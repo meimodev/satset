@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FlowServe - Product Matrix</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "inverse-primary": "#dec1ac",
+                "outline": "#80756d",
+                "tertiary-fixed": "#f4dfcb",
+                "on-tertiary": "#ffffff",
+                "on-surface": "#1b1c19",
+                "surface-container-low": "#f5f3ee",
+                "on-secondary": "#ffffff",
+                "on-error-container": "#93000a",
+                "surface-container-highest": "#e4e2dd",
+                "surface-tint": "#705a49",
+                "surface": "#fbf9f4",
+                "on-surface-variant": "#4e453e",
+                "primary": "#322214",
+                "outline-variant": "#d2c4bb",
+                "background": "#fbf9f4",
+                "secondary-container": "#efddc9",
+                "primary-fixed-dim": "#dec1ac",
+                "on-tertiary-fixed-variant": "#524436",
+                "on-secondary-fixed": "#231a0e",
+                "surface-variant": "#e4e2dd",
+                "on-tertiary-fixed": "#241a0e",
+                "secondary-fixed-dim": "#d6c4b1",
+                "on-background": "#1b1c19",
+                "inverse-surface": "#30312e",
+                "on-tertiary-container": "#b5a290",
+                "on-primary-fixed": "#28180b",
+                "on-primary": "#ffffff",
+                "on-primary-container": "#bba08c",
+                "inverse-on-surface": "#f2f1ec",
+                "error": "#ba1a1a",
+                "tertiary": "#2f2317",
+                "on-primary-fixed-variant": "#574333",
+                "on-secondary-container": "#6e6051",
+                "tertiary-fixed-dim": "#d7c3b0",
+                "primary-container": "#4a3728",
+                "surface-container": "#f0eee9",
+                "secondary-fixed": "#f2dfcc",
+                "primary-fixed": "#fbddc7",
+                "surface-dim": "#dbdad5",
+                "surface-container-high": "#eae8e3",
+                "error-container": "#ffdad6",
+                "tertiary-container": "#46392b",
+                "surface-bright": "#fbf9f4",
+                "surface-container-lowest": "#ffffff",
+                "secondary": "#6a5c4d",
+                "on-secondary-fixed-variant": "#514537",
+                "on-error": "#ffffff"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "xl": "40px",
+                "sm": "8px",
+                "md": "16px",
+                "xs": "4px",
+                "unit": "4px",
+                "container-margin": "24px",
+                "gutter": "12px",
+                "lg": "24px"
+        },
+        "fontFamily": {
+                "label-caps": [
+                        "Be Vietnam Pro"
+                ],
+                "headline-lg": [
+                        "Noto Serif"
+                ],
+                "headline-display": [
+                        "Noto Serif"
+                ],
+                "body-sm": [
+                        "Be Vietnam Pro"
+                ],
+                "label-md": [
+                        "Be Vietnam Pro"
+                ],
+                "body-lg": [
+                        "Be Vietnam Pro"
+                ],
+                "body-md": [
+                        "Be Vietnam Pro"
+                ],
+                "headline-md": [
+                        "Noto Serif"
+                ]
+        },
+        "fontSize": {
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.1em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-display": [
+                        "48px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-md": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "fontWeight": "500"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "500"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar (Web & Mobile) -->
+<header class="bg-surface-container-lowest font-['Noto_Serif'] font-medium full-width sticky top-0 z-50 shadow-sm flex justify-between items-center w-full px-6 h-16 border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">restaurant_menu</span>
+<span class="text-2xl font-bold font-headline-md text-primary">FlowServe</span>
+</div>
+<!-- Web Navigation -->
+<nav class="hidden md:flex gap-8 items-center">
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors px-3 py-2 rounded-lg flex items-center gap-2 active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-xl">grid_view</span>
+<span>Zones</span>
+</a>
+<a class="text-primary font-bold hover:bg-surface-variant transition-colors px-3 py-2 rounded-lg flex items-center gap-2 active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-xl">analytics</span>
+<span>Matrix</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors px-3 py-2 rounded-lg flex items-center gap-2 active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-xl">confirmation_number</span>
+<span>Tickets</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors px-3 py-2 rounded-lg flex items-center gap-2 active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-xl">settings</span>
+<span>Admin</span>
+</a>
+</nav>
+<div class="flex items-center">
+<img alt="User profile" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A small, circular avatar portrait of a professional individual against a neutral background. The lighting is soft and flattering, suitable for a sophisticated SaaS dashboard profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0of3K-ZTzOvhvuUkFrChnn2iHKHdFmTCl_FVAssoJ3-nJ8_axcNfZA4tO6QLiSLCXQIHsEvqnKSP9uOYBpaprSFXU8M7nUvpQa3ySVrxiR8W2P0depPO5TjzBlQ2GS6fgHjLwjFOLbK0Jnpnpvx0N0mqtEGOa36nvoFVfbY5sOfGP7hnf82JkXTtq7ADWZ3UtHt_kgqYDqxU8PAZ6r6z_LYPZVPH5XvrNc1Y5uBUmbE8YCj55D7MMjhrgTVX6__7yVj4zqvzy2w"/>
+</div>
+</header>
+<main class="max-w-[1280px] mx-auto px-6 py-xl">
+<!-- Page Header & Filters -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-lg gap-md">
+<div>
+<h1 class="font-headline-display text-headline-display text-on-background mb-xs">Product Matrix</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">High-density overview of active offerings.</p>
+</div>
+<div class="flex gap-sm overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-4 py-2 rounded-full whitespace-nowrap active:scale-95 transition-transform">All Items</button>
+<button class="bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md px-4 py-2 rounded-full whitespace-nowrap hover:bg-surface-variant active:scale-95 transition-transform border border-outline-variant">Signatures</button>
+<button class="bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md px-4 py-2 rounded-full whitespace-nowrap hover:bg-surface-variant active:scale-95 transition-transform border border-outline-variant">Seasonal</button>
+<button class="bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md px-4 py-2 rounded-full whitespace-nowrap hover:bg-surface-variant active:scale-95 transition-transform border border-outline-variant">Beverages</button>
+</div>
+</div>
+<!-- Matrix Grid -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant shadow-sm">
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[1px] bg-outline-variant">
+<!-- Item 1 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-700"></div>
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Truffle Risotto</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$28.00</span>
+</div>
+</button>
+<!-- Item 2 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Wagyu Sliders (3)</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$22.00</span>
+</div>
+</button>
+<!-- Item 3 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Seared Scallops</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$34.00</span>
+</div>
+</button>
+<!-- Item 4 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Autumn Squash Soup</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$12.00</span>
+</div>
+</button>
+<!-- Item 5 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-700"></div>
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Venison Medallions</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$42.00</span>
+</div>
+</button>
+<!-- Item 6 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Fig &amp; Prosciutto</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$18.00</span>
+</div>
+</button>
+<!-- Item 7 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Artisan Espresso</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$4.50</span>
+</div>
+</button>
+<!-- Item 8 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Matcha Latte</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$6.00</span>
+</div>
+</button>
+<!-- Item 9 -->
+<button class="bg-surface-container-lowest flex items-center p-sm h-16 hover:bg-surface-variant active:border-[2px] active:border-primary active:p-[6px] transition-all relative overflow-hidden group text-left">
+<div class="w-10 h-10 bg-surface-variant rounded-md mr-3 flex-shrink-0"></div>
+<div class="flex flex-col justify-center flex-grow overflow-hidden">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">Sparkling Yuzu</span>
+<span class="text-[12px] font-semibold text-secondary mt-[2px]">$5.50</span>
+</div>
+</button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-lowest border-outline-variant shadow-[0_-8px_30px_rgba(46,0,139,0.05)] fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 border-t">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1">grid_view</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Zones</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Matrix</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1">confirmation_number</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Tickets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Admin</span>
+</a>
+</nav>
+</body></html>

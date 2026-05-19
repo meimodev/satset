@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FlowServe - Zone Map</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=Noto+Serif:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "secondary-fixed-dim": "#d6c4b1",
+                "error": "#ba1a1a",
+                "error-container": "#ffdad6",
+                "background": "#fbf9f4",
+                "tertiary-fixed": "#f4dfcb",
+                "tertiary-container": "#46392b",
+                "surface-bright": "#fbf9f4",
+                "on-primary-container": "#bba08c",
+                "secondary-fixed": "#f2dfcc",
+                "outline-variant": "#d2c4bb",
+                "secondary-container": "#efddc9",
+                "surface-tint": "#705a49",
+                "surface-container-highest": "#e4e2dd",
+                "surface-variant": "#e4e2dd",
+                "inverse-on-surface": "#f2f1ec",
+                "on-error": "#ffffff",
+                "on-surface-variant": "#4e453e",
+                "on-secondary": "#ffffff",
+                "on-tertiary-fixed-variant": "#524436",
+                "on-error-container": "#93000a",
+                "primary-fixed": "#fbddc7",
+                "secondary": "#6a5c4d",
+                "on-primary": "#ffffff",
+                "primary-container": "#4a3728",
+                "on-surface": "#1b1c19",
+                "surface-container-low": "#f5f3ee",
+                "on-secondary-container": "#6e6051",
+                "surface-container": "#f0eee9",
+                "on-secondary-fixed": "#231a0e",
+                "on-secondary-fixed-variant": "#514537",
+                "primary-fixed-dim": "#dec1ac",
+                "outline": "#80756d",
+                "surface": "#fbf9f4",
+                "surface-container-lowest": "#ffffff",
+                "on-primary-fixed-variant": "#574333",
+                "on-background": "#1b1c19",
+                "on-tertiary-container": "#b5a290",
+                "tertiary-fixed-dim": "#d7c3b0",
+                "on-tertiary-fixed": "#241a0e",
+                "inverse-primary": "#dec1ac",
+                "on-primary-fixed": "#28180b",
+                "tertiary": "#2f2317",
+                "surface-container-high": "#eae8e3",
+                "on-tertiary": "#ffffff",
+                "surface-dim": "#dbdad5",
+                "inverse-surface": "#30312e",
+                "primary": "#322214"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "md": "16px",
+                "sm": "8px",
+                "lg": "24px",
+                "xl": "40px",
+                "unit": "4px",
+                "xs": "4px",
+                "gutter": "12px",
+                "container-margin": "24px",
+                "container-max": "1280px"
+        },
+        "fontFamily": {
+                "label-md": [
+                        "Be Vietnam Pro"
+                ],
+                "label-caps": [
+                        "Be Vietnam Pro"
+                ],
+                "headline-lg": [
+                        "Noto Serif"
+                ],
+                "headline-display": [
+                        "Noto Serif"
+                ],
+                "body-sm": [
+                        "Be Vietnam Pro"
+                ],
+                "body-lg": [
+                        "Be Vietnam Pro"
+                ],
+                "headline-md": [
+                        "Noto Serif"
+                ],
+                "body-md": [
+                        "Be Vietnam Pro"
+                ]
+        },
+        "fontSize": {
+                "label-md": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "fontWeight": "500"
+                        }
+                ],
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.1em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-display": [
+                        "48px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "500"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        /* Base styles to ensure consistency with design system intent */
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        /* Custom scrollbar for high-density areas */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: theme('borderRadius.full');
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col relative selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed z-40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md shadow-[0_8px_30px_rgba(50,34,20,0.08)] flex justify-between items-center w-full px-6 h-16 border-b-0 border-outline/10">
+<div class="flex items-center gap-md">
+<button class="text-primary hover:bg-surface-container-high transition-colors rounded-full p-2 flex items-center justify-center active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">restaurant_menu</span>
+</button>
+<span class="text-2xl font-bold font-headline-md text-primary tracking-tight">FlowServe</span>
+</div>
+<!-- Desktop Navigation Integration (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-lg h-full">
+<a class="h-full flex items-center border-b-2 border-transparent text-primary font-bold hover:bg-surface-container-high transition-colors px-4 border-primary" href="#">
+<span class="font-headline-md font-medium text-[14px] tracking-wide">Zones</span>
+</a>
+<a class="h-full flex items-center border-b-2 border-transparent text-on-surface-variant hover:bg-surface-container-high transition-colors px-4" href="#">
+<span class="font-headline-md font-medium text-[14px] tracking-wide">Matrix</span>
+</a>
+<a class="h-full flex items-center border-b-2 border-transparent text-on-surface-variant hover:bg-surface-container-high transition-colors px-4" href="#">
+<span class="font-headline-md font-medium text-[14px] tracking-wide">Tickets</span>
+</a>
+<a class="h-full flex items-center border-b-2 border-transparent text-on-surface-variant hover:bg-surface-container-high transition-colors px-4" href="#">
+<span class="font-headline-md font-medium text-[14px] tracking-wide">Admin</span>
+</a>
+</nav>
+<div class="flex items-center">
+<button class="hover:bg-surface-container-high transition-colors rounded-full p-2 flex items-center justify-center active:scale-95 transition-transform duration-200">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md font-bold">
+                    UP
+                </div>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-[100px] md:pb-24 px-6 max-w-container-max mx-auto w-full flex flex-col gap-xl">
+<!-- Header & Controls -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<h1 class="font-headline-display text-headline-display text-on-background flex items-center gap-sm">
+                    Zone Map
+                    <span class="w-3 h-3 rounded-full bg-secondary-container inline-block shadow-[0_0_10px_rgba(239,221,201,0.5)]"></span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-sm">Live floor status and capacity management.</p>
+</div>
+<!-- Legend / Filters -->
+<div class="flex flex-wrap gap-sm">
+<div class="flex items-center gap-xs px-sm py-xs bg-surface border border-outline/10 rounded-full">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="font-label-caps text-label-caps text-on-surface">Occupied</span>
+</div>
+<div class="flex items-center gap-xs px-sm py-xs bg-surface border border-outline/10 rounded-full">
+<div class="w-2 h-2 rounded-full border border-outline"></div>
+<span class="font-label-caps text-label-caps text-on-surface">Available</span>
+</div>
+<div class="flex items-center gap-xs px-sm py-xs bg-surface border border-outline/10 rounded-full">
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<span class="font-label-caps text-label-caps text-on-surface">Reserved</span>
+</div>
+</div>
+</section>
+<!-- High-Density Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-lg auto-rows-min">
+<!-- Zone: Main Floor (Large) -->
+<div class="col-span-1 md:col-span-8 bg-white/70 backdrop-blur-[12px] border border-outline/10 shadow-[0_8px_30px_rgba(50,34,20,0.08)] rounded-xl flex flex-col">
+<div class="px-lg py-md border-b border-outline/10 flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-background">Main Floor</h2>
+<span class="font-label-caps text-label-caps bg-primary-fixed text-on-primary-fixed px-sm py-xs rounded-full">80% CAPACITY</span>
+</div>
+<div class="p-lg grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-sm">
+<!-- Table Item - Occupied -->
+<button class="aspect-square bg-primary text-on-primary rounded-lg flex flex-col items-center justify-center p-sm shadow-[0_4px_12px_rgba(50,34,20,0.15)] hover:-translate-y-0.5 transition-transform">
+<span class="font-headline-md text-[20px] font-bold">12</span>
+<span class="font-label-caps text-[10px] opacity-80 flex items-center gap-xs mt-1">
+<span class="material-symbols-outlined text-[12px]">group</span> 4
+                        </span>
+</button>
+<button class="aspect-square bg-primary text-on-primary rounded-lg flex flex-col items-center justify-center p-sm shadow-[0_4px_12px_rgba(50,34,20,0.15)] hover:-translate-y-0.5 transition-transform">
+<span class="font-headline-md text-[20px] font-bold">14</span>
+<span class="font-label-caps text-[10px] opacity-80 flex items-center gap-xs mt-1">
+<span class="material-symbols-outlined text-[12px]">group</span> 2
+                        </span>
+</button>
+<!-- Table Item - Available -->
+<button class="aspect-square bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm hover:border-primary transition-colors hover:-translate-y-0.5">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">15</span>
+<span class="font-label-caps text-[10px] text-outline flex items-center gap-xs mt-1">
+<span class="material-symbols-outlined text-[12px]">chair</span> 4
+                        </span>
+</button>
+<button class="aspect-square bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm hover:border-primary transition-colors hover:-translate-y-0.5">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">16</span>
+<span class="font-label-caps text-[10px] text-outline flex items-center gap-xs mt-1">
+<span class="material-symbols-outlined text-[12px]">chair</span> 2
+                        </span>
+</button>
+<!-- Table Item - Reserved -->
+<button class="aspect-square bg-secondary-container text-on-secondary-container rounded-lg flex flex-col items-center justify-center p-sm shadow-[0_4px_12px_rgba(106,92,77,0.15)] hover:-translate-y-0.5 transition-transform">
+<span class="font-headline-md text-[20px] font-bold">18</span>
+<span class="font-label-caps text-[10px] opacity-90 flex items-center gap-xs mt-1">
+<span class="material-symbols-outlined text-[12px]">schedule</span> 6
+                        </span>
+</button>
+<!-- More tables to fill grid -->
+<button class="aspect-square bg-primary text-on-primary rounded-lg flex flex-col items-center justify-center p-sm shadow-[0_4px_12px_rgba(50,34,20,0.15)]">
+<span class="font-headline-md text-[20px] font-bold">20</span>
+</button>
+<button class="aspect-square bg-primary text-on-primary rounded-lg flex flex-col items-center justify-center p-sm shadow-[0_4px_12px_rgba(50,34,20,0.15)]">
+<span class="font-headline-md text-[20px] font-bold">22</span>
+</button>
+<button class="aspect-square bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">24</span>
+</button>
+<!-- Large Booth (spans 2 cols visually, but grid-cols-2 to simulate) -->
+<button class="aspect-[2/1] col-span-2 bg-primary text-on-primary rounded-lg flex flex-col items-center justify-center p-sm shadow-[0_4px_12px_rgba(50,34,20,0.15)]">
+<span class="font-headline-md text-[20px] font-bold">B1</span>
+<span class="font-label-caps text-[10px] opacity-80 mt-1">Booth • 6 Pax</span>
+</button>
+<button class="aspect-[2/1] col-span-2 bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">B2</span>
+<span class="font-label-caps text-[10px] text-outline mt-1">Booth • 6 Pax</span>
+</button>
+</div>
+</div>
+<!-- Zone: The Terrace (Vertical) -->
+<div class="col-span-1 md:col-span-4 bg-white/70 backdrop-blur-[12px] border border-outline/10 shadow-[0_8px_30px_rgba(50,34,20,0.08)] rounded-xl flex flex-col">
+<div class="px-lg py-md border-b border-outline/10 flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-background">Terrace</h2>
+<span class="font-label-caps text-label-caps bg-surface-variant text-on-surface-variant px-sm py-xs rounded-full">20% CAPACITY</span>
+</div>
+<div class="p-lg grid grid-cols-3 gap-sm flex-grow content-start">
+<button class="aspect-square bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">T1</span>
+</button>
+<button class="aspect-square bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">T2</span>
+</button>
+<button class="aspect-square bg-primary text-on-primary rounded-lg flex flex-col items-center justify-center p-sm shadow-[0_4px_12px_rgba(50,34,20,0.15)]">
+<span class="font-headline-md text-[20px] font-bold">T3</span>
+</button>
+<button class="aspect-square bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">T4</span>
+</button>
+<button class="aspect-square bg-surface border border-outline-variant text-on-surface rounded-lg flex flex-col items-center justify-center p-sm">
+<span class="font-headline-md text-[20px] font-bold text-on-surface-variant">T5</span>
+</button>
+</div>
+</div>
+<!-- Zone: VIP Gallery (Horizontal strip) -->
+<div class="col-span-1 md:col-span-12 bg-gradient-to-r from-tertiary-container/10 to-transparent border border-outline/10 shadow-[0_8px_30px_rgba(50,34,20,0.04)] rounded-xl flex flex-col md:flex-row">
+<div class="px-lg py-md md:w-48 flex-shrink-0 flex flex-col justify-center border-b md:border-b-0 md:border-r border-outline/10">
+<h2 class="font-headline-md text-headline-md text-on-background">VIP Gallery</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Exclusive Access</p>
+</div>
+<div class="p-lg grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-md flex-grow">
+<!-- Elegant rectangular tables -->
+<button class="h-16 bg-surface border-2 border-secondary-container/50 text-on-surface rounded-lg flex items-center justify-between px-md shadow-sm">
+<span class="font-headline-md text-[18px] font-bold text-on-surface-variant">V1</span>
+<span class="material-symbols-outlined text-outline">wine_bar</span>
+</button>
+<button class="h-16 bg-primary text-on-primary rounded-lg flex items-center justify-between px-md shadow-[0_4px_12px_rgba(50,34,20,0.15)]">
+<span class="font-headline-md text-[18px] font-bold">V2</span>
+<span class="material-symbols-outlined text-on-primary/80">local_dining</span>
+</button>
+<button class="h-16 bg-surface border border-outline-variant text-on-surface rounded-lg flex items-center justify-between px-md shadow-sm">
+<span class="font-headline-md text-[18px] font-bold text-on-surface-variant">V3</span>
+<span class="material-symbols-outlined text-outline">chair</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only per Layout Rule) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 border-t-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md shadow-[0_-8px_30px_rgba(50,34,20,0.05)] border-outline/10">
+<!-- Active Tab: Zones -->
+<a class="flex flex-col items-center justify-center bg-primary-container/20 text-primary rounded-full px-4 py-1 active:scale-90 transition-all hover:text-primary-fixed" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-caps text-[10px] font-semibold uppercase tracking-wider mt-1">Zones</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 transition-all hover:text-primary" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-[10px] font-semibold uppercase tracking-wider mt-1">Matrix</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 transition-all hover:text-primary" href="#">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-label-caps text-[10px] font-semibold uppercase tracking-wider mt-1">Tickets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-90 transition-all hover:text-primary" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-[10px] font-semibold uppercase tracking-wider mt-1">Admin</span>
+</a>
+</nav>
+</body></html>
