@@ -1,36 +1,16 @@
-import 'package:flutter/material.dart';
-
-enum UserRole { waiter, chef, manager, admin }
-
-class User {
+class AppUser {
   final String id;
-  final String username;
-  final String displayName;
-  final UserRole role;
-
-  const User({
+  final String name;
+  final String initials;
+  final String role;
+  final String shiftStartedAt;
+  final String zoneAssigned;
+  const AppUser({
     required this.id,
-    required this.username,
-    required this.displayName,
+    required this.name,
+    required this.initials,
     required this.role,
+    required this.shiftStartedAt,
+    required this.zoneAssigned,
   });
-
-  IconData get roleIcon {
-    switch (role) {
-      case UserRole.waiter:
-        return Icons.room_service;
-      case UserRole.chef:
-        return Icons.restaurant;
-      case UserRole.manager:
-        return Icons.insights;
-      case UserRole.admin:
-        return Icons.admin_panel_settings;
-    }
-  }
-
-  String get initials => displayName
-      .split(' ')
-      .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
-      .take(2)
-      .join();
 }

@@ -1,53 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AppTypography {
-  AppTypography._();
+class SatType {
+  SatType._();
 
-  static TextTheme buildTextTheme() {
-    return GoogleFonts.beVietnamProTextTheme().copyWith(
-      displayLarge: GoogleFonts.notoSerif(
-        fontSize: 48,
-        fontWeight: FontWeight.w600,
-        height: 1.1,
-        letterSpacing: -0.02,
-      ),
-      headlineLarge: GoogleFonts.notoSerif(
-        fontSize: 32,
-        fontWeight: FontWeight.w500,
-        height: 1.2,
-      ),
-      headlineMedium: GoogleFonts.notoSerif(
-        fontSize: 24,
-        fontWeight: FontWeight.w500,
-        height: 1.3,
-      ),
-      bodyLarge: GoogleFonts.beVietnamPro(
-        fontSize: 18,
-        fontWeight: FontWeight.w400,
-        height: 1.6,
-      ),
-      bodyMedium: GoogleFonts.beVietnamPro(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-      ),
-      bodySmall: GoogleFonts.beVietnamPro(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-      ),
-      labelLarge: GoogleFonts.beVietnamPro(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        height: 1.0,
-        letterSpacing: 0.1,
-      ),
-      labelMedium: GoogleFonts.beVietnamPro(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        height: 1.0,
-      ),
+  static TextStyle sans({
+    double size = 14,
+    FontWeight weight = FontWeight.w400,
+    double letterSpacing = 0,
+    double? height,
+    Color? color,
+  }) {
+    return GoogleFonts.ibmPlexSans(
+      fontSize: size,
+      fontWeight: weight,
+      letterSpacing: letterSpacing,
+      height: height,
+      color: color,
     );
   }
+
+  static TextStyle mono({
+    double size = 11,
+    FontWeight weight = FontWeight.w500,
+    double letterSpacing = 0.04,
+    double? height,
+    Color? color,
+  }) {
+    return GoogleFonts.ibmPlexMono(
+      fontSize: size,
+      fontWeight: weight,
+      letterSpacing: letterSpacing,
+      height: height,
+      color: color,
+    );
+  }
+
+  static TextTheme buildTextTheme(Color textHi, Color textMd) {
+    return TextTheme(
+      displayLarge: sans(size: 38, weight: FontWeight.w600, letterSpacing: -0.76, height: 1.05, color: textHi),
+      displayMedium: sans(size: 30, weight: FontWeight.w600, letterSpacing: -0.6, height: 1.05, color: textHi),
+      displaySmall: sans(size: 22, weight: FontWeight.w600, letterSpacing: -0.22, color: textHi),
+      headlineLarge: sans(size: 30, weight: FontWeight.w600, letterSpacing: -0.6, color: textHi),
+      headlineMedium: sans(size: 22, weight: FontWeight.w600, letterSpacing: -0.22, color: textHi),
+      headlineSmall: sans(size: 19, weight: FontWeight.w600, letterSpacing: -0.19, color: textHi),
+      titleLarge: sans(size: 17, weight: FontWeight.w600, letterSpacing: -0.17, color: textHi),
+      titleMedium: sans(size: 15, weight: FontWeight.w600, letterSpacing: -0.15, color: textHi),
+      titleSmall: sans(size: 14, weight: FontWeight.w600, letterSpacing: -0.14, color: textHi),
+      bodyLarge: sans(size: 15, weight: FontWeight.w400, color: textHi),
+      bodyMedium: sans(size: 14, weight: FontWeight.w400, color: textHi),
+      bodySmall: sans(size: 12, weight: FontWeight.w400, color: textMd),
+      labelLarge: sans(size: 14, weight: FontWeight.w500, color: textHi),
+      labelMedium: sans(size: 12, weight: FontWeight.w500, color: textMd),
+      labelSmall: sans(size: 11, weight: FontWeight.w500, color: textLow(textMd)),
+    );
+  }
+
+  static Color textLow(Color textMd) => textMd;
 }

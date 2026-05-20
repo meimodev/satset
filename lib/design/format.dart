@@ -1,11 +1,5 @@
-String formatRupiah(double value) {
-  final chars = value.toInt().toString().split('');
-  final buffer = StringBuffer();
-  for (int i = 0; i < chars.length; i++) {
-    if (i > 0 && (chars.length - i) % 3 == 0) {
-      buffer.write('.');
-    }
-    buffer.write(chars[i]);
-  }
-  return buffer.toString();
-}
+import 'package:intl/intl.dart';
+
+final _idr = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+String formatIDR(num value) => _idr.format(value);

@@ -2,119 +2,53 @@ import 'package:flutter/material.dart';
 import 'colors.dart';
 import 'typography.dart';
 
-ThemeData heritageLightTheme() {
-  final colorScheme = const ColorScheme.light(
-    primary: AppColors.primary,
-    onPrimary: AppColors.onPrimary,
-    primaryContainer: AppColors.primaryContainer,
-    onPrimaryContainer: AppColors.onPrimaryContainer,
-    secondary: AppColors.secondary,
-    onSecondary: AppColors.onSecondary,
-    secondaryContainer: AppColors.secondaryContainer,
-    onSecondaryContainer: AppColors.onSecondaryContainer,
-    tertiary: AppColors.tertiary,
-    onTertiary: AppColors.onTertiary,
-    tertiaryContainer: AppColors.tertiaryContainer,
-    onTertiaryContainer: AppColors.onTertiaryContainer,
-    error: AppColors.error,
-    onError: AppColors.onError,
-    errorContainer: AppColors.errorContainer,
-    onErrorContainer: AppColors.onErrorContainer,
-    surface: AppColors.surface,
-    onSurface: AppColors.onSurface,
-    onSurfaceVariant: AppColors.onSurfaceVariant,
-    outline: AppColors.outline,
-    outlineVariant: AppColors.outlineVariant,
-    surfaceTint: AppColors.surfaceTint,
-    inverseSurface: AppColors.inverseSurface,
-    inversePrimary: AppColors.inversePrimary,
+ThemeData _build(SatColors sc, Brightness brightness) {
+  final scheme = ColorScheme(
+    brightness: brightness,
+    primary: sc.accent,
+    onPrimary: sc.accentInk,
+    secondary: sc.accent,
+    onSecondary: sc.accentInk,
+    error: sc.urgent,
+    onError: Colors.white,
+    surface: sc.bg0,
+    onSurface: sc.textHi,
+    surfaceContainerHighest: sc.bg3,
+    surfaceContainerHigh: sc.bg2,
+    surfaceContainer: sc.bg2,
+    surfaceContainerLow: sc.bg1,
+    surfaceContainerLowest: sc.bg0,
+    outline: sc.border2,
+    outlineVariant: sc.border1,
   );
 
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.light,
-    colorScheme: colorScheme,
-    scaffoldBackgroundColor: AppColors.surface,
-    textTheme: AppTypography.buildTextTheme(),
-    dividerTheme: const DividerThemeData(
-      color: AppColors.secondaryOverride,
-      thickness: 0.5,
-      space: 12,
-    ),
-    cardTheme: CardThemeData(
-      color: AppColors.surfaceLowest,
+    brightness: brightness,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: sc.bg0,
+    canvasColor: sc.bg0,
+    splashColor: Colors.transparent,
+    highlightColor: sc.bg3,
+    textTheme: SatType.buildTextTheme(sc.textHi, sc.textMd),
+    extensions: [sc],
+    iconTheme: IconThemeData(color: sc.textMd, size: 18),
+    dividerColor: sc.border0,
+    appBarTheme: AppBarTheme(
+      backgroundColor: sc.bg0,
+      foregroundColor: sc.textHi,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: AppColors.secondaryOverride, width: 1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      margin: EdgeInsets.zero,
+      scrolledUnderElevation: 0,
     ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primaryOverride,
-        foregroundColor: AppColors.onPrimary,
-        minimumSize: const Size(0, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: sc.bg1,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primaryOverride,
-        side: const BorderSide(color: AppColors.secondaryOverride),
-        minimumSize: const Size(0, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      ),
-    ),
-    inputDecorationTheme: const InputDecorationTheme(
-      filled: false,
-      border: UnderlineInputBorder(
-        borderSide: BorderSide(color: AppColors.secondaryOverride),
-      ),
-      enabledBorder: UnderlineInputBorder(
-        borderSide: BorderSide(color: AppColors.secondaryOverride),
-      ),
-      focusedBorder: UnderlineInputBorder(
-        borderSide: BorderSide(color: AppColors.primaryOverride, width: 2),
-      ),
-      labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.1),
-      contentPadding: EdgeInsets.symmetric(vertical: 12),
-    ),
-    chipTheme: ChipThemeData(
-      backgroundColor: AppColors.tertiaryContainer,
-      labelStyle: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: AppColors.onTertiaryContainer,
-      ),
-      side: BorderSide.none,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.surfaceContainer,
-      indicatorColor: AppColors.primaryContainer.withValues(alpha: 0.2),
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary,
-            letterSpacing: 0.1,
-          );
-        }
-        return const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: AppColors.onSurfaceVariant,
-        );
-      }),
-      iconTheme: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: AppColors.primary, size: 24);
-        }
-        return const IconThemeData(color: AppColors.onSurfaceVariant, size: 24);
-      }),
     ),
   );
 }
+
+ThemeData satDarkTheme() => _build(SatColors.dark, Brightness.dark);
+ThemeData satLightTheme() => _build(SatColors.light, Brightness.light);

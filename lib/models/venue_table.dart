@@ -1,41 +1,42 @@
-enum TableStatus { empty, ordering, waiting, ready }
+enum TableStatus { available, occupied, pending, ready }
 
 class VenueTable {
   final String id;
   final String zoneId;
-  final String label;
-  final int capacity;
+  final int pax;
   final TableStatus status;
-  final int? guestCount;
-  final bool isBooth;
+  final String? elapsed;
+  final bool mine;
+  final int openAmount;
+  final int readyCount;
 
   const VenueTable({
     required this.id,
     required this.zoneId,
-    required this.label,
-    this.capacity = 4,
-    this.status = TableStatus.empty,
-    this.guestCount,
-    this.isBooth = false,
+    this.pax = 2,
+    this.status = TableStatus.available,
+    this.elapsed,
+    this.mine = false,
+    this.openAmount = 0,
+    this.readyCount = 0,
   });
 
   VenueTable copyWith({
-    String? id,
-    String? zoneId,
-    String? label,
-    int? capacity,
     TableStatus? status,
-    int? guestCount,
-    bool? isBooth,
+    String? elapsed,
+    bool? mine,
+    int? openAmount,
+    int? readyCount,
   }) {
     return VenueTable(
-      id: id ?? this.id,
-      zoneId: zoneId ?? this.zoneId,
-      label: label ?? this.label,
-      capacity: capacity ?? this.capacity,
+      id: id,
+      zoneId: zoneId,
+      pax: pax,
       status: status ?? this.status,
-      guestCount: guestCount ?? this.guestCount,
-      isBooth: isBooth ?? this.isBooth,
+      elapsed: elapsed ?? this.elapsed,
+      mine: mine ?? this.mine,
+      openAmount: openAmount ?? this.openAmount,
+      readyCount: readyCount ?? this.readyCount,
     );
   }
 }
