@@ -1,21 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../auth/auth_state.dart';
-import '../auth/screens/pin_screen.dart';
-import '../features/shell/app_shell.dart';
-import '../features/tables/tables_screen.dart';
-import '../features/tables/table_detail_screen.dart';
-import '../features/orders/orders_screen.dart';
-import '../features/me/me_screen.dart';
-import '../features/menu/menu_screen.dart';
-import '../features/review/review_screen.dart';
-import '../features/sent/sent_screen.dart';
-import '../features/admin/kitchen_screen.dart';
-import '../features/admin/floor_screen.dart';
-import '../features/admin/menu_admin_screen.dart';
-import '../features/admin/reports_screen.dart';
-import '../features/admin/settings_screen.dart';
-import '../features/admin/staff_screen.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/ui/features/auth/views/pin_screen.dart';
+import 'package:satset/ui/features/shell/app_shell.dart';
+import 'package:satset/ui/features/tables/tables_screen.dart';
+import 'package:satset/ui/features/tables/table_detail_screen.dart';
+import 'package:satset/ui/features/orders/orders_screen.dart';
+import 'package:satset/ui/features/me/me_screen.dart';
+import 'package:satset/ui/features/menu/menu_screen.dart';
+import 'package:satset/ui/features/review/review_screen.dart';
+import 'package:satset/ui/features/sent/sent_screen.dart';
+import 'package:satset/ui/features/admin/kitchen_screen.dart';
+import 'package:satset/ui/features/admin/floor_screen.dart';
+import 'package:satset/ui/features/admin/menu_admin_screen.dart';
+import 'package:satset/ui/features/admin/menu_admin_item_screen.dart';
+import 'package:satset/ui/features/admin/reports_screen.dart';
+import 'package:satset/ui/features/admin/settings_screen.dart';
+import 'package:satset/ui/features/admin/staff_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authStateProvider);
@@ -43,6 +44,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),
           GoRoute(path: '/me', builder: (_, _) => const MeScreen()),
         ],
+      ),
+      GoRoute(
+        path: '/menuadm/:id',
+        builder: (_, s) =>
+            MenuAdminItemScreen(id: s.pathParameters['id']!),
       ),
       GoRoute(
         path: '/table/:id',

@@ -1,0 +1,30 @@
+enum CapabilityGroup { orders, money, inventory, admin }
+
+enum Capability {
+  takeOrder(CapabilityGroup.orders, 'Take order'),
+  modifyOrder(CapabilityGroup.orders, 'Modify order'),
+  voidItem(CapabilityGroup.orders, 'Void item'),
+  compItem(CapabilityGroup.orders, 'Comp item'),
+  openDrawer(CapabilityGroup.money, 'Open drawer'),
+  applyDiscount(CapabilityGroup.money, 'Apply discount'),
+  refund(CapabilityGroup.money, 'Refund'),
+  closeShift(CapabilityGroup.money, 'Close shift'),
+  editMenu(CapabilityGroup.inventory, 'Edit menu'),
+  toggle86(CapabilityGroup.inventory, 'Toggle 86'),
+  adjustStock(CapabilityGroup.inventory, 'Adjust stock'),
+  manageStaff(CapabilityGroup.admin, 'Manage staff'),
+  manageRoles(CapabilityGroup.admin, 'Manage roles'),
+  viewReports(CapabilityGroup.admin, 'View reports'),
+  editSettings(CapabilityGroup.admin, 'Edit settings');
+
+  final CapabilityGroup group;
+  final String label;
+  const Capability(this.group, this.label);
+}
+
+String capabilityGroupLabel(CapabilityGroup g) => switch (g) {
+      CapabilityGroup.orders => 'Orders',
+      CapabilityGroup.money => 'Money',
+      CapabilityGroup.inventory => 'Inventory',
+      CapabilityGroup.admin => 'Admin',
+    };

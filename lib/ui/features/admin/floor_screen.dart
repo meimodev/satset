@@ -1,0 +1,1647 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/domain/models/user.dart';
+import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/domain/models/zone.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
+
+class FloorScreen extends ConsumerStatefulWidget {
+  const FloorScreen({super.key});
+
+  @override
+  ConsumerState<FloorScreen> createState() => _FloorScreenState();
+}
+
+class _FloorScreenState extends ConsumerState<FloorScreen> {
+  String? _selectedZoneId;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final zones = ref.watch(zonesProvider);
+    final tables = ref.watch(tablesProvider);
+    final layout = context.layout;
+    final auth = ref.watch(authStateProvider);
+    final canManage = auth.user?.role == UserRole.admin;
+
+    if (zones.isEmpty) {
+      return SafeArea(child: _noZones(context, sc, canManage));
+    }
+
+    final selected = zones.firstWhere(
+      (z) => z.id == _selectedZoneId,
+      orElse: () => zones.first,
+    );
+    final zoneTables = tables.where((t) => t.zoneId == selected.id).toList();
+    final seats = tables.fold<int>(0, (s, t) => s + t.pax);
+
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          _Header(
+            sub: '${tables.length} meja · ${zones.length} zona · $seats kursi',
+            canManage: canManage,
+            onManageZones: () => _showZones(context),
+          ),
+          _ZoneBar(
+            zones: zones,
+            tables: tables,
+            selectedId: selected.id,
+            onSelect: (id) => setState(() => _selectedZoneId = id),
+            onAdd: () => _editTable(context, null, selected.id),
+          ),
+          Expanded(
+            child: zoneTables.isEmpty
+                ? _emptyZone(context, sc, selected)
+                : ReorderableListView.builder(
+                    padding: EdgeInsets.fromLTRB(
+                      layout.gutter,
+                      14,
+                      layout.gutter,
+                      layout.bottomInset,
+                    ),
+                    buildDefaultDragHandles: false,
+                    proxyDecorator: (child, _, _) =>
+                        _DragProxy(child: child),
+                    itemCount: zoneTables.length,
+                    onReorder: (o, n) => ref
+                        .read(tablesProvider.notifier)
+                        .reorderTable(selected.id, o, n),
+                    itemBuilder: (ctx, i) {
+                      final t = zoneTables[i];
+                      return _TableRow(
+                        key: ValueKey(t.id),
+                        index: i,
+                        table: t,
+                        onTap: () => _editTable(context, t, selected.id),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyZone(BuildContext context, SatColors sc, Zone zone) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.table_restaurant_outlined, size: 40, color: sc.textDim),
+            const SizedBox(height: 12),
+            Text('Belum ada meja di ${zone.name}',
+                style: SatType.sans(size: 14, color: sc.textMd)),
+            const SizedBox(height: 16),
+            _FilledBtn(
+              label: 'Tambah meja',
+              icon: Icons.add,
+              onTap: () => _editTable(context, null, zone.id),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _noZones(BuildContext context, SatColors sc, bool canManage) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.layers_outlined, size: 44, color: sc.textDim),
+            const SizedBox(height: 14),
+            Text('Belum ada zona',
+                style: SatType.sans(
+                    size: 18, weight: FontWeight.w600, color: sc.textHi)),
+            const SizedBox(height: 6),
+            Text(
+              canManage
+                  ? 'Buat zona dulu untuk menata meja.'
+                  : 'Minta admin untuk membuat zona.',
+              textAlign: TextAlign.center,
+              style: SatType.sans(size: 13, color: sc.textMd),
+            ),
+            if (canManage) ...[
+              const SizedBox(height: 18),
+              _FilledBtn(
+                label: 'Tambah zona',
+                onTap: () => _showZones(context),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showZones(BuildContext context) {
+    _present(context, const _ZonesEditor());
+  }
+
+  void _editTable(BuildContext context, VenueTable? table, String zoneId) {
+    _present(context, _TableEditor(table: table, zoneId: zoneId));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Header
+// ---------------------------------------------------------------------------
+
+class _Header extends StatelessWidget {
+  final String sub;
+  final bool canManage;
+  final VoidCallback onManageZones;
+  const _Header({
+    required this.sub,
+    required this.canManage,
+    required this.onManageZones,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: sc.border0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Atur Lantai',
+                    style: SatType.sans(
+                      size: 24,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.4,
+                      color: sc.textHi,
+                    )),
+                const SizedBox(height: 3),
+                Text(sub.toUpperCase(),
+                    style: SatType.mono(
+                      size: 11,
+                      color: sc.textLo,
+                      letterSpacing: 0.6,
+                    )),
+              ],
+            ),
+          ),
+          if (canManage)
+            _GhostBtn(
+              icon: Icons.dashboard_customize_outlined,
+              label: 'Zona',
+              onTap: onManageZones,
+            )
+          else
+            _LockedPill(label: 'Zona'),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockedPill extends StatelessWidget {
+  final String label;
+  const _LockedPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline, size: 14, color: sc.textDim),
+          const SizedBox(width: 6),
+          Text(label,
+              style: SatType.sans(
+                size: 13,
+                weight: FontWeight.w600,
+                color: sc.textDim,
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Zone selector bar
+// ---------------------------------------------------------------------------
+
+class _ZoneBar extends StatelessWidget {
+  final List<Zone> zones;
+  final List<VenueTable> tables;
+  final String selectedId;
+  final ValueChanged<String> onSelect;
+  final VoidCallback onAdd;
+  const _ZoneBar({
+    required this.zones,
+    required this.tables,
+    required this.selectedId,
+    required this.onSelect,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      height: 60,
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: sc.border0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 13, 8, 13),
+              itemCount: zones.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (ctx, i) {
+                final z = zones[i];
+                final count = tables.where((t) => t.zoneId == z.id).length;
+                return _ZoneChip(
+                  zone: z,
+                  count: count,
+                  selected: z.id == selectedId,
+                  onTap: () => onSelect(z.id),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 14, 0),
+            child: _FilledBtn(label: 'Meja', icon: Icons.add, onTap: onAdd),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ZoneChip extends StatelessWidget {
+  final Zone zone;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+  const _ZoneChip({
+    required this.zone,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final fg = selected ? zone.color : sc.textMd;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.fromLTRB(8, 0, 14, 0),
+        decoration: BoxDecoration(
+          color: selected
+              ? zone.color.withValues(alpha: 0.14)
+              : sc.bg2,
+          border: Border.all(
+            color: selected
+                ? zone.color.withValues(alpha: 0.55)
+                : sc.border1,
+          ),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: zone.color.withValues(alpha: selected ? 0.22 : 0.16),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(zone.icon, size: 15, color: zone.color),
+            ),
+            const SizedBox(width: 8),
+            Text(zone.name,
+                style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w600,
+                  color: fg,
+                )),
+            const SizedBox(width: 7),
+            Text('$count',
+                style: SatType.mono(
+                  size: 11,
+                  weight: FontWeight.w600,
+                  color: selected ? zone.color : sc.textLo,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Table list row
+// ---------------------------------------------------------------------------
+
+class _TableRow extends StatelessWidget {
+  final int index;
+  final VenueTable table;
+  final VoidCallback onTap;
+  const _TableRow({
+    super.key,
+    required this.index,
+    required this.table,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final inactive = !table.active;
+    final nameColor = inactive ? sc.textLo : sc.textHi;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(6, 10, 12, 10),
+          decoration: BoxDecoration(
+            color: sc.bg2,
+            border: Border.all(color: sc.border1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              ReorderableDragStartListener(
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Icon(Icons.drag_indicator,
+                      size: 22, color: sc.textDim),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(table.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: SatType.sans(
+                          size: 15,
+                          weight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                          color: nameColor,
+                        )),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${table.pax} kursi',
+                      style: SatType.mono(
+                        size: 10,
+                        letterSpacing: 0.4,
+                        color: sc.textLo,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (inactive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: sc.urgentSoft,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text('Nonaktif',
+                      style: SatType.sans(
+                        size: 10,
+                        weight: FontWeight.w600,
+                        color: sc.urgent,
+                      )),
+                ),
+              const SizedBox(width: 6),
+              Icon(Icons.chevron_right, size: 20, color: sc.textDim),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DragProxy extends StatelessWidget {
+  final Widget child;
+  const _DragProxy({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Transform.scale(scale: 1.02, child: child),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Table editor sheet
+// ---------------------------------------------------------------------------
+
+class _TableEditor extends ConsumerStatefulWidget {
+  final VenueTable? table;
+  final String zoneId;
+  const _TableEditor({required this.table, required this.zoneId});
+
+  @override
+  ConsumerState<_TableEditor> createState() => _TableEditorState();
+}
+
+class _TableEditorState extends ConsumerState<_TableEditor> {
+  late final TextEditingController _name;
+  late int _pax;
+  late String _zoneId;
+  late bool _active;
+
+  bool get _isNew => widget.table == null;
+
+  @override
+  void initState() {
+    super.initState();
+    final t = widget.table;
+    _name = TextEditingController(text: t?.label ?? '');
+    _pax = t?.pax ?? 2;
+    _zoneId = t?.zoneId ?? widget.zoneId;
+    _active = t?.active ?? true;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final n = ref.read(tablesProvider.notifier);
+    if (_isNew) {
+      n.addTable(
+        zoneId: _zoneId,
+        label: _name.text,
+        pax: _pax,
+      );
+    } else {
+      n.configureTable(
+        widget.table!.id,
+        label: _name.text,
+        pax: _pax,
+        zoneId: _zoneId,
+        active: _active,
+      );
+    }
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _delete() async {
+    final ok = await _confirm(
+      context,
+      'Hapus meja?',
+      '${widget.table!.displayName} akan dihapus permanen dari lantai.',
+    );
+    if (ok != true) return;
+    ref.read(tablesProvider.notifier).removeTable(widget.table!.id);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final zones = ref.watch(zonesProvider);
+
+    return _SheetShell(
+      title: _isNew ? 'Meja baru' : 'Atur ${widget.table!.displayName}',
+      body: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+        children: [
+          _label(sc, 'Nama meja'),
+          const SizedBox(height: 8),
+          _SatField(controller: _name, hint: 'mis. T7, Booth A'),
+          const SizedBox(height: 20),
+          _label(sc, 'Kapasitas kursi'),
+          const SizedBox(height: 8),
+          _Stepper(
+            value: _pax,
+            min: 1,
+            max: 20,
+            onChanged: (v) => setState(() => _pax = v),
+          ),
+          const SizedBox(height: 20),
+          _label(sc, 'Zona'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final z in zones)
+                _SelectChip(
+                  label: z.name,
+                  icon: z.icon,
+                  tint: z.color,
+                  selected: z.id == _zoneId,
+                  onTap: () => setState(() => _zoneId = z.id),
+                ),
+            ],
+          ),
+          if (!_isNew) ...[
+            const SizedBox(height: 20),
+            _ActiveRow(
+              active: _active,
+              onChanged: (v) => setState(() => _active = v),
+            ),
+          ],
+        ],
+      ),
+      footer: Row(
+        children: [
+          if (!_isNew) ...[
+            _DangerBtn(label: 'Hapus', onTap: _delete),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: _FilledBtn(
+              label: _isNew ? 'Tambah meja' : 'Simpan',
+              expand: true,
+              onTap: _save,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _label(SatColors sc, String text) => Text(
+        text.toUpperCase(),
+        style: SatType.mono(
+          size: 10,
+          weight: FontWeight.w600,
+          letterSpacing: 1.0,
+          color: sc.textLo,
+        ),
+      );
+}
+
+class _ActiveRow extends StatelessWidget {
+  final bool active;
+  final ValueChanged<bool> onChanged;
+  const _ActiveRow({required this.active, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return GestureDetector(
+      onTap: () => onChanged(!active),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: sc.bg2,
+          border: Border.all(color: sc.border1),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Meja aktif',
+                      style: SatType.sans(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: sc.textHi,
+                      )),
+                  const SizedBox(height: 2),
+                  Text('Matikan untuk perbaikan tanpa menghapus.',
+                      style: SatType.sans(size: 12, color: sc.textMd)),
+                ],
+              ),
+            ),
+            _Switch(on: active),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Zone editor sheet
+// ---------------------------------------------------------------------------
+
+class _ZonesEditor extends ConsumerWidget {
+  const _ZonesEditor();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final zones = ref.watch(zonesProvider);
+    final tables = ref.watch(tablesProvider);
+    final zonesN = ref.read(zonesProvider.notifier);
+    final seats = tables.fold<int>(0, (s, t) => s + t.pax);
+
+    return _SheetShell(
+      title: 'Kelola Zona',
+      subtitle:
+          '${zones.length} zona · ${tables.length} meja · $seats kursi',
+      body: zones.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: Text('Belum ada zona. Tambah zona pertama.',
+                  style: SatType.sans(size: 13, color: sc.textMd)),
+            )
+          : ReorderableListView.builder(
+              shrinkWrap: true,
+              buildDefaultDragHandles: false,
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              itemCount: zones.length,
+              onReorder: zonesN.reorder,
+              itemBuilder: (ctx, i) {
+                final z = zones[i];
+                final count = tables.where((t) => t.zoneId == z.id).length;
+                return _ZoneRow(
+                  key: ValueKey(z.id),
+                  index: i,
+                  zone: z,
+                  tableCount: count,
+                  onEdit: () => _present(
+                    context,
+                    _ZoneEditor(zone: z, tableCount: count),
+                  ),
+                  onDelete: () async {
+                    if (count > 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Pindahkan $count meja dulu sebelum hapus zona.'),
+                        ),
+                      );
+                      return;
+                    }
+                    final ok = await _confirm(context, 'Hapus zona?',
+                        'Zona "${z.name}" akan dihapus.');
+                    if (ok == true) zonesN.remove(z.id);
+                  },
+                );
+              },
+            ),
+      footer: _FilledBtn(
+        label: 'Tambah zona',
+        icon: Icons.add,
+        expand: true,
+        onTap: () => _present(context, const _ZoneEditor()),
+      ),
+    );
+  }
+}
+
+class _ZoneRow extends StatelessWidget {
+  final int index;
+  final Zone zone;
+  final int tableCount;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _ZoneRow({
+    super.key,
+    required this.index,
+    required this.zone,
+    required this.tableCount,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final locked = tableCount > 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          ReorderableDragStartListener(
+            index: index,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(Icons.drag_indicator, size: 20, color: sc.textDim),
+            ),
+          ),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: zone.color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(zone.icon, size: 20, color: zone.color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onEdit,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(zone.name,
+                      style: SatType.sans(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: sc.textHi,
+                      )),
+                  const SizedBox(height: 2),
+                  Text('$tableCount meja',
+                      style: SatType.mono(
+                        size: 10,
+                        letterSpacing: 0.4,
+                        color: sc.textLo,
+                      )),
+                ],
+              ),
+            ),
+          ),
+          _IconBtn(icon: Icons.tune, onTap: onEdit),
+          const SizedBox(width: 4),
+          _IconBtn(
+            icon: Icons.delete_outline,
+            danger: !locked,
+            muted: locked,
+            onTap: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ZoneEditor extends ConsumerStatefulWidget {
+  final Zone? zone;
+  final int tableCount;
+  const _ZoneEditor({this.zone, this.tableCount = 0});
+
+  @override
+  ConsumerState<_ZoneEditor> createState() => _ZoneEditorState();
+}
+
+class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
+  late final TextEditingController _name;
+  late Color _color;
+  late IconData _icon;
+
+  bool get _isNew => widget.zone == null;
+
+  @override
+  void initState() {
+    super.initState();
+    final z = widget.zone;
+    _name = TextEditingController(text: z?.name ?? '');
+    _color = z?.color ?? ZonePresets.colors.first;
+    _icon = z?.icon ?? ZonePresets.icons.first;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final name = _name.text.trim();
+    if (name.isEmpty) return;
+    final n = ref.read(zonesProvider.notifier);
+    if (_isNew) {
+      n.add(name, color: _color, icon: _icon);
+    } else {
+      n.update(widget.zone!.id, name: name, color: _color, icon: _icon);
+    }
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _delete() async {
+    if (widget.tableCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Pindahkan ${widget.tableCount} meja dulu sebelum hapus zona.'),
+        ),
+      );
+      return;
+    }
+    final ok = await _confirm(
+      context,
+      'Hapus zona?',
+      'Zona "${widget.zone!.name}" akan dihapus.',
+    );
+    if (ok != true) return;
+    ref.read(zonesProvider.notifier).remove(widget.zone!.id);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return _SheetShell(
+      title: _isNew ? 'Zona baru' : 'Atur ${widget.zone!.name}',
+      body: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+        children: [
+          _ZonePreview(name: _name.text, color: _color, icon: _icon),
+          const SizedBox(height: 20),
+          _fieldLabel(sc, 'Nama zona'),
+          const SizedBox(height: 8),
+          _SatField(
+            controller: _name,
+            hint: 'mis. Teras, Bar',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 20),
+          _fieldLabel(sc, 'Warna'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final c in ZonePresets.colors)
+                _ColorDot(
+                  color: c,
+                  selected: c.toARGB32() == _color.toARGB32(),
+                  onTap: () => setState(() => _color = c),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _fieldLabel(sc, 'Ikon'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final i in ZonePresets.icons)
+                _IconTile(
+                  icon: i,
+                  color: _color,
+                  selected: i.codePoint == _icon.codePoint,
+                  onTap: () => setState(() => _icon = i),
+                ),
+            ],
+          ),
+          if (!_isNew) ...[
+            const SizedBox(height: 22),
+            _MetaRow(
+              tableCount: widget.tableCount,
+            ),
+          ],
+        ],
+      ),
+      footer: Row(
+        children: [
+          if (!_isNew) ...[
+            _DangerBtn(label: 'Hapus', onTap: _delete),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: _FilledBtn(
+              label: _isNew ? 'Tambah zona' : 'Simpan',
+              expand: true,
+              onTap: _save,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldLabel(SatColors sc, String text) => Text(
+        text.toUpperCase(),
+        style: SatType.mono(
+          size: 10,
+          weight: FontWeight.w600,
+          letterSpacing: 1.0,
+          color: sc.textLo,
+        ),
+      );
+}
+
+class _ZonePreview extends StatelessWidget {
+  final String name;
+  final Color color;
+  final IconData icon;
+  const _ZonePreview({
+    required this.name,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final shown = name.trim().isEmpty ? 'Zona baru' : name;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 24, color: color),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(shown,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SatType.sans(
+                      size: 16,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    )),
+                const SizedBox(height: 2),
+                Text('PRATINJAU',
+                    style: SatType.mono(
+                      size: 10,
+                      letterSpacing: 1.2,
+                      color: color,
+                    )),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ColorDot extends StatelessWidget {
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+  const _ColorDot({
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 130),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: selected ? 0.95 : 0.2),
+          border: Border.all(
+            color: selected ? color : sc.border1,
+            width: selected ? 2 : 1,
+          ),
+          shape: BoxShape.circle,
+        ),
+        child: selected
+            ? Icon(Icons.check, size: 18, color: sc.accentInk)
+            : null,
+      ),
+    );
+  }
+}
+
+class _IconTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+  const _IconTile({
+    required this.icon,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 130),
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.18) : sc.bg2,
+          border: Border.all(
+            color: selected ? color : sc.border1,
+            width: selected ? 1.4 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          size: 22,
+          color: selected ? color : sc.textMd,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  final int tableCount;
+  const _MetaRow({required this.tableCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.table_restaurant_outlined, size: 18, color: sc.textMd),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              tableCount == 0
+                  ? 'Belum ada meja di zona ini.'
+                  : '$tableCount meja saat ini ada di zona ini.',
+              style: SatType.sans(size: 13, color: sc.textMd),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared sheet shell + presentation helpers
+// ---------------------------------------------------------------------------
+
+class _SheetShell extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final Widget body;
+  final Widget footer;
+  const _SheetShell({
+    required this.title,
+    this.subtitle,
+    required this.body,
+    required this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      decoration: BoxDecoration(
+        color: sc.bg1,
+        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 38,
+            height: 4,
+            decoration: BoxDecoration(
+              color: sc.border2,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 14, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: SatType.sans(
+                            size: 18,
+                            weight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                            color: sc.textHi,
+                          )),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(subtitle!.toUpperCase(),
+                            style: SatType.mono(
+                              size: 10,
+                              letterSpacing: 0.8,
+                              color: sc.textLo,
+                            )),
+                      ],
+                    ],
+                  ),
+                ),
+                _IconBtn(
+                  icon: Icons.close,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+          Flexible(child: body),
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: sc.border0)),
+            ),
+            child: SafeArea(top: false, child: footer),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _present(BuildContext context, Widget child) {
+  return showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    barrierColor: Colors.black.withValues(alpha: 0.5),
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        left: 8,
+        right: 8,
+        top: 60,
+      ),
+      child: child,
+    ),
+  );
+}
+
+Widget _sheetHandle(SatColors sc) => Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: sc.border1,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+
+Future<bool?> _confirm(BuildContext context, String title, String message) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    backgroundColor: context.sat.bg1,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) {
+      final sc = ctx.sat;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(child: _sheetHandle(sc)),
+              const SizedBox(height: 18),
+              Text(title,
+                  style: SatType.sans(
+                    size: 16,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  )),
+              const SizedBox(height: 8),
+              Text(message,
+                  style:
+                      SatType.sans(size: 13, color: sc.textMd, height: 1.4)),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _GhostBtn(
+                      label: 'Batal',
+                      expand: true,
+                      onTap: () => Navigator.of(ctx).pop(false),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _DangerBtn(
+                      label: 'Hapus',
+                      expand: true,
+                      onTap: () => Navigator.of(ctx).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Small shared widgets
+// ---------------------------------------------------------------------------
+
+class _SatField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final ValueChanged<String>? onChanged;
+  const _SatField({
+    required this.controller,
+    required this.hint,
+    this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      style: SatType.sans(size: 14, color: sc.textHi),
+      cursorColor: sc.accent,
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: hint,
+        hintStyle: SatType.sans(size: 14, color: sc.textDim),
+        filled: true,
+        fillColor: sc.bg2,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: sc.border1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: sc.accentBorder),
+        ),
+      ),
+    );
+  }
+}
+
+class _Stepper extends StatelessWidget {
+  final int value;
+  final int min;
+  final int max;
+  final ValueChanged<int> onChanged;
+  const _Stepper({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      child: Row(
+        children: [
+          _stepBtn(sc, Icons.remove,
+              value > min ? () => onChanged(value - 1) : null),
+          Expanded(
+            child: Text('$value',
+                textAlign: TextAlign.center,
+                style: SatType.mono(
+                  size: 18,
+                  weight: FontWeight.w600,
+                  color: sc.textHi,
+                )),
+          ),
+          _stepBtn(sc, Icons.add,
+              value < max ? () => onChanged(value + 1) : null),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 36,
+        decoration: BoxDecoration(
+          color: onTap == null ? sc.bg3 : sc.bg4,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon,
+            size: 18, color: onTap == null ? sc.textDim : sc.textHi),
+      ),
+    );
+  }
+}
+
+class _SelectChip extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final Color? tint;
+  final bool selected;
+  final VoidCallback onTap;
+  const _SelectChip({
+    required this.label,
+    this.icon,
+    this.tint,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final c = tint ?? sc.accent;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 130),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? c.withValues(alpha: 0.18) : sc.bg2,
+          border: Border.all(
+            color: selected ? c.withValues(alpha: 0.6) : sc.border1,
+          ),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: selected ? c : sc.textMd),
+              const SizedBox(width: 6),
+            ],
+            Text(label,
+                style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w500,
+                  color: selected ? c : sc.textMd,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Switch extends StatelessWidget {
+  final bool on;
+  const _Switch({required this.on});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      width: 44,
+      height: 26,
+      decoration: BoxDecoration(
+        color: on ? sc.success : sc.bg3,
+        border: Border.all(color: on ? sc.success : sc.border1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: AnimatedAlign(
+        duration: const Duration(milliseconds: 160),
+        alignment: on ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.all(2),
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: on ? const Color(0xFF0A0A0A) : sc.textLo,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilledBtn extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final bool expand;
+  final VoidCallback onTap;
+  const _FilledBtn({
+    required this.label,
+    this.icon,
+    this.expand = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: sc.accent,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 17, color: sc.accentInk),
+              const SizedBox(width: 6),
+            ],
+            Text(label,
+                style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w600,
+                  color: sc.accentInk,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GhostBtn extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final bool expand;
+  final VoidCallback onTap;
+  const _GhostBtn({
+    required this.label,
+    this.icon,
+    this.expand = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: sc.bg2,
+          border: Border.all(color: sc.border1),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: sc.textMd),
+              const SizedBox(width: 6),
+            ],
+            Text(label,
+                style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w600,
+                  color: sc.textMd,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DangerBtn extends StatelessWidget {
+  final String label;
+  final bool expand;
+  final VoidCallback onTap;
+  const _DangerBtn({
+    required this.label,
+    this.expand = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: sc.urgentSoft,
+          border: Border.all(color: sc.urgent),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(label,
+            style: SatType.sans(
+              size: 13,
+              weight: FontWeight.w600,
+              color: sc.urgent,
+            )),
+      ),
+    );
+  }
+}
+
+class _IconBtn extends StatelessWidget {
+  final IconData icon;
+  final bool danger;
+  final bool muted;
+  final VoidCallback onTap;
+  const _IconBtn({
+    required this.icon,
+    this.danger = false,
+    this.muted = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final fg = danger
+        ? sc.urgent
+        : muted
+            ? sc.textDim
+            : sc.textMd;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: sc.bg2,
+          border: Border.all(color: sc.border1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 18, color: fg),
+      ),
+    );
+  }
+}

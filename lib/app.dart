@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'design/theme.dart';
+import 'package:satset/ui/core/design/theme.dart';
 import 'router/app_router.dart';
-import 'state/theme_provider.dart';
+import 'package:satset/ui/core/state/theme_view_model.dart';
 
 class SatSetApp extends ConsumerWidget {
   const SatSetApp({super.key});
