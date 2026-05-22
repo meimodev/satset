@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/colors.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/menu_item.dart';
 import '../../models/ticket.dart';
@@ -21,6 +22,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final l = context.layout;
     final tickets = ref.watch(ticketsProvider);
     final tables = ref.watch(tablesProvider);
 
@@ -48,10 +50,83 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
     final list = _seg == 'ready' ? ready : (_seg == 'active' ? active : done);
 
+    if (l.useTabletShell) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 22, 32, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Pesanan saya',
+                    style: SatType.sans(
+                      size: 32,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.8,
+                      height: 1.05,
+                      color: sc.textHi,
+                    )),
+                const SizedBox(height: 6),
+                Text('${active.length} BERJALAN · ${ready.length} SIAP DIAMBIL',
+                    style: SatType.mono(
+                      size: 11,
+                      color: sc.textLo,
+                      letterSpacing: 0.66,
+                    )),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 0, 32, 12),
+            child: Row(
+              children: [
+                _TabletSeg(label: 'Siap diambil', count: ready.length, active: _seg == 'ready', onTap: () => setState(() => _seg = 'ready')),
+                const SizedBox(width: 8),
+                _TabletSeg(label: 'Disiapkan', count: active.length, active: _seg == 'active', onTap: () => setState(() => _seg = 'active')),
+                const SizedBox(width: 8),
+                _TabletSeg(label: 'Selesai', count: done.length, active: _seg == 'done', onTap: () => setState(() => _seg = 'done')),
+              ],
+            ),
+          ),
+          Expanded(
+            child: list.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(60),
+                      child: Text(
+                        _seg == 'ready'
+                            ? 'Belum ada yang siap di pass.'
+                            : _seg == 'active'
+                                ? 'Tidak ada item yang sedang disiapkan.'
+                                : 'Belum ada item yang selesai pada sesi ini.',
+                        style: SatType.sans(size: 13, color: sc.textLo),
+                      ),
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      mainAxisExtent: 120,
+                    ),
+                    itemCount: list.length,
+                    itemBuilder: (ctx, i) {
+                      final r = list[i];
+                      return _OrderRow(row: r, onTap: () => context.push('/table/${r.tableId}'));
+                    },
+                  ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 56, 16, 10),
+          padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
           child: Row(
             children: [
               Container(
@@ -142,16 +217,21 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     ),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
-                  itemCount: list.length,
-                  itemBuilder: (_, i) {
-                    final r = list[i];
-                    return _OrderRow(
-                      row: r,
-                      onTap: () => context.push('/table/${r.tableId}'),
-                    );
-                  },
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
+                    child: ListView.builder(
+                      padding: EdgeInsets.fromLTRB(16, 4, 16, l.bottomInset),
+                      itemCount: list.length,
+                      itemBuilder: (_, i) {
+                        final r = list[i];
+                        return _OrderRow(
+                          row: r,
+                          onTap: () => context.push('/table/${r.tableId}'),
+                        );
+                      },
+                    ),
+                  ),
                 ),
         ),
       ],
@@ -436,6 +516,47 @@ class _StatusChip extends StatelessWidget {
           weight: FontWeight.w600,
           letterSpacing: 1.0,
           color: fg,
+        ),
+      ),
+    );
+  }
+}
+
+class _TabletSeg extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool active;
+  final VoidCallback onTap;
+  const _TabletSeg({required this.label, required this.count, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? sc.textHi : sc.bg2,
+          border: Border.all(color: active ? sc.textHi : sc.border0),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w500,
+                  color: active ? sc.bg0 : sc.textMd,
+                )),
+            const SizedBox(width: 10),
+            Text('$count',
+                style: SatType.mono(
+                  size: 11,
+                  color: active ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
+                )),
+          ],
         ),
       ),
     );

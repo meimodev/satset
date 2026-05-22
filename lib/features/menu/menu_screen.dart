@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/colors.dart';
 import '../../design/format.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/dummy_data.dart';
 import '../../models/menu_item.dart';
@@ -25,6 +26,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final l = context.layout;
+    final cols = l.gridCount(minTileWidth: 170);
     final cart = ref.watch(cartProvider);
     final tables = ref.watch(tablesProvider);
     final table = tables.firstWhere(
@@ -41,6 +44,112 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       inCartQty[c.itemId] = (inCartQty[c.itemId] ?? 0) + c.qty;
     }
 
+    if (l.useTabletShell) {
+      return Scaffold(
+        backgroundColor: sc.bg0,
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(28, 18, 28, 12),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: sc.border0)),
+                    ),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => safePop(context, fallback: '/table/${widget.tableId}'),
+                          child: Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              color: sc.bg2,
+                              border: Border.all(color: sc.border0),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(Icons.arrow_back, size: 18, color: sc.textMd),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Tambah ke Meja ${widget.tableId}',
+                                  style: SatType.sans(
+                                    size: 18,
+                                    weight: FontWeight.w600,
+                                    letterSpacing: -0.18,
+                                    color: sc.textHi,
+                                  )),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${table.zoneId.toUpperCase()} · ${table.pax} TAMU',
+                                style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0.44),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          height: 36,
+                          width: 200,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: sc.bg2,
+                            border: Border.all(color: sc.border0),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.search, size: 14, color: sc.textLo),
+                              const SizedBox(width: 8),
+                              Text('Cari menu…',
+                                  style: SatType.sans(size: 13, color: sc.textLo)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: sc.border0)),
+                    ),
+                    child: _CatTabs(active: _cat, onChange: (id) => setState(() => _cat = id)),
+                  ),
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 0.85,
+                      padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
+                      children: [
+                        for (final it in items)
+                          _ItemCard(
+                            item: it,
+                            inCart: inCartQty[it.id] ?? 0,
+                            onTap: () => _openItem(it),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _TabletCartPane(
+              tableId: widget.tableId,
+              onReview: () => context.push('/table/${widget.tableId}/review'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: sc.bg0,
       body: Stack(
@@ -48,10 +157,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 56, 16, 10),
+                padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
                 child: Row(
                   children: [
-                    SatBackButton(onTap: () => context.pop()),
+                    SatBackButton(onTap: () => safePop(context, fallback: '/table/${widget.tableId}')),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -123,29 +232,34 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
               _CatTabs(active: _cat, onChange: (id) => setState(() => _cat = id)),
               const SizedBox(height: 8),
               Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 0.74,
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 200),
-                  children: [
-                    for (final it in items)
-                      _ItemCard(
-                        item: it,
-                        inCart: inCartQty[it.id] ?? 0,
-                        onTap: () => _openItem(it),
-                      ),
-                  ],
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
+                    child: GridView.count(
+                      crossAxisCount: cols,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 0.74,
+                      padding: EdgeInsets.fromLTRB(16, 4, 16, l.bottomInset + 80),
+                      children: [
+                        for (final it in items)
+                          _ItemCard(
+                            item: it,
+                            inCart: inCartQty[it.id] ?? 0,
+                            onTap: () => _openItem(it),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
           if (cartCount > 0)
             Positioned(
-              left: 8,
-              right: 8,
-              bottom: 20,
+              left: 8 + l.padding.left,
+              right: 8 + l.padding.right,
+              bottom: l.useSideRail ? 16 + l.padding.bottom : 92 + l.padding.bottom,
               child: _CartFooter(
                 count: cartCount,
                 total: cartTotal,
@@ -423,6 +537,211 @@ class _CartFooter extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabletCartPane extends ConsumerWidget {
+  final String tableId;
+  final VoidCallback onReview;
+  const _TabletCartPane({required this.tableId, required this.onReview});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final cart = ref.watch(cartProvider);
+    final count = cart.fold<int>(0, (s, c) => s + c.qty);
+    final subtotal = cart.fold<int>(0, (s, c) => s + c.unitPrice * c.qty);
+    final kit = cart.where((c) => c.station == Station.kitchen).fold<int>(0, (s, c) => s + c.qty);
+    final bar = cart.where((c) => c.station == Station.bar).fold<int>(0, (s, c) => s + c.qty);
+    final taxService = (subtotal * 0.18).round();
+    final est = subtotal + taxService;
+
+    final byCourse = <String, List<int>>{};
+    for (var i = 0; i < cart.length; i++) {
+      final cid = cart[i].course.toString().split('.').last;
+      byCourse.putIfAbsent(cid, () => []).add(i);
+    }
+
+    return Container(
+      width: 380,
+      decoration: BoxDecoration(
+        color: sc.bg1,
+        border: Border(left: BorderSide(color: sc.border0)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 14),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: sc.border0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('PESANAN BARU · MEJA $tableId',
+                    style: SatType.mono(size: 10, weight: FontWeight.w600, letterSpacing: 1.0, color: sc.textLo)),
+                const SizedBox(height: 6),
+                Text(count == 0 ? 'Keranjang kosong' : '$count item siap kirim',
+                    style: SatType.sans(size: 18, weight: FontWeight.w600, letterSpacing: -0.18, color: sc.textHi)),
+                if (count > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    [if (kit > 0) 'Dapur × $kit', if (bar > 0) 'Bar × $bar'].join('  ·  '),
+                    style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0.44),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            child: cart.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Text('Belum ada item di keranjang. Pilih dari menu di kiri.',
+                          textAlign: TextAlign.center,
+                          style: SatType.sans(size: 13, color: sc.textLo, height: 1.5)),
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(22, 14, 22, 14),
+                    children: [
+                      for (final entry in byCourse.entries) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(entry.key.toUpperCase(),
+                              style: SatType.mono(size: 11, weight: FontWeight.w600, letterSpacing: 1.0, color: sc.textMd)),
+                        ),
+                        for (final i in entry.value)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: sc.bg2,
+                              border: Border.all(color: sc.border0),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text('×${cart[i].qty}',
+                                        style: SatType.mono(size: 12, weight: FontWeight.w600, color: sc.textMd)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        cart[i].variantName.isEmpty ? cart[i].name : '${cart[i].name} · ${cart[i].variantName}',
+                                        style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.textHi, letterSpacing: -0.13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (cart[i].modifiers.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4, left: 22),
+                                    child: Text(cart[i].modifiers.join(' · '),
+                                        style: SatType.sans(size: 11, color: sc.textMd, height: 1.3)),
+                                  ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => ref.read(cartProvider.notifier).remove(cart[i].id),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete_outline, size: 12, color: sc.urgent),
+                                          const SizedBox(width: 4),
+                                          Text('Hapus',
+                                              style: SatType.sans(size: 12, color: sc.urgent)),
+                                        ],
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(formatIDR(cart[i].unitPrice * cart[i].qty),
+                                        style: SatType.mono(size: 12, weight: FontWeight.w500, color: sc.textMd)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+          ),
+          if (cart.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 20),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: sc.border0)),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      children: [
+                        _totalRow(context, sc, 'Subtotal', formatIDR(subtotal)),
+                        _totalRow(context, sc, 'Layanan 7% · Pajak 11%', formatIDR(taxService)),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Container(
+                            padding: const EdgeInsets.only(top: 8),
+                            decoration: BoxDecoration(
+                              border: Border(top: BorderSide(color: sc.border0)),
+                            ),
+                            child: Row(
+                              children: [
+                                Text('Estimasi',
+                                    style: SatType.sans(size: 13, weight: FontWeight.w600, color: sc.textHi)),
+                                const Spacer(),
+                                Text(formatIDR(est),
+                                    style: SatType.mono(size: 13, weight: FontWeight.w600, color: sc.textHi)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Material(
+                      color: sc.accent,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        onTap: onReview,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          height: 56,
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Tinjau & kirim ke ${kit > 0 && bar > 0 ? 'dapur + bar' : kit > 0 ? 'dapur' : 'bar'}',
+                            style: SatType.sans(size: 15, weight: FontWeight.w600, color: sc.accentInk),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _totalRow(BuildContext context, SatColors sc, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Text(label, style: SatType.mono(size: 12, color: sc.textMd, letterSpacing: 0.24)),
+          const Spacer(),
+          Text(value, style: SatType.mono(size: 12, color: sc.textMd, letterSpacing: 0.24)),
         ],
       ),
     );

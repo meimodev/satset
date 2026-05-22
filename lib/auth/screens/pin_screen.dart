@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/colors.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/dummy_data.dart';
 import '../auth_state.dart';
@@ -36,67 +37,191 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final l = context.layout;
     final user = DummyData.maya;
+
+    if (l.useTabletShell) {
+      return Scaffold(
+        backgroundColor: sc.bg0,
+        body: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                color: sc.bg1,
+                padding: const EdgeInsets.fromLTRB(56, 56, 56, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TabletBrand(),
+                    const SizedBox(height: 80),
+                    Text('Selamat sore',
+                        style: SatType.mono(
+                          size: 13,
+                          color: sc.textMd,
+                          letterSpacing: 1.3,
+                        )),
+                    const SizedBox(height: 6),
+                    Text('${user.name},\nmasukkan PIN',
+                        style: SatType.sans(
+                          size: 54,
+                          weight: FontWeight.w600,
+                          letterSpacing: -1.35,
+                          height: 1.05,
+                          color: sc.textHi,
+                        )),
+                    const SizedBox(height: 12),
+                    Text('Pelayan · Zona Teras · mulai 17:30',
+                        style: SatType.sans(size: 16, color: sc.textMd)),
+                    const Spacer(),
+                    Text('WARUNG SEBELAH\nBERAWA, BALI\n\nPIN BERAKHIR DI AKHIR SHIFT · BYOD · v2.0',
+                        style: SatType.mono(
+                          size: 11,
+                          color: sc.textLo,
+                          letterSpacing: 0.66,
+                          height: 1.6,
+                        )),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              width: 480,
+              decoration: BoxDecoration(
+                border: Border(left: BorderSide(color: sc.border0)),
+              ),
+              padding: const EdgeInsets.fromLTRB(48, 56, 48, 32),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _max,
+                        (i) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 9),
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: i < _pin.length ? sc.accent : sc.bg3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 36),
+                    _Pad(onPress: _press, tablet: true),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final brand = _Brand();
+    final greeting = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Selamat sore',
+            style: SatType.mono(
+              size: 13,
+              color: sc.textMd,
+              letterSpacing: 1.04,
+            )),
+        const SizedBox(height: 4),
+        Text('${user.name},\nPIN shift',
+            style: SatType.sans(
+              size: l.isCompact ? 38 : 44,
+              weight: FontWeight.w600,
+              letterSpacing: -0.76,
+              height: 1.05,
+              color: sc.textHi,
+            )),
+        const SizedBox(height: 6),
+        Text('Pelayan · Zona Teras · mulai 17:30',
+            style: SatType.sans(size: 14, color: sc.textMd)),
+      ],
+    );
+    final dots = Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          _max,
+          (i) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: i < _pin.length ? sc.accent : sc.bg3,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final pad = _Pad(onPress: _press, tablet: false);
+    final footer = Center(
+      child: Text(
+        'PIN BERAKHIR DI AKHIR SHIFT · BYOD',
+        style: SatType.mono(size: 12, color: sc.textLo, letterSpacing: 0.5),
+      ),
+    );
+
+    final twoCol = l.isLandscape && l.size.width >= 720;
 
     return Scaffold(
       backgroundColor: sc.bg0,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 24),
-              _Brand(),
-              const SizedBox(height: 52),
-              Text('Selamat sore',
-                  style: SatType.mono(
-                    size: 13,
-                    color: sc.textMd,
-                    letterSpacing: 1.04,
-                  )),
-              const SizedBox(height: 4),
-              Text('${user.name},\nPIN shift',
-                  style: SatType.sans(
-                    size: 38,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.76,
-                    height: 1.05,
-                    color: sc.textHi,
-                  )),
-              const SizedBox(height: 6),
-              Text('Floor Server · Zona Teras · mulai 17:30',
-                  style: SatType.sans(size: 14, color: sc.textMd)),
-              const SizedBox(height: 36),
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _max,
-                    (i) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: i < _pin.length ? sc.accent : sc.bg3,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: twoCol ? 980 : 520),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+              child: twoCol
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              brand,
+                              const SizedBox(height: 52),
+                              greeting,
+                              const SizedBox(height: 36),
+                              dots,
+                              const SizedBox(height: 24),
+                              footer,
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 48),
+                        Expanded(child: pad),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 24),
+                        brand,
+                        const SizedBox(height: 52),
+                        greeting,
+                        const SizedBox(height: 36),
+                        dots,
+                        const SizedBox(height: 32),
+                        pad,
+                        const SizedBox(height: 18),
+                        footer,
+                      ],
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              _Pad(onPress: _press),
-              const SizedBox(height: 18),
-              Center(
-                child: Text(
-                  'PIN BERAKHIR DI AKHIR SHIFT · BYOD',
-                  style: SatType.mono(size: 12, color: sc.textLo, letterSpacing: 0.5),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -147,9 +272,47 @@ class _Brand extends StatelessWidget {
   }
 }
 
+class _TabletBrand extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: sc.accent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            'S',
+            style: SatType.mono(
+              size: 22,
+              weight: FontWeight.w700,
+              letterSpacing: -0.88,
+              color: sc.accentInk,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text('satset',
+            style: SatType.sans(
+              size: 22,
+              weight: FontWeight.w600,
+              letterSpacing: -0.22,
+              color: sc.textHi,
+            )),
+      ],
+    );
+  }
+}
+
 class _Pad extends StatelessWidget {
   final void Function(String) onPress;
-  const _Pad({required this.onPress});
+  final bool tablet;
+  const _Pad({required this.onPress, required this.tablet});
 
   @override
   Widget build(BuildContext context) {
@@ -158,15 +321,15 @@ class _Pad extends StatelessWidget {
       crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.4,
+      mainAxisSpacing: tablet ? 12 : 10,
+      crossAxisSpacing: tablet ? 12 : 10,
+      childAspectRatio: tablet ? 1.6 : 1.4,
       children: [
         for (final k in keys)
           if (k == '')
             const SizedBox.shrink()
           else
-            _PinKey(label: k, onTap: () => onPress(k)),
+            _PinKey(label: k, tablet: tablet, onTap: () => onPress(k)),
       ],
     );
   }
@@ -174,8 +337,9 @@ class _Pad extends StatelessWidget {
 
 class _PinKey extends StatelessWidget {
   final String label;
+  final bool tablet;
   final VoidCallback onTap;
-  const _PinKey({required this.label, required this.onTap});
+  const _PinKey({required this.label, required this.tablet, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -190,10 +354,10 @@ class _PinKey extends StatelessWidget {
         child: Container(
           alignment: Alignment.center,
           child: muted
-              ? Icon(Icons.backspace_outlined, color: sc.textMd, size: 22)
+              ? Icon(Icons.backspace_outlined, color: sc.textMd, size: tablet ? 26 : 22)
               : Text(label,
                   style: SatType.mono(
-                    size: 26,
+                    size: tablet ? 32 : 26,
                     weight: FontWeight.w500,
                     letterSpacing: 0,
                     color: sc.textHi,

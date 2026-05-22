@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/colors.dart';
 import '../../design/format.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/cart_item.dart';
 import '../../models/course.dart';
@@ -19,6 +20,7 @@ class ReviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final l = context.layout;
     final cart = ref.watch(cartProvider);
     final tables = ref.watch(tablesProvider);
     final table = tables.firstWhere((t) => t.id == tableId, orElse: () => tables.first);
@@ -54,10 +56,10 @@ class ReviewScreen extends ConsumerWidget {
           Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 56, 16, 10),
+                padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
                 child: Row(
                   children: [
-                    SatBackButton(onTap: () => context.pop()),
+                    SatBackButton(onTap: () => safePop(context, fallback: '/table/$tableId')),
                     const Spacer(),
                     Row(
                       children: [
@@ -144,8 +146,11 @@ class ReviewScreen extends ConsumerWidget {
                 ),
               ),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 200),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
+                    child: ListView(
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, l.bottomInset + 100),
                   children: [
                     for (final cid in [
                       CourseId.drinksNow,
@@ -213,13 +218,15 @@ class ReviewScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                  ),
+                ),
               ),
             ],
           ),
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 100,
+            left: 16 + l.padding.left,
+            right: 16 + l.padding.right,
+            bottom: l.useSideRail ? 16 + l.padding.bottom : 92 + l.padding.bottom,
             child: SizedBox(
               height: 52,
               child: ElevatedButton(

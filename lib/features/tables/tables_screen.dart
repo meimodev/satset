@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/colors.dart';
+import '../../design/format.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/dummy_data.dart';
 import '../../models/venue_table.dart';
 import '../../state/tables_provider.dart';
+import '../../state/view_mode_provider.dart';
 import '../../widgets/satset_top_bar.dart';
+import '../../widgets/tablet_chrome.dart';
 
 class TablesScreen extends ConsumerStatefulWidget {
   const TablesScreen({super.key});
@@ -20,13 +24,68 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
+    final l = context.layout;
+    final forcePhone = ref.watch(forcePhoneViewProvider);
     final tables = ref.watch(tablesProvider);
     final zone = DummyData.zones.firstWhere((z) => z.id == _activeZone);
     final zoneTables = tables.where((t) => t.zoneId == _activeZone).toList();
     final occupied = zoneTables.where((t) => t.status != TableStatus.available).length;
     final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
+    final openTotal = zoneTables.fold<int>(0, (s, t) => s + t.openAmount);
+    final subParts = <String>[
+      '$occupied dari ${zoneTables.length} terisi',
+      if (ready > 0) '$ready siap diambil',
+      if (openTotal > 0) 'tab ${formatIDR(openTotal)}',
+    ];
+    final subLine = subParts.join(' · ');
 
+    if (l.useTabletShell && !forcePhone) {
+      return Stack(
+        children: [
+          Column(
+            children: [
+              TabletSectionHead(
+                title: zone.name,
+                sub: subLine,
+              ),
+              _ZoneRow(tables: tables, active: _activeZone, onChange: (id) => setState(() => _activeZone = id), tablet: true),
+              Expanded(
+                child: zoneTables.isEmpty
+                    ? _EmptyZone(zoneName: zone.name, tablet: true)
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(32, 16, 32, 96),
+                        child: GridView.count(
+                          crossAxisCount: 4,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1.45,
+                          children: [
+                            for (final t in zoneTables)
+                              _TableCard(
+                                table: t,
+                                tablet: true,
+                                onTap: () => context.push('/table/${t.id}'),
+                              ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
+          Positioned(
+            right: 24,
+            bottom: 24,
+            child: _PhoneViewToggle(
+              onTap: () => ref.read(forcePhoneViewProvider.notifier).state = true,
+            ),
+          ),
+        ],
+      );
+    }
+
+    final cols = l.gridCount(minTileWidth: 180);
     return Column(
       children: [
         SatsetTopBar(zone: zone),
@@ -45,14 +104,14 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                           weight: FontWeight.w600,
                           letterSpacing: -0.6,
                           height: 1.05,
-                          color: sc.textHi,
+                          color: context.sat.textHi,
                         )),
                     const SizedBox(height: 4),
                     Text(
-                      '$occupied dari ${zoneTables.length} terisi · $ready siap',
+                      subLine,
                       style: SatType.mono(
                         size: 11,
-                        color: sc.textLo,
+                        color: context.sat.textLo,
                         letterSpacing: 0.44,
                       ),
                     ),
@@ -62,87 +121,108 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
             ],
           ),
         ),
-        _ZoneTabs(
+        _ZoneRow(
           tables: tables,
           active: _activeZone,
           onChange: (id) => setState(() => _activeZone = id),
+          tablet: false,
         ),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-            child: GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1.45,
-              children: [
-                for (final t in zoneTables)
-                  _TableCard(
-                    table: t,
-                    onTap: () => context.push('/table/${t.id}'),
+          child: zoneTables.isEmpty
+              ? _EmptyZone(zoneName: zone.name, tablet: false)
+              : SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, l.bottomInset),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
+                      child: GridView.count(
+                        crossAxisCount: cols,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 1.45,
+                        children: [
+                          for (final t in zoneTables)
+                            _TableCard(
+                              table: t,
+                              tablet: false,
+                              onTap: () => context.push('/table/${t.id}'),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-              ],
+                ),
+        ),
+        if (l.useTabletShell && forcePhone)
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, l.bottomInset + 8),
+            child: _BackToTabletPill(
+              onTap: () => ref.read(forcePhoneViewProvider.notifier).state = false,
             ),
           ),
-        ),
       ],
     );
   }
 }
 
-class _ZoneTabs extends StatelessWidget {
+class _ZoneRow extends StatelessWidget {
   final List<VenueTable> tables;
   final String active;
   final ValueChanged<String> onChange;
-  const _ZoneTabs({required this.tables, required this.active, required this.onChange});
+  final bool tablet;
+  const _ZoneRow({required this.tables, required this.active, required this.onChange, required this.tablet});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return SizedBox(
-      height: 42,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-        itemCount: DummyData.zones.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (_, i) {
-          final z = DummyData.zones[i];
-          final isActive = active == z.id;
-          final zoneTables = tables.where((t) => t.zoneId == z.id).toList();
-          final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
-          final countLabel = ready > 0 ? '$ready·sp' : '${zoneTables.length}';
-          return GestureDetector(
-            onTap: () => onChange(z.id),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                color: isActive ? sc.textHi : sc.bg2,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: isActive ? sc.textHi : sc.border0),
+    final padH = tablet ? 32.0 : 16.0;
+    final padV = tablet ? 12.0 : 10.0;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(padH, 0, padH, padV),
+      child: SizedBox(
+        height: tablet ? 42 : 38,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: DummyData.zones.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, i) {
+            final z = DummyData.zones[i];
+            final isActive = active == z.id;
+            final zoneTables = tables.where((t) => t.zoneId == z.id).toList();
+            final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
+            final countLabel = ready > 0 ? '$ready siap' : '${zoneTables.length}';
+            return GestureDetector(
+              onTap: () => onChange(z.id),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: tablet ? 16 : 14, vertical: tablet ? 10 : 9),
+                decoration: BoxDecoration(
+                  color: isActive ? sc.textHi : sc.bg2,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: isActive ? sc.textHi : sc.border0),
+                ),
+                child: Row(
+                  children: [
+                    Text(z.name,
+                        style: SatType.sans(
+                          size: 13,
+                          weight: FontWeight.w500,
+                          color: isActive ? sc.bg0 : sc.textMd,
+                        )),
+                    const SizedBox(width: 10),
+                    Text(countLabel,
+                        style: SatType.mono(
+                          size: 11,
+                          color: isActive ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
+                          letterSpacing: 0,
+                        )),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  Text(z.name,
-                      style: SatType.sans(
-                        size: 13,
-                        weight: FontWeight.w500,
-                        color: isActive ? sc.bg0 : sc.textMd,
-                      )),
-                  const SizedBox(width: 8),
-                  Text(countLabel,
-                      style: SatType.mono(
-                        size: 11,
-                        color: isActive ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
-                        letterSpacing: 0,
-                      )),
-                ],
-              ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -151,11 +231,12 @@ class _ZoneTabs extends StatelessWidget {
 class _TableCard extends StatelessWidget {
   final VenueTable table;
   final VoidCallback onTap;
-  const _TableCard({required this.table, required this.onTap});
+  final bool tablet;
+  const _TableCard({required this.table, required this.onTap, required this.tablet});
 
   String _statusLabel() => switch (table.status) {
         TableStatus.available => 'Kosong',
-        TableStatus.occupied => 'Duduk',
+        TableStatus.occupied => 'Terisi',
         TableStatus.pending => 'Pesanan masuk',
         TableStatus.ready => 'Siap ×${table.readyCount > 0 ? table.readyCount : 1}',
       };
@@ -193,16 +274,20 @@ class _TableCard extends StatelessWidget {
       border = sc.accentBorder;
     }
 
+    final tnumSize = tablet ? 36.0 : 26.0;
+    final radius = tablet ? 20.0 : 22.0;
+    final padding = tablet ? const EdgeInsets.fromLTRB(18, 18, 18, 16) : const EdgeInsets.fromLTRB(14, 16, 14, 14);
+
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(radius),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(radius),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+          padding: padding,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(radius),
             border: Border.all(color: border),
           ),
           child: Stack(
@@ -215,20 +300,31 @@ class _TableCard extends StatelessWidget {
                     children: [
                       Text(table.id,
                           style: SatType.mono(
-                            size: 26,
+                            size: tnumSize,
                             weight: FontWeight.w500,
-                            letterSpacing: -0.52,
+                            letterSpacing: -tnumSize * 0.02,
                             color: numColor,
                           )),
                       const Spacer(),
-                      Text('${table.pax}p',
+                      Text(tablet ? '${table.pax} tamu' : '${table.pax}p',
                           style: SatType.mono(
-                            size: 11,
+                            size: tablet ? 13 : 11,
                             color: sc.textMd,
                             letterSpacing: 0.44,
                           )),
                     ],
                   ),
+                  if (table.openAmount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(formatIDR(table.openAmount),
+                          style: SatType.mono(
+                            size: 12,
+                            weight: FontWeight.w500,
+                            color: sc.textMd,
+                            letterSpacing: 0.24,
+                          )),
+                    ),
                   const Spacer(),
                   Row(
                     children: [
@@ -241,11 +337,13 @@ class _TableCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           _statusLabel(),
+                          maxLines: isPending ? 2 : 1,
                           overflow: TextOverflow.ellipsis,
                           style: SatType.sans(
-                            size: 12,
+                            size: tablet ? 13 : 12,
                             weight: isReady ? FontWeight.w600 : FontWeight.w500,
                             letterSpacing: -0.12,
+                            height: isPending ? 1.15 : 1.0,
                             color: statusColor,
                           ),
                         ),
@@ -254,7 +352,7 @@ class _TableCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(table.elapsed!,
                             style: SatType.mono(
-                              size: 11,
+                              size: tablet ? 12 : 11,
                               color: sc.textLo,
                               letterSpacing: 0.44,
                             )),
@@ -268,7 +366,7 @@ class _TableCard extends StatelessWidget {
                   top: 0,
                   right: 0,
                   child: Text(
-                    'PUNYAMU',
+                    'PUNYA SAYA',
                     style: SatType.mono(
                       size: 9,
                       weight: FontWeight.w600,
@@ -278,6 +376,145 @@ class _TableCard extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyZone extends StatelessWidget {
+  final String zoneName;
+  final bool tablet;
+  const _EmptyZone({required this.zoneName, required this.tablet});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final pad = tablet ? 48.0 : 24.0;
+    return Padding(
+      padding: EdgeInsets.all(pad),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: tablet ? 72 : 56,
+              height: tablet ? 72 : 56,
+              decoration: BoxDecoration(
+                color: sc.bg2,
+                shape: BoxShape.circle,
+                border: Border.all(color: sc.border0),
+              ),
+              alignment: Alignment.center,
+              child: Icon(Icons.grid_view_rounded, size: tablet ? 32 : 26, color: sc.textLo),
+            ),
+            SizedBox(height: tablet ? 18 : 14),
+            Text(
+              'Belum ada meja di $zoneName',
+              textAlign: TextAlign.center,
+              style: SatType.sans(
+                size: tablet ? 18 : 15,
+                weight: FontWeight.w600,
+                letterSpacing: -0.2,
+                color: sc.textHi,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tambahkan meja lewat Manajer › Lantai',
+              textAlign: TextAlign.center,
+              style: SatType.mono(
+                size: 11,
+                color: sc.textLo,
+                letterSpacing: 0.44,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhoneViewToggle extends StatelessWidget {
+  final VoidCallback onTap;
+  const _PhoneViewToggle({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Material(
+      color: sc.bg2,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 16, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: sc.border1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.smartphone_outlined, size: 14, color: sc.textMd),
+              const SizedBox(width: 8),
+              Text(
+                'PHONE VIEW',
+                style: SatType.mono(
+                  size: 11,
+                  weight: FontWeight.w600,
+                  letterSpacing: 0.88,
+                  color: sc.textMd,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BackToTabletPill extends StatelessWidget {
+  final VoidCallback onTap;
+  const _BackToTabletPill({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Material(
+        color: sc.bg2,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 16, 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: sc.border1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.tablet_mac_outlined, size: 14, color: sc.textMd),
+                const SizedBox(width: 8),
+                Text(
+                  'TABLET VIEW',
+                  style: SatType.mono(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    letterSpacing: 0.88,
+                    color: sc.textMd,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

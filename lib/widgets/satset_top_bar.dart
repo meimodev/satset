@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../design/colors.dart';
+import '../design/layout.dart';
 import '../design/typography.dart';
 import '../models/zone.dart';
+
+void safePop(BuildContext context, {String fallback = '/tables'}) {
+  final router = GoRouter.of(context);
+  if (router.canPop()) {
+    router.pop();
+  } else {
+    router.go(fallback);
+  }
+}
 
 enum SyncMode { live, offline }
 
@@ -30,8 +41,9 @@ class SatsetTopBar extends StatelessWidget {
     final dotColor = isOffline ? sc.warn : sc.success;
     final softColor = isOffline ? sc.warnSoft : sc.successSoft;
     final label = overrideSyncLabel ?? (isOffline ? 'LAN ONLY · CLOUD PAUSED' : 'LIVE · LAN');
+    final l = context.layout;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 56, 16, 10),
+      padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
       child: Row(
         children: [
           if (leading != null)

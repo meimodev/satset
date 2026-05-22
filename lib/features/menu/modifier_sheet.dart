@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../design/colors.dart';
 import '../../design/format.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/cart_item.dart';
 import '../../models/course.dart';
@@ -15,6 +16,46 @@ Future<void> showModifierSheet({
   required MenuItem item,
   required ValueChanged<CartItem> onAdd,
 }) {
+  final isTablet = SatLayout.of(context).useTabletShell;
+  if (isTablet) {
+    return showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (ctx) {
+        final sc = ctx.sat;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(40),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 700),
+            child: Container(
+              decoration: BoxDecoration(
+                color: sc.bg1,
+                border: Border.all(color: sc.border1),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 80,
+                    offset: const Offset(0, 32),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _ModifierSheetBody(
+                item: item,
+                scrollController: ScrollController(),
+                onAdd: (ci) {
+                  onAdd(ci);
+                  Navigator.of(ctx).pop();
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
   return showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,

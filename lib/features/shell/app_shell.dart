@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/colors.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
+import '../../models/dummy_data.dart';
 import '../../state/tables_provider.dart';
+import '../../state/view_mode_provider.dart';
+import '../../widgets/tablet_chrome.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -15,14 +19,18 @@ class AppShell extends ConsumerWidget {
     final sc = context.sat;
     final ready = ref.watch(totalReadyCountProvider);
     final loc = GoRouterState.of(context).uri.path;
+    final l = context.layout;
 
-    String activeTab;
-    if (loc.startsWith('/orders')) {
-      activeTab = 'orders';
-    } else if (loc.startsWith('/me')) {
-      activeTab = 'me';
-    } else {
-      activeTab = 'tables';
+    final activeTab = _activeFor(loc);
+    final forcePhone = ref.watch(forcePhoneViewProvider);
+
+    if (l.useTabletShell && !forcePhone) {
+      return TabletShell(
+        activeTab: activeTab,
+        readyCount: ready,
+        crumbs: _crumbsFor(loc, activeTab),
+        child: child,
+      );
     }
 
     return Scaffold(
@@ -31,14 +39,50 @@ class AppShell extends ConsumerWidget {
         children: [
           Positioned.fill(child: child),
           Positioned(
-            left: 8,
-            right: 8,
-            bottom: 20,
+            left: 8 + l.padding.left,
+            right: 8 + l.padding.right,
+            bottom: 12 + l.padding.bottom,
             child: _FloatingTabBar(active: activeTab, readyCount: ready),
           ),
         ],
       ),
     );
+  }
+
+  String _activeFor(String loc) {
+    if (loc.startsWith('/orders')) return 'orders';
+    if (loc.startsWith('/kds')) return 'kds';
+    if (loc.startsWith('/floor')) return 'floor';
+    if (loc.startsWith('/menuadm')) return 'menuadm';
+    if (loc.startsWith('/reports')) return 'reports';
+    if (loc.startsWith('/settings')) return 'settings';
+    if (loc.startsWith('/staff')) return 'staff';
+    if (loc.startsWith('/me')) return 'me';
+    return 'tables';
+  }
+
+  List<String> _crumbsFor(String loc, String activeTab) {
+    final zone = DummyData.zones.first;
+    switch (activeTab) {
+      case 'orders':
+        return ['Teras', 'Pesanan saya'];
+      case 'me':
+        return ['Maya Anjani', 'Ringkasan shift'];
+      case 'kds':
+        return ['Stasiun', 'Dapur Utama', 'KDS · live queue'];
+      case 'floor':
+        return ['Manajer', 'Live floor'];
+      case 'menuadm':
+        return ['Manajer', 'Menu admin'];
+      case 'reports':
+        return ['Manajer', 'Laporan shift'];
+      case 'settings':
+        return ['Sistem', 'Server & konfigurasi'];
+      case 'staff':
+        return ['Sistem', 'Staff & akun'];
+      default:
+        return ['Warung Sebelah', zone.name];
+    }
   }
 }
 
@@ -85,7 +129,7 @@ class _FloatingTabBar extends StatelessWidget {
               _Tab(
                 id: 'orders',
                 label: 'Pesanan',
-                icon: Icons.receipt_long_rounded,
+                icon: Icons.description_outlined,
                 active: active == 'orders',
                 badge: readyCount,
                 badgeAlert: readyCount > 0,
@@ -161,7 +205,7 @@ class _Tab extends StatelessWidget {
             if (badge > 0)
               Positioned(
                 top: 8,
-                right: 14,
+                right: 22,
                 child: Container(
                   constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                   padding: const EdgeInsets.symmetric(horizontal: 4),

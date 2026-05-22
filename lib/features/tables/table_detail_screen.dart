@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/colors.dart';
 import '../../design/format.dart';
+import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/course.dart';
 import '../../models/dummy_data.dart';
@@ -11,6 +12,7 @@ import '../../models/venue_table.dart';
 import '../../models/zone.dart';
 import '../../state/tables_provider.dart';
 import '../../state/tickets_provider.dart';
+import '../../widgets/ready_banner.dart';
 import '../../widgets/satset_top_bar.dart';
 import '../void_flow/line_item_action_sheet.dart';
 
@@ -21,6 +23,7 @@ class TableDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final l = context.layout;
     final tables = ref.watch(tablesProvider);
     final tickets = ref.watch(ticketsProvider)[tableId] ?? const [];
     final table = tables.firstWhere(
@@ -39,18 +42,41 @@ class TableDetailScreen extends ConsumerWidget {
     final total = tickets.fold<int>(0, (s, t) => s + t.price * t.qty);
     final readyAny = tickets.any((t) => t.status == TicketStatus.ready);
 
+    if (l.useTabletShell) {
+      return _TabletSplit(
+        table: table,
+        zone: zone,
+        tickets: tickets,
+        grouped: grouped,
+        total: total,
+        readyAny: readyAny,
+        onMarkServed: (id) {
+          ref.read(ticketsProvider.notifier).markServed(tableId, id);
+          ref.read(tablesProvider.notifier).decrementReady(tableId);
+        },
+        onFireCourse: (cid) =>
+            ref.read(ticketsProvider.notifier).fireCourse(tableId, cid),
+        onTicketTap: (t) => _openAction(context, ref, t),
+        onAdd: () => context.push('/table/$tableId/menu'),
+        onBack: () => safePop(context),
+      );
+    }
+
     return Scaffold(
       backgroundColor: sc.bg0,
       body: Stack(
         children: [
           Column(
             children: [
-              _TopBar(table: table, onBack: () => context.pop()),
+              _TopBar(table: table, onBack: () => safePop(context)),
               _Header(table: table, zoneName: zone.name, total: total),
-              if (readyAny) _ReadyBanner(),
+              if (readyAny) const ReadyBanner(),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 180),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
+                    child: ListView(
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, l.bottomInset + 80),
                   children: [
                     for (final cid in Courses.stationOrder.map((c) => c.id))
                       if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
@@ -76,13 +102,15 @@ class TableDetailScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
+                  ),
+                ),
               ),
             ],
           ),
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 100,
+            left: 16 + l.padding.left,
+            right: 16 + l.padding.right,
+            bottom: l.useSideRail ? 16 + l.padding.bottom : 92 + l.padding.bottom,
             child: _PrimaryButton(
               label: tickets.isEmpty ? 'Bangun pesanan' : 'Tambah ke pesanan',
               icon: Icons.add,
@@ -107,8 +135,9 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final l = context.layout;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 56, 16, 10),
+      padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
       child: Row(
         children: [
           SatBackButton(onTap: onBack),
@@ -226,34 +255,6 @@ class _HPill extends StatelessWidget {
                 weight: FontWeight.w500,
                 color: sc.textMd,
               )),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReadyBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: sc.successSoft,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: sc.success.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.notifications_active_rounded, size: 14, color: sc.success),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Item siap diambil di pass — tandai disajikan di bawah',
-              style: SatType.sans(size: 12, weight: FontWeight.w500, color: sc.success),
-            ),
-          ),
         ],
       ),
     );
@@ -597,6 +598,394 @@ class _PrimaryButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 22),
           minimumSize: const Size.fromHeight(52),
         ),
+      ),
+    );
+  }
+}
+
+class _TabletSplit extends StatelessWidget {
+  final VenueTable table;
+  final Zone zone;
+  final List<Ticket> tickets;
+  final Map<CourseId, List<Ticket>> grouped;
+  final int total;
+  final bool readyAny;
+  final void Function(String) onMarkServed;
+  final void Function(CourseId) onFireCourse;
+  final void Function(Ticket) onTicketTap;
+  final VoidCallback onAdd;
+  final VoidCallback onBack;
+
+  const _TabletSplit({
+    required this.table,
+    required this.zone,
+    required this.tickets,
+    required this.grouped,
+    required this.total,
+    required this.readyAny,
+    required this.onMarkServed,
+    required this.onFireCourse,
+    required this.onTicketTap,
+    required this.onAdd,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final readyN = tickets.where((t) => t.status == TicketStatus.ready).length;
+    return Scaffold(
+      backgroundColor: sc.bg0,
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 560,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(28, 22, 28, 16),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: sc.border0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          GestureDetector(
+                            onTap: onBack,
+                            child: Container(
+                              width: 38, height: 38,
+                              margin: const EdgeInsets.only(right: 14, bottom: 6),
+                              decoration: BoxDecoration(
+                                color: sc.bg2,
+                                border: Border.all(color: sc.border0),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Icon(Icons.arrow_back, size: 18, color: sc.textMd),
+                            ),
+                          ),
+                          Text(table.id,
+                              style: SatType.mono(
+                                size: 56,
+                                weight: FontWeight.w500,
+                                letterSpacing: -1.68,
+                                height: 1,
+                                color: sc.textHi,
+                              )),
+                          const SizedBox(width: 14),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text('${zone.name} · ${table.pax} tamu',
+                                style: SatType.sans(size: 15, color: sc.textMd)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _pill(context, sc, '⏱ duduk ${table.elapsed ?? '0:00'}'),
+                          _pill(context, sc, formatIDR(total)),
+                          if (readyN > 0) _pill(context, sc, '$readyN siap diambil', tone: 'success'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: tickets.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(28),
+                            child: Text(
+                              'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
+                              textAlign: TextAlign.center,
+                              style: SatType.sans(size: 14, color: sc.textLo, height: 1.5),
+                            ),
+                          ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                          children: [
+                            for (final cid in Courses.stationOrder.map((c) => c.id))
+                              if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
+                                _CourseBlock(
+                                  course: Courses.byId(cid),
+                                  items: grouped[cid]!,
+                                  onMarkServed: onMarkServed,
+                                  onFireCourse: () => onFireCourse(cid),
+                                  onTicketTap: onTicketTap,
+                                ),
+                          ],
+                        ),
+                ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: sc.border0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Material(
+                          color: sc.accent,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            onTap: onAdd,
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              height: 52,
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add, size: 18, color: sc.accentInk),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    tickets.isEmpty ? 'Buat pesanan' : 'Tambah pesanan',
+                                    style: SatType.sans(
+                                      size: 15,
+                                      weight: FontWeight.w600,
+                                      color: sc.accentInk,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(width: 1, color: sc.border0),
+          Expanded(
+            child: _ContextPane(table: table, tickets: tickets),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pill(BuildContext context, SatColors sc, String text, {String tone = 'normal'}) {
+    Color bg = sc.bg3;
+    Color fg = sc.textMd;
+    Color border = sc.border1;
+    if (tone == 'success') { bg = sc.successSoft; fg = sc.success; border = sc.success.withValues(alpha: 0.3); }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(text,
+          style: SatType.sans(
+            size: 11,
+            weight: FontWeight.w500,
+            letterSpacing: 0.2,
+            color: fg,
+          )),
+    );
+  }
+}
+
+class _ContextPane extends StatelessWidget {
+  final VenueTable table;
+  final List<Ticket> tickets;
+  const _ContextPane({required this.table, required this.tickets});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final sent = tickets.where((t) => t.status != TicketStatus.voided && t.status != TicketStatus.served).length;
+    final served = tickets.where((t) => t.status == TicketStatus.served).length;
+    final allergens = <String>{};
+    for (final t in tickets) {
+      final it = DummyData.items.where((i) => i.id == t.itemId).firstOrNull;
+      if (it != null) allergens.addAll(it.allergens.map((a) => a.name));
+    }
+    final peanut = tickets.any((t) =>
+        t.specialInstructions != null && t.specialInstructions!.toLowerCase().contains('kacang'));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 22, 28, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Konteks meja',
+                  style: SatType.sans(
+                    size: 22,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.44,
+                    color: sc.textHi,
+                  )),
+              const SizedBox(height: 4),
+              Text('DUDUK ${table.elapsed ?? '0:00'} · ${table.pax} TAMU',
+                  style: SatType.mono(
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0.44,
+                  )),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: _stat(context, sc, tickets.length.toString(), 'Total item')),
+                    const SizedBox(width: 8),
+                    Expanded(child: _stat(context, sc, sent.toString(), 'Dalam proses')),
+                    const SizedBox(width: 8),
+                    Expanded(child: _stat(context, sc, served.toString(), 'Disajikan')),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _card(context, sc, 'CATATAN TAMU',
+                    peanut
+                        ? Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: sc.urgentSoft,
+                              border: Border.all(color: sc.urgent.withValues(alpha: 0.25)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.warning_amber_rounded, size: 16, color: sc.urgent),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text('Tamu alergi kacang — hindari saus kacang & garnish sate.',
+                                      style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.urgent)),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Text('Belum ada catatan khusus.',
+                            style: SatType.sans(size: 13, color: sc.textLo))),
+                const SizedBox(height: 14),
+                _card(context, sc, 'ALERGEN DI PESANAN',
+                    allergens.isEmpty
+                        ? Text('Tidak ada.', style: SatType.sans(size: 13, color: sc.textLo))
+                        : Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final a in allergens)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: sc.urgentSoft,
+                                    border: Border.all(color: sc.urgent.withValues(alpha: 0.35)),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(a,
+                                      style: SatType.sans(
+                                        size: 12,
+                                        weight: FontWeight.w500,
+                                        color: sc.urgent,
+                                      )),
+                                ),
+                            ],
+                          )),
+                const SizedBox(height: 14),
+                _card(context, sc, 'AKSI CEPAT',
+                    Column(
+                      children: [
+                        _quickAction(context, sc, Icons.receipt_long_rounded, 'Cetak struk meja', accent: true),
+                        const SizedBox(height: 6),
+                        _quickAction(context, sc, Icons.edit_outlined, 'Pindahkan meja'),
+                      ],
+                    )),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _stat(BuildContext context, SatColors sc, String v, String l) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(v, style: SatType.mono(size: 22, weight: FontWeight.w600, letterSpacing: -0.44, height: 1, color: sc.textHi)),
+          const SizedBox(height: 8),
+          Text(l.toUpperCase(),
+              style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.6)),
+        ],
+      ),
+    );
+  }
+
+  Widget _card(BuildContext context, SatColors sc, String head, Widget child) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(head,
+              style: SatType.mono(size: 10, weight: FontWeight.w600, letterSpacing: 1.2, color: sc.textLo)),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _quickAction(BuildContext context, SatColors sc, IconData icon, String label, {bool accent = false}) {
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+        color: accent ? sc.accentSoft : sc.bg3,
+        border: Border.all(
+          color: accent ? sc.accentBorder : sc.border1,
+          style: accent ? BorderStyle.solid : BorderStyle.solid,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 14, color: accent ? sc.accent : sc.textMd),
+          const SizedBox(width: 8),
+          Text(label.toUpperCase(),
+              style: SatType.sans(
+                size: 12,
+                weight: FontWeight.w600,
+                letterSpacing: 0.48,
+                color: accent ? sc.accent : sc.textMd,
+              )),
+        ],
       ),
     );
   }
