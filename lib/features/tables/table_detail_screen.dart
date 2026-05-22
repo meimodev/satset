@@ -382,9 +382,14 @@ class _LineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final isReady = ticket.status == TicketStatus.ready;
+    final isCooked = ticket.status == TicketStatus.cooked;
     final isVoided = ticket.status == TicketStatus.voided;
-    final bg = isReady ? sc.successSoft : (isVoided ? sc.bg1 : sc.bg2);
-    final border = isReady ? sc.success.withValues(alpha: 0.3) : sc.border0;
+    final bg = isReady
+        ? sc.successSoft
+        : (isCooked ? sc.accentSoft : (isVoided ? sc.bg1 : sc.bg2));
+    final border = isReady
+        ? sc.success.withValues(alpha: 0.3)
+        : (isCooked ? sc.accent.withValues(alpha: 0.3) : sc.border0);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -518,6 +523,10 @@ class _StatusChip extends StatelessWidget {
       case TicketStatus.prep:
         bg = sc.warnSoft;
         fg = sc.warn;
+        break;
+      case TicketStatus.cooked:
+        bg = sc.accentSoft;
+        fg = sc.accent;
         break;
       case TicketStatus.ready:
         bg = sc.successSoft;

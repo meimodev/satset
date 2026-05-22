@@ -264,6 +264,10 @@ class _StatusChip extends StatelessWidget {
         bg = sc.warnSoft;
         fg = sc.warn;
         break;
+      case TicketStatus.cooked:
+        bg = sc.accentSoft;
+        fg = sc.accent;
+        break;
       case TicketStatus.ready:
         bg = sc.successSoft;
         fg = sc.success;

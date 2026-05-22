@@ -10,7 +10,7 @@ import '../features/me/me_screen.dart';
 import '../features/menu/menu_screen.dart';
 import '../features/review/review_screen.dart';
 import '../features/sent/sent_screen.dart';
-import '../features/admin/kds_screen.dart';
+import '../features/admin/kitchen_screen.dart';
 import '../features/admin/floor_screen.dart';
 import '../features/admin/menu_admin_screen.dart';
 import '../features/admin/reports_screen.dart';
@@ -35,7 +35,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/tables', builder: (_, _) => const TablesScreen()),
           GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
-          GoRoute(path: '/kds', builder: (_, _) => const KdsScreen()),
+          GoRoute(path: '/kitchen', builder: (_, _) => const KitchenScreen()),
           GoRoute(path: '/floor', builder: (_, _) => const FloorScreen()),
           GoRoute(path: '/menuadm', builder: (_, _) => const MenuAdminScreen()),
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),

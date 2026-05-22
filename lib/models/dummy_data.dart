@@ -386,7 +386,7 @@ class DummyData {
         'T1': const [
           Ticket(id: 'L01', itemId: 'gado-gado', name: 'Gado-Gado', course: CourseId.starters, station: Station.kitchen, qty: 1, modifiers: ['Sedikit pedas'], price: 65000, status: TicketStatus.ready, sentAt: '17:42'),
           Ticket(id: 'L02', itemId: 'es-teh', name: 'Es Teh Manis', course: CourseId.drinksNow, station: Station.bar, qty: 2, modifiers: ['Kurang manis'], price: 25000, status: TicketStatus.served, sentAt: '17:42'),
-          Ticket(id: 'L03', itemId: 'nasi-goreng', name: 'Nasi Goreng', variantName: 'Reguler', course: CourseId.mains, station: Station.kitchen, qty: 1, modifiers: ['Ayam', 'Sedang', '+ Krupuk'], price: 93000, status: TicketStatus.prep, sentAt: '17:46'),
+          Ticket(id: 'L03', itemId: 'nasi-goreng', name: 'Nasi Goreng', variantName: 'Reguler', course: CourseId.mains, station: Station.kitchen, qty: 1, modifiers: ['Ayam', 'Sedang', '+ Krupuk'], price: 93000, status: TicketStatus.cooked, sentAt: '17:46'),
           Ticket(id: 'L04', itemId: 'rendang', name: 'Rendang Sapi', course: CourseId.mains, station: Station.kitchen, qty: 1, modifiers: ['Tanpa nasi uduk', 'Tambah nasi putih'], specialInstructions: 'Alergi kacang tamu — tanpa garnish sate', price: 145000, status: TicketStatus.prep, sentAt: '17:46'),
           Ticket(id: 'L05', itemId: 'pisang', name: 'Pisang Goreng + Es Krim', course: CourseId.desserts, station: Station.kitchen, qty: 2, modifiers: ['Vanila'], price: 55000, status: TicketStatus.held, sentAt: '17:46'),
         ],

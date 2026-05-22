@@ -1,11 +1,12 @@
 import 'course.dart';
 import 'menu_item.dart';
 
-enum TicketStatus { sent, prep, ready, served, held, voided }
+enum TicketStatus { sent, prep, cooked, ready, served, held, voided }
 
 String ticketStatusLabel(TicketStatus s) => switch (s) {
       TicketStatus.sent => 'Terkirim',
       TicketStatus.prep => 'Disiapkan',
+      TicketStatus.cooked => 'Selesai dimasak',
       TicketStatus.ready => 'Siap diambil',
       TicketStatus.served => 'Disajikan',
       TicketStatus.held => 'Ditahan',

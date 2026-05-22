@@ -239,7 +239,7 @@ class MeScreen extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                _NavRow(icon: Icons.local_fire_department_outlined, label: 'KDS · Dapur', onTap: () => context.go('/kds')),
+                _NavRow(icon: Icons.local_fire_department_outlined, label: 'Dapur · Antrian masak', onTap: () => context.go('/kitchen')),
                 Divider(height: 1, color: sc.border0),
                 _NavRow(icon: Icons.place_outlined, label: 'Live floor', onTap: () => context.go('/floor')),
                 Divider(height: 1, color: sc.border0),

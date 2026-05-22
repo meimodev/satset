@@ -51,7 +51,7 @@ class AppShell extends ConsumerWidget {
 
   String _activeFor(String loc) {
     if (loc.startsWith('/orders')) return 'orders';
-    if (loc.startsWith('/kds')) return 'kds';
+    if (loc.startsWith('/kitchen')) return 'kitchen';
     if (loc.startsWith('/floor')) return 'floor';
     if (loc.startsWith('/menuadm')) return 'menuadm';
     if (loc.startsWith('/reports')) return 'reports';
@@ -68,8 +68,8 @@ class AppShell extends ConsumerWidget {
         return ['Teras', 'Pesanan saya'];
       case 'me':
         return ['Maya Anjani', 'Ringkasan shift'];
-      case 'kds':
-        return ['Stasiun', 'Dapur Utama', 'KDS · live queue'];
+      case 'kitchen':
+        return ['Stasiun', 'Dapur Utama', 'Dapur · antrian masak'];
       case 'floor':
         return ['Manajer', 'Live floor'];
       case 'menuadm':

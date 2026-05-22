@@ -40,6 +40,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         .where((r) =>
             r.ticket.status == TicketStatus.sent ||
             r.ticket.status == TicketStatus.prep ||
+            r.ticket.status == TicketStatus.cooked ||
             r.ticket.status == TicketStatus.held)
         .toList();
     final done = all
@@ -488,6 +489,10 @@ class _StatusChip extends StatelessWidget {
       case TicketStatus.prep:
         bg = sc.warnSoft;
         fg = sc.warn;
+        break;
+      case TicketStatus.cooked:
+        bg = sc.accentSoft;
+        fg = sc.accent;
         break;
       case TicketStatus.ready:
         bg = sc.successSoft;
