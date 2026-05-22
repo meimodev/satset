@@ -1,8 +1,10 @@
+enum UserRole { waiter, kitchen, admin }
+
 class AppUser {
   final String id;
   final String name;
   final String initials;
-  final String role;
+  final UserRole role;
   final String shiftStartedAt;
   final String zoneAssigned;
   const AppUser({
@@ -14,3 +16,9 @@ class AppUser {
     required this.zoneAssigned,
   });
 }
+
+String userRoleLabel(UserRole r) => switch (r) {
+      UserRole.waiter => 'Pelayan',
+      UserRole.kitchen => 'Dapur',
+      UserRole.admin => 'Admin',
+    };

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../auth/auth_state.dart';
 import '../../design/colors.dart';
 import '../../design/format.dart';
 import '../../design/layout.dart';
 import '../../design/typography.dart';
 import '../../models/dummy_data.dart';
+import '../../models/user.dart';
 import '../../models/venue_table.dart';
 import '../../state/tables_provider.dart';
 import '../../state/view_mode_provider.dart';
 import '../../widgets/satset_top_bar.dart';
 import '../../widgets/tablet_chrome.dart';
+import 'widgets/guest_stepper_sheet.dart';
 
 class TablesScreen extends ConsumerStatefulWidget {
   const TablesScreen({super.key});
@@ -67,6 +70,10 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                                 table: t,
                                 tablet: true,
                                 onTap: () => context.push('/table/${t.id}'),
+                                onLongPress: () => showGuestStepperSheet(
+                                  context: context,
+                                  tableId: t.id,
+                                ),
                               ),
                           ],
                         ),
@@ -148,6 +155,10 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                               table: t,
                               tablet: false,
                               onTap: () => context.push('/table/${t.id}'),
+                              onLongPress: () => showGuestStepperSheet(
+                                context: context,
+                                tableId: t.id,
+                              ),
                             ),
                         ],
                       ),
@@ -228,11 +239,17 @@ class _ZoneRow extends StatelessWidget {
   }
 }
 
-class _TableCard extends StatelessWidget {
+class _TableCard extends ConsumerWidget {
   final VenueTable table;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final bool tablet;
-  const _TableCard({required this.table, required this.onTap, required this.tablet});
+  const _TableCard({
+    required this.table,
+    required this.onTap,
+    required this.tablet,
+    this.onLongPress,
+  });
 
   String _statusLabel() => switch (table.status) {
         TableStatus.available => 'Kosong',
@@ -242,7 +259,7 @@ class _TableCard extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final isReady = table.status == TableStatus.ready;
     final isOccupied = table.status == TableStatus.occupied;
@@ -270,19 +287,25 @@ class _TableCard extends StatelessWidget {
       statusColor = sc.success;
       numColor = sc.success;
     }
-    if (table.mine) {
+
+    final currentUserId = ref.watch(authStateProvider).user?.id;
+    final actor = DummyData.userById(table.lastActorId);
+    final isMine = actor != null && actor.id == currentUserId;
+    if (isMine) {
       border = sc.accentBorder;
     }
 
     final tnumSize = tablet ? 36.0 : 26.0;
     final radius = tablet ? 20.0 : 22.0;
     final padding = tablet ? const EdgeInsets.fromLTRB(18, 18, 18, 16) : const EdgeInsets.fromLTRB(14, 16, 14, 14);
+    final avatarSize = tablet ? 24.0 : 20.0;
 
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(radius),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(radius),
         child: Container(
           padding: padding,
@@ -357,26 +380,66 @@ class _TableCard extends StatelessWidget {
                               letterSpacing: 0.44,
                             )),
                       ],
+                      if (actor != null) ...[
+                        const SizedBox(width: 8),
+                        _ActorAvatar(actor: actor, size: avatarSize, mine: isMine),
+                      ],
                     ],
                   ),
                 ],
               ),
-              if (table.mine)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Text(
-                    'PUNYA SAYA',
-                    style: SatType.mono(
-                      size: 9,
-                      weight: FontWeight.w600,
-                      letterSpacing: 0.9,
-                      color: sc.accent,
-                    ),
-                  ),
-                ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActorAvatar extends StatelessWidget {
+  final AppUser actor;
+  final double size;
+  final bool mine;
+  const _ActorAvatar({required this.actor, required this.size, required this.mine});
+
+  static const _palette = <List<int>>[
+    [0xFFFF9233, 0xFFD96030], // orange
+    [0xFF6DB5FF, 0xFF4060D0], // blue
+    [0xFF4DD487, 0xFF1F6E3E], // green
+    [0xFFC08AFF, 0xFF6D3FC4], // violet
+    [0xFFFFC04D, 0xFFB87A1A], // amber
+    [0xFFFF5C5C, 0xFFB03030], // red
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final hash = actor.id.hashCode.abs();
+    final pair = _palette[hash % _palette.length];
+    final grad = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Color(pair[0]), Color(pair[1])],
+    );
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: grad,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: mine ? sc.accent : Colors.transparent,
+          width: mine ? 2 : 0,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        actor.initials,
+        style: SatType.mono(
+          size: size * 0.42,
+          weight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: 0.2,
         ),
       ),
     );

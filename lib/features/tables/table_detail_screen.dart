@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../auth/auth_state.dart';
 import '../../design/colors.dart';
 import '../../design/format.dart';
 import '../../design/layout.dart';
@@ -8,6 +9,7 @@ import '../../design/typography.dart';
 import '../../models/course.dart';
 import '../../models/dummy_data.dart';
 import '../../models/ticket.dart';
+import '../../models/user.dart';
 import '../../models/venue_table.dart';
 import '../../models/zone.dart';
 import '../../state/tables_provider.dart';
@@ -15,6 +17,7 @@ import '../../state/tickets_provider.dart';
 import '../../widgets/ready_banner.dart';
 import '../../widgets/satset_top_bar.dart';
 import '../void_flow/line_item_action_sheet.dart';
+import 'widgets/guest_stepper.dart';
 
 class TableDetailScreen extends ConsumerWidget {
   final String tableId;
@@ -34,6 +37,16 @@ class TableDetailScreen extends ConsumerWidget {
       (z) => z.id == table.zoneId,
       orElse: () => const Zone(id: '', name: '', short: ''),
     );
+    final user = ref.watch(authStateProvider).user;
+    final actorId = user?.id;
+    final canEditGuests = user?.role == UserRole.waiter;
+
+    void onMinus() => ref
+        .read(tablesProvider.notifier)
+        .decrementPax(tableId, userId: actorId);
+    void onPlus() => ref
+        .read(tablesProvider.notifier)
+        .incrementPax(tableId, userId: actorId);
 
     final grouped = <CourseId, List<Ticket>>{};
     for (final t in tickets) {
@@ -50,9 +63,14 @@ class TableDetailScreen extends ConsumerWidget {
         grouped: grouped,
         total: total,
         readyAny: readyAny,
+        canEditGuests: canEditGuests,
+        onMinusPax: onMinus,
+        onPlusPax: onPlus,
         onMarkServed: (id) {
           ref.read(ticketsProvider.notifier).markServed(tableId, id);
-          ref.read(tablesProvider.notifier).decrementReady(tableId);
+          ref
+              .read(tablesProvider.notifier)
+              .decrementReady(tableId, userId: actorId);
         },
         onFireCourse: (cid) =>
             ref.read(ticketsProvider.notifier).fireCourse(tableId, cid),
@@ -69,7 +87,14 @@ class TableDetailScreen extends ConsumerWidget {
           Column(
             children: [
               _TopBar(table: table, onBack: () => safePop(context)),
-              _Header(table: table, zoneName: zone.name, total: total),
+              _Header(
+                table: table,
+                zoneName: zone.name,
+                total: total,
+                canEditGuests: canEditGuests,
+                onMinusPax: onMinus,
+                onPlusPax: onPlus,
+              ),
               if (readyAny) const ReadyBanner(),
               Expanded(
                 child: Center(
@@ -85,7 +110,9 @@ class TableDetailScreen extends ConsumerWidget {
                           items: grouped[cid]!,
                           onMarkServed: (id) {
                             ref.read(ticketsProvider.notifier).markServed(tableId, id);
-                            ref.read(tablesProvider.notifier).decrementReady(tableId);
+                            ref
+                                .read(tablesProvider.notifier)
+                                .decrementReady(tableId, userId: actorId);
                           },
                           onFireCourse: () =>
                               ref.read(ticketsProvider.notifier).fireCourse(tableId, cid),
@@ -182,7 +209,17 @@ class _Header extends StatelessWidget {
   final VenueTable table;
   final String zoneName;
   final int total;
-  const _Header({required this.table, required this.zoneName, required this.total});
+  final bool canEditGuests;
+  final VoidCallback onMinusPax;
+  final VoidCallback onPlusPax;
+  const _Header({
+    required this.table,
+    required this.zoneName,
+    required this.total,
+    required this.canEditGuests,
+    required this.onMinusPax,
+    required this.onPlusPax,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -205,8 +242,20 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('$zoneName · ${table.pax} tamu',
+                Text(zoneName,
                     style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.textMd)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    GuestStepper(
+                      pax: table.pax,
+                      enabled: canEditGuests,
+                      onMinus: onMinusPax,
+                      onPlus: onPlusPax,
+                      size: 32,
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
@@ -610,6 +659,9 @@ class _TabletSplit extends StatelessWidget {
   final Map<CourseId, List<Ticket>> grouped;
   final int total;
   final bool readyAny;
+  final bool canEditGuests;
+  final VoidCallback onMinusPax;
+  final VoidCallback onPlusPax;
   final void Function(String) onMarkServed;
   final void Function(CourseId) onFireCourse;
   final void Function(Ticket) onTicketTap;
@@ -623,6 +675,9 @@ class _TabletSplit extends StatelessWidget {
     required this.grouped,
     required this.total,
     required this.readyAny,
+    required this.canEditGuests,
+    required this.onMinusPax,
+    required this.onPlusPax,
     required this.onMarkServed,
     required this.onFireCourse,
     required this.onTicketTap,
@@ -679,8 +734,22 @@ class _TabletSplit extends StatelessWidget {
                           const SizedBox(width: 14),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: Text('${zone.name} · ${table.pax} tamu',
-                                style: SatType.sans(size: 15, color: sc.textMd)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(zone.name,
+                                    style: SatType.sans(size: 15, color: sc.textMd)),
+                                const SizedBox(height: 6),
+                                GuestStepper(
+                                  pax: table.pax,
+                                  enabled: canEditGuests,
+                                  onMinus: onMinusPax,
+                                  onPlus: onPlusPax,
+                                  size: 36,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

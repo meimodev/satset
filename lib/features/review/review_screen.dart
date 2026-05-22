@@ -8,6 +8,7 @@ import '../../design/typography.dart';
 import '../../models/cart_item.dart';
 import '../../models/course.dart';
 import '../../models/menu_item.dart';
+import '../../auth/auth_state.dart';
 import '../../state/cart_provider.dart';
 import '../../state/tables_provider.dart';
 import '../../state/tickets_provider.dart';
@@ -236,7 +237,10 @@ class ReviewScreen extends ConsumerWidget {
                         ref
                             .read(ticketsProvider.notifier)
                             .sendOrder(tableId, cart);
-                        ref.read(tablesProvider.notifier).markPending(tableId);
+                        final actorId = ref.read(authStateProvider).user?.id;
+                        ref
+                            .read(tablesProvider.notifier)
+                            .markPending(tableId, userId: actorId);
                         final stations = <String>{
                           if (kitchenCt > 0) 'Dapur',
                           if (barCt > 0) 'Bar',

@@ -9,6 +9,7 @@ class VenueTable {
   final bool mine;
   final int openAmount;
   final int readyCount;
+  final String? lastActorId;
 
   const VenueTable({
     required this.id,
@@ -19,24 +20,28 @@ class VenueTable {
     this.mine = false,
     this.openAmount = 0,
     this.readyCount = 0,
+    this.lastActorId,
   });
 
   VenueTable copyWith({
+    int? pax,
     TableStatus? status,
     String? elapsed,
     bool? mine,
     int? openAmount,
     int? readyCount,
+    String? lastActorId,
   }) {
     return VenueTable(
       id: id,
       zoneId: zoneId,
-      pax: pax,
+      pax: pax ?? this.pax,
       status: status ?? this.status,
       elapsed: elapsed ?? this.elapsed,
       mine: mine ?? this.mine,
       openAmount: openAmount ?? this.openAmount,
       readyCount: readyCount ?? this.readyCount,
+      lastActorId: lastActorId ?? this.lastActorId,
     );
   }
 }

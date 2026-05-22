@@ -20,10 +20,56 @@ class DummyData {
     id: 'maya',
     name: 'Maya',
     initials: 'MA',
-    role: 'Floor Server',
+    role: UserRole.waiter,
     shiftStartedAt: '17:30',
     zoneAssigned: 'Terrace',
   );
+
+  static const budi = AppUser(
+    id: 'budi',
+    name: 'Budi',
+    initials: 'BU',
+    role: UserRole.waiter,
+    shiftStartedAt: '17:30',
+    zoneAssigned: 'Garden',
+  );
+
+  static const rina = AppUser(
+    id: 'rina',
+    name: 'Rina',
+    initials: 'RI',
+    role: UserRole.waiter,
+    shiftStartedAt: '17:30',
+    zoneAssigned: 'Indoor',
+  );
+
+  static const koki = AppUser(
+    id: 'koki',
+    name: 'Komang',
+    initials: 'KT',
+    role: UserRole.kitchen,
+    shiftStartedAt: '16:30',
+    zoneAssigned: '—',
+  );
+
+  static const bos = AppUser(
+    id: 'bos',
+    name: 'Pak Nyoman',
+    initials: 'PN',
+    role: UserRole.admin,
+    shiftStartedAt: '17:00',
+    zoneAssigned: '—',
+  );
+
+  static const users = <AppUser>[maya, budi, rina, koki, bos];
+
+  static AppUser? userById(String? id) {
+    if (id == null) return null;
+    for (final u in users) {
+      if (u.id == id) return u;
+    }
+    return null;
+  }
 
   static const zones = <Zone>[
     Zone(id: 'terrace', name: 'Teras', short: 'Ter'),
@@ -33,26 +79,26 @@ class DummyData {
   ];
 
   static const tables = <VenueTable>[
-    VenueTable(id: 'T1', zoneId: 'terrace', pax: 2, status: TableStatus.occupied, elapsed: '0:18', mine: true, openAmount: 245000),
-    VenueTable(id: 'T2', zoneId: 'terrace', pax: 4, status: TableStatus.ready, elapsed: '0:42', mine: true, openAmount: 612000, readyCount: 2),
+    VenueTable(id: 'T1', zoneId: 'terrace', pax: 2, status: TableStatus.occupied, elapsed: '0:18', mine: true, openAmount: 245000, lastActorId: 'maya'),
+    VenueTable(id: 'T2', zoneId: 'terrace', pax: 4, status: TableStatus.ready, elapsed: '0:42', mine: true, openAmount: 612000, readyCount: 2, lastActorId: 'maya'),
     VenueTable(id: 'T3', zoneId: 'terrace', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'T4', zoneId: 'terrace', pax: 6, status: TableStatus.pending, elapsed: '0:08', mine: true),
-    VenueTable(id: 'T5', zoneId: 'terrace', pax: 3, status: TableStatus.occupied, elapsed: '1:14', openAmount: 880000),
+    VenueTable(id: 'T4', zoneId: 'terrace', pax: 6, status: TableStatus.pending, elapsed: '0:08', mine: true, lastActorId: 'maya'),
+    VenueTable(id: 'T5', zoneId: 'terrace', pax: 3, status: TableStatus.occupied, elapsed: '1:14', openAmount: 880000, lastActorId: 'rina'),
     VenueTable(id: 'T6', zoneId: 'terrace', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'G1', zoneId: 'garden', pax: 4, status: TableStatus.occupied, elapsed: '0:32', openAmount: 425000),
+    VenueTable(id: 'G1', zoneId: 'garden', pax: 4, status: TableStatus.occupied, elapsed: '0:32', openAmount: 425000, lastActorId: 'budi'),
     VenueTable(id: 'G2', zoneId: 'garden', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'G3', zoneId: 'garden', pax: 5, status: TableStatus.occupied, elapsed: '0:54', openAmount: 690000),
-    VenueTable(id: 'G4', zoneId: 'garden', pax: 2, status: TableStatus.ready, elapsed: '0:21', openAmount: 180000, readyCount: 1),
+    VenueTable(id: 'G3', zoneId: 'garden', pax: 5, status: TableStatus.occupied, elapsed: '0:54', openAmount: 690000, lastActorId: 'budi'),
+    VenueTable(id: 'G4', zoneId: 'garden', pax: 2, status: TableStatus.ready, elapsed: '0:21', openAmount: 180000, readyCount: 1, lastActorId: 'budi'),
     VenueTable(id: 'I1', zoneId: 'indoor', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'I2', zoneId: 'indoor', pax: 4, status: TableStatus.occupied, elapsed: '0:46', openAmount: 535000),
-    VenueTable(id: 'I3', zoneId: 'indoor', pax: 2, status: TableStatus.pending, elapsed: '0:03'),
-    VenueTable(id: 'I4', zoneId: 'indoor', pax: 4, status: TableStatus.occupied, elapsed: '1:32', openAmount: 1120000),
+    VenueTable(id: 'I2', zoneId: 'indoor', pax: 4, status: TableStatus.occupied, elapsed: '0:46', openAmount: 535000, lastActorId: 'rina'),
+    VenueTable(id: 'I3', zoneId: 'indoor', pax: 2, status: TableStatus.pending, elapsed: '0:03', lastActorId: 'rina'),
+    VenueTable(id: 'I4', zoneId: 'indoor', pax: 4, status: TableStatus.occupied, elapsed: '1:32', openAmount: 1120000, lastActorId: 'rina'),
     VenueTable(id: 'I5', zoneId: 'indoor', pax: 6, status: TableStatus.available),
-    VenueTable(id: 'I6', zoneId: 'indoor', pax: 2, status: TableStatus.occupied, elapsed: '0:12', openAmount: 95000),
-    VenueTable(id: 'B1', zoneId: 'bar', pax: 2, status: TableStatus.occupied, elapsed: '0:24', openAmount: 145000),
+    VenueTable(id: 'I6', zoneId: 'indoor', pax: 2, status: TableStatus.occupied, elapsed: '0:12', openAmount: 95000, lastActorId: 'budi'),
+    VenueTable(id: 'B1', zoneId: 'bar', pax: 2, status: TableStatus.occupied, elapsed: '0:24', openAmount: 145000, lastActorId: 'maya'),
     VenueTable(id: 'B2', zoneId: 'bar', pax: 1, status: TableStatus.available),
     VenueTable(id: 'B3', zoneId: 'bar', pax: 3, status: TableStatus.available),
-    VenueTable(id: 'B4', zoneId: 'bar', pax: 2, status: TableStatus.occupied, elapsed: '0:38', openAmount: 270000),
+    VenueTable(id: 'B4', zoneId: 'bar', pax: 2, status: TableStatus.occupied, elapsed: '0:38', openAmount: 270000, lastActorId: 'rina'),
   ];
 
   static const categories = <MenuCategory>[
