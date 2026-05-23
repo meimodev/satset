@@ -113,6 +113,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
+    // Admin sign-in remains dummy (no email/password endpoint yet).
     ref.read(authStateProvider.notifier).signIn();
     context.go('/tables');
   }
@@ -126,10 +127,14 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     if (_pin.length >= _max) return;
     setState(() => _pin = _pin + d);
     if (_pin.length == _max) {
-      Future.delayed(const Duration(milliseconds: 220), () {
+      Future.delayed(const Duration(milliseconds: 220), () async {
         if (!mounted) return;
-        ref.read(authStateProvider.notifier).signIn();
-        context.go('/tables');
+        // PIN-based LAN sign-in; falls back to dummy when no API config.
+        await ref.read(authStateProvider.notifier).signInWithPin(_pin);
+        if (!mounted) return;
+        if (ref.read(authStateProvider).isAuthenticated) {
+          context.go('/tables');
+        }
       });
     }
   }

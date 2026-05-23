@@ -7,11 +7,12 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
+import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
+import 'package:satset/ui/features/review/view_models/review_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
-import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 
 class ReviewScreen extends ConsumerWidget {
@@ -22,7 +23,7 @@ class ReviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final l = context.layout;
-    final cart = ref.watch(cartProvider);
+    final cart = ref.watch(cartProvider(tableId));
     final tables = ref.watch(tablesProvider);
     final table = tables.firstWhere((t) => t.id == tableId, orElse: () => tables.first);
 
@@ -166,7 +167,7 @@ class ReviewScreen extends ConsumerWidget {
                           course: Courses.byId(cid),
                           items: grouped[cid]!,
                           onRemove: (id) =>
-                              ref.read(cartProvider.notifier).remove(id),
+                              ref.read(cartProvider(tableId).notifier).remove(id),
                         ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -233,10 +234,13 @@ class ReviewScreen extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: cart.isEmpty
                     ? null
-                    : () {
-                        ref
-                            .read(ticketsProvider.notifier)
-                            .sendOrder(tableId, cart);
+                    : () async {
+                        final vm = ref.read(reviewViewModelProvider.notifier);
+                        await vm.submit(tableId, cart);
+                        final s = ref.read(reviewViewModelProvider);
+                        if (s.error != null || s.submittedTicketIds == null) {
+                          return;
+                        }
                         final actorId = ref.read(authStateProvider).user?.id;
                         ref
                             .read(tablesProvider.notifier)
@@ -245,8 +249,10 @@ class ReviewScreen extends ConsumerWidget {
                           if (kitchenCt > 0) 'Dapur',
                           if (barCt > 0) 'Bar',
                         }.join(',');
-                        ref.read(cartProvider.notifier).clear();
-                        context.go('/table/$tableId/sent?stations=$stations');
+                        ref.read(cartProvider(tableId).notifier).clear();
+                        if (context.mounted) {
+                          context.go('/table/$tableId/sent?stations=$stations');
+                        }
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: sc.accent,

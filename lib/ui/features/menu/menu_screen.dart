@@ -5,7 +5,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/data/services/dummy_data_seed.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
@@ -28,15 +28,66 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final sc = context.sat;
     final l = context.layout;
     final cols = l.gridCount(minTileWidth: 170);
-    final cart = ref.watch(cartProvider);
+    final cart = ref.watch(cartProvider(widget.tableId));
     final tables = ref.watch(tablesProvider);
     final table = tables.firstWhere(
       (t) => t.id == widget.tableId,
       orElse: () => tables.first,
     );
 
+    final menuStatus = ref.watch(menuStatusProvider);
+    final allItems = ref.watch(menuItemsProvider);
     final items =
-        DummyData.items.where((i) => _cat == 'all' || i.categoryId == _cat).toList();
+        allItems.where((i) => _cat == 'all' || i.categoryId == _cat).toList();
+
+    if (menuStatus.isLoading) {
+      return Scaffold(
+        backgroundColor: sc.bg0,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 12),
+              Text('Memuat menu…',
+                  style: SatType.sans(size: 13, color: sc.textMd)),
+            ],
+          ),
+        ),
+      );
+    }
+    if (menuStatus.hasError) {
+      return Scaffold(
+        backgroundColor: sc.bg0,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off, size: 36, color: sc.urgent),
+                const SizedBox(height: 12),
+                Text('Gagal memuat menu',
+                    style: SatType.sans(
+                      size: 16,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    )),
+                const SizedBox(height: 6),
+                Text('${menuStatus.error}',
+                    textAlign: TextAlign.center,
+                    style: SatType.sans(size: 12, color: sc.textLo)),
+                const SizedBox(height: 14),
+                OutlinedButton(
+                  onPressed: () => ref.read(menuRepositoryProvider.notifier).refresh(),
+                  child: const Text('Coba lagi'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     final cartCount = cart.fold<int>(0, (s, c) => s + c.qty);
     final cartTotal = cart.fold<int>(0, (s, c) => s + c.unitPrice * c.qty);
     final inCartQty = <String, int>{};
@@ -277,29 +328,30 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       context: context,
       item: item,
       onAdd: (cartItem) {
-        ref.read(cartProvider.notifier).add(cartItem);
+        ref.read(cartProvider(widget.tableId).notifier).add(cartItem);
       },
     );
   }
 }
 
-class _CatTabs extends StatelessWidget {
+class _CatTabs extends ConsumerWidget {
   final String active;
   final ValueChanged<String> onChange;
   const _CatTabs({required this.active, required this.onChange});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final cats = ref.watch(menuCategoriesProvider);
     return SizedBox(
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: DummyData.categories.length,
+        itemCount: cats.length,
         separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (_, i) {
-          final c = DummyData.categories[i];
+          final c = cats[i];
           final isActive = active == c.id;
           return GestureDetector(
             onTap: () => onChange(c.id),
@@ -551,7 +603,7 @@ class _TabletCartPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final cart = ref.watch(cartProvider);
+    final cart = ref.watch(cartProvider(tableId));
     final count = cart.fold<int>(0, (s, c) => s + c.qty);
     final subtotal = cart.fold<int>(0, (s, c) => s + c.unitPrice * c.qty);
     final kit = cart.where((c) => c.station == Station.kitchen).fold<int>(0, (s, c) => s + c.qty);
@@ -650,7 +702,7 @@ class _TabletCartPane extends ConsumerWidget {
                                 Row(
                                   children: [
                                     GestureDetector(
-                                      onTap: () => ref.read(cartProvider.notifier).remove(cart[i].id),
+                                      onTap: () => ref.read(cartProvider(tableId).notifier).remove(cart[i].id),
                                       child: Row(
                                         children: [
                                           Icon(Icons.delete_outline, size: 12, color: sc.urgent),

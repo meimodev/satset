@@ -18,6 +18,13 @@ class SatSetApp extends ConsumerWidget {
       darkTheme: satDarkTheme(),
       themeMode: mode,
       routerConfig: router,
+      builder: (context, child) {
+        final bg = Theme.of(context).scaffoldBackgroundColor;
+        return ColoredBox(
+          color: bg,
+          child: SafeArea(child: child ?? const SizedBox.shrink()),
+        );
+      },
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
+import 'package:satset/ui/core/design/zone_visuals.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
@@ -835,8 +836,8 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
     super.initState();
     final z = widget.zone;
     _name = TextEditingController(text: z?.name ?? '');
-    _color = z?.color ?? ZonePresets.colors.first;
-    _icon = z?.icon ?? ZonePresets.icons.first;
+    _color = z?.color ?? zoneColorPresets.first;
+    _icon = z?.icon ?? zoneIconPresets.first;
   }
 
   @override
@@ -850,9 +851,14 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
     if (name.isEmpty) return;
     final n = ref.read(zonesProvider.notifier);
     if (_isNew) {
-      n.add(name, color: _color, icon: _icon);
+      n.add(name,
+          colorHex: _color.toARGB32(),
+          iconKey: zoneIconKeyFromIcon(_icon));
     } else {
-      n.update(widget.zone!.id, name: name, color: _color, icon: _icon);
+      n.update(widget.zone!.id,
+          name: name,
+          colorHex: _color.toARGB32(),
+          iconKey: zoneIconKeyFromIcon(_icon));
     }
     Navigator.of(context).pop();
   }
@@ -902,7 +908,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              for (final c in ZonePresets.colors)
+              for (final c in zoneColorPresets)
                 _ColorDot(
                   color: c,
                   selected: c.toARGB32() == _color.toARGB32(),
@@ -917,7 +923,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              for (final i in ZonePresets.icons)
+              for (final i in zoneIconPresets)
                 _IconTile(
                   icon: i,
                   color: _color,

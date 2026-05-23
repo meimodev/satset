@@ -1,61 +1,52 @@
-import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class Zone {
-  final String id;
-  final String name;
-  final String short;
-  final Color color;
-  final IconData icon;
+part 'zone.freezed.dart';
 
-  const Zone({
-    required this.id,
-    required this.name,
-    required this.short,
-    this.color = const Color(0xFFFF9233),
-    this.icon = Icons.table_restaurant_outlined,
-  });
+/// Domain model for floor zones. Visual concerns (Color/IconData and the
+/// admin-picker presets) live in `lib/ui/core/design/zone_visuals.dart`.
+/// This layer carries no Flutter imports.
+@freezed
+class Zone with _$Zone {
+  const factory Zone({
+    required String id,
+    required String name,
+    required String short,
 
-  Zone copyWith({
-    String? name,
-    String? short,
-    Color? color,
-    IconData? icon,
-  }) =>
-      Zone(
-        id: id,
-        name: name ?? this.name,
-        short: short ?? this.short,
-        color: color ?? this.color,
-        icon: icon ?? this.icon,
-      );
+    /// 0xAARRGGBB hex. UI wraps this in `Color(...)`.
+    @Default(0xFFFF9233) int colorHex,
+
+    /// Stable key (e.g. `tableRestaurant`). UI maps it to an `IconData`.
+    @Default('tableRestaurant') String iconKey,
+  }) = _Zone;
 }
 
+/// Primitive presets the UI helpers map to Color/IconData.
 class ZonePresets {
   ZonePresets._();
 
-  static const colors = <Color>[
-    Color(0xFFFF9233),
-    Color(0xFF4DD487),
-    Color(0xFF6DB5FF),
-    Color(0xFFC08AFF),
-    Color(0xFFFFC04D),
-    Color(0xFFFF5C5C),
-    Color(0xFF7ED6C4),
-    Color(0xFFE48BB7),
+  static const colorHexes = <int>[
+    0xFFFF9233,
+    0xFF4DD487,
+    0xFF6DB5FF,
+    0xFFC08AFF,
+    0xFFFFC04D,
+    0xFFFF5C5C,
+    0xFF7ED6C4,
+    0xFFE48BB7,
   ];
 
-  static const icons = <IconData>[
-    Icons.table_restaurant_outlined,
-    Icons.deck_outlined,
-    Icons.park_outlined,
-    Icons.local_bar_outlined,
-    Icons.weekend_outlined,
-    Icons.balcony_outlined,
-    Icons.roofing_outlined,
-    Icons.event_seat_outlined,
-    Icons.window_outlined,
-    Icons.umbrella_outlined,
-    Icons.celebration_outlined,
-    Icons.storefront_outlined,
+  static const iconKeys = <String>[
+    'tableRestaurant',
+    'deck',
+    'park',
+    'localBar',
+    'weekend',
+    'balcony',
+    'roofing',
+    'eventSeat',
+    'window',
+    'umbrella',
+    'celebration',
+    'storefront',
   ];
 }

@@ -6,9 +6,11 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/data/services/dummy_data_seed.dart';
+import 'package:satset/data/repositories/staff_repository.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
@@ -30,7 +32,13 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final l = context.layout;
     final forcePhone = ref.watch(forcePhoneViewProvider);
     final tables = ref.watch(tablesProvider);
-    final zone = DummyData.zones.firstWhere((z) => z.id == _activeZone);
+    final zones = ref.watch(zonesProvider);
+    final zone = zones.firstWhere(
+      (z) => z.id == _activeZone,
+      orElse: () => zones.isEmpty
+          ? const Zone(id: '', name: '', short: '')
+          : zones.first,
+    );
     final zoneTables = tables.where((t) => t.zoneId == _activeZone).toList();
     final occupied = zoneTables.where((t) => t.status != TableStatus.available).length;
     final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
@@ -51,7 +59,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                 title: zone.name,
                 sub: subLine,
               ),
-              _ZoneRow(tables: tables, active: _activeZone, onChange: (id) => setState(() => _activeZone = id), tablet: true),
+              _ZoneRow(tables: tables, zones: zones, active: _activeZone, onChange: (id) => setState(() => _activeZone = id), tablet: true),
               Expanded(
                 child: zoneTables.isEmpty
                     ? _EmptyZone(zoneName: zone.name, tablet: true)
@@ -130,6 +138,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
         ),
         _ZoneRow(
           tables: tables,
+          zones: zones,
           active: _activeZone,
           onChange: (id) => setState(() => _activeZone = id),
           tablet: false,
@@ -180,10 +189,11 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
 
 class _ZoneRow extends StatelessWidget {
   final List<VenueTable> tables;
+  final List<Zone> zones;
   final String active;
   final ValueChanged<String> onChange;
   final bool tablet;
-  const _ZoneRow({required this.tables, required this.active, required this.onChange, required this.tablet});
+  const _ZoneRow({required this.tables, required this.zones, required this.active, required this.onChange, required this.tablet});
 
   @override
   Widget build(BuildContext context) {
@@ -196,10 +206,10 @@ class _ZoneRow extends StatelessWidget {
         height: tablet ? 42 : 38,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: DummyData.zones.length,
+          itemCount: zones.length,
           separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
-            final z = DummyData.zones[i];
+            final z = zones[i];
             final isActive = active == z.id;
             final zoneTables = tables.where((t) => t.zoneId == z.id).toList();
             final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
@@ -289,7 +299,10 @@ class _TableCard extends ConsumerWidget {
     }
 
     final currentUserId = ref.watch(authStateProvider).user?.id;
-    final actor = DummyData.userById(table.lastActorId);
+    final staff = ref.watch(staffRepositoryProvider);
+    final actor = table.lastActorId == null
+        ? null
+        : staff.where((u) => u.id == table.lastActorId).firstOrNull;
     final isMine = actor != null && actor.id == currentUserId;
     if (isMine) {
       border = sc.accentBorder;

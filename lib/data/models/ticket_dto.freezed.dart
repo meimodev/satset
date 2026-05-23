@@ -1,0 +1,680 @@
+// coverage:ignore-file
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'ticket_dto.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+T _$identity<T>(T value) => value;
+
+final _privateConstructorUsedError = UnsupportedError(
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
+
+TicketDto _$TicketDtoFromJson(Map<String, dynamic> json) {
+  return _TicketDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TicketDto {
+  String get id => throw _privateConstructorUsedError;
+  String get tableId => throw _privateConstructorUsedError;
+  String get itemId => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String get variantName => throw _privateConstructorUsedError;
+  String get course => throw _privateConstructorUsedError;
+  String get station => throw _privateConstructorUsedError;
+  int get qty => throw _privateConstructorUsedError;
+  List<String> get modifiers => throw _privateConstructorUsedError;
+  String? get specialInstructions => throw _privateConstructorUsedError;
+  int get price => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
+  DateTime get sentAt => throw _privateConstructorUsedError;
+  String? get voidReason => throw _privateConstructorUsedError;
+  String? get voidApprovedBy => throw _privateConstructorUsedError;
+
+  /// Serializes this TicketDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TicketDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TicketDtoCopyWith<TicketDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TicketDtoCopyWith<$Res> {
+  factory $TicketDtoCopyWith(TicketDto value, $Res Function(TicketDto) then) =
+      _$TicketDtoCopyWithImpl<$Res, TicketDto>;
+  @useResult
+  $Res call({
+    String id,
+    String tableId,
+    String itemId,
+    String name,
+    String variantName,
+    String course,
+    String station,
+    int qty,
+    List<String> modifiers,
+    String? specialInstructions,
+    int price,
+    String status,
+    DateTime sentAt,
+    String? voidReason,
+    String? voidApprovedBy,
+  });
+}
+
+/// @nodoc
+class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
+    implements $TicketDtoCopyWith<$Res> {
+  _$TicketDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TicketDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tableId = null,
+    Object? itemId = null,
+    Object? name = null,
+    Object? variantName = null,
+    Object? course = null,
+    Object? station = null,
+    Object? qty = null,
+    Object? modifiers = null,
+    Object? specialInstructions = freezed,
+    Object? price = null,
+    Object? status = null,
+    Object? sentAt = null,
+    Object? voidReason = freezed,
+    Object? voidApprovedBy = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            tableId: null == tableId
+                ? _value.tableId
+                : tableId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            itemId: null == itemId
+                ? _value.itemId
+                : itemId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            variantName: null == variantName
+                ? _value.variantName
+                : variantName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            course: null == course
+                ? _value.course
+                : course // ignore: cast_nullable_to_non_nullable
+                      as String,
+            station: null == station
+                ? _value.station
+                : station // ignore: cast_nullable_to_non_nullable
+                      as String,
+            qty: null == qty
+                ? _value.qty
+                : qty // ignore: cast_nullable_to_non_nullable
+                      as int,
+            modifiers: null == modifiers
+                ? _value.modifiers
+                : modifiers // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            specialInstructions: freezed == specialInstructions
+                ? _value.specialInstructions
+                : specialInstructions // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            price: null == price
+                ? _value.price
+                : price // ignore: cast_nullable_to_non_nullable
+                      as int,
+            status: null == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as String,
+            sentAt: null == sentAt
+                ? _value.sentAt
+                : sentAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime,
+            voidReason: freezed == voidReason
+                ? _value.voidReason
+                : voidReason // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            voidApprovedBy: freezed == voidApprovedBy
+                ? _value.voidApprovedBy
+                : voidApprovedBy // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TicketDtoImplCopyWith<$Res>
+    implements $TicketDtoCopyWith<$Res> {
+  factory _$$TicketDtoImplCopyWith(
+    _$TicketDtoImpl value,
+    $Res Function(_$TicketDtoImpl) then,
+  ) = __$$TicketDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    String tableId,
+    String itemId,
+    String name,
+    String variantName,
+    String course,
+    String station,
+    int qty,
+    List<String> modifiers,
+    String? specialInstructions,
+    int price,
+    String status,
+    DateTime sentAt,
+    String? voidReason,
+    String? voidApprovedBy,
+  });
+}
+
+/// @nodoc
+class __$$TicketDtoImplCopyWithImpl<$Res>
+    extends _$TicketDtoCopyWithImpl<$Res, _$TicketDtoImpl>
+    implements _$$TicketDtoImplCopyWith<$Res> {
+  __$$TicketDtoImplCopyWithImpl(
+    _$TicketDtoImpl _value,
+    $Res Function(_$TicketDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TicketDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tableId = null,
+    Object? itemId = null,
+    Object? name = null,
+    Object? variantName = null,
+    Object? course = null,
+    Object? station = null,
+    Object? qty = null,
+    Object? modifiers = null,
+    Object? specialInstructions = freezed,
+    Object? price = null,
+    Object? status = null,
+    Object? sentAt = null,
+    Object? voidReason = freezed,
+    Object? voidApprovedBy = freezed,
+  }) {
+    return _then(
+      _$TicketDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        tableId: null == tableId
+            ? _value.tableId
+            : tableId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        itemId: null == itemId
+            ? _value.itemId
+            : itemId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        variantName: null == variantName
+            ? _value.variantName
+            : variantName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        course: null == course
+            ? _value.course
+            : course // ignore: cast_nullable_to_non_nullable
+                  as String,
+        station: null == station
+            ? _value.station
+            : station // ignore: cast_nullable_to_non_nullable
+                  as String,
+        qty: null == qty
+            ? _value.qty
+            : qty // ignore: cast_nullable_to_non_nullable
+                  as int,
+        modifiers: null == modifiers
+            ? _value._modifiers
+            : modifiers // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        specialInstructions: freezed == specialInstructions
+            ? _value.specialInstructions
+            : specialInstructions // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        price: null == price
+            ? _value.price
+            : price // ignore: cast_nullable_to_non_nullable
+                  as int,
+        status: null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as String,
+        sentAt: null == sentAt
+            ? _value.sentAt
+            : sentAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
+        voidReason: freezed == voidReason
+            ? _value.voidReason
+            : voidReason // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        voidApprovedBy: freezed == voidApprovedBy
+            ? _value.voidApprovedBy
+            : voidApprovedBy // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TicketDtoImpl implements _TicketDto {
+  const _$TicketDtoImpl({
+    required this.id,
+    required this.tableId,
+    required this.itemId,
+    required this.name,
+    this.variantName = '',
+    required this.course,
+    required this.station,
+    this.qty = 1,
+    final List<String> modifiers = const <String>[],
+    this.specialInstructions,
+    required this.price,
+    required this.status,
+    required this.sentAt,
+    this.voidReason,
+    this.voidApprovedBy,
+  }) : _modifiers = modifiers;
+
+  factory _$TicketDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TicketDtoImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String tableId;
+  @override
+  final String itemId;
+  @override
+  final String name;
+  @override
+  @JsonKey()
+  final String variantName;
+  @override
+  final String course;
+  @override
+  final String station;
+  @override
+  @JsonKey()
+  final int qty;
+  final List<String> _modifiers;
+  @override
+  @JsonKey()
+  List<String> get modifiers {
+    if (_modifiers is EqualUnmodifiableListView) return _modifiers;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_modifiers);
+  }
+
+  @override
+  final String? specialInstructions;
+  @override
+  final int price;
+  @override
+  final String status;
+  @override
+  final DateTime sentAt;
+  @override
+  final String? voidReason;
+  @override
+  final String? voidApprovedBy;
+
+  @override
+  String toString() {
+    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidApprovedBy: $voidApprovedBy)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TicketDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.itemId, itemId) || other.itemId == itemId) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.variantName, variantName) ||
+                other.variantName == variantName) &&
+            (identical(other.course, course) || other.course == course) &&
+            (identical(other.station, station) || other.station == station) &&
+            (identical(other.qty, qty) || other.qty == qty) &&
+            const DeepCollectionEquality().equals(
+              other._modifiers,
+              _modifiers,
+            ) &&
+            (identical(other.specialInstructions, specialInstructions) ||
+                other.specialInstructions == specialInstructions) &&
+            (identical(other.price, price) || other.price == price) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.sentAt, sentAt) || other.sentAt == sentAt) &&
+            (identical(other.voidReason, voidReason) ||
+                other.voidReason == voidReason) &&
+            (identical(other.voidApprovedBy, voidApprovedBy) ||
+                other.voidApprovedBy == voidApprovedBy));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    tableId,
+    itemId,
+    name,
+    variantName,
+    course,
+    station,
+    qty,
+    const DeepCollectionEquality().hash(_modifiers),
+    specialInstructions,
+    price,
+    status,
+    sentAt,
+    voidReason,
+    voidApprovedBy,
+  );
+
+  /// Create a copy of TicketDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TicketDtoImplCopyWith<_$TicketDtoImpl> get copyWith =>
+      __$$TicketDtoImplCopyWithImpl<_$TicketDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TicketDtoImplToJson(this);
+  }
+}
+
+abstract class _TicketDto implements TicketDto {
+  const factory _TicketDto({
+    required final String id,
+    required final String tableId,
+    required final String itemId,
+    required final String name,
+    final String variantName,
+    required final String course,
+    required final String station,
+    final int qty,
+    final List<String> modifiers,
+    final String? specialInstructions,
+    required final int price,
+    required final String status,
+    required final DateTime sentAt,
+    final String? voidReason,
+    final String? voidApprovedBy,
+  }) = _$TicketDtoImpl;
+
+  factory _TicketDto.fromJson(Map<String, dynamic> json) =
+      _$TicketDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get tableId;
+  @override
+  String get itemId;
+  @override
+  String get name;
+  @override
+  String get variantName;
+  @override
+  String get course;
+  @override
+  String get station;
+  @override
+  int get qty;
+  @override
+  List<String> get modifiers;
+  @override
+  String? get specialInstructions;
+  @override
+  int get price;
+  @override
+  String get status;
+  @override
+  DateTime get sentAt;
+  @override
+  String? get voidReason;
+  @override
+  String? get voidApprovedBy;
+
+  /// Create a copy of TicketDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TicketDtoImplCopyWith<_$TicketDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TicketTransitionRequestDto _$TicketTransitionRequestDtoFromJson(
+  Map<String, dynamic> json,
+) {
+  return _TicketTransitionRequestDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TicketTransitionRequestDto {
+  String get status => throw _privateConstructorUsedError;
+  String? get voidReason => throw _privateConstructorUsedError;
+
+  /// Serializes this TicketTransitionRequestDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TicketTransitionRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TicketTransitionRequestDtoCopyWith<TicketTransitionRequestDto>
+  get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TicketTransitionRequestDtoCopyWith<$Res> {
+  factory $TicketTransitionRequestDtoCopyWith(
+    TicketTransitionRequestDto value,
+    $Res Function(TicketTransitionRequestDto) then,
+  ) =
+      _$TicketTransitionRequestDtoCopyWithImpl<
+        $Res,
+        TicketTransitionRequestDto
+      >;
+  @useResult
+  $Res call({String status, String? voidReason});
+}
+
+/// @nodoc
+class _$TicketTransitionRequestDtoCopyWithImpl<
+  $Res,
+  $Val extends TicketTransitionRequestDto
+>
+    implements $TicketTransitionRequestDtoCopyWith<$Res> {
+  _$TicketTransitionRequestDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TicketTransitionRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? status = null, Object? voidReason = freezed}) {
+    return _then(
+      _value.copyWith(
+            status: null == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as String,
+            voidReason: freezed == voidReason
+                ? _value.voidReason
+                : voidReason // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TicketTransitionRequestDtoImplCopyWith<$Res>
+    implements $TicketTransitionRequestDtoCopyWith<$Res> {
+  factory _$$TicketTransitionRequestDtoImplCopyWith(
+    _$TicketTransitionRequestDtoImpl value,
+    $Res Function(_$TicketTransitionRequestDtoImpl) then,
+  ) = __$$TicketTransitionRequestDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String status, String? voidReason});
+}
+
+/// @nodoc
+class __$$TicketTransitionRequestDtoImplCopyWithImpl<$Res>
+    extends
+        _$TicketTransitionRequestDtoCopyWithImpl<
+          $Res,
+          _$TicketTransitionRequestDtoImpl
+        >
+    implements _$$TicketTransitionRequestDtoImplCopyWith<$Res> {
+  __$$TicketTransitionRequestDtoImplCopyWithImpl(
+    _$TicketTransitionRequestDtoImpl _value,
+    $Res Function(_$TicketTransitionRequestDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TicketTransitionRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? status = null, Object? voidReason = freezed}) {
+    return _then(
+      _$TicketTransitionRequestDtoImpl(
+        status: null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as String,
+        voidReason: freezed == voidReason
+            ? _value.voidReason
+            : voidReason // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TicketTransitionRequestDtoImpl implements _TicketTransitionRequestDto {
+  const _$TicketTransitionRequestDtoImpl({
+    required this.status,
+    this.voidReason,
+  });
+
+  factory _$TicketTransitionRequestDtoImpl.fromJson(
+    Map<String, dynamic> json,
+  ) => _$$TicketTransitionRequestDtoImplFromJson(json);
+
+  @override
+  final String status;
+  @override
+  final String? voidReason;
+
+  @override
+  String toString() {
+    return 'TicketTransitionRequestDto(status: $status, voidReason: $voidReason)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TicketTransitionRequestDtoImpl &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.voidReason, voidReason) ||
+                other.voidReason == voidReason));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, status, voidReason);
+
+  /// Create a copy of TicketTransitionRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TicketTransitionRequestDtoImplCopyWith<_$TicketTransitionRequestDtoImpl>
+  get copyWith =>
+      __$$TicketTransitionRequestDtoImplCopyWithImpl<
+        _$TicketTransitionRequestDtoImpl
+      >(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TicketTransitionRequestDtoImplToJson(this);
+  }
+}
+
+abstract class _TicketTransitionRequestDto
+    implements TicketTransitionRequestDto {
+  const factory _TicketTransitionRequestDto({
+    required final String status,
+    final String? voidReason,
+  }) = _$TicketTransitionRequestDtoImpl;
+
+  factory _TicketTransitionRequestDto.fromJson(Map<String, dynamic> json) =
+      _$TicketTransitionRequestDtoImpl.fromJson;
+
+  @override
+  String get status;
+  @override
+  String? get voidReason;
+
+  /// Create a copy of TicketTransitionRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TicketTransitionRequestDtoImplCopyWith<_$TicketTransitionRequestDtoImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}

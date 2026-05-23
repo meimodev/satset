@@ -48,7 +48,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final sc = context.sat;
     final isSystem = _tab == _SettingsTab.system;
     return AdminPage(
-      title: isSystem ? 'Server & konfigurasi' : 'Identitas restoran',
+      title: isSystem ? 'Server & konfigurasi' : 'Identitas venue',
       sub: isSystem
           ? 'Warung Sebelah · Berawa, Bali · v2.0'
           : '$_venueName · $_legalName',
@@ -82,7 +82,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _tabChip(context, sc, 'Sistem', _SettingsTab.system),
-          _tabChip(context, sc, 'Restoran', _SettingsTab.restaurant),
+          _tabChip(context, sc, 'Venue', _SettingsTab.restaurant),
         ],
       ),
     );
@@ -504,7 +504,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Text('Sistem & identitas restoran',
+            child: Text('Sistem & identitas venue',
                 style: SatType.sans(size: 13, color: sc.textMd)),
           ),
           Expanded(

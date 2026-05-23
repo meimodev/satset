@@ -482,6 +482,8 @@ class _StatusChip extends StatelessWidget {
     Color bg;
     Color fg;
     switch (status) {
+      case TicketStatus.draft:
+      case TicketStatus.acknowledged:
       case TicketStatus.sent:
         bg = sc.infoSoft;
         fg = sc.info;

@@ -7,13 +7,17 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/course.dart';
-import 'package:satset/data/services/dummy_data_seed.dart';
+import 'package:satset/ui/core/design/course_visuals.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
+import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import '../void_flow/line_item_action_sheet.dart';
@@ -33,7 +37,8 @@ class TableDetailScreen extends ConsumerWidget {
       (t) => t.id == tableId,
       orElse: () => VenueTable(id: tableId, zoneId: 'terrace'),
     );
-    final zone = DummyData.zones.firstWhere(
+    final zones = ref.watch(zonesProvider);
+    final zone = zones.firstWhere(
       (z) => z.id == table.zoneId,
       orElse: () => const Zone(id: '', name: '', short: ''),
     );
@@ -41,12 +46,13 @@ class TableDetailScreen extends ConsumerWidget {
     final actorId = user?.id;
     final canEditGuests = user?.role == UserRole.waiter;
 
-    void onMinus() => ref
-        .read(tablesProvider.notifier)
-        .decrementPax(tableId, userId: actorId);
-    void onPlus() => ref
-        .read(tablesProvider.notifier)
-        .incrementPax(tableId, userId: actorId);
+    void onMinus() {
+      // Fire-and-forget; tables repo rolls back on REST failure.
+      ref.read(tablesProvider.notifier).decrementPax(tableId, userId: actorId);
+    }
+    void onPlus() {
+      ref.read(tablesProvider.notifier).incrementPax(tableId, userId: actorId);
+    }
 
     final grouped = <CourseId, List<Ticket>>{};
     for (final t in tickets) {
@@ -55,8 +61,52 @@ class TableDetailScreen extends ConsumerWidget {
     final total = tickets.fold<int>(0, (s, t) => s + t.price * t.qty);
     final readyAny = tickets.any((t) => t.status == TicketStatus.ready);
 
+    // The context pane reads menu metadata (allergens) — surface load state
+    // explicitly rather than rendering against an empty cache.
+    final menuStatus = ref.watch(menuStatusProvider);
+    if (menuStatus.isLoading) {
+      return Scaffold(
+        backgroundColor: sc.bg0,
+        body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 12),
+            Text('Memuat menu…',
+                style: SatType.sans(size: 13, color: sc.textMd)),
+          ]),
+        ),
+      );
+    }
+    if (menuStatus.hasError) {
+      return Scaffold(
+        backgroundColor: sc.bg0,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.cloud_off, size: 36, color: sc.urgent),
+              const SizedBox(height: 10),
+              Text('Gagal memuat menu meja',
+                  style: SatType.sans(
+                    size: 15,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  )),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () =>
+                    ref.read(menuRepositoryProvider.notifier).refresh(),
+                child: const Text('Coba lagi'),
+              ),
+            ]),
+          ),
+        ),
+      );
+    }
+
     if (l.useTabletShell) {
       return _TabletSplit(
+        menu: ref.watch(menuItemsProvider),
         table: table,
         zone: zone,
         tickets: tickets,
@@ -66,11 +116,13 @@ class TableDetailScreen extends ConsumerWidget {
         canEditGuests: canEditGuests,
         onMinusPax: onMinus,
         onPlusPax: onPlus,
-        onMarkServed: (id) {
-          ref.read(ticketsProvider.notifier).markServed(tableId, id);
-          ref
-              .read(tablesProvider.notifier)
-              .decrementReady(tableId, userId: actorId);
+        onMarkServed: (id) async {
+          // Server maintains table.readyCount + status transactionally on
+          // the ticket transition and broadcasts table.updated; the client
+          // must not perform a second, non-atomic decrement here.
+          await ref
+              .read(advanceTicketStatusUseCaseProvider)
+              .call(tableId, id, TicketStatus.served);
         },
         onFireCourse: (cid) =>
             ref.read(ticketsProvider.notifier).fireCourse(tableId, cid),
@@ -108,11 +160,13 @@ class TableDetailScreen extends ConsumerWidget {
                         _CourseBlock(
                           course: Courses.byId(cid),
                           items: grouped[cid]!,
-                          onMarkServed: (id) {
-                            ref.read(ticketsProvider.notifier).markServed(tableId, id);
-                            ref
-                                .read(tablesProvider.notifier)
-                                .decrementReady(tableId, userId: actorId);
+                          onMarkServed: (id) async {
+                            // Server-side transition decrements readyCount
+                            // and broadcasts table.updated atomically; no
+                            // client mutation needed.
+                            await ref
+                                .read(advanceTicketStatusUseCaseProvider)
+                                .call(tableId, id, TicketStatus.served);
                           },
                           onFireCourse: () =>
                               ref.read(ticketsProvider.notifier).fireCourse(tableId, cid),
@@ -516,6 +570,8 @@ class _StatusChip extends StatelessWidget {
     Color bg;
     Color fg;
     switch (status) {
+      case TicketStatus.draft:
+      case TicketStatus.acknowledged:
       case TicketStatus.sent:
         bg = sc.infoSoft;
         fg = sc.info;
@@ -662,6 +718,7 @@ class _PrimaryButton extends StatelessWidget {
 }
 
 class _TabletSplit extends StatelessWidget {
+  final List<MenuItem> menu;
   final VenueTable table;
   final Zone zone;
   final List<Ticket> tickets;
@@ -678,6 +735,7 @@ class _TabletSplit extends StatelessWidget {
   final VoidCallback onBack;
 
   const _TabletSplit({
+    required this.menu,
     required this.table,
     required this.zone,
     required this.tickets,
@@ -846,7 +904,7 @@ class _TabletSplit extends StatelessWidget {
           ),
           Container(width: 1, color: sc.border0),
           Expanded(
-            child: _ContextPane(table: table, tickets: tickets),
+            child: _ContextPane(table: table, tickets: tickets, menu: menu),
           ),
         ],
       ),
@@ -879,7 +937,8 @@ class _TabletSplit extends StatelessWidget {
 class _ContextPane extends StatelessWidget {
   final VenueTable table;
   final List<Ticket> tickets;
-  const _ContextPane({required this.table, required this.tickets});
+  final List<MenuItem> menu;
+  const _ContextPane({required this.table, required this.tickets, required this.menu});
 
   @override
   Widget build(BuildContext context) {
@@ -888,7 +947,7 @@ class _ContextPane extends StatelessWidget {
     final served = tickets.where((t) => t.status == TicketStatus.served).length;
     final allergens = <String>{};
     for (final t in tickets) {
-      final it = DummyData.items.where((i) => i.id == t.itemId).firstOrNull;
+      final it = menu.where((i) => i.id == t.itemId).firstOrNull;
       if (it != null) allergens.addAll(it.allergens.map((a) => a.name));
     }
     final peanut = tickets.any((t) =>

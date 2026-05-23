@@ -1,6 +1,5 @@
 import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/course.dart';
-import 'package:flutter/material.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
@@ -90,23 +89,48 @@ class DummyData {
         Role(
           id: roleAdminId,
           name: 'Admin',
-          color: const Color(0xFFC08AFF),
+          colorHex: 0xFFC08AFF,
           capabilities: Capability.values.toSet(),
         ),
-        const Role(
+        Role(
           id: roleManagerId,
           name: 'Manager',
-          color: Color(0xFF6DB5FF),
+          colorHex: 0xFF6DB5FF,
+          capabilities: const {
+            Capability.takeOrder,
+            Capability.modifyOrder,
+            Capability.voidItem,
+            Capability.compItem,
+            Capability.viewKds,
+            Capability.openDrawer,
+            Capability.applyDiscount,
+            Capability.refund,
+            Capability.closeShift,
+            Capability.editMenu,
+            Capability.toggle86,
+            Capability.adjustStock,
+            Capability.manageStaff,
+            Capability.viewReports,
+            Capability.editSettings,
+          },
         ),
-        const Role(
+        Role(
           id: roleWaiterId,
           name: 'Waiter',
-          color: Color(0xFFFF9233),
+          colorHex: 0xFFFF9233,
+          capabilities: const {
+            Capability.takeOrder,
+            Capability.modifyOrder,
+          },
         ),
-        const Role(
+        Role(
           id: roleKitchenId,
           name: 'Kitchen',
-          color: Color(0xFFFF5C5C),
+          colorHex: 0xFFFF5C5C,
+          capabilities: const {
+            Capability.viewKds,
+            Capability.toggle86,
+          },
         ),
       ];
 
@@ -123,29 +147,29 @@ class DummyData {
       id: 'terrace',
       name: 'Teras',
       short: 'Ter',
-      color: Color(0xFFFF9233),
-      icon: Icons.deck_outlined,
+      colorHex: 0xFFFF9233,
+      iconKey: 'deck',
     ),
     Zone(
       id: 'garden',
       name: 'Taman',
       short: 'Tam',
-      color: Color(0xFF4DD487),
-      icon: Icons.park_outlined,
+      colorHex: 0xFF4DD487,
+      iconKey: 'park',
     ),
     Zone(
       id: 'indoor',
       name: 'Dalam',
       short: 'Dlm',
-      color: Color(0xFF6DB5FF),
-      icon: Icons.weekend_outlined,
+      colorHex: 0xFF6DB5FF,
+      iconKey: 'weekend',
     ),
     Zone(
       id: 'bar',
       name: 'Bar',
       short: 'Bar',
-      color: Color(0xFFC08AFF),
-      icon: Icons.local_bar_outlined,
+      colorHex: 0xFFC08AFF,
+      iconKey: 'localBar',
     ),
   ];
 

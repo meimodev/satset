@@ -4,9 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-SatSet — Flutter 3.41+ Android-only (minSdk 29) LAN-based restaurant ordering app. Single APK runs in Server or Client mode. UI-first phase: dummy data only, no real WebSocket/DB yet.
+SatSet — Flutter 3.41+ Android-only (minSdk 29) LAN-based restaurant ordering app. Single APK runs in Server or Client mode.
 
-Stack: `flutter_riverpod`, `go_router`, `google_fonts`, `intl`, `uuid`. No codegen (no freezed, no drift, no build_runner).
+Stack: `flutter_riverpod`, `go_router`, `google_fonts`, `intl`, `uuid`, `freezed`, `json_serializable`, `drift`, `shelf`, `web_socket_channel`, `http`, `flutter_secure_storage`, `shared_preferences`, `bonsoir`, `mobile_scanner`, `basic_utils`, `dart_jsonwebtoken`.
+
+### Codegen scope
+
+Codegen (`build_runner` with `freezed` / `json_serializable` / `drift_dev`) is only allowed under:
+
+- `lib/data/models/**` (wire DTOs)
+- `lib/domain/models/**` (domain models)
+- `lib/server/db/**` (Drift schema, DAOs)
+
+Generated `*.g.dart`, `*.freezed.dart`, and Drift generated files are excluded from analyzer. Run `tool/codegen.sh` (or `dart run build_runner build --delete-conflicting-outputs`) after editing any of those files.
+
+UI, repositories, services, and server route code must remain hand-written.
 
 ## Commands
 

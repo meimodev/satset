@@ -7,6 +7,7 @@ import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/modifier_group.dart';
+import 'package:satset/ui/core/design/course_visuals.dart';
 
 const _uuid = Uuid();
 

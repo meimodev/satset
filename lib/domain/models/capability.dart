@@ -1,10 +1,11 @@
-enum CapabilityGroup { orders, money, inventory, admin }
+enum CapabilityGroup { orders, money, inventory, admin, kitchen }
 
 enum Capability {
   takeOrder(CapabilityGroup.orders, 'Take order'),
   modifyOrder(CapabilityGroup.orders, 'Modify order'),
   voidItem(CapabilityGroup.orders, 'Void item'),
   compItem(CapabilityGroup.orders, 'Comp item'),
+  viewKds(CapabilityGroup.kitchen, 'View KDS'),
   openDrawer(CapabilityGroup.money, 'Open drawer'),
   applyDiscount(CapabilityGroup.money, 'Apply discount'),
   refund(CapabilityGroup.money, 'Refund'),
@@ -27,4 +28,12 @@ String capabilityGroupLabel(CapabilityGroup g) => switch (g) {
       CapabilityGroup.money => 'Money',
       CapabilityGroup.inventory => 'Inventory',
       CapabilityGroup.admin => 'Admin',
+      CapabilityGroup.kitchen => 'Kitchen',
     };
+
+Capability? capabilityFromKey(String key) {
+  for (final c in Capability.values) {
+    if (c.name == key) return c;
+  }
+  return null;
+}

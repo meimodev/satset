@@ -1,0 +1,61 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// Keychain/Keystore-backed secrets: JWT session token, device id and
+/// device-cert material. Repositories must not touch these keys directly.
+class SecureStorageService {
+  SecureStorageService([FlutterSecureStorage? backend])
+      : _s = backend ?? const FlutterSecureStorage();
+
+  final FlutterSecureStorage _s;
+
+  static const _kToken = 'satset.session.jwt';
+  static const _kDeviceId = 'satset.device.id';
+  static const _kDeviceCert = 'satset.device.cert.pem';
+  static const _kDeviceKey = 'satset.device.key.pem';
+  static const _kServerFingerprint = 'satset.server.fingerprint';
+  static const _kServerCert = 'satset.server.cert.pem';
+
+  Future<String?> readToken() => _s.read(key: _kToken);
+  Future<void> writeToken(String? v) =>
+      v == null ? _s.delete(key: _kToken) : _s.write(key: _kToken, value: v);
+
+  Future<String?> readDeviceId() => _s.read(key: _kDeviceId);
+  Future<void> writeDeviceId(String v) => _s.write(key: _kDeviceId, value: v);
+
+  Future<String?> readServerFingerprint() =>
+      _s.read(key: _kServerFingerprint);
+  Future<void> writeServerFingerprint(String? v) => v == null
+      ? _s.delete(key: _kServerFingerprint)
+      : _s.write(key: _kServerFingerprint, value: v);
+
+  Future<String?> readServerCert() => _s.read(key: _kServerCert);
+  Future<void> writeServerCert(String? v) => v == null
+      ? _s.delete(key: _kServerCert)
+      : _s.write(key: _kServerCert, value: v);
+
+  Future<String?> readDeviceCert() => _s.read(key: _kDeviceCert);
+  Future<void> writeDeviceCert(String? v) => v == null
+      ? _s.delete(key: _kDeviceCert)
+      : _s.write(key: _kDeviceCert, value: v);
+
+  Future<String?> readDeviceKey() => _s.read(key: _kDeviceKey);
+  Future<void> writeDeviceKey(String? v) => v == null
+      ? _s.delete(key: _kDeviceKey)
+      : _s.write(key: _kDeviceKey, value: v);
+
+  Future<void> clearSession() async {
+    await _s.delete(key: _kToken);
+  }
+
+  Future<void> clearPairing() async {
+    await _s.delete(key: _kToken);
+    await _s.delete(key: _kServerFingerprint);
+    await _s.delete(key: _kServerCert);
+    await _s.delete(key: _kDeviceCert);
+    await _s.delete(key: _kDeviceKey);
+  }
+}
+
+final secureStorageServiceProvider =
+    Provider<SecureStorageService>((ref) => SecureStorageService());

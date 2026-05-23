@@ -6,6 +6,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
 
 /// One kitchen order card: the kitchen-station tickets a table sent together.
@@ -87,8 +88,11 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
     );
     final itemCount = orders.fold<int>(0, (n, o) => n + o.total);
 
-    void toggle(String tableId, String ticketId) =>
-        ref.read(ticketsProvider.notifier).toggleCooked(tableId, ticketId);
+    // All status changes round-trip through the server via the KDS
+    // view model + AdvanceTicketStatusUseCase so other clients see them.
+    void toggle(String tableId, String ticketId) {
+      ref.read(kitchenViewModelProvider.notifier).toggleCooked(tableId, ticketId);
+    }
 
     final filter = _CompletedFilter(
       value: _showCompleted,

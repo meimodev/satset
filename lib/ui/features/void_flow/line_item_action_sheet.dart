@@ -8,6 +8,7 @@ import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/audit_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 
 const _voidReasons = <Map<String, String>>[
   {'id': 'error', 'label': 'Terkirim salah', 'desc': 'Salah meja, tap ganda, salah ring'},
@@ -72,9 +73,10 @@ class _SheetBodyState extends State<_SheetBody> {
     return '${pad(d.hour)}:${pad(d.minute)}';
   }
 
-  void _pickAction(String id) {
+  Future<void> _pickAction(String id) async {
     final t = widget.ticket;
     final notifier = widget.ref.read(ticketsProvider.notifier);
+    final useCase = widget.ref.read(advanceTicketStatusUseCaseProvider);
     final audit = widget.ref.read(auditProvider.notifier);
     switch (id) {
       case 'modify':
@@ -87,19 +89,21 @@ class _SheetBodyState extends State<_SheetBody> {
           when: _nowStamp(),
           reason: id == 'request-modify' ? 'Menunggu konfirmasi stasiun' : 'Edit pra-prep',
         ));
-        Navigator.of(context).pop();
+        if (mounted) Navigator.of(context).pop();
         break;
       case 'fire':
-        notifier.fireCourse(widget.tableId, t.course);
-        Navigator.of(context).pop();
+        await notifier.fireCourse(widget.tableId, t.course);
+        if (mounted) Navigator.of(context).pop();
         break;
       case 'serve':
-        notifier.markServed(widget.tableId, t.id);
-        Navigator.of(context).pop();
+        await useCase.call(widget.tableId, t.id, TicketStatus.served);
+        if (mounted) Navigator.of(context).pop();
         break;
       case 'unserve':
-        notifier.unserve(widget.tableId, t.id);
-        Navigator.of(context).pop();
+        // served → ready is the canonical undo path (see _allowedTransitions
+        // in lib/server/routes/tickets_routes.dart).
+        await useCase.call(widget.tableId, t.id, TicketStatus.ready);
+        if (mounted) Navigator.of(context).pop();
         break;
       case 'void':
         setState(() => _step = _Step.voidReason);
@@ -107,16 +111,17 @@ class _SheetBodyState extends State<_SheetBody> {
     }
   }
 
-  void _commitVoid(String approver) {
+  Future<void> _commitVoid(String approver) async {
     final t = widget.ticket;
     final reason = _reason!;
     final reasonStr = reason['label']! +
         (_reasonText.isNotEmpty ? ' — "$_reasonText"' : '');
-    widget.ref.read(ticketsProvider.notifier).voidTicket(
+    await widget.ref.read(advanceTicketStatusUseCaseProvider).call(
           widget.tableId,
           t.id,
-          reason['label']!,
-          approver,
+          TicketStatus.voided,
+          voidReason: reason['label']!,
+          voidApprovedBy: approver,
         );
     widget.ref.read(auditProvider.notifier).add(AuditEntry(
           id: 'A${DateTime.now().millisecondsSinceEpoch}',
@@ -256,6 +261,8 @@ class _StatusChip extends StatelessWidget {
     Color bg;
     Color fg;
     switch (status) {
+      case TicketStatus.draft:
+      case TicketStatus.acknowledged:
       case TicketStatus.sent:
         bg = sc.infoSoft;
         fg = sc.info;

@@ -37,23 +37,12 @@ class AppShell extends ConsumerWidget {
       backgroundColor: sc.bg0,
       body: Stack(
         children: [
-          Positioned.fill(
-            child: SafeArea(
-              bottom: false,
-              child: child,
-            ),
-          ),
+          Positioned.fill(child: child),
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-                child: _FloatingTabBar(active: activeTab, readyCount: ready),
-              ),
-            ),
+            left: 8,
+            right: 8,
+            bottom: 12,
+            child: _FloatingTabBar(active: activeTab, readyCount: ready),
           ),
         ],
       ),
@@ -63,11 +52,12 @@ class AppShell extends ConsumerWidget {
   String _activeFor(String loc) {
     if (loc.startsWith('/orders')) return 'orders';
     if (loc.startsWith('/kitchen')) return 'kitchen';
-    if (loc.startsWith('/floor')) return 'floor';
-    if (loc.startsWith('/menuadm')) return 'menuadm';
-    if (loc.startsWith('/reports')) return 'reports';
-    if (loc.startsWith('/settings')) return 'settings';
-    if (loc.startsWith('/staff')) return 'staff';
+    if (loc.startsWith('/venue')) return 'venue';
+    if (loc.startsWith('/floor')) return 'venue';
+    if (loc.startsWith('/menuadm')) return 'venue';
+    if (loc.startsWith('/settings')) return 'venue';
+    if (loc.startsWith('/staff')) return 'venue';
+    if (loc.startsWith('/reports')) return 'venue';
     if (loc.startsWith('/me')) return 'me';
     return 'tables';
   }
@@ -81,16 +71,13 @@ class AppShell extends ConsumerWidget {
         return ['Maya Anjani', 'Ringkasan shift'];
       case 'kitchen':
         return ['Stasiun', 'Dapur Utama', 'Dapur · antrian masak'];
-      case 'floor':
-        return ['Manajer', 'Atur lantai'];
-      case 'menuadm':
-        return ['Manajer', 'Menu admin'];
-      case 'reports':
-        return ['Manajer', 'Laporan shift'];
-      case 'settings':
-        return ['Sistem', 'Server & konfigurasi'];
-      case 'staff':
-        return ['Sistem', 'Staff & akun'];
+      case 'venue':
+        if (loc.startsWith('/floor')) return ['Venue', 'Atur lantai'];
+        if (loc.startsWith('/menuadm')) return ['Venue', 'Menu admin'];
+        if (loc.startsWith('/settings')) return ['Venue', 'Server & konfigurasi'];
+        if (loc.startsWith('/staff')) return ['Venue', 'Staf & akun'];
+        if (loc.startsWith('/reports')) return ['Venue', 'Laporan shift'];
+        return ['Venue', 'Konfigurasi'];
       default:
         return ['Warung Sebelah', zone.name];
     }

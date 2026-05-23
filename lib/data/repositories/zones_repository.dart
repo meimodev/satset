@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/data/services/dummy_data_service.dart';
@@ -9,7 +8,7 @@ const _uuid = Uuid();
 class ZonesRepository extends StateNotifier<List<Zone>> {
   ZonesRepository(DummyDataService seed) : super(seed.initialZones());
 
-  String? add(String name, {Color? color, IconData? icon}) {
+  String? add(String name, {int? colorHex, String? iconKey}) {
     final n = name.trim();
     if (n.isEmpty) return null;
     final short = _shortFor(n);
@@ -20,8 +19,8 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
         id: id,
         name: n,
         short: short,
-        color: color ?? ZonePresets.colors.first,
-        icon: icon ?? ZonePresets.icons.first,
+        colorHex: colorHex ?? ZonePresets.colorHexes.first,
+        iconKey: iconKey ?? ZonePresets.iconKeys.first,
       ),
     ];
     return id;
@@ -39,17 +38,19 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
   void update(
     String id, {
     String? name,
-    Color? color,
-    IconData? icon,
+    int? colorHex,
+    String? iconKey,
   }) {
+    final trimmed = name?.trim();
+    final hasName = trimmed != null && trimmed.isNotEmpty;
     state = [
       for (final z in state)
         if (z.id == id)
           z.copyWith(
-            name: name?.trim().isNotEmpty == true ? name!.trim() : null,
-            short: name?.trim().isNotEmpty == true ? _shortFor(name!) : null,
-            color: color,
-            icon: icon,
+            name: hasName ? trimmed : z.name,
+            short: hasName ? _shortFor(trimmed) : z.short,
+            colorHex: colorHex ?? z.colorHex,
+            iconKey: iconKey ?? z.iconKey,
           )
         else
           z,

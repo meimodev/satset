@@ -17,5 +17,6 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
   }
 }
 
-final cartProvider =
-    StateNotifierProvider<CartViewModel, List<CartItem>>((ref) => CartViewModel());
+/// Cart is scoped per-table so two open tables do not bleed items.
+final cartProvider = StateNotifierProvider.family<CartViewModel, List<CartItem>,
+    String>((ref, tableId) => CartViewModel());

@@ -7,6 +7,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/role.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/role_visuals.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';

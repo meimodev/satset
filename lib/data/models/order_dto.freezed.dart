@@ -1,0 +1,710 @@
+// coverage:ignore-file
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'order_dto.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+T _$identity<T>(T value) => value;
+
+final _privateConstructorUsedError = UnsupportedError(
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
+
+CartLineDto _$CartLineDtoFromJson(Map<String, dynamic> json) {
+  return _CartLineDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$CartLineDto {
+  String get itemId => throw _privateConstructorUsedError;
+  String get variantId => throw _privateConstructorUsedError;
+  List<String> get modifierOptionIds => throw _privateConstructorUsedError;
+  String? get specialInstructions => throw _privateConstructorUsedError;
+  String get course => throw _privateConstructorUsedError;
+  int get qty => throw _privateConstructorUsedError;
+  int get unitPrice => throw _privateConstructorUsedError;
+
+  /// Serializes this CartLineDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of CartLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $CartLineDtoCopyWith<CartLineDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $CartLineDtoCopyWith<$Res> {
+  factory $CartLineDtoCopyWith(
+    CartLineDto value,
+    $Res Function(CartLineDto) then,
+  ) = _$CartLineDtoCopyWithImpl<$Res, CartLineDto>;
+  @useResult
+  $Res call({
+    String itemId,
+    String variantId,
+    List<String> modifierOptionIds,
+    String? specialInstructions,
+    String course,
+    int qty,
+    int unitPrice,
+  });
+}
+
+/// @nodoc
+class _$CartLineDtoCopyWithImpl<$Res, $Val extends CartLineDto>
+    implements $CartLineDtoCopyWith<$Res> {
+  _$CartLineDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of CartLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemId = null,
+    Object? variantId = null,
+    Object? modifierOptionIds = null,
+    Object? specialInstructions = freezed,
+    Object? course = null,
+    Object? qty = null,
+    Object? unitPrice = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            itemId: null == itemId
+                ? _value.itemId
+                : itemId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            variantId: null == variantId
+                ? _value.variantId
+                : variantId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            modifierOptionIds: null == modifierOptionIds
+                ? _value.modifierOptionIds
+                : modifierOptionIds // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            specialInstructions: freezed == specialInstructions
+                ? _value.specialInstructions
+                : specialInstructions // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            course: null == course
+                ? _value.course
+                : course // ignore: cast_nullable_to_non_nullable
+                      as String,
+            qty: null == qty
+                ? _value.qty
+                : qty // ignore: cast_nullable_to_non_nullable
+                      as int,
+            unitPrice: null == unitPrice
+                ? _value.unitPrice
+                : unitPrice // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$CartLineDtoImplCopyWith<$Res>
+    implements $CartLineDtoCopyWith<$Res> {
+  factory _$$CartLineDtoImplCopyWith(
+    _$CartLineDtoImpl value,
+    $Res Function(_$CartLineDtoImpl) then,
+  ) = __$$CartLineDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String itemId,
+    String variantId,
+    List<String> modifierOptionIds,
+    String? specialInstructions,
+    String course,
+    int qty,
+    int unitPrice,
+  });
+}
+
+/// @nodoc
+class __$$CartLineDtoImplCopyWithImpl<$Res>
+    extends _$CartLineDtoCopyWithImpl<$Res, _$CartLineDtoImpl>
+    implements _$$CartLineDtoImplCopyWith<$Res> {
+  __$$CartLineDtoImplCopyWithImpl(
+    _$CartLineDtoImpl _value,
+    $Res Function(_$CartLineDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of CartLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemId = null,
+    Object? variantId = null,
+    Object? modifierOptionIds = null,
+    Object? specialInstructions = freezed,
+    Object? course = null,
+    Object? qty = null,
+    Object? unitPrice = null,
+  }) {
+    return _then(
+      _$CartLineDtoImpl(
+        itemId: null == itemId
+            ? _value.itemId
+            : itemId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        variantId: null == variantId
+            ? _value.variantId
+            : variantId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        modifierOptionIds: null == modifierOptionIds
+            ? _value._modifierOptionIds
+            : modifierOptionIds // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        specialInstructions: freezed == specialInstructions
+            ? _value.specialInstructions
+            : specialInstructions // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        course: null == course
+            ? _value.course
+            : course // ignore: cast_nullable_to_non_nullable
+                  as String,
+        qty: null == qty
+            ? _value.qty
+            : qty // ignore: cast_nullable_to_non_nullable
+                  as int,
+        unitPrice: null == unitPrice
+            ? _value.unitPrice
+            : unitPrice // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$CartLineDtoImpl implements _CartLineDto {
+  const _$CartLineDtoImpl({
+    required this.itemId,
+    required this.variantId,
+    required final List<String> modifierOptionIds,
+    required this.specialInstructions,
+    required this.course,
+    required this.qty,
+    required this.unitPrice,
+  }) : _modifierOptionIds = modifierOptionIds;
+
+  factory _$CartLineDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CartLineDtoImplFromJson(json);
+
+  @override
+  final String itemId;
+  @override
+  final String variantId;
+  final List<String> _modifierOptionIds;
+  @override
+  List<String> get modifierOptionIds {
+    if (_modifierOptionIds is EqualUnmodifiableListView)
+      return _modifierOptionIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_modifierOptionIds);
+  }
+
+  @override
+  final String? specialInstructions;
+  @override
+  final String course;
+  @override
+  final int qty;
+  @override
+  final int unitPrice;
+
+  @override
+  String toString() {
+    return 'CartLineDto(itemId: $itemId, variantId: $variantId, modifierOptionIds: $modifierOptionIds, specialInstructions: $specialInstructions, course: $course, qty: $qty, unitPrice: $unitPrice)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CartLineDtoImpl &&
+            (identical(other.itemId, itemId) || other.itemId == itemId) &&
+            (identical(other.variantId, variantId) ||
+                other.variantId == variantId) &&
+            const DeepCollectionEquality().equals(
+              other._modifierOptionIds,
+              _modifierOptionIds,
+            ) &&
+            (identical(other.specialInstructions, specialInstructions) ||
+                other.specialInstructions == specialInstructions) &&
+            (identical(other.course, course) || other.course == course) &&
+            (identical(other.qty, qty) || other.qty == qty) &&
+            (identical(other.unitPrice, unitPrice) ||
+                other.unitPrice == unitPrice));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    itemId,
+    variantId,
+    const DeepCollectionEquality().hash(_modifierOptionIds),
+    specialInstructions,
+    course,
+    qty,
+    unitPrice,
+  );
+
+  /// Create a copy of CartLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CartLineDtoImplCopyWith<_$CartLineDtoImpl> get copyWith =>
+      __$$CartLineDtoImplCopyWithImpl<_$CartLineDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$CartLineDtoImplToJson(this);
+  }
+}
+
+abstract class _CartLineDto implements CartLineDto {
+  const factory _CartLineDto({
+    required final String itemId,
+    required final String variantId,
+    required final List<String> modifierOptionIds,
+    required final String? specialInstructions,
+    required final String course,
+    required final int qty,
+    required final int unitPrice,
+  }) = _$CartLineDtoImpl;
+
+  factory _CartLineDto.fromJson(Map<String, dynamic> json) =
+      _$CartLineDtoImpl.fromJson;
+
+  @override
+  String get itemId;
+  @override
+  String get variantId;
+  @override
+  List<String> get modifierOptionIds;
+  @override
+  String? get specialInstructions;
+  @override
+  String get course;
+  @override
+  int get qty;
+  @override
+  int get unitPrice;
+
+  /// Create a copy of CartLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$CartLineDtoImplCopyWith<_$CartLineDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+SubmitOrderRequestDto _$SubmitOrderRequestDtoFromJson(
+  Map<String, dynamic> json,
+) {
+  return _SubmitOrderRequestDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$SubmitOrderRequestDto {
+  String get tableId => throw _privateConstructorUsedError;
+  String get idempotencyKey => throw _privateConstructorUsedError;
+  List<CartLineDto> get lines => throw _privateConstructorUsedError;
+
+  /// Serializes this SubmitOrderRequestDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of SubmitOrderRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $SubmitOrderRequestDtoCopyWith<SubmitOrderRequestDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $SubmitOrderRequestDtoCopyWith<$Res> {
+  factory $SubmitOrderRequestDtoCopyWith(
+    SubmitOrderRequestDto value,
+    $Res Function(SubmitOrderRequestDto) then,
+  ) = _$SubmitOrderRequestDtoCopyWithImpl<$Res, SubmitOrderRequestDto>;
+  @useResult
+  $Res call({String tableId, String idempotencyKey, List<CartLineDto> lines});
+}
+
+/// @nodoc
+class _$SubmitOrderRequestDtoCopyWithImpl<
+  $Res,
+  $Val extends SubmitOrderRequestDto
+>
+    implements $SubmitOrderRequestDtoCopyWith<$Res> {
+  _$SubmitOrderRequestDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of SubmitOrderRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tableId = null,
+    Object? idempotencyKey = null,
+    Object? lines = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            tableId: null == tableId
+                ? _value.tableId
+                : tableId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            idempotencyKey: null == idempotencyKey
+                ? _value.idempotencyKey
+                : idempotencyKey // ignore: cast_nullable_to_non_nullable
+                      as String,
+            lines: null == lines
+                ? _value.lines
+                : lines // ignore: cast_nullable_to_non_nullable
+                      as List<CartLineDto>,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$SubmitOrderRequestDtoImplCopyWith<$Res>
+    implements $SubmitOrderRequestDtoCopyWith<$Res> {
+  factory _$$SubmitOrderRequestDtoImplCopyWith(
+    _$SubmitOrderRequestDtoImpl value,
+    $Res Function(_$SubmitOrderRequestDtoImpl) then,
+  ) = __$$SubmitOrderRequestDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String tableId, String idempotencyKey, List<CartLineDto> lines});
+}
+
+/// @nodoc
+class __$$SubmitOrderRequestDtoImplCopyWithImpl<$Res>
+    extends
+        _$SubmitOrderRequestDtoCopyWithImpl<$Res, _$SubmitOrderRequestDtoImpl>
+    implements _$$SubmitOrderRequestDtoImplCopyWith<$Res> {
+  __$$SubmitOrderRequestDtoImplCopyWithImpl(
+    _$SubmitOrderRequestDtoImpl _value,
+    $Res Function(_$SubmitOrderRequestDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of SubmitOrderRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tableId = null,
+    Object? idempotencyKey = null,
+    Object? lines = null,
+  }) {
+    return _then(
+      _$SubmitOrderRequestDtoImpl(
+        tableId: null == tableId
+            ? _value.tableId
+            : tableId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        idempotencyKey: null == idempotencyKey
+            ? _value.idempotencyKey
+            : idempotencyKey // ignore: cast_nullable_to_non_nullable
+                  as String,
+        lines: null == lines
+            ? _value._lines
+            : lines // ignore: cast_nullable_to_non_nullable
+                  as List<CartLineDto>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SubmitOrderRequestDtoImpl implements _SubmitOrderRequestDto {
+  const _$SubmitOrderRequestDtoImpl({
+    required this.tableId,
+    required this.idempotencyKey,
+    required final List<CartLineDto> lines,
+  }) : _lines = lines;
+
+  factory _$SubmitOrderRequestDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SubmitOrderRequestDtoImplFromJson(json);
+
+  @override
+  final String tableId;
+  @override
+  final String idempotencyKey;
+  final List<CartLineDto> _lines;
+  @override
+  List<CartLineDto> get lines {
+    if (_lines is EqualUnmodifiableListView) return _lines;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_lines);
+  }
+
+  @override
+  String toString() {
+    return 'SubmitOrderRequestDto(tableId: $tableId, idempotencyKey: $idempotencyKey, lines: $lines)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SubmitOrderRequestDtoImpl &&
+            (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.idempotencyKey, idempotencyKey) ||
+                other.idempotencyKey == idempotencyKey) &&
+            const DeepCollectionEquality().equals(other._lines, _lines));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    tableId,
+    idempotencyKey,
+    const DeepCollectionEquality().hash(_lines),
+  );
+
+  /// Create a copy of SubmitOrderRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SubmitOrderRequestDtoImplCopyWith<_$SubmitOrderRequestDtoImpl>
+  get copyWith =>
+      __$$SubmitOrderRequestDtoImplCopyWithImpl<_$SubmitOrderRequestDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SubmitOrderRequestDtoImplToJson(this);
+  }
+}
+
+abstract class _SubmitOrderRequestDto implements SubmitOrderRequestDto {
+  const factory _SubmitOrderRequestDto({
+    required final String tableId,
+    required final String idempotencyKey,
+    required final List<CartLineDto> lines,
+  }) = _$SubmitOrderRequestDtoImpl;
+
+  factory _SubmitOrderRequestDto.fromJson(Map<String, dynamic> json) =
+      _$SubmitOrderRequestDtoImpl.fromJson;
+
+  @override
+  String get tableId;
+  @override
+  String get idempotencyKey;
+  @override
+  List<CartLineDto> get lines;
+
+  /// Create a copy of SubmitOrderRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$SubmitOrderRequestDtoImplCopyWith<_$SubmitOrderRequestDtoImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}
+
+SubmitOrderResponseDto _$SubmitOrderResponseDtoFromJson(
+  Map<String, dynamic> json,
+) {
+  return _SubmitOrderResponseDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$SubmitOrderResponseDto {
+  List<String> get ticketIds => throw _privateConstructorUsedError;
+
+  /// Serializes this SubmitOrderResponseDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of SubmitOrderResponseDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $SubmitOrderResponseDtoCopyWith<SubmitOrderResponseDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $SubmitOrderResponseDtoCopyWith<$Res> {
+  factory $SubmitOrderResponseDtoCopyWith(
+    SubmitOrderResponseDto value,
+    $Res Function(SubmitOrderResponseDto) then,
+  ) = _$SubmitOrderResponseDtoCopyWithImpl<$Res, SubmitOrderResponseDto>;
+  @useResult
+  $Res call({List<String> ticketIds});
+}
+
+/// @nodoc
+class _$SubmitOrderResponseDtoCopyWithImpl<
+  $Res,
+  $Val extends SubmitOrderResponseDto
+>
+    implements $SubmitOrderResponseDtoCopyWith<$Res> {
+  _$SubmitOrderResponseDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of SubmitOrderResponseDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? ticketIds = null}) {
+    return _then(
+      _value.copyWith(
+            ticketIds: null == ticketIds
+                ? _value.ticketIds
+                : ticketIds // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$SubmitOrderResponseDtoImplCopyWith<$Res>
+    implements $SubmitOrderResponseDtoCopyWith<$Res> {
+  factory _$$SubmitOrderResponseDtoImplCopyWith(
+    _$SubmitOrderResponseDtoImpl value,
+    $Res Function(_$SubmitOrderResponseDtoImpl) then,
+  ) = __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({List<String> ticketIds});
+}
+
+/// @nodoc
+class __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>
+    extends
+        _$SubmitOrderResponseDtoCopyWithImpl<$Res, _$SubmitOrderResponseDtoImpl>
+    implements _$$SubmitOrderResponseDtoImplCopyWith<$Res> {
+  __$$SubmitOrderResponseDtoImplCopyWithImpl(
+    _$SubmitOrderResponseDtoImpl _value,
+    $Res Function(_$SubmitOrderResponseDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of SubmitOrderResponseDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? ticketIds = null}) {
+    return _then(
+      _$SubmitOrderResponseDtoImpl(
+        ticketIds: null == ticketIds
+            ? _value._ticketIds
+            : ticketIds // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
+  const _$SubmitOrderResponseDtoImpl({required final List<String> ticketIds})
+    : _ticketIds = ticketIds;
+
+  factory _$SubmitOrderResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SubmitOrderResponseDtoImplFromJson(json);
+
+  final List<String> _ticketIds;
+  @override
+  List<String> get ticketIds {
+    if (_ticketIds is EqualUnmodifiableListView) return _ticketIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_ticketIds);
+  }
+
+  @override
+  String toString() {
+    return 'SubmitOrderResponseDto(ticketIds: $ticketIds)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SubmitOrderResponseDtoImpl &&
+            const DeepCollectionEquality().equals(
+              other._ticketIds,
+              _ticketIds,
+            ));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, const DeepCollectionEquality().hash(_ticketIds));
+
+  /// Create a copy of SubmitOrderResponseDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SubmitOrderResponseDtoImplCopyWith<_$SubmitOrderResponseDtoImpl>
+  get copyWith =>
+      __$$SubmitOrderResponseDtoImplCopyWithImpl<_$SubmitOrderResponseDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SubmitOrderResponseDtoImplToJson(this);
+  }
+}
+
+abstract class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
+  const factory _SubmitOrderResponseDto({
+    required final List<String> ticketIds,
+  }) = _$SubmitOrderResponseDtoImpl;
+
+  factory _SubmitOrderResponseDto.fromJson(Map<String, dynamic> json) =
+      _$SubmitOrderResponseDtoImpl.fromJson;
+
+  @override
+  List<String> get ticketIds;
+
+  /// Create a copy of SubmitOrderResponseDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$SubmitOrderResponseDtoImplCopyWith<_$SubmitOrderResponseDtoImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}

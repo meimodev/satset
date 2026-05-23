@@ -1,9 +1,33 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
 import 'course.dart';
 import 'menu_item.dart';
 
-enum TicketStatus { sent, prep, cooked, ready, served, held, voided }
+part 'ticket.freezed.dart';
+
+/// Ticket lifecycle.
+///
+/// `draft` and `acknowledged` exist for the LAN backend: a cart staged
+/// before submit is `draft`; `acknowledged` is reserved for the case where
+/// the server wants a held queue before it dispatches to KDS. The active
+/// kitchen lifecycle today is `sent → prep → cooked → ready → served`,
+/// with `held` for course-pacing and `voided` as the terminal failure
+/// state.
+enum TicketStatus {
+  draft,
+  acknowledged,
+  sent,
+  prep,
+  cooked,
+  ready,
+  served,
+  held,
+  voided,
+}
 
 String ticketStatusLabel(TicketStatus s) => switch (s) {
+      TicketStatus.draft => 'Draf',
+      TicketStatus.acknowledged => 'Diterima',
       TicketStatus.sent => 'Terkirim',
       TicketStatus.prep => 'Disiapkan',
       TicketStatus.cooked => 'Selesai dimasak',
@@ -13,59 +37,49 @@ String ticketStatusLabel(TicketStatus s) => switch (s) {
       TicketStatus.voided => 'Dibatalkan',
     };
 
-class Ticket {
-  final String id;
-  final String itemId;
-  final String name;
-  final String variantName;
-  final CourseId course;
-  final Station station;
-  final int qty;
-  final List<String> modifiers;
-  final String? specialInstructions;
-  final int price;
-  final TicketStatus status;
-  final String sentAt;
-  final String? voidReason;
-  final String? voidApprovedBy;
+String ticketStatusKey(TicketStatus s) => switch (s) {
+      TicketStatus.draft => 'draft',
+      TicketStatus.acknowledged => 'acknowledged',
+      TicketStatus.sent => 'sent',
+      TicketStatus.prep => 'prep',
+      TicketStatus.cooked => 'cooked',
+      TicketStatus.ready => 'ready',
+      TicketStatus.served => 'served',
+      TicketStatus.held => 'held',
+      TicketStatus.voided => 'voided',
+    };
 
-  const Ticket({
-    required this.id,
-    required this.itemId,
-    required this.name,
-    this.variantName = '',
-    required this.course,
-    required this.station,
-    this.qty = 1,
-    this.modifiers = const [],
-    this.specialInstructions,
-    required this.price,
-    required this.status,
-    required this.sentAt,
-    this.voidReason,
-    this.voidApprovedBy,
-  });
+TicketStatus ticketStatusFromKey(String? raw) => switch (raw) {
+      'draft' => TicketStatus.draft,
+      'acknowledged' => TicketStatus.acknowledged,
+      'sent' => TicketStatus.sent,
+      'prep' => TicketStatus.prep,
+      'cooked' => TicketStatus.cooked,
+      'ready' => TicketStatus.ready,
+      'served' => TicketStatus.served,
+      'held' => TicketStatus.held,
+      'voided' => TicketStatus.voided,
+      _ => TicketStatus.sent,
+    };
 
-  Ticket copyWith({
-    TicketStatus? status,
+/// Immutable ticket aggregate. `copyWith`, equality, and `hashCode` come
+/// from Freezed.
+@freezed
+class Ticket with _$Ticket {
+  const factory Ticket({
+    required String id,
+    required String itemId,
+    required String name,
+    @Default('') String variantName,
+    required CourseId course,
+    required Station station,
+    @Default(1) int qty,
+    @Default(<String>[]) List<String> modifiers,
+    String? specialInstructions,
+    required int price,
+    required TicketStatus status,
+    required String sentAt,
     String? voidReason,
     String? voidApprovedBy,
-  }) {
-    return Ticket(
-      id: id,
-      itemId: itemId,
-      name: name,
-      variantName: variantName,
-      course: course,
-      station: station,
-      qty: qty,
-      modifiers: modifiers,
-      specialInstructions: specialInstructions,
-      price: price,
-      status: status ?? this.status,
-      sentAt: sentAt,
-      voidReason: voidReason ?? this.voidReason,
-      voidApprovedBy: voidApprovedBy ?? this.voidApprovedBy,
-    );
-  }
+  }) = _Ticket;
 }

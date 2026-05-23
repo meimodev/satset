@@ -1,26 +1,24 @@
-import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
 import 'package:satset/domain/models/capability.dart';
 
-class Role {
-  final String id;
-  final String name;
-  final Color color;
-  final Set<Capability> capabilities;
+part 'role.freezed.dart';
 
-  const Role({
-    required this.id,
-    required this.name,
-    required this.color,
-    this.capabilities = const {},
-  });
+/// Domain model for staff roles. Visual mapping (colorHex → Color) lives
+/// in `lib/ui/core/design/role_visuals.dart` so this layer carries no
+/// Flutter imports.
+@freezed
+class Role with _$Role {
+  const Role._();
 
-  Role copyWith({String? name, Color? color, Set<Capability>? capabilities}) =>
-      Role(
-        id: id,
-        name: name ?? this.name,
-        color: color ?? this.color,
-        capabilities: capabilities ?? this.capabilities,
-      );
+  const factory Role({
+    required String id,
+    required String name,
+
+    /// 0xAARRGGBB hex. UI wraps in `Color(...)`.
+    required int colorHex,
+    @Default(<Capability>{}) Set<Capability> capabilities,
+  }) = _Role;
 
   bool has(Capability c) => capabilities.contains(c);
 }
