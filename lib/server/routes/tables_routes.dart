@@ -60,12 +60,15 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final id = (body['id'] as String?) ?? _uuid.v4();
+    final capacity = (body['capacity'] as num?)?.toInt() ?? 2;
+    final paxIn = (body['pax'] as num?)?.toInt() ?? 0;
     await db.into(db.venueTables).insertOnConflictUpdate(
           VenueTablesCompanion.insert(
             id: id,
             zoneId: body['zoneId'] as String,
             label: Value(body['label'] as String?),
-            pax: Value((body['pax'] as num?)?.toInt() ?? 2),
+            pax: Value(paxIn.clamp(0, capacity)),
+            capacity: Value(capacity < 1 ? 1 : capacity),
             active: Value((body['active'] as bool?) ?? true),
           ),
         );
@@ -82,14 +85,34 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final denied = await _requireCap(req, db, auth, Capability.editSettings);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    // Capacity changes can shrink below the current pax; clamp pax down
+    // in the same write so we never leave pax > capacity.
+    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return Response.notFound('table not found');
+    int? nextCap;
+    if (body.containsKey('capacity')) {
+      final c = (body['capacity'] as num).toInt();
+      nextCap = c < 1 ? 1 : c;
+    }
+    int? nextPax;
+    if (body.containsKey('pax')) {
+      nextPax = (body['pax'] as num).toInt();
+    }
+    final effectiveCap = nextCap ?? row.capacity;
+    if (nextPax != null) {
+      nextPax = nextPax.clamp(0, effectiveCap);
+    } else if (nextCap != null && row.pax > effectiveCap) {
+      nextPax = effectiveCap;
+    }
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
       VenueTablesCompanion(
         label: body.containsKey('label')
             ? Value(body['label'] as String?)
             : const Value.absent(),
-        pax: body.containsKey('pax')
-            ? Value((body['pax'] as num).toInt())
-            : const Value.absent(),
+        pax: nextPax == null ? const Value.absent() : Value(nextPax),
+        capacity:
+            nextCap == null ? const Value.absent() : Value(nextCap),
         zoneId: body.containsKey('zoneId')
             ? Value(body['zoneId'] as String)
             : const Value.absent(),
@@ -116,9 +139,15 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final pax = (body['pax'] as num).toInt();
     final actorId = body['actorId'] as String?;
+    // Clamp to [1, capacity] server-side; the UI gates this too but never
+    // trust client clamping for a multi-device flow.
+    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return Response.notFound('table not found');
+    final clamped = pax.clamp(0, row.capacity < 1 ? 1 : row.capacity);
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
       VenueTablesCompanion(
-        pax: Value(pax),
+        pax: Value(clamped),
         lastActorId: actorId == null ? const Value.absent() : Value(actorId),
       ),
     );
@@ -274,11 +303,13 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         status: const Value('available'),
         openAmount: const Value(0),
         readyCount: const Value(0),
+        pax: const Value(0),
         lastActorId: actorId == null ? const Value.absent() : Value(actorId),
         lockedBy: const Value(null),
         lockedByName: const Value(null),
         lockedAt: const Value(null),
         lockExpiresAt: const Value(null),
+        openedAt: const Value(null),
       ),
     );
     return _broadcast(db, hub, id);
@@ -324,6 +355,7 @@ Map<String, dynamic> _toJson(VenueTable t) => {
       'zoneId': t.zoneId,
       'label': t.label,
       'pax': t.pax,
+      'capacity': t.capacity,
       'active': t.active,
       'status': t.status,
       'openAmount': t.openAmount,
@@ -333,4 +365,5 @@ Map<String, dynamic> _toJson(VenueTable t) => {
       'lockedByName': t.lockedByName,
       'lockedAt': t.lockedAt?.toIso8601String(),
       'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
+      'openedAt': t.openedAt?.toIso8601String(),
     };

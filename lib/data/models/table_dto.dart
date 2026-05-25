@@ -10,6 +10,7 @@ class TableDto with _$TableDto {
     required String zoneId,
     required String? label,
     @Default(0) int pax,
+    @Default(2) int capacity,
     @Default(true) bool active,
     @Default('available') String status,
     @Default(0) int openAmount,
@@ -19,6 +20,7 @@ class TableDto with _$TableDto {
     String? lockedByName,
     DateTime? lockedAt,
     DateTime? lockExpiresAt,
+    DateTime? openedAt,
   }) = _TableDto;
 
   factory TableDto.fromJson(Map<String, dynamic> json) =>

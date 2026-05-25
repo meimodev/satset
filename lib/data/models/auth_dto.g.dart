@@ -62,6 +62,7 @@ _$MeDtoImpl _$$MeDtoImplFromJson(Map<String, dynamic> json) => _$MeDtoImpl(
   capabilities: (json['capabilities'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
+  avatarColorHex: (json['avatarColorHex'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$$MeDtoImplToJson(_$MeDtoImpl instance) =>
@@ -72,4 +73,5 @@ Map<String, dynamic> _$$MeDtoImplToJson(_$MeDtoImpl instance) =>
       'roleId': instance.roleId,
       'zoneAssigned': instance.zoneAssigned,
       'capabilities': instance.capabilities,
+      'avatarColorHex': instance.avatarColorHex,
     };

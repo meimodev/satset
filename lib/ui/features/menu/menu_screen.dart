@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'modifier_sheet.dart';
 
@@ -207,37 +208,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         children: [
           Column(
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
-                child: Row(
-                  children: [
-                    SatBackButton(onTap: () => safePop(context, fallback: '/table/${widget.tableId}')),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: sc.accentSoft,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: sc.accentBorder),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.place_outlined, size: 11, color: sc.accent),
-                          const SizedBox(width: 6),
-                          Text('Meja ${widget.tableId} · ${table.pax}p',
-                              style: SatType.sans(
-                                size: 11,
-                                weight: FontWeight.w500,
-                                color: sc.accent,
-                              )),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    SatBackButton(onTap: () {}, icon: Icons.search),
-                  ],
-                ),
+              SatAppBar(
+                onBack: () => safePop(context, fallback: '/table/${widget.tableId}'),
+                title: 'Meja ${widget.tableId} · ${table.pax}p',
+                crumbs: ['Meja', widget.tableId, 'Tambah item'],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),

@@ -863,7 +863,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     return Row(
       children: [
         Expanded(child: _label(t)),
-        if (trailing != null) trailing,
+        ?trailing,
       ],
     );
   }
@@ -959,7 +959,7 @@ class _Section extends StatelessWidget {
                       letterSpacing: 1.2, color: sc.textLo,
                     )),
               ),
-              if (trailing != null) trailing!,
+              ?trailing,
             ],
           ),
           const SizedBox(height: 12),

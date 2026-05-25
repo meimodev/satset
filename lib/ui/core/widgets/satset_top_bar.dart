@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
-import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
-import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
 void safePop(BuildContext context, {String fallback = '/tables'}) {
@@ -15,103 +13,6 @@ void safePop(BuildContext context, {String fallback = '/tables'}) {
     router.pop();
   } else {
     router.go(fallback);
-  }
-}
-
-class SatsetTopBar extends ConsumerWidget {
-  final Widget? leading;
-
-  const SatsetTopBar({super.key, this.leading});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final state = ref.watch(wsConnStateProvider).value;
-    final (dotColor, softColor, label) = switch (state) {
-      WsConnState.open => (sc.success, sc.successSoft, 'LIVE · LAN'),
-      WsConnState.connecting => (sc.warn, sc.warnSoft, 'MENGHUBUNGKAN…'),
-      WsConnState.closed => (sc.urgent, sc.urgentSoft, 'OFFLINE'),
-    };
-    final l = context.layout;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
-      child: Row(
-        children: [
-          const LoginClock(),
-          if (leading != null) ...[
-            const SizedBox(width: 10),
-            leading!,
-          ],
-          const Spacer(),
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: dotColor,
-                  boxShadow: [BoxShadow(color: softColor, spreadRadius: 3)],
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w500,
-                    letterSpacing: 0.6,
-                    color: sc.textMd,
-                  )),
-            ],
-          ),
-          const Spacer(),
-          const _Avatar(),
-        ],
-      ),
-    );
-  }
-}
-
-class _Avatar extends ConsumerWidget {
-  const _Avatar();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider).user;
-    final initials = (user?.initials.isNotEmpty ?? false) ? user!.initials : '—';
-    final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
-    final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base);
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () => context.go('/me'),
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [base, dark],
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            initials,
-            style: SatType.sans(
-              size: 12,
-              weight: FontWeight.w600,
-              letterSpacing: 0.24,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 

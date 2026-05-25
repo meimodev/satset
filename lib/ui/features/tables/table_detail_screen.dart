@@ -13,14 +13,15 @@ import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/ticket.dart';
-import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
@@ -40,6 +41,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
   static const _lockTtlSeconds = 7;
 
   Timer? _heartbeat;
+
+  /// Auto-acquire timer: fires when the table becomes unlocked while this
+  /// screen is open in read-only mode. Short grace window so the original
+  /// holder can re-take the lock on a brief navigation.
+  Timer? _autoAcquireTimer;
+  static const _autoAcquireDelay = Duration(milliseconds: 1500);
 
   /// Cached so [dispose] can release the lock without touching `ref` — the
   /// underlying ConsumerStatefulElement rejects ref reads after unmount.
@@ -108,9 +115,51 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     });
   }
 
+  /// Schedule a short-delay auto-acquire when the table transitions to
+  /// unlocked while this screen is open and we don't own it. The delay lets
+  /// the previous holder re-acquire on a quick back/forward without us
+  /// snatching the lock mid-blink.
+  void _scheduleAutoAcquire() {
+    _autoAcquireTimer?.cancel();
+    _autoAcquireTimer = Timer(_autoAcquireDelay, _tryAutoAcquire);
+  }
+
+  Future<void> _tryAutoAcquire() async {
+    if (!mounted || _ownsLock || _acquiring) return;
+    final user = ref.read(authStateProvider).user;
+    if (user == null) return;
+    final repo = ref.read(tablesProvider.notifier);
+    _tablesRepo = repo;
+    setState(() => _acquiring = true);
+    try {
+      final r = await repo.acquireLock(
+        _tableId,
+        userId: user.id,
+        userName: user.name,
+        ttlSeconds: _lockTtlSeconds,
+      );
+      if (!mounted) return;
+      setState(() {
+        _ownsLock = r.isAcquired;
+        _acquiring = false;
+      });
+      if (r.isAcquired) {
+        _startHeartbeat();
+      } else if (r.conflict != null) {
+        final holder = r.conflict!.lockedByName ?? 'pengguna lain';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Meja diambil oleh $holder')),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _acquiring = false);
+    }
+  }
+
   @override
   void dispose() {
     _heartbeat?.cancel();
+    _autoAcquireTimer?.cancel();
     if (_ownsLock) {
       // Best-effort release via the cached repo reference — ref access here
       // would throw because the ConsumerStatefulElement has been disposed.
@@ -127,14 +176,15 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final tickets = ref.watch(ticketsProvider)[_tableId] ?? const [];
     final table = tables.firstWhere(
       (t) => t.id == _tableId,
-      orElse: () => VenueTable(id: _tableId, zoneId: 'terrace'),
+      orElse: () => VenueTable(id: _tableId, zoneId: ''),
     );
     final zones = ref.watch(zonesProvider);
     final zone = zones.firstWhere(
       (z) => z.id == table.zoneId,
       orElse: () => const Zone(id: '', name: '', short: ''),
     );
-    final user = ref.watch(authStateProvider).user;
+    final auth = ref.watch(authStateProvider);
+    final user = auth.user;
     final actorId = user?.id;
 
     // Lock state: derived from server-pushed table row, so a WS update from
@@ -142,7 +192,26 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     // requiring a local poll.
     final lockedByOther = table.isLockedByOther(actorId);
     final readOnly = lockedByOther || (!_ownsLock && !_acquiring);
-    final canEditGuests = user?.role == UserRole.waiter && !readOnly;
+
+    // Watch for lock release by the current holder. When `lockedByOther`
+    // flips false while we're sitting read-only, schedule a short-delay
+    // auto-acquire (loser of the race gets a toast inside _tryAutoAcquire).
+    ref.listen<List<VenueTable>>(tablesProvider, (prev, next) {
+      if (_ownsLock || actorId == null) return;
+      final t = next.firstWhere(
+        (x) => x.id == _tableId,
+        orElse: () => VenueTable(id: _tableId, zoneId: ''),
+      );
+      final stillLocked = t.isLockedByOther(actorId);
+      if (stillLocked) {
+        _autoAcquireTimer?.cancel();
+      } else {
+        _scheduleAutoAcquire();
+      }
+    });
+    // Gate by capability, not role enum: admins also have takeOrder and need
+    // to be able to correct guest counts during testing/coverage.
+    final canEditGuests = auth.has(Capability.takeOrder) && !readOnly;
 
     void onMinus() {
       if (readOnly) return;
@@ -170,6 +239,32 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     };
     final hasLive = tickets.any((t) => liveStatuses.contains(t.status));
     final canClose = !readOnly && tickets.isNotEmpty && !hasLive;
+
+    final menuItems = ref.watch(menuItemsProvider);
+    final ctxAllergens = <String>{};
+    for (final t in tickets) {
+      final it = menuItems.where((i) => i.id == t.itemId).firstOrNull;
+      if (it != null) ctxAllergens.addAll(it.allergens.map((a) => a.name));
+    }
+    final ctxNotes = <String>{
+      for (final t in tickets)
+        if (t.specialInstructions != null && t.specialInstructions!.trim().isNotEmpty)
+          t.specialInstructions!.trim(),
+    };
+    final ctxAlertCount = ctxAllergens.length + ctxNotes.length;
+
+    void showContextSheet() {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _ContextSheet(
+          table: table,
+          tickets: tickets,
+          menu: menuItems,
+        ),
+      );
+    }
 
     // The context pane reads menu metadata (allergens) — surface load state
     // explicitly rather than rendering against an empty cache.
@@ -284,9 +379,22 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           )
         : null;
 
+    if (tables.isNotEmpty && !tables.any((t) => t.id == _tableId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) safePop(context);
+      });
+    }
+
+    final appBar = SatAppBar(
+      onBack: () => safePop(context),
+      crumbs: ['Meja', table.displayName, if (zone.name.isNotEmpty) zone.name],
+      title: 'Meja ${table.displayName}',
+    );
+
     if (l.useTabletShell) {
       return _TabletSplit(
         menu: ref.watch(menuItemsProvider),
+        appBar: appBar,
         table: table,
         zone: zone,
         tickets: tickets,
@@ -314,7 +422,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         children: [
           Column(
             children: [
-              _TopBar(table: table, onBack: () => safePop(context)),
+              appBar,
               _Header(
                 table: table,
                 zoneName: zone.name,
@@ -322,6 +430,8 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 canEditGuests: canEditGuests,
                 onMinusPax: onMinus,
                 onPlusPax: onPlus,
+                alertCount: ctxAlertCount,
+                onShowContext: showContextSheet,
               ),
               ?lockBanner,
               if (readyAny) const ReadyBanner(),
@@ -395,57 +505,6 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  final VenueTable table;
-  final VoidCallback onBack;
-  const _TopBar({required this.table, required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final l = context.layout;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
-      child: Row(
-        children: [
-          SatBackButton(onTap: onBack),
-          const Spacer(),
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: sc.success,
-                  boxShadow: [BoxShadow(color: sc.successSoft, spreadRadius: 3)],
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text('T+${table.elapsed ?? '—'}',
-                  style: SatType.mono(size: 10, color: sc.textMd, letterSpacing: 0.6)),
-            ],
-          ),
-          const Spacer(),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Color(0xFFFF9233), Color(0xFFD96030)],
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text('MA',
-                style: SatType.sans(size: 12, weight: FontWeight.w600, color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Header extends StatelessWidget {
   final VenueTable table;
   final String zoneName;
@@ -453,6 +512,8 @@ class _Header extends StatelessWidget {
   final bool canEditGuests;
   final VoidCallback onMinusPax;
   final VoidCallback onPlusPax;
+  final int alertCount;
+  final VoidCallback onShowContext;
   const _Header({
     required this.table,
     required this.zoneName,
@@ -460,6 +521,8 @@ class _Header extends StatelessWidget {
     required this.canEditGuests,
     required this.onMinusPax,
     required this.onPlusPax,
+    required this.alertCount,
+    required this.onShowContext,
   });
 
   @override
@@ -470,14 +533,21 @@ class _Header extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(table.id,
-              style: SatType.mono(
-                size: 44,
-                weight: FontWeight.w500,
-                letterSpacing: -1.32,
-                height: 1.0,
-                color: sc.textHi,
-              )),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(table.displayName,
+                  maxLines: 1,
+                  style: SatType.mono(
+                    size: 44,
+                    weight: FontWeight.w500,
+                    letterSpacing: -1.32,
+                    height: 1.0,
+                    color: sc.textHi,
+                  )),
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -488,12 +558,20 @@ class _Header extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    GuestStepper(
-                      pax: table.pax,
-                      enabled: canEditGuests,
-                      onMinus: onMinusPax,
-                      onPlus: onPlusPax,
-                      size: 32,
+                    Flexible(
+                      child: GuestStepper(
+                        pax: table.pax,
+                        max: table.capacity,
+                        enabled: canEditGuests,
+                        onMinus: onMinusPax,
+                        onPlus: onPlusPax,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _ContextTriggerBtn(
+                      alertCount: alertCount,
+                      onTap: onShowContext,
                     ),
                   ],
                 ),
@@ -546,6 +624,141 @@ class _HPill extends StatelessWidget {
                 color: sc.textMd,
               )),
         ],
+      ),
+    );
+  }
+}
+
+class _ContextTriggerBtn extends StatelessWidget {
+  final int alertCount;
+  final VoidCallback onTap;
+  const _ContextTriggerBtn({required this.alertCount, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Material(
+      color: sc.bg2,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: sc.border0),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.info_outline, size: 16, color: sc.textMd),
+              ),
+              if (alertCount > 0)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: sc.urgent,
+                      shape: alertCount < 10 ? BoxShape.circle : BoxShape.rectangle,
+                      borderRadius: alertCount < 10 ? null : BorderRadius.circular(8),
+                      border: Border.all(color: sc.bg0, width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$alertCount',
+                      style: SatType.mono(
+                        size: 9,
+                        weight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ContextSheet extends StatelessWidget {
+  final VenueTable table;
+  final List<Ticket> tickets;
+  final List<MenuItem> menu;
+  const _ContextSheet({
+    required this.table,
+    required this.tickets,
+    required this.menu,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      minChildSize: 0.35,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, scroll) => Container(
+        decoration: BoxDecoration(
+          color: sc.bg1,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          border: Border.all(color: sc.border0),
+        ),
+        child: ListView(
+          controller: scroll,
+          padding: EdgeInsets.zero,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: sc.border1,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Konteks meja',
+                      style: SatType.sans(
+                        size: 20,
+                        weight: FontWeight.w600,
+                        letterSpacing: -0.4,
+                        color: sc.textHi,
+                      )),
+                  const SizedBox(height: 4),
+                  Text('DUDUK ${table.elapsed ?? '0:00'} · ${table.pax} TAMU',
+                      style: SatType.mono(
+                        size: 11,
+                        color: sc.textLo,
+                        letterSpacing: 0.44,
+                      )),
+                ],
+              ),
+            ),
+            _ContextPane(
+              table: table,
+              tickets: tickets,
+              menu: menu,
+              compact: true,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1008,6 +1221,7 @@ class _LockedBanner extends StatelessWidget {
 
 class _TabletSplit extends StatelessWidget {
   final List<MenuItem> menu;
+  final Widget appBar;
   final VenueTable table;
   final Zone zone;
   final List<Ticket> tickets;
@@ -1029,6 +1243,7 @@ class _TabletSplit extends StatelessWidget {
 
   const _TabletSplit({
     required this.menu,
+    required this.appBar,
     required this.table,
     required this.zone,
     required this.tickets,
@@ -1055,9 +1270,13 @@ class _TabletSplit extends StatelessWidget {
     final readyN = tickets.where((t) => t.status == TicketStatus.ready).length;
     return Scaffold(
       backgroundColor: sc.bg0,
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
         children: [
+          appBar,
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           SizedBox(
             width: 560,
             child: Column(
@@ -1073,28 +1292,21 @@ class _TabletSplit extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          GestureDetector(
-                            onTap: onBack,
-                            child: Container(
-                              width: 38, height: 38,
-                              margin: const EdgeInsets.only(right: 14, bottom: 6),
-                              decoration: BoxDecoration(
-                                color: sc.bg2,
-                                border: Border.all(color: sc.border0),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              alignment: Alignment.center,
-                              child: Icon(Icons.arrow_back, size: 18, color: sc.textMd),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(table.displayName,
+                                  maxLines: 1,
+                                  style: SatType.mono(
+                                    size: 56,
+                                    weight: FontWeight.w500,
+                                    letterSpacing: -1.68,
+                                    height: 1,
+                                    color: sc.textHi,
+                                  )),
                             ),
                           ),
-                          Text(table.id,
-                              style: SatType.mono(
-                                size: 56,
-                                weight: FontWeight.w500,
-                                letterSpacing: -1.68,
-                                height: 1,
-                                color: sc.textHi,
-                              )),
                           const SizedBox(width: 14),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
@@ -1107,6 +1319,7 @@ class _TabletSplit extends StatelessWidget {
                                 const SizedBox(height: 6),
                                 GuestStepper(
                                   pax: table.pax,
+                                  max: table.capacity,
                                   enabled: canEditGuests,
                                   onMinus: onMinusPax,
                                   onPlus: onPlusPax,
@@ -1227,6 +1440,9 @@ class _TabletSplit extends StatelessWidget {
           Expanded(
             child: _ContextPane(table: table, tickets: tickets, menu: menu),
           ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1259,7 +1475,13 @@ class _ContextPane extends StatelessWidget {
   final VenueTable table;
   final List<Ticket> tickets;
   final List<MenuItem> menu;
-  const _ContextPane({required this.table, required this.tickets, required this.menu});
+  final bool compact;
+  const _ContextPane({
+    required this.table,
+    required this.tickets,
+    required this.menu,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1271,9 +1493,113 @@ class _ContextPane extends StatelessWidget {
       final it = menu.where((i) => i.id == t.itemId).firstOrNull;
       if (it != null) allergens.addAll(it.allergens.map((a) => a.name));
     }
-    final peanut = tickets.any((t) =>
-        t.specialInstructions != null && t.specialInstructions!.toLowerCase().contains('kacang'));
+    final guestNotes = <String>{
+      for (final t in tickets)
+        if (t.specialInstructions != null && t.specialInstructions!.trim().isNotEmpty)
+          t.specialInstructions!.trim(),
+    }.toList();
 
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: _stat(context, sc, tickets.length.toString(), 'Total item')),
+            const SizedBox(width: 8),
+            Expanded(child: _stat(context, sc, sent.toString(), 'Dalam proses')),
+            const SizedBox(width: 8),
+            Expanded(child: _stat(context, sc, served.toString(), 'Disajikan')),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _card(context, sc, 'CATATAN TAMU',
+                    guestNotes.isEmpty
+                        ? Text('Belum ada catatan khusus.',
+                            style: SatType.sans(size: 13, color: sc.textLo))
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (final note in guestNotes)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: sc.urgentSoft,
+                                      border: Border.all(color: sc.urgent.withValues(alpha: 0.25)),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(Icons.warning_amber_rounded, size: 16, color: sc.urgent),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(note,
+                                              style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.urgent)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          )),
+                const SizedBox(height: 14),
+                _card(context, sc, 'ALERGEN DI PESANAN',
+                    allergens.isEmpty
+                        ? Text('Tidak ada.', style: SatType.sans(size: 13, color: sc.textLo))
+                        : Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final a in allergens)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: sc.urgentSoft,
+                                    border: Border.all(color: sc.urgent.withValues(alpha: 0.35)),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(a,
+                                      style: SatType.sans(
+                                        size: 12,
+                                        weight: FontWeight.w500,
+                                        color: sc.urgent,
+                                      )),
+                                ),
+                            ],
+                          )),
+                const SizedBox(height: 14),
+        _card(context, sc, 'AKSI CEPAT',
+            Column(
+              children: [
+                _quickAction(
+                  context,
+                  sc,
+                  Icons.receipt_long_rounded,
+                  'Cetak struk meja',
+                  accent: true,
+                  onTap: () => _notImplemented(context, 'Cetak struk'),
+                ),
+                const SizedBox(height: 6),
+                _quickAction(
+                  context,
+                  sc,
+                  Icons.edit_outlined,
+                  'Pindahkan meja',
+                  onTap: () => _notImplemented(context, 'Pindah meja'),
+                ),
+              ],
+            )),
+      ],
+    );
+
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: body,
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1302,78 +1628,7 @@ class _ContextPane extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: _stat(context, sc, tickets.length.toString(), 'Total item')),
-                    const SizedBox(width: 8),
-                    Expanded(child: _stat(context, sc, sent.toString(), 'Dalam proses')),
-                    const SizedBox(width: 8),
-                    Expanded(child: _stat(context, sc, served.toString(), 'Disajikan')),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _card(context, sc, 'CATATAN TAMU',
-                    peanut
-                        ? Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: sc.urgentSoft,
-                              border: Border.all(color: sc.urgent.withValues(alpha: 0.25)),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(Icons.warning_amber_rounded, size: 16, color: sc.urgent),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text('Tamu alergi kacang — hindari saus kacang & garnish sate.',
-                                      style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.urgent)),
-                                ),
-                              ],
-                            ),
-                          )
-                        : Text('Belum ada catatan khusus.',
-                            style: SatType.sans(size: 13, color: sc.textLo))),
-                const SizedBox(height: 14),
-                _card(context, sc, 'ALERGEN DI PESANAN',
-                    allergens.isEmpty
-                        ? Text('Tidak ada.', style: SatType.sans(size: 13, color: sc.textLo))
-                        : Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              for (final a in allergens)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: sc.urgentSoft,
-                                    border: Border.all(color: sc.urgent.withValues(alpha: 0.35)),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(a,
-                                      style: SatType.sans(
-                                        size: 12,
-                                        weight: FontWeight.w500,
-                                        color: sc.urgent,
-                                      )),
-                                ),
-                            ],
-                          )),
-                const SizedBox(height: 14),
-                _card(context, sc, 'AKSI CEPAT',
-                    Column(
-                      children: [
-                        _quickAction(context, sc, Icons.receipt_long_rounded, 'Cetak struk meja', accent: true),
-                        const SizedBox(height: 6),
-                        _quickAction(context, sc, Icons.edit_outlined, 'Pindahkan meja'),
-                      ],
-                    )),
-              ],
-            ),
+            child: body,
           ),
         ),
       ],
@@ -1420,31 +1675,50 @@ class _ContextPane extends StatelessWidget {
     );
   }
 
-  Widget _quickAction(BuildContext context, SatColors sc, IconData icon, String label, {bool accent = false}) {
-    return Container(
-      height: 38,
-      decoration: BoxDecoration(
-        color: accent ? sc.accentSoft : sc.bg3,
-        border: Border.all(
-          color: accent ? sc.accentBorder : sc.border1,
-          style: accent ? BorderStyle.solid : BorderStyle.solid,
-        ),
+  Widget _quickAction(
+    BuildContext context,
+    SatColors sc,
+    IconData icon,
+    String label, {
+    bool accent = false,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: accent ? sc.accentSoft : sc.bg3,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 14, color: accent ? sc.accent : sc.textMd),
-          const SizedBox(width: 8),
-          Text(label.toUpperCase(),
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w600,
-                letterSpacing: 0.48,
-                color: accent ? sc.accent : sc.textMd,
-              )),
-        ],
+        child: Container(
+          height: 38,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: accent ? sc.accentBorder : sc.border1,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: accent ? sc.accent : sc.textMd),
+              const SizedBox(width: 8),
+              Text(label.toUpperCase(),
+                  style: SatType.sans(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    letterSpacing: 0.48,
+                    color: accent ? sc.accent : sc.textMd,
+                  )),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+void _notImplemented(BuildContext context, String label) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('$label belum tersedia')),
+  );
 }

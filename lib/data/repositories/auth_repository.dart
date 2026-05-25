@@ -101,6 +101,7 @@ class AuthRepository extends StateNotifier<AuthState> {
           shiftStartedAt: loginAt.toIso8601String(),
           zoneAssigned: me.zoneAssigned ?? '',
           roleId: me.roleId,
+          avatarColorHex: me.avatarColorHex,
         ),
         capabilities: caps,
         busy: false,
@@ -163,6 +164,7 @@ class AuthRepository extends StateNotifier<AuthState> {
           shiftStartedAt: loginAt.toIso8601String(),
           zoneAssigned: me.zoneAssigned ?? '',
           roleId: me.roleId,
+          avatarColorHex: me.avatarColorHex,
         ),
         capabilities: caps,
         busy: false,
@@ -207,6 +209,7 @@ class AuthRepository extends StateNotifier<AuthState> {
           shiftStartedAt: loginAt.toIso8601String(),
           zoneAssigned: me.zoneAssigned ?? '',
           roleId: me.roleId,
+          avatarColorHex: me.avatarColorHex,
         ),
         capabilities: caps,
       );

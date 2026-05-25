@@ -117,6 +117,7 @@ Router authRoutes(ServerAuth auth) {
         'roleId': user.roleId,
         'zoneAssigned': user.zoneAssigned,
         'capabilities': caps,
+        'avatarColorHex': user.avatarColorHex,
       }),
       headers: {'content-type': 'application/json'},
     );

@@ -4,15 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/ui/core/widgets/satset_top_bar.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 
 class TabletShell extends StatelessWidget {
   final String activeTab;
   final int readyCount;
   final Widget child;
   final List<String> crumbs;
-  final Widget? crumbLeading;
-  final bool offline;
 
   const TabletShell({
     super.key,
@@ -20,8 +18,6 @@ class TabletShell extends StatelessWidget {
     required this.readyCount,
     required this.child,
     required this.crumbs,
-    this.crumbLeading,
-    this.offline = false,
   });
 
   @override
@@ -35,11 +31,7 @@ class TabletShell extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                TabletTopBar(
-                  crumbs: crumbs,
-                  leading: crumbLeading,
-                  offline: offline,
-                ),
+                SatAppBar(crumbs: crumbs, showAvatar: false),
                 Expanded(child: child),
               ],
             ),
@@ -268,110 +260,6 @@ class _AvatarBtn extends ConsumerWidget {
   }
 }
 
-class TabletTopBar extends StatelessWidget {
-  final List<String> crumbs;
-  final Widget? leading;
-  final bool offline;
-  const TabletTopBar({super.key, required this.crumbs, this.leading, this.offline = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
-      ),
-      child: Row(
-        children: [
-          const LoginClock(),
-          const SizedBox(width: 14),
-          if (leading != null) ...[leading!, const SizedBox(width: 10)],
-          Flexible(child: _Crumbs(items: crumbs)),
-          const Spacer(),
-          _SyncPill(offline: offline),
-        ],
-      ),
-    );
-  }
-}
-
-class _Crumbs extends StatelessWidget {
-  final List<String> items;
-  const _Crumbs({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final children = <Widget>[];
-    for (var i = 0; i < items.length; i++) {
-      if (i > 0) {
-        children.add(Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text('›', style: SatType.mono(size: 12, color: sc.textDim)),
-        ));
-      }
-      children.add(Text(
-        items[i],
-        overflow: TextOverflow.ellipsis,
-        style: SatType.mono(
-          size: 12,
-          weight: i == items.length - 1 ? FontWeight.w500 : FontWeight.w400,
-          letterSpacing: 0.48,
-          color: i == items.length - 1 ? sc.textHi : sc.textMd,
-        ),
-      ));
-    }
-    return Row(mainAxisSize: MainAxisSize.min, children: children);
-  }
-}
-
-class _SyncPill extends StatelessWidget {
-  final bool offline;
-  const _SyncPill({required this.offline});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final dotColor = offline ? sc.warn : sc.success;
-    final softColor = offline ? sc.warnSoft : sc.successSoft;
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: softColor, blurRadius: 0, spreadRadius: 3)],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            offline ? 'HANYA LAN · CLOUD TUNGGU' : 'LIVE · LAN',
-            style: SatType.mono(
-              size: 11,
-              weight: FontWeight.w500,
-              letterSpacing: 0.66,
-              color: sc.textMd,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class TabletSectionHead extends StatelessWidget {
   final String title;
   final String? sub;
@@ -412,7 +300,7 @@ class TabletSectionHead extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );
@@ -459,7 +347,7 @@ class TabletCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (headerTrailing != null) headerTrailing!,
+                ?headerTrailing,
               ],
             ),
             const SizedBox(height: 12),

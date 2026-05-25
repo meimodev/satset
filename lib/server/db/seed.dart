@@ -67,22 +67,6 @@ Future<void> seedIfEmpty(AppDatabase db) async {
             avatarColorHex: Value(u.avatarColorHex),
           ));
     }
-    // Tables
-    for (final t in seed.DummyData.tables) {
-      await db.into(db.venueTables).insertOnConflictUpdate(
-            VenueTablesCompanion.insert(
-              id: t.id,
-              zoneId: t.zoneId,
-              label: Value(t.label),
-              pax: Value(t.pax),
-              active: Value(t.active),
-              status: Value(t.status.name),
-              openAmount: Value(t.openAmount),
-              readyCount: Value(t.readyCount),
-              lastActorId: Value(t.lastActorId),
-            ),
-          );
-    }
     // Categories
     var ci = 0;
     for (final c in seed.DummyData.categories) {
@@ -137,32 +121,6 @@ Future<void> seedIfEmpty(AppDatabase db) async {
             );
       }
     }
-    // Tickets — must be awaited inside the transaction, not fire-and-forget.
-    final ticketsByTable = seed.DummyData.initialTicketsByTable();
-    for (final entry in ticketsByTable.entries) {
-      final tableId = entry.key;
-      for (final t in entry.value) {
-        await db.into(db.tickets).insertOnConflictUpdate(
-              TicketsCompanion.insert(
-                id: t.id,
-                tableId: tableId,
-                itemId: t.itemId,
-                name: t.name,
-                variantName: Value(t.variantName),
-                course: t.course.name,
-                station: t.station.name,
-                qty: Value(t.qty),
-                modifiersJson: Value(jsonEncode(t.modifiers)),
-                specialInstructions: Value(t.specialInstructions),
-                price: t.price,
-                status: t.status.name,
-                sentAt: DateTime.tryParse(t.sentAt) ?? DateTime.now(),
-                voidReason: Value(t.voidReason),
-                voidApprovedBy: Value(t.voidApprovedBy),
-              ),
-            );
-      }
-    }
   });
 
   // First-boot verification: every reference table the seed populates must
@@ -172,24 +130,19 @@ Future<void> seedIfEmpty(AppDatabase db) async {
   final users = await db.select(db.users).get();
   final roles = await db.select(db.roles).get();
   final zones = await db.select(db.zones).get();
-  final tables = await db.select(db.venueTables).get();
   final cats = await db.select(db.menuCategories).get();
   final menu = await db.select(db.menuItems).get();
   final mods = await db.select(db.modifierGroups).get();
-  final tickets = await db.select(db.tickets).get();
   if (users.isEmpty ||
       roles.isEmpty ||
       zones.isEmpty ||
-      tables.isEmpty ||
       cats.isEmpty ||
       menu.isEmpty ||
-      mods.isEmpty ||
-      tickets.isEmpty) {
+      mods.isEmpty) {
     throw StateError(
         'seedIfEmpty: post-seed verification failed (users=${users.length} '
-        'roles=${roles.length} zones=${zones.length} tables=${tables.length} '
-        'cats=${cats.length} menu=${menu.length} mods=${mods.length} '
-        'tickets=${tickets.length})');
+        'roles=${roles.length} zones=${zones.length} '
+        'cats=${cats.length} menu=${menu.length} mods=${mods.length})');
   }
 }
 

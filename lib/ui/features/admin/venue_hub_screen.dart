@@ -36,8 +36,15 @@ final _sections = <_Section>[
     tint: (sc) => sc.warn,
   ),
   _Section(
+    label: 'Identitas venue',
+    sub: 'Profil, lokal, pajak, dan branding struk',
+    icon: Icons.storefront_outlined,
+    route: '/venue-identity',
+    tint: (sc) => sc.violet,
+  ),
+  _Section(
     label: 'Sistem',
-    sub: 'Server, jaringan, identitas restoran',
+    sub: 'Server, jaringan, printer, perangkat',
     icon: Icons.wifi_rounded,
     route: '/settings',
     tint: (sc) => sc.info,

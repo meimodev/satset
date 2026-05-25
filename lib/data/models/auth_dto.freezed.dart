@@ -663,6 +663,7 @@ mixin _$MeDto {
   String get roleId => throw _privateConstructorUsedError;
   String? get zoneAssigned => throw _privateConstructorUsedError;
   List<String> get capabilities => throw _privateConstructorUsedError;
+  int? get avatarColorHex => throw _privateConstructorUsedError;
 
   /// Serializes this MeDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -685,6 +686,7 @@ abstract class $MeDtoCopyWith<$Res> {
     String roleId,
     String? zoneAssigned,
     List<String> capabilities,
+    int? avatarColorHex,
   });
 }
 
@@ -709,6 +711,7 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
     Object? roleId = null,
     Object? zoneAssigned = freezed,
     Object? capabilities = null,
+    Object? avatarColorHex = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -736,6 +739,10 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
                 ? _value.capabilities
                 : capabilities // ignore: cast_nullable_to_non_nullable
                       as List<String>,
+            avatarColorHex: freezed == avatarColorHex
+                ? _value.avatarColorHex
+                : avatarColorHex // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -757,6 +764,7 @@ abstract class _$$MeDtoImplCopyWith<$Res> implements $MeDtoCopyWith<$Res> {
     String roleId,
     String? zoneAssigned,
     List<String> capabilities,
+    int? avatarColorHex,
   });
 }
 
@@ -780,6 +788,7 @@ class __$$MeDtoImplCopyWithImpl<$Res>
     Object? roleId = null,
     Object? zoneAssigned = freezed,
     Object? capabilities = null,
+    Object? avatarColorHex = freezed,
   }) {
     return _then(
       _$MeDtoImpl(
@@ -807,6 +816,10 @@ class __$$MeDtoImplCopyWithImpl<$Res>
             ? _value._capabilities
             : capabilities // ignore: cast_nullable_to_non_nullable
                   as List<String>,
+        avatarColorHex: freezed == avatarColorHex
+            ? _value.avatarColorHex
+            : avatarColorHex // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -822,6 +835,7 @@ class _$MeDtoImpl implements _MeDto {
     required this.roleId,
     required this.zoneAssigned,
     required final List<String> capabilities,
+    this.avatarColorHex,
   }) : _capabilities = capabilities;
 
   factory _$MeDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -846,8 +860,11 @@ class _$MeDtoImpl implements _MeDto {
   }
 
   @override
+  final int? avatarColorHex;
+
+  @override
   String toString() {
-    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities)';
+    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities, avatarColorHex: $avatarColorHex)';
   }
 
   @override
@@ -865,7 +882,9 @@ class _$MeDtoImpl implements _MeDto {
             const DeepCollectionEquality().equals(
               other._capabilities,
               _capabilities,
-            ));
+            ) &&
+            (identical(other.avatarColorHex, avatarColorHex) ||
+                other.avatarColorHex == avatarColorHex));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -878,6 +897,7 @@ class _$MeDtoImpl implements _MeDto {
     roleId,
     zoneAssigned,
     const DeepCollectionEquality().hash(_capabilities),
+    avatarColorHex,
   );
 
   /// Create a copy of MeDto
@@ -902,6 +922,7 @@ abstract class _MeDto implements MeDto {
     required final String roleId,
     required final String? zoneAssigned,
     required final List<String> capabilities,
+    final int? avatarColorHex,
   }) = _$MeDtoImpl;
 
   factory _MeDto.fromJson(Map<String, dynamic> json) = _$MeDtoImpl.fromJson;
@@ -918,6 +939,8 @@ abstract class _MeDto implements MeDto {
   String? get zoneAssigned;
   @override
   List<String> get capabilities;
+  @override
+  int? get avatarColorHex;
 
   /// Create a copy of MeDto
   /// with the given fields replaced by the non-null parameter values.

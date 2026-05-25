@@ -94,6 +94,7 @@ Map<String, dynamic> _tableToJson(VenueTable t) => {
       'lockedByName': t.lockedByName,
       'lockedAt': t.lockedAt?.toIso8601String(),
       'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
+      'openedAt': t.openedAt?.toIso8601String(),
     };
 
 Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
@@ -168,11 +169,18 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           );
       // Mark the table `pending` in the same transaction so that all
       // clients observe ticket-creation and table-state changes together
-      // and never see one without the other.
+      // and never see one without the other. Set openedAt only on the
+      // first order (when the table transitions from available to pending).
+      final tblCurrent =
+          await (db.select(db.venueTables)..where((t) => t.id.equals(tableId)))
+              .getSingleOrNull();
       await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
           .write(VenueTablesCompanion(
         status: const Value('pending'),
         lastActorId: Value(actorId),
+        openedAt: tblCurrent?.openedAt == null
+            ? Value(DateTime.now())
+            : const Value.absent(),
       ));
       tableRow =
           await (db.select(db.venueTables)..where((t) => t.id.equals(tableId)))
@@ -278,6 +286,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           status: Value('available'),
           readyCount: Value(0),
           openAmount: Value(0),
+          openedAt: Value(null),
         ));
       }
       tableRow =

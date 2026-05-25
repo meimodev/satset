@@ -5,6 +5,7 @@ class VenueTable {
   final String zoneId;
   final String? label;
   final int pax;
+  final int capacity;
   final bool active;
 
   final TableStatus status;
@@ -17,12 +18,14 @@ class VenueTable {
   final String? lockedByName;
   final DateTime? lockedAt;
   final DateTime? lockExpiresAt;
+  final DateTime? openedAt;
 
   const VenueTable({
     required this.id,
     required this.zoneId,
     this.label,
     this.pax = 2,
+    this.capacity = 2,
     this.active = true,
     this.status = TableStatus.available,
     this.elapsed,
@@ -34,6 +37,7 @@ class VenueTable {
     this.lockedByName,
     this.lockedAt,
     this.lockExpiresAt,
+    this.openedAt,
   });
 
   /// True when [lockedBy] is set, not equal to [userId], and the lease has
@@ -52,6 +56,7 @@ class VenueTable {
     String? zoneId,
     String? label,
     int? pax,
+    int? capacity,
     bool? active,
     TableStatus? status,
     String? elapsed,
@@ -63,12 +68,14 @@ class VenueTable {
     String? lockedByName,
     DateTime? lockedAt,
     DateTime? lockExpiresAt,
+    DateTime? openedAt,
   }) {
     return VenueTable(
       id: id,
       zoneId: zoneId ?? this.zoneId,
       label: label ?? this.label,
       pax: pax ?? this.pax,
+      capacity: capacity ?? this.capacity,
       active: active ?? this.active,
       status: status ?? this.status,
       elapsed: elapsed ?? this.elapsed,
@@ -80,6 +87,7 @@ class VenueTable {
       lockedByName: lockedByName ?? this.lockedByName,
       lockedAt: lockedAt ?? this.lockedAt,
       lockExpiresAt: lockExpiresAt ?? this.lockExpiresAt,
+      openedAt: openedAt ?? this.openedAt,
     );
   }
 }

@@ -55,6 +55,7 @@ class MeDto with _$MeDto {
     required String roleId,
     required String? zoneAssigned,
     required List<String> capabilities,
+    int? avatarColorHex,
   }) = _MeDto;
 
   factory MeDto.fromJson(Map<String, dynamic> json) => _$MeDtoFromJson(json);

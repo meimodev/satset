@@ -40,7 +40,7 @@ class _FloorScreenState extends ConsumerState<FloorScreen> {
       orElse: () => zones.first,
     );
     final zoneTables = tables.where((t) => t.zoneId == selected.id).toList();
-    final seats = tables.fold<int>(0, (s, t) => s + t.pax);
+    final seats = tables.fold<int>(0, (s, t) => s + t.capacity);
 
     return SafeArea(
       bottom: false,
@@ -92,9 +92,9 @@ class _FloorScreenState extends ConsumerState<FloorScreen> {
   }
 
   Widget _emptyZone(BuildContext context, SatColors sc, Zone zone) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -424,7 +424,7 @@ class _TableRow extends StatelessWidget {
                         )),
                     const SizedBox(height: 2),
                     Text(
-                      '${table.pax} kursi',
+                      '${table.capacity} kursi',
                       style: SatType.mono(
                         size: 10,
                         letterSpacing: 0.4,
@@ -487,7 +487,7 @@ class _TableEditor extends ConsumerStatefulWidget {
 
 class _TableEditorState extends ConsumerState<_TableEditor> {
   late final TextEditingController _name;
-  late int _pax;
+  late int _capacity;
   late String _zoneId;
   late bool _active;
 
@@ -498,7 +498,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     super.initState();
     final t = widget.table;
     _name = TextEditingController(text: t?.label ?? '');
-    _pax = t?.pax ?? 2;
+    _capacity = t?.capacity ?? 2;
     _zoneId = t?.zoneId ?? widget.zoneId;
     _active = t?.active ?? true;
   }
@@ -511,17 +511,25 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
 
   void _save() {
     final n = ref.read(tablesProvider.notifier);
+    var label = _name.text.trim();
+    if (label.isEmpty) {
+      final existing = ref
+          .read(tablesProvider)
+          .where((t) => t.zoneId == _zoneId)
+          .length;
+      label = 'T${existing + 1}';
+    }
     if (_isNew) {
       n.addTable(
         zoneId: _zoneId,
-        label: _name.text,
-        pax: _pax,
+        label: label,
+        capacity: _capacity,
       );
     } else {
       n.configureTable(
         widget.table!.id,
-        label: _name.text,
-        pax: _pax,
+        label: label,
+        capacity: _capacity,
         zoneId: _zoneId,
         active: _active,
       );
@@ -555,13 +563,13 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
           const SizedBox(height: 8),
           _SatField(controller: _name, hint: 'mis. T7, Booth A'),
           const SizedBox(height: 20),
-          _label(sc, 'Kapasitas kursi'),
+          _label(sc, 'Kapasitas tamu maks'),
           const SizedBox(height: 8),
           _Stepper(
-            value: _pax,
+            value: _capacity,
             min: 1,
             max: 20,
-            onChanged: (v) => setState(() => _pax = v),
+            onChanged: (v) => setState(() => _capacity = v),
           ),
           const SizedBox(height: 20),
           _label(sc, 'Zona'),
@@ -674,7 +682,7 @@ class _ZonesEditor extends ConsumerWidget {
     final zones = ref.watch(zonesProvider);
     final tables = ref.watch(tablesProvider);
     final zonesN = ref.read(zonesProvider.notifier);
-    final seats = tables.fold<int>(0, (s, t) => s + t.pax);
+    final seats = tables.fold<int>(0, (s, t) => s + t.capacity);
 
     return _SheetShell(
       title: 'Kelola Zona',

@@ -103,6 +103,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       zoneId: d.zoneId,
       label: d.label,
       pax: d.pax,
+      capacity: d.capacity,
       active: d.active,
       status: TableStatus.values.firstWhere(
         (s) => s.name == d.status,
@@ -115,7 +116,18 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       lockedByName: d.lockedByName,
       lockedAt: d.lockedAt,
       lockExpiresAt: d.lockExpiresAt,
+      openedAt: d.openedAt,
+      elapsed: d.openedAt == null ? null : _elapsedStr(d.openedAt!),
     );
+  }
+
+  static String _elapsedStr(DateTime openedAt) {
+    final d = DateTime.now().difference(openedAt).abs();
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    return h > 0
+        ? '$h:${m.toString().padLeft(2, '0')}'
+        : '0:${m.toString().padLeft(2, '0')}';
   }
 
   /// Apply a server-returned [TableDto] to local state. Used both by
@@ -141,11 +153,13 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     SatLog.repo('tables.markPending id=${id.substring(0, id.length.clamp(0, 6))}');
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
+      final now = DateTime.now();
       _replace(
         id,
         prev.copyWith(
           status: TableStatus.pending,
-          elapsed: prev.elapsed ?? '0:01',
+          openedAt: prev.openedAt ?? now,
+          elapsed: prev.elapsed ?? _elapsedStr(prev.openedAt ?? now),
           mine: true,
           lastActorId: userId ?? prev.lastActorId,
         ),
@@ -247,13 +261,13 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
 
   Future<void> incrementPax(String id, {String? userId}) async {
     final cur = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
-    if (cur == null || cur.pax >= 12) return;
+    if (cur == null || cur.pax >= cur.capacity) return;
     await setPax(id, cur.pax + 1, userId: userId);
   }
 
   Future<void> decrementPax(String id, {String? userId}) async {
     final cur = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
-    if (cur == null || cur.pax <= 1) return;
+    if (cur == null || cur.pax <= 0) return;
     await setPax(id, cur.pax - 1, userId: userId);
   }
 
@@ -262,15 +276,17 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   String addTable({
     required String zoneId,
     required String label,
-    int pax = 2,
+    int capacity = 2,
   }) {
     SatLog.repo('tables.add zone=${zoneId.substring(0, zoneId.length.clamp(0, 6))} label=$label');
     final id = _uuid.v4();
+    final cap = capacity < 1 ? 1 : capacity;
     final next = VenueTable(
       id: id,
       zoneId: zoneId,
       label: label.trim().isEmpty ? null : label.trim(),
-      pax: pax,
+      pax: 0, // empty until waiter seats guests.
+      capacity: cap,
     );
     state = [...state, next];
     final cfg = ref.read(apiConfigProvider);
@@ -286,6 +302,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
         'zoneId': t.zoneId,
         'label': t.label,
         'pax': t.pax,
+        'capacity': t.capacity,
         'active': t.active,
       });
       _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
@@ -431,6 +448,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
             status: TableStatus.available,
             readyCount: 0,
             openAmount: 0,
+            pax: 0,
           ),
         );
       }
@@ -446,7 +464,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   void configureTable(
     String id, {
     String? label,
-    int? pax,
+    int? capacity,
     String? zoneId,
     bool? active,
   }) {
@@ -454,12 +472,21 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     state = [
       for (final t in state)
         if (t.id == id)
-          t.copyWith(
-            label: label,
-            pax: pax,
-            zoneId: zoneId,
-            active: active,
-          )
+          () {
+            final nextCap = capacity == null
+                ? t.capacity
+                : (capacity < 1 ? 1 : capacity);
+            // Shrinking capacity below current pax drags pax down so the
+            // optimistic state never violates pax <= capacity.
+            final nextPax = t.pax > nextCap ? nextCap : t.pax;
+            return t.copyWith(
+              label: label,
+              capacity: nextCap,
+              pax: nextPax,
+              zoneId: zoneId,
+              active: active,
+            );
+          }()
         else
           t,
     ];
@@ -469,7 +496,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       try {
         final body = <String, dynamic>{
           'label': ?label,
-          'pax': ?pax,
+          'capacity': ?capacity,
           'zoneId': ?zoneId,
           'active': ?active,
         };

@@ -4,6 +4,7 @@ import 'package:satset/ui/core/design/typography.dart';
 
 class GuestStepper extends StatelessWidget {
   final int pax;
+  final int max;
   final VoidCallback? onMinus;
   final VoidCallback? onPlus;
   final bool enabled;
@@ -12,6 +13,7 @@ class GuestStepper extends StatelessWidget {
   const GuestStepper({
     super.key,
     required this.pax,
+    required this.max,
     required this.onMinus,
     required this.onPlus,
     this.enabled = true,
@@ -21,8 +23,9 @@ class GuestStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final canMinus = enabled && pax > 1;
-    final canPlus = enabled && pax < 12;
+    final effectiveMax = max < 1 ? 1 : max;
+    final canMinus = enabled && pax > 0;
+    final canPlus = enabled && pax < effectiveMax;
     return Container(
       height: size,
       decoration: BoxDecoration(
@@ -35,15 +38,24 @@ class GuestStepper extends StatelessWidget {
         children: [
           _btn(context, sc, Icons.remove_rounded, canMinus ? onMinus : null, canMinus),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: size * 0.35),
-            child: Text(
-              '$pax tamu',
-              style: SatType.sans(
-                size: size * 0.36,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-                letterSpacing: -0.1,
-              ),
+            padding: EdgeInsets.symmetric(horizontal: size * 0.22),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.person_outline,
+                    size: size * 0.38, color: sc.textMd),
+                SizedBox(width: size * 0.12),
+                Text(
+                  '$pax/$effectiveMax',
+                  style: SatType.sans(
+                    size: size * 0.36,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
             ),
           ),
           _btn(context, sc, Icons.add_rounded, canPlus ? onPlus : null, canPlus),

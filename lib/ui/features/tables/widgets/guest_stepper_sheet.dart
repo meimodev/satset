@@ -78,6 +78,7 @@ class _GuestStepperSheet extends ConsumerWidget {
             Center(
               child: GuestStepper(
                 pax: table.pax,
+                max: table.capacity,
                 enabled: canEdit,
                 size: 48,
                 onMinus: () => ref

@@ -38,7 +38,8 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
           ? const Zone(id: '', name: '', short: '')
           : zones.first,
     );
-    final zoneTables = tables.where((t) => t.zoneId == _activeZone).toList();
+    final activeZoneId = zone.id.isEmpty ? _activeZone : zone.id;
+    final zoneTables = tables.where((t) => t.zoneId == activeZoneId).toList();
     final occupied = zoneTables.where((t) => t.status != TableStatus.available).length;
     final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
     final openTotal = zoneTables.fold<int>(0, (s, t) => s + t.openAmount);
@@ -332,15 +333,26 @@ class _TableCard extends ConsumerWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(table.id,
-                          style: SatType.mono(
-                            size: tnumSize,
-                            weight: FontWeight.w500,
-                            letterSpacing: -tnumSize * 0.02,
-                            color: numColor,
-                          )),
-                      const Spacer(),
-                      Text(tablet ? '${table.pax} tamu' : '${table.pax}p',
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(table.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: SatType.mono(
+                                size: tnumSize,
+                                weight: FontWeight.w500,
+                                letterSpacing: -tnumSize * 0.02,
+                                color: numColor,
+                              )),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.person_outline,
+                          size: tablet ? 16 : 13, color: sc.textMd),
+                      const SizedBox(width: 3),
+                      Text('${table.pax}/${table.capacity}',
                           style: SatType.mono(
                             size: tablet ? 13 : 11,
                             color: sc.textMd,
