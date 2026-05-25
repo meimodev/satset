@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart' as http_io;
 
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 
 /// Holds the LAN connection parameters the ApiClient needs.
@@ -95,28 +96,49 @@ class ApiClient {
     };
   }
 
-  Future<dynamic> getJson(String path, {Map<String, String>? query}) async {
-    final uri = _config.baseUri.resolve(path).replace(queryParameters: query);
-    final r = await _inner.get(uri, headers: await _headers());
-    return _decode(r);
-  }
+  Future<dynamic> getJson(String path, {Map<String, String>? query}) =>
+      _send('GET', path, query: query);
 
-  Future<dynamic> postJson(String path, Object body) async {
-    final uri = _config.baseUri.resolve(path);
-    final r = await _inner.post(uri, headers: await _headers(), body: jsonEncode(body));
-    return _decode(r);
-  }
+  Future<dynamic> postJson(String path, Object body) =>
+      _send('POST', path, body: body);
 
-  Future<dynamic> patchJson(String path, Object body) async {
-    final uri = _config.baseUri.resolve(path);
-    final r = await _inner.patch(uri, headers: await _headers(), body: jsonEncode(body));
-    return _decode(r);
-  }
+  Future<dynamic> patchJson(String path, Object body) =>
+      _send('PATCH', path, body: body);
 
   Future<void> delete(String path) async {
-    final uri = _config.baseUri.resolve(path);
-    final r = await _inner.delete(uri, headers: await _headers());
-    _decode(r);
+    await _send('DELETE', path);
+  }
+
+  Future<dynamic> deleteJson(String path) => _send('DELETE', path);
+
+  Future<dynamic> _send(
+    String method,
+    String path, {
+    Map<String, String>? query,
+    Object? body,
+  }) async {
+    final uri = _config.baseUri.resolve(path).replace(queryParameters: query);
+    final headers = await _headers();
+    final encoded = body == null ? null : jsonEncode(body);
+    final sw = Stopwatch()..start();
+    try {
+      final r = switch (method) {
+        'GET' => await _inner.get(uri, headers: headers),
+        'POST' => await _inner.post(uri, headers: headers, body: encoded),
+        'PATCH' => await _inner.patch(uri, headers: headers, body: encoded),
+        'DELETE' => await _inner.delete(uri, headers: headers),
+        _ => throw StateError('Unsupported method $method'),
+      };
+      SatLog.http('$method $path → ${r.statusCode} ${sw.elapsedMilliseconds}ms');
+      return _decode(r);
+    } on ApiException catch (e) {
+      SatLog.http(
+          '$method $path ✗ ${e.statusCode} ${e.code ?? "-"} ${sw.elapsedMilliseconds}ms');
+      rethrow;
+    } catch (e, st) {
+      SatLog.err('http $method $path', e, st);
+      rethrow;
+    }
   }
 
   dynamic _decode(http.Response r) {
@@ -137,6 +159,12 @@ class ApiClient {
 
 /// Lazily-constructed; replaced when mode or pairing changes.
 final apiConfigProvider = StateProvider<ApiConfig?>((ref) => null);
+
+/// True iff [apiConfigProvider] is populated. Drives the router pair-gate
+/// and is the single signal repositories use to decide whether `_bootstrap`
+/// is allowed to hit the network.
+final pairedProvider = Provider<bool>(
+    (ref) => ref.watch(apiConfigProvider) != null);
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final cfg = ref.watch(apiConfigProvider);

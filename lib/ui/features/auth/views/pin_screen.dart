@@ -1,48 +1,27 @@
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/services/prefs_service.dart';
+import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 
-enum _LoginMode { admin, staff }
+const _kEnterDur = Duration(milliseconds: 480);
+const _kMicroDur = Duration(milliseconds: 200);
+const _kPanelDur = Duration(milliseconds: 280);
+const _kPressDur = Duration(milliseconds: 110);
+const _kShakeDur = Duration(milliseconds: 360);
+const _kEnterCurve = Curves.easeOutQuart;
+const _kPanelCurve = Curves.easeOutQuint;
 
-class _ServerOption {
-  final String id;
-  final String name;
-  final String ip;
-  final String latency;
-  final bool online;
-  const _ServerOption({
-    required this.id,
-    required this.name,
-    required this.ip,
-    required this.latency,
-    required this.online,
-  });
-}
-
-const List<_ServerOption> _kServers = [
-  _ServerOption(
-      id: 'warung-berawa',
-      name: 'Warung Sebelah · Berawa',
-      ip: '192.168.4.21',
-      latency: '38 ms',
-      online: true),
-  _ServerOption(
-      id: 'cabang-sanur',
-      name: 'Cabang Sanur',
-      ip: '192.168.5.10',
-      latency: '62 ms',
-      online: true),
-  _ServerOption(
-      id: 'cabang-ubud',
-      name: 'Cabang Ubud',
-      ip: '192.168.6.4',
-      latency: '—',
-      online: false),
-];
+Duration _d(BuildContext c, Duration d) =>
+    MediaQuery.disableAnimationsOf(c) ? Duration.zero : d;
 
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
@@ -51,17 +30,15 @@ class PinScreen extends ConsumerStatefulWidget {
   ConsumerState<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends ConsumerState<PinScreen> {
-  String _pin = '';
-  static const _max = 4;
-  _LoginMode _mode = _LoginMode.staff;
-  String _serverId = _kServers.first.id;
-
+class _PinScreenState extends ConsumerState<PinScreen>
+    with TickerProviderStateMixin {
   final _adminEmail = TextEditingController(text: 'admin@warungsebelah.id');
   final _adminPassword = TextEditingController();
   bool _showAdminPw = false;
+  bool _serverEditing = false;
   String? _emailError;
   String? _passwordError;
+  late final AnimationController _shake;
 
   static final _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
@@ -70,6 +47,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     super.initState();
     _adminEmail.addListener(_clearEmailError);
     _adminPassword.addListener(_clearPasswordError);
+    _shake = AnimationController(vsync: this, duration: _kShakeDur);
   }
 
   @override
@@ -78,7 +56,13 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     _adminPassword.removeListener(_clearPasswordError);
     _adminEmail.dispose();
     _adminPassword.dispose();
+    _shake.dispose();
     super.dispose();
+  }
+
+  void _triggerShake() {
+    if (MediaQuery.disableAnimationsOf(context)) return;
+    _shake.forward(from: 0);
   }
 
   void _clearEmailError() {
@@ -102,7 +86,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     return null;
   }
 
-  void _signInAdmin() {
+  Future<void> _signInAdmin() async {
     final emailErr = _validateEmail(_adminEmail.text);
     final pwErr = _validatePassword(_adminPassword.text);
     if (emailErr != null || pwErr != null) {
@@ -113,53 +97,141 @@ class _PinScreenState extends ConsumerState<PinScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-    // Admin sign-in remains dummy (no email/password endpoint yet).
-    ref.read(authStateProvider.notifier).signIn();
-    context.go('/tables');
+    final ok = await ref.read(pinViewModelProvider.notifier).submitAdmin(
+          email: _adminEmail.text.trim(),
+          password: _adminPassword.text,
+        );
+    if (!mounted) return;
+    if (ok) context.go('/venue');
   }
 
-  void _press(String d) {
+  Future<void> _onDigit(String d) async {
+    final vm = ref.read(pinViewModelProvider.notifier);
     if (d == 'del') {
-      setState(() =>
-          _pin = _pin.isEmpty ? _pin : _pin.substring(0, _pin.length - 1));
+      vm.backspace();
       return;
     }
-    if (_pin.length >= _max) return;
-    setState(() => _pin = _pin + d);
-    if (_pin.length == _max) {
-      Future.delayed(const Duration(milliseconds: 220), () async {
-        if (!mounted) return;
-        // PIN-based LAN sign-in; falls back to dummy when no API config.
-        await ref.read(authStateProvider.notifier).signInWithPin(_pin);
-        if (!mounted) return;
-        if (ref.read(authStateProvider).isAuthenticated) {
-          context.go('/tables');
-        }
-      });
+    vm.onDigit(d);
+    final st = ref.read(pinViewModelProvider);
+    if (st.pin.length == PinState.pinMax) {
+      await Future<void>.delayed(const Duration(milliseconds: 220));
+      if (!mounted) return;
+      final ok = await vm.submitStaffPin();
+      if (!mounted) return;
+      if (ok) context.go('/tables');
     }
-  }
-
-  void _setMode(_LoginMode m) {
-    setState(() => _mode = m);
-  }
-
-  void _setServer(String id) {
-    setState(() => _serverId = id);
   }
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l = context.layout;
+    final prefs = ref.watch(prefsServiceProvider);
+    if (!prefs.hasValue) {
+      return Scaffold(
+        backgroundColor: sc.bg0,
+        body: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2, color: sc.accent),
+          ),
+        ),
+      );
+    }
+    final state = ref.watch(pinViewModelProvider);
 
-    final modeSwitcher = _ModeSwitcher(mode: _mode, onChange: _setMode);
-    final serverList = _ServerList(
-      servers: _kServers,
-      selectedId: _serverId,
-      onSelect: _setServer,
+    // Auto-collapse the server editor once a paired server is selected.
+    ref.listen<PinState>(pinViewModelProvider, (prev, next) {
+      final wasPaired = prev?.selectedServer?.paired ?? false;
+      final isPaired = next.selectedServer?.paired ?? false;
+      if (!wasPaired && isPaired && _serverEditing) {
+        setState(() => _serverEditing = false);
+      }
+      if (prev?.pinError != next.pinError && next.pinError != null) {
+        _triggerShake();
+      }
+    });
+
+    final staffConnected = state.mode == SignInMode.staff &&
+        (state.selectedServer?.paired ?? false);
+    // Staff editor is shown when explicitly editing OR there is nothing to
+    // connect to yet. Hides PIN input until a server is locked in.
+    final staffEditing =
+        state.mode == SignInMode.staff && (_serverEditing || !staffConnected);
+    // Hide mode switcher once a staff connection is locked in — the chip on
+    // the connected card already conveys the active mode, and edit re-opens
+    // the editor (which brings the switcher back).
+    final showModeSwitcher =
+        state.mode == SignInMode.admin || staffEditing;
+
+    final modeSwitcher = _ModeSwitcher(
+      mode: state.mode,
+      onChange: (m) {
+        if (m == SignInMode.staff) {
+          setState(() => _serverEditing = false);
+        }
+        ref.read(pinViewModelProvider.notifier).setMode(m);
+      },
     );
+    final serverPanel = state.mode != SignInMode.staff
+        ? const SizedBox.shrink()
+        : staffEditing
+            ? _ServerList(
+                servers: state.servers,
+                selectedKey: state.selectedServerKey,
+                pairingBusy: state.pairingBusy,
+                pairingError: state.pairingError,
+                onSelect: (k) => ref
+                    .read(pinViewModelProvider.notifier)
+                    .selectServer(k),
+                onAutoClaim: (s) => ref
+                    .read(pinViewModelProvider.notifier)
+                    .selectDiscovered(s),
+              )
+            : _ConnectedServerCard(
+                server: state.selectedServer!,
+                onEdit: () => setState(() => _serverEditing = true),
+              );
 
     if (l.useTabletShell) {
+      final tabletAuthBody = state.mode == SignInMode.staff
+          ? (staffEditing
+              ? _SelectServerHint(sc: sc)
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _PinDots(pin: state.pin, tablet: true, shake: _shake),
+                    const SizedBox(height: 12),
+                    _PinHelper(
+                      pinLength: state.pin.length,
+                      max: PinState.pinMax,
+                      busy: state.pinBusy,
+                      error: state.pinError,
+                    ),
+                    const SizedBox(height: 22),
+                    _Pad(
+                      onPress: _onDigit,
+                      tablet: true,
+                      enabled: !state.pinBusy,
+                    ),
+                  ],
+                ))
+          : _AdminAuthForm(
+              email: _adminEmail,
+              password: _adminPassword,
+              showPassword: _showAdminPw,
+              onToggleShow: () =>
+                  setState(() => _showAdminPw = !_showAdminPw),
+              onSubmit: _signInAdmin,
+              emailError: _emailError,
+              passwordError: _passwordError,
+              busy: state.adminBusy,
+              serverError: state.adminError,
+            );
+      final swapKey = state.mode == SignInMode.admin
+          ? 'admin'
+          : (staffEditing ? 'staff-edit' : 'staff-pin');
       return Scaffold(
         backgroundColor: sc.bg0,
         body: Row(
@@ -173,20 +245,31 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _TabletBrand(),
+                      _Reveal(child: _TabletBrand()),
                       const SizedBox(height: 48),
-                      Text('Selamat sore',
-                          style: SatType.mono(
-                            size: 13,
-                            color: sc.textMd,
-                            letterSpacing: 1.3,
-                          )),
-                      const SizedBox(height: 22),
-                      modeSwitcher,
-                      if (_mode == _LoginMode.staff) ...[
-                        const SizedBox(height: 18),
-                        serverList,
-                      ],
+                      _Reveal(
+                        delay: const Duration(milliseconds: 80),
+                        child: AnimatedSize(
+                          duration: _d(context, _kPanelDur),
+                          curve: _kPanelCurve,
+                          alignment: Alignment.topCenter,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (showModeSwitcher) modeSwitcher,
+                              if (state.mode == SignInMode.staff) ...[
+                                SizedBox(height: showModeSwitcher ? 18 : 0),
+                                _SwapBody(
+                                  switchKey: staffEditing
+                                      ? 'server-list'
+                                      : 'server-connected',
+                                  child: serverPanel,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -203,43 +286,27 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _ModeHeading(mode: _mode, serverId: _serverId),
-                      const SizedBox(height: 28),
-                      if (_mode == _LoginMode.staff) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            _max,
-                            (i) => Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 9),
-                              child: Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:
-                                      i < _pin.length ? sc.accent : sc.bg3,
-                                ),
-                              ),
-                            ),
+                      if (state.mode == SignInMode.admin) ...[
+                        _Reveal(
+                          delay: const Duration(milliseconds: 120),
+                          child: _ModeHeading(
+                            mode: state.mode,
+                            server: state.selectedServer,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        _PinHelper(pinLength: _pin.length, max: _max),
-                        const SizedBox(height: 22),
-                        _Pad(onPress: _press, tablet: true),
-                      ] else
-                        _AdminAuthForm(
-                          email: _adminEmail,
-                          password: _adminPassword,
-                          showPassword: _showAdminPw,
-                          onToggleShow: () => setState(
-                              () => _showAdminPw = !_showAdminPw),
-                          onSubmit: _signInAdmin,
-                          emailError: _emailError,
-                          passwordError: _passwordError,
+                        const SizedBox(height: 28),
+                      ],
+                      _Reveal(
+                        delay: const Duration(milliseconds: 180),
+                        child: _SwapBody(
+                          switchKey: swapKey,
+                          child: tabletAuthBody,
                         ),
+                      ),
+                      _Reveal(
+                        delay: const Duration(milliseconds: 260),
+                        child: _DebugCredsButton(mode: state.mode),
+                      ),
                     ],
                   ),
                 ),
@@ -251,33 +318,15 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     }
 
     final brand = _Brand();
-    final greeting = Text('Selamat sore',
-        style: SatType.mono(
-          size: 13,
-          color: sc.textMd,
-          letterSpacing: 1.04,
-        ));
-    final dots = Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          _max,
-          (i) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: i < _pin.length ? sc.accent : sc.bg3,
-              ),
-            ),
-          ),
-        ),
-      ),
+    final pad = _Pad(
+      onPress: _onDigit,
+      tablet: false,
+      enabled: !state.pinBusy,
     );
-    final pad = _Pad(onPress: _press, tablet: false);
-    final modeHeading = _ModeHeading(mode: _mode, serverId: _serverId);
+    final modeHeading = _ModeHeading(
+      mode: state.mode,
+      server: state.selectedServer,
+    );
     final adminForm = _AdminAuthForm(
       email: _adminEmail,
       password: _adminPassword,
@@ -286,32 +335,54 @@ class _PinScreenState extends ConsumerState<PinScreen> {
       onSubmit: _signInAdmin,
       emailError: _emailError,
       passwordError: _passwordError,
+      busy: state.adminBusy,
+      serverError: state.adminError,
     );
-    final authBody = _mode == _LoginMode.staff
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              dots,
-              const SizedBox(height: 10),
-              _PinHelper(pinLength: _pin.length, max: _max),
-              const SizedBox(height: 18),
-              pad,
-            ],
-          )
+    final authBody = state.mode == SignInMode.staff
+        ? (staffEditing
+            ? _SelectServerHint(sc: sc)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _PinDots(pin: state.pin, tablet: false, shake: _shake),
+                  const SizedBox(height: 10),
+                  _PinHelper(
+                    pinLength: state.pin.length,
+                    max: PinState.pinMax,
+                    busy: state.pinBusy,
+                    error: state.pinError,
+                  ),
+                  const SizedBox(height: 18),
+                  pad,
+                ],
+              ))
         : adminForm;
 
     final twoCol = l.isLandscape && l.size.width >= 720;
+    final swapKey = state.mode == SignInMode.admin
+        ? 'admin'
+        : (staffEditing ? 'staff-edit' : 'staff-pin');
 
-    final modeBlock = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        modeSwitcher,
-        if (_mode == _LoginMode.staff) ...[
-          const SizedBox(height: 14),
-          serverList,
+    final modeBlock = AnimatedSize(
+      duration: _d(context, _kPanelDur),
+      curve: _kPanelCurve,
+      alignment: Alignment.topCenter,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showModeSwitcher) modeSwitcher,
+          if (state.mode == SignInMode.staff) ...[
+            SizedBox(height: showModeSwitcher ? 14 : 0),
+            _SwapBody(
+              switchKey: staffEditing ? 'server-list' : 'server-connected',
+              child: serverPanel,
+            ),
+          ],
         ],
-      ],
+      ),
     );
+
+    final wrappedAuthBody = _SwapBody(switchKey: swapKey, child: authBody);
 
     return Scaffold(
       backgroundColor: sc.bg0,
@@ -329,11 +400,12 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              brand,
+                              _Reveal(child: brand),
                               const SizedBox(height: 36),
-                              greeting,
-                              const SizedBox(height: 24),
-                              modeBlock,
+                              _Reveal(
+                                delay: const Duration(milliseconds: 80),
+                                child: modeBlock,
+                              ),
                             ],
                           ),
                         ),
@@ -342,9 +414,21 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              modeHeading,
-                              const SizedBox(height: 22),
-                              authBody,
+                              if (state.mode == SignInMode.admin) ...[
+                                _Reveal(
+                                  delay: const Duration(milliseconds: 120),
+                                  child: modeHeading,
+                                ),
+                                const SizedBox(height: 22),
+                              ],
+                              _Reveal(
+                                delay: const Duration(milliseconds: 180),
+                                child: wrappedAuthBody,
+                              ),
+                              _Reveal(
+                                delay: const Duration(milliseconds: 260),
+                                child: _DebugCredsButton(mode: state.mode),
+                              ),
                             ],
                           ),
                         ),
@@ -354,18 +438,28 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 24),
-                        brand,
+                        _Reveal(child: brand),
                         const SizedBox(height: 36),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: greeting,
+                        _Reveal(
+                          delay: const Duration(milliseconds: 80),
+                          child: modeBlock,
                         ),
-                        const SizedBox(height: 22),
-                        modeBlock,
                         const SizedBox(height: 26),
-                        modeHeading,
-                        const SizedBox(height: 18),
-                        authBody,
+                        if (state.mode == SignInMode.admin) ...[
+                          _Reveal(
+                            delay: const Duration(milliseconds: 140),
+                            child: modeHeading,
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+                        _Reveal(
+                          delay: const Duration(milliseconds: 200),
+                          child: wrappedAuthBody,
+                        ),
+                        _Reveal(
+                          delay: const Duration(milliseconds: 280),
+                          child: _DebugCredsButton(mode: state.mode),
+                        ),
                       ],
                     ),
             ),
@@ -376,22 +470,77 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   }
 }
 
-class _ModeHeading extends StatelessWidget {
-  final _LoginMode mode;
-  final String serverId;
-  const _ModeHeading({required this.mode, required this.serverId});
+class _PinDots extends StatelessWidget {
+  final String pin;
+  final bool tablet;
+  final Animation<double>? shake;
+  const _PinDots({required this.pin, required this.tablet, this.shake});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final isAdmin = mode == _LoginMode.admin;
-    final server =
-        _kServers.firstWhere((s) => s.id == serverId, orElse: () => _kServers.first);
+    final size = tablet ? 16.0 : 14.0;
+    final pad = tablet ? 9.0 : 8.0;
+    final row = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(PinState.pinMax, (i) {
+        final filled = i < pin.length;
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: pad),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: filled ? 0 : 1, end: filled ? 1 : 0),
+            duration: _d(context, const Duration(milliseconds: 180)),
+            curve: Curves.easeOutQuart,
+            builder: (context, t, _) {
+              final scale = 0.7 + 0.3 * t;
+              return Transform.scale(
+                scale: filled ? scale : 1.0,
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color.lerp(sc.bg3, sc.accent, t)!,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }),
+    );
+    final shaken = shake == null
+        ? row
+        : AnimatedBuilder(
+            animation: shake!,
+            builder: (context, child) {
+              final t = shake!.value;
+              if (t == 0) return child!;
+              final dx = math.sin(t * math.pi * 4) * 8 * (1 - t);
+              return Transform.translate(offset: Offset(dx, 0), child: child);
+            },
+            child: row,
+          );
+    return Center(child: shaken);
+  }
+}
+
+class _ModeHeading extends StatelessWidget {
+  final SignInMode mode;
+  final PairedServerInfo? server;
+  const _ModeHeading({required this.mode, required this.server});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final isAdmin = mode == SignInMode.admin;
     final label = isAdmin ? 'MODE ADMIN' : 'MODE STAFF';
     final title = isAdmin ? 'Masuk admin' : 'Masukkan PIN';
     final sub = isAdmin
         ? 'Login dengan email & kata sandi'
-        : 'Tersambung ke ${server.name}';
+        : server != null
+            ? 'Tersambung ke ${server!.label}'
+            : 'Pilih server lebih dulu';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -434,6 +583,8 @@ class _AdminAuthForm extends StatelessWidget {
   final VoidCallback onSubmit;
   final String? emailError;
   final String? passwordError;
+  final bool busy;
+  final String? serverError;
   const _AdminAuthForm({
     required this.email,
     required this.password,
@@ -442,6 +593,8 @@ class _AdminAuthForm extends StatelessWidget {
     required this.onSubmit,
     this.emailError,
     this.passwordError,
+    this.busy = false,
+    this.serverError,
   });
 
   @override
@@ -544,10 +697,17 @@ class _AdminAuthForm extends StatelessWidget {
         SizedBox(
           height: 52,
           child: ElevatedButton.icon(
-            onPressed: onSubmit,
-            icon: Icon(Icons.shield_moon_outlined,
-                size: 18, color: sc.accentInk),
-            label: Text('Masuk sebagai admin',
+            onPressed: busy ? null : onSubmit,
+            icon: busy
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: sc.accentInk),
+                  )
+                : Icon(Icons.shield_moon_outlined,
+                    size: 18, color: sc.accentInk),
+            label: Text(busy ? 'Memuat...' : 'Masuk sebagai admin',
                 style: SatType.sans(
                     size: 15,
                     weight: FontWeight.w600,
@@ -555,11 +715,30 @@ class _AdminAuthForm extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: sc.accent,
               foregroundColor: sc.accentInk,
+              disabledBackgroundColor: sc.accent.withValues(alpha: 0.7),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ),
+        if (serverError != null) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 12, color: sc.urgent),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(serverError!,
+                    textAlign: TextAlign.center,
+                    style: SatType.sans(
+                        size: 12,
+                        weight: FontWeight.w500,
+                        color: sc.urgent)),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -577,13 +756,14 @@ class _AdminAuthForm extends StatelessWidget {
 }
 
 class _ModeSwitcher extends StatelessWidget {
-  final _LoginMode mode;
-  final ValueChanged<_LoginMode> onChange;
+  final SignInMode mode;
+  final ValueChanged<SignInMode> onChange;
   const _ModeSwitcher({required this.mode, required this.onChange});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final isAdmin = mode == SignInMode.admin;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -591,32 +771,55 @@ class _ModeSwitcher extends StatelessWidget {
         border: Border.all(color: sc.border0),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _modeTab(
-              context,
-              sc,
-              icon: Icons.shield_moon_outlined,
-              label: 'Admin',
-              sub: 'Server lokal',
-              active: mode == _LoginMode.admin,
-              onTap: () => onChange(_LoginMode.admin),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _modeTab(
-              context,
-              sc,
-              icon: Icons.badge_outlined,
-              label: 'Staff',
-              sub: 'Pilih server',
-              active: mode == _LoginMode.staff,
-              onTap: () => onChange(_LoginMode.staff),
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final pillW = (constraints.maxWidth - 4) / 2;
+          return Stack(
+            children: [
+              AnimatedAlign(
+                alignment:
+                    isAdmin ? Alignment.centerLeft : Alignment.centerRight,
+                duration: _d(context, _kPanelDur),
+                curve: _kPanelCurve,
+                child: Container(
+                  width: pillW,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: sc.accentSoft,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _modeTab(
+                      context,
+                      sc,
+                      icon: Icons.shield_moon_outlined,
+                      label: 'Admin',
+                      sub: 'Server lokal',
+                      active: isAdmin,
+                      onTap: () => onChange(SignInMode.admin),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: _modeTab(
+                      context,
+                      sc,
+                      icon: Icons.badge_outlined,
+                      label: 'Staff',
+                      sub: 'Pilih server',
+                      active: !isAdmin,
+                      onTap: () => onChange(SignInMode.staff),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -630,61 +833,86 @@ class _ModeSwitcher extends StatelessWidget {
     required bool active,
     required VoidCallback onTap,
   }) {
-    final fg = active ? sc.accent : sc.textMd;
-    return Material(
-      color: active ? sc.accentSoft : Colors.transparent,
+    return InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: fg),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(end: active ? 1.0 : 0.0),
+              duration: _d(context, _kMicroDur),
+              curve: Curves.easeOutQuart,
+              builder: (context, t, _) => Icon(
+                icon,
+                size: 18,
+                color: Color.lerp(sc.textMd, sc.accent, t),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(end: active ? 1.0 : 0.0),
+                    duration: _d(context, _kMicroDur),
+                    curve: Curves.easeOutQuart,
+                    builder: (context, t, _) => Text(label,
                         style: SatType.sans(
                           size: 14,
                           weight: FontWeight.w600,
                           letterSpacing: -0.14,
-                          color: active ? sc.textHi : sc.textMd,
+                          color: Color.lerp(sc.textMd, sc.textHi, t),
                         )),
-                    const SizedBox(height: 1),
-                    Text(sub,
+                  ),
+                  const SizedBox(height: 1),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(end: active ? 1.0 : 0.0),
+                    duration: _d(context, _kMicroDur),
+                    curve: Curves.easeOutQuart,
+                    builder: (context, t, _) => Text(sub,
                         style: SatType.mono(
                           size: 10,
-                          color: active ? fg : sc.textLo,
+                          color: Color.lerp(sc.textLo, sc.accent, t),
                           letterSpacing: 0.4,
                         )),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ServerList extends StatelessWidget {
-  final List<_ServerOption> servers;
-  final String selectedId;
+class _ServerList extends ConsumerWidget {
+  final List<PairedServerInfo> servers;
+  final String? selectedKey;
+  final bool pairingBusy;
+  final String? pairingError;
   final ValueChanged<String> onSelect;
+  final Future<bool> Function(PairedServerInfo) onAutoClaim;
   const _ServerList({
     required this.servers,
-    required this.selectedId,
+    required this.selectedKey,
+    required this.pairingBusy,
+    required this.pairingError,
     required this.onSelect,
+    required this.onAutoClaim,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final pairedCount = servers.where((s) => s.paired).length;
+    final discoveredCount = servers.length - pairedCount;
+    final counterText = discoveredCount > 0
+        ? '$pairedCount TERPASANG · $discoveredCount LAN'
+        : '$pairedCount TERPASANG';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -700,7 +928,7 @@ class _ServerList extends StatelessWidget {
                     color: sc.textLo,
                   )),
               const Spacer(),
-              Text('${servers.where((s) => s.online).length}/${servers.length} ONLINE',
+              Text(counterText,
                   style: SatType.mono(
                     size: 10,
                     color: sc.textDim,
@@ -715,154 +943,143 @@ class _ServerList extends StatelessWidget {
             border: Border.all(color: sc.border0),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Column(
-            children: [
-              for (var i = 0; i < servers.length; i++) ...[
-                _ServerRow(
-                  server: servers[i],
-                  selected: servers[i].id == selectedId,
-                  onTap: servers[i].online
-                      ? () => onSelect(servers[i].id)
-                      : null,
+          child: servers.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Text(
+                    'Mencari server di jaringan… atau pasangkan manual lewat QR.',
+                    style: SatType.sans(size: 13, color: sc.textMd),
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (var i = 0; i < servers.length; i++) ...[
+                      _ServerRow(
+                        server: servers[i],
+                        selected: servers[i].key == selectedKey,
+                        busy: pairingBusy && servers[i].key == selectedKey,
+                        onTap: servers[i].paired
+                            ? () => onSelect(servers[i].key)
+                            : () => onAutoClaim(servers[i]),
+                      ),
+                      if (i != servers.length - 1)
+                        Divider(height: 1, color: sc.border0),
+                    ],
+                  ],
                 ),
-                if (i != servers.length - 1)
-                  Divider(height: 1, color: sc.border0),
-              ],
+        ),
+        if (pairingError != null) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.error_outline, size: 12, color: sc.urgent),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(pairingError!,
+                    style: SatType.sans(
+                        size: 12,
+                        weight: FontWeight.w500,
+                        color: sc.urgent)),
+              ),
             ],
           ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _OutlineActionButton(
-                icon: Icons.add_link_rounded,
-                label: 'Tambah manual',
-                onTap: () => showManualServerSheet(context),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _OutlineActionButton(
-                icon: Icons.qr_code_scanner_rounded,
-                label: 'Pindai QR',
-                onTap: () => showQrScanSheet(context),
-              ),
-            ),
-          ],
-        ),
+        ],
       ],
     );
   }
 }
 
-class _OutlineActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _OutlineActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Material(
-      color: sc.bg2,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 44,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: sc.border1),
-          ),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: sc.textMd),
-              const SizedBox(width: 8),
-              Text(label,
-                  style: SatType.sans(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.13,
-                    color: sc.textHi,
-                  )),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ServerRow extends StatelessWidget {
-  final _ServerOption server;
+  final PairedServerInfo server;
   final bool selected;
-  final VoidCallback? onTap;
+  final bool busy;
+  final VoidCallback onTap;
   const _ServerRow({
     required this.server,
     required this.selected,
+    required this.busy,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final disabled = onTap == null;
-    final dotColor = server.online ? sc.success : sc.urgent;
-    return Material(
+    final dotColor = server.paired ? sc.success : sc.accent;
+    final dotShadow = server.paired ? sc.successSoft : sc.accentSoft;
+    return AnimatedContainer(
+      duration: _d(context, _kMicroDur),
+      curve: Curves.easeOutQuart,
       color: selected ? sc.accentSoft : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+        onTap: busy ? null : onTap,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           child: Row(
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: dotColor,
-                  boxShadow: server.online
-                      ? [BoxShadow(color: sc.successSoft, spreadRadius: 3)]
-                      : null,
-                ),
-              ),
+              _PulseDot(color: dotColor, glow: dotShadow),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(server.name,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w500,
-                          letterSpacing: -0.14,
-                          color: disabled ? sc.textLo : sc.textHi,
-                        )),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(server.label,
+                              overflow: TextOverflow.ellipsis,
+                              style: SatType.sans(
+                                size: 14,
+                                weight: FontWeight.w500,
+                                letterSpacing: -0.14,
+                                color: sc.textHi,
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: server.paired
+                                ? sc.successSoft
+                                : sc.accentSoft,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            server.paired ? 'TERPASANG' : 'LAN',
+                            style: SatType.mono(
+                              size: 9,
+                              weight: FontWeight.w600,
+                              letterSpacing: 1.0,
+                              color: server.paired ? sc.success : sc.accent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 2),
                     Text(
-                      server.online
-                          ? '${server.ip} · ${server.latency}'
-                          : '${server.ip} · offline',
+                      server.version == null
+                          ? server.ipLine
+                          : '${server.ipLine} · v${server.version}',
                       style: SatType.mono(
                         size: 10,
-                        color: disabled ? sc.textDim : sc.textLo,
+                        color: sc.textLo,
                         letterSpacing: 0.4,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (selected)
+              if (busy)
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: sc.accent),
+                )
+              else if (selected && server.paired)
                 Container(
                   width: 22,
                   height: 22,
@@ -873,14 +1090,9 @@ class _ServerRow extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Icon(Icons.check, size: 14, color: sc.accentInk),
                 )
-              else if (disabled)
-                Text('OFFLINE',
-                    style: SatType.mono(
-                      size: 9,
-                      weight: FontWeight.w600,
-                      letterSpacing: 0.8,
-                      color: sc.textDim,
-                    ))
+              else if (!server.paired)
+                Icon(Icons.wifi_tethering_rounded,
+                    size: 18, color: sc.accent)
               else
                 Container(
                   width: 22,
@@ -893,6 +1105,7 @@ class _ServerRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -975,7 +1188,12 @@ class _TabletBrand extends StatelessWidget {
 class _Pad extends StatelessWidget {
   final void Function(String) onPress;
   final bool tablet;
-  const _Pad({required this.onPress, required this.tablet});
+  final bool enabled;
+  const _Pad({
+    required this.onPress,
+    required this.tablet,
+    required this.enabled,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -992,284 +1210,12 @@ class _Pad extends StatelessWidget {
           if (k == '')
             const SizedBox.shrink()
           else
-            _PinKey(label: k, tablet: tablet, onTap: () => onPress(k)),
+            _PinKey(
+              label: k,
+              tablet: tablet,
+              onTap: enabled ? () => onPress(k) : null,
+            ),
       ],
-    );
-  }
-}
-
-void showManualServerSheet(BuildContext context) {
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const _ManualServerSheet(),
-  );
-}
-
-void showQrScanSheet(BuildContext context) {
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const _QrScanSheet(),
-  );
-}
-
-class _SheetShell extends StatelessWidget {
-  final String title;
-  final String? sub;
-  final Widget child;
-  const _SheetShell({required this.title, this.sub, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sc.bg1,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: sc.border2,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 12, 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(title,
-                              style: SatType.sans(
-                                size: 20,
-                                weight: FontWeight.w600,
-                                letterSpacing: -0.4,
-                                color: sc.textHi,
-                              )),
-                          if (sub != null) ...[
-                            const SizedBox(height: 3),
-                            Text(sub!,
-                                style: SatType.sans(
-                                    size: 13, color: sc.textMd, height: 1.4)),
-                          ],
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: Icon(Icons.close_rounded, color: sc.textMd),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(child: child),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ManualServerSheet extends StatefulWidget {
-  const _ManualServerSheet();
-
-  @override
-  State<_ManualServerSheet> createState() => _ManualServerSheetState();
-}
-
-class _ManualServerSheetState extends State<_ManualServerSheet> {
-  final _name = TextEditingController(text: 'Cabang baru');
-  final _host = TextEditingController();
-  final _port = TextEditingController(text: '8080');
-  bool _testing = false;
-  bool? _testOk;
-  String _testLatency = '';
-
-  @override
-  void dispose() {
-    _name.dispose();
-    _host.dispose();
-    _port.dispose();
-    super.dispose();
-  }
-
-  void _runTest() async {
-    setState(() {
-      _testing = true;
-      _testOk = null;
-    });
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    final ok = _host.text.trim().isNotEmpty;
-    setState(() {
-      _testing = false;
-      _testOk = ok;
-      _testLatency = ok ? '42 ms' : 'host kosong';
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final canSave = _testOk == true;
-    return _SheetShell(
-      title: 'Tambah server',
-      sub: 'Isi alamat server lokal yang ingin dijadikan target staff.',
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Field(label: 'Nama server', controller: _name, hint: 'Cabang Kuta'),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: _Field(
-                      label: 'Host / IP',
-                      controller: _host,
-                      hint: '192.168.4.21'),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 1,
-                  child: _Field(
-                      label: 'Port', controller: _port, hint: '8080'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: sc.bg2,
-                border: Border.all(color: sc.border0),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  if (_testing)
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: sc.accent),
-                    )
-                  else if (_testOk == true)
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: sc.successSoft,
-                      ),
-                      alignment: Alignment.center,
-                      child:
-                          Icon(Icons.check, size: 14, color: sc.success),
-                    )
-                  else if (_testOk == false)
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: sc.urgentSoft,
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(Icons.close_rounded,
-                          size: 14, color: sc.urgent),
-                    )
-                  else
-                    Icon(Icons.wifi_find_rounded,
-                        size: 18, color: sc.textMd),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _testing
-                              ? 'Menguji koneksi...'
-                              : _testOk == true
-                                  ? 'Terhubung'
-                                  : _testOk == false
-                                      ? 'Gagal'
-                                      : 'Belum diuji',
-                          style: SatType.sans(
-                              size: 14,
-                              weight: FontWeight.w600,
-                              color: sc.textHi),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _testing
-                              ? 'Mencari handshake LAN'
-                              : _testOk == true
-                                  ? '$_testLatency · cert OK'
-                                  : _testOk == false
-                                      ? _testLatency
-                                      : 'Tekan "Uji koneksi" untuk verifikasi',
-                          style: SatType.mono(
-                              size: 10,
-                              color: sc.textLo,
-                              letterSpacing: 0.4),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _testing ? null : _runTest,
-                    child: Text('Uji koneksi',
-                        style: SatType.sans(
-                            size: 13,
-                            weight: FontWeight.w600,
-                            color: _testing ? sc.textLo : sc.accent)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: canSave
-                    ? () => Navigator.of(context).maybePop()
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  foregroundColor: sc.accentInk,
-                  disabledBackgroundColor: sc.bg3,
-                  disabledForegroundColor: sc.textLo,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Text('Simpan & sambungkan',
-                    style: SatType.sans(
-                        size: 15, weight: FontWeight.w600)),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1352,238 +1298,40 @@ class _Field extends StatelessWidget {
   }
 }
 
-class _QrScanSheet extends StatefulWidget {
-  const _QrScanSheet();
-
-  @override
-  State<_QrScanSheet> createState() => _QrScanSheetState();
-}
-
-class _QrScanSheetState extends State<_QrScanSheet>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return _SheetShell(
-      title: 'Pindai QR server',
-      sub: 'Arahkan kamera ke QR yang tampil di layar admin server.',
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  children: [
-                    const Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            colors: [Color(0xFF1A1410), Color(0xFF000000)],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: SizedBox(
-                        width: 220,
-                        height: 220,
-                        child: Stack(
-                          children: [
-                            _corner(Alignment.topLeft, sc),
-                            _corner(Alignment.topRight, sc),
-                            _corner(Alignment.bottomLeft, sc),
-                            _corner(Alignment.bottomRight, sc),
-                            AnimatedBuilder(
-                              animation: _ctrl,
-                              builder: (_, _) => Positioned(
-                                left: 0,
-                                right: 0,
-                                top: 220 * _ctrl.value,
-                                child: Container(
-                                  height: 2,
-                                  decoration: BoxDecoration(
-                                    color: sc.accent,
-                                    boxShadow: [
-                                      BoxShadow(
-                                          color: sc.accent.withValues(alpha: 0.6),
-                                          blurRadius: 10),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 14,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text('MENCARI QR · LAN',
-                              style: SatType.mono(
-                                size: 10,
-                                color: Colors.white.withValues(alpha: 0.7),
-                                letterSpacing: 0.8,
-                              )),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: sc.bg2,
-                border: Border.all(color: sc.border0),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.history_rounded, size: 16, color: sc.textMd),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Terakhir dipindai',
-                            style: SatType.sans(
-                                size: 13,
-                                weight: FontWeight.w600,
-                                color: sc.textHi)),
-                        const SizedBox(height: 2),
-                        Text('Warung Sebelah · 192.168.4.21 · 2 jam lalu',
-                            style: SatType.mono(
-                                size: 10,
-                                color: sc.textLo,
-                                letterSpacing: 0.4)),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    child: Text('Gunakan',
-                        style: SatType.sans(
-                            size: 13,
-                            weight: FontWeight.w600,
-                            color: sc.accent)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: Icon(Icons.flashlight_on_outlined,
-                    size: 18, color: sc.textHi),
-                label: Text('Senter',
-                    style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: sc.textHi)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: sc.border2),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _corner(Alignment a, SatColors sc) {
-    const t = 3.0;
-    const len = 28.0;
-    final isTop = a.y < 0;
-    final isLeft = a.x < 0;
-    return Align(
-      alignment: a,
-      child: SizedBox(
-        width: len,
-        height: len,
-        child: Stack(
-          children: [
-            Positioned(
-              top: isTop ? 0 : null,
-              bottom: isTop ? null : 0,
-              left: isLeft ? 0 : null,
-              right: isLeft ? null : 0,
-              child: Container(width: len, height: t, color: sc.accent),
-            ),
-            Positioned(
-              top: isTop ? 0 : null,
-              bottom: isTop ? null : 0,
-              left: isLeft ? 0 : null,
-              right: isLeft ? null : 0,
-              child: Container(width: t, height: len, color: sc.accent),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _PinHelper extends StatelessWidget {
   final int pinLength;
   final int max;
-  const _PinHelper({required this.pinLength, required this.max});
+  final bool busy;
+  final String? error;
+  const _PinHelper({
+    required this.pinLength,
+    required this.max,
+    required this.busy,
+    this.error,
+  });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    if (error != null) {
+      return Center(
+        child: Text(error!,
+            style: SatType.mono(
+                size: 11,
+                weight: FontWeight.w600,
+                color: sc.urgent,
+                letterSpacing: 0.6)),
+      );
+    }
     final empty = pinLength == 0;
     final complete = pinLength >= max;
-    final text = complete
+    if (empty && !busy && !complete) {
+      return const SizedBox.shrink();
+    }
+    final text = busy || complete
         ? 'Memverifikasi...'
-        : empty
-            ? 'Masukkan $max digit PIN'
-            : '$pinLength / $max digit';
-    final color = complete ? sc.accent : sc.textLo;
+        : '$pinLength / $max digit';
+    final color = (busy || complete) ? sc.accent : sc.textLo;
     return Center(
       child: Text(text,
           style: SatType.mono(
@@ -1592,34 +1340,510 @@ class _PinHelper extends StatelessWidget {
   }
 }
 
-class _PinKey extends StatelessWidget {
+class _PinKey extends StatefulWidget {
   final String label;
   final bool tablet;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const _PinKey({required this.label, required this.tablet, required this.onTap});
+
+  @override
+  State<_PinKey> createState() => _PinKeyState();
+}
+
+class _PinKeyState extends State<_PinKey> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final muted = label == 'del';
-    return Material(
-      color: muted ? Colors.transparent : sc.bg2,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
+    final muted = widget.label == 'del';
+    final disabled = widget.onTap == null;
+    return GestureDetector(
+      onTapDown: disabled ? null : (_) => setState(() => _pressed = true),
+      onTapCancel: disabled ? null : () => setState(() => _pressed = false),
+      onTapUp: disabled ? null : (_) => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedScale(
+        scale: _pressed ? 0.92 : 1.0,
+        duration: _d(context, _kPressDur),
+        curve: Curves.easeOutQuart,
+        child: AnimatedContainer(
+          duration: _d(context, _kMicroDur),
+          curve: Curves.easeOutQuart,
+          decoration: BoxDecoration(
+            color: muted
+                ? Colors.transparent
+                : (disabled
+                    ? sc.bg2.withValues(alpha: 0.6)
+                    : (_pressed ? sc.accentSoft : sc.bg2)),
+            borderRadius: BorderRadius.circular(22),
+          ),
           alignment: Alignment.center,
           child: muted
-              ? Icon(Icons.backspace_outlined, color: sc.textMd, size: tablet ? 26 : 22)
-              : Text(label,
+              ? Icon(Icons.backspace_outlined,
+                  color: disabled ? sc.textLo : sc.textMd,
+                  size: widget.tablet ? 26 : 22)
+              : Text(widget.label,
                   style: SatType.mono(
-                    size: tablet ? 32 : 26,
+                    size: widget.tablet ? 32 : 26,
                     weight: FontWeight.w500,
                     letterSpacing: 0,
-                    color: sc.textHi,
+                    color: disabled ? sc.textLo : sc.textHi,
                   )),
         ),
+      ),
+    );
+  }
+}
+
+// Keep `authStateProvider` import alive — surfacing auth busy/error on the
+// pad area is delegated to PinViewModel which forwards into PinState.
+// ignore: unused_element
+void _retain(WidgetRef ref) => ref.read(authStateProvider);
+
+/// Debug-only button that opens a bottom sheet with seeded credentials.
+class _DebugCredsButton extends StatelessWidget {
+  final SignInMode mode;
+  const _DebugCredsButton({required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kDebugMode) return const SizedBox.shrink();
+    final sc = context.sat;
+    return Padding(
+      padding: const EdgeInsets.only(top: 18),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () => _showDebugCreds(context, mode),
+          style: TextButton.styleFrom(
+            foregroundColor: sc.warn,
+            backgroundColor: sc.warnSoft,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(999),
+              side: BorderSide(color: sc.warn.withValues(alpha: 0.4)),
+            ),
+          ),
+          icon: Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
+          label: Text('DEBUG · SEEDED CREDS',
+              style: SatType.mono(
+                size: 10,
+                weight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: sc.warn,
+              )),
+        ),
+      ),
+    );
+  }
+
+  static void _showDebugCreds(BuildContext context, SignInMode mode) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final sc = ctx.sat;
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: sc.bg1,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: sc.border0),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+              child: _DebugCredsHint(mode: mode),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Debug-only seeded credentials hint. Hidden in release builds.
+class _DebugCredsHint extends StatelessWidget {
+  final SignInMode mode;
+  const _DebugCredsHint({required this.mode});
+
+  static const _adminEmail = 'admin@satset.local';
+  static const _adminPassword = 'admin123';
+  static const _staffPins = <(String, String, String)>[
+    ('100000', 'Pak Nyoman', 'Owner'),
+    ('100001', 'Maya', 'Waiter'),
+    ('100002', 'Budi', 'Waiter'),
+    ('100003', 'Rina', 'Waiter'),
+    ('100004', 'Komang', 'Kitchen'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kDebugMode) return const SizedBox.shrink();
+    final sc = context.sat;
+    return Container(
+      margin: const EdgeInsets.only(top: 18),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: sc.warnSoft,
+        border: Border.all(color: sc.warn.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
+              const SizedBox(width: 6),
+              Text('DEBUG · SEEDED CREDS',
+                  style: SatType.mono(
+                    size: 10,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                    color: sc.warn,
+                  )),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (mode == SignInMode.admin) ...[
+            _DebugCredRow(
+              label: 'EMAIL',
+              value: _adminEmail,
+            ),
+            const SizedBox(height: 4),
+            _DebugCredRow(
+              label: 'PASS',
+              value: _adminPassword,
+            ),
+          ] else
+            for (var i = 0; i < _staffPins.length; i++) ...[
+              if (i > 0) const SizedBox(height: 4),
+              _DebugCredRow(
+                label: _staffPins[i].$1,
+                value: '${_staffPins[i].$2} · ${_staffPins[i].$3}',
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectedServerCard extends StatelessWidget {
+  final PairedServerInfo server;
+  final VoidCallback onEdit;
+  const _ConnectedServerCard({required this.server, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+          child: Text('SERVER TERSAMBUNG',
+              style: SatType.mono(
+                size: 10,
+                weight: FontWeight.w500,
+                letterSpacing: 1.2,
+                color: sc.textLo,
+              )),
+        ),
+        Material(
+          color: sc.bg2,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: onEdit,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: sc.border0),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: sc.success,
+                      boxShadow: [
+                        BoxShadow(color: sc.successSoft, spreadRadius: 3),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                server.label,
+                                overflow: TextOverflow.ellipsis,
+                                style: SatType.sans(
+                                  size: 14,
+                                  weight: FontWeight.w500,
+                                  letterSpacing: -0.14,
+                                  color: sc.textHi,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: sc.accentSoft,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                'STAFF',
+                                style: SatType.mono(
+                                  size: 9,
+                                  weight: FontWeight.w600,
+                                  letterSpacing: 1.0,
+                                  color: sc.accent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          server.version == null
+                              ? server.ipLine
+                              : '${server.ipLine} · v${server.version}',
+                          style: SatType.mono(
+                            size: 10,
+                            color: sc.textLo,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onEdit,
+                    tooltip: 'Ubah server',
+                    icon: Icon(Icons.edit_outlined,
+                        size: 18, color: sc.textMd),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectServerHint extends StatelessWidget {
+  final SatColors sc;
+  const _SelectServerHint({required this.sc});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 18, color: sc.textMd),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Pilih server terlebih dahulu untuk memasukkan PIN.',
+              style: SatType.sans(size: 13, color: sc.textMd),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DebugCredRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DebugCredRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return InkWell(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: label));
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text('Disalin: $label'),
+            duration: const Duration(milliseconds: 800),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 76,
+              child: Text(label,
+                  style: SatType.mono(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: sc.textHi,
+                  )),
+            ),
+            Expanded(
+              child: Text(value,
+                  style: SatType.sans(size: 11, color: sc.textMd)),
+            ),
+            Icon(Icons.copy_rounded, size: 12, color: sc.textLo),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Reveal extends StatefulWidget {
+  final Duration delay;
+  final Widget child;
+  const _Reveal({this.delay = Duration.zero, required this.child});
+
+  @override
+  State<_Reveal> createState() => _RevealState();
+}
+
+class _RevealState extends State<_Reveal>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: _kEnterDur);
+    Future<void>.delayed(widget.delay, () {
+      if (mounted) _c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, child) {
+        final t = _kEnterCurve.transform(_c.value);
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 14),
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _PulseDot extends StatefulWidget {
+  final Color color;
+  final Color glow;
+  const _PulseDot({required this.color, required this.glow});
+
+  @override
+  State<_PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<_PulseDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = reduce ? 0.5 : Curves.easeInOut.transform(_c.value);
+        final spread = 2.0 + t * 2.5;
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.color,
+            boxShadow: [BoxShadow(color: widget.glow, spreadRadius: spread)],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SwapBody extends StatelessWidget {
+  final Widget child;
+  final Object switchKey;
+  const _SwapBody({required this.child, required this.switchKey});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: _d(context, _kPanelDur),
+      curve: _kPanelCurve,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: _d(context, _kPanelDur),
+        switchInCurve: _kPanelCurve,
+        switchOutCurve: Curves.easeInQuart,
+        transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.04),
+              end: Offset.zero,
+            ).animate(anim),
+            child: child,
+          ),
+        ),
+        child: KeyedSubtree(key: ValueKey(switchKey), child: child),
       ),
     );
   }

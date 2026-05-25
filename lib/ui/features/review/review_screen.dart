@@ -26,6 +26,14 @@ class ReviewScreen extends ConsumerWidget {
     final cart = ref.watch(cartProvider(tableId));
     final tables = ref.watch(tablesProvider);
     final table = tables.firstWhere((t) => t.id == tableId, orElse: () => tables.first);
+    final reviewState = ref.watch(reviewViewModelProvider);
+    ref.listen<ReviewState>(reviewViewModelProvider, (prev, next) {
+      if (next.error != null && next.error != prev?.error) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text('Gagal kirim: ${next.error}')),
+        );
+      }
+    });
 
     final grouped = <CourseId, List<CartItem>>{};
     for (final c in cart) {
@@ -232,16 +240,16 @@ class ReviewScreen extends ConsumerWidget {
             child: SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: cart.isEmpty
+                onPressed: cart.isEmpty || reviewState.busy
                     ? null
                     : () async {
                         final vm = ref.read(reviewViewModelProvider.notifier);
-                        await vm.submit(tableId, cart);
+                        final actorId = ref.read(authStateProvider).user?.id;
+                        await vm.submit(tableId, cart, actorId: actorId);
                         final s = ref.read(reviewViewModelProvider);
                         if (s.error != null || s.submittedTicketIds == null) {
                           return;
                         }
-                        final actorId = ref.read(authStateProvider).user?.id;
                         ref
                             .read(tablesProvider.notifier)
                             .markPending(tableId, userId: actorId);
@@ -264,9 +272,19 @@ class ReviewScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.auto_awesome, size: 16, color: sc.accentInk),
+                    if (reviewState.busy)
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(sc.accentInk),
+                        ),
+                      )
+                    else
+                      Icon(Icons.auto_awesome, size: 16, color: sc.accentInk),
                     const SizedBox(width: 10),
-                    Text('Kirim ke $sendTarget',
+                    Text(reviewState.busy ? 'Mengirim…' : 'Kirim ke $sendTarget',
                         style: SatType.sans(
                           size: 15,
                           weight: FontWeight.w600,

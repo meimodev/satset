@@ -8,6 +8,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/_common.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:uuid/uuid.dart';
 
@@ -56,7 +57,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     if (id == null) {
       _draft = _blankItem();
     } else {
-      final found = ref.read(menuItemsNotifierProvider).where((i) => i.id == id).firstOrNull;
+      final found = ref.read(menuItemsProvider).where((i) => i.id == id).firstOrNull;
       _draft = found ?? _blankItem();
     }
     _name.text = _draft.name;
@@ -103,7 +104,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       variants: variants,
       stockCount: stockN,
     );
-    ref.read(menuItemsNotifierProvider.notifier).upsertItem(saved);
+    ref.read(menuRepositoryProvider.notifier).upsertItem(saved);
     if (_isNew) {
       ref.read(menuAdminSelectedItemIdProvider.notifier).state = saved.id;
     }
@@ -176,7 +177,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     );
     if (ok != true) return;
     if (!_isNew) {
-      ref.read(menuItemsNotifierProvider.notifier).removeItem(_draft.id);
+      ref.read(menuRepositoryProvider.notifier).removeItem(_draft.id);
     }
     widget.onDeleted?.call();
   }
@@ -191,38 +192,49 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
     return Container(
       color: sc.bg1,
-      child: Column(
-        children: [
-          _Header(
-            title: _isNew ? 'Item baru' : _draft.name,
-            sub: readOnly ? 'Hanya admin yang bisa edit' : 'Edit lengkap',
-            onClose: widget.onClose,
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _identitySection(sc, cats, readOnly),
-                  const SizedBox(height: 18),
-                  _pricingSection(sc, readOnly),
-                  const SizedBox(height: 18),
-                  _modifiersSection(sc, readOnly),
-                  const SizedBox(height: 18),
-                  _kitchenSection(sc, readOnly),
-                  const SizedBox(height: 18),
-                  _inventorySection(sc, readOnly),
-                  const SizedBox(height: 18),
-                  _tagsSection(sc, readOnly),
-                  const SizedBox(height: 18),
-                  _availabilitySection(sc),
-                ],
+      // ClipRect absorbs sub-pixel overflow when the IME animates in and the
+      // pane height briefly drops below header+footer+scroll min height.
+      child: ClipRect(
+        child: Column(
+          children: [
+            Flexible(
+              fit: FlexFit.loose,
+              child: _Header(
+                title: _isNew ? 'Item baru' : _draft.name,
+                sub: readOnly ? 'Hanya admin yang bisa edit' : 'Edit lengkap',
+                onClose: widget.onClose,
               ),
             ),
-          ),
-          if (!readOnly) _Footer(onSave: _save, onDelete: _isNew ? null : _delete),
-        ],
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _identitySection(sc, cats, readOnly),
+                    const SizedBox(height: 18),
+                    _pricingSection(sc, readOnly),
+                    const SizedBox(height: 18),
+                    _modifiersSection(sc, readOnly),
+                    const SizedBox(height: 18),
+                    _kitchenSection(sc, readOnly),
+                    const SizedBox(height: 18),
+                    _inventorySection(sc, readOnly),
+                    const SizedBox(height: 18),
+                    _tagsSection(sc, readOnly),
+                    const SizedBox(height: 18),
+                    _availabilitySection(sc),
+                  ],
+                ),
+              ),
+            ),
+            if (!readOnly)
+              Flexible(
+                fit: FlexFit.loose,
+                child: _Footer(onSave: _save, onDelete: _isNew ? null : _delete),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -783,7 +795,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     final updated = _draft.copyWith(unavailable: newVal);
                     _patch(updated);
                     if (!_isNew) {
-                      ref.read(menuItemsNotifierProvider.notifier).upsertItem(updated);
+                      ref.read(menuRepositoryProvider.notifier).upsertItem(updated);
                     }
                   },
             child: Text(_draft.unavailable ? 'Aktifkan' : '86'),

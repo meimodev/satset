@@ -32,7 +32,7 @@ class DummyData {
     zoneAssigned: 'Terrace',
     roleId: roleWaiterId,
     pin: '100001',
-    onDuty: true,
+    avatarColorHex: 0xFFC08AFF,
   );
 
   static const budi = AppUser(
@@ -44,7 +44,7 @@ class DummyData {
     zoneAssigned: 'Garden',
     roleId: roleWaiterId,
     pin: '100002',
-    onDuty: true,
+    avatarColorHex: 0xFF6DB5FF,
   );
 
   static const rina = AppUser(
@@ -56,7 +56,7 @@ class DummyData {
     zoneAssigned: 'Indoor',
     roleId: roleWaiterId,
     pin: '100003',
-    onDuty: true,
+    avatarColorHex: 0xFF4DD487,
   );
 
   static const koki = AppUser(
@@ -68,7 +68,7 @@ class DummyData {
     zoneAssigned: '—',
     roleId: roleKitchenId,
     pin: '100004',
-    onDuty: true,
+    avatarColorHex: 0xFFFF9233,
   );
 
   static const bos = AppUser(
@@ -80,7 +80,7 @@ class DummyData {
     zoneAssigned: '—',
     roleId: roleAdminId,
     pin: '100000',
-    onDuty: true,
+    avatarColorHex: 0xFFFFC04D,
   );
 
   static const users = <AppUser>[maya, budi, rina, koki, bos];

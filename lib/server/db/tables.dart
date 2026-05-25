@@ -10,8 +10,10 @@ class Users extends Table {
   TextColumn get roleId => text()();
   TextColumn get zoneAssigned => text().nullable()();
   TextColumn get pinHash => text()();
-  BoolColumn get onDuty => boolean().withDefault(const Constant(true))();
+  TextColumn get email => text().nullable()();
+  TextColumn get passwordHash => text().nullable()();
   BoolColumn get disabled => boolean().withDefault(const Constant(false))();
+  IntColumn get avatarColorHex => integer().nullable()();
   DateTimeColumn get shiftStartedAt => dateTime().nullable()();
   @override
   Set<Column> get primaryKey => {id};
@@ -50,6 +52,10 @@ class VenueTables extends Table {
   IntColumn get openAmount => integer().withDefault(const Constant(0))();
   IntColumn get readyCount => integer().withDefault(const Constant(0))();
   TextColumn get lastActorId => text().nullable()();
+  TextColumn get lockedBy => text().nullable()();
+  TextColumn get lockedByName => text().nullable()();
+  DateTimeColumn get lockedAt => dateTime().nullable()();
+  DateTimeColumn get lockExpiresAt => dateTime().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

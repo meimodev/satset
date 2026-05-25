@@ -15,6 +15,10 @@ class TableDto with _$TableDto {
     @Default(0) int openAmount,
     @Default(0) int readyCount,
     String? lastActorId,
+    String? lockedBy,
+    String? lockedByName,
+    DateTime? lockedAt,
+    DateTime? lockExpiresAt,
   }) = _TableDto;
 
   factory TableDto.fromJson(Map<String, dynamic> json) =>

@@ -7,9 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/audit_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/data/repositories/roles_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
-import 'package:satset/data/services/dummy_data_seed.dart';
+import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
@@ -30,6 +33,7 @@ class _ShiftMetrics {
   final String name;
   final String roleLabel;
   final String initials;
+  final int? avatarColorHex;
   final String shiftStart;
   final int elapsedMinutes;
   final int totalSales;
@@ -45,6 +49,7 @@ class _ShiftMetrics {
     required this.name,
     required this.roleLabel,
     required this.initials,
+    required this.avatarColorHex,
     required this.shiftStart,
     required this.elapsedMinutes,
     required this.totalSales,
@@ -76,6 +81,10 @@ _ShiftMetrics _computeMetrics({
   required List<VenueTable> tables,
   required Map<String, List<Ticket>> tickets,
   required List<AuditEntry> audit,
+  required String userName,
+  required String userInitials,
+  required int? userAvatarColorHex,
+  required String shiftStart,
 }) {
   final myTables = tables.where((t) => t.mine).toList();
   int totalSales = 0;
@@ -94,10 +103,11 @@ _ShiftMetrics _computeMetrics({
   final modifyCount = audit.where((a) => a.type == AuditType.modify).length;
 
   return _ShiftMetrics(
-    name: DummyData.maya.name,
+    name: userName,
     roleLabel: 'Pelayan · Zona Teras',
-    initials: 'MA',
-    shiftStart: DummyData.maya.shiftStartedAt,
+    initials: userInitials,
+    avatarColorHex: userAvatarColorHex,
+    shiftStart: shiftStart,
     elapsedMinutes: 47,
     totalSales: totalSales,
     ticketCount: ticketCount,
@@ -117,9 +127,26 @@ class MeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tables = ref.watch(tablesProvider);
     final tickets = ref.watch(ticketsProvider);
-    final audit = ref.watch(auditProvider);
+    final rawAudit = ref.watch(auditProvider);
     final themeMode = ref.watch(themeModeProvider);
-    final m = _computeMetrics(tables: tables, tickets: tickets, audit: audit);
+    final user = ref.watch(authStateProvider).user;
+    final roles = ref.watch(rolesRepositoryProvider);
+    // Hide staff/role admin audit rows from users without `manageStaff`.
+    final canManageStaff = user != null &&
+        !user.disabled &&
+        roles.any((r) => r.id == user.roleId && r.has(Capability.manageStaff));
+    final audit = canManageStaff
+        ? rawAudit
+        : [for (final e in rawAudit) if (!isAdminAuditType(e.type)) e];
+    final m = _computeMetrics(
+      tables: tables,
+      tickets: tickets,
+      audit: audit,
+      userName: user?.name ?? '—',
+      userInitials: user?.initials ?? '—',
+      userAvatarColorHex: user?.avatarColorHex,
+      shiftStart: user?.shiftStartedAt ?? '',
+    );
 
     void toggleTheme() {
       final next =
@@ -450,12 +477,17 @@ class _Identity extends StatelessWidget {
             Container(
               width: size,
               height: size,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFF9233), Color(0xFFD96030)],
+                  colors: [
+                    Color(m.avatarColorHex ?? 0xFFFF9233),
+                    Color.alphaBlend(
+                        Colors.black.withValues(alpha: 0.36),
+                        Color(m.avatarColorHex ?? 0xFFFF9233)),
+                  ],
                 ),
               ),
               alignment: Alignment.center,
@@ -883,6 +915,18 @@ class _AuditRow extends StatelessWidget {
       AuditType.comp => (Icons.card_giftcard_rounded, sc.warnSoft, sc.warn),
       AuditType.modify => (Icons.edit_outlined, sc.infoSoft, sc.info),
       AuditType.fire => (Icons.local_fire_department, sc.accentSoft, sc.accent),
+      AuditType.staffCreated => (Icons.person_add_alt_1, sc.successSoft, sc.success),
+      AuditType.staffDeleted => (Icons.person_remove, sc.urgentSoft, sc.urgent),
+      AuditType.staffDisabled => (Icons.block, sc.urgentSoft, sc.urgent),
+      AuditType.staffEnabled => (Icons.check_circle_outline, sc.successSoft, sc.success),
+      AuditType.staffRoleChanged => (Icons.badge_outlined, sc.infoSoft, sc.info),
+      AuditType.staffPinSet => (Icons.lock_reset, sc.infoSoft, sc.info),
+      AuditType.staffPinReset => (Icons.lock_reset, sc.warnSoft, sc.warn),
+      AuditType.roleCreated => (Icons.shield_outlined, sc.successSoft, sc.success),
+      AuditType.roleRenamed => (Icons.edit_outlined, sc.infoSoft, sc.info),
+      AuditType.roleDeleted => (Icons.shield_outlined, sc.urgentSoft, sc.urgent),
+      AuditType.roleColorChanged => (Icons.palette_outlined, sc.infoSoft, sc.info),
+      AuditType.roleCapabilityChanged => (Icons.key_outlined, sc.infoSoft, sc.info),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -988,7 +1032,7 @@ class _DebugSection extends ConsumerWidget {
             icon: Icons.tune_rounded,
             label: 'ModifierSheet',
             sub: 'Dialog / bottom sheet menu',
-            onTap: () => _showModifierSheetDebug(context),
+            onTap: () => _showModifierSheetDebug(context, ref),
           ),
           Divider(height: 1, color: sc.border0),
           _DebugRow(
@@ -1127,10 +1171,12 @@ void _showReadyBannerPreview(BuildContext context) {
   );
 }
 
-void _showModifierSheetDebug(BuildContext context) {
-  final item = DummyData.items.firstWhere(
+void _showModifierSheetDebug(BuildContext context, WidgetRef ref) {
+  final items = ref.read(menuItemsProvider);
+  if (items.isEmpty) return;
+  final item = items.firstWhere(
     (i) => i.modifierGroups.isNotEmpty,
-    orElse: () => DummyData.items.first,
+    orElse: () => items.first,
   );
   showModifierSheet(context: context, item: item, onAdd: (_) {});
 }
@@ -1147,7 +1193,7 @@ void _showLineItemSheetDebug(BuildContext context, WidgetRef ref) {
     }
   }
   tableId ??= 'T2';
-  ticket ??= _stubTicket();
+  ticket ??= _stubTicket(ref);
   showLineItemActionSheet(
     context: context,
     ref: ref,
@@ -1156,16 +1202,17 @@ void _showLineItemSheetDebug(BuildContext context, WidgetRef ref) {
   );
 }
 
-Ticket _stubTicket() {
-  final item = DummyData.items.first;
+Ticket _stubTicket(WidgetRef ref) {
+  final items = ref.read(menuItemsProvider);
+  final item = items.isEmpty ? null : items.first;
   return Ticket(
     id: 'debug-${DateTime.now().millisecondsSinceEpoch}',
-    itemId: item.id,
-    name: item.name,
+    itemId: item?.id ?? 'debug-item',
+    name: item?.name ?? 'Debug item',
     course: CourseId.mains,
-    station: item.station,
+    station: item?.station ?? Station.kitchen,
     qty: 1,
-    price: item.basePrice,
+    price: item?.basePrice ?? 0,
     status: TicketStatus.sent,
     sentAt: '17:42',
   );

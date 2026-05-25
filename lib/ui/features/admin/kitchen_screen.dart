@@ -17,32 +17,43 @@ class _KOrder {
   const _KOrder(this.tableId, this.sentAt, this.tickets);
 
   int get total => tickets.length;
-  int get done => tickets.where((t) => t.status == TicketStatus.cooked).length;
+  int get done => tickets.where((t) => _isDone(t.status)).length;
 }
 
-const _kitchenActive = {
+const _kitchenInProgress = {
   TicketStatus.sent,
   TicketStatus.prep,
   TicketStatus.cooked,
+};
+
+// Completed batches (everything `cooked`) auto-promote to `ready` and may
+// later become `served`. The "show completed" filter has to include those
+// statuses or the order vanishes the instant the cook marks the last item.
+const _kitchenCompleted = {
+  TicketStatus.ready,
+  TicketStatus.served,
 };
 
 List<_KOrder> _buildOrders(
   Map<String, List<Ticket>> byTable, {
   required bool showCompleted,
 }) {
+  final visible = showCompleted
+      ? {..._kitchenInProgress, ..._kitchenCompleted}
+      : _kitchenInProgress;
   final out = <_KOrder>[];
   byTable.forEach((tableId, list) {
     final groups = <String, List<Ticket>>{};
     for (final t in list) {
       if (t.station != Station.kitchen) continue;
-      if (!_kitchenActive.contains(t.status)) continue;
+      if (!visible.contains(t.status)) continue;
       groups.putIfAbsent(t.sentAt, () => []).add(t);
     }
     groups.forEach((sentAt, tickets) {
       // Unfinished items rise to the top so the cook always sees what's left.
       tickets.sort((a, b) {
-        final ac = a.status == TicketStatus.cooked ? 1 : 0;
-        final bc = b.status == TicketStatus.cooked ? 1 : 0;
+        final ac = _isDone(a.status) ? 1 : 0;
+        final bc = _isDone(b.status) ? 1 : 0;
         return ac.compareTo(bc);
       });
       final order = _KOrder(tableId, sentAt, tickets);
@@ -54,6 +65,11 @@ List<_KOrder> _buildOrders(
   out.sort((a, b) => a.sentAt.compareTo(b.sentAt));
   return out;
 }
+
+bool _isDone(TicketStatus s) =>
+    s == TicketStatus.cooked ||
+    s == TicketStatus.ready ||
+    s == TicketStatus.served;
 
 int _ageMinutes(String hhmm) {
   final p = hhmm.split(':');
@@ -355,7 +371,7 @@ class _ItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final cooked = ticket.status == TicketStatus.cooked;
+    final cooked = _isDone(ticket.status);
 
     return Material(
       color: cooked ? sc.successSoft : Colors.transparent,

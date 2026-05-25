@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 
 class _WsConn {
@@ -20,10 +21,17 @@ class WsHub {
   void register(WebSocketChannel ch, String userId, String deviceId) {
     final c = _WsConn(ch, userId, deviceId);
     _conns.add(c);
+    SatLog.srv('ws connect user=$userId dev=${deviceId.length > 6 ? deviceId.substring(0, 6) : deviceId} clients=${_conns.length}');
     ch.stream.listen(
       (_) {},
-      onDone: () => _conns.remove(c),
-      onError: (_) => _conns.remove(c),
+      onDone: () {
+        _conns.remove(c);
+        SatLog.srv('ws disconnect user=$userId clients=${_conns.length}');
+      },
+      onError: (_) {
+        _conns.remove(c);
+        SatLog.srv('ws error-disconnect user=$userId clients=${_conns.length}');
+      },
       cancelOnError: true,
     );
   }
@@ -36,6 +44,7 @@ class WsHub {
       ts: DateTime.now(),
     );
     final frame = jsonEncode(ev.toJson());
+    SatLog.srv('ws broadcast type=$type clients=${_conns.length}');
     for (final c in List.of(_conns)) {
       try {
         c.ch.sink.add(frame);

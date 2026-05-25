@@ -187,6 +187,210 @@ abstract class _PinLoginRequestDto implements PinLoginRequestDto {
       throw _privateConstructorUsedError;
 }
 
+AdminLoginRequestDto _$AdminLoginRequestDtoFromJson(Map<String, dynamic> json) {
+  return _AdminLoginRequestDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$AdminLoginRequestDto {
+  String get email => throw _privateConstructorUsedError;
+  String get password => throw _privateConstructorUsedError;
+  String get deviceId => throw _privateConstructorUsedError;
+
+  /// Serializes this AdminLoginRequestDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of AdminLoginRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $AdminLoginRequestDtoCopyWith<AdminLoginRequestDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $AdminLoginRequestDtoCopyWith<$Res> {
+  factory $AdminLoginRequestDtoCopyWith(
+    AdminLoginRequestDto value,
+    $Res Function(AdminLoginRequestDto) then,
+  ) = _$AdminLoginRequestDtoCopyWithImpl<$Res, AdminLoginRequestDto>;
+  @useResult
+  $Res call({String email, String password, String deviceId});
+}
+
+/// @nodoc
+class _$AdminLoginRequestDtoCopyWithImpl<
+  $Res,
+  $Val extends AdminLoginRequestDto
+>
+    implements $AdminLoginRequestDtoCopyWith<$Res> {
+  _$AdminLoginRequestDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of AdminLoginRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? email = null,
+    Object? password = null,
+    Object? deviceId = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            email: null == email
+                ? _value.email
+                : email // ignore: cast_nullable_to_non_nullable
+                      as String,
+            password: null == password
+                ? _value.password
+                : password // ignore: cast_nullable_to_non_nullable
+                      as String,
+            deviceId: null == deviceId
+                ? _value.deviceId
+                : deviceId // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$AdminLoginRequestDtoImplCopyWith<$Res>
+    implements $AdminLoginRequestDtoCopyWith<$Res> {
+  factory _$$AdminLoginRequestDtoImplCopyWith(
+    _$AdminLoginRequestDtoImpl value,
+    $Res Function(_$AdminLoginRequestDtoImpl) then,
+  ) = __$$AdminLoginRequestDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String email, String password, String deviceId});
+}
+
+/// @nodoc
+class __$$AdminLoginRequestDtoImplCopyWithImpl<$Res>
+    extends _$AdminLoginRequestDtoCopyWithImpl<$Res, _$AdminLoginRequestDtoImpl>
+    implements _$$AdminLoginRequestDtoImplCopyWith<$Res> {
+  __$$AdminLoginRequestDtoImplCopyWithImpl(
+    _$AdminLoginRequestDtoImpl _value,
+    $Res Function(_$AdminLoginRequestDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of AdminLoginRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? email = null,
+    Object? password = null,
+    Object? deviceId = null,
+  }) {
+    return _then(
+      _$AdminLoginRequestDtoImpl(
+        email: null == email
+            ? _value.email
+            : email // ignore: cast_nullable_to_non_nullable
+                  as String,
+        password: null == password
+            ? _value.password
+            : password // ignore: cast_nullable_to_non_nullable
+                  as String,
+        deviceId: null == deviceId
+            ? _value.deviceId
+            : deviceId // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AdminLoginRequestDtoImpl implements _AdminLoginRequestDto {
+  const _$AdminLoginRequestDtoImpl({
+    required this.email,
+    required this.password,
+    required this.deviceId,
+  });
+
+  factory _$AdminLoginRequestDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AdminLoginRequestDtoImplFromJson(json);
+
+  @override
+  final String email;
+  @override
+  final String password;
+  @override
+  final String deviceId;
+
+  @override
+  String toString() {
+    return 'AdminLoginRequestDto(email: $email, password: $password, deviceId: $deviceId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AdminLoginRequestDtoImpl &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.password, password) ||
+                other.password == password) &&
+            (identical(other.deviceId, deviceId) ||
+                other.deviceId == deviceId));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, email, password, deviceId);
+
+  /// Create a copy of AdminLoginRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AdminLoginRequestDtoImplCopyWith<_$AdminLoginRequestDtoImpl>
+  get copyWith =>
+      __$$AdminLoginRequestDtoImplCopyWithImpl<_$AdminLoginRequestDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AdminLoginRequestDtoImplToJson(this);
+  }
+}
+
+abstract class _AdminLoginRequestDto implements AdminLoginRequestDto {
+  const factory _AdminLoginRequestDto({
+    required final String email,
+    required final String password,
+    required final String deviceId,
+  }) = _$AdminLoginRequestDtoImpl;
+
+  factory _AdminLoginRequestDto.fromJson(Map<String, dynamic> json) =
+      _$AdminLoginRequestDtoImpl.fromJson;
+
+  @override
+  String get email;
+  @override
+  String get password;
+  @override
+  String get deviceId;
+
+  /// Create a copy of AdminLoginRequestDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$AdminLoginRequestDtoImplCopyWith<_$AdminLoginRequestDtoImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}
+
 SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) {
   return _SessionDto.fromJson(json);
 }

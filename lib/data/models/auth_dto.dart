@@ -21,6 +21,18 @@ class PinLoginRequestDto with _$PinLoginRequestDto {
 }
 
 @freezed
+class AdminLoginRequestDto with _$AdminLoginRequestDto {
+  const factory AdminLoginRequestDto({
+    required String email,
+    required String password,
+    required String deviceId,
+  }) = _AdminLoginRequestDto;
+
+  factory AdminLoginRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$AdminLoginRequestDtoFromJson(json);
+}
+
+@freezed
 class SessionDto with _$SessionDto {
   const factory SessionDto({
     required String token,

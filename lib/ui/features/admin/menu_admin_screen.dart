@@ -8,6 +8,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/features/admin/menu_admin_item_editor.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 
 /// Two-tier menu admin screen.
@@ -280,7 +281,7 @@ class _CategoryRail extends ConsumerWidget {
     final sc = context.sat;
     final cats = ref.watch(menuRealCategoriesProvider);
     final selected = ref.watch(menuAdminCategoryFilterProvider);
-    final items = ref.watch(menuItemsNotifierProvider);
+    final items = ref.watch(menuItemsProvider);
 
     int count(String catId) =>
         catId == 'all' ? items.length : items.where((i) => i.categoryId == catId).length;
@@ -397,7 +398,7 @@ class _ItemRow extends ConsumerWidget {
           },
           onLongPress: perm == MenuPermission.admin
               ? () => ref
-                  .read(menuItemsNotifierProvider.notifier)
+                  .read(menuRepositoryProvider.notifier)
                   .toggleAvailability(item.id)
               : null,
           child: Container(
@@ -542,7 +543,7 @@ class _StatusToggle extends ConsumerWidget {
     return GestureDetector(
       onTap: canToggle
           ? () => ref
-              .read(menuItemsNotifierProvider.notifier)
+              .read(menuRepositoryProvider.notifier)
               .toggleAvailability(item.id)
           : null,
       child: Container(

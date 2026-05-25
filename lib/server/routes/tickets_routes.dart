@@ -90,6 +90,10 @@ Map<String, dynamic> _tableToJson(VenueTable t) => {
       'openAmount': t.openAmount,
       'readyCount': t.readyCount,
       'lastActorId': t.lastActorId,
+      'lockedBy': t.lockedBy,
+      'lockedByName': t.lockedByName,
+      'lockedAt': t.lockedAt?.toIso8601String(),
+      'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
     };
 
 Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
@@ -130,11 +134,9 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       for (final l in lines) {
         final id = uuid.v4();
         final course = l['course'] as String;
-        // Immediately-cookable courses enter the queue as `sent` so KDS sees
-        // them right away. Everything else is `held` until the waiter fires
-        // the course explicitly. KDS filters on sent/prep/cooked, so the
-        // canonical lifecycle never needs to display `acknowledged`.
-        final autoFire = course == 'drinks-now' || course == 'fire-now';
+        // "Kirim ke dapur" is an explicit fire action: every line enters
+        // the KDS queue as `sent`. Course pacing is purely a sort/grouping
+        // hint for the kitchen, not a gate.
         final row = TicketsCompanion.insert(
           id: id,
           tableId: tableId,
@@ -147,7 +149,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           modifiersJson: Value(jsonEncode(l['modifierOptionIds'] ?? const [])),
           specialInstructions: Value(l['specialInstructions'] as String?),
           price: (l['unitPrice'] as num).toInt(),
-          status: autoFire ? 'sent' : 'held',
+          status: 'sent',
           sentAt: DateTime.now(),
         );
         await db.into(db.tickets).insert(row);
@@ -252,6 +254,30 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             .write(VenueTablesCompanion(
           readyCount: Value(n),
           status: Value(nextStatus),
+        ));
+      }
+      // Auto-release: when no live tickets remain on the table, clear it
+      // back to `available`. Live = anything still moving through the
+      // kitchen/serve graph; `served` and `voided` are terminal.
+      const liveStatuses = [
+        'draft',
+        'acknowledged',
+        'held',
+        'sent',
+        'prep',
+        'cooked',
+        'ready',
+      ];
+      final liveRemaining = await (db.select(db.tickets)
+            ..where((t) =>
+                t.tableId.equals(tableId) & t.status.isIn(liveStatuses)))
+          .get();
+      if (liveRemaining.isEmpty) {
+        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
+            .write(const VenueTablesCompanion(
+          status: Value('available'),
+          readyCount: Value(0),
+          openAmount: Value(0),
         ));
       }
       tableRow =

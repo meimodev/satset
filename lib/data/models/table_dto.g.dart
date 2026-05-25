@@ -17,6 +17,14 @@ _$TableDtoImpl _$$TableDtoImplFromJson(Map<String, dynamic> json) =>
       openAmount: (json['openAmount'] as num?)?.toInt() ?? 0,
       readyCount: (json['readyCount'] as num?)?.toInt() ?? 0,
       lastActorId: json['lastActorId'] as String?,
+      lockedBy: json['lockedBy'] as String?,
+      lockedByName: json['lockedByName'] as String?,
+      lockedAt: json['lockedAt'] == null
+          ? null
+          : DateTime.parse(json['lockedAt'] as String),
+      lockExpiresAt: json['lockExpiresAt'] == null
+          ? null
+          : DateTime.parse(json['lockExpiresAt'] as String),
     );
 
 Map<String, dynamic> _$$TableDtoImplToJson(_$TableDtoImpl instance) =>
@@ -30,6 +38,10 @@ Map<String, dynamic> _$$TableDtoImplToJson(_$TableDtoImpl instance) =>
       'openAmount': instance.openAmount,
       'readyCount': instance.readyCount,
       'lastActorId': instance.lastActorId,
+      'lockedBy': instance.lockedBy,
+      'lockedByName': instance.lockedByName,
+      'lockedAt': instance.lockedAt?.toIso8601String(),
+      'lockExpiresAt': instance.lockExpiresAt?.toIso8601String(),
     };
 
 _$UpdateTablePaxDtoImpl _$$UpdateTablePaxDtoImplFromJson(

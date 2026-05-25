@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/log/sat_log.dart';
+
 /// Severity of a transport/retry user-facing error.
 enum AppErrorLevel { info, warning, error }
 
@@ -27,6 +29,7 @@ class ErrorBusService {
 
   void push(String message,
       {AppErrorLevel level = AppErrorLevel.error, String? code}) {
+    SatLog.err('bus ${level.name}${code != null ? " $code" : ""}: $message');
     _c.add(AppError(
       message: message,
       level: level,

@@ -7,7 +7,10 @@ part 'order_dto.g.dart';
 class CartLineDto with _$CartLineDto {
   const factory CartLineDto({
     required String itemId,
+    required String name,
     required String variantId,
+    required String variantName,
+    required String station,
     required List<String> modifierOptionIds,
     required String? specialInstructions,
     required String course,
@@ -25,6 +28,7 @@ class SubmitOrderRequestDto with _$SubmitOrderRequestDto {
     required String tableId,
     required String idempotencyKey,
     required List<CartLineDto> lines,
+    String? actorId,
   }) = _SubmitOrderRequestDto;
 
   factory SubmitOrderRequestDto.fromJson(Map<String, dynamic> json) =>

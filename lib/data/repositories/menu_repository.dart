@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/menu_dto.dart';
+import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
-import 'package:satset/data/services/dummy_data_service.dart';
+import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/modifier_group.dart';
@@ -25,6 +27,17 @@ class MenuSnapshot {
     items: [],
     modifierGroups: [],
   );
+
+  MenuSnapshot copyWith({
+    List<MenuCategory>? categories,
+    List<MenuItem>? items,
+    List<ModifierGroup>? modifierGroups,
+  }) =>
+      MenuSnapshot(
+        categories: categories ?? this.categories,
+        items: items ?? this.items,
+        modifierGroups: modifierGroups ?? this.modifierGroups,
+      );
 }
 
 /// Surfaces bootstrap progress so the menu/table-detail UIs can render
@@ -34,25 +47,20 @@ final menuStatusProvider =
 
 /// LAN-aware menu cache.
 ///
-/// When [apiConfigProvider] is set the repository fetches `/menu`, maps
-/// the [MenuSnapshotDto] into domain models, and exposes the result via
-/// [state]. [DummyDataService] is retained as a pre-pair fallback and as
-/// the server seed source; it is NOT silently returned during LAN mode.
+/// The router pair-gate guarantees an [ApiConfig] is populated before this
+/// repository is read, so [_bootstrap] always fetches `/menu` from the
+/// LAN server, maps the [MenuSnapshotDto] into domain models, and exposes
+/// the result via [state]. No in-memory fallback.
 class MenuRepository extends StateNotifier<MenuSnapshot> {
-  MenuRepository({required this.ref, required DummyDataService seed})
-      : _seed = seed,
-        super(MenuSnapshot(
-          categories: seed.categories(),
-          items: seed.items(),
-          modifierGroups: const [],
-        )) {
-    _bootstrap();
+  MenuRepository({required this.ref}) : super(MenuSnapshot.empty) {
+    Future.microtask(_bootstrap);
   }
 
   final Ref ref;
-  final DummyDataService _seed;
+  StreamSubscription? _wsSub;
 
   Future<void> _bootstrap() async {
+    SatLog.repo('menu.bootstrap');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       ref.read(menuStatusProvider.notifier).state =
@@ -62,19 +70,42 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     state = MenuSnapshot.empty;
     ref.read(menuStatusProvider.notifier).state = const AsyncValue.loading();
     try {
-      final api = ref.read(apiClientProvider);
-      final raw = await api.getJson('/menu') as Map<String, dynamic>;
-      final dto = MenuSnapshotDto.fromJson(raw);
-      state = _toDomain(dto);
+      await _refetch();
       ref.read(menuStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
+      SatLog.repo('menu.bootstrap fail $e');
       ref.read(menuStatusProvider.notifier).state =
           AsyncValue.error(e, st);
     }
+    // WS: any peer's menu mutation triggers a full refetch. Cheap; the
+    // snapshot is small and refetch keeps modifier-group state consistent.
+    _wsSub = ref.read(wsClientProvider).events.listen((ev) {
+      if (ev.type != WsEventTypes.menuUpdated) return;
+      SatLog.repo('menu.ws update kind=${ev.payload['kind']}');
+      unawaited(_refetch());
+    });
   }
 
-  Future<void> refresh() => _bootstrap();
+  @override
+  void dispose() {
+    _wsSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refetch() async {
+    final api = ref.read(apiClientProvider);
+    final raw = await api.getJson('/menu') as Map<String, dynamic>;
+    final dto = MenuSnapshotDto.fromJson(raw);
+    state = _toDomain(dto);
+    SatLog.repo(
+        'menu.loaded cats=${state.categories.length} items=${state.items.length} mods=${state.modifierGroups.length}');
+  }
+
+  Future<void> refresh() {
+    SatLog.repo('menu.refresh');
+    return _bootstrap();
+  }
 
   MenuSnapshot _toDomain(MenuSnapshotDto d) {
     final groups = [for (final g in d.modifierGroups) _modGroupFromDto(g)];
@@ -135,20 +166,183 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   DietaryTag? _dietary(String name) =>
       DietaryTag.values.where((d) => d.name == name).cast<DietaryTag?>().firstOrNull;
 
-  // Pre-pair / dev convenience: hand back a seed item by id. Returns the
-  // server-loaded item when the repository has bootstrapped.
-  MenuItem itemById(String id) {
-    final inState = state.items.where((i) => i.id == id).firstOrNull;
-    return inState ?? _seed.itemById(id);
+  /// Lookup an item by id from the snapshot. Returns null when the
+  /// repository has not yet loaded the item — callers must handle the
+  /// absence rather than receive a stale dummy.
+  MenuItem? itemById(String id) {
+    for (final i in state.items) {
+      if (i.id == id) return i;
+    }
+    return null;
   }
+
+  // ---------- mutations ----------
+
+  /// Insert when [item.id] is absent from state, otherwise PATCH.
+  /// Pre-LAN (no apiConfig): updates local state only. In LAN mode the WS
+  /// `menu.updated` event drives a refetch that supersedes the optimistic
+  /// state, so other clients converge as well.
+  Future<void> upsertItem(MenuItem item) async {
+    final isInsert = !state.items.any((i) => i.id == item.id);
+    SatLog.repo('menu.upsert id=${item.id} insert=$isInsert');
+    final prev = state;
+    state = state.copyWith(
+      items: isInsert
+          ? [...state.items, item]
+          : [for (final i in state.items) if (i.id == item.id) item else i],
+      modifierGroups: _mergeGroups(state.modifierGroups, item.modifierGroups),
+    );
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    try {
+      final body = _itemToJson(item);
+      final raw = isInsert
+          ? await ref.read(apiClientProvider).postJson('/menu/items', body)
+          : await ref
+              .read(apiClientProvider)
+              .patchJson('/menu/items/${item.id}', body);
+      final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
+      _mergeServerItem(dto);
+    } catch (e) {
+      SatLog.repo('menu.upsert fail $e');
+      state = prev;
+      rethrow;
+    }
+  }
+
+  Future<void> removeItem(String id) async {
+    SatLog.repo('menu.remove id=$id');
+    final prev = state;
+    state = state.copyWith(
+      items: [for (final i in state.items) if (i.id != id) i],
+    );
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    try {
+      await ref.read(apiClientProvider).deleteJson('/menu/items/$id');
+    } catch (e) {
+      SatLog.repo('menu.remove fail $e');
+      state = prev;
+      rethrow;
+    }
+  }
+
+  Future<void> toggleAvailability(String id) async {
+    final cur = state.items.where((i) => i.id == id).firstOrNull;
+    if (cur == null) return;
+    final next = !cur.unavailable;
+    SatLog.repo('menu.toggle86 id=$id → $next');
+    final prev = state;
+    state = state.copyWith(
+      items: [
+        for (final i in state.items)
+          if (i.id == id) i.copyWith(unavailable: next) else i,
+      ],
+    );
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    try {
+      final raw = await ref
+          .read(apiClientProvider)
+          .postJson('/menu/items/$id/availability', {'unavailable': next});
+      final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
+      _mergeServerItem(dto);
+    } catch (e) {
+      SatLog.repo('menu.toggle86 fail $e');
+      state = prev;
+      rethrow;
+    }
+  }
+
+  Future<void> adjustStock(String id, int delta) async {
+    final cur = state.items.where((i) => i.id == id).firstOrNull;
+    if (cur == null) return;
+    final next = ((cur.stockCount ?? 0) + delta).clamp(0, 9999);
+    SatLog.repo('menu.adjustStock id=$id Δ=$delta → $next');
+    final prev = state;
+    state = state.copyWith(
+      items: [
+        for (final i in state.items)
+          if (i.id == id) i.copyWith(stockCount: next) else i,
+      ],
+    );
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    try {
+      final raw = await ref
+          .read(apiClientProvider)
+          .postJson('/menu/items/$id/stock', {'delta': delta});
+      final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
+      _mergeServerItem(dto);
+    } catch (e) {
+      SatLog.repo('menu.adjustStock fail $e');
+      state = prev;
+      rethrow;
+    }
+  }
+
+  // ---------- helpers ----------
+
+  List<ModifierGroup> _mergeGroups(
+    List<ModifierGroup> existing,
+    List<ModifierGroup> incoming,
+  ) {
+    final byId = {for (final g in existing) g.id: g};
+    for (final g in incoming) {
+      byId[g.id] = g;
+    }
+    return byId.values.toList();
+  }
+
+  void _mergeServerItem(MenuItemDto dto) {
+    final groups = {for (final g in state.modifierGroups) g.id: g};
+    final merged = _itemFromDto(dto, groups);
+    state = state.copyWith(
+      items: state.items.any((i) => i.id == merged.id)
+          ? [
+              for (final i in state.items)
+                if (i.id == merged.id) merged else i,
+            ]
+          : [...state.items, merged],
+    );
+  }
+
+  Map<String, dynamic> _itemToJson(MenuItem it) => {
+        'id': it.id,
+        'name': it.name,
+        'categoryId': it.categoryId,
+        'station': it.station.name,
+        'description': it.description,
+        'basePrice': it.basePrice,
+        'prepTime': it.prepTime,
+        'variants': [
+          for (final v in it.variants)
+            {'id': v.id, 'name': v.name, 'price': v.price}
+        ],
+        'modifierGroups': [
+          for (final g in it.modifierGroups)
+            {
+              'id': g.id,
+              'name': g.name,
+              'required': g.required,
+              'multi': g.multi,
+              'options': [
+                for (final o in g.options)
+                  {'id': o.id, 'name': o.name, 'priceDelta': o.priceDelta}
+              ],
+            }
+        ],
+        'allergens': [for (final a in it.allergens) a.name],
+        'dietary': [for (final d in it.dietary) d.name],
+        'unavailable': it.unavailable,
+        'stockCount': it.stockCount,
+        'autoEightySixAtZero': it.autoEightySixAtZero,
+      };
 }
 
 final menuRepositoryProvider =
     StateNotifierProvider<MenuRepository, MenuSnapshot>(
-        (ref) => MenuRepository(
-              ref: ref,
-              seed: ref.watch(dummyDataServiceProvider),
-            ));
+        (ref) => MenuRepository(ref: ref));
 
 final menuCategoriesProvider = Provider<List<MenuCategory>>(
     (ref) => ref.watch(menuRepositoryProvider).categories);

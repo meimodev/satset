@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 
 class TabletShell extends StatelessWidget {
   final String activeTab;
@@ -206,13 +209,17 @@ class _RailBtn extends StatelessWidget {
   }
 }
 
-class _AvatarBtn extends StatelessWidget {
+class _AvatarBtn extends ConsumerWidget {
   final bool active;
   const _AvatarBtn({required this.active});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final user = ref.watch(authStateProvider).user;
+    final initials = (user?.initials.isNotEmpty ?? false) ? user!.initials : '—';
+    final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
+    final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base);
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Material(
@@ -238,16 +245,16 @@ class _AvatarBtn extends StatelessWidget {
             child: Container(
               width: 42,
               height: 42,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFF9233), Color(0xFFD96030)],
+                  colors: [base, dark],
                 ),
               ),
               alignment: Alignment.center,
-              child: Text('MA',
+              child: Text(initials,
                   style: SatType.mono(
                     size: 14,
                     weight: FontWeight.w600,
@@ -278,17 +285,12 @@ class TabletTopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          const LoginClock(),
+          const SizedBox(width: 14),
           if (leading != null) ...[leading!, const SizedBox(width: 10)],
           Flexible(child: _Crumbs(items: crumbs)),
           const Spacer(),
           _SyncPill(offline: offline),
-          const SizedBox(width: 14),
-          Text('18:14 · Sab',
-              style: SatType.mono(
-                size: 13,
-                color: sc.textMd,
-                letterSpacing: 0.52,
-              )),
         ],
       ),
     );

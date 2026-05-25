@@ -68,18 +68,25 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _onDutyMeta = const VerificationMeta('onDuty');
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
   @override
-  late final GeneratedColumn<bool> onDuty = GeneratedColumn<bool>(
-    'on_duty',
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+    'email',
     aliasedName,
-    false,
-    type: DriftSqlType.bool,
+    true,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("on_duty" IN (0, 1))',
-    ),
-    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _passwordHashMeta = const VerificationMeta(
+    'passwordHash',
+  );
+  @override
+  late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
+    'password_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _disabledMeta = const VerificationMeta(
     'disabled',
@@ -95,6 +102,17 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       'CHECK ("disabled" IN (0, 1))',
     ),
     defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _avatarColorHexMeta = const VerificationMeta(
+    'avatarColorHex',
+  );
+  @override
+  late final GeneratedColumn<int> avatarColorHex = GeneratedColumn<int>(
+    'avatar_color_hex',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _shiftStartedAtMeta = const VerificationMeta(
     'shiftStartedAt',
@@ -116,8 +134,10 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     roleId,
     zoneAssigned,
     pinHash,
-    onDuty,
+    email,
+    passwordHash,
     disabled,
+    avatarColorHex,
     shiftStartedAt,
   ];
   @override
@@ -178,16 +198,34 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     } else if (isInserting) {
       context.missing(_pinHashMeta);
     }
-    if (data.containsKey('on_duty')) {
+    if (data.containsKey('email')) {
       context.handle(
-        _onDutyMeta,
-        onDuty.isAcceptableOrUnknown(data['on_duty']!, _onDutyMeta),
+        _emailMeta,
+        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    }
+    if (data.containsKey('password_hash')) {
+      context.handle(
+        _passwordHashMeta,
+        passwordHash.isAcceptableOrUnknown(
+          data['password_hash']!,
+          _passwordHashMeta,
+        ),
       );
     }
     if (data.containsKey('disabled')) {
       context.handle(
         _disabledMeta,
         disabled.isAcceptableOrUnknown(data['disabled']!, _disabledMeta),
+      );
+    }
+    if (data.containsKey('avatar_color_hex')) {
+      context.handle(
+        _avatarColorHexMeta,
+        avatarColorHex.isAcceptableOrUnknown(
+          data['avatar_color_hex']!,
+          _avatarColorHexMeta,
+        ),
       );
     }
     if (data.containsKey('shift_started_at')) {
@@ -232,14 +270,22 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.string,
         data['${effectivePrefix}pin_hash'],
       )!,
-      onDuty: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}on_duty'],
-      )!,
+      email: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}email'],
+      ),
+      passwordHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}password_hash'],
+      ),
       disabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}disabled'],
       )!,
+      avatarColorHex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}avatar_color_hex'],
+      ),
       shiftStartedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}shift_started_at'],
@@ -260,8 +306,10 @@ class User extends DataClass implements Insertable<User> {
   final String roleId;
   final String? zoneAssigned;
   final String pinHash;
-  final bool onDuty;
+  final String? email;
+  final String? passwordHash;
   final bool disabled;
+  final int? avatarColorHex;
   final DateTime? shiftStartedAt;
   const User({
     required this.id,
@@ -270,8 +318,10 @@ class User extends DataClass implements Insertable<User> {
     required this.roleId,
     this.zoneAssigned,
     required this.pinHash,
-    required this.onDuty,
+    this.email,
+    this.passwordHash,
     required this.disabled,
+    this.avatarColorHex,
     this.shiftStartedAt,
   });
   @override
@@ -285,8 +335,16 @@ class User extends DataClass implements Insertable<User> {
       map['zone_assigned'] = Variable<String>(zoneAssigned);
     }
     map['pin_hash'] = Variable<String>(pinHash);
-    map['on_duty'] = Variable<bool>(onDuty);
+    if (!nullToAbsent || email != null) {
+      map['email'] = Variable<String>(email);
+    }
+    if (!nullToAbsent || passwordHash != null) {
+      map['password_hash'] = Variable<String>(passwordHash);
+    }
     map['disabled'] = Variable<bool>(disabled);
+    if (!nullToAbsent || avatarColorHex != null) {
+      map['avatar_color_hex'] = Variable<int>(avatarColorHex);
+    }
     if (!nullToAbsent || shiftStartedAt != null) {
       map['shift_started_at'] = Variable<DateTime>(shiftStartedAt);
     }
@@ -303,8 +361,16 @@ class User extends DataClass implements Insertable<User> {
           ? const Value.absent()
           : Value(zoneAssigned),
       pinHash: Value(pinHash),
-      onDuty: Value(onDuty),
+      email: email == null && nullToAbsent
+          ? const Value.absent()
+          : Value(email),
+      passwordHash: passwordHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(passwordHash),
       disabled: Value(disabled),
+      avatarColorHex: avatarColorHex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avatarColorHex),
       shiftStartedAt: shiftStartedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(shiftStartedAt),
@@ -323,8 +389,10 @@ class User extends DataClass implements Insertable<User> {
       roleId: serializer.fromJson<String>(json['roleId']),
       zoneAssigned: serializer.fromJson<String?>(json['zoneAssigned']),
       pinHash: serializer.fromJson<String>(json['pinHash']),
-      onDuty: serializer.fromJson<bool>(json['onDuty']),
+      email: serializer.fromJson<String?>(json['email']),
+      passwordHash: serializer.fromJson<String?>(json['passwordHash']),
       disabled: serializer.fromJson<bool>(json['disabled']),
+      avatarColorHex: serializer.fromJson<int?>(json['avatarColorHex']),
       shiftStartedAt: serializer.fromJson<DateTime?>(json['shiftStartedAt']),
     );
   }
@@ -338,8 +406,10 @@ class User extends DataClass implements Insertable<User> {
       'roleId': serializer.toJson<String>(roleId),
       'zoneAssigned': serializer.toJson<String?>(zoneAssigned),
       'pinHash': serializer.toJson<String>(pinHash),
-      'onDuty': serializer.toJson<bool>(onDuty),
+      'email': serializer.toJson<String?>(email),
+      'passwordHash': serializer.toJson<String?>(passwordHash),
       'disabled': serializer.toJson<bool>(disabled),
+      'avatarColorHex': serializer.toJson<int?>(avatarColorHex),
       'shiftStartedAt': serializer.toJson<DateTime?>(shiftStartedAt),
     };
   }
@@ -351,8 +421,10 @@ class User extends DataClass implements Insertable<User> {
     String? roleId,
     Value<String?> zoneAssigned = const Value.absent(),
     String? pinHash,
-    bool? onDuty,
+    Value<String?> email = const Value.absent(),
+    Value<String?> passwordHash = const Value.absent(),
     bool? disabled,
+    Value<int?> avatarColorHex = const Value.absent(),
     Value<DateTime?> shiftStartedAt = const Value.absent(),
   }) => User(
     id: id ?? this.id,
@@ -361,8 +433,12 @@ class User extends DataClass implements Insertable<User> {
     roleId: roleId ?? this.roleId,
     zoneAssigned: zoneAssigned.present ? zoneAssigned.value : this.zoneAssigned,
     pinHash: pinHash ?? this.pinHash,
-    onDuty: onDuty ?? this.onDuty,
+    email: email.present ? email.value : this.email,
+    passwordHash: passwordHash.present ? passwordHash.value : this.passwordHash,
     disabled: disabled ?? this.disabled,
+    avatarColorHex: avatarColorHex.present
+        ? avatarColorHex.value
+        : this.avatarColorHex,
     shiftStartedAt: shiftStartedAt.present
         ? shiftStartedAt.value
         : this.shiftStartedAt,
@@ -377,8 +453,14 @@ class User extends DataClass implements Insertable<User> {
           ? data.zoneAssigned.value
           : this.zoneAssigned,
       pinHash: data.pinHash.present ? data.pinHash.value : this.pinHash,
-      onDuty: data.onDuty.present ? data.onDuty.value : this.onDuty,
+      email: data.email.present ? data.email.value : this.email,
+      passwordHash: data.passwordHash.present
+          ? data.passwordHash.value
+          : this.passwordHash,
       disabled: data.disabled.present ? data.disabled.value : this.disabled,
+      avatarColorHex: data.avatarColorHex.present
+          ? data.avatarColorHex.value
+          : this.avatarColorHex,
       shiftStartedAt: data.shiftStartedAt.present
           ? data.shiftStartedAt.value
           : this.shiftStartedAt,
@@ -394,8 +476,10 @@ class User extends DataClass implements Insertable<User> {
           ..write('roleId: $roleId, ')
           ..write('zoneAssigned: $zoneAssigned, ')
           ..write('pinHash: $pinHash, ')
-          ..write('onDuty: $onDuty, ')
+          ..write('email: $email, ')
+          ..write('passwordHash: $passwordHash, ')
           ..write('disabled: $disabled, ')
+          ..write('avatarColorHex: $avatarColorHex, ')
           ..write('shiftStartedAt: $shiftStartedAt')
           ..write(')'))
         .toString();
@@ -409,8 +493,10 @@ class User extends DataClass implements Insertable<User> {
     roleId,
     zoneAssigned,
     pinHash,
-    onDuty,
+    email,
+    passwordHash,
     disabled,
+    avatarColorHex,
     shiftStartedAt,
   );
   @override
@@ -423,8 +509,10 @@ class User extends DataClass implements Insertable<User> {
           other.roleId == this.roleId &&
           other.zoneAssigned == this.zoneAssigned &&
           other.pinHash == this.pinHash &&
-          other.onDuty == this.onDuty &&
+          other.email == this.email &&
+          other.passwordHash == this.passwordHash &&
           other.disabled == this.disabled &&
+          other.avatarColorHex == this.avatarColorHex &&
           other.shiftStartedAt == this.shiftStartedAt);
 }
 
@@ -435,8 +523,10 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> roleId;
   final Value<String?> zoneAssigned;
   final Value<String> pinHash;
-  final Value<bool> onDuty;
+  final Value<String?> email;
+  final Value<String?> passwordHash;
   final Value<bool> disabled;
+  final Value<int?> avatarColorHex;
   final Value<DateTime?> shiftStartedAt;
   final Value<int> rowid;
   const UsersCompanion({
@@ -446,8 +536,10 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.roleId = const Value.absent(),
     this.zoneAssigned = const Value.absent(),
     this.pinHash = const Value.absent(),
-    this.onDuty = const Value.absent(),
+    this.email = const Value.absent(),
+    this.passwordHash = const Value.absent(),
     this.disabled = const Value.absent(),
+    this.avatarColorHex = const Value.absent(),
     this.shiftStartedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -458,8 +550,10 @@ class UsersCompanion extends UpdateCompanion<User> {
     required String roleId,
     this.zoneAssigned = const Value.absent(),
     required String pinHash,
-    this.onDuty = const Value.absent(),
+    this.email = const Value.absent(),
+    this.passwordHash = const Value.absent(),
     this.disabled = const Value.absent(),
+    this.avatarColorHex = const Value.absent(),
     this.shiftStartedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -474,8 +568,10 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? roleId,
     Expression<String>? zoneAssigned,
     Expression<String>? pinHash,
-    Expression<bool>? onDuty,
+    Expression<String>? email,
+    Expression<String>? passwordHash,
     Expression<bool>? disabled,
+    Expression<int>? avatarColorHex,
     Expression<DateTime>? shiftStartedAt,
     Expression<int>? rowid,
   }) {
@@ -486,8 +582,10 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (roleId != null) 'role_id': roleId,
       if (zoneAssigned != null) 'zone_assigned': zoneAssigned,
       if (pinHash != null) 'pin_hash': pinHash,
-      if (onDuty != null) 'on_duty': onDuty,
+      if (email != null) 'email': email,
+      if (passwordHash != null) 'password_hash': passwordHash,
       if (disabled != null) 'disabled': disabled,
+      if (avatarColorHex != null) 'avatar_color_hex': avatarColorHex,
       if (shiftStartedAt != null) 'shift_started_at': shiftStartedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -500,8 +598,10 @@ class UsersCompanion extends UpdateCompanion<User> {
     Value<String>? roleId,
     Value<String?>? zoneAssigned,
     Value<String>? pinHash,
-    Value<bool>? onDuty,
+    Value<String?>? email,
+    Value<String?>? passwordHash,
     Value<bool>? disabled,
+    Value<int?>? avatarColorHex,
     Value<DateTime?>? shiftStartedAt,
     Value<int>? rowid,
   }) {
@@ -512,8 +612,10 @@ class UsersCompanion extends UpdateCompanion<User> {
       roleId: roleId ?? this.roleId,
       zoneAssigned: zoneAssigned ?? this.zoneAssigned,
       pinHash: pinHash ?? this.pinHash,
-      onDuty: onDuty ?? this.onDuty,
+      email: email ?? this.email,
+      passwordHash: passwordHash ?? this.passwordHash,
       disabled: disabled ?? this.disabled,
+      avatarColorHex: avatarColorHex ?? this.avatarColorHex,
       shiftStartedAt: shiftStartedAt ?? this.shiftStartedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -540,11 +642,17 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (pinHash.present) {
       map['pin_hash'] = Variable<String>(pinHash.value);
     }
-    if (onDuty.present) {
-      map['on_duty'] = Variable<bool>(onDuty.value);
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (passwordHash.present) {
+      map['password_hash'] = Variable<String>(passwordHash.value);
     }
     if (disabled.present) {
       map['disabled'] = Variable<bool>(disabled.value);
+    }
+    if (avatarColorHex.present) {
+      map['avatar_color_hex'] = Variable<int>(avatarColorHex.value);
     }
     if (shiftStartedAt.present) {
       map['shift_started_at'] = Variable<DateTime>(shiftStartedAt.value);
@@ -564,8 +672,10 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('roleId: $roleId, ')
           ..write('zoneAssigned: $zoneAssigned, ')
           ..write('pinHash: $pinHash, ')
-          ..write('onDuty: $onDuty, ')
+          ..write('email: $email, ')
+          ..write('passwordHash: $passwordHash, ')
           ..write('disabled: $disabled, ')
+          ..write('avatarColorHex: $avatarColorHex, ')
           ..write('shiftStartedAt: $shiftStartedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1383,6 +1493,51 @@ class $VenueTablesTable extends VenueTables
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _lockedByMeta = const VerificationMeta(
+    'lockedBy',
+  );
+  @override
+  late final GeneratedColumn<String> lockedBy = GeneratedColumn<String>(
+    'locked_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lockedByNameMeta = const VerificationMeta(
+    'lockedByName',
+  );
+  @override
+  late final GeneratedColumn<String> lockedByName = GeneratedColumn<String>(
+    'locked_by_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lockedAtMeta = const VerificationMeta(
+    'lockedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lockedAt = GeneratedColumn<DateTime>(
+    'locked_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lockExpiresAtMeta = const VerificationMeta(
+    'lockExpiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lockExpiresAt =
+      GeneratedColumn<DateTime>(
+        'lock_expires_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1394,6 +1549,10 @@ class $VenueTablesTable extends VenueTables
     openAmount,
     readyCount,
     lastActorId,
+    lockedBy,
+    lockedByName,
+    lockedAt,
+    lockExpiresAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1465,6 +1624,36 @@ class $VenueTablesTable extends VenueTables
         ),
       );
     }
+    if (data.containsKey('locked_by')) {
+      context.handle(
+        _lockedByMeta,
+        lockedBy.isAcceptableOrUnknown(data['locked_by']!, _lockedByMeta),
+      );
+    }
+    if (data.containsKey('locked_by_name')) {
+      context.handle(
+        _lockedByNameMeta,
+        lockedByName.isAcceptableOrUnknown(
+          data['locked_by_name']!,
+          _lockedByNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('locked_at')) {
+      context.handle(
+        _lockedAtMeta,
+        lockedAt.isAcceptableOrUnknown(data['locked_at']!, _lockedAtMeta),
+      );
+    }
+    if (data.containsKey('lock_expires_at')) {
+      context.handle(
+        _lockExpiresAtMeta,
+        lockExpiresAt.isAcceptableOrUnknown(
+          data['lock_expires_at']!,
+          _lockExpiresAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1510,6 +1699,22 @@ class $VenueTablesTable extends VenueTables
         DriftSqlType.string,
         data['${effectivePrefix}last_actor_id'],
       ),
+      lockedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locked_by'],
+      ),
+      lockedByName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locked_by_name'],
+      ),
+      lockedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}locked_at'],
+      ),
+      lockExpiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}lock_expires_at'],
+      ),
     );
   }
 
@@ -1529,6 +1734,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
   final int openAmount;
   final int readyCount;
   final String? lastActorId;
+  final String? lockedBy;
+  final String? lockedByName;
+  final DateTime? lockedAt;
+  final DateTime? lockExpiresAt;
   const VenueTable({
     required this.id,
     required this.zoneId,
@@ -1539,6 +1748,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     required this.openAmount,
     required this.readyCount,
     this.lastActorId,
+    this.lockedBy,
+    this.lockedByName,
+    this.lockedAt,
+    this.lockExpiresAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1555,6 +1768,18 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     map['ready_count'] = Variable<int>(readyCount);
     if (!nullToAbsent || lastActorId != null) {
       map['last_actor_id'] = Variable<String>(lastActorId);
+    }
+    if (!nullToAbsent || lockedBy != null) {
+      map['locked_by'] = Variable<String>(lockedBy);
+    }
+    if (!nullToAbsent || lockedByName != null) {
+      map['locked_by_name'] = Variable<String>(lockedByName);
+    }
+    if (!nullToAbsent || lockedAt != null) {
+      map['locked_at'] = Variable<DateTime>(lockedAt);
+    }
+    if (!nullToAbsent || lockExpiresAt != null) {
+      map['lock_expires_at'] = Variable<DateTime>(lockExpiresAt);
     }
     return map;
   }
@@ -1574,6 +1799,18 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       lastActorId: lastActorId == null && nullToAbsent
           ? const Value.absent()
           : Value(lastActorId),
+      lockedBy: lockedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lockedBy),
+      lockedByName: lockedByName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lockedByName),
+      lockedAt: lockedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lockedAt),
+      lockExpiresAt: lockExpiresAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lockExpiresAt),
     );
   }
 
@@ -1592,6 +1829,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       openAmount: serializer.fromJson<int>(json['openAmount']),
       readyCount: serializer.fromJson<int>(json['readyCount']),
       lastActorId: serializer.fromJson<String?>(json['lastActorId']),
+      lockedBy: serializer.fromJson<String?>(json['lockedBy']),
+      lockedByName: serializer.fromJson<String?>(json['lockedByName']),
+      lockedAt: serializer.fromJson<DateTime?>(json['lockedAt']),
+      lockExpiresAt: serializer.fromJson<DateTime?>(json['lockExpiresAt']),
     );
   }
   @override
@@ -1607,6 +1848,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       'openAmount': serializer.toJson<int>(openAmount),
       'readyCount': serializer.toJson<int>(readyCount),
       'lastActorId': serializer.toJson<String?>(lastActorId),
+      'lockedBy': serializer.toJson<String?>(lockedBy),
+      'lockedByName': serializer.toJson<String?>(lockedByName),
+      'lockedAt': serializer.toJson<DateTime?>(lockedAt),
+      'lockExpiresAt': serializer.toJson<DateTime?>(lockExpiresAt),
     };
   }
 
@@ -1620,6 +1865,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     int? openAmount,
     int? readyCount,
     Value<String?> lastActorId = const Value.absent(),
+    Value<String?> lockedBy = const Value.absent(),
+    Value<String?> lockedByName = const Value.absent(),
+    Value<DateTime?> lockedAt = const Value.absent(),
+    Value<DateTime?> lockExpiresAt = const Value.absent(),
   }) => VenueTable(
     id: id ?? this.id,
     zoneId: zoneId ?? this.zoneId,
@@ -1630,6 +1879,12 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     openAmount: openAmount ?? this.openAmount,
     readyCount: readyCount ?? this.readyCount,
     lastActorId: lastActorId.present ? lastActorId.value : this.lastActorId,
+    lockedBy: lockedBy.present ? lockedBy.value : this.lockedBy,
+    lockedByName: lockedByName.present ? lockedByName.value : this.lockedByName,
+    lockedAt: lockedAt.present ? lockedAt.value : this.lockedAt,
+    lockExpiresAt: lockExpiresAt.present
+        ? lockExpiresAt.value
+        : this.lockExpiresAt,
   );
   VenueTable copyWithCompanion(VenueTablesCompanion data) {
     return VenueTable(
@@ -1648,6 +1903,14 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       lastActorId: data.lastActorId.present
           ? data.lastActorId.value
           : this.lastActorId,
+      lockedBy: data.lockedBy.present ? data.lockedBy.value : this.lockedBy,
+      lockedByName: data.lockedByName.present
+          ? data.lockedByName.value
+          : this.lockedByName,
+      lockedAt: data.lockedAt.present ? data.lockedAt.value : this.lockedAt,
+      lockExpiresAt: data.lockExpiresAt.present
+          ? data.lockExpiresAt.value
+          : this.lockExpiresAt,
     );
   }
 
@@ -1662,7 +1925,11 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ..write('status: $status, ')
           ..write('openAmount: $openAmount, ')
           ..write('readyCount: $readyCount, ')
-          ..write('lastActorId: $lastActorId')
+          ..write('lastActorId: $lastActorId, ')
+          ..write('lockedBy: $lockedBy, ')
+          ..write('lockedByName: $lockedByName, ')
+          ..write('lockedAt: $lockedAt, ')
+          ..write('lockExpiresAt: $lockExpiresAt')
           ..write(')'))
         .toString();
   }
@@ -1678,6 +1945,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     openAmount,
     readyCount,
     lastActorId,
+    lockedBy,
+    lockedByName,
+    lockedAt,
+    lockExpiresAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1691,7 +1962,11 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           other.status == this.status &&
           other.openAmount == this.openAmount &&
           other.readyCount == this.readyCount &&
-          other.lastActorId == this.lastActorId);
+          other.lastActorId == this.lastActorId &&
+          other.lockedBy == this.lockedBy &&
+          other.lockedByName == this.lockedByName &&
+          other.lockedAt == this.lockedAt &&
+          other.lockExpiresAt == this.lockExpiresAt);
 }
 
 class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
@@ -1704,6 +1979,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
   final Value<int> openAmount;
   final Value<int> readyCount;
   final Value<String?> lastActorId;
+  final Value<String?> lockedBy;
+  final Value<String?> lockedByName;
+  final Value<DateTime?> lockedAt;
+  final Value<DateTime?> lockExpiresAt;
   final Value<int> rowid;
   const VenueTablesCompanion({
     this.id = const Value.absent(),
@@ -1715,6 +1994,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.openAmount = const Value.absent(),
     this.readyCount = const Value.absent(),
     this.lastActorId = const Value.absent(),
+    this.lockedBy = const Value.absent(),
+    this.lockedByName = const Value.absent(),
+    this.lockedAt = const Value.absent(),
+    this.lockExpiresAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueTablesCompanion.insert({
@@ -1727,6 +2010,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.openAmount = const Value.absent(),
     this.readyCount = const Value.absent(),
     this.lastActorId = const Value.absent(),
+    this.lockedBy = const Value.absent(),
+    this.lockedByName = const Value.absent(),
+    this.lockedAt = const Value.absent(),
+    this.lockExpiresAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        zoneId = Value(zoneId);
@@ -1740,6 +2027,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Expression<int>? openAmount,
     Expression<int>? readyCount,
     Expression<String>? lastActorId,
+    Expression<String>? lockedBy,
+    Expression<String>? lockedByName,
+    Expression<DateTime>? lockedAt,
+    Expression<DateTime>? lockExpiresAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1752,6 +2043,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       if (openAmount != null) 'open_amount': openAmount,
       if (readyCount != null) 'ready_count': readyCount,
       if (lastActorId != null) 'last_actor_id': lastActorId,
+      if (lockedBy != null) 'locked_by': lockedBy,
+      if (lockedByName != null) 'locked_by_name': lockedByName,
+      if (lockedAt != null) 'locked_at': lockedAt,
+      if (lockExpiresAt != null) 'lock_expires_at': lockExpiresAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1766,6 +2061,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Value<int>? openAmount,
     Value<int>? readyCount,
     Value<String?>? lastActorId,
+    Value<String?>? lockedBy,
+    Value<String?>? lockedByName,
+    Value<DateTime?>? lockedAt,
+    Value<DateTime?>? lockExpiresAt,
     Value<int>? rowid,
   }) {
     return VenueTablesCompanion(
@@ -1778,6 +2077,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       openAmount: openAmount ?? this.openAmount,
       readyCount: readyCount ?? this.readyCount,
       lastActorId: lastActorId ?? this.lastActorId,
+      lockedBy: lockedBy ?? this.lockedBy,
+      lockedByName: lockedByName ?? this.lockedByName,
+      lockedAt: lockedAt ?? this.lockedAt,
+      lockExpiresAt: lockExpiresAt ?? this.lockExpiresAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1812,6 +2115,18 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     if (lastActorId.present) {
       map['last_actor_id'] = Variable<String>(lastActorId.value);
     }
+    if (lockedBy.present) {
+      map['locked_by'] = Variable<String>(lockedBy.value);
+    }
+    if (lockedByName.present) {
+      map['locked_by_name'] = Variable<String>(lockedByName.value);
+    }
+    if (lockedAt.present) {
+      map['locked_at'] = Variable<DateTime>(lockedAt.value);
+    }
+    if (lockExpiresAt.present) {
+      map['lock_expires_at'] = Variable<DateTime>(lockExpiresAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1830,6 +2145,10 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
           ..write('openAmount: $openAmount, ')
           ..write('readyCount: $readyCount, ')
           ..write('lastActorId: $lastActorId, ')
+          ..write('lockedBy: $lockedBy, ')
+          ..write('lockedByName: $lockedByName, ')
+          ..write('lockedAt: $lockedAt, ')
+          ..write('lockExpiresAt: $lockExpiresAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6142,8 +6461,10 @@ typedef $$UsersTableCreateCompanionBuilder =
       required String roleId,
       Value<String?> zoneAssigned,
       required String pinHash,
-      Value<bool> onDuty,
+      Value<String?> email,
+      Value<String?> passwordHash,
       Value<bool> disabled,
+      Value<int?> avatarColorHex,
       Value<DateTime?> shiftStartedAt,
       Value<int> rowid,
     });
@@ -6155,8 +6476,10 @@ typedef $$UsersTableUpdateCompanionBuilder =
       Value<String> roleId,
       Value<String?> zoneAssigned,
       Value<String> pinHash,
-      Value<bool> onDuty,
+      Value<String?> email,
+      Value<String?> passwordHash,
       Value<bool> disabled,
+      Value<int?> avatarColorHex,
       Value<DateTime?> shiftStartedAt,
       Value<int> rowid,
     });
@@ -6199,13 +6522,23 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get onDuty => $composableBuilder(
-    column: $table.onDuty,
+  ColumnFilters<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<bool> get disabled => $composableBuilder(
     column: $table.disabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get avatarColorHex => $composableBuilder(
+    column: $table.avatarColorHex,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6254,13 +6587,23 @@ class $$UsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get onDuty => $composableBuilder(
-    column: $table.onDuty,
+  ColumnOrderings<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<bool> get disabled => $composableBuilder(
     column: $table.disabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get avatarColorHex => $composableBuilder(
+    column: $table.avatarColorHex,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6299,11 +6642,21 @@ class $$UsersTableAnnotationComposer
   GeneratedColumn<String> get pinHash =>
       $composableBuilder(column: $table.pinHash, builder: (column) => column);
 
-  GeneratedColumn<bool> get onDuty =>
-      $composableBuilder(column: $table.onDuty, builder: (column) => column);
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get disabled =>
       $composableBuilder(column: $table.disabled, builder: (column) => column);
+
+  GeneratedColumn<int> get avatarColorHex => $composableBuilder(
+    column: $table.avatarColorHex,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get shiftStartedAt => $composableBuilder(
     column: $table.shiftStartedAt,
@@ -6345,8 +6698,10 @@ class $$UsersTableTableManager
                 Value<String> roleId = const Value.absent(),
                 Value<String?> zoneAssigned = const Value.absent(),
                 Value<String> pinHash = const Value.absent(),
-                Value<bool> onDuty = const Value.absent(),
+                Value<String?> email = const Value.absent(),
+                Value<String?> passwordHash = const Value.absent(),
                 Value<bool> disabled = const Value.absent(),
+                Value<int?> avatarColorHex = const Value.absent(),
                 Value<DateTime?> shiftStartedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UsersCompanion(
@@ -6356,8 +6711,10 @@ class $$UsersTableTableManager
                 roleId: roleId,
                 zoneAssigned: zoneAssigned,
                 pinHash: pinHash,
-                onDuty: onDuty,
+                email: email,
+                passwordHash: passwordHash,
                 disabled: disabled,
+                avatarColorHex: avatarColorHex,
                 shiftStartedAt: shiftStartedAt,
                 rowid: rowid,
               ),
@@ -6369,8 +6726,10 @@ class $$UsersTableTableManager
                 required String roleId,
                 Value<String?> zoneAssigned = const Value.absent(),
                 required String pinHash,
-                Value<bool> onDuty = const Value.absent(),
+                Value<String?> email = const Value.absent(),
+                Value<String?> passwordHash = const Value.absent(),
                 Value<bool> disabled = const Value.absent(),
+                Value<int?> avatarColorHex = const Value.absent(),
                 Value<DateTime?> shiftStartedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UsersCompanion.insert(
@@ -6380,8 +6739,10 @@ class $$UsersTableTableManager
                 roleId: roleId,
                 zoneAssigned: zoneAssigned,
                 pinHash: pinHash,
-                onDuty: onDuty,
+                email: email,
+                passwordHash: passwordHash,
                 disabled: disabled,
+                avatarColorHex: avatarColorHex,
                 shiftStartedAt: shiftStartedAt,
                 rowid: rowid,
               ),
@@ -6806,6 +7167,10 @@ typedef $$VenueTablesTableCreateCompanionBuilder =
       Value<int> openAmount,
       Value<int> readyCount,
       Value<String?> lastActorId,
+      Value<String?> lockedBy,
+      Value<String?> lockedByName,
+      Value<DateTime?> lockedAt,
+      Value<DateTime?> lockExpiresAt,
       Value<int> rowid,
     });
 typedef $$VenueTablesTableUpdateCompanionBuilder =
@@ -6819,6 +7184,10 @@ typedef $$VenueTablesTableUpdateCompanionBuilder =
       Value<int> openAmount,
       Value<int> readyCount,
       Value<String?> lastActorId,
+      Value<String?> lockedBy,
+      Value<String?> lockedByName,
+      Value<DateTime?> lockedAt,
+      Value<DateTime?> lockExpiresAt,
       Value<int> rowid,
     });
 
@@ -6873,6 +7242,26 @@ class $$VenueTablesTableFilterComposer
 
   ColumnFilters<String> get lastActorId => $composableBuilder(
     column: $table.lastActorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lockedBy => $composableBuilder(
+    column: $table.lockedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lockedByName => $composableBuilder(
+    column: $table.lockedByName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lockedAt => $composableBuilder(
+    column: $table.lockedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lockExpiresAt => $composableBuilder(
+    column: $table.lockExpiresAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6930,6 +7319,26 @@ class $$VenueTablesTableOrderingComposer
     column: $table.lastActorId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get lockedBy => $composableBuilder(
+    column: $table.lockedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lockedByName => $composableBuilder(
+    column: $table.lockedByName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lockedAt => $composableBuilder(
+    column: $table.lockedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lockExpiresAt => $composableBuilder(
+    column: $table.lockExpiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueTablesTableAnnotationComposer
@@ -6971,6 +7380,22 @@ class $$VenueTablesTableAnnotationComposer
 
   GeneratedColumn<String> get lastActorId => $composableBuilder(
     column: $table.lastActorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lockedBy =>
+      $composableBuilder(column: $table.lockedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get lockedByName => $composableBuilder(
+    column: $table.lockedByName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lockedAt =>
+      $composableBuilder(column: $table.lockedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lockExpiresAt => $composableBuilder(
+    column: $table.lockExpiresAt,
     builder: (column) => column,
   );
 }
@@ -7015,6 +7440,10 @@ class $$VenueTablesTableTableManager
                 Value<int> openAmount = const Value.absent(),
                 Value<int> readyCount = const Value.absent(),
                 Value<String?> lastActorId = const Value.absent(),
+                Value<String?> lockedBy = const Value.absent(),
+                Value<String?> lockedByName = const Value.absent(),
+                Value<DateTime?> lockedAt = const Value.absent(),
+                Value<DateTime?> lockExpiresAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion(
                 id: id,
@@ -7026,6 +7455,10 @@ class $$VenueTablesTableTableManager
                 openAmount: openAmount,
                 readyCount: readyCount,
                 lastActorId: lastActorId,
+                lockedBy: lockedBy,
+                lockedByName: lockedByName,
+                lockedAt: lockedAt,
+                lockExpiresAt: lockExpiresAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7039,6 +7472,10 @@ class $$VenueTablesTableTableManager
                 Value<int> openAmount = const Value.absent(),
                 Value<int> readyCount = const Value.absent(),
                 Value<String?> lastActorId = const Value.absent(),
+                Value<String?> lockedBy = const Value.absent(),
+                Value<String?> lockedByName = const Value.absent(),
+                Value<DateTime?> lockedAt = const Value.absent(),
+                Value<DateTime?> lockExpiresAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion.insert(
                 id: id,
@@ -7050,6 +7487,10 @@ class $$VenueTablesTableTableManager
                 openAmount: openAmount,
                 readyCount: readyCount,
                 lastActorId: lastActorId,
+                lockedBy: lockedBy,
+                lockedByName: lockedByName,
+                lockedAt: lockedAt,
+                lockExpiresAt: lockExpiresAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

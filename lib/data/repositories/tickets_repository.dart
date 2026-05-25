@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/order_dto.dart';
 import 'package:satset/data/models/ticket_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
-import 'package:satset/data/services/dummy_data_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
@@ -17,9 +17,9 @@ final ticketsStatusProvider =
     StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
 
 class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
-  TicketsRepository({required this.ref, required DummyDataService seed})
-      : super(seed.initialTicketsByTable()) {
-    _bootstrap();
+  TicketsRepository({required this.ref})
+      : super(const <String, List<Ticket>>{}) {
+    Future.microtask(_bootstrap);
   }
 
   final Ref ref;
@@ -44,9 +44,11 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         grouped.putIfAbsent(dto.tableId, () => []).add(_toDomain(dto));
       }
       state = grouped;
+      SatLog.repo('tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}');
       ref.read(ticketsStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
+      SatLog.repo('tickets.bootstrap fail $e');
       ref.read(ticketsStatusProvider.notifier).state =
           AsyncValue.error(e, st);
     }
@@ -54,6 +56,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       if (ev.type == WsEventTypes.ticketCreated ||
           ev.type == WsEventTypes.ticketUpdated) {
         final dto = TicketDto.fromJson(ev.payload);
+        SatLog.repo('tickets.ws ${ev.type} id=${dto.id.substring(0, dto.id.length.clamp(0, 6))} status=${dto.status}');
         final next = Map<String, List<Ticket>>.from(state);
         final list = List<Ticket>.from(next[dto.tableId] ?? const []);
         final idx = list.indexWhere((t) => t.id == dto.id);
@@ -90,7 +93,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       specialInstructions: d.specialInstructions,
       price: d.price,
       status: ticketStatusFromKey(d.status),
-      sentAt: d.sentAt.toIso8601String(),
+      // Domain stores sentAt as `HH:mm` local; the KDS age computation
+      // and seed data both rely on that format.
+      sentAt: _nowStamp(d.sentAt.toLocal()),
       voidReason: d.voidReason,
       voidApprovedBy: d.voidApprovedBy,
     );
@@ -121,7 +126,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     required String tableId,
     required String idempotencyKey,
     required List<CartLineDto> lines,
+    String? actorId,
   }) async {
+    SatLog.repo('tickets.submit table=${tableId.substring(0, tableId.length.clamp(0, 6))} lines=${lines.length}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       final cart = [
@@ -129,11 +136,11 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           CartItem(
             id: l.itemId,
             itemId: l.itemId,
-            name: l.itemId,
-            station: Station.kitchen,
+            name: l.name,
+            station: l.station == 'bar' ? Station.bar : Station.kitchen,
             variantId: l.variantId,
-            variantName: '',
-            course: CourseId.fireNow,
+            variantName: l.variantName,
+            course: _courseFromKey(l.course),
             qty: l.qty,
             unitPrice: l.unitPrice,
           ),
@@ -147,6 +154,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         tableId: tableId,
         idempotencyKey: idempotencyKey,
         lines: lines,
+        actorId: actorId,
       ).toJson(),
     );
     final res = SubmitOrderResponseDto.fromJson(
@@ -164,6 +172,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     String? voidReason,
     String? voidApprovedBy,
   }) async {
+    SatLog.repo('tickets.transition id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} → ${to.name}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg != null) {
       final body = <String, dynamic>{
@@ -226,6 +235,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }
 
   Future<void> fireCourse(String tableId, CourseId courseId) async {
+    SatLog.repo('tickets.fireCourse table=${tableId.substring(0, tableId.length.clamp(0, 6))} course=${courseId.name}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       _fireCourseLocal(tableId, courseId);
@@ -353,7 +363,4 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
 
 final ticketsProvider =
     StateNotifierProvider<TicketsRepository, Map<String, List<Ticket>>>(
-        (ref) => TicketsRepository(
-              ref: ref,
-              seed: ref.watch(dummyDataServiceProvider),
-            ));
+        (ref) => TicketsRepository(ref: ref));

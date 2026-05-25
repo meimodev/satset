@@ -1,45 +1,526 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/io_client.dart' as http_io;
+import 'package:uuid/uuid.dart';
+
+import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/data/models/pair_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/mdns_browser_service.dart';
+import 'package:satset/data/services/prefs_service.dart';
+import 'package:satset/data/services/secure_storage_service.dart';
+import 'package:satset/domain/models/app_mode.dart';
+import 'package:satset/ui/features/onboarding/view_models/mode_select_view_model.dart';
+import 'package:satset/ui/features/onboarding/view_models/pair_view_model.dart';
+
+enum SignInMode { admin, staff }
+
+class PairedServerInfo {
+  final String host;
+  final int port;
+  final String fingerprint;
+  final String label;
+
+  /// True when the device has previously paired with this server (token in
+  /// secure storage); false for entries surfaced only by live mDNS discovery.
+  final bool paired;
+
+  /// App version reported in mDNS TXT, informational only.
+  final String? version;
+
+  const PairedServerInfo({
+    required this.host,
+    required this.port,
+    required this.fingerprint,
+    required this.label,
+    this.paired = true,
+    this.version,
+  });
+
+  String get key => '$host:$port';
+  String get ipLine => '$host:$port';
+}
 
 class PinState {
+  final SignInMode mode;
   final String pin;
-  final bool busy;
-  final String? error;
-  const PinState({this.pin = '', this.busy = false, this.error});
+  final bool pinBusy;
+  final String? pinError;
+  final bool adminBusy;
+  final String? adminError;
+  final List<PairedServerInfo> servers;
+  final String? selectedServerKey;
+  final bool pairingBusy;
+  final String? pairingError;
+  static const int pinMax = 6;
 
-  PinState copyWith({String? pin, bool? busy, String? error}) => PinState(
+  const PinState({
+    this.mode = SignInMode.staff,
+    this.pin = '',
+    this.pinBusy = false,
+    this.pinError,
+    this.adminBusy = false,
+    this.adminError,
+    this.servers = const [],
+    this.selectedServerKey,
+    this.pairingBusy = false,
+    this.pairingError,
+  });
+
+  PairedServerInfo? get selectedServer {
+    if (selectedServerKey == null) return null;
+    for (final s in servers) {
+      if (s.key == selectedServerKey) return s;
+    }
+    return null;
+  }
+
+  PinState copyWith({
+    SignInMode? mode,
+    String? pin,
+    bool? pinBusy,
+    Object? pinError = _unset,
+    bool? adminBusy,
+    Object? adminError = _unset,
+    List<PairedServerInfo>? servers,
+    Object? selectedServerKey = _unset,
+    bool? pairingBusy,
+    Object? pairingError = _unset,
+  }) =>
+      PinState(
+        mode: mode ?? this.mode,
         pin: pin ?? this.pin,
-        busy: busy ?? this.busy,
-        error: error,
+        pinBusy: pinBusy ?? this.pinBusy,
+        pinError: pinError == _unset ? this.pinError : pinError as String?,
+        adminBusy: adminBusy ?? this.adminBusy,
+        adminError:
+            adminError == _unset ? this.adminError : adminError as String?,
+        servers: servers ?? this.servers,
+        selectedServerKey: selectedServerKey == _unset
+            ? this.selectedServerKey
+            : selectedServerKey as String?,
+        pairingBusy: pairingBusy ?? this.pairingBusy,
+        pairingError:
+            pairingError == _unset ? this.pairingError : pairingError as String?,
       );
 }
 
+const Object _unset = Object();
+
+/// Controller behind the unified sign-in screen. Owns:
+///   - mode switch (Admin / Staff)
+///   - staff PIN entry + submit
+///   - admin credential submit (dummy: bypasses email/password)
+///   - paired-server discovery and selection
+///   - live mDNS server discovery + LAN-trusted auto-claim
+///   - manual + QR pairing handoff to [PairViewModel]
+///
+/// The widget renders state and routes user intent through these actions —
+/// it does not own auth, pairing or mode logic.
 class PinViewModel extends StateNotifier<PinState> {
-  PinViewModel(this._auth) : super(const PinState());
-  final AuthRepository _auth;
+  PinViewModel(this._ref, PrefsService prefs, this._storage, this._mdns)
+      : _prefs = prefs,
+        super(PinState(
+          mode: prefs.appMode() == AppMode.server
+              ? SignInMode.admin
+              : SignInMode.staff,
+        )) {
+    refreshPairedServers();
+    _startDiscovery();
+  }
+
+  final Ref _ref;
+  final PrefsService _prefs;
+  final SecureStorageService _storage;
+  final MdnsBrowserService _mdns;
+
+  PairedServerInfo? _pairedFromPrefs;
+  List<DiscoveredServer> _discovered = const [];
+  StreamSubscription<List<DiscoveredServer>>? _mdnsSub;
+
+  AuthRepository get _auth => _ref.read(authStateProvider.notifier);
+
+  void _startDiscovery() {
+    // Fire-and-forget: PinViewModel must not block on mDNS readiness.
+    unawaited(_mdns.start());
+    _mdnsSub = _mdns.servers.listen(_onDiscovered);
+    // Seed with anything already in the cache (subscribers join late).
+    _onDiscovered(_mdns.current);
+  }
+
+  void _onDiscovered(List<DiscoveredServer> list) {
+    _discovered = list;
+    _rebuildServers();
+  }
+
+  Future<void> refreshPairedServers() async {
+    final host = _prefs.pairedHost();
+    final port = _prefs.pairedPort();
+    final fp = await _storage.readServerFingerprint();
+    if (host == null || host.isEmpty || port == null || fp == null || fp.isEmpty) {
+      _pairedFromPrefs = null;
+    } else {
+      _pairedFromPrefs = PairedServerInfo(
+        host: host,
+        port: port,
+        fingerprint: fp,
+        label: host,
+      );
+    }
+    _rebuildServers();
+  }
+
+  void _rebuildServers() {
+    final byKey = <String, PairedServerInfo>{};
+    final paired = _pairedFromPrefs;
+    if (paired != null) {
+      byKey[paired.key] = paired;
+    }
+    for (final d in _discovered) {
+      final key = '${d.host}:${d.port}';
+      final isPaired =
+          paired != null && paired.host == d.host && paired.port == d.port;
+      byKey[key] = PairedServerInfo(
+        host: d.host,
+        port: d.port,
+        fingerprint: isPaired ? paired.fingerprint : d.fingerprint,
+        label: d.label,
+        paired: isPaired,
+        version: d.version,
+      );
+    }
+    final list = byKey.values.toList()
+      // Paired first, then by label for stability.
+      ..sort((a, b) {
+        if (a.paired != b.paired) return a.paired ? -1 : 1;
+        return a.label.compareTo(b.label);
+      });
+
+    // Keep current selection if still present; else default to the first
+    // paired entry (discovered-only entries require explicit auto-claim).
+    String? sel = state.selectedServerKey;
+    if (sel != null && !byKey.containsKey(sel)) sel = null;
+    if (sel == null) {
+      for (final s in list) {
+        if (s.paired) {
+          sel = s.key;
+          break;
+        }
+      }
+    }
+
+    state = state.copyWith(
+      servers: list,
+      selectedServerKey: sel,
+    );
+
+    // Don't override the loopback ApiConfig that Admin/Server mode publishes.
+    if (state.mode != SignInMode.admin && sel != null) {
+      final current = list.firstWhere(
+        (s) => s.key == sel,
+        orElse: () => list.first,
+      );
+      if (current.paired) _publishApiConfig(current);
+    }
+  }
+
+  void setMode(SignInMode m) {
+    if (state.mode == m) return;
+    SatLog.vm('PinVM setMode ${m.name}');
+    state = state.copyWith(
+      mode: m,
+      pin: '',
+      pinError: null,
+      adminError: null,
+    );
+    if (m == SignInMode.staff) {
+      // Fire-and-forget: submitStaffPin() is the authoritative gate that
+      // re-persists and blocks auth on failure. Surface any error here too
+      // so explicit Staff selection cannot silently leave stale mode.
+      _persistMode(AppMode.client).catchError((Object e) {
+        SatLog.vm('PinVM setMode persist fail $e');
+        state = state.copyWith(pinError: 'Gagal menyimpan mode: $e');
+      });
+    }
+    // Admin server boot is deferred to submitAdmin() so a failure can be
+    // surfaced via adminError and block sign-in.
+  }
+
+  Future<void> _persistMode(AppMode m) async {
+    if (_prefs.appMode() == m) return;
+    await _prefs.setAppMode(m);
+  }
+
+  /// Boots the in-process server and publishes a loopback [ApiConfig].
+  /// Throws if [ModeSelectViewModel] reported an error or if the runtime /
+  /// ApiConfig never materialised, so callers can refuse to authenticate.
+  Future<void> _bootServerMode() async {
+    final vm = _ref.read(modeSelectViewModelProvider.notifier);
+    await vm.choose(AppMode.server);
+    final ms = _ref.read(modeSelectViewModelProvider);
+    if (ms.error != null) {
+      throw StateError(ms.error!);
+    }
+    final rt = _ref.read(serverRuntimeProvider);
+    final cfg = _ref.read(apiConfigProvider);
+    if (rt == null || cfg == null) {
+      throw StateError('Server runtime tidak siap');
+    }
+  }
+
+  void selectServer(String key) {
+    final match = state.servers.where((s) => s.key == key).toList();
+    if (match.isEmpty) return;
+    final picked = match.first;
+    state = state.copyWith(selectedServerKey: key, pinError: null);
+    if (picked.paired) _publishApiConfig(picked);
+  }
+
+  void _publishApiConfig(PairedServerInfo s) {
+    _ref.read(apiConfigProvider.notifier).state = ApiConfig(
+      baseUri: Uri.parse('https://${s.host}:${s.port}'),
+      trustedFingerprint: s.fingerprint,
+    );
+  }
 
   void onDigit(String d) {
-    if (state.pin.length >= 8) return;
-    state = state.copyWith(pin: state.pin + d, error: null);
+    if (state.pinBusy) return;
+    if (state.pin.length >= PinState.pinMax) return;
+    state = state.copyWith(pin: state.pin + d, pinError: null);
   }
 
   void backspace() {
+    if (state.pinBusy) return;
     if (state.pin.isEmpty) return;
     state = state.copyWith(pin: state.pin.substring(0, state.pin.length - 1));
   }
 
-  void clear() => state = state.copyWith(pin: '');
+  void clearPin() => state = state.copyWith(pin: '', pinError: null);
 
-  Future<void> submit() async {
-    if (state.pin.isEmpty) return;
-    state = state.copyWith(busy: true);
-    await _auth.signInWithPin(state.pin);
-    state = state.copyWith(busy: false);
+  void clearAdminError() {
+    if (state.adminError != null) {
+      state = state.copyWith(adminError: null);
+    }
+  }
+
+  void clearPairingError() {
+    if (state.pairingError != null) {
+      state = state.copyWith(pairingError: null);
+    }
+  }
+
+  /// Returns true when sign-in succeeded.
+  Future<bool> submitStaffPin() async {
+    SatLog.vm('PinVM submitStaff len=${state.pin.length}');
+    if (state.pin.length < PinState.pinMax || state.pinBusy) return false;
+    final cfg = _ref.read(apiConfigProvider);
+    final sel = state.selectedServer;
+    if (cfg == null || sel == null || !sel.paired) {
+      state = state.copyWith(
+        pin: '',
+        pinError: 'Pilih server terlebih dahulu',
+      );
+      return false;
+    }
+    final deviceId = await _storage.readDeviceId();
+    if (deviceId == null || deviceId.isEmpty) {
+      SatLog.vm('PinVM submitStaff missing deviceId');
+      state = state.copyWith(
+        pin: '',
+        pinError: 'Perangkat belum dipasangkan ulang',
+      );
+      return false;
+    }
+    state = state.copyWith(pinBusy: true, pinError: null);
+    try {
+      await _persistMode(AppMode.client);
+    } catch (e) {
+      SatLog.vm('PinVM submitStaff persist fail $e');
+      state = state.copyWith(
+        pinBusy: false,
+        pinError: 'Gagal menyimpan mode klien: $e',
+      );
+      return false;
+    }
+    final ok = await _auth.signInWithPin(state.pin);
+    if (ok) {
+      SatLog.vm('PinVM submitStaff result=ok');
+      state = state.copyWith(pinBusy: false);
+      return true;
+    }
+    final err = _ref.read(authStateProvider).error;
+    SatLog.vm('PinVM submitStaff result=fail err=$err');
+    state = state.copyWith(
+      pinBusy: false,
+      pin: '',
+      pinError: err ?? 'PIN tidak dikenal',
+    );
+    return false;
+  }
+
+  Future<bool> submitAdmin({
+    required String email,
+    required String password,
+  }) async {
+    SatLog.vm('PinVM submitAdmin');
+    if (state.adminBusy) return false;
+    state = state.copyWith(adminBusy: true, adminError: null);
+    try {
+      await _bootServerMode();
+    } catch (e) {
+      SatLog.vm('PinVM submitAdmin boot fail $e');
+      state = state.copyWith(
+        adminBusy: false,
+        adminError: 'Gagal memulai server: $e',
+      );
+      return false;
+    }
+    await _persistMode(AppMode.server);
+    final ok = await _auth.signInAsAdmin(email: email, password: password);
+    if (ok) {
+      SatLog.vm('PinVM submitAdmin result=ok');
+      state = state.copyWith(adminBusy: false);
+      return true;
+    }
+    final err = _ref.read(authStateProvider).error;
+    SatLog.vm('PinVM submitAdmin result=fail err=$err');
+    state = state.copyWith(
+      adminBusy: false,
+      adminError: err ?? 'Login admin gagal',
+    );
+    return false;
+  }
+
+  /// Claim a pairing via QR JSON payload. Returns the paired info on success.
+  Future<PairedServerInfo?> claimQr(String qrJson) async {
+    return _runClaim(qrJson);
+  }
+
+  /// Claim a pairing via manually entered fields.
+  Future<PairedServerInfo?> claimManual({
+    required String host,
+    required int port,
+    required String fingerprint,
+    required String token,
+  }) async {
+    final payload = PairQrPayloadDto(
+      host: host,
+      port: port,
+      fingerprint: fingerprint,
+      token: token,
+    );
+    return _runClaim(jsonEncode(payload.toJson()));
+  }
+
+  /// LAN-trusted auto-claim for a server surfaced via mDNS. POSTs to
+  /// `/pair/auto-claim` over a TLS-pinned client; on success persists the
+  /// pairing and selects the entry so the user can immediately enter PIN.
+  Future<bool> selectDiscovered(PairedServerInfo s) async {
+    if (state.pairingBusy) return false;
+    SatLog.vm('PinVM autoClaim ${s.host}:${s.port}');
+    state = state.copyWith(
+      pairingBusy: true,
+      pairingError: null,
+      selectedServerKey: s.key,
+    );
+    await _persistMode(AppMode.client);
+    // Clear any stale session token so a previously-paired token cannot
+    // silently authenticate the user — Staff PIN entry is required.
+    await _storage.clearSession();
+    try {
+      final deviceId = await _storage.readDeviceId() ?? const Uuid().v4();
+      await _storage.writeDeviceId(deviceId);
+      final inner = ApiClient.buildPinnedHttpClient(
+        s.fingerprint,
+        isLoopback: ApiClient.isLoopbackHost(s.host),
+      );
+      final client = http_io.IOClient(inner);
+      Map<String, dynamic> body;
+      try {
+        final uri = Uri(
+          scheme: 'https',
+          host: s.host,
+          port: s.port,
+          path: '/pair/auto-claim',
+        );
+        final r = await client.post(
+          uri,
+          headers: {'content-type': 'application/json'},
+          body: jsonEncode({
+            'deviceId': deviceId,
+            'deviceLabel': 'satset-client',
+            'publicKey': '',
+          }),
+        );
+        if (r.statusCode >= 400) {
+          throw StateError('auto-claim failed ${r.statusCode}');
+        }
+        body = jsonDecode(r.body) as Map<String, dynamic>;
+      } finally {
+        client.close();
+      }
+      final res = PairClaimResponseDto.fromJson(body);
+      if (res.fingerprint.toLowerCase() != s.fingerprint.toLowerCase()) {
+        throw StateError('fingerprint mismatch — refuse to trust server');
+      }
+      await _storage.writeServerFingerprint(s.fingerprint);
+      await _storage.writeServerCert(res.serverPublicKey);
+      await _prefs.setPairedHost(s.host);
+      await _prefs.setPairedPort(s.port);
+      _publishApiConfig(s);
+      await refreshPairedServers();
+      state = state.copyWith(
+        pairingBusy: false,
+        selectedServerKey: s.key,
+      );
+      return true;
+    } catch (e) {
+      SatLog.vm('PinVM autoClaim fail $e');
+      state = state.copyWith(
+        pairingBusy: false,
+        pairingError: 'Sambung otomatis gagal: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<PairedServerInfo?> _runClaim(String qrJson) async {
+    SatLog.vm('PinVM claim');
+    state = state.copyWith(pairingBusy: true, pairingError: null);
+    await _persistMode(AppMode.client);
+    // Clear any stale session token so a previously-paired token cannot
+    // silently authenticate the user — Staff PIN entry is required.
+    await _storage.clearSession();
+    final vm = _ref.read(pairViewModelProvider.notifier);
+    await vm.claim(qrJson, restoreAuth: false);
+    final ps = _ref.read(pairViewModelProvider);
+    if (ps.error != null || !ps.paired) {
+      state = state.copyWith(
+        pairingBusy: false,
+        pairingError: ps.error ?? 'Pairing gagal',
+      );
+      return null;
+    }
+    await refreshPairedServers();
+    state = state.copyWith(pairingBusy: false, pairingError: null);
+    return state.selectedServer;
+  }
+
+  @override
+  void dispose() {
+    unawaited(_mdnsSub?.cancel());
+    unawaited(_mdns.stop());
+    super.dispose();
   }
 }
 
 final pinViewModelProvider =
     StateNotifierProvider.autoDispose<PinViewModel, PinState>((ref) {
-  return PinViewModel(ref.watch(authStateProvider.notifier));
+  final prefs = ref.watch(prefsServiceProvider).requireValue;
+  final storage = ref.watch(secureStorageServiceProvider);
+  final mdns = ref.watch(mdnsBrowserServiceProvider);
+  return PinViewModel(ref, prefs, storage, mdns);
 });

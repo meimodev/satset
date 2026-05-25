@@ -470,9 +470,12 @@ class _ItemCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.name,
@@ -497,7 +500,8 @@ class _ItemCard extends StatelessWidget {
                       ),
                       if (item.allergens.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Wrap(
+                        Flexible(
+                          child: Wrap(
                           spacing: 4,
                           children: [
                             for (final a in item.allergens)
@@ -519,9 +523,11 @@ class _ItemCard extends StatelessWidget {
                               ),
                           ],
                         ),
+                        ),
                       ],
                     ],
                   ),
+                ),
                 ),
               ],
             ),

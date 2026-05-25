@@ -8,6 +8,53 @@ import 'package:satset/server/auth.dart';
 Router authRoutes(ServerAuth auth) {
   final r = Router();
 
+  r.post('/auth/admin/login', (Request req) async {
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final email = (body['email'] as String?) ?? '';
+    final password = (body['password'] as String?) ?? '';
+    final deviceId = (body['deviceId'] as String?) ?? '';
+    if (email.isEmpty || password.isEmpty || deviceId.isEmpty) {
+      return Response(400,
+          body: jsonEncode({
+            'code': 'bad_request',
+            'message': 'email+password+deviceId required',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    final session = await auth.signInWithEmailPassword(
+      email: email,
+      password: password,
+      deviceId: deviceId,
+    );
+    if (session == null) {
+      return Response(401,
+          body: jsonEncode({
+            'code': 'invalid_credentials',
+            'message': 'Email atau password salah',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    final me = await auth.resolveBearer(session.token);
+    final role = me == null
+        ? null
+        : await (auth.db.select(auth.db.roles)
+              ..where((r) => r.id.equals(me.roleId)))
+            .getSingleOrNull();
+    final caps = role == null
+        ? const <String>[]
+        : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
+    return Response.ok(
+      jsonEncode({
+        'token': session.token,
+        'userId': session.userId,
+        'roleId': me?.roleId ?? '',
+        'capabilities': caps,
+        'expiresAt': session.expiresAt.toIso8601String(),
+      }),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
   r.post('/auth/login', (Request req) async {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final pin = (body['pin'] as String?) ?? '';

@@ -9,7 +9,10 @@ part of 'order_dto.dart';
 _$CartLineDtoImpl _$$CartLineDtoImplFromJson(Map<String, dynamic> json) =>
     _$CartLineDtoImpl(
       itemId: json['itemId'] as String,
+      name: json['name'] as String,
       variantId: json['variantId'] as String,
+      variantName: json['variantName'] as String,
+      station: json['station'] as String,
       modifierOptionIds: (json['modifierOptionIds'] as List<dynamic>)
           .map((e) => e as String)
           .toList(),
@@ -22,7 +25,10 @@ _$CartLineDtoImpl _$$CartLineDtoImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$CartLineDtoImplToJson(_$CartLineDtoImpl instance) =>
     <String, dynamic>{
       'itemId': instance.itemId,
+      'name': instance.name,
       'variantId': instance.variantId,
+      'variantName': instance.variantName,
+      'station': instance.station,
       'modifierOptionIds': instance.modifierOptionIds,
       'specialInstructions': instance.specialInstructions,
       'course': instance.course,
@@ -38,6 +44,7 @@ _$SubmitOrderRequestDtoImpl _$$SubmitOrderRequestDtoImplFromJson(
   lines: (json['lines'] as List<dynamic>)
       .map((e) => CartLineDto.fromJson(e as Map<String, dynamic>))
       .toList(),
+  actorId: json['actorId'] as String?,
 );
 
 Map<String, dynamic> _$$SubmitOrderRequestDtoImplToJson(
@@ -46,6 +53,7 @@ Map<String, dynamic> _$$SubmitOrderRequestDtoImplToJson(
   'tableId': instance.tableId,
   'idempotencyKey': instance.idempotencyKey,
   'lines': instance.lines,
+  'actorId': instance.actorId,
 };
 
 _$SubmitOrderResponseDtoImpl _$$SubmitOrderResponseDtoImplFromJson(

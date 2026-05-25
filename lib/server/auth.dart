@@ -22,6 +22,9 @@ class ServerAuth {
   String hashPin(String pin) =>
       sha256.convert(utf8.encode('satset.v1::$pin')).toString();
 
+  String hashPassword(String pw) =>
+      sha256.convert(utf8.encode('satset.v1.pw::$pw')).toString();
+
   /// Returns a fresh session row on success, or null if the PIN does not
   /// match an active user.
   Future<Session?> signInWithPin({
@@ -29,8 +32,14 @@ class ServerAuth {
     required String deviceId,
   }) async {
     final h = hashPin(pin);
+    // Demo users use PIN sign-in. Reject the dedicated admin from this path
+    // even when its `pinHash` happens to collide (it shouldn't, but be
+    // defensive): admin must use /auth/admin/login.
     final user = await (db.select(db.users)
-          ..where((u) => u.pinHash.equals(h) & u.disabled.equals(false)))
+          ..where((u) =>
+              u.pinHash.equals(h) &
+              u.disabled.equals(false) &
+              u.pinHash.equals('').not()))
         .getSingleOrNull();
     if (user == null) return null;
 
@@ -52,6 +61,49 @@ class ServerAuth {
       expiresAt: expiry,
     );
     await db.into(db.sessions).insertOnConflictUpdate(session);
+    return Session(
+      token: token,
+      userId: user.id,
+      deviceId: deviceId,
+      issuedAt: now,
+      expiresAt: expiry,
+    );
+  }
+
+  /// Returns a fresh session for an admin authenticated via email+password.
+  /// Null on bad credentials or disabled account.
+  Future<Session?> signInWithEmailPassword({
+    required String email,
+    required String password,
+    required String deviceId,
+  }) async {
+    final e = email.trim().toLowerCase();
+    if (e.isEmpty || password.isEmpty) return null;
+    final h = hashPassword(password);
+    final user = await (db.select(db.users)
+          ..where((u) =>
+              u.email.equals(e) &
+              u.passwordHash.equals(h) &
+              u.disabled.equals(false)))
+        .getSingleOrNull();
+    if (user == null) return null;
+    final now = DateTime.now();
+    final expiry = now.add(tokenTtl);
+    final jwt = JWT({
+      'sub': user.id,
+      'role': user.roleId,
+      'deviceId': deviceId,
+      'iat': now.millisecondsSinceEpoch ~/ 1000,
+      'exp': expiry.millisecondsSinceEpoch ~/ 1000,
+    });
+    final token = jwt.sign(SecretKey(secret));
+    await db.into(db.sessions).insertOnConflictUpdate(SessionsCompanion.insert(
+          token: token,
+          userId: user.id,
+          deviceId: deviceId,
+          issuedAt: now,
+          expiresAt: expiry,
+        ));
     return Session(
       token: token,
       userId: user.id,

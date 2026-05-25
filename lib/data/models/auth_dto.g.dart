@@ -17,6 +17,22 @@ Map<String, dynamic> _$$PinLoginRequestDtoImplToJson(
   _$PinLoginRequestDtoImpl instance,
 ) => <String, dynamic>{'pin': instance.pin, 'deviceId': instance.deviceId};
 
+_$AdminLoginRequestDtoImpl _$$AdminLoginRequestDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$AdminLoginRequestDtoImpl(
+  email: json['email'] as String,
+  password: json['password'] as String,
+  deviceId: json['deviceId'] as String,
+);
+
+Map<String, dynamic> _$$AdminLoginRequestDtoImplToJson(
+  _$AdminLoginRequestDtoImpl instance,
+) => <String, dynamic>{
+  'email': instance.email,
+  'password': instance.password,
+  'deviceId': instance.deviceId,
+};
+
 _$SessionDtoImpl _$$SessionDtoImplFromJson(Map<String, dynamic> json) =>
     _$SessionDtoImpl(
       token: json['token'] as String,

@@ -13,7 +13,6 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
-import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper_sheet.dart';
 
@@ -103,7 +102,6 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final cols = l.gridCount(minTileWidth: 180);
     return Column(
       children: [
-        SatsetTopBar(zone: zone),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
           child: Row(
@@ -415,24 +413,17 @@ class _ActorAvatar extends StatelessWidget {
   final bool mine;
   const _ActorAvatar({required this.actor, required this.size, required this.mine});
 
-  static const _palette = <List<int>>[
-    [0xFFFF9233, 0xFFD96030], // orange
-    [0xFF6DB5FF, 0xFF4060D0], // blue
-    [0xFF4DD487, 0xFF1F6E3E], // green
-    [0xFFC08AFF, 0xFF6D3FC4], // violet
-    [0xFFFFC04D, 0xFFB87A1A], // amber
-    [0xFFFF5C5C, 0xFFB03030], // red
-  ];
+  static const _fallback = 0xFFFF9233;
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final hash = actor.id.hashCode.abs();
-    final pair = _palette[hash % _palette.length];
+    final base = Color(actor.avatarColorHex ?? _fallback);
+    final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.36), base);
     final grad = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(pair[0]), Color(pair[1])],
+      colors: [base, dark],
     );
     return Container(
       width: size,

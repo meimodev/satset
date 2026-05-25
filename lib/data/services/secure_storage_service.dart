@@ -10,6 +10,7 @@ class SecureStorageService {
   final FlutterSecureStorage _s;
 
   static const _kToken = 'satset.session.jwt';
+  static const _kLoginAt = 'satset.session.loginAt';
   static const _kDeviceId = 'satset.device.id';
   static const _kDeviceCert = 'satset.device.cert.pem';
   static const _kDeviceKey = 'satset.device.key.pem';
@@ -19,6 +20,16 @@ class SecureStorageService {
   Future<String?> readToken() => _s.read(key: _kToken);
   Future<void> writeToken(String? v) =>
       v == null ? _s.delete(key: _kToken) : _s.write(key: _kToken, value: v);
+
+  Future<DateTime?> readLoginAt() async {
+    final s = await _s.read(key: _kLoginAt);
+    if (s == null || s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+
+  Future<void> writeLoginAt(DateTime? v) => v == null
+      ? _s.delete(key: _kLoginAt)
+      : _s.write(key: _kLoginAt, value: v.toIso8601String());
 
   Future<String?> readDeviceId() => _s.read(key: _kDeviceId);
   Future<void> writeDeviceId(String v) => _s.write(key: _kDeviceId, value: v);
@@ -46,6 +57,7 @@ class SecureStorageService {
 
   Future<void> clearSession() async {
     await _s.delete(key: _kToken);
+    await _s.delete(key: _kLoginAt);
   }
 
   Future<void> clearPairing() async {

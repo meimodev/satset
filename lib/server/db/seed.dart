@@ -3,14 +3,33 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 
-import 'package:satset/data/services/dummy_data_seed.dart' as seed;
 import 'database.dart';
+import 'seed_data.dart' as seed;
 
-/// Seed the database on first boot using the existing in-memory `DummyData`.
-/// Idempotent: skips if reference tables already populated.
+/// Default admin email/password seeded on first boot. PIN-only sign-in is
+/// for demo users; the dedicated admin row uses email+password.
+const String defaultAdminId = 'admin';
+const String defaultAdminEmail = 'admin@satset.local';
+const String defaultAdminPassword = 'admin123';
+
+String _hashPassword(String pw) =>
+    sha256.convert(utf8.encode('satset.v1.pw::$pw')).toString();
+
+/// Seed the database on first boot using the existing in-memory `DummyData`,
+/// plus a dedicated admin row with email+password credentials.
+/// Idempotent: skips when the dedicated admin already exists.
 Future<void> seedIfEmpty(AppDatabase db) async {
+  await _seedDedicatedAdmin(db);
+
   final hasUsers = (await db.select(db.users).get()).isNotEmpty;
-  if (hasUsers) return;
+  // Demo seed runs only when the table holds nothing beyond the dedicated
+  // admin row (i.e. exactly one user with the well-known admin id).
+  final onlyAdminPresent = hasUsers &&
+      (await (db.select(db.users)..where((u) => u.id.equals(defaultAdminId)))
+              .getSingleOrNull()) !=
+          null &&
+      (await db.select(db.users).get()).length == 1;
+  if (hasUsers && !onlyAdminPresent) return;
 
   await db.transaction(() async {
     // Roles
@@ -44,8 +63,8 @@ Future<void> seedIfEmpty(AppDatabase db) async {
             roleId: u.roleId ?? u.role.name,
             zoneAssigned: Value(u.zoneAssigned),
             pinHash: _hashPin(u.pin),
-            onDuty: Value(u.onDuty),
             disabled: Value(u.disabled),
+            avatarColorHex: Value(u.avatarColorHex),
           ));
     }
     // Tables
@@ -151,22 +170,62 @@ Future<void> seedIfEmpty(AppDatabase db) async {
   // database being usable. Throws StateError otherwise — better to crash
   // early than to ship a half-seeded server.
   final users = await db.select(db.users).get();
+  final roles = await db.select(db.roles).get();
   final zones = await db.select(db.zones).get();
   final tables = await db.select(db.venueTables).get();
+  final cats = await db.select(db.menuCategories).get();
   final menu = await db.select(db.menuItems).get();
+  final mods = await db.select(db.modifierGroups).get();
   final tickets = await db.select(db.tickets).get();
   if (users.isEmpty ||
+      roles.isEmpty ||
       zones.isEmpty ||
       tables.isEmpty ||
+      cats.isEmpty ||
       menu.isEmpty ||
+      mods.isEmpty ||
       tickets.isEmpty) {
     throw StateError(
         'seedIfEmpty: post-seed verification failed (users=${users.length} '
-        'zones=${zones.length} tables=${tables.length} menu=${menu.length} '
+        'roles=${roles.length} zones=${zones.length} tables=${tables.length} '
+        'cats=${cats.length} menu=${menu.length} mods=${mods.length} '
         'tickets=${tickets.length})');
   }
 }
 
 String _hashPin(String pin) {
   return sha256.convert(utf8.encode('satset.v1::$pin')).toString();
+}
+
+Future<void> _seedDedicatedAdmin(AppDatabase db) async {
+  final existing =
+      await (db.select(db.users)..where((u) => u.id.equals(defaultAdminId)))
+          .getSingleOrNull();
+  if (existing != null) return;
+  // Ensure the admin role is present so the FK-like join in /auth/me resolves.
+  final adminRole = await (db.select(db.roles)
+        ..where((r) => r.id.equals(seed.DummyData.roleAdminId)))
+      .getSingleOrNull();
+  if (adminRole == null) {
+    await db.into(db.roles).insertOnConflictUpdate(RolesCompanion.insert(
+          id: seed.DummyData.roleAdminId,
+          name: 'Admin',
+          colorHex: const Value('#C08AFF'),
+          capabilitiesJson: Value(jsonEncode([
+            for (final c in seed.DummyData.initialRoles()
+                .firstWhere((r) => r.id == seed.DummyData.roleAdminId)
+                .capabilities)
+              c.name,
+          ])),
+        ));
+  }
+  await db.into(db.users).insert(UsersCompanion.insert(
+        id: defaultAdminId,
+        name: 'Administrator',
+        initials: 'AD',
+        roleId: seed.DummyData.roleAdminId,
+        pinHash: '',
+        email: const Value(defaultAdminEmail),
+        passwordHash: Value(_hashPassword(defaultAdminPassword)),
+      ));
 }

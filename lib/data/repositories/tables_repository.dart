@@ -1,13 +1,28 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/table_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
-import 'package:satset/data/services/dummy_data_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/venue_table.dart';
+
+/// Outcome of a [TablesRepository.acquireLock] call. Mutually exclusive:
+/// either [acquired] holds the post-write table snapshot, or [conflict] holds
+/// the current (other-user) lock state from the server.
+class TableLockResult {
+  final VenueTable? acquired;
+  final VenueTable? conflict;
+  const TableLockResult._({this.acquired, this.conflict});
+  factory TableLockResult.acquired(VenueTable t) =>
+      TableLockResult._(acquired: t);
+  factory TableLockResult.conflict(VenueTable t) =>
+      TableLockResult._(conflict: t);
+  bool get isAcquired => acquired != null;
+}
 
 const _uuid = Uuid();
 
@@ -17,9 +32,10 @@ final tablesStatusProvider =
     StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
 
 class TablesRepository extends StateNotifier<List<VenueTable>> {
-  TablesRepository({required this.ref, required DummyDataService seed})
-      : super(seed.initialTables()) {
-    _bootstrap();
+  TablesRepository({required this.ref}) : super(const <VenueTable>[]) {
+    // Defer to a microtask: Riverpod forbids mutating other providers
+    // (tablesStatusProvider) during this notifier's own initialization.
+    Future.microtask(_bootstrap);
   }
 
   final Ref ref;
@@ -44,6 +60,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
           .map((e) => TableDto.fromJson((e as Map).cast<String, dynamic>()))
           .toList();
       state = [for (final d in dtos) _toDomain(d)];
+      SatLog.repo('tables.loaded n=${state.length}');
       ref.read(tablesStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
@@ -55,10 +72,21 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type == WsEventTypes.tableUpdated) {
         final d = TableDto.fromJson(ev.payload);
-        state = [
-          for (final t in state)
-            if (t.id == d.id) _toDomain(d) else t,
-        ];
+        SatLog.repo('tables.ws update id=${d.id.substring(0, d.id.length.clamp(0, 6))} status=${d.status}');
+        final exists = state.any((t) => t.id == d.id);
+        state = exists
+            ? [for (final t in state) if (t.id == d.id) _toDomain(d) else t]
+            : [...state, _toDomain(d)];
+      } else if (ev.type == WsEventTypes.tableCreated) {
+        final d = TableDto.fromJson(ev.payload);
+        if (state.any((t) => t.id == d.id)) return;
+        SatLog.repo('tables.ws create id=${d.id.substring(0, d.id.length.clamp(0, 6))}');
+        state = [...state, _toDomain(d)];
+      } else if (ev.type == WsEventTypes.tableDeleted) {
+        final id = ev.payload['id'] as String?;
+        if (id == null) return;
+        SatLog.repo('tables.ws delete id=${id.substring(0, id.length.clamp(0, 6))}');
+        state = [for (final t in state) if (t.id != id) t];
       }
     });
   }
@@ -83,6 +111,10 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       openAmount: d.openAmount,
       readyCount: d.readyCount,
       lastActorId: d.lastActorId,
+      lockedBy: d.lockedBy,
+      lockedByName: d.lockedByName,
+      lockedAt: d.lockedAt,
+      lockExpiresAt: d.lockExpiresAt,
     );
   }
 
@@ -106,6 +138,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> markPending(String id, {String? userId}) async {
+    SatLog.repo('tables.markPending id=${id.substring(0, id.length.clamp(0, 6))}');
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(
@@ -133,6 +166,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> decrementReady(String id, {String? userId}) async {
+    SatLog.repo('tables.decReady id=${id.substring(0, id.length.clamp(0, 6))}');
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(
@@ -164,6 +198,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> setPax(String id, int pax, {String? userId}) async {
+    SatLog.repo('tables.setPax id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax');
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(
@@ -186,6 +221,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> setHandler(String id, String userId) async {
+    SatLog.repo('tables.setHandler id=${id.substring(0, id.length.clamp(0, 6))} user=${userId.substring(0, userId.length.clamp(0, 6))}');
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(id, prev.copyWith(lastActorId: userId));
@@ -228,21 +264,51 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     required String label,
     int pax = 2,
   }) {
+    SatLog.repo('tables.add zone=${zoneId.substring(0, zoneId.length.clamp(0, 6))} label=$label');
     final id = _uuid.v4();
-    state = [
-      ...state,
-      VenueTable(
-        id: id,
-        zoneId: zoneId,
-        label: label.trim().isEmpty ? null : label.trim(),
-        pax: pax,
-      ),
-    ];
+    final next = VenueTable(
+      id: id,
+      zoneId: zoneId,
+      label: label.trim().isEmpty ? null : label.trim(),
+      pax: pax,
+    );
+    state = [...state, next];
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return id;
+    unawaited(_postCreate(next));
     return id;
   }
 
+  Future<void> _postCreate(VenueTable t) async {
+    try {
+      final raw = await ref.read(apiClientProvider).postJson('/tables', {
+        'id': t.id,
+        'zoneId': t.zoneId,
+        'label': t.label,
+        'pax': t.pax,
+        'active': t.active,
+      });
+      _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+    } catch (e) {
+      SatLog.repo('tables.create fail $e');
+      state = state.where((x) => x.id != t.id).toList();
+    }
+  }
+
   void removeTable(String id) {
+    SatLog.repo('tables.remove id=${id.substring(0, id.length.clamp(0, 6))}');
+    final prev = state;
     state = state.where((t) => t.id != id).toList();
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    unawaited(() async {
+      try {
+        await ref.read(apiClientProvider).deleteJson('/tables/$id');
+      } catch (e) {
+        SatLog.repo('tables.delete fail $e');
+        state = prev;
+      }
+    }());
   }
 
   /// Reorders tables within a single zone. Indices are relative to that
@@ -258,6 +324,125 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     ];
   }
 
+  /// Acquire (or refresh own) lock on [id]. The server is authoritative;
+  /// on 409 returns a [TableLockResult.conflict] carrying the current holder
+  /// state so the UI can show a read-only banner.
+  Future<TableLockResult> acquireLock(
+    String id, {
+    required String userId,
+    required String userName,
+    int ttlSeconds = 7,
+  }) async {
+    SatLog.repo('tables.lock.acquire id=${id.substring(0, id.length.clamp(0, 6))} user=${userId.substring(0, userId.length.clamp(0, 6))}');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) {
+      final cur = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      if (cur == null) throw StateError('table not found: $id');
+      return TableLockResult.acquired(cur);
+    }
+    try {
+      final raw = await ref.read(apiClientProvider).postJson(
+        '/tables/$id/lock',
+        {
+          'userId': userId,
+          'userName': userName,
+          'ttlSeconds': ttlSeconds,
+        },
+      );
+      final dto = TableDto.fromJson((raw as Map).cast<String, dynamic>());
+      _mergeDto(dto);
+      return TableLockResult.acquired(_toDomain(dto));
+    } on ApiException catch (e) {
+      if (e.statusCode == 409 && e.code == 'table_locked') {
+        try {
+          final body = jsonDecode(e.body) as Map<String, dynamic>;
+          final tableJson =
+              (body['table'] as Map).cast<String, dynamic>();
+          final dto = TableDto.fromJson(tableJson);
+          _mergeDto(dto);
+          return TableLockResult.conflict(_toDomain(dto));
+        } catch (_) {
+          // Fall through if the server didn't include a payload.
+        }
+      }
+      rethrow;
+    }
+  }
+
+  /// Refresh the lease. Returns true while the caller is still the holder,
+  /// false on 409 (another user took the table or the lease expired).
+  Future<bool> heartbeatLock(
+    String id, {
+    required String userId,
+    int ttlSeconds = 7,
+  }) async {
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return true;
+    try {
+      final raw = await ref.read(apiClientProvider).postJson(
+        '/tables/$id/lock/heartbeat',
+        {'userId': userId, 'ttlSeconds': ttlSeconds},
+      );
+      _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 409) {
+        try {
+          final body = jsonDecode(e.body) as Map<String, dynamic>;
+          final t = body['table'];
+          if (t is Map) {
+            _mergeDto(TableDto.fromJson(t.cast<String, dynamic>()));
+          }
+        } catch (_) {}
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  /// Best-effort release. Safe to call from dispose paths — swallows
+  /// network errors. The server treats DELETE as idempotent.
+  Future<void> releaseLock(String id) async {
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    try {
+      final raw =
+          await ref.read(apiClientProvider).deleteJson('/tables/$id/lock');
+      if (raw is Map) {
+        _mergeDto(TableDto.fromJson(raw.cast<String, dynamic>()));
+      }
+    } catch (e) {
+      SatLog.repo('tables.lock.release fail $e');
+    }
+  }
+
+  /// Close + settle the table. Clears lock and resets status to `available`.
+  /// UI gates this behind "no live tickets" but the server applies it
+  /// unconditionally.
+  Future<void> closeTable(String id, {String? actorId}) async {
+    SatLog.repo('tables.close id=${id.substring(0, id.length.clamp(0, 6))}');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) {
+      final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      if (prev != null) {
+        _replace(
+          id,
+          prev.copyWith(
+            status: TableStatus.available,
+            readyCount: 0,
+            openAmount: 0,
+          ),
+        );
+      }
+      return;
+    }
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/tables/$id/close',
+      {'actorId': ?actorId},
+    );
+    _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+  }
+
   void configureTable(
     String id, {
     String? label,
@@ -265,6 +450,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     String? zoneId,
     bool? active,
   }) {
+    final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     state = [
       for (final t in state)
         if (t.id == id)
@@ -277,15 +463,32 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
         else
           t,
     ];
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    unawaited(() async {
+      try {
+        final body = <String, dynamic>{
+          'label': ?label,
+          'pax': ?pax,
+          'zoneId': ?zoneId,
+          'active': ?active,
+        };
+        final raw = await ref.read(apiClientProvider).patchJson(
+              '/tables/$id',
+              body,
+            );
+        _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+      } catch (e) {
+        SatLog.repo('tables.configure fail $e');
+        if (prev != null) _replace(id, prev);
+      }
+    }());
   }
 }
 
 final tablesProvider =
     StateNotifierProvider<TablesRepository, List<VenueTable>>(
-        (ref) => TablesRepository(
-              ref: ref,
-              seed: ref.watch(dummyDataServiceProvider),
-            ));
+        (ref) => TablesRepository(ref: ref));
 
 final totalReadyCountProvider = Provider<int>((ref) {
   final tables = ref.watch(tablesProvider);

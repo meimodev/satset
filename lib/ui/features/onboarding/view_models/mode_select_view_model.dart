@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
@@ -37,6 +38,7 @@ class ModeSelectViewModel extends StateNotifier<ModeSelectState> {
   final PrefsService _prefs;
 
   Future<void> choose(AppMode mode) async {
+    SatLog.vm('ModeVM choose ${mode.name}');
     state = state.copyWith(busy: true, error: null);
     try {
       await _prefs.setAppMode(mode);
@@ -56,8 +58,11 @@ class ModeSelectViewModel extends StateNotifier<ModeSelectState> {
   }
 }
 
-final modeSelectViewModelProvider = StateNotifierProvider.autoDispose<
-    ModeSelectViewModel, ModeSelectState>((ref) {
+// NOTE: not autoDispose — PinViewModel reads this notifier without watching
+// and awaits long-running ServerRuntime.boot(). An autoDispose provider would
+// risk being torn down mid-boot and dropping its error state.
+final modeSelectViewModelProvider =
+    StateNotifierProvider<ModeSelectViewModel, ModeSelectState>((ref) {
   final prefs = ref.watch(prefsServiceProvider).requireValue;
   return ModeSelectViewModel(ref, prefs);
 });

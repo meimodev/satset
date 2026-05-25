@@ -9,8 +9,12 @@ class AppUser {
   final String zoneAssigned;
   final String? roleId;
   final String pin;
-  final bool onDuty;
   final bool disabled;
+
+  /// Per-account avatar background color (0xAARRGGBB). Soft-unique across
+  /// the venue: clients warn on collision but server accepts duplicates.
+  /// Nullable for legacy rows pre-backfill — UI falls back to role color.
+  final int? avatarColorHex;
 
   const AppUser({
     required this.id,
@@ -21,8 +25,8 @@ class AppUser {
     required this.zoneAssigned,
     this.roleId,
     this.pin = '000000',
-    this.onDuty = true,
     this.disabled = false,
+    this.avatarColorHex,
   });
 
   AppUser copyWith({
@@ -33,8 +37,8 @@ class AppUser {
     String? zoneAssigned,
     String? roleId,
     String? pin,
-    bool? onDuty,
     bool? disabled,
+    int? avatarColorHex,
   }) =>
       AppUser(
         id: id,
@@ -45,10 +49,29 @@ class AppUser {
         zoneAssigned: zoneAssigned ?? this.zoneAssigned,
         roleId: roleId ?? this.roleId,
         pin: pin ?? this.pin,
-        onDuty: onDuty ?? this.onDuty,
         disabled: disabled ?? this.disabled,
+        avatarColorHex: avatarColorHex ?? this.avatarColorHex,
       );
 }
+
+/// Fixed 12-swatch palette for per-account avatar background colors.
+/// Index alignment matters: backfill migration assigns by index, seed users
+/// reference these constants by index, so reordering changes assignments
+/// across upgrades. Append to the end if extending.
+const List<int> avatarColorPalette = <int>[
+  0xFFC08AFF, // violet
+  0xFF6DB5FF, // sky
+  0xFF4DD487, // mint
+  0xFFFF9233, // orange
+  0xFFFFC04D, // amber
+  0xFFFF5C5C, // coral
+  0xFF7ED6C4, // teal
+  0xFFE48BB7, // rose
+  0xFFA1D26A, // lime
+  0xFF8D9DFF, // periwinkle
+  0xFFD4A373, // tan
+  0xFF9F5BFF, // grape
+];
 
 String userRoleLabel(UserRole r) => switch (r) {
       UserRole.waiter => 'Pelayan',

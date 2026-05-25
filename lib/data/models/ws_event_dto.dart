@@ -21,7 +21,17 @@ class WsEventTypes {
   WsEventTypes._();
   static const ticketCreated = 'ticket.created';
   static const ticketUpdated = 'ticket.updated';
+  static const tableCreated = 'table.created';
   static const tableUpdated = 'table.updated';
+  static const tableDeleted = 'table.deleted';
+  static const zoneCreated = 'zone.created';
+  static const zoneUpdated = 'zone.updated';
+  static const zoneDeleted = 'zone.deleted';
   static const menuUpdated = 'menu.updated';
   static const presenceChanged = 'presence.changed';
+  static const staffCreated = 'staff.created';
+  static const staffUpdated = 'staff.updated';
+  static const staffDeleted = 'staff.deleted';
+  static const auditCreated = 'audit.created';
+  static const rolesUpdated = 'roles.updated';
 }

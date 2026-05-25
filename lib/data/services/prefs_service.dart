@@ -13,7 +13,12 @@ class PrefsService {
   static const _kPairedPort = 'satset.paired.port';
 
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
-  Future<void> setAppMode(AppMode m) => _p.setString(_kMode, appModeKey(m));
+  Future<void> setAppMode(AppMode m) async {
+    final ok = await _p.setString(_kMode, appModeKey(m));
+    if (!ok) {
+      throw StateError('Failed to persist app mode ${appModeKey(m)}');
+    }
+  }
 
   String? pairedHost() => _p.getString(_kPairedHost);
   Future<void> setPairedHost(String? v) async {

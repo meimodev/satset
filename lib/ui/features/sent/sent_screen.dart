@@ -28,7 +28,7 @@ class _SentScreenState extends State<SentScreen> with TickerProviderStateMixin {
       if (mounted) setState(() => _progress = 2);
     });
     Future.delayed(const Duration(milliseconds: 1900), () {
-      if (mounted) context.go('/table/${widget.tableId}');
+      if (mounted) context.go('/tables');
     });
   }
 

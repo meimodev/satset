@@ -13,6 +13,10 @@ class VenueTable {
   final int openAmount;
   final int readyCount;
   final String? lastActorId;
+  final String? lockedBy;
+  final String? lockedByName;
+  final DateTime? lockedAt;
+  final DateTime? lockExpiresAt;
 
   const VenueTable({
     required this.id,
@@ -26,7 +30,21 @@ class VenueTable {
     this.openAmount = 0,
     this.readyCount = 0,
     this.lastActorId,
+    this.lockedBy,
+    this.lockedByName,
+    this.lockedAt,
+    this.lockExpiresAt,
   });
+
+  /// True when [lockedBy] is set, not equal to [userId], and the lease has
+  /// not expired. Server is authoritative; this is a UI gating helper only.
+  bool isLockedByOther(String? userId, {DateTime? now}) {
+    if (lockedBy == null || lockedBy!.isEmpty) return false;
+    if (userId != null && lockedBy == userId) return false;
+    final exp = lockExpiresAt;
+    if (exp == null) return false;
+    return exp.isAfter(now ?? DateTime.now());
+  }
 
   String get displayName => (label != null && label!.trim().isNotEmpty) ? label! : id;
 
@@ -41,6 +59,10 @@ class VenueTable {
     int? openAmount,
     int? readyCount,
     String? lastActorId,
+    String? lockedBy,
+    String? lockedByName,
+    DateTime? lockedAt,
+    DateTime? lockExpiresAt,
   }) {
     return VenueTable(
       id: id,
@@ -54,6 +76,10 @@ class VenueTable {
       openAmount: openAmount ?? this.openAmount,
       readyCount: readyCount ?? this.readyCount,
       lastActorId: lastActorId ?? this.lastActorId,
+      lockedBy: lockedBy ?? this.lockedBy,
+      lockedByName: lockedByName ?? this.lockedByName,
+      lockedAt: lockedAt ?? this.lockedAt,
+      lockExpiresAt: lockExpiresAt ?? this.lockExpiresAt,
     );
   }
 }

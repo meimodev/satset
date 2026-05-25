@@ -1,13 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
+
+/// Lifecycle stages reported by [WsClient.connState]. The UI top bar reads
+/// this; repositories use [WsClient.events] instead.
+enum WsConnState { connecting, open, closed }
 
 /// Authenticated WS client with exponential backoff reconnect.
 ///
@@ -24,12 +31,18 @@ class WsClient {
   bool _disposed = false;
   int _attempt = 0;
 
+  /// Surfaces the connection lifecycle to the UI. ValueNotifier (not Stream)
+  /// so widgets can read the current value synchronously on first build.
+  final ValueNotifier<WsConnState> connState =
+      ValueNotifier(WsConnState.connecting);
+
   final _controller = StreamController<WsEventDto>.broadcast();
   Stream<WsEventDto> get events => _controller.stream;
 
   Future<void> start() async {
     if (_disposed) return;
     _attempt += 1;
+    connState.value = WsConnState.connecting;
     try {
       final token = await _storage.readToken();
       final deviceId = await _storage.readDeviceId();
@@ -40,17 +53,42 @@ class WsClient {
       final uri = config.baseUri
           .replace(scheme: wsScheme, path: '/ws')
           .replace(queryParameters: qp);
-      _channel = _pinnedConnect(uri);
-      _sub = _channel!.stream.listen(
+      SatLog.ws('connect attempt=$_attempt host=${uri.host}:${uri.port}');
+      final channel = _pinnedConnect(uri);
+      _channel = channel;
+      _sub = channel.stream.listen(
         _onMessage,
-        onError: (_) => _scheduleReconnect(),
-        onDone: _scheduleReconnect,
+        onError: (e, st) {
+          SatLog.err('ws stream', e, st);
+          _handleDrop();
+        },
+        onDone: () {
+          SatLog.ws('closed');
+          _handleDrop();
+        },
         cancelOnError: true,
       );
+      // Wait for handshake to actually complete before flipping the UI to
+      // OPEN and resetting backoff. Otherwise a failed connect (cert/auth)
+      // briefly shows LIVE then immediately ricochets to OFFLINE at the
+      // 200ms minimum backoff — sub-second flicker on the top bar.
+      await channel.ready;
+      if (_disposed || _channel != channel) return;
+      SatLog.ws('open');
+      connState.value = WsConnState.open;
       _attempt = 0;
-    } catch (_) {
-      _scheduleReconnect();
+    } catch (e, st) {
+      SatLog.err('ws start', e, st);
+      _handleDrop();
     }
+  }
+
+  void _handleDrop() {
+    if (_disposed) return;
+    if (connState.value != WsConnState.closed) {
+      connState.value = WsConnState.closed;
+    }
+    _scheduleReconnect();
   }
 
   WebSocketChannel _pinnedConnect(Uri uri) {
@@ -71,9 +109,11 @@ class WsClient {
   void _onMessage(dynamic raw) {
     try {
       final j = jsonDecode(raw as String) as Map<String, dynamic>;
-      _controller.add(WsEventDto.fromJson(j));
-    } catch (_) {
-      // ignore malformed frames
+      final ev = WsEventDto.fromJson(j);
+      SatLog.wsLazy(() => 'rx ${j['type'] ?? "?"}');
+      _controller.add(ev);
+    } catch (e, st) {
+      SatLog.err('ws decode', e, st);
     }
   }
 
@@ -83,6 +123,7 @@ class WsClient {
     _channel?.sink.close();
     final delay = Duration(
         milliseconds: (200 * (1 << _attempt.clamp(0, 6))).clamp(200, 10000));
+    SatLog.ws('reconnect in ${delay.inMilliseconds}ms attempt=$_attempt');
     _reconnect?.cancel();
     _reconnect = Timer(delay, start);
   }
@@ -93,6 +134,8 @@ class WsClient {
     await _sub?.cancel();
     await _channel?.sink.close();
     await _controller.close();
+    connState.value = WsConnState.closed;
+    connState.dispose();
   }
 }
 
@@ -106,4 +149,18 @@ final wsClientProvider = Provider<WsClient>((ref) {
   c.start();
   ref.onDispose(c.dispose);
   return c;
+});
+
+/// Live WS connection lifecycle. UI top bar reads this to render the
+/// network indicator. Returns [WsConnState.closed] before pairing AND before
+/// login — without a valid bearer token the server 403s every WS upgrade,
+/// which under exponential backoff would flicker the indicator between
+/// `open` and `closed`.
+final wsConnStateProvider = ChangeNotifierProvider<ValueNotifier<WsConnState>>(
+    (ref) {
+  final cfg = ref.watch(apiConfigProvider);
+  final authed =
+      ref.watch(authStateProvider.select((s) => s.isAuthenticated));
+  if (cfg == null || !authed) return ValueNotifier(WsConnState.closed);
+  return ref.watch(wsClientProvider).connState;
 });

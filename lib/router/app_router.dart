@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/core/log/sat_nav_observer.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
-import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/features/auth/views/pin_screen.dart';
@@ -39,43 +42,59 @@ Capability? _capabilityFor(String loc) {
   return null;
 }
 
+class _RouterRefresh extends ChangeNotifier {
+  void bump() {
+    if (hasListeners) notifyListeners();
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authStateProvider);
-  final prefs = ref.watch(prefsServiceProvider).valueOrNull;
-  final storage = ref.watch(secureStorageServiceProvider);
+  final refresh = _RouterRefresh();
+  // Re-evaluate redirects when auth or prefs change without re-creating the
+  // GoRouter instance. Rebuilding the provider would replace MaterialApp's
+  // routerConfig and reset Navigator state mid-sign-in.
+  ref.listen(authStateProvider, (_, _) => refresh.bump());
+  ref.listen(prefsServiceProvider, (_, _) => refresh.bump());
+  ref.listen(apiConfigProvider, (_, _) => refresh.bump());
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/pin',
+    refreshListenable: refresh,
+    observers: [SatNavObserver()],
     redirect: (context, state) async {
       final loc = state.uri.path;
-      final mode = prefs?.appMode() ?? AppMode.unset;
-
-      if (mode == AppMode.unset && loc != '/onboarding') return '/onboarding';
-      if (mode != AppMode.unset && loc == '/onboarding') return '/pin';
-
-      if (mode == AppMode.client) {
-        final fp = await storage.readServerFingerprint();
-        final paired = fp != null && fp.isNotEmpty;
-        if (!paired && loc != '/pair') return '/pair';
-        if (paired && loc == '/pair') return '/pin';
-      }
-
+      final auth = ref.read(authStateProvider);
+      final prefs = ref.read(prefsServiceProvider).valueOrNull;
+      final paired = ref.read(apiConfigProvider) != null;
       final loggedIn = auth.isAuthenticated;
-      if (!loggedIn && loc != '/pin' && loc != '/onboarding' && loc != '/pair') {
-        return '/pin';
-      }
-      if (loggedIn && loc == '/pin') return '/tables';
+      String? decision;
 
-      if (loggedIn) {
+      const onboardingRoutes = {'/pin', '/onboarding', '/pair', '/forbidden'};
+
+      // Hard pair-required gate: until ApiConfig is populated nothing else
+      // may render — repos start empty so any data screen would be blank
+      // anyway, and we never want to ship UI that depends on stale memory.
+      // PinScreen carries the inline mode-select + pair flow that populates
+      // apiConfigProvider.
+      if (!paired && !onboardingRoutes.contains(loc)) {
+        decision = '/pin';
+      } else if (!loggedIn && !onboardingRoutes.contains(loc)) {
+        decision = '/pin';
+      } else if (loggedIn && loc == '/pin') {
+        final mode = prefs?.appMode() ?? AppMode.unset;
+        decision = mode == AppMode.server ? '/venue' : '/tables';
+      } else if (loggedIn) {
         final needed = _capabilityFor(loc);
-        // Fail-closed: missing capability denies the route. There is no
-        // bypass for empty capability sets — those users must be sent to
-        // /forbidden until the server grants them caps.
+        // Fail-closed: missing capability denies the route.
         if (needed != null && !auth.has(needed)) {
-          return '/forbidden';
+          decision = '/forbidden';
         }
       }
-      return null;
+      if (decision != null && decision != loc) {
+        SatLog.nav('redirect $loc → $decision');
+      }
+      return decision;
     },
     routes: [
       GoRoute(path: '/onboarding', builder: (_, _) => const ModeSelectScreen()),
@@ -95,39 +114,43 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),
           GoRoute(path: '/me', builder: (_, _) => const MeScreen()),
+          GoRoute(
+            path: '/table/:id',
+            builder: (_, s) =>
+                TableDetailScreen(tableId: s.pathParameters['id']!),
+            routes: [
+              GoRoute(
+                path: 'menu',
+                builder: (_, s) =>
+                    MenuScreen(tableId: s.pathParameters['id']!),
+              ),
+              GoRoute(
+                path: 'review',
+                builder: (_, s) =>
+                    ReviewScreen(tableId: s.pathParameters['id']!),
+              ),
+              GoRoute(
+                path: 'sent',
+                builder: (_, s) {
+                  final stations =
+                      (s.uri.queryParameters['stations'] ?? 'Dapur')
+                          .split(',')
+                          .where((x) => x.isNotEmpty)
+                          .toList();
+                  return SentScreen(
+                    tableId: s.pathParameters['id']!,
+                    stations: stations.isEmpty ? const ['Dapur'] : stations,
+                  );
+                },
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(
         path: '/menuadm/:id',
         builder: (_, s) =>
             MenuAdminItemScreen(id: s.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/table/:id',
-        builder: (_, s) => TableDetailScreen(tableId: s.pathParameters['id']!),
-        routes: [
-          GoRoute(
-            path: 'menu',
-            builder: (_, s) => MenuScreen(tableId: s.pathParameters['id']!),
-          ),
-          GoRoute(
-            path: 'review',
-            builder: (_, s) => ReviewScreen(tableId: s.pathParameters['id']!),
-          ),
-          GoRoute(
-            path: 'sent',
-            builder: (_, s) {
-              final stations = (s.uri.queryParameters['stations'] ?? 'Dapur')
-                  .split(',')
-                  .where((x) => x.isNotEmpty)
-                  .toList();
-              return SentScreen(
-                tableId: s.pathParameters['id']!,
-                stations: stations.isEmpty ? const ['Dapur'] : stations,
-              );
-            },
-          ),
-        ],
       ),
     ],
   );

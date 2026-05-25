@@ -25,13 +25,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
   _Tab _tab = _Tab.people;
   String _query = '';
   String? _roleFilter; // null = All
-  bool _onDutyOnly = false;
 
   @override
   Widget build(BuildContext context) {
     final users = ref.watch(staffRepositoryProvider);
     final roles = ref.watch(rolesRepositoryProvider);
-    final onDuty = users.where((u) => u.onDuty && !u.disabled).length;
     final approvers = users
         .where((u) => !u.disabled && _isAdmin(u, roles))
         .length;
@@ -42,7 +40,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
     return AdminPage(
       title: 'Staff & accounts',
-      sub: '${users.length} members · $onDuty on-duty · $approvers admins',
+      sub: '${users.length} members · $approvers admins',
       topTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -103,13 +101,6 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                         ],
                       ),
                     ),
-                    if (u.onDuty)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                            color: sc.success, shape: BoxShape.circle),
-                      ),
                   ],
                 ),
               ),
@@ -123,7 +114,6 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
   Widget _peopleTab(List<AppUser> users, List<Role> roles) {
     final sc = context.sat;
     final filtered = users.where((u) {
-      if (_onDutyOnly && (!u.onDuty || u.disabled)) return false;
       if (_roleFilter != null && u.roleId != _roleFilter) return false;
       if (_query.isNotEmpty &&
           !u.name.toLowerCase().contains(_query.toLowerCase())) {
@@ -177,15 +167,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _filterChip('All', _roleFilter == null && !_onDutyOnly, () {
-                setState(() {
-                  _roleFilter = null;
-                  _onDutyOnly = false;
-                });
-              }),
-              const SizedBox(width: 8),
-              _filterChip('On-duty', _onDutyOnly, () {
-                setState(() => _onDutyOnly = !_onDutyOnly);
+              _filterChip('All', _roleFilter == null, () {
+                setState(() => _roleFilter = null);
               }),
               for (final r in roles) ...[
                 const SizedBox(width: 8),
@@ -307,6 +290,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           ),
           if (isAdminRole) _tagBadge(context, 'ADMIN', sc.violet, sc.violetSoft),
           const SizedBox(width: 8),
+          GestureDetector(
+              onTap: () => _pickRoleColor(r),
+              child: adminPill(context, 'Color')),
+          const SizedBox(width: 6),
           GestureDetector(
               onTap: () => _renameRole(r),
               child: adminPill(context, 'Rename')),
@@ -473,10 +460,18 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   // ── Actions ─────────────────────────────────────────────────
   Future<void> _addStaff(List<Role> roles) async {
-    if (roles.isEmpty) {
-      _toast('Create a role first');
+    final selectable = [
+      for (final r in roles) if (!r.has(Capability.manageStaff)) r,
+    ];
+    if (selectable.isEmpty) {
+      _toast('Create a non-admin role first');
       return;
     }
+    final users = ref.read(staffRepositoryProvider);
+    final takenColors = <int>{
+      for (final u in users)
+        if (u.avatarColorHex != null) u.avatarColorHex!,
+    };
     final res = await showModalBottomSheet<_NewStaff>(
       context: context,
       isScrollControlled: true,
@@ -484,15 +479,20 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _NewStaffDialog(roles: roles),
+      builder: (_) =>
+          _NewStaffDialog(roles: selectable, takenColors: takenColors),
     );
     if (res == null) return;
+    if (takenColors.contains(res.avatarColorHex)) {
+      _toast('Avatar color already used by another account');
+    }
     try {
       final created = ref.read(staffRepositoryProvider.notifier).create(
             name: res.name,
             initials: res.initials,
             roleId: res.roleId,
             legacyRole: res.legacyRole,
+            avatarColorHex: res.avatarColorHex,
           );
       _toast('Created ${created.name}. PIN: ${created.pin}');
     } on StaffException catch (e) {
@@ -504,6 +504,72 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final name = await _prompt('New role name', '');
     if (name == null || name.trim().isEmpty) return;
     ref.read(rolesRepositoryProvider.notifier).create(name.trim());
+  }
+
+  Future<void> _pickRoleColor(Role r) async {
+    const swatches = <int>[
+      0xFFC08AFF,
+      0xFF6DB5FF,
+      0xFF4DD487,
+      0xFFFF9233,
+      0xFFFFC04D,
+      0xFFFF5C5C,
+      0xFF7ED6C4,
+      0xFFE48BB7,
+    ];
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: context.sat.bg1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final sc = ctx.sat;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: _sheetHandle(sc)),
+                const SizedBox(height: 18),
+                Text('Role color',
+                    style: SatType.sans(
+                        size: 16,
+                        weight: FontWeight.w600,
+                        color: sc.textHi)),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 14,
+                  children: [
+                    for (final c in swatches)
+                      GestureDetector(
+                        onTap: () => Navigator.pop(ctx, c),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Color(c),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: c == r.colorHex ? sc.textHi : sc.border1,
+                              width: c == r.colorHex ? 3 : 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked == null || picked == r.colorHex) return;
+    ref.read(rolesRepositoryProvider.notifier).setColor(r.id, picked);
   }
 
   Future<void> _renameRole(Role r) async {
@@ -781,19 +847,7 @@ class _StaffCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  _Avatar(user: user, role: role, size: 44),
-                  const Spacer(),
-                  if (user.onDuty && !disabled)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                          color: sc.success, shape: BoxShape.circle),
-                    ),
-                ],
-              ),
+              _Avatar(user: user, role: role, size: 44),
               const SizedBox(height: 12),
               Text(user.name,
                   maxLines: 1,
@@ -843,7 +897,9 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = role?.color ?? const Color(0xFF6DB5FF);
+    final base = user.avatarColorHex != null
+        ? Color(user.avatarColorHex!)
+        : (role?.color ?? const Color(0xFF6DB5FF));
     return Container(
       width: size,
       height: size,
@@ -866,6 +922,86 @@ class _Avatar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Avatar color swatch grid
+// ─────────────────────────────────────────────────────────────
+class _AvatarSwatchGrid extends StatelessWidget {
+  final List<int> palette;
+  final Set<int> takenColors;
+  final int? selected;
+  final ValueChanged<int> onPick;
+  const _AvatarSwatchGrid({
+    required this.palette,
+    required this.takenColors,
+    required this.selected,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        for (final c in palette)
+          _SwatchDot(
+            color: Color(c),
+            taken: takenColors.contains(c) && c != selected,
+            selected: c == selected,
+            borderColor: sc.textHi,
+            faintBorder: sc.border1,
+            onTap: () => onPick(c),
+          ),
+      ],
+    );
+  }
+}
+
+class _SwatchDot extends StatelessWidget {
+  final Color color;
+  final bool taken;
+  final bool selected;
+  final Color borderColor;
+  final Color faintBorder;
+  final VoidCallback onTap;
+  const _SwatchDot({
+    required this.color,
+    required this.taken,
+    required this.selected,
+    required this.borderColor,
+    required this.faintBorder,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Opacity(
+        opacity: taken ? 0.4 : 1,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? borderColor : faintBorder,
+              width: selected ? 3 : 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: taken
+              ? Icon(Icons.warning_amber_rounded,
+                  size: 16, color: Colors.white.withValues(alpha: 0.85))
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // New staff dialog
 // ─────────────────────────────────────────────────────────────
 class _NewStaff {
@@ -873,12 +1009,15 @@ class _NewStaff {
   final String initials;
   final String roleId;
   final UserRole legacyRole;
-  _NewStaff(this.name, this.initials, this.roleId, this.legacyRole);
+  final int avatarColorHex;
+  _NewStaff(this.name, this.initials, this.roleId, this.legacyRole,
+      this.avatarColorHex);
 }
 
 class _NewStaffDialog extends StatefulWidget {
   final List<Role> roles;
-  const _NewStaffDialog({required this.roles});
+  final Set<int> takenColors;
+  const _NewStaffDialog({required this.roles, required this.takenColors});
 
   @override
   State<_NewStaffDialog> createState() => _NewStaffDialogState();
@@ -887,16 +1026,22 @@ class _NewStaffDialog extends StatefulWidget {
 class _NewStaffDialogState extends State<_NewStaffDialog> {
   final _nameCtl = TextEditingController();
   String? _roleId;
+  int? _avatarHex;
 
   @override
   void initState() {
     super.initState();
     _roleId = widget.roles.first.id;
+    // Pre-pick the first non-taken swatch as a hint, but the user must still
+    // confirm by leaving or tapping any swatch before Add becomes enabled.
+    _avatarHex = avatarColorPalette.firstWhere(
+        (c) => !widget.takenColors.contains(c),
+        orElse: () => avatarColorPalette.first);
   }
 
   void _submit() {
     final name = _nameCtl.text.trim();
-    if (name.isEmpty || _roleId == null) return;
+    if (name.isEmpty || _roleId == null || _avatarHex == null) return;
     final initials = name
         .split(RegExp(r'\s+'))
         .where((s) => s.isNotEmpty)
@@ -911,7 +1056,8 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
         : (rname.contains('admin') || rname.contains('manager'))
             ? UserRole.admin
             : UserRole.waiter;
-    Navigator.pop(context, _NewStaff(name, initials, _roleId!, legacy));
+    Navigator.pop(context,
+        _NewStaff(name, initials, _roleId!, legacy, _avatarHex!));
   }
 
   @override
@@ -920,7 +1066,7 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -949,6 +1095,23 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
                 decoration: const InputDecoration(
                     labelText: 'Role', border: OutlineInputBorder()),
               ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Avatar color',
+                    style: SatType.mono(
+                        size: 10,
+                        weight: FontWeight.w600,
+                        letterSpacing: 1,
+                        color: sc.textLo)),
+              ),
+              const SizedBox(height: 8),
+              _AvatarSwatchGrid(
+                palette: avatarColorPalette,
+                takenColors: widget.takenColors,
+                selected: _avatarHex,
+                onPick: (c) => setState(() => _avatarHex = c),
+              ),
               const SizedBox(height: 18),
               Row(
                 children: [
@@ -960,7 +1123,8 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton(
-                        onPressed: _submit, child: const Text('Add')),
+                        onPressed: _avatarHex == null ? null : _submit,
+                        child: const Text('Add')),
                   ),
                 ],
               ),
@@ -1047,7 +1211,7 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                                   weight: FontWeight.w600,
                                   color: sc.textHi)),
                           const SizedBox(height: 2),
-                          Text(user.disabled ? 'Disabled' : (user.onDuty ? 'On duty' : 'Off duty'),
+                          Text(user.disabled ? 'Disabled' : 'Active',
                               style: SatType.mono(
                                   size: 11,
                                   color: user.disabled ? sc.urgent : sc.textLo,
@@ -1080,11 +1244,29 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                       initialValue: user.roleId,
                       items: [
                         for (final r in roles)
-                          DropdownMenuItem(value: r.id, child: Text(r.name)),
+                          if (!r.has(Capability.manageStaff) ||
+                              r.id == user.roleId)
+                            DropdownMenuItem(
+                                value: r.id,
+                                child: Text(r.has(Capability.manageStaff)
+                                    ? '${r.name} (admin)'
+                                    : r.name)),
                       ],
-                      onChanged: (v) => _changeRole(user, v),
+                      onChanged: (v) => _changeRole(user, v, roles),
                       decoration:
                           const InputDecoration(border: OutlineInputBorder()),
+                    ),
+                    const SizedBox(height: 16),
+                    _label('Avatar color'),
+                    _AvatarSwatchGrid(
+                      palette: avatarColorPalette,
+                      takenColors: {
+                        for (final u in users)
+                          if (u.id != user.id && u.avatarColorHex != null)
+                            u.avatarColorHex!,
+                      },
+                      selected: user.avatarColorHex,
+                      onPick: (c) => _pickAvatarColor(user, c, users),
                     ),
                     const SizedBox(height: 16),
                     _label('PIN (6 digits, unique)'),
@@ -1110,22 +1292,6 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text('On duty',
-                              style: SatType.sans(size: 13, color: sc.textHi)),
-                        ),
-                        Switch(
-                          value: user.onDuty,
-                          onChanged: user.disabled
-                              ? null
-                              : (_) => ref
-                                  .read(staffRepositoryProvider.notifier)
-                                  .toggleOnDuty(user.id),
-                        ),
-                      ],
-                    ),
                     Row(
                       children: [
                         Expanded(
@@ -1160,9 +1326,14 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: FilledButton(
-                        onPressed: () {
-                          _saveName(user);
-                          _savePin(user);
+                        onPressed: () async {
+                          final results = await Future.wait([
+                            _saveName(user),
+                            _savePin(user),
+                          ]);
+                          if (results.every((ok) => ok) && context.mounted) {
+                            Navigator.pop(context);
+                          }
                         },
                         child: const Text('Save changes'),
                       ),
@@ -1190,9 +1361,17 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
     );
   }
 
-  void _saveName(AppUser u) {
+  /// Returns true when the name persisted (or was unchanged). Network
+  /// failures are swallowed by the repo's optimistic rename; treat them as
+  /// success here since the user can re-open and retry.
+  Future<bool> _saveName(AppUser u) async {
     final name = _nameCtl.text.trim();
-    if (name.isEmpty || name == u.name) return;
+    if (name.isEmpty) {
+      _toast('Name cannot be empty');
+      _nameCtl.text = u.name;
+      return false;
+    }
+    if (name == u.name) return true;
     final initials = name
         .split(RegExp(r'\s+'))
         .where((s) => s.isNotEmpty)
@@ -1200,10 +1379,18 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
         .map((s) => s[0].toUpperCase())
         .join();
     ref.read(staffRepositoryProvider.notifier).rename(u.id, name, initials);
+    return true;
   }
 
-  Future<void> _changeRole(AppUser u, String? newId) async {
+  Future<void> _changeRole(AppUser u, String? newId, List<Role> roles) async {
     if (newId == null || newId == u.roleId) return;
+    // Block UI-driven promotion to an admin role. Existing admins keep their
+    // role in the dropdown but can only be moved to a non-admin role.
+    final target = _findRole(roles, newId);
+    if (target != null && target.has(Capability.manageStaff)) {
+      _toast('Promoting to an admin role is not allowed here');
+      return;
+    }
     final ok = await _confirmSheet(
       context,
       'Change role?',
@@ -1217,20 +1404,38 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
     }
   }
 
-  void _savePin(AppUser u) {
-    if (_pinCtl.text == u.pin) return;
+  Future<bool> _savePin(AppUser u) async {
+    if (_pinCtl.text == u.pin) return true;
     try {
-      ref.read(staffRepositoryProvider.notifier).setPin(u.id, _pinCtl.text);
+      await ref
+          .read(staffRepositoryProvider.notifier)
+          .setPin(u.id, _pinCtl.text);
+      _toast('PIN updated');
+      return true;
     } on StaffException catch (e) {
       _toast(e.message);
       _pinCtl.text = u.pin;
+      return false;
     }
   }
 
-  void _resetPin(AppUser u) {
-    final pin = ref.read(staffRepositoryProvider.notifier).resetPin(u.id);
-    _pinCtl.text = pin;
-    _toast('New PIN: $pin');
+  void _pickAvatarColor(AppUser u, int hex, List<AppUser> users) {
+    if (hex == u.avatarColorHex) return;
+    final collision = users.any(
+        (x) => x.id != u.id && x.avatarColorHex == hex);
+    if (collision) _toast('Color also used by another account');
+    ref.read(staffRepositoryProvider.notifier).setAvatarColor(u.id, hex);
+  }
+
+  Future<void> _resetPin(AppUser u) async {
+    try {
+      final pin =
+          await ref.read(staffRepositoryProvider.notifier).resetPin(u.id);
+      _pinCtl.text = pin;
+      _toast('New PIN: $pin');
+    } on StaffException catch (e) {
+      _toast(e.message);
+    }
   }
 
   Future<void> _setDisabled(AppUser u, bool disabled) async {

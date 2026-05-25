@@ -22,7 +22,10 @@ CartLineDto _$CartLineDtoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$CartLineDto {
   String get itemId => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
   String get variantId => throw _privateConstructorUsedError;
+  String get variantName => throw _privateConstructorUsedError;
+  String get station => throw _privateConstructorUsedError;
   List<String> get modifierOptionIds => throw _privateConstructorUsedError;
   String? get specialInstructions => throw _privateConstructorUsedError;
   String get course => throw _privateConstructorUsedError;
@@ -48,7 +51,10 @@ abstract class $CartLineDtoCopyWith<$Res> {
   @useResult
   $Res call({
     String itemId,
+    String name,
     String variantId,
+    String variantName,
+    String station,
     List<String> modifierOptionIds,
     String? specialInstructions,
     String course,
@@ -73,7 +79,10 @@ class _$CartLineDtoCopyWithImpl<$Res, $Val extends CartLineDto>
   @override
   $Res call({
     Object? itemId = null,
+    Object? name = null,
     Object? variantId = null,
+    Object? variantName = null,
+    Object? station = null,
     Object? modifierOptionIds = null,
     Object? specialInstructions = freezed,
     Object? course = null,
@@ -86,9 +95,21 @@ class _$CartLineDtoCopyWithImpl<$Res, $Val extends CartLineDto>
                 ? _value.itemId
                 : itemId // ignore: cast_nullable_to_non_nullable
                       as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
             variantId: null == variantId
                 ? _value.variantId
                 : variantId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            variantName: null == variantName
+                ? _value.variantName
+                : variantName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            station: null == station
+                ? _value.station
+                : station // ignore: cast_nullable_to_non_nullable
                       as String,
             modifierOptionIds: null == modifierOptionIds
                 ? _value.modifierOptionIds
@@ -127,7 +148,10 @@ abstract class _$$CartLineDtoImplCopyWith<$Res>
   @useResult
   $Res call({
     String itemId,
+    String name,
     String variantId,
+    String variantName,
+    String station,
     List<String> modifierOptionIds,
     String? specialInstructions,
     String course,
@@ -151,7 +175,10 @@ class __$$CartLineDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? itemId = null,
+    Object? name = null,
     Object? variantId = null,
+    Object? variantName = null,
+    Object? station = null,
     Object? modifierOptionIds = null,
     Object? specialInstructions = freezed,
     Object? course = null,
@@ -164,9 +191,21 @@ class __$$CartLineDtoImplCopyWithImpl<$Res>
             ? _value.itemId
             : itemId // ignore: cast_nullable_to_non_nullable
                   as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
         variantId: null == variantId
             ? _value.variantId
             : variantId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        variantName: null == variantName
+            ? _value.variantName
+            : variantName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        station: null == station
+            ? _value.station
+            : station // ignore: cast_nullable_to_non_nullable
                   as String,
         modifierOptionIds: null == modifierOptionIds
             ? _value._modifierOptionIds
@@ -198,7 +237,10 @@ class __$$CartLineDtoImplCopyWithImpl<$Res>
 class _$CartLineDtoImpl implements _CartLineDto {
   const _$CartLineDtoImpl({
     required this.itemId,
+    required this.name,
     required this.variantId,
+    required this.variantName,
+    required this.station,
     required final List<String> modifierOptionIds,
     required this.specialInstructions,
     required this.course,
@@ -212,7 +254,13 @@ class _$CartLineDtoImpl implements _CartLineDto {
   @override
   final String itemId;
   @override
+  final String name;
+  @override
   final String variantId;
+  @override
+  final String variantName;
+  @override
+  final String station;
   final List<String> _modifierOptionIds;
   @override
   List<String> get modifierOptionIds {
@@ -233,7 +281,7 @@ class _$CartLineDtoImpl implements _CartLineDto {
 
   @override
   String toString() {
-    return 'CartLineDto(itemId: $itemId, variantId: $variantId, modifierOptionIds: $modifierOptionIds, specialInstructions: $specialInstructions, course: $course, qty: $qty, unitPrice: $unitPrice)';
+    return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, station: $station, modifierOptionIds: $modifierOptionIds, specialInstructions: $specialInstructions, course: $course, qty: $qty, unitPrice: $unitPrice)';
   }
 
   @override
@@ -242,8 +290,12 @@ class _$CartLineDtoImpl implements _CartLineDto {
         (other.runtimeType == runtimeType &&
             other is _$CartLineDtoImpl &&
             (identical(other.itemId, itemId) || other.itemId == itemId) &&
+            (identical(other.name, name) || other.name == name) &&
             (identical(other.variantId, variantId) ||
                 other.variantId == variantId) &&
+            (identical(other.variantName, variantName) ||
+                other.variantName == variantName) &&
+            (identical(other.station, station) || other.station == station) &&
             const DeepCollectionEquality().equals(
               other._modifierOptionIds,
               _modifierOptionIds,
@@ -261,7 +313,10 @@ class _$CartLineDtoImpl implements _CartLineDto {
   int get hashCode => Object.hash(
     runtimeType,
     itemId,
+    name,
     variantId,
+    variantName,
+    station,
     const DeepCollectionEquality().hash(_modifierOptionIds),
     specialInstructions,
     course,
@@ -286,7 +341,10 @@ class _$CartLineDtoImpl implements _CartLineDto {
 abstract class _CartLineDto implements CartLineDto {
   const factory _CartLineDto({
     required final String itemId,
+    required final String name,
     required final String variantId,
+    required final String variantName,
+    required final String station,
     required final List<String> modifierOptionIds,
     required final String? specialInstructions,
     required final String course,
@@ -300,7 +358,13 @@ abstract class _CartLineDto implements CartLineDto {
   @override
   String get itemId;
   @override
+  String get name;
+  @override
   String get variantId;
+  @override
+  String get variantName;
+  @override
+  String get station;
   @override
   List<String> get modifierOptionIds;
   @override
@@ -331,6 +395,7 @@ mixin _$SubmitOrderRequestDto {
   String get tableId => throw _privateConstructorUsedError;
   String get idempotencyKey => throw _privateConstructorUsedError;
   List<CartLineDto> get lines => throw _privateConstructorUsedError;
+  String? get actorId => throw _privateConstructorUsedError;
 
   /// Serializes this SubmitOrderRequestDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -349,7 +414,12 @@ abstract class $SubmitOrderRequestDtoCopyWith<$Res> {
     $Res Function(SubmitOrderRequestDto) then,
   ) = _$SubmitOrderRequestDtoCopyWithImpl<$Res, SubmitOrderRequestDto>;
   @useResult
-  $Res call({String tableId, String idempotencyKey, List<CartLineDto> lines});
+  $Res call({
+    String tableId,
+    String idempotencyKey,
+    List<CartLineDto> lines,
+    String? actorId,
+  });
 }
 
 /// @nodoc
@@ -373,6 +443,7 @@ class _$SubmitOrderRequestDtoCopyWithImpl<
     Object? tableId = null,
     Object? idempotencyKey = null,
     Object? lines = null,
+    Object? actorId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -388,6 +459,10 @@ class _$SubmitOrderRequestDtoCopyWithImpl<
                 ? _value.lines
                 : lines // ignore: cast_nullable_to_non_nullable
                       as List<CartLineDto>,
+            actorId: freezed == actorId
+                ? _value.actorId
+                : actorId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -403,7 +478,12 @@ abstract class _$$SubmitOrderRequestDtoImplCopyWith<$Res>
   ) = __$$SubmitOrderRequestDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String tableId, String idempotencyKey, List<CartLineDto> lines});
+  $Res call({
+    String tableId,
+    String idempotencyKey,
+    List<CartLineDto> lines,
+    String? actorId,
+  });
 }
 
 /// @nodoc
@@ -424,6 +504,7 @@ class __$$SubmitOrderRequestDtoImplCopyWithImpl<$Res>
     Object? tableId = null,
     Object? idempotencyKey = null,
     Object? lines = null,
+    Object? actorId = freezed,
   }) {
     return _then(
       _$SubmitOrderRequestDtoImpl(
@@ -439,6 +520,10 @@ class __$$SubmitOrderRequestDtoImplCopyWithImpl<$Res>
             ? _value._lines
             : lines // ignore: cast_nullable_to_non_nullable
                   as List<CartLineDto>,
+        actorId: freezed == actorId
+            ? _value.actorId
+            : actorId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -451,6 +536,7 @@ class _$SubmitOrderRequestDtoImpl implements _SubmitOrderRequestDto {
     required this.tableId,
     required this.idempotencyKey,
     required final List<CartLineDto> lines,
+    this.actorId,
   }) : _lines = lines;
 
   factory _$SubmitOrderRequestDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -469,8 +555,11 @@ class _$SubmitOrderRequestDtoImpl implements _SubmitOrderRequestDto {
   }
 
   @override
+  final String? actorId;
+
+  @override
   String toString() {
-    return 'SubmitOrderRequestDto(tableId: $tableId, idempotencyKey: $idempotencyKey, lines: $lines)';
+    return 'SubmitOrderRequestDto(tableId: $tableId, idempotencyKey: $idempotencyKey, lines: $lines, actorId: $actorId)';
   }
 
   @override
@@ -481,7 +570,8 @@ class _$SubmitOrderRequestDtoImpl implements _SubmitOrderRequestDto {
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.idempotencyKey, idempotencyKey) ||
                 other.idempotencyKey == idempotencyKey) &&
-            const DeepCollectionEquality().equals(other._lines, _lines));
+            const DeepCollectionEquality().equals(other._lines, _lines) &&
+            (identical(other.actorId, actorId) || other.actorId == actorId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -491,6 +581,7 @@ class _$SubmitOrderRequestDtoImpl implements _SubmitOrderRequestDto {
     tableId,
     idempotencyKey,
     const DeepCollectionEquality().hash(_lines),
+    actorId,
   );
 
   /// Create a copy of SubmitOrderRequestDto
@@ -516,6 +607,7 @@ abstract class _SubmitOrderRequestDto implements SubmitOrderRequestDto {
     required final String tableId,
     required final String idempotencyKey,
     required final List<CartLineDto> lines,
+    final String? actorId,
   }) = _$SubmitOrderRequestDtoImpl;
 
   factory _SubmitOrderRequestDto.fromJson(Map<String, dynamic> json) =
@@ -527,6 +619,8 @@ abstract class _SubmitOrderRequestDto implements SubmitOrderRequestDto {
   String get idempotencyKey;
   @override
   List<CartLineDto> get lines;
+  @override
+  String? get actorId;
 
   /// Create a copy of SubmitOrderRequestDto
   /// with the given fields replaced by the non-null parameter values.

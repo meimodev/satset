@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart' as http_io;
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/pair_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -41,10 +42,12 @@ class PairViewModel extends StateNotifier<PairState> {
   /// The QR/manual fingerprint MUST be present; the HTTP client only trusts
   /// the server cert when its SHA-256 matches that fingerprint.
   ///
-  /// On success, also publishes a fresh [ApiConfig] into [apiConfigProvider]
-  /// and kicks an auth-restore so the post-pair `/pin` flow always reaches
-  /// the LAN server instead of the dummy fallback.
-  Future<void> claim(String qrJson) async {
+  /// On success, always publishes a fresh [ApiConfig] into [apiConfigProvider].
+  /// When [restoreAuth] is true, also kicks an auth-restore so a returning
+  /// device skips PIN entry; pass `false` from a sign-in screen so the user
+  /// is forced through PIN entry after pairing.
+  Future<void> claim(String qrJson, {bool restoreAuth = true}) async {
+    SatLog.vm('PairVM claim');
     state = state.copyWith(busy: true, error: null);
     try {
       final payload =
@@ -95,12 +98,16 @@ class PairViewModel extends StateNotifier<PairState> {
         baseUri: Uri.parse('https://${payload.host}:${payload.port}'),
         trustedFingerprint: expectedFp,
       );
-      // If a token from a previous session is still in storage, restore it
-      // through the live API so the auth state reflects server-issued caps.
-      await ref.read(authStateProvider.notifier).restoreFromStoredToken();
+      if (restoreAuth) {
+        // If a token from a previous session is still in storage, restore it
+        // through the live API so the auth state reflects server-issued caps.
+        await ref.read(authStateProvider.notifier).restoreFromStoredToken();
+      }
 
+      SatLog.vm('PairVM paired host=${payload.host}:${payload.port}');
       state = state.copyWith(busy: false, paired: true);
     } catch (e) {
+      SatLog.vm('PairVM fail $e');
       state = state.copyWith(busy: false, error: e.toString());
     }
   }
@@ -114,8 +121,11 @@ class PairViewModel extends StateNotifier<PairState> {
   }
 }
 
+// NOTE: not autoDispose — PinViewModel reads this notifier without watching
+// and awaits long pinned-HTTPS pairing. An autoDispose provider could be torn
+// down mid-claim and lose pairing error state.
 final pairViewModelProvider =
-    StateNotifierProvider.autoDispose<PairViewModel, PairState>((ref) {
+    StateNotifierProvider<PairViewModel, PairState>((ref) {
   final storage = ref.watch(secureStorageServiceProvider);
   final prefs = ref.watch(prefsServiceProvider).requireValue;
   return PairViewModel(ref: ref, storage: storage, prefs: prefs);

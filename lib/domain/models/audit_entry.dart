@@ -1,4 +1,46 @@
-enum AuditType { fire, modify, voidItem, comp }
+enum AuditType {
+  fire,
+  modify,
+  voidItem,
+  comp,
+  staffCreated,
+  staffDeleted,
+  staffDisabled,
+  staffEnabled,
+  staffRoleChanged,
+  staffPinSet,
+  staffPinReset,
+  roleCreated,
+  roleRenamed,
+  roleDeleted,
+  roleColorChanged,
+  roleCapabilityChanged,
+}
+
+/// True for audit types that expose user/role admin actions. Hide from
+/// non-managers in the audit feed.
+bool isAdminAuditType(AuditType t) {
+  switch (t) {
+    case AuditType.staffCreated:
+    case AuditType.staffDeleted:
+    case AuditType.staffDisabled:
+    case AuditType.staffEnabled:
+    case AuditType.staffRoleChanged:
+    case AuditType.staffPinSet:
+    case AuditType.staffPinReset:
+    case AuditType.roleCreated:
+    case AuditType.roleRenamed:
+    case AuditType.roleDeleted:
+    case AuditType.roleColorChanged:
+    case AuditType.roleCapabilityChanged:
+      return true;
+    case AuditType.fire:
+    case AuditType.modify:
+    case AuditType.voidItem:
+    case AuditType.comp:
+      return false;
+  }
+}
 
 class AuditEntry {
   final String id;

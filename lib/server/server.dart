@@ -7,6 +7,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 
+import 'package:satset/core/log/sat_log.dart';
 import 'auth.dart';
 import 'db/database.dart';
 import 'db/seed.dart';
@@ -43,8 +44,13 @@ class ServerRuntime {
   HttpServer? _http;
 
   static const defaultPort = 7443;
+  static const defaultVersion = '1.0.0';
 
-  static Future<ServerRuntime> boot({int port = defaultPort}) async {
+  static Future<ServerRuntime> boot({
+    int port = defaultPort,
+    String? label,
+    String version = defaultVersion,
+  }) async {
     final db = await AppDatabase.open();
     await seedIfEmpty(db);
     final tls = await ServerTls.loadOrCreate();
@@ -64,6 +70,7 @@ class ServerRuntime {
     );
 
     final handler = const Pipeline()
+        .addMiddleware(_loggingMiddleware())
         .addMiddleware(_corsMiddleware())
         .addMiddleware(_authMiddleware(auth))
         .addHandler(rt._buildRouter().call);
@@ -74,8 +81,14 @@ class ServerRuntime {
       port,
       securityContext: tls.context,
     );
+    SatLog.srv('boot port=$port fp=${tls.fingerprint.substring(0, tls.fingerprint.length.clamp(0, 12))}');
 
-    await advertiser.start(port: port, fingerprint: tls.fingerprint);
+    await advertiser.start(
+      port: port,
+      fingerprint: tls.fingerprint,
+      label: label,
+      version: version,
+    );
     return rt;
   }
 
@@ -83,10 +96,10 @@ class ServerRuntime {
     final r = Router();
     r.mount('/', healthRoutes().call);
     r.mount('/', authRoutes(auth).call);
-    r.mount('/', menuRoutes(db).call);
+    r.mount('/', menuRoutes(db, hub, auth).call);
     r.mount('/', tablesRoutes(db, hub, auth).call);
     r.mount('/', ticketsRoutes(db, hub, auth).call);
-    r.mount('/', referenceRoutes(db).call);
+    r.mount('/', referenceRoutes(db, hub, auth).call);
 
     r.post('/pair/claim', (Request req) async {
       final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
@@ -97,6 +110,30 @@ class ServerRuntime {
         publicKeyPem: body['publicKey'] as String,
       );
       if (dev == null) return Response(409, body: 'pair token invalid');
+      return Response.ok(
+        jsonEncode({
+          'deviceToken': dev.id,
+          'fingerprint': tls.fingerprint,
+          'serverPublicKey': '',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    });
+
+    // LAN-trusted auto-claim: client reached this server via mDNS+TLS
+    // fingerprint pinning, so we issue+consume a one-shot token internally
+    // instead of requiring out-of-band token entry. PIN auth still gates
+    // anything useful after pairing.
+    r.post('/pair/auto-claim', (Request req) async {
+      final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+      final token = await pairing.issue();
+      final dev = await pairing.claim(
+        token: token.token,
+        deviceId: (body['deviceId'] as String?) ?? '',
+        deviceLabel: (body['deviceLabel'] as String?) ?? 'satset-client',
+        publicKeyPem: (body['publicKey'] as String?) ?? '',
+      );
+      if (dev == null) return Response(409, body: 'auto-claim failed');
       return Response.ok(
         jsonEncode({
           'deviceToken': dev.id,
@@ -124,6 +161,18 @@ class ServerRuntime {
 }
 
 
+Middleware _loggingMiddleware() {
+  return (Handler inner) {
+    return (Request req) async {
+      final sw = Stopwatch()..start();
+      final res = await inner(req);
+      SatLog.srv(
+          '${req.method} /${req.url.path} → ${res.statusCode} ${sw.elapsedMilliseconds}ms');
+      return res;
+    };
+  };
+}
+
 Middleware _corsMiddleware() {
   return (Handler inner) {
     return (Request req) async {
@@ -147,7 +196,9 @@ Middleware _authMiddleware(ServerAuth auth) {
   const skip = {
     '/healthz',
     '/auth/login',
+    '/auth/admin/login',
     '/pair/claim',
+    '/pair/auto-claim',
   };
   return (Handler inner) {
     return (Request req) async {

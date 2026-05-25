@@ -8,6 +8,7 @@ import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -26,14 +27,35 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final tickets = ref.watch(ticketsProvider);
     final tables = ref.watch(tablesProvider);
 
+    // Show every ticket the LAN knows about. The previous `table.mine`
+    // filter dropped everything once the server-fetched VenueTable
+    // lacked that flag and made the screen permanently empty.
     final all = <_Row>[];
     tickets.forEach((tableId, list) {
       final table = tables.where((t) => t.id == tableId).firstOrNull;
-      if (table == null || !table.mine) return;
+      if (table == null) return;
       for (final t in list) {
-        all.add(_Row(ticket: t, tableId: tableId, zoneId: table.zoneId, pax: table.pax));
+        all.add(_Row(
+          ticket: t,
+          tableId: tableId,
+          zoneId: table.zoneId,
+          pax: table.pax,
+        ));
       }
     });
+
+    Future<void> markServed(String tableId, String ticketId) async {
+      try {
+        await ref
+            .read(advanceTicketStatusUseCaseProvider)
+            .call(tableId, ticketId, TicketStatus.served);
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text('Gagal sajikan: $e')),
+        );
+      }
+    }
 
     final ready = all.where((r) => r.ticket.status == TicketStatus.ready).toList();
     final active = all
@@ -116,7 +138,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     itemCount: list.length,
                     itemBuilder: (ctx, i) {
                       final r = list[i];
-                      return _OrderRow(row: r, onTap: () => context.push('/table/${r.tableId}'));
+                      return _OrderRow(
+                        row: r,
+                        onTap: () => context.push('/table/${r.tableId}'),
+                        onServe: () => markServed(r.tableId, r.ticket.id),
+                      );
                     },
                   ),
           ),
@@ -229,6 +255,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         return _OrderRow(
                           row: r,
                           onTap: () => context.push('/table/${r.tableId}'),
+                          onServe: () => markServed(r.tableId, r.ticket.id),
                         );
                       },
                     ),
@@ -352,7 +379,12 @@ class _SegBtn extends StatelessWidget {
 class _OrderRow extends StatelessWidget {
   final _Row row;
   final VoidCallback onTap;
-  const _OrderRow({required this.row, required this.onTap});
+  final VoidCallback onServe;
+  const _OrderRow({
+    required this.row,
+    required this.onTap,
+    required this.onServe,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -461,10 +493,47 @@ class _OrderRow extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, size: 16, color: sc.textLo),
+                  if (isReady)
+                    _ServeButton(onTap: onServe)
+                  else
+                    Icon(Icons.chevron_right, size: 16, color: sc.textLo),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ServeButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ServeButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Material(
+      color: sc.success,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_rounded, size: 14, color: sc.accentInk),
+              const SizedBox(width: 6),
+              Text('Sajikan',
+                  style: SatType.sans(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: sc.accentInk,
+                  )),
+            ],
           ),
         ),
       ),
