@@ -26,6 +26,7 @@ import 'package:satset/ui/features/admin/menu_admin_screen.dart';
 import 'package:satset/ui/features/admin/menu_admin_item_screen.dart';
 import 'package:satset/ui/features/admin/reports_screen.dart';
 import 'package:satset/ui/features/admin/venue_hub_screen.dart';
+import 'package:satset/ui/features/admin/venue_identity_screen.dart';
 import 'package:satset/ui/features/admin/settings_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
 
@@ -34,6 +35,7 @@ Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/table/') || loc.startsWith('/orders')) {
     return Capability.takeOrder;
   }
+  if (loc.startsWith('/venue-identity')) return Capability.editSettings;
   if (loc.startsWith('/menuadm') || loc.startsWith('/staff') ||
       loc.startsWith('/reports') || loc.startsWith('/settings') ||
       loc.startsWith('/floor') || loc.startsWith('/venue')) {
@@ -108,42 +110,49 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
           GoRoute(path: '/kitchen', builder: (_, _) => const KitchenScreen()),
           GoRoute(path: '/venue', builder: (_, _) => const VenueHubScreen()),
+          GoRoute(
+              path: '/venue-identity',
+              builder: (_, _) => const VenueIdentityScreen()),
           GoRoute(path: '/floor', builder: (_, _) => const FloorScreen()),
           GoRoute(path: '/menuadm', builder: (_, _) => const MenuAdminScreen()),
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
           GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),
           GoRoute(path: '/me', builder: (_, _) => const MeScreen()),
+        ],
+      ),
+      // Table flow lives outside the shell so a root-navigator push gives a
+      // full-page transition. Nesting it under ShellRoute caused the outgoing
+      // tables page to flash bare during the push (AppShell rebuilds with
+      // the new loc and removes its Scaffold before the transition ends).
+      GoRoute(
+        path: '/table/:id',
+        builder: (_, s) =>
+            TableDetailScreen(tableId: s.pathParameters['id']!),
+        routes: [
           GoRoute(
-            path: '/table/:id',
+            path: 'menu',
             builder: (_, s) =>
-                TableDetailScreen(tableId: s.pathParameters['id']!),
-            routes: [
-              GoRoute(
-                path: 'menu',
-                builder: (_, s) =>
-                    MenuScreen(tableId: s.pathParameters['id']!),
-              ),
-              GoRoute(
-                path: 'review',
-                builder: (_, s) =>
-                    ReviewScreen(tableId: s.pathParameters['id']!),
-              ),
-              GoRoute(
-                path: 'sent',
-                builder: (_, s) {
-                  final stations =
-                      (s.uri.queryParameters['stations'] ?? 'Dapur')
-                          .split(',')
-                          .where((x) => x.isNotEmpty)
-                          .toList();
-                  return SentScreen(
-                    tableId: s.pathParameters['id']!,
-                    stations: stations.isEmpty ? const ['Dapur'] : stations,
-                  );
-                },
-              ),
-            ],
+                MenuScreen(tableId: s.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'review',
+            builder: (_, s) =>
+                ReviewScreen(tableId: s.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'sent',
+            builder: (_, s) {
+              final stations =
+                  (s.uri.queryParameters['stations'] ?? 'Dapur')
+                      .split(',')
+                      .where((x) => x.isNotEmpty)
+                      .toList();
+              return SentScreen(
+                tableId: s.pathParameters['id']!,
+                stations: stations.isEmpty ? const ['Dapur'] : stations,
+              );
+            },
           ),
         ],
       ),

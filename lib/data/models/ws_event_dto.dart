@@ -34,4 +34,5 @@ class WsEventTypes {
   static const staffDeleted = 'staff.deleted';
   static const auditCreated = 'audit.created';
   static const rolesUpdated = 'roles.updated';
+  static const venueSettingsUpdated = 'venueSettings.updated';
 }

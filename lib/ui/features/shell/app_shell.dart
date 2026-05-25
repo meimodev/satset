@@ -6,9 +6,10 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
-import 'package:satset/ui/core/widgets/satset_top_bar.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 
 class AppShell extends ConsumerWidget {
@@ -26,27 +27,23 @@ class AppShell extends ConsumerWidget {
     final forcePhone = ref.watch(forcePhoneViewProvider);
     final zones = ref.watch(zonesProvider);
     final zoneName = zones.isEmpty ? '—' : zones.first.name;
+    final venueName = ref.watch(
+        venueSettingsProvider.select((s) => s.displayName));
 
     if (l.useTabletShell && !forcePhone) {
-      // Table flow keeps its own full-bleed Scaffold (split pane); skip the
-      // TabletShell chrome there so the bar doesn't double-up.
-      if (loc.startsWith('/table/')) return child;
       return TabletShell(
         activeTab: activeTab,
         readyCount: ready,
-        crumbs: _crumbsFor(loc, activeTab, zoneName),
+        crumbs: _crumbsFor(loc, activeTab, zoneName, venueName),
         child: child,
       );
     }
 
-    // Phone-only: persistent SatsetTopBar wraps every shell route (including
-    // /table/:id and its subroutes) so the network indicator is always
-    // visible. Bottom floating tab bar overlays content.
     return Scaffold(
       backgroundColor: sc.bg0,
       body: Column(
         children: [
-          const SatsetTopBar(),
+          const SatAppBar(),
           Expanded(
             child: Stack(
               children: [
@@ -78,7 +75,9 @@ class AppShell extends ConsumerWidget {
     return 'tables';
   }
 
-  List<String> _crumbsFor(String loc, String activeTab, String zoneName) {
+  List<String> _crumbsFor(
+      String loc, String activeTab, String zoneName, String venueName) {
+    final venue = venueName.isEmpty ? 'Venue' : venueName;
     switch (activeTab) {
       case 'orders':
         return ['Teras', 'Pesanan saya'];
@@ -94,7 +93,7 @@ class AppShell extends ConsumerWidget {
         if (loc.startsWith('/reports')) return ['Venue', 'Laporan shift'];
         return ['Venue', 'Konfigurasi'];
       default:
-        return ['Warung Sebelah', zoneName];
+        return [venue, zoneName];
     }
   }
 }

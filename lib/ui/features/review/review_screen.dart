@@ -10,9 +10,11 @@ import 'package:satset/domain/models/course.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/review/view_models/review_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 
 class ReviewScreen extends ConsumerWidget {
@@ -40,6 +42,20 @@ class ReviewScreen extends ConsumerWidget {
       grouped.putIfAbsent(c.course, () => []).add(c);
     }
     final subtotal = cart.fold<int>(0, (s, c) => s + c.unitPrice * c.qty);
+    final venue = ref.watch(venueSettingsProvider);
+    final serviceAmount = !venue.serviceEnabled
+        ? 0
+        : venue.serviceMode == 'fixed'
+            ? venue.serviceFixedAmount
+            : (subtotal * venue.serviceRateBps / 10000).round();
+    final taxAmount = !venue.taxEnabled
+        ? 0
+        : ((subtotal + serviceAmount) * venue.taxRateBps / 10000).round();
+    final grandTotal = subtotal + serviceAmount + taxAmount;
+    final serviceLabel = venue.serviceMode == 'fixed'
+        ? 'Layanan'
+        : 'Layanan · ${_fmtPct(venue.serviceRateBps)}';
+    final taxLabel = 'Pajak · ${_fmtPct(venue.taxRateBps)}';
     final allergens = <Allergen>{};
     for (final c in cart) {
       allergens.addAll(c.allergens);
@@ -65,49 +81,10 @@ class ReviewScreen extends ConsumerWidget {
         children: [
           Column(
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
-                child: Row(
-                  children: [
-                    SatBackButton(onTap: () => safePop(context, fallback: '/table/$tableId')),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: sc.success,
-                            boxShadow: [BoxShadow(color: sc.successSoft, spreadRadius: 3)],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text('LIVE · LAN',
-                            style: SatType.mono(
-                                size: 10, color: sc.textMd, letterSpacing: 0.6)),
-                      ],
-                    ),
-                    const Spacer(),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFFF9233), Color(0xFFD96030)],
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text('MA',
-                          style: SatType.sans(
-                            size: 12,
-                            weight: FontWeight.w600,
-                            color: Colors.white,
-                          )),
-                    ),
-                  ],
-                ),
+              SatAppBar(
+                onBack: () => safePop(context, fallback: '/table/$tableId'),
+                title: 'Tinjau · Meja $tableId',
+                crumbs: ['Meja', tableId, 'Tinjau'],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
@@ -189,14 +166,16 @@ class ReviewScreen extends ConsumerWidget {
                         child: Column(
                           children: [
                             _TotalsRow(label: 'Subtotal', value: formatIDR(subtotal)),
-                            _TotalsRow(
-                              label: 'Layanan · 7%',
-                              value: formatIDR((subtotal * 0.07).round()),
-                            ),
-                            _TotalsRow(
-                              label: 'Pajak · 11%',
-                              value: formatIDR((subtotal * 0.11).round()),
-                            ),
+                            if (venue.serviceEnabled)
+                              _TotalsRow(
+                                label: serviceLabel,
+                                value: formatIDR(serviceAmount),
+                              ),
+                            if (venue.taxEnabled)
+                              _TotalsRow(
+                                label: taxLabel,
+                                value: formatIDR(taxAmount),
+                              ),
                             Container(
                               margin: const EdgeInsets.only(top: 8),
                               padding: const EdgeInsets.only(top: 12),
@@ -206,7 +185,7 @@ class ReviewScreen extends ConsumerWidget {
                               ),
                               child: _TotalsRow(
                                 label: 'Total perkiraan',
-                                value: formatIDR((subtotal * 1.18).round()),
+                                value: formatIDR(grandTotal),
                                 isTotal: true,
                               ),
                             ),
@@ -525,4 +504,9 @@ class _TotalsRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _fmtPct(int bps) {
+  final v = bps / 100.0;
+  return '${v.toStringAsFixed(v == v.roundToDouble() ? 0 : 2)}%';
 }

@@ -47,6 +47,7 @@ class VenueTables extends Table {
   TextColumn get zoneId => text()();
   TextColumn get label => text().nullable()();
   IntColumn get pax => integer().withDefault(const Constant(2))();
+  IntColumn get capacity => integer().withDefault(const Constant(2))();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
   TextColumn get status => text().withDefault(const Constant('available'))();
   IntColumn get openAmount => integer().withDefault(const Constant(0))();
@@ -56,6 +57,7 @@ class VenueTables extends Table {
   TextColumn get lockedByName => text().nullable()();
   DateTimeColumn get lockedAt => dateTime().nullable()();
   DateTimeColumn get lockExpiresAt => dateTime().nullable()();
+  DateTimeColumn get openedAt => dateTime().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -158,6 +160,30 @@ class Idempotency extends Table {
   DateTimeColumn get createdAt => dateTime()();
   @override
   Set<Column> get primaryKey => {key};
+}
+
+/// Single-row venue config: pajak (tax) + layanan (service charge) settings.
+/// Always keyed by id='default'. UI exposes toggles + editable rates.
+class VenueSettings extends Table {
+  TextColumn get id => text()();
+  TextColumn get displayName =>
+      text().withDefault(const Constant('Warung Sebelah'))();
+  TextColumn get legalName => text().withDefault(const Constant(''))();
+  TextColumn get address => text().withDefault(const Constant(''))();
+  TextColumn get phone => text().withDefault(const Constant(''))();
+  TextColumn get receiptHeader => text().withDefault(const Constant(''))();
+  TextColumn get receiptFooter => text().withDefault(const Constant(''))();
+  BoolColumn get taxEnabled => boolean().withDefault(const Constant(false))();
+  IntColumn get taxRateBps => integer().withDefault(const Constant(1100))();
+  BoolColumn get serviceEnabled =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get serviceMode =>
+      text().withDefault(const Constant('percent'))();
+  IntColumn get serviceRateBps => integer().withDefault(const Constant(500))();
+  IntColumn get serviceFixedAmount =>
+      integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class AuditEntries extends Table {

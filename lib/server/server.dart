@@ -19,6 +19,7 @@ import 'routes/menu_routes.dart';
 import 'routes/reference_routes.dart';
 import 'routes/tables_routes.dart';
 import 'routes/tickets_routes.dart';
+import 'routes/venue_settings_routes.dart';
 import 'tls.dart';
 import 'ws_hub.dart';
 
@@ -81,7 +82,9 @@ class ServerRuntime {
       port,
       securityContext: tls.context,
     );
-    SatLog.srv('boot port=$port fp=${tls.fingerprint.substring(0, tls.fingerprint.length.clamp(0, 12))}');
+    SatLog.srv(
+      'boot port=$port fp=${tls.fingerprint.substring(0, tls.fingerprint.length.clamp(0, 12))}',
+    );
 
     await advertiser.start(
       port: port,
@@ -100,6 +103,7 @@ class ServerRuntime {
     r.mount('/', tablesRoutes(db, hub, auth).call);
     r.mount('/', ticketsRoutes(db, hub, auth).call);
     r.mount('/', referenceRoutes(db, hub, auth).call);
+    r.mount('/', venueSettingsRoutes(db, hub, auth).call);
 
     r.post('/pair/claim', (Request req) async {
       final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
@@ -144,10 +148,14 @@ class ServerRuntime {
       );
     });
 
-    r.get('/ws', webSocketHandler((webSocket, _) {
-      // Auth handled in middleware. Register without specific user yet.
-      hub.register(webSocket, 'anonymous', 'unknown');
-    }) as Function);
+    r.get(
+      '/ws',
+      webSocketHandler((webSocket, _) {
+            // Auth handled in middleware. Register without specific user yet.
+            hub.register(webSocket, 'anonymous', 'unknown');
+          })
+          as Function,
+    );
 
     return r;
   }
@@ -160,14 +168,14 @@ class ServerRuntime {
   }
 }
 
-
 Middleware _loggingMiddleware() {
   return (Handler inner) {
     return (Request req) async {
       final sw = Stopwatch()..start();
       final res = await inner(req);
       SatLog.srv(
-          '${req.method} /${req.url.path} → ${res.statusCode} ${sw.elapsedMilliseconds}ms');
+        '${req.method} /${req.url.path} → ${res.statusCode} ${sw.elapsedMilliseconds}ms',
+      );
       return res;
     };
   };

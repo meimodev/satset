@@ -1435,6 +1435,18 @@ class $VenueTablesTable extends VenueTables
     requiredDuringInsert: false,
     defaultValue: const Constant(2),
   );
+  static const VerificationMeta _capacityMeta = const VerificationMeta(
+    'capacity',
+  );
+  @override
+  late final GeneratedColumn<int> capacity = GeneratedColumn<int>(
+    'capacity',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(2),
+  );
   static const VerificationMeta _activeMeta = const VerificationMeta('active');
   @override
   late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
@@ -1538,12 +1550,24 @@ class $VenueTablesTable extends VenueTables
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _openedAtMeta = const VerificationMeta(
+    'openedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> openedAt = GeneratedColumn<DateTime>(
+    'opened_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     zoneId,
     label,
     pax,
+    capacity,
     active,
     status,
     openAmount,
@@ -1553,6 +1577,7 @@ class $VenueTablesTable extends VenueTables
     lockedByName,
     lockedAt,
     lockExpiresAt,
+    openedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1589,6 +1614,12 @@ class $VenueTablesTable extends VenueTables
       context.handle(
         _paxMeta,
         pax.isAcceptableOrUnknown(data['pax']!, _paxMeta),
+      );
+    }
+    if (data.containsKey('capacity')) {
+      context.handle(
+        _capacityMeta,
+        capacity.isAcceptableOrUnknown(data['capacity']!, _capacityMeta),
       );
     }
     if (data.containsKey('active')) {
@@ -1654,6 +1685,12 @@ class $VenueTablesTable extends VenueTables
         ),
       );
     }
+    if (data.containsKey('opened_at')) {
+      context.handle(
+        _openedAtMeta,
+        openedAt.isAcceptableOrUnknown(data['opened_at']!, _openedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1678,6 +1715,10 @@ class $VenueTablesTable extends VenueTables
       pax: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}pax'],
+      )!,
+      capacity: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}capacity'],
       )!,
       active: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
@@ -1715,6 +1756,10 @@ class $VenueTablesTable extends VenueTables
         DriftSqlType.dateTime,
         data['${effectivePrefix}lock_expires_at'],
       ),
+      openedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}opened_at'],
+      ),
     );
   }
 
@@ -1729,6 +1774,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
   final String zoneId;
   final String? label;
   final int pax;
+  final int capacity;
   final bool active;
   final String status;
   final int openAmount;
@@ -1738,11 +1784,13 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
   final String? lockedByName;
   final DateTime? lockedAt;
   final DateTime? lockExpiresAt;
+  final DateTime? openedAt;
   const VenueTable({
     required this.id,
     required this.zoneId,
     this.label,
     required this.pax,
+    required this.capacity,
     required this.active,
     required this.status,
     required this.openAmount,
@@ -1752,6 +1800,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     this.lockedByName,
     this.lockedAt,
     this.lockExpiresAt,
+    this.openedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1762,6 +1811,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       map['label'] = Variable<String>(label);
     }
     map['pax'] = Variable<int>(pax);
+    map['capacity'] = Variable<int>(capacity);
     map['active'] = Variable<bool>(active);
     map['status'] = Variable<String>(status);
     map['open_amount'] = Variable<int>(openAmount);
@@ -1781,6 +1831,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     if (!nullToAbsent || lockExpiresAt != null) {
       map['lock_expires_at'] = Variable<DateTime>(lockExpiresAt);
     }
+    if (!nullToAbsent || openedAt != null) {
+      map['opened_at'] = Variable<DateTime>(openedAt);
+    }
     return map;
   }
 
@@ -1792,6 +1845,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ? const Value.absent()
           : Value(label),
       pax: Value(pax),
+      capacity: Value(capacity),
       active: Value(active),
       status: Value(status),
       openAmount: Value(openAmount),
@@ -1811,6 +1865,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       lockExpiresAt: lockExpiresAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lockExpiresAt),
+      openedAt: openedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(openedAt),
     );
   }
 
@@ -1824,6 +1881,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       zoneId: serializer.fromJson<String>(json['zoneId']),
       label: serializer.fromJson<String?>(json['label']),
       pax: serializer.fromJson<int>(json['pax']),
+      capacity: serializer.fromJson<int>(json['capacity']),
       active: serializer.fromJson<bool>(json['active']),
       status: serializer.fromJson<String>(json['status']),
       openAmount: serializer.fromJson<int>(json['openAmount']),
@@ -1833,6 +1891,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       lockedByName: serializer.fromJson<String?>(json['lockedByName']),
       lockedAt: serializer.fromJson<DateTime?>(json['lockedAt']),
       lockExpiresAt: serializer.fromJson<DateTime?>(json['lockExpiresAt']),
+      openedAt: serializer.fromJson<DateTime?>(json['openedAt']),
     );
   }
   @override
@@ -1843,6 +1902,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       'zoneId': serializer.toJson<String>(zoneId),
       'label': serializer.toJson<String?>(label),
       'pax': serializer.toJson<int>(pax),
+      'capacity': serializer.toJson<int>(capacity),
       'active': serializer.toJson<bool>(active),
       'status': serializer.toJson<String>(status),
       'openAmount': serializer.toJson<int>(openAmount),
@@ -1852,6 +1912,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       'lockedByName': serializer.toJson<String?>(lockedByName),
       'lockedAt': serializer.toJson<DateTime?>(lockedAt),
       'lockExpiresAt': serializer.toJson<DateTime?>(lockExpiresAt),
+      'openedAt': serializer.toJson<DateTime?>(openedAt),
     };
   }
 
@@ -1860,6 +1921,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     String? zoneId,
     Value<String?> label = const Value.absent(),
     int? pax,
+    int? capacity,
     bool? active,
     String? status,
     int? openAmount,
@@ -1869,11 +1931,13 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     Value<String?> lockedByName = const Value.absent(),
     Value<DateTime?> lockedAt = const Value.absent(),
     Value<DateTime?> lockExpiresAt = const Value.absent(),
+    Value<DateTime?> openedAt = const Value.absent(),
   }) => VenueTable(
     id: id ?? this.id,
     zoneId: zoneId ?? this.zoneId,
     label: label.present ? label.value : this.label,
     pax: pax ?? this.pax,
+    capacity: capacity ?? this.capacity,
     active: active ?? this.active,
     status: status ?? this.status,
     openAmount: openAmount ?? this.openAmount,
@@ -1885,6 +1949,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     lockExpiresAt: lockExpiresAt.present
         ? lockExpiresAt.value
         : this.lockExpiresAt,
+    openedAt: openedAt.present ? openedAt.value : this.openedAt,
   );
   VenueTable copyWithCompanion(VenueTablesCompanion data) {
     return VenueTable(
@@ -1892,6 +1957,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       zoneId: data.zoneId.present ? data.zoneId.value : this.zoneId,
       label: data.label.present ? data.label.value : this.label,
       pax: data.pax.present ? data.pax.value : this.pax,
+      capacity: data.capacity.present ? data.capacity.value : this.capacity,
       active: data.active.present ? data.active.value : this.active,
       status: data.status.present ? data.status.value : this.status,
       openAmount: data.openAmount.present
@@ -1911,6 +1977,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       lockExpiresAt: data.lockExpiresAt.present
           ? data.lockExpiresAt.value
           : this.lockExpiresAt,
+      openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
     );
   }
 
@@ -1921,6 +1988,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ..write('zoneId: $zoneId, ')
           ..write('label: $label, ')
           ..write('pax: $pax, ')
+          ..write('capacity: $capacity, ')
           ..write('active: $active, ')
           ..write('status: $status, ')
           ..write('openAmount: $openAmount, ')
@@ -1929,7 +1997,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ..write('lockedBy: $lockedBy, ')
           ..write('lockedByName: $lockedByName, ')
           ..write('lockedAt: $lockedAt, ')
-          ..write('lockExpiresAt: $lockExpiresAt')
+          ..write('lockExpiresAt: $lockExpiresAt, ')
+          ..write('openedAt: $openedAt')
           ..write(')'))
         .toString();
   }
@@ -1940,6 +2009,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     zoneId,
     label,
     pax,
+    capacity,
     active,
     status,
     openAmount,
@@ -1949,6 +2019,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     lockedByName,
     lockedAt,
     lockExpiresAt,
+    openedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1958,6 +2029,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           other.zoneId == this.zoneId &&
           other.label == this.label &&
           other.pax == this.pax &&
+          other.capacity == this.capacity &&
           other.active == this.active &&
           other.status == this.status &&
           other.openAmount == this.openAmount &&
@@ -1966,7 +2038,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           other.lockedBy == this.lockedBy &&
           other.lockedByName == this.lockedByName &&
           other.lockedAt == this.lockedAt &&
-          other.lockExpiresAt == this.lockExpiresAt);
+          other.lockExpiresAt == this.lockExpiresAt &&
+          other.openedAt == this.openedAt);
 }
 
 class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
@@ -1974,6 +2047,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
   final Value<String> zoneId;
   final Value<String?> label;
   final Value<int> pax;
+  final Value<int> capacity;
   final Value<bool> active;
   final Value<String> status;
   final Value<int> openAmount;
@@ -1983,12 +2057,14 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
   final Value<String?> lockedByName;
   final Value<DateTime?> lockedAt;
   final Value<DateTime?> lockExpiresAt;
+  final Value<DateTime?> openedAt;
   final Value<int> rowid;
   const VenueTablesCompanion({
     this.id = const Value.absent(),
     this.zoneId = const Value.absent(),
     this.label = const Value.absent(),
     this.pax = const Value.absent(),
+    this.capacity = const Value.absent(),
     this.active = const Value.absent(),
     this.status = const Value.absent(),
     this.openAmount = const Value.absent(),
@@ -1998,6 +2074,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.lockedByName = const Value.absent(),
     this.lockedAt = const Value.absent(),
     this.lockExpiresAt = const Value.absent(),
+    this.openedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueTablesCompanion.insert({
@@ -2005,6 +2082,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     required String zoneId,
     this.label = const Value.absent(),
     this.pax = const Value.absent(),
+    this.capacity = const Value.absent(),
     this.active = const Value.absent(),
     this.status = const Value.absent(),
     this.openAmount = const Value.absent(),
@@ -2014,6 +2092,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.lockedByName = const Value.absent(),
     this.lockedAt = const Value.absent(),
     this.lockExpiresAt = const Value.absent(),
+    this.openedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        zoneId = Value(zoneId);
@@ -2022,6 +2101,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Expression<String>? zoneId,
     Expression<String>? label,
     Expression<int>? pax,
+    Expression<int>? capacity,
     Expression<bool>? active,
     Expression<String>? status,
     Expression<int>? openAmount,
@@ -2031,6 +2111,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Expression<String>? lockedByName,
     Expression<DateTime>? lockedAt,
     Expression<DateTime>? lockExpiresAt,
+    Expression<DateTime>? openedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2038,6 +2119,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       if (zoneId != null) 'zone_id': zoneId,
       if (label != null) 'label': label,
       if (pax != null) 'pax': pax,
+      if (capacity != null) 'capacity': capacity,
       if (active != null) 'active': active,
       if (status != null) 'status': status,
       if (openAmount != null) 'open_amount': openAmount,
@@ -2047,6 +2129,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       if (lockedByName != null) 'locked_by_name': lockedByName,
       if (lockedAt != null) 'locked_at': lockedAt,
       if (lockExpiresAt != null) 'lock_expires_at': lockExpiresAt,
+      if (openedAt != null) 'opened_at': openedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2056,6 +2139,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Value<String>? zoneId,
     Value<String?>? label,
     Value<int>? pax,
+    Value<int>? capacity,
     Value<bool>? active,
     Value<String>? status,
     Value<int>? openAmount,
@@ -2065,6 +2149,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Value<String?>? lockedByName,
     Value<DateTime?>? lockedAt,
     Value<DateTime?>? lockExpiresAt,
+    Value<DateTime?>? openedAt,
     Value<int>? rowid,
   }) {
     return VenueTablesCompanion(
@@ -2072,6 +2157,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       zoneId: zoneId ?? this.zoneId,
       label: label ?? this.label,
       pax: pax ?? this.pax,
+      capacity: capacity ?? this.capacity,
       active: active ?? this.active,
       status: status ?? this.status,
       openAmount: openAmount ?? this.openAmount,
@@ -2081,6 +2167,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       lockedByName: lockedByName ?? this.lockedByName,
       lockedAt: lockedAt ?? this.lockedAt,
       lockExpiresAt: lockExpiresAt ?? this.lockExpiresAt,
+      openedAt: openedAt ?? this.openedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2099,6 +2186,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     }
     if (pax.present) {
       map['pax'] = Variable<int>(pax.value);
+    }
+    if (capacity.present) {
+      map['capacity'] = Variable<int>(capacity.value);
     }
     if (active.present) {
       map['active'] = Variable<bool>(active.value);
@@ -2127,6 +2217,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     if (lockExpiresAt.present) {
       map['lock_expires_at'] = Variable<DateTime>(lockExpiresAt.value);
     }
+    if (openedAt.present) {
+      map['opened_at'] = Variable<DateTime>(openedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2140,6 +2233,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
           ..write('zoneId: $zoneId, ')
           ..write('label: $label, ')
           ..write('pax: $pax, ')
+          ..write('capacity: $capacity, ')
           ..write('active: $active, ')
           ..write('status: $status, ')
           ..write('openAmount: $openAmount, ')
@@ -2149,6 +2243,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
           ..write('lockedByName: $lockedByName, ')
           ..write('lockedAt: $lockedAt, ')
           ..write('lockExpiresAt: $lockExpiresAt, ')
+          ..write('openedAt: $openedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6416,6 +6511,780 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
   }
 }
 
+class $VenueSettingsTable extends VenueSettings
+    with TableInfo<$VenueSettingsTable, VenueSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VenueSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Warung Sebelah'),
+  );
+  static const VerificationMeta _legalNameMeta = const VerificationMeta(
+    'legalName',
+  );
+  @override
+  late final GeneratedColumn<String> legalName = GeneratedColumn<String>(
+    'legal_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _addressMeta = const VerificationMeta(
+    'address',
+  );
+  @override
+  late final GeneratedColumn<String> address = GeneratedColumn<String>(
+    'address',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _receiptHeaderMeta = const VerificationMeta(
+    'receiptHeader',
+  );
+  @override
+  late final GeneratedColumn<String> receiptHeader = GeneratedColumn<String>(
+    'receipt_header',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _receiptFooterMeta = const VerificationMeta(
+    'receiptFooter',
+  );
+  @override
+  late final GeneratedColumn<String> receiptFooter = GeneratedColumn<String>(
+    'receipt_footer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _taxEnabledMeta = const VerificationMeta(
+    'taxEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> taxEnabled = GeneratedColumn<bool>(
+    'tax_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("tax_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _taxRateBpsMeta = const VerificationMeta(
+    'taxRateBps',
+  );
+  @override
+  late final GeneratedColumn<int> taxRateBps = GeneratedColumn<int>(
+    'tax_rate_bps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1100),
+  );
+  static const VerificationMeta _serviceEnabledMeta = const VerificationMeta(
+    'serviceEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> serviceEnabled = GeneratedColumn<bool>(
+    'service_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("service_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _serviceModeMeta = const VerificationMeta(
+    'serviceMode',
+  );
+  @override
+  late final GeneratedColumn<String> serviceMode = GeneratedColumn<String>(
+    'service_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('percent'),
+  );
+  static const VerificationMeta _serviceRateBpsMeta = const VerificationMeta(
+    'serviceRateBps',
+  );
+  @override
+  late final GeneratedColumn<int> serviceRateBps = GeneratedColumn<int>(
+    'service_rate_bps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(500),
+  );
+  static const VerificationMeta _serviceFixedAmountMeta =
+      const VerificationMeta('serviceFixedAmount');
+  @override
+  late final GeneratedColumn<int> serviceFixedAmount = GeneratedColumn<int>(
+    'service_fixed_amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    displayName,
+    legalName,
+    address,
+    phone,
+    receiptHeader,
+    receiptFooter,
+    taxEnabled,
+    taxRateBps,
+    serviceEnabled,
+    serviceMode,
+    serviceRateBps,
+    serviceFixedAmount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'venue_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VenueSetting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('legal_name')) {
+      context.handle(
+        _legalNameMeta,
+        legalName.isAcceptableOrUnknown(data['legal_name']!, _legalNameMeta),
+      );
+    }
+    if (data.containsKey('address')) {
+      context.handle(
+        _addressMeta,
+        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
+      );
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('receipt_header')) {
+      context.handle(
+        _receiptHeaderMeta,
+        receiptHeader.isAcceptableOrUnknown(
+          data['receipt_header']!,
+          _receiptHeaderMeta,
+        ),
+      );
+    }
+    if (data.containsKey('receipt_footer')) {
+      context.handle(
+        _receiptFooterMeta,
+        receiptFooter.isAcceptableOrUnknown(
+          data['receipt_footer']!,
+          _receiptFooterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tax_enabled')) {
+      context.handle(
+        _taxEnabledMeta,
+        taxEnabled.isAcceptableOrUnknown(data['tax_enabled']!, _taxEnabledMeta),
+      );
+    }
+    if (data.containsKey('tax_rate_bps')) {
+      context.handle(
+        _taxRateBpsMeta,
+        taxRateBps.isAcceptableOrUnknown(
+          data['tax_rate_bps']!,
+          _taxRateBpsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('service_enabled')) {
+      context.handle(
+        _serviceEnabledMeta,
+        serviceEnabled.isAcceptableOrUnknown(
+          data['service_enabled']!,
+          _serviceEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('service_mode')) {
+      context.handle(
+        _serviceModeMeta,
+        serviceMode.isAcceptableOrUnknown(
+          data['service_mode']!,
+          _serviceModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('service_rate_bps')) {
+      context.handle(
+        _serviceRateBpsMeta,
+        serviceRateBps.isAcceptableOrUnknown(
+          data['service_rate_bps']!,
+          _serviceRateBpsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('service_fixed_amount')) {
+      context.handle(
+        _serviceFixedAmountMeta,
+        serviceFixedAmount.isAcceptableOrUnknown(
+          data['service_fixed_amount']!,
+          _serviceFixedAmountMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VenueSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VenueSetting(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      legalName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}legal_name'],
+      )!,
+      address: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address'],
+      )!,
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      )!,
+      receiptHeader: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_header'],
+      )!,
+      receiptFooter: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_footer'],
+      )!,
+      taxEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}tax_enabled'],
+      )!,
+      taxRateBps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tax_rate_bps'],
+      )!,
+      serviceEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}service_enabled'],
+      )!,
+      serviceMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}service_mode'],
+      )!,
+      serviceRateBps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}service_rate_bps'],
+      )!,
+      serviceFixedAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}service_fixed_amount'],
+      )!,
+    );
+  }
+
+  @override
+  $VenueSettingsTable createAlias(String alias) {
+    return $VenueSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class VenueSetting extends DataClass implements Insertable<VenueSetting> {
+  final String id;
+  final String displayName;
+  final String legalName;
+  final String address;
+  final String phone;
+  final String receiptHeader;
+  final String receiptFooter;
+  final bool taxEnabled;
+  final int taxRateBps;
+  final bool serviceEnabled;
+  final String serviceMode;
+  final int serviceRateBps;
+  final int serviceFixedAmount;
+  const VenueSetting({
+    required this.id,
+    required this.displayName,
+    required this.legalName,
+    required this.address,
+    required this.phone,
+    required this.receiptHeader,
+    required this.receiptFooter,
+    required this.taxEnabled,
+    required this.taxRateBps,
+    required this.serviceEnabled,
+    required this.serviceMode,
+    required this.serviceRateBps,
+    required this.serviceFixedAmount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['display_name'] = Variable<String>(displayName);
+    map['legal_name'] = Variable<String>(legalName);
+    map['address'] = Variable<String>(address);
+    map['phone'] = Variable<String>(phone);
+    map['receipt_header'] = Variable<String>(receiptHeader);
+    map['receipt_footer'] = Variable<String>(receiptFooter);
+    map['tax_enabled'] = Variable<bool>(taxEnabled);
+    map['tax_rate_bps'] = Variable<int>(taxRateBps);
+    map['service_enabled'] = Variable<bool>(serviceEnabled);
+    map['service_mode'] = Variable<String>(serviceMode);
+    map['service_rate_bps'] = Variable<int>(serviceRateBps);
+    map['service_fixed_amount'] = Variable<int>(serviceFixedAmount);
+    return map;
+  }
+
+  VenueSettingsCompanion toCompanion(bool nullToAbsent) {
+    return VenueSettingsCompanion(
+      id: Value(id),
+      displayName: Value(displayName),
+      legalName: Value(legalName),
+      address: Value(address),
+      phone: Value(phone),
+      receiptHeader: Value(receiptHeader),
+      receiptFooter: Value(receiptFooter),
+      taxEnabled: Value(taxEnabled),
+      taxRateBps: Value(taxRateBps),
+      serviceEnabled: Value(serviceEnabled),
+      serviceMode: Value(serviceMode),
+      serviceRateBps: Value(serviceRateBps),
+      serviceFixedAmount: Value(serviceFixedAmount),
+    );
+  }
+
+  factory VenueSetting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VenueSetting(
+      id: serializer.fromJson<String>(json['id']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      legalName: serializer.fromJson<String>(json['legalName']),
+      address: serializer.fromJson<String>(json['address']),
+      phone: serializer.fromJson<String>(json['phone']),
+      receiptHeader: serializer.fromJson<String>(json['receiptHeader']),
+      receiptFooter: serializer.fromJson<String>(json['receiptFooter']),
+      taxEnabled: serializer.fromJson<bool>(json['taxEnabled']),
+      taxRateBps: serializer.fromJson<int>(json['taxRateBps']),
+      serviceEnabled: serializer.fromJson<bool>(json['serviceEnabled']),
+      serviceMode: serializer.fromJson<String>(json['serviceMode']),
+      serviceRateBps: serializer.fromJson<int>(json['serviceRateBps']),
+      serviceFixedAmount: serializer.fromJson<int>(json['serviceFixedAmount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'displayName': serializer.toJson<String>(displayName),
+      'legalName': serializer.toJson<String>(legalName),
+      'address': serializer.toJson<String>(address),
+      'phone': serializer.toJson<String>(phone),
+      'receiptHeader': serializer.toJson<String>(receiptHeader),
+      'receiptFooter': serializer.toJson<String>(receiptFooter),
+      'taxEnabled': serializer.toJson<bool>(taxEnabled),
+      'taxRateBps': serializer.toJson<int>(taxRateBps),
+      'serviceEnabled': serializer.toJson<bool>(serviceEnabled),
+      'serviceMode': serializer.toJson<String>(serviceMode),
+      'serviceRateBps': serializer.toJson<int>(serviceRateBps),
+      'serviceFixedAmount': serializer.toJson<int>(serviceFixedAmount),
+    };
+  }
+
+  VenueSetting copyWith({
+    String? id,
+    String? displayName,
+    String? legalName,
+    String? address,
+    String? phone,
+    String? receiptHeader,
+    String? receiptFooter,
+    bool? taxEnabled,
+    int? taxRateBps,
+    bool? serviceEnabled,
+    String? serviceMode,
+    int? serviceRateBps,
+    int? serviceFixedAmount,
+  }) => VenueSetting(
+    id: id ?? this.id,
+    displayName: displayName ?? this.displayName,
+    legalName: legalName ?? this.legalName,
+    address: address ?? this.address,
+    phone: phone ?? this.phone,
+    receiptHeader: receiptHeader ?? this.receiptHeader,
+    receiptFooter: receiptFooter ?? this.receiptFooter,
+    taxEnabled: taxEnabled ?? this.taxEnabled,
+    taxRateBps: taxRateBps ?? this.taxRateBps,
+    serviceEnabled: serviceEnabled ?? this.serviceEnabled,
+    serviceMode: serviceMode ?? this.serviceMode,
+    serviceRateBps: serviceRateBps ?? this.serviceRateBps,
+    serviceFixedAmount: serviceFixedAmount ?? this.serviceFixedAmount,
+  );
+  VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
+    return VenueSetting(
+      id: data.id.present ? data.id.value : this.id,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      legalName: data.legalName.present ? data.legalName.value : this.legalName,
+      address: data.address.present ? data.address.value : this.address,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      receiptHeader: data.receiptHeader.present
+          ? data.receiptHeader.value
+          : this.receiptHeader,
+      receiptFooter: data.receiptFooter.present
+          ? data.receiptFooter.value
+          : this.receiptFooter,
+      taxEnabled: data.taxEnabled.present
+          ? data.taxEnabled.value
+          : this.taxEnabled,
+      taxRateBps: data.taxRateBps.present
+          ? data.taxRateBps.value
+          : this.taxRateBps,
+      serviceEnabled: data.serviceEnabled.present
+          ? data.serviceEnabled.value
+          : this.serviceEnabled,
+      serviceMode: data.serviceMode.present
+          ? data.serviceMode.value
+          : this.serviceMode,
+      serviceRateBps: data.serviceRateBps.present
+          ? data.serviceRateBps.value
+          : this.serviceRateBps,
+      serviceFixedAmount: data.serviceFixedAmount.present
+          ? data.serviceFixedAmount.value
+          : this.serviceFixedAmount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VenueSetting(')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('legalName: $legalName, ')
+          ..write('address: $address, ')
+          ..write('phone: $phone, ')
+          ..write('receiptHeader: $receiptHeader, ')
+          ..write('receiptFooter: $receiptFooter, ')
+          ..write('taxEnabled: $taxEnabled, ')
+          ..write('taxRateBps: $taxRateBps, ')
+          ..write('serviceEnabled: $serviceEnabled, ')
+          ..write('serviceMode: $serviceMode, ')
+          ..write('serviceRateBps: $serviceRateBps, ')
+          ..write('serviceFixedAmount: $serviceFixedAmount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    displayName,
+    legalName,
+    address,
+    phone,
+    receiptHeader,
+    receiptFooter,
+    taxEnabled,
+    taxRateBps,
+    serviceEnabled,
+    serviceMode,
+    serviceRateBps,
+    serviceFixedAmount,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VenueSetting &&
+          other.id == this.id &&
+          other.displayName == this.displayName &&
+          other.legalName == this.legalName &&
+          other.address == this.address &&
+          other.phone == this.phone &&
+          other.receiptHeader == this.receiptHeader &&
+          other.receiptFooter == this.receiptFooter &&
+          other.taxEnabled == this.taxEnabled &&
+          other.taxRateBps == this.taxRateBps &&
+          other.serviceEnabled == this.serviceEnabled &&
+          other.serviceMode == this.serviceMode &&
+          other.serviceRateBps == this.serviceRateBps &&
+          other.serviceFixedAmount == this.serviceFixedAmount);
+}
+
+class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
+  final Value<String> id;
+  final Value<String> displayName;
+  final Value<String> legalName;
+  final Value<String> address;
+  final Value<String> phone;
+  final Value<String> receiptHeader;
+  final Value<String> receiptFooter;
+  final Value<bool> taxEnabled;
+  final Value<int> taxRateBps;
+  final Value<bool> serviceEnabled;
+  final Value<String> serviceMode;
+  final Value<int> serviceRateBps;
+  final Value<int> serviceFixedAmount;
+  final Value<int> rowid;
+  const VenueSettingsCompanion({
+    this.id = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.legalName = const Value.absent(),
+    this.address = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.receiptHeader = const Value.absent(),
+    this.receiptFooter = const Value.absent(),
+    this.taxEnabled = const Value.absent(),
+    this.taxRateBps = const Value.absent(),
+    this.serviceEnabled = const Value.absent(),
+    this.serviceMode = const Value.absent(),
+    this.serviceRateBps = const Value.absent(),
+    this.serviceFixedAmount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VenueSettingsCompanion.insert({
+    required String id,
+    this.displayName = const Value.absent(),
+    this.legalName = const Value.absent(),
+    this.address = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.receiptHeader = const Value.absent(),
+    this.receiptFooter = const Value.absent(),
+    this.taxEnabled = const Value.absent(),
+    this.taxRateBps = const Value.absent(),
+    this.serviceEnabled = const Value.absent(),
+    this.serviceMode = const Value.absent(),
+    this.serviceRateBps = const Value.absent(),
+    this.serviceFixedAmount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<VenueSetting> custom({
+    Expression<String>? id,
+    Expression<String>? displayName,
+    Expression<String>? legalName,
+    Expression<String>? address,
+    Expression<String>? phone,
+    Expression<String>? receiptHeader,
+    Expression<String>? receiptFooter,
+    Expression<bool>? taxEnabled,
+    Expression<int>? taxRateBps,
+    Expression<bool>? serviceEnabled,
+    Expression<String>? serviceMode,
+    Expression<int>? serviceRateBps,
+    Expression<int>? serviceFixedAmount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (displayName != null) 'display_name': displayName,
+      if (legalName != null) 'legal_name': legalName,
+      if (address != null) 'address': address,
+      if (phone != null) 'phone': phone,
+      if (receiptHeader != null) 'receipt_header': receiptHeader,
+      if (receiptFooter != null) 'receipt_footer': receiptFooter,
+      if (taxEnabled != null) 'tax_enabled': taxEnabled,
+      if (taxRateBps != null) 'tax_rate_bps': taxRateBps,
+      if (serviceEnabled != null) 'service_enabled': serviceEnabled,
+      if (serviceMode != null) 'service_mode': serviceMode,
+      if (serviceRateBps != null) 'service_rate_bps': serviceRateBps,
+      if (serviceFixedAmount != null)
+        'service_fixed_amount': serviceFixedAmount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VenueSettingsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? displayName,
+    Value<String>? legalName,
+    Value<String>? address,
+    Value<String>? phone,
+    Value<String>? receiptHeader,
+    Value<String>? receiptFooter,
+    Value<bool>? taxEnabled,
+    Value<int>? taxRateBps,
+    Value<bool>? serviceEnabled,
+    Value<String>? serviceMode,
+    Value<int>? serviceRateBps,
+    Value<int>? serviceFixedAmount,
+    Value<int>? rowid,
+  }) {
+    return VenueSettingsCompanion(
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      legalName: legalName ?? this.legalName,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+      receiptHeader: receiptHeader ?? this.receiptHeader,
+      receiptFooter: receiptFooter ?? this.receiptFooter,
+      taxEnabled: taxEnabled ?? this.taxEnabled,
+      taxRateBps: taxRateBps ?? this.taxRateBps,
+      serviceEnabled: serviceEnabled ?? this.serviceEnabled,
+      serviceMode: serviceMode ?? this.serviceMode,
+      serviceRateBps: serviceRateBps ?? this.serviceRateBps,
+      serviceFixedAmount: serviceFixedAmount ?? this.serviceFixedAmount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (legalName.present) {
+      map['legal_name'] = Variable<String>(legalName.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (receiptHeader.present) {
+      map['receipt_header'] = Variable<String>(receiptHeader.value);
+    }
+    if (receiptFooter.present) {
+      map['receipt_footer'] = Variable<String>(receiptFooter.value);
+    }
+    if (taxEnabled.present) {
+      map['tax_enabled'] = Variable<bool>(taxEnabled.value);
+    }
+    if (taxRateBps.present) {
+      map['tax_rate_bps'] = Variable<int>(taxRateBps.value);
+    }
+    if (serviceEnabled.present) {
+      map['service_enabled'] = Variable<bool>(serviceEnabled.value);
+    }
+    if (serviceMode.present) {
+      map['service_mode'] = Variable<String>(serviceMode.value);
+    }
+    if (serviceRateBps.present) {
+      map['service_rate_bps'] = Variable<int>(serviceRateBps.value);
+    }
+    if (serviceFixedAmount.present) {
+      map['service_fixed_amount'] = Variable<int>(serviceFixedAmount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VenueSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('legalName: $legalName, ')
+          ..write('address: $address, ')
+          ..write('phone: $phone, ')
+          ..write('receiptHeader: $receiptHeader, ')
+          ..write('receiptFooter: $receiptFooter, ')
+          ..write('taxEnabled: $taxEnabled, ')
+          ..write('taxRateBps: $taxRateBps, ')
+          ..write('serviceEnabled: $serviceEnabled, ')
+          ..write('serviceMode: $serviceMode, ')
+          ..write('serviceRateBps: $serviceRateBps, ')
+          ..write('serviceFixedAmount: $serviceFixedAmount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6432,6 +7301,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PairTokensTable pairTokens = $PairTokensTable(this);
   late final $IdempotencyTable idempotency = $IdempotencyTable(this);
   late final $AuditEntriesTable auditEntries = $AuditEntriesTable(this);
+  late final $VenueSettingsTable venueSettings = $VenueSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6450,6 +7320,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pairTokens,
     idempotency,
     auditEntries,
+    venueSettings,
   ];
 }
 
@@ -7162,6 +8033,7 @@ typedef $$VenueTablesTableCreateCompanionBuilder =
       required String zoneId,
       Value<String?> label,
       Value<int> pax,
+      Value<int> capacity,
       Value<bool> active,
       Value<String> status,
       Value<int> openAmount,
@@ -7171,6 +8043,7 @@ typedef $$VenueTablesTableCreateCompanionBuilder =
       Value<String?> lockedByName,
       Value<DateTime?> lockedAt,
       Value<DateTime?> lockExpiresAt,
+      Value<DateTime?> openedAt,
       Value<int> rowid,
     });
 typedef $$VenueTablesTableUpdateCompanionBuilder =
@@ -7179,6 +8052,7 @@ typedef $$VenueTablesTableUpdateCompanionBuilder =
       Value<String> zoneId,
       Value<String?> label,
       Value<int> pax,
+      Value<int> capacity,
       Value<bool> active,
       Value<String> status,
       Value<int> openAmount,
@@ -7188,6 +8062,7 @@ typedef $$VenueTablesTableUpdateCompanionBuilder =
       Value<String?> lockedByName,
       Value<DateTime?> lockedAt,
       Value<DateTime?> lockExpiresAt,
+      Value<DateTime?> openedAt,
       Value<int> rowid,
     });
 
@@ -7217,6 +8092,11 @@ class $$VenueTablesTableFilterComposer
 
   ColumnFilters<int> get pax => $composableBuilder(
     column: $table.pax,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get capacity => $composableBuilder(
+    column: $table.capacity,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7264,6 +8144,11 @@ class $$VenueTablesTableFilterComposer
     column: $table.lockExpiresAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<DateTime> get openedAt => $composableBuilder(
+    column: $table.openedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$VenueTablesTableOrderingComposer
@@ -7292,6 +8177,11 @@ class $$VenueTablesTableOrderingComposer
 
   ColumnOrderings<int> get pax => $composableBuilder(
     column: $table.pax,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get capacity => $composableBuilder(
+    column: $table.capacity,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7339,6 +8229,11 @@ class $$VenueTablesTableOrderingComposer
     column: $table.lockExpiresAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get openedAt => $composableBuilder(
+    column: $table.openedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueTablesTableAnnotationComposer
@@ -7361,6 +8256,9 @@ class $$VenueTablesTableAnnotationComposer
 
   GeneratedColumn<int> get pax =>
       $composableBuilder(column: $table.pax, builder: (column) => column);
+
+  GeneratedColumn<int> get capacity =>
+      $composableBuilder(column: $table.capacity, builder: (column) => column);
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
@@ -7398,6 +8296,9 @@ class $$VenueTablesTableAnnotationComposer
     column: $table.lockExpiresAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get openedAt =>
+      $composableBuilder(column: $table.openedAt, builder: (column) => column);
 }
 
 class $$VenueTablesTableTableManager
@@ -7435,6 +8336,7 @@ class $$VenueTablesTableTableManager
                 Value<String> zoneId = const Value.absent(),
                 Value<String?> label = const Value.absent(),
                 Value<int> pax = const Value.absent(),
+                Value<int> capacity = const Value.absent(),
                 Value<bool> active = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> openAmount = const Value.absent(),
@@ -7444,12 +8346,14 @@ class $$VenueTablesTableTableManager
                 Value<String?> lockedByName = const Value.absent(),
                 Value<DateTime?> lockedAt = const Value.absent(),
                 Value<DateTime?> lockExpiresAt = const Value.absent(),
+                Value<DateTime?> openedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion(
                 id: id,
                 zoneId: zoneId,
                 label: label,
                 pax: pax,
+                capacity: capacity,
                 active: active,
                 status: status,
                 openAmount: openAmount,
@@ -7459,6 +8363,7 @@ class $$VenueTablesTableTableManager
                 lockedByName: lockedByName,
                 lockedAt: lockedAt,
                 lockExpiresAt: lockExpiresAt,
+                openedAt: openedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7467,6 +8372,7 @@ class $$VenueTablesTableTableManager
                 required String zoneId,
                 Value<String?> label = const Value.absent(),
                 Value<int> pax = const Value.absent(),
+                Value<int> capacity = const Value.absent(),
                 Value<bool> active = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> openAmount = const Value.absent(),
@@ -7476,12 +8382,14 @@ class $$VenueTablesTableTableManager
                 Value<String?> lockedByName = const Value.absent(),
                 Value<DateTime?> lockedAt = const Value.absent(),
                 Value<DateTime?> lockExpiresAt = const Value.absent(),
+                Value<DateTime?> openedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion.insert(
                 id: id,
                 zoneId: zoneId,
                 label: label,
                 pax: pax,
+                capacity: capacity,
                 active: active,
                 status: status,
                 openAmount: openAmount,
@@ -7491,6 +8399,7 @@ class $$VenueTablesTableTableManager
                 lockedByName: lockedByName,
                 lockedAt: lockedAt,
                 lockExpiresAt: lockExpiresAt,
+                openedAt: openedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9698,6 +10607,376 @@ typedef $$AuditEntriesTableProcessedTableManager =
       AuditEntry,
       PrefetchHooks Function()
     >;
+typedef $$VenueSettingsTableCreateCompanionBuilder =
+    VenueSettingsCompanion Function({
+      required String id,
+      Value<String> displayName,
+      Value<String> legalName,
+      Value<String> address,
+      Value<String> phone,
+      Value<String> receiptHeader,
+      Value<String> receiptFooter,
+      Value<bool> taxEnabled,
+      Value<int> taxRateBps,
+      Value<bool> serviceEnabled,
+      Value<String> serviceMode,
+      Value<int> serviceRateBps,
+      Value<int> serviceFixedAmount,
+      Value<int> rowid,
+    });
+typedef $$VenueSettingsTableUpdateCompanionBuilder =
+    VenueSettingsCompanion Function({
+      Value<String> id,
+      Value<String> displayName,
+      Value<String> legalName,
+      Value<String> address,
+      Value<String> phone,
+      Value<String> receiptHeader,
+      Value<String> receiptFooter,
+      Value<bool> taxEnabled,
+      Value<int> taxRateBps,
+      Value<bool> serviceEnabled,
+      Value<String> serviceMode,
+      Value<int> serviceRateBps,
+      Value<int> serviceFixedAmount,
+      Value<int> rowid,
+    });
+
+class $$VenueSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $VenueSettingsTable> {
+  $$VenueSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get legalName => $composableBuilder(
+    column: $table.legalName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get address => $composableBuilder(
+    column: $table.address,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptHeader => $composableBuilder(
+    column: $table.receiptHeader,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptFooter => $composableBuilder(
+    column: $table.receiptFooter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get taxEnabled => $composableBuilder(
+    column: $table.taxEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get taxRateBps => $composableBuilder(
+    column: $table.taxRateBps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get serviceEnabled => $composableBuilder(
+    column: $table.serviceEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serviceMode => $composableBuilder(
+    column: $table.serviceMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serviceRateBps => $composableBuilder(
+    column: $table.serviceRateBps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serviceFixedAmount => $composableBuilder(
+    column: $table.serviceFixedAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VenueSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $VenueSettingsTable> {
+  $$VenueSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get legalName => $composableBuilder(
+    column: $table.legalName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get address => $composableBuilder(
+    column: $table.address,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptHeader => $composableBuilder(
+    column: $table.receiptHeader,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptFooter => $composableBuilder(
+    column: $table.receiptFooter,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get taxEnabled => $composableBuilder(
+    column: $table.taxEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get taxRateBps => $composableBuilder(
+    column: $table.taxRateBps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get serviceEnabled => $composableBuilder(
+    column: $table.serviceEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serviceMode => $composableBuilder(
+    column: $table.serviceMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serviceRateBps => $composableBuilder(
+    column: $table.serviceRateBps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serviceFixedAmount => $composableBuilder(
+    column: $table.serviceFixedAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VenueSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VenueSettingsTable> {
+  $$VenueSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get legalName =>
+      $composableBuilder(column: $table.legalName, builder: (column) => column);
+
+  GeneratedColumn<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get receiptHeader => $composableBuilder(
+    column: $table.receiptHeader,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get receiptFooter => $composableBuilder(
+    column: $table.receiptFooter,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get taxEnabled => $composableBuilder(
+    column: $table.taxEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get taxRateBps => $composableBuilder(
+    column: $table.taxRateBps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get serviceEnabled => $composableBuilder(
+    column: $table.serviceEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serviceMode => $composableBuilder(
+    column: $table.serviceMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serviceRateBps => $composableBuilder(
+    column: $table.serviceRateBps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serviceFixedAmount => $composableBuilder(
+    column: $table.serviceFixedAmount,
+    builder: (column) => column,
+  );
+}
+
+class $$VenueSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VenueSettingsTable,
+          VenueSetting,
+          $$VenueSettingsTableFilterComposer,
+          $$VenueSettingsTableOrderingComposer,
+          $$VenueSettingsTableAnnotationComposer,
+          $$VenueSettingsTableCreateCompanionBuilder,
+          $$VenueSettingsTableUpdateCompanionBuilder,
+          (
+            VenueSetting,
+            BaseReferences<_$AppDatabase, $VenueSettingsTable, VenueSetting>,
+          ),
+          VenueSetting,
+          PrefetchHooks Function()
+        > {
+  $$VenueSettingsTableTableManager(_$AppDatabase db, $VenueSettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VenueSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VenueSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VenueSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<String> legalName = const Value.absent(),
+                Value<String> address = const Value.absent(),
+                Value<String> phone = const Value.absent(),
+                Value<String> receiptHeader = const Value.absent(),
+                Value<String> receiptFooter = const Value.absent(),
+                Value<bool> taxEnabled = const Value.absent(),
+                Value<int> taxRateBps = const Value.absent(),
+                Value<bool> serviceEnabled = const Value.absent(),
+                Value<String> serviceMode = const Value.absent(),
+                Value<int> serviceRateBps = const Value.absent(),
+                Value<int> serviceFixedAmount = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VenueSettingsCompanion(
+                id: id,
+                displayName: displayName,
+                legalName: legalName,
+                address: address,
+                phone: phone,
+                receiptHeader: receiptHeader,
+                receiptFooter: receiptFooter,
+                taxEnabled: taxEnabled,
+                taxRateBps: taxRateBps,
+                serviceEnabled: serviceEnabled,
+                serviceMode: serviceMode,
+                serviceRateBps: serviceRateBps,
+                serviceFixedAmount: serviceFixedAmount,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> displayName = const Value.absent(),
+                Value<String> legalName = const Value.absent(),
+                Value<String> address = const Value.absent(),
+                Value<String> phone = const Value.absent(),
+                Value<String> receiptHeader = const Value.absent(),
+                Value<String> receiptFooter = const Value.absent(),
+                Value<bool> taxEnabled = const Value.absent(),
+                Value<int> taxRateBps = const Value.absent(),
+                Value<bool> serviceEnabled = const Value.absent(),
+                Value<String> serviceMode = const Value.absent(),
+                Value<int> serviceRateBps = const Value.absent(),
+                Value<int> serviceFixedAmount = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VenueSettingsCompanion.insert(
+                id: id,
+                displayName: displayName,
+                legalName: legalName,
+                address: address,
+                phone: phone,
+                receiptHeader: receiptHeader,
+                receiptFooter: receiptFooter,
+                taxEnabled: taxEnabled,
+                taxRateBps: taxRateBps,
+                serviceEnabled: serviceEnabled,
+                serviceMode: serviceMode,
+                serviceRateBps: serviceRateBps,
+                serviceFixedAmount: serviceFixedAmount,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VenueSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VenueSettingsTable,
+      VenueSetting,
+      $$VenueSettingsTableFilterComposer,
+      $$VenueSettingsTableOrderingComposer,
+      $$VenueSettingsTableAnnotationComposer,
+      $$VenueSettingsTableCreateCompanionBuilder,
+      $$VenueSettingsTableUpdateCompanionBuilder,
+      (
+        VenueSetting,
+        BaseReferences<_$AppDatabase, $VenueSettingsTable, VenueSetting>,
+      ),
+      VenueSetting,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9728,4 +11007,6 @@ class $AppDatabaseManager {
       $$IdempotencyTableTableManager(_db, _db.idempotency);
   $$AuditEntriesTableTableManager get auditEntries =>
       $$AuditEntriesTableTableManager(_db, _db.auditEntries);
+  $$VenueSettingsTableTableManager get venueSettings =>
+      $$VenueSettingsTableTableManager(_db, _db.venueSettings);
 }

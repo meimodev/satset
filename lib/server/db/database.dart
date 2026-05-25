@@ -25,12 +25,13 @@ part 'database.g.dart';
   PairTokens,
   Idempotency,
   AuditEntries,
+  VenueSettings,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -62,12 +63,65 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn(
                 'venue_tables', 'lock_expires_at', type: 'INTEGER');
           }
+          if (from < 6) {
+            await _safeAddColumnOn(
+                'venue_tables', 'opened_at', type: 'INTEGER');
+          }
+          if (from < 7) {
+            // Wipe stale demo table + ticket seed; the app now requires
+            // tables to be created via the admin floor editor.
+            await customStatement('DELETE FROM tickets');
+            await customStatement('DELETE FROM venue_tables');
+          }
+          if (from < 8) {
+            await _safeAddColumnOn(
+                'venue_tables', 'capacity', type: 'INTEGER NOT NULL DEFAULT 2');
+            // Pre-v8 `pax` doubled as seat count (admin floor labelled it
+            // "Kapasitas kursi"). Promote it to the new capacity column and
+            // reset pax to 1 so the stepper has headroom on existing rows.
+            await customStatement(
+                'UPDATE venue_tables SET capacity = pax WHERE pax > capacity');
+            await customStatement(
+                'UPDATE venue_tables SET pax = 1 WHERE pax > 1');
+          }
+          if (from < 9) {
+            await m.createTable(venueSettings);
+            await customStatement(
+                "INSERT OR IGNORE INTO venue_settings(id) VALUES('default')");
+          }
+          if (from < 10) {
+            await _safeAddColumnOn('venue_settings', 'display_name',
+                type: "TEXT NOT NULL DEFAULT 'Warung Sebelah'");
+            await _safeAddColumnOn('venue_settings', 'legal_name',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'address',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'phone',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'receipt_header',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'receipt_footer',
+                type: "TEXT NOT NULL DEFAULT ''");
+          }
         },
         onCreate: (m) async {
           await m.createAll();
           await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique '
               'ON users(email) WHERE email IS NOT NULL');
+          await into(venueSettings).insertOnConflictUpdate(
+            VenueSettingsCompanion.insert(
+              id: 'default',
+              displayName: const Value('Warung Sebelah'),
+              legalName: const Value('PT Warung Sebelah Bali'),
+              address: const Value(
+                  'Jl. Pantai Berawa No. 17, Canggu, Bali 80361'),
+              phone: const Value('+62 813 3700 2244'),
+              receiptHeader: const Value('Warung Sebelah · Berawa'),
+              receiptFooter:
+                  const Value('Terima kasih · Sampai jumpa lagi'),
+            ),
+          );
         },
       );
 
