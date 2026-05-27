@@ -46,7 +46,7 @@ final _sections = <_Section>[
     label: 'Sistem',
     sub: 'Server, jaringan, printer, perangkat',
     icon: Icons.wifi_rounded,
-    route: '/settings',
+    route: '/system',
     tint: (sc) => sc.info,
   ),
   _Section(

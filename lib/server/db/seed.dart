@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import 'database.dart';
 import 'seed_data.dart' as seed;
@@ -29,7 +31,14 @@ Future<void> seedIfEmpty(AppDatabase db) async {
               .getSingleOrNull()) !=
           null &&
       (await db.select(db.users).get()).length == 1;
-  if (hasUsers && !onlyAdminPresent) return;
+  // Historical session seed is independent of the demo-user gate so existing
+  // dev installs upgraded to v14 also pick up plausible reports data. The
+  // function self-skips when tableSessions already has rows.
+  if (hasUsers && !onlyAdminPresent) {
+    await _seedHistoricalSessions(db);
+    await _seedReservations(db);
+    return;
+  }
 
   await db.transaction(() async {
     // Roles
@@ -88,6 +97,10 @@ Future<void> seedIfEmpty(AppDatabase db) async {
               station: it.station.name,
               description: Value(it.description),
               basePrice: it.basePrice,
+              // Heuristic seed cost: 35% of base price. Manager can override
+              // per item via the admin editor; reports degrade gracefully when
+              // cost = 0 (treated as full margin).
+              cost: Value((it.basePrice * 0.35).round()),
               prepTime: Value(it.prepTime),
               variantsJson: Value(jsonEncode(it.variants
                   .map((v) => {'id': v.id, 'name': v.name, 'price': v.price})
@@ -122,6 +135,14 @@ Future<void> seedIfEmpty(AppDatabase db) async {
       }
     }
   });
+
+  // Synthesize 30 days of historical sessions so the reports screen has
+  // immediate data on a fresh first boot. Idempotent — skipped if any
+  // table_sessions row already exists.
+  await _seedHistoricalSessions(db);
+  // Seed a handful of reservations spanning yesterday + today + tomorrow so
+  // the tables screen card and reports reservation widget have data.
+  await _seedReservations(db);
 
   // First-boot verification: every reference table the seed populates must
   // be non-empty before this future resolves, so callers can rely on the
@@ -181,4 +202,183 @@ Future<void> _seedDedicatedAdmin(AppDatabase db) async {
         email: const Value(defaultAdminEmail),
         passwordHash: Value(_hashPassword(defaultAdminPassword)),
       ));
+}
+
+/// Synthesize 30 days of `TableSessions` + `TableSessionTickets` so the
+/// reports screen renders meaningful aggregates on a fresh DB. Daily session
+/// volume peaks Thu–Sat; ticket sentAt timestamps cluster between 11:00 and
+/// 22:00 with a 17–19 dinner peak. ~6 % of tickets are voided across rotating
+/// reason codes. Skipped if any session row already exists (idempotent).
+Future<void> _seedHistoricalSessions(AppDatabase db) async {
+  final existing =
+      await (db.selectOnly(db.tableSessions)..addColumns([db.tableSessions.id]))
+          .get();
+  if (existing.isNotEmpty) return;
+
+  final menu = await db.select(db.menuItems).get();
+  if (menu.isEmpty) return;
+  final zones = await db.select(db.zones).get();
+  if (zones.isEmpty) return;
+  final venueTables = await db.select(db.venueTables).get();
+  // Waiters only (kitchen/admin/etc. do not open sessions in this seed).
+  final users = await (db.select(db.users)
+        ..where((u) => u.roleId.equals(seed.DummyData.roleWaiterId)))
+      .get();
+  if (users.isEmpty) return;
+
+  const reasonCodes = ['outOfStock', 'wrongOrder', 'customerChange', 'kitchenError', 'comp', 'other'];
+  const reasonText = {
+    'outOfStock': 'Stok habis',
+    'wrongOrder': 'Salah input pelayan',
+    'customerChange': 'Tamu ganti pesanan',
+    'kitchenError': 'Kualitas dapur',
+    'comp': 'Kompensasi manajer',
+    'other': 'Lainnya',
+  };
+
+  final rng = Random(42); // deterministic seed for reproducible demo data
+  const uuid = Uuid();
+  final now = DateTime.now();
+
+  await db.transaction(() async {
+    for (var d = 0; d < 30; d++) {
+      final dayBase = DateTime(now.year, now.month, now.day - d);
+      // Weekday 5=Fri, 6=Sat — heavier; 0=Mon lighter.
+      final wd = dayBase.weekday; // 1..7
+      final sessionCount = switch (wd) {
+        5 || 6 => 12 + rng.nextInt(6), // Fri/Sat
+        7 || 4 => 9 + rng.nextInt(5),  // Sun/Thu
+        _ => 6 + rng.nextInt(5),
+      };
+
+      for (var s = 0; s < sessionCount; s++) {
+        // Dinner-weighted hour distribution.
+        final hourBucket = rng.nextDouble();
+        final hour = hourBucket < 0.55
+            ? 17 + rng.nextInt(3) // 17/18/19
+            : hourBucket < 0.80
+                ? 11 + rng.nextInt(5) // 11..15 lunch
+                : 20 + rng.nextInt(3); // 20..22 late
+        final minute = rng.nextInt(60);
+        final openedAt = DateTime(dayBase.year, dayBase.month, dayBase.day, hour, minute);
+        final durationMin = 25 + rng.nextInt(70); // 25..95 min
+        final closedAt = openedAt.add(Duration(minutes: durationMin));
+        final pax = 1 + rng.nextInt(5); // 1..5
+        final actor = users[rng.nextInt(users.length)];
+        final zone = zones[rng.nextInt(zones.length)];
+        final venueTable = venueTables.isEmpty
+            ? null
+            : venueTables[rng.nextInt(venueTables.length)];
+
+        final sessionId = uuid.v4();
+        final ticketsInSession = 2 + rng.nextInt(7); // 2..8 line items
+
+        var subtotal = 0;
+        var voidAmount = 0;
+        final ticketRows = <TableSessionTicketsCompanion>[];
+        for (var t = 0; t < ticketsInSession; t++) {
+          final item = menu[rng.nextInt(menu.length)];
+          final qty = 1 + rng.nextInt(3); // 1..3
+          final lineTotal = item.basePrice * qty;
+          final sentAtOffset = rng.nextInt(durationMin.clamp(1, 999));
+          final sentAt = openedAt.add(Duration(minutes: sentAtOffset));
+          final isVoid = rng.nextDouble() < 0.06;
+          final status = isVoid ? 'voided' : 'served';
+          final reasonCode = isVoid ? reasonCodes[rng.nextInt(reasonCodes.length)] : null;
+          // Each session gets at most 2 modifiers picked from a fixed pool
+          // so the modifier-attach report has something to count.
+          final modifiers = <String>[
+            if (rng.nextDouble() < 0.55) 'spice:md',
+            if (rng.nextDouble() < 0.30) 'extras:krupuk',
+            if (rng.nextDouble() < 0.20) 'sauce:medium',
+          ];
+
+          if (isVoid) {
+            voidAmount += lineTotal;
+          } else {
+            subtotal += lineTotal;
+          }
+
+          ticketRows.add(TableSessionTicketsCompanion.insert(
+            id: uuid.v4(),
+            sessionId: sessionId,
+            ticketId: uuid.v4(),
+            itemId: item.id,
+            name: item.name,
+            course: 'mains',
+            station: item.station,
+            qty: Value(qty),
+            modifiersJson: Value(jsonEncode(modifiers)),
+            price: item.basePrice,
+            status: status,
+            sentAt: sentAt,
+            voidReason:
+                reasonCode == null ? const Value.absent() : Value(reasonText[reasonCode]),
+            voidReasonCode:
+                reasonCode == null ? const Value.absent() : Value(reasonCode),
+            createdByUserId: Value(actor.id),
+          ));
+        }
+
+        await db.into(db.tableSessions).insert(TableSessionsCompanion.insert(
+              id: sessionId,
+              tableId: venueTable?.id ?? 'T${rng.nextInt(20) + 1}',
+              tableLabel: Value(venueTable?.label),
+              zoneId: zone.id,
+              pax: Value(pax),
+              openedAt: Value(openedAt),
+              closedAt: closedAt,
+              durationSec: Value(durationMin * 60),
+              actorUserId: Value(actor.id),
+              subtotal: Value(subtotal),
+              voidAmount: Value(voidAmount),
+              netTotal: Value(subtotal - voidAmount),
+              ticketCount: Value(ticketsInSession),
+            ));
+        await db.batch((b) => b.insertAll(db.tableSessionTickets, ticketRows));
+      }
+    }
+  });
+}
+
+/// Seed a small spread of reservations (yesterday/today/tomorrow) so the
+/// tables-screen card and reports reservation widget render real data.
+/// Idempotent — skipped when any reservation row already exists.
+Future<void> _seedReservations(AppDatabase db) async {
+  final existing = await (db.selectOnly(db.reservations)
+        ..addColumns([db.reservations.id]))
+      .get();
+  if (existing.isNotEmpty) return;
+
+  const uuid = Uuid();
+  final now = DateTime.now();
+  DateTime at(int dayDelta, int hour, int min) =>
+      DateTime(now.year, now.month, now.day + dayDelta, hour, min);
+
+  final seeds = <Map<String, dynamic>>[
+    {'name': 'Pak Tono', 'phone': '+62 812 1111 0001', 'party': 4, 'when': at(0, 18, 30), 'status': 'pending',  'zone': 'terrace'},
+    {'name': 'Bu Ratna', 'phone': '+62 812 1111 0002', 'party': 2, 'when': at(0, 19, 0),  'status': 'seated',   'zone': 'indoor'},
+    {'name': 'Keluarga Wijaya', 'phone': '+62 812 1111 0003', 'party': 6, 'when': at(0, 20, 0),  'status': 'pending', 'zone': 'garden'},
+    {'name': 'Andre & Sinta', 'phone': '+62 812 1111 0004', 'party': 2, 'when': at(-1, 19, 0), 'status': 'noShow',   'zone': 'indoor'},
+    {'name': 'Pak Hadi', 'phone': '+62 812 1111 0005', 'party': 3, 'when': at(-1, 20, 0), 'status': 'cancelled','zone': 'terrace'},
+    {'name': 'Komunitas Foto', 'phone': '+62 812 1111 0006', 'party': 8, 'when': at(1, 19, 30), 'status': 'pending', 'zone': 'garden'},
+  ];
+
+  await db.batch((b) {
+    for (final s in seeds) {
+      b.insert(
+        db.reservations,
+        ReservationsCompanion.insert(
+          id: uuid.v4(),
+          name: s['name'] as String,
+          phone: Value(s['phone'] as String?),
+          partySize: Value(s['party'] as int),
+          expectedAt: s['when'] as DateTime,
+          status: Value(s['status'] as String),
+          zoneId: Value(s['zone'] as String?),
+          createdAt: now,
+        ),
+      );
+    }
+  });
 }

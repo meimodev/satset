@@ -130,7 +130,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Tambah ke Meja ${widget.tableId}',
+                              Text('Tambah ke Meja ${table.displayName}',
                                   style: SatType.sans(
                                     size: 18,
                                     weight: FontWeight.w600,
@@ -210,8 +210,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             children: [
               SatAppBar(
                 onBack: () => safePop(context, fallback: '/table/${widget.tableId}'),
-                title: 'Meja ${widget.tableId} · ${table.pax}p',
-                crumbs: ['Meja', widget.tableId, 'Tambah item'],
+                title: 'Meja ${table.displayName} · ${table.pax}p',
+                crumbs: ['Meja', table.displayName, 'Tambah item'],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),

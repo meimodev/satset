@@ -21,6 +21,7 @@ class TicketDto with _$TicketDto {
     required DateTime sentAt,
     String? voidReason,
     String? voidApprovedBy,
+    String? createdByUserId,
   }) = _TicketDto;
 
   factory TicketDto.fromJson(Map<String, dynamic> json) =>

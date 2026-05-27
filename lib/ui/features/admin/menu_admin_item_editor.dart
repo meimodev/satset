@@ -37,6 +37,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   final _name = TextEditingController();
   final _desc = TextEditingController();
   final _basePrice = TextEditingController();
+  final _cost = TextEditingController();
   final _prep = TextEditingController();
   final _stock = TextEditingController();
 
@@ -45,6 +46,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _name.dispose();
     _desc.dispose();
     _basePrice.dispose();
+    _cost.dispose();
     _prep.dispose();
     _stock.dispose();
     super.dispose();
@@ -63,6 +65,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _name.text = _draft.name;
     _desc.text = _draft.description;
     _basePrice.text = _draft.basePrice.toString();
+    _cost.text = _draft.cost.toString();
     _prep.text = _draft.prepTime.toString();
     _stock.text = (_draft.stockCount ?? 0).toString();
     _initialized = true;
@@ -87,6 +90,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   void _save() {
     final priceCents = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    final costCents = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final prep = int.tryParse(_prep.text) ?? _draft.prepTime;
     final stockTracked = _draft.stockCount != null;
     final stockN = stockTracked ? (int.tryParse(_stock.text) ?? 0) : null;
@@ -100,6 +104,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       name: _name.text.trim().isEmpty ? '(tanpa nama)' : _name.text.trim(),
       description: _desc.text.trim(),
       basePrice: priceCents,
+      cost: costCents,
       prepTime: prep,
       variants: variants,
       stockCount: stockN,
@@ -117,6 +122,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   void _delete() async {
     final ok = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: context.sat.bg1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -328,9 +334,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         children: [
           Row(
             children: [
-              Expanded(child: _input(_basePrice, 'Harga dasar (Rp)', keyboard: TextInputType.number, readOnly: readOnly)),
+              Expanded(child: _input(_basePrice, 'Harga dasar (Rp)', keyboard: TextInputType.number, readOnly: readOnly, onChanged: (_) => setState(() {}))),
               const SizedBox(width: 12),
               Expanded(child: _input(_prep, 'Prep (menit)', keyboard: TextInputType.number, readOnly: readOnly)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _input(_cost, 'HPP (Rp)', keyboard: TextInputType.number, readOnly: readOnly, onChanged: (_) => setState(() {}))),
+              const SizedBox(width: 12),
+              Expanded(child: _marginPreview(sc)),
             ],
           ),
           const SizedBox(height: 14),
@@ -836,17 +850,67 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     int maxLines = 1,
     TextInputType? keyboard,
     bool readOnly = false,
+    ValueChanged<String>? onChanged,
   }) {
     return TextField(
       controller: c,
       maxLines: maxLines,
       readOnly: readOnly,
       keyboardType: keyboard,
+      onChanged: onChanged,
       style: SatType.sans(size: 14, color: context.sat.textHi),
       decoration: _fieldDeco(hint),
       inputFormatters: keyboard == TextInputType.number
           ? [FilteringTextInputFormatter.digitsOnly]
           : null,
+    );
+  }
+
+  Widget _marginPreview(SatColors sc) {
+    final price = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    final cost = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    final hasData = price > 0;
+    final marginPct = hasData ? ((price - cost) / price * 100) : 0;
+    final marginRp = price - cost;
+    Color tone;
+    String hint;
+    if (!hasData) {
+      tone = sc.textLo;
+      hint = 'Isi harga dasar dulu';
+    } else if (marginPct >= 40) {
+      tone = sc.success;
+      hint = 'Margin sehat';
+    } else if (marginPct >= 15) {
+      tone = sc.warn;
+      hint = 'Margin tipis';
+    } else {
+      tone = sc.urgent;
+      hint = 'Margin kritis';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.08),
+        border: Border.all(color: tone.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('MARGIN',
+              style: SatType.mono(
+                size: 9, weight: FontWeight.w600,
+                letterSpacing: 1.0, color: sc.textLo,
+              )),
+          const SizedBox(height: 4),
+          Text(hasData ? '${marginPct.toStringAsFixed(0)}%' : '—',
+              style: SatType.sans(
+                  size: 18, weight: FontWeight.w600, color: tone)),
+          const SizedBox(height: 2),
+          Text(hasData ? 'Rp $marginRp · $hint' : hint,
+              style: SatType.sans(size: 11, color: sc.textMd)),
+        ],
+      ),
     );
   }
 

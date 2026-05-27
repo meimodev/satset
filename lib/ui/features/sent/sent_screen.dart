@@ -1,19 +1,22 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
-class SentScreen extends StatefulWidget {
+class SentScreen extends ConsumerStatefulWidget {
   final String tableId;
   final List<String> stations;
   const SentScreen({super.key, required this.tableId, required this.stations});
 
   @override
-  State<SentScreen> createState() => _SentScreenState();
+  ConsumerState<SentScreen> createState() => _SentScreenState();
 }
 
-class _SentScreenState extends State<SentScreen> with TickerProviderStateMixin {
+class _SentScreenState extends ConsumerState<SentScreen>
+    with TickerProviderStateMixin {
   int _progress = 0;
   late final int _latency;
 
@@ -35,6 +38,9 @@ class _SentScreenState extends State<SentScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final tables = ref.watch(tablesProvider);
+    final t = tables.where((x) => x.id == widget.tableId).cast<dynamic>().firstOrNull;
+    final name = t?.displayName ?? widget.tableId;
     return Scaffold(
       backgroundColor: sc.bg0,
       body: Center(
@@ -63,7 +69,7 @@ class _SentScreenState extends State<SentScreen> with TickerProviderStateMixin {
                   )),
               const SizedBox(height: 8),
               Text(
-                'Pesanan Meja ${widget.tableId} sudah live di display dapur dan bar.',
+                'Pesanan Meja $name sudah live di display dapur dan bar.',
                 textAlign: TextAlign.center,
                 style: SatType.sans(size: 14, color: sc.textMd),
               ),

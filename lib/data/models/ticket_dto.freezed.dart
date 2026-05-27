@@ -36,6 +36,7 @@ mixin _$TicketDto {
   DateTime get sentAt => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
   String? get voidApprovedBy => throw _privateConstructorUsedError;
+  String? get createdByUserId => throw _privateConstructorUsedError;
 
   /// Serializes this TicketDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -68,6 +69,7 @@ abstract class $TicketDtoCopyWith<$Res> {
     DateTime sentAt,
     String? voidReason,
     String? voidApprovedBy,
+    String? createdByUserId,
   });
 }
 
@@ -101,6 +103,7 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
     Object? sentAt = null,
     Object? voidReason = freezed,
     Object? voidApprovedBy = freezed,
+    Object? createdByUserId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -164,6 +167,10 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
                 ? _value.voidApprovedBy
                 : voidApprovedBy // ignore: cast_nullable_to_non_nullable
                       as String?,
+            createdByUserId: freezed == createdByUserId
+                ? _value.createdByUserId
+                : createdByUserId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -195,6 +202,7 @@ abstract class _$$TicketDtoImplCopyWith<$Res>
     DateTime sentAt,
     String? voidReason,
     String? voidApprovedBy,
+    String? createdByUserId,
   });
 }
 
@@ -227,6 +235,7 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
     Object? sentAt = null,
     Object? voidReason = freezed,
     Object? voidApprovedBy = freezed,
+    Object? createdByUserId = freezed,
   }) {
     return _then(
       _$TicketDtoImpl(
@@ -290,6 +299,10 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
             ? _value.voidApprovedBy
             : voidApprovedBy // ignore: cast_nullable_to_non_nullable
                   as String?,
+        createdByUserId: freezed == createdByUserId
+            ? _value.createdByUserId
+            : createdByUserId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -314,6 +327,7 @@ class _$TicketDtoImpl implements _TicketDto {
     required this.sentAt,
     this.voidReason,
     this.voidApprovedBy,
+    this.createdByUserId,
   }) : _modifiers = modifiers;
 
   factory _$TicketDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -358,10 +372,12 @@ class _$TicketDtoImpl implements _TicketDto {
   final String? voidReason;
   @override
   final String? voidApprovedBy;
+  @override
+  final String? createdByUserId;
 
   @override
   String toString() {
-    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidApprovedBy: $voidApprovedBy)';
+    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId)';
   }
 
   @override
@@ -390,7 +406,9 @@ class _$TicketDtoImpl implements _TicketDto {
             (identical(other.voidReason, voidReason) ||
                 other.voidReason == voidReason) &&
             (identical(other.voidApprovedBy, voidApprovedBy) ||
-                other.voidApprovedBy == voidApprovedBy));
+                other.voidApprovedBy == voidApprovedBy) &&
+            (identical(other.createdByUserId, createdByUserId) ||
+                other.createdByUserId == createdByUserId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -412,6 +430,7 @@ class _$TicketDtoImpl implements _TicketDto {
     sentAt,
     voidReason,
     voidApprovedBy,
+    createdByUserId,
   );
 
   /// Create a copy of TicketDto
@@ -445,6 +464,7 @@ abstract class _TicketDto implements TicketDto {
     required final DateTime sentAt,
     final String? voidReason,
     final String? voidApprovedBy,
+    final String? createdByUserId,
   }) = _$TicketDtoImpl;
 
   factory _TicketDto.fromJson(Map<String, dynamic> json) =
@@ -480,6 +500,8 @@ abstract class _TicketDto implements TicketDto {
   String? get voidReason;
   @override
   String? get voidApprovedBy;
+  @override
+  String? get createdByUserId;
 
   /// Create a copy of TicketDto
   /// with the given fields replaced by the non-null parameter values.

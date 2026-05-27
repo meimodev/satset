@@ -6,6 +6,8 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/models/user.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
@@ -26,23 +28,28 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final l = context.layout;
     final tickets = ref.watch(ticketsProvider);
     final tables = ref.watch(tablesProvider);
+    final user = ref.watch(authStateProvider).user;
+    final userId = user?.id;
 
-    // Show every ticket the LAN knows about. The previous `table.mine`
-    // filter dropped everything once the server-fetched VenueTable
-    // lacked that flag and made the screen permanently empty.
+    // Per-waiter filter: only tickets the current user submitted. Server
+    // stamps `createdBy` from the JWT-resolved actor on `/orders`; legacy
+    // rows with NULL `createdBy` stay hidden so the screen never lies.
     final all = <_Row>[];
-    tickets.forEach((tableId, list) {
-      final table = tables.where((t) => t.id == tableId).firstOrNull;
-      if (table == null) return;
-      for (final t in list) {
-        all.add(_Row(
-          ticket: t,
-          tableId: tableId,
-          zoneId: table.zoneId,
-          pax: table.pax,
-        ));
-      }
-    });
+    if (userId != null) {
+      tickets.forEach((tableId, list) {
+        final table = tables.where((t) => t.id == tableId).firstOrNull;
+        if (table == null) return;
+        for (final t in list) {
+          if (t.createdBy != userId) continue;
+          all.add(_Row(
+            ticket: t,
+            tableId: tableId,
+            zoneId: table.zoneId,
+            pax: table.pax,
+          ));
+        }
+      });
+    }
 
     Future<void> markServed(String tableId, String ticketId) async {
       try {
@@ -78,7 +85,17 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(32, 22, 32, 14),
+            padding: const EdgeInsets.fromLTRB(32, 18, 32, 0),
+            child: Row(
+              children: [
+                _LiveChip(),
+                const Spacer(),
+                _Avatar(user: user),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 14, 32, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -178,25 +195,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               ),
               const Spacer(),
-              Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: sc.success,
-                      boxShadow: [BoxShadow(color: sc.successSoft, spreadRadius: 3)],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text('LIVE · LAN',
-                      style: SatType.mono(
-                          size: 10, color: sc.textMd, letterSpacing: 0.6)),
-                ],
-              ),
+              _LiveChip(),
               const Spacer(),
-              _Avatar(),
+              _Avatar(user: user),
             ],
           ),
         ),
@@ -276,22 +277,53 @@ class _Row {
 }
 
 class _Avatar extends StatelessWidget {
+  final AppUser? user;
+  const _Avatar({this.user});
+
   @override
   Widget build(BuildContext context) {
+    final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
     return Container(
       width: 32,
       height: 32,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [Color(0xFFFF9233), Color(0xFFD96030)]),
+        gradient: LinearGradient(
+          colors: [base, Color.lerp(base, Colors.black, 0.18)!],
+        ),
       ),
       alignment: Alignment.center,
-      child: Text('MA',
+      child: Text(user?.initials ?? '—',
           style: SatType.sans(
             size: 12,
             weight: FontWeight.w600,
             color: Colors.white,
           )),
+    );
+  }
+}
+
+class _LiveChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: sc.success,
+            boxShadow: [BoxShadow(color: sc.successSoft, spreadRadius: 3)],
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text('LIVE · LAN',
+            style: SatType.mono(
+                size: 10, color: sc.textMd, letterSpacing: 0.6)),
+      ],
     );
   }
 }

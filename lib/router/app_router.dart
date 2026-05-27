@@ -27,7 +27,7 @@ import 'package:satset/ui/features/admin/menu_admin_item_screen.dart';
 import 'package:satset/ui/features/admin/reports_screen.dart';
 import 'package:satset/ui/features/admin/venue_hub_screen.dart';
 import 'package:satset/ui/features/admin/venue_identity_screen.dart';
-import 'package:satset/ui/features/admin/settings_screen.dart';
+import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
 
 Capability? _capabilityFor(String loc) {
@@ -36,8 +36,9 @@ Capability? _capabilityFor(String loc) {
     return Capability.takeOrder;
   }
   if (loc.startsWith('/venue-identity')) return Capability.editSettings;
+  if (loc.startsWith('/reports')) return Capability.viewReports;
   if (loc.startsWith('/menuadm') || loc.startsWith('/staff') ||
-      loc.startsWith('/reports') || loc.startsWith('/settings') ||
+      loc.startsWith('/system') ||
       loc.startsWith('/floor') || loc.startsWith('/venue')) {
     return Capability.manageStaff;
   }
@@ -116,7 +117,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/floor', builder: (_, _) => const FloorScreen()),
           GoRoute(path: '/menuadm', builder: (_, _) => const MenuAdminScreen()),
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
-          GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+          GoRoute(path: '/system', builder: (_, _) => const SystemScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),
           GoRoute(path: '/me', builder: (_, _) => const MeScreen()),
         ],

@@ -77,6 +77,9 @@ class MenuItems extends Table {
   TextColumn get station => text()();
   TextColumn get description => text().withDefault(const Constant(''))();
   IntColumn get basePrice => integer()();
+  /// Cost of goods (same int-cents unit as `basePrice`). Used for margin
+  /// reports + menu-engineering matrix. 0 = unknown (treated as full margin).
+  IntColumn get cost => integer().withDefault(const Constant(0))();
   IntColumn get prepTime => integer().withDefault(const Constant(5))();
   TextColumn get variantsJson => text().withDefault(const Constant('[]'))();
   TextColumn get modifierGroupIdsJson =>
@@ -116,6 +119,9 @@ class Tickets extends Table {
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
   TextColumn get voidReason => text().nullable()();
+  /// Canonical enum slug for void/comp analytics. One of:
+  /// outOfStock | wrongOrder | customerChange | kitchenError | comp | other.
+  TextColumn get voidReasonCode => text().nullable()();
   TextColumn get voidApprovedBy => text().nullable()();
   TextColumn get createdByUserId => text().nullable()();
   @override
@@ -182,6 +188,28 @@ class VenueSettings extends Table {
   IntColumn get serviceRateBps => integer().withDefault(const Constant(500))();
   IntColumn get serviceFixedAmount =>
       integer().withDefault(const Constant(0))();
+  /// Business-day rollover hour (0..23). Reports bucket "today" as
+  /// [hour, hour+24h). Default 4 covers late-night service.
+  IntColumn get businessDayStartHour =>
+      integer().withDefault(const Constant(4))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Printers + KDS displays advertised on the LAN. ESC/POS receipt printers
+/// or KDS station screens. `lastSeenAt` updated when the device check-ins
+/// (test print, status ping). Online = now - lastSeenAt &lt; 5min.
+class Printers extends Table {
+  TextColumn get id => text()();
+  TextColumn get label => text()();
+  TextColumn get host => text()();
+  IntColumn get port => integer().withDefault(const Constant(9100))();
+
+  /// 'escpos' or 'kds'.
+  TextColumn get kind => text().withDefault(const Constant('escpos'))();
+  BoolColumn get enabled => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get lastSeenAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -195,6 +223,88 @@ class AuditEntries extends Table {
   TextColumn get approvedBy => text().nullable()();
   TextColumn get reason => text().nullable()();
   TextColumn get actorUserId => text().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Historical table-occupancy session. Inserted when a table is closed.
+/// Source of truth for reports + insights (revenue, turn time, item mix,
+/// void rate). Tickets are snapshotted into TableSessionTickets and the
+/// originals are deleted from the live `tickets` table.
+class TableSessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get tableId => text()();
+  TextColumn get tableLabel => text().nullable()();
+  TextColumn get zoneId => text()();
+  IntColumn get pax => integer().withDefault(const Constant(0))();
+  DateTimeColumn get openedAt => dateTime().nullable()();
+  DateTimeColumn get closedAt => dateTime()();
+  IntColumn get durationSec => integer().withDefault(const Constant(0))();
+  TextColumn get actorUserId => text().nullable()();
+  IntColumn get subtotal => integer().withDefault(const Constant(0))();
+  IntColumn get voidAmount => integer().withDefault(const Constant(0))();
+  IntColumn get netTotal => integer().withDefault(const Constant(0))();
+  IntColumn get ticketCount => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Per-ticket snapshot tied to a TableSession. Mirrors `tickets` columns
+/// at close time so reports survive after live tickets are hard-deleted.
+class TableSessionTickets extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get ticketId => text()();
+  TextColumn get itemId => text()();
+  TextColumn get name => text()();
+  TextColumn get variantName => text().withDefault(const Constant(''))();
+  TextColumn get course => text()();
+  TextColumn get station => text()();
+  IntColumn get qty => integer().withDefault(const Constant(1))();
+  TextColumn get modifiersJson => text().withDefault(const Constant('[]'))();
+  TextColumn get specialInstructions => text().nullable()();
+  IntColumn get price => integer()();
+  TextColumn get status => text()();
+  DateTimeColumn get sentAt => dateTime()();
+  TextColumn get voidReason => text().nullable()();
+  /// Canonical enum slug — mirrors Tickets.voidReasonCode at session close.
+  TextColumn get voidReasonCode => text().nullable()();
+  TextColumn get voidApprovedBy => text().nullable()();
+  TextColumn get createdByUserId => text().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Internal-only reservation entries. Hosts add via the tables screen.
+/// Status flow: pending → seated | noShow | cancelled. Deletes are
+/// disallowed for `seated` rows (transition to cancelled first).
+class Reservations extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get phone => text().nullable()();
+  IntColumn get partySize => integer().withDefault(const Constant(1))();
+  DateTimeColumn get expectedAt => dateTime()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  TextColumn get zoneId => text().nullable()();
+  TextColumn get tableId => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Per-course timing rollup for a session. `firedAt` is the earliest
+/// ticket `sentAt` in that course; `servedAt` is the latest sentAt of
+/// tickets in `served` status (best-effort — live tickets do not yet
+/// carry an explicit servedAt column).
+class TableSessionCourses extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get courseId => text()();
+  DateTimeColumn get firedAt => dateTime().nullable()();
+  DateTimeColumn get servedAt => dateTime().nullable()();
+  IntColumn get ticketCount => integer().withDefault(const Constant(0))();
   @override
   Set<Column> get primaryKey => {id};
 }

@@ -130,6 +130,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       ),
       description: i.description,
       basePrice: i.basePrice,
+      cost: i.cost,
       prepTime: i.prepTime,
       variants: [
         for (final v in i.variants) Variant(id: v.id, name: v.name, price: v.price),
@@ -314,6 +315,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
         'station': it.station.name,
         'description': it.description,
         'basePrice': it.basePrice,
+        'cost': it.cost,
         'prepTime': it.prepTime,
         'variants': [
           for (final v in it.variants)

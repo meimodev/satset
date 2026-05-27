@@ -27,6 +27,7 @@ _$TicketDtoImpl _$$TicketDtoImplFromJson(Map<String, dynamic> json) =>
       sentAt: DateTime.parse(json['sentAt'] as String),
       voidReason: json['voidReason'] as String?,
       voidApprovedBy: json['voidApprovedBy'] as String?,
+      createdByUserId: json['createdByUserId'] as String?,
     );
 
 Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
@@ -46,6 +47,7 @@ Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
       'sentAt': instance.sentAt.toIso8601String(),
       'voidReason': instance.voidReason,
       'voidApprovedBy': instance.voidApprovedBy,
+      'createdByUserId': instance.createdByUserId,
     };
 
 _$TicketTransitionRequestDtoImpl _$$TicketTransitionRequestDtoImplFromJson(

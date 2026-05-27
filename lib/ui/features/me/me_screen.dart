@@ -1163,6 +1163,7 @@ void _showReadyToast(BuildContext context) {
 void _showReadyBannerPreview(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: context.sat.bg1,
     builder: (ctx) => const Padding(
       padding: EdgeInsets.fromLTRB(0, 24, 0, 32),

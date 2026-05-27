@@ -5,7 +5,9 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
 
@@ -232,17 +234,24 @@ class _CompletedFilter extends StatelessWidget {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends ConsumerWidget {
   final _KOrder order;
   final void Function(String tableId, String ticketId) onToggle;
   const _OrderCard({required this.order, required this.onToggle});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final age = _ageMinutes(order.sentAt);
     final ageColor = _ageColor(sc, age);
     final progress = order.total == 0 ? 0.0 : order.done / order.total;
+    final tables = ref.watch(tablesProvider);
+    final tableLabel = tables
+        .firstWhere(
+          (t) => t.id == order.tableId,
+          orElse: () => VenueTable(id: order.tableId, zoneId: ''),
+        )
+        .displayName;
 
     return Container(
       decoration: BoxDecoration(
@@ -267,7 +276,7 @@ class _OrderCard extends StatelessWidget {
                     color: sc.bg3,
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: Text(order.tableId,
+                  child: Text(tableLabel,
                       style: SatType.mono(
                         size: 15,
                         weight: FontWeight.w700,

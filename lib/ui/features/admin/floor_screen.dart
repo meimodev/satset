@@ -1233,6 +1233,7 @@ class _SheetShell extends StatelessWidget {
 Future<void> _present(BuildContext context, Widget child) {
   return showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -1260,6 +1261,7 @@ Widget _sheetHandle(SatColors sc) => Container(
 Future<bool?> _confirm(BuildContext context, String title, String message) {
   return showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: context.sat.bg1,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

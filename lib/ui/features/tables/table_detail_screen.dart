@@ -257,6 +257,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        useRootNavigator: true,
         backgroundColor: Colors.transparent,
         builder: (_) => _ContextSheet(
           table: table,
@@ -479,10 +480,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
               children: [
                 if (canClose)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _SecondaryButton(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _CloseTableButton(
                       label: 'Tutup meja',
-                      icon: Icons.check_circle_outline,
                       onTap: onClose,
                     ),
                   ),
@@ -1140,35 +1140,43 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
-class _SecondaryButton extends StatelessWidget {
+class _CloseTableButton extends StatelessWidget {
   final String label;
-  final IconData icon;
   final VoidCallback onTap;
-  const _SecondaryButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
+  const _CloseTableButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     return SizedBox(
-      height: 48,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 18, color: sc.textMd),
-        label: Text(label,
-            style: SatType.sans(
-              size: 14,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-            )),
-        style: OutlinedButton.styleFrom(
-          backgroundColor: sc.bg2,
-          side: BorderSide(color: sc.border0),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          minimumSize: const Size.fromHeight(48),
+      height: 52,
+      child: Material(
+        color: sc.success,
+        borderRadius: BorderRadius.circular(18),
+        elevation: 0,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle, size: 20, color: Colors.white),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: SatType.sans(
+                    size: 15,
+                    weight: FontWeight.w700,
+                    letterSpacing: -0.15,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1381,9 +1389,8 @@ class _TabletSplit extends StatelessWidget {
                     children: [
                       if (canClose) ...[
                         Expanded(
-                          child: _SecondaryButton(
+                          child: _CloseTableButton(
                             label: 'Tutup meja',
-                            icon: Icons.check_circle_outline,
                             onTap: onClose,
                           ),
                         ),

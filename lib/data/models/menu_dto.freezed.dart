@@ -643,6 +643,7 @@ mixin _$MenuItemDto {
   String get station => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   int get basePrice => throw _privateConstructorUsedError;
+  int get cost => throw _privateConstructorUsedError;
   int get prepTime => throw _privateConstructorUsedError;
   List<VariantDto> get variants => throw _privateConstructorUsedError;
   List<String> get modifierGroupIds => throw _privateConstructorUsedError;
@@ -676,6 +677,7 @@ abstract class $MenuItemDtoCopyWith<$Res> {
     String station,
     String description,
     int basePrice,
+    int cost,
     int prepTime,
     List<VariantDto> variants,
     List<String> modifierGroupIds,
@@ -708,6 +710,7 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
     Object? station = null,
     Object? description = null,
     Object? basePrice = null,
+    Object? cost = null,
     Object? prepTime = null,
     Object? variants = null,
     Object? modifierGroupIds = null,
@@ -742,6 +745,10 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
             basePrice: null == basePrice
                 ? _value.basePrice
                 : basePrice // ignore: cast_nullable_to_non_nullable
+                      as int,
+            cost: null == cost
+                ? _value.cost
+                : cost // ignore: cast_nullable_to_non_nullable
                       as int,
             prepTime: null == prepTime
                 ? _value.prepTime
@@ -797,6 +804,7 @@ abstract class _$$MenuItemDtoImplCopyWith<$Res>
     String station,
     String description,
     int basePrice,
+    int cost,
     int prepTime,
     List<VariantDto> variants,
     List<String> modifierGroupIds,
@@ -828,6 +836,7 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
     Object? station = null,
     Object? description = null,
     Object? basePrice = null,
+    Object? cost = null,
     Object? prepTime = null,
     Object? variants = null,
     Object? modifierGroupIds = null,
@@ -862,6 +871,10 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
         basePrice: null == basePrice
             ? _value.basePrice
             : basePrice // ignore: cast_nullable_to_non_nullable
+                  as int,
+        cost: null == cost
+            ? _value.cost
+            : cost // ignore: cast_nullable_to_non_nullable
                   as int,
         prepTime: null == prepTime
             ? _value.prepTime
@@ -910,6 +923,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     required this.station,
     this.description = '',
     required this.basePrice,
+    this.cost = 0,
     this.prepTime = 5,
     final List<VariantDto> variants = const <VariantDto>[],
     final List<String> modifierGroupIds = const <String>[],
@@ -939,6 +953,9 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
   final String description;
   @override
   final int basePrice;
+  @override
+  @JsonKey()
+  final int cost;
   @override
   @JsonKey()
   final int prepTime;
@@ -990,7 +1007,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
 
   @override
   String toString() {
-    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, station: $station, description: $description, basePrice: $basePrice, prepTime: $prepTime, variants: $variants, modifierGroupIds: $modifierGroupIds, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, stockCount: $stockCount, autoEightySixAtZero: $autoEightySixAtZero)';
+    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, station: $station, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroupIds: $modifierGroupIds, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, stockCount: $stockCount, autoEightySixAtZero: $autoEightySixAtZero)';
   }
 
   @override
@@ -1007,6 +1024,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
                 other.description == description) &&
             (identical(other.basePrice, basePrice) ||
                 other.basePrice == basePrice) &&
+            (identical(other.cost, cost) || other.cost == cost) &&
             (identical(other.prepTime, prepTime) ||
                 other.prepTime == prepTime) &&
             const DeepCollectionEquality().equals(other._variants, _variants) &&
@@ -1037,6 +1055,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     station,
     description,
     basePrice,
+    cost,
     prepTime,
     const DeepCollectionEquality().hash(_variants),
     const DeepCollectionEquality().hash(_modifierGroupIds),
@@ -1069,6 +1088,7 @@ abstract class _MenuItemDto implements MenuItemDto {
     required final String station,
     final String description,
     required final int basePrice,
+    final int cost,
     final int prepTime,
     final List<VariantDto> variants,
     final List<String> modifierGroupIds,
@@ -1094,6 +1114,8 @@ abstract class _MenuItemDto implements MenuItemDto {
   String get description;
   @override
   int get basePrice;
+  @override
+  int get cost;
   @override
   int get prepTime;
   @override

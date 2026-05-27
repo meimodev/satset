@@ -446,6 +446,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.32),
       builder: (ctx) => Padding(
@@ -475,6 +476,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final res = await showModalBottomSheet<_NewStaff>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: context.sat.bg1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -519,6 +521,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     ];
     final picked = await showModalBottomSheet<int>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: context.sat.bg1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -686,6 +689,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: context.sat.bg1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -769,6 +773,7 @@ Future<bool?> _confirmSheet(
 }) {
   return showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: context.sat.bg1,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

@@ -15,6 +15,7 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper_sheet.dart';
+import 'package:satset/ui/features/tables/widgets/reservations_strip.dart';
 
 class TablesScreen extends ConsumerStatefulWidget {
   const TablesScreen({super.key});
@@ -59,6 +60,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                 title: zone.name,
                 sub: subLine,
               ),
+              const ReservationsStrip(tablet: true),
               _ZoneRow(tables: tables, zones: zones, active: _activeZone, onChange: (id) => setState(() => _activeZone = id), tablet: true),
               Expanded(
                 child: zoneTables.isEmpty
@@ -135,6 +137,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
             ],
           ),
         ),
+        const ReservationsStrip(tablet: false),
         _ZoneRow(
           tables: tables,
           zones: zones,

@@ -169,6 +169,8 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
         ),
         const SizedBox(height: 14),
         _PajakLayananCard(),
+        const SizedBox(height: 14),
+        _ReportsHourCard(),
       ],
     );
   }
@@ -213,7 +215,13 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                     label: 'Pajak & layanan',
                     value: _pajakLayananSummary(s),
                     onTap: () => _openDetail(context, 'Pajak & layanan',
-                        (c, _) => _PajakLayananCard()),
+                        (c, _) => _PajakLayananCard())),
+                _phoneRow(context, sc,
+                    label: 'Laporan & shift',
+                    value:
+                        'Hari kerja mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00',
+                    onTap: () => _openDetail(context, 'Laporan & shift',
+                        (c, _) => _ReportsHourCard()),
                     last: true),
               ],
             ),
@@ -816,6 +824,120 @@ class _PajakLayananCard extends ConsumerWidget {
   }
 }
 
+
+class _ReportsHourCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final s = ref.watch(venueSettingsProvider);
+    final n = ref.read(venueSettingsProvider.notifier);
+    final hour = s.businessDayStartHour;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Laporan & shift',
+                    style: SatType.sans(
+                      size: 15,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    )),
+              ),
+              Text('LAPORAN',
+                  style: SatType.mono(
+                    size: 9,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.4,
+                    color: sc.textLo,
+                  )),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              SizedBox(
+                width: 200,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Jam mulai hari kerja',
+                        style: SatType.sans(size: 13, color: sc.textMd)),
+                    const SizedBox(height: 2),
+                    Text('Pengelompokan laporan "Hari ini"',
+                        style: SatType.sans(size: 11, color: sc.textLo)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    _stepBtn(
+                      sc,
+                      Icons.remove,
+                      hour > 0
+                          ? () => n.patch(businessDayStartHour: hour - 1)
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: sc.bg3,
+                        border: Border.all(color: sc.border1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${hour.toString().padLeft(2, '0')}:00',
+                          style: SatType.mono(
+                            size: 13,
+                            weight: FontWeight.w600,
+                            color: sc.textHi,
+                          )),
+                    ),
+                    const SizedBox(width: 10),
+                    _stepBtn(
+                      sc,
+                      Icons.add,
+                      hour < 23
+                          ? () => n.patch(businessDayStartHour: hour + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: onTap == null ? sc.bg2 : sc.bg3,
+          border: Border.all(color: sc.border1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon,
+            size: 16, color: onTap == null ? sc.textDim : sc.textHi),
+      ),
+    );
+  }
+}
 
 class _PhoneDetailScreen extends StatelessWidget {
   final String title;

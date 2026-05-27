@@ -26,12 +26,17 @@ part 'database.g.dart';
   Idempotency,
   AuditEntries,
   VenueSettings,
+  Printers,
+  TableSessions,
+  TableSessionTickets,
+  TableSessionCourses,
+  Reservations,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -102,6 +107,55 @@ class AppDatabase extends _$AppDatabase {
                 type: "TEXT NOT NULL DEFAULT ''");
             await _safeAddColumnOn('venue_settings', 'receipt_footer',
                 type: "TEXT NOT NULL DEFAULT ''");
+          }
+          if (from < 11) {
+            await m.createTable(printers);
+          }
+          if (from < 12) {
+            await _safeAddColumnOn('tickets', 'created_by_user_id',
+                type: 'TEXT');
+          }
+          if (from < 13) {
+            await m.createTable(tableSessions);
+            await m.createTable(tableSessionTickets);
+            await m.createTable(tableSessionCourses);
+          }
+          if (from < 14) {
+            await _safeAddColumnOn('menu_items', 'cost',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('tickets', 'void_reason_code', type: 'TEXT');
+            await _safeAddColumnOn(
+                'table_session_tickets', 'void_reason_code', type: 'TEXT');
+            // Backfill cost = basePrice * 0.35 for already-seeded items so the
+            // matrix has plausible margins on existing installs. New seed paths
+            // set this explicitly per item.
+            await customStatement(
+                'UPDATE menu_items SET cost = CAST(base_price * 0.35 AS INTEGER) WHERE cost = 0');
+            // Backfill void_reason_code from free-text reason via substring
+            // heuristic. Unknown reasons fall through to "other".
+            await customStatement(
+                "UPDATE tickets SET void_reason_code = CASE "
+                "WHEN void_reason IS NULL THEN NULL "
+                "WHEN lower(void_reason) LIKE '%stok%' OR lower(void_reason) LIKE '%habis%' THEN 'outOfStock' "
+                "WHEN lower(void_reason) LIKE '%salah%' OR lower(void_reason) LIKE '%input%' THEN 'wrongOrder' "
+                "WHEN lower(void_reason) LIKE '%ganti%' OR lower(void_reason) LIKE '%batal%' THEN 'customerChange' "
+                "WHEN lower(void_reason) LIKE '%dapur%' OR lower(void_reason) LIKE '%gosong%' OR lower(void_reason) LIKE '%kualitas%' THEN 'kitchenError' "
+                "WHEN lower(void_reason) LIKE '%comp%' OR lower(void_reason) LIKE '%gratis%' THEN 'comp' "
+                "ELSE 'other' END WHERE void_reason_code IS NULL");
+            await customStatement(
+                "UPDATE table_session_tickets SET void_reason_code = CASE "
+                "WHEN void_reason IS NULL THEN NULL "
+                "WHEN lower(void_reason) LIKE '%stok%' OR lower(void_reason) LIKE '%habis%' THEN 'outOfStock' "
+                "WHEN lower(void_reason) LIKE '%salah%' OR lower(void_reason) LIKE '%input%' THEN 'wrongOrder' "
+                "WHEN lower(void_reason) LIKE '%ganti%' OR lower(void_reason) LIKE '%batal%' THEN 'customerChange' "
+                "WHEN lower(void_reason) LIKE '%dapur%' OR lower(void_reason) LIKE '%gosong%' OR lower(void_reason) LIKE '%kualitas%' THEN 'kitchenError' "
+                "WHEN lower(void_reason) LIKE '%comp%' OR lower(void_reason) LIKE '%gratis%' THEN 'comp' "
+                "ELSE 'other' END WHERE void_reason_code IS NULL");
+          }
+          if (from < 15) {
+            await _safeAddColumnOn('venue_settings', 'business_day_start_hour',
+                type: 'INTEGER NOT NULL DEFAULT 4');
+            await m.createTable(reservations);
           }
         },
         onCreate: (m) async {

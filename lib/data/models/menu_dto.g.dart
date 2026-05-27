@@ -64,6 +64,7 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
   station: json['station'] as String,
   description: json['description'] as String? ?? '',
   basePrice: (json['basePrice'] as num).toInt(),
+  cost: (json['cost'] as num?)?.toInt() ?? 0,
   prepTime: (json['prepTime'] as num?)?.toInt() ?? 5,
   variants:
       (json['variants'] as List<dynamic>?)
@@ -94,6 +95,7 @@ Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
       'station': instance.station,
       'description': instance.description,
       'basePrice': instance.basePrice,
+      'cost': instance.cost,
       'prepTime': instance.prepTime,
       'variants': instance.variants,
       'modifierGroupIds': instance.modifierGroupIds,

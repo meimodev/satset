@@ -83,8 +83,8 @@ class ReviewScreen extends ConsumerWidget {
             children: [
               SatAppBar(
                 onBack: () => safePop(context, fallback: '/table/$tableId'),
-                title: 'Tinjau · Meja $tableId',
-                crumbs: ['Meja', tableId, 'Tinjau'],
+                title: 'Tinjau · Meja ${table.displayName}',
+                crumbs: ['Meja', table.displayName, 'Tinjau'],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
@@ -101,7 +101,7 @@ class ReviewScreen extends ConsumerWidget {
                         )),
                     const SizedBox(height: 4),
                     Text(
-                      'MEJA $tableId · ${table.pax} TAMU · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM',
+                      'MEJA ${table.displayName} · ${table.pax} TAMU · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM',
                       style: SatType.mono(
                           size: 11, color: sc.textLo, letterSpacing: 0.44),
                     ),

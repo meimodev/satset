@@ -35,4 +35,16 @@ class WsEventTypes {
   static const auditCreated = 'audit.created';
   static const rolesUpdated = 'roles.updated';
   static const venueSettingsUpdated = 'venueSettings.updated';
+  static const systemStatus = 'system.status';
+  static const devicePaired = 'device.paired';
+  static const deviceRevoked = 'device.revoked';
+  static const sessionExpired = 'session.expired';
+  static const printerCreated = 'printer.created';
+  static const printerUpdated = 'printer.updated';
+  static const printerDeleted = 'printer.deleted';
+  static const serverRestarting = 'server.restarting';
+  static const tableSessionClosed = 'tableSession.closed';
+  static const reservationCreated = 'reservation.created';
+  static const reservationUpdated = 'reservation.updated';
+  static const reservationDeleted = 'reservation.deleted';
 }

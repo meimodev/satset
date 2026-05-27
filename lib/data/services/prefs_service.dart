@@ -11,6 +11,7 @@ class PrefsService {
   static const _kMode = 'satset.app_mode';
   static const _kPairedHost = 'satset.paired.host';
   static const _kPairedPort = 'satset.paired.port';
+  static const _kAudioAlert = 'satset.audio_alert';
 
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
   Future<void> setAppMode(AppMode m) async {
@@ -37,7 +38,18 @@ class PrefsService {
       await _p.setInt(_kPairedPort, v);
     }
   }
+
+  bool audioAlertEnabled() => _p.getBool(_kAudioAlert) ?? true;
+  Future<void> setAudioAlertEnabled(bool v) async {
+    await _p.setBool(_kAudioAlert, v);
+  }
 }
+
+/// Live read of the audio-alert flag. Returns true while prefs are loading.
+final audioAlertEnabledProvider = Provider<bool>((ref) {
+  final p = ref.watch(prefsServiceProvider).valueOrNull;
+  return p?.audioAlertEnabled() ?? true;
+});
 
 final prefsServiceProvider = FutureProvider<PrefsService>((ref) async {
   final p = await SharedPreferences.getInstance();

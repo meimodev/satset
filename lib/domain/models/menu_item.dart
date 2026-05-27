@@ -53,6 +53,7 @@ class MenuItem {
   final List<DietaryTag> dietary;
   final int prepTime;
   final int basePrice;
+  final int cost;
   final List<Variant> variants;
   final List<ModifierGroup> modifierGroups;
   final bool unavailable;
@@ -71,6 +72,7 @@ class MenuItem {
     this.dietary = const [],
     this.prepTime = 5,
     required this.basePrice,
+    this.cost = 0,
     required this.variants,
     this.modifierGroups = const [],
     this.unavailable = false,
@@ -97,6 +99,7 @@ class MenuItem {
     List<DietaryTag>? dietary,
     int? prepTime,
     int? basePrice,
+    int? cost,
     List<Variant>? variants,
     List<ModifierGroup>? modifierGroups,
     bool? unavailable,
@@ -115,6 +118,7 @@ class MenuItem {
       dietary: dietary ?? this.dietary,
       prepTime: prepTime ?? this.prepTime,
       basePrice: basePrice ?? this.basePrice,
+      cost: cost ?? this.cost,
       variants: variants ?? this.variants,
       modifierGroups: modifierGroups ?? this.modifierGroups,
       unavailable: unavailable ?? this.unavailable,

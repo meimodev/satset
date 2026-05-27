@@ -152,6 +152,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           price: (l['unitPrice'] as num).toInt(),
           status: 'sent',
           sentAt: DateTime.now(),
+          createdByUserId: Value(actorId),
         );
         await db.into(db.tickets).insert(row);
         createdIds.add(id);
@@ -356,4 +357,5 @@ Map<String, dynamic> _toJson(Ticket t) => {
       'sentAt': t.sentAt.toIso8601String(),
       'voidReason': t.voidReason,
       'voidApprovedBy': t.voidApprovedBy,
+      'createdByUserId': t.createdByUserId,
     };

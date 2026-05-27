@@ -48,6 +48,7 @@ class MenuItemDto with _$MenuItemDto {
     required String station,
     @Default('') String description,
     required int basePrice,
+    @Default(0) int cost,
     @Default(5) int prepTime,
     @Default(<VariantDto>[]) List<VariantDto> variants,
     @Default(<String>[]) List<String> modifierGroupIds,

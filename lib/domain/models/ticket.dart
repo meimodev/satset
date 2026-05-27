@@ -81,5 +81,6 @@ class Ticket with _$Ticket {
     required String sentAt,
     String? voidReason,
     String? voidApprovedBy,
+    String? createdBy,
   }) = _Ticket;
 }

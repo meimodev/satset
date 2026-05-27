@@ -22,6 +22,7 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   serviceMode: json['serviceMode'] as String? ?? 'percent',
   serviceRateBps: (json['serviceRateBps'] as num?)?.toInt() ?? 500,
   serviceFixedAmount: (json['serviceFixedAmount'] as num?)?.toInt() ?? 0,
+  businessDayStartHour: (json['businessDayStartHour'] as num?)?.toInt() ?? 4,
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -40,4 +41,5 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'serviceMode': instance.serviceMode,
   'serviceRateBps': instance.serviceRateBps,
   'serviceFixedAmount': instance.serviceFixedAmount,
+  'businessDayStartHour': instance.businessDayStartHour,
 };

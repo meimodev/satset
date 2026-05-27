@@ -67,6 +67,13 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         }
         next[dto.tableId] = list;
         state = next;
+      } else if (ev.type == WsEventTypes.tableSessionClosed) {
+        final tableId = ev.payload['tableId'] as String?;
+        if (tableId == null) return;
+        SatLog.repo('tickets.ws tableSession.closed table=${tableId.substring(0, tableId.length.clamp(0, 6))} — purging local tickets');
+        final next = Map<String, List<Ticket>>.from(state);
+        next.remove(tableId);
+        state = next;
       }
     });
   }
@@ -98,6 +105,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       sentAt: _nowStamp(d.sentAt.toLocal()),
       voidReason: d.voidReason,
       voidApprovedBy: d.voidApprovedBy,
+      createdBy: d.createdByUserId,
     );
   }
 
@@ -145,7 +153,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             unitPrice: l.unitPrice,
           ),
       ];
-      return sendOrder(tableId, cart).map((t) => t.id).toList();
+      return sendOrder(tableId, cart, actorId: actorId)
+          .map((t) => t.id)
+          .toList();
     }
     final api = ref.read(apiClientProvider);
     final raw = await api.postJson(
@@ -207,7 +217,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     return '${pad(d.hour)}:${pad(d.minute)}';
   }
 
-  List<Ticket> sendOrder(String tableId, List<CartItem> cart) {
+  List<Ticket> sendOrder(String tableId, List<CartItem> cart, {String? actorId}) {
     final stamp = _nowStamp(DateTime.now());
     final newTickets = [
       for (var i = 0; i < cart.length; i++)
@@ -226,6 +236,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
               ? TicketStatus.sent
               : TicketStatus.held,
           sentAt: stamp,
+          createdBy: actorId,
         ),
     ];
     final next = Map<String, List<Ticket>>.from(state);

@@ -31,6 +31,7 @@ mixin _$Ticket {
   String get sentAt => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
   String? get voidApprovedBy => throw _privateConstructorUsedError;
+  String? get createdBy => throw _privateConstructorUsedError;
 
   /// Create a copy of Ticket
   /// with the given fields replaced by the non-null parameter values.
@@ -58,6 +59,7 @@ abstract class $TicketCopyWith<$Res> {
     String sentAt,
     String? voidReason,
     String? voidApprovedBy,
+    String? createdBy,
   });
 }
 
@@ -90,6 +92,7 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
     Object? sentAt = null,
     Object? voidReason = freezed,
     Object? voidApprovedBy = freezed,
+    Object? createdBy = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -149,6 +152,10 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.voidApprovedBy
                 : voidApprovedBy // ignore: cast_nullable_to_non_nullable
                       as String?,
+            createdBy: freezed == createdBy
+                ? _value.createdBy
+                : createdBy // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -178,6 +185,7 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
     String sentAt,
     String? voidReason,
     String? voidApprovedBy,
+    String? createdBy,
   });
 }
 
@@ -209,6 +217,7 @@ class __$$TicketImplCopyWithImpl<$Res>
     Object? sentAt = null,
     Object? voidReason = freezed,
     Object? voidApprovedBy = freezed,
+    Object? createdBy = freezed,
   }) {
     return _then(
       _$TicketImpl(
@@ -268,6 +277,10 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.voidApprovedBy
             : voidApprovedBy // ignore: cast_nullable_to_non_nullable
                   as String?,
+        createdBy: freezed == createdBy
+            ? _value.createdBy
+            : createdBy // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -291,6 +304,7 @@ class _$TicketImpl implements _Ticket {
     required this.sentAt,
     this.voidReason,
     this.voidApprovedBy,
+    this.createdBy,
   }) : _modifiers = modifiers;
 
   @override
@@ -330,10 +344,12 @@ class _$TicketImpl implements _Ticket {
   final String? voidReason;
   @override
   final String? voidApprovedBy;
+  @override
+  final String? createdBy;
 
   @override
   String toString() {
-    return 'Ticket(id: $id, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidApprovedBy: $voidApprovedBy)';
+    return 'Ticket(id: $id, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy)';
   }
 
   @override
@@ -361,7 +377,9 @@ class _$TicketImpl implements _Ticket {
             (identical(other.voidReason, voidReason) ||
                 other.voidReason == voidReason) &&
             (identical(other.voidApprovedBy, voidApprovedBy) ||
-                other.voidApprovedBy == voidApprovedBy));
+                other.voidApprovedBy == voidApprovedBy) &&
+            (identical(other.createdBy, createdBy) ||
+                other.createdBy == createdBy));
   }
 
   @override
@@ -381,6 +399,7 @@ class _$TicketImpl implements _Ticket {
     sentAt,
     voidReason,
     voidApprovedBy,
+    createdBy,
   );
 
   /// Create a copy of Ticket
@@ -408,6 +427,7 @@ abstract class _Ticket implements Ticket {
     required final String sentAt,
     final String? voidReason,
     final String? voidApprovedBy,
+    final String? createdBy,
   }) = _$TicketImpl;
 
   @override
@@ -438,6 +458,8 @@ abstract class _Ticket implements Ticket {
   String? get voidReason;
   @override
   String? get voidApprovedBy;
+  @override
+  String? get createdBy;
 
   /// Create a copy of Ticket
   /// with the given fields replaced by the non-null parameter values.

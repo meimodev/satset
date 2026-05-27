@@ -68,7 +68,7 @@ class AppShell extends ConsumerWidget {
     if (loc.startsWith('/venue')) return 'venue';
     if (loc.startsWith('/floor')) return 'venue';
     if (loc.startsWith('/menuadm')) return 'venue';
-    if (loc.startsWith('/settings')) return 'venue';
+    if (loc.startsWith('/system')) return 'venue';
     if (loc.startsWith('/staff')) return 'venue';
     if (loc.startsWith('/reports')) return 'venue';
     if (loc.startsWith('/me')) return 'me';
@@ -88,7 +88,7 @@ class AppShell extends ConsumerWidget {
       case 'venue':
         if (loc.startsWith('/floor')) return ['Venue', 'Atur lantai'];
         if (loc.startsWith('/menuadm')) return ['Venue', 'Menu admin'];
-        if (loc.startsWith('/settings')) return ['Venue', 'Server & konfigurasi'];
+        if (loc.startsWith('/system')) return ['Venue', 'Sistem'];
         if (loc.startsWith('/staff')) return ['Venue', 'Staf & akun'];
         if (loc.startsWith('/reports')) return ['Venue', 'Laporan shift'];
         return ['Venue', 'Konfigurasi'];

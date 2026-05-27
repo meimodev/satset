@@ -170,6 +170,7 @@ Map<String, dynamic> _itemRowToJson(MenuItem it) => {
       'station': it.station,
       'description': it.description,
       'basePrice': it.basePrice,
+      'cost': it.cost,
       'prepTime': it.prepTime,
       'variants': jsonDecode(it.variantsJson),
       'modifierGroupIds': jsonDecode(it.modifierGroupIdsJson),
@@ -231,6 +232,7 @@ Future<void> _writeItem(
             station: (body['station'] as String?) ?? 'kitchen',
             description: Value((body['description'] as String?) ?? ''),
             basePrice: (body['basePrice'] as num?)?.toInt() ?? 0,
+            cost: Value((body['cost'] as num?)?.toInt() ?? 0),
             prepTime: Value((body['prepTime'] as num?)?.toInt() ?? 5),
             variantsJson: Value(jsonEncode(body['variants'] ?? const [])),
             modifierGroupIdsJson: Value(jsonEncode(modIds ?? const [])),
@@ -259,6 +261,9 @@ Future<void> _writeItem(
             : const Value.absent(),
         basePrice: body.containsKey('basePrice')
             ? Value((body['basePrice'] as num).toInt())
+            : const Value.absent(),
+        cost: body.containsKey('cost')
+            ? Value((body['cost'] as num).toInt())
             : const Value.absent(),
         prepTime: body.containsKey('prepTime')
             ? Value((body['prepTime'] as num).toInt())

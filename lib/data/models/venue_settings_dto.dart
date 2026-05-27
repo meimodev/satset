@@ -19,6 +19,7 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default('percent') String serviceMode,
     @Default(500) int serviceRateBps,
     @Default(0) int serviceFixedAmount,
+    @Default(4) int businessDayStartHour,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

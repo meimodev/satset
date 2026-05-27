@@ -289,7 +289,8 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return _broadcast(db, hub, id);
   });
 
-  // Settle + close: clears open amount and returns the table to `available`.
+  // Settle + close: snapshots the session into TableSessions(+children),
+  // hard-deletes the live tickets, then returns the table to `available`.
   // Guarded by takeOrder; UI gates this behind "all tickets terminal".
   r.post('/tables/<id>/close', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
@@ -298,20 +299,122 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final actorId = body.isEmpty
         ? null
         : (jsonDecode(body) as Map<String, dynamic>)['actorId'] as String?;
-    await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
-      VenueTablesCompanion(
-        status: const Value('available'),
-        openAmount: const Value(0),
-        readyCount: const Value(0),
-        pax: const Value(0),
-        lastActorId: actorId == null ? const Value.absent() : Value(actorId),
-        lockedBy: const Value(null),
-        lockedByName: const Value(null),
-        lockedAt: const Value(null),
-        lockExpiresAt: const Value(null),
-        openedAt: const Value(null),
-      ),
-    );
+    String? sessionIdForBroadcast;
+    await db.transaction(() async {
+      final tableRow = await (db.select(db.venueTables)
+            ..where((t) => t.id.equals(id)))
+          .getSingleOrNull();
+      if (tableRow == null) return;
+      final tickets = await (db.select(db.tickets)
+            ..where((t) => t.tableId.equals(id)))
+          .get();
+      final now = DateTime.now().toUtc();
+      final openedAt = tableRow.openedAt;
+      final durationSec = openedAt == null
+          ? 0
+          : now.difference(openedAt).inSeconds.clamp(0, 1 << 31);
+      var subtotal = 0;
+      var voidAmount = 0;
+      for (final t in tickets) {
+        final line = t.price * t.qty;
+        if (t.status == 'void') {
+          voidAmount += line;
+        } else {
+          subtotal += line;
+        }
+      }
+      final sessionId = _uuid.v4();
+      sessionIdForBroadcast = sessionId;
+      await db.into(db.tableSessions).insert(TableSessionsCompanion.insert(
+            id: sessionId,
+            tableId: tableRow.id,
+            tableLabel: Value(tableRow.label),
+            zoneId: tableRow.zoneId,
+            pax: Value(tableRow.pax),
+            openedAt: Value(openedAt),
+            closedAt: now,
+            durationSec: Value(durationSec),
+            actorUserId: Value(actorId),
+            subtotal: Value(subtotal),
+            voidAmount: Value(voidAmount),
+            netTotal: Value(subtotal),
+            ticketCount: Value(tickets.length),
+          ));
+      for (final t in tickets) {
+        await db.into(db.tableSessionTickets).insert(
+              TableSessionTicketsCompanion.insert(
+                id: _uuid.v4(),
+                sessionId: sessionId,
+                ticketId: t.id,
+                itemId: t.itemId,
+                name: t.name,
+                variantName: Value(t.variantName),
+                course: t.course,
+                station: t.station,
+                qty: Value(t.qty),
+                modifiersJson: Value(t.modifiersJson),
+                specialInstructions: Value(t.specialInstructions),
+                price: t.price,
+                status: t.status,
+                sentAt: t.sentAt,
+                voidReason: Value(t.voidReason),
+                voidApprovedBy: Value(t.voidApprovedBy),
+                createdByUserId: Value(t.createdByUserId),
+              ),
+            );
+      }
+      final byCourse = <String, List<Ticket>>{};
+      for (final t in tickets) {
+        byCourse.putIfAbsent(t.course, () => []).add(t);
+      }
+      for (final entry in byCourse.entries) {
+        final courseTickets = entry.value;
+        DateTime? firedAt;
+        DateTime? servedAt;
+        for (final t in courseTickets) {
+          if (firedAt == null || t.sentAt.isBefore(firedAt)) {
+            firedAt = t.sentAt;
+          }
+          if (t.status == 'served') {
+            if (servedAt == null || t.sentAt.isAfter(servedAt)) {
+              servedAt = t.sentAt;
+            }
+          }
+        }
+        await db.into(db.tableSessionCourses).insert(
+              TableSessionCoursesCompanion.insert(
+                id: _uuid.v4(),
+                sessionId: sessionId,
+                courseId: entry.key,
+                firedAt: Value(firedAt),
+                servedAt: Value(servedAt),
+                ticketCount: Value(courseTickets.length),
+              ),
+            );
+      }
+      await (db.delete(db.tickets)..where((t) => t.tableId.equals(id))).go();
+      await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
+        VenueTablesCompanion(
+          status: const Value('available'),
+          openAmount: const Value(0),
+          readyCount: const Value(0),
+          pax: const Value(0),
+          lastActorId:
+              actorId == null ? const Value.absent() : Value(actorId),
+          lockedBy: const Value(null),
+          lockedByName: const Value(null),
+          lockedAt: const Value(null),
+          lockExpiresAt: const Value(null),
+          openedAt: const Value(null),
+        ),
+      );
+    });
+    if (sessionIdForBroadcast != null) {
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': id,
+        'sessionId': sessionIdForBroadcast,
+      });
+    }
     return _broadcast(db, hub, id);
   });
 

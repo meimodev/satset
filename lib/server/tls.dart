@@ -20,6 +20,17 @@ class ServerTls {
     required this.fingerprint,
   });
 
+  late final X509CertificateData _parsed =
+      X509Utils.x509CertificateFromPem(certPem);
+
+  /// Cert NotBefore (issued at). UTC.
+  DateTime get certIssuedAt =>
+      _parsed.tbsCertificate?.validity.notBefore ?? DateTime.now();
+
+  /// Cert NotAfter (expires at). UTC.
+  DateTime get certExpiry =>
+      _parsed.tbsCertificate?.validity.notAfter ?? DateTime.now();
+
   /// Load existing material or generate a new self-signed pair.
   static Future<ServerTls> loadOrCreate() async {
     final dir = await getApplicationSupportDirectory();
