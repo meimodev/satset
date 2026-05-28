@@ -209,6 +209,7 @@ class OpsSectionDto with _$OpsSectionDto {
     @Default(<List<double>>[]) List<List<double>> heatmap,
     required ReservationStatsDto reservations,
     @Default(<VoidReasonDto>[]) List<VoidReasonDto> voidReasons,
+    @Default(<StaffVoidDto>[]) List<StaffVoidDto> voidByStaff,
   }) = _OpsSectionDto;
 
   factory OpsSectionDto.fromJson(Map<String, dynamic> json) =>
@@ -252,4 +253,19 @@ class VoidReasonDto with _$VoidReasonDto {
 
   factory VoidReasonDto.fromJson(Map<String, dynamic> json) =>
       _$VoidReasonDtoFromJson(json);
+}
+
+@freezed
+class StaffVoidDto with _$StaffVoidDto {
+  const factory StaffVoidDto({
+    required String id,
+    required String name,
+    @Default(0) int count,
+    @Default(0) int lostRupiah,
+    @Default('other') String topReasonCode,
+    @Default('Lainnya') String topReasonLabel,
+  }) = _StaffVoidDto;
+
+  factory StaffVoidDto.fromJson(Map<String, dynamic> json) =>
+      _$StaffVoidDtoFromJson(json);
 }

@@ -17,6 +17,35 @@ import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/reservations_strip.dart';
 
+/// Ticks once per second to drive live elapsed-time updates on table cards.
+/// autoDispose so the stream stops when no card is watching it.
+final _tableElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
+  (ref) => Stream<DateTime>.periodic(
+    const Duration(seconds: 1),
+    (_) => DateTime.now(),
+  ),
+);
+
+// Animation tuning. Lively but professional. easeOutQuart per design tokens.
+const Curve _kEase = Curves.easeOutQuart;
+const Duration _kStatusXfade = Duration(milliseconds: 280);
+const Duration _kChipMorph = Duration(milliseconds: 240);
+const Duration _kCardEnter = Duration(milliseconds: 380);
+const Duration _kPressIn = Duration(milliseconds: 90);
+const int _kStaggerStepMs = 26;
+
+bool _animationsDisabled(BuildContext context) =>
+    MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+String _formatElapsed(Duration d) {
+  final s = d.inSeconds.abs();
+  final h = s ~/ 3600;
+  final m = (s % 3600) ~/ 60;
+  final sec = s % 60;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return h > 0 ? '$h:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
+}
+
 class TablesScreen extends ConsumerStatefulWidget {
   const TablesScreen({super.key});
 
@@ -75,14 +104,18 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                           crossAxisSpacing: 12,
                           childAspectRatio: 1.45,
                           children: [
-                            for (final t in zoneTables)
-                              _TableCard(
-                                table: t,
-                                tablet: true,
-                                onTap: () => context.push('/table/${t.id}'),
-                                onLongPress: () => showGuestStepperSheet(
-                                  context: context,
-                                  tableId: t.id,
+                            for (final entry in zoneTables.asMap().entries)
+                              _CardFadeIn(
+                                key: ValueKey('tab-$activeZoneId-${entry.value.id}'),
+                                index: entry.key,
+                                child: _TableCard(
+                                  table: entry.value,
+                                  tablet: true,
+                                  onTap: () => context.push('/table/${entry.value.id}'),
+                                  onLongPress: () => showGuestStepperSheet(
+                                    context: context,
+                                    tableId: entry.value.id,
+                                  ),
                                 ),
                               ),
                           ],
@@ -161,14 +194,18 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                         crossAxisSpacing: 8,
                         childAspectRatio: 1.45,
                         children: [
-                          for (final t in zoneTables)
-                            _TableCard(
-                              table: t,
-                              tablet: false,
-                              onTap: () => context.push('/table/${t.id}'),
-                              onLongPress: () => showGuestStepperSheet(
-                                context: context,
-                                tableId: t.id,
+                          for (final entry in zoneTables.asMap().entries)
+                            _CardFadeIn(
+                              key: ValueKey('phn-$activeZoneId-${entry.value.id}'),
+                              index: entry.key,
+                              child: _TableCard(
+                                table: entry.value,
+                                tablet: false,
+                                onTap: () => context.push('/table/${entry.value.id}'),
+                                onLongPress: () => showGuestStepperSheet(
+                                  context: context,
+                                  tableId: entry.value.id,
+                                ),
                               ),
                             ),
                         ],
@@ -216,31 +253,47 @@ class _ZoneRow extends StatelessWidget {
             final zoneTables = tables.where((t) => t.zoneId == z.id).toList();
             final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
             final countLabel = ready > 0 ? '$ready siap' : '${zoneTables.length}';
+            final dur = _animationsDisabled(context) ? Duration.zero : _kChipMorph;
             return GestureDetector(
               onTap: () => onChange(z.id),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: tablet ? 16 : 14, vertical: tablet ? 10 : 9),
-                decoration: BoxDecoration(
-                  color: isActive ? sc.textHi : sc.bg2,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: isActive ? sc.textHi : sc.border0),
-                ),
-                child: Row(
-                  children: [
-                    Text(z.name,
+              child: AnimatedScale(
+                scale: isActive ? 1.0 : 0.97,
+                duration: dur,
+                curve: _kEase,
+                child: AnimatedContainer(
+                  duration: dur,
+                  curve: _kEase,
+                  padding: EdgeInsets.symmetric(horizontal: tablet ? 16 : 14, vertical: tablet ? 10 : 9),
+                  decoration: BoxDecoration(
+                    color: isActive ? sc.textHi : sc.bg2,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: isActive ? sc.textHi : sc.border0),
+                  ),
+                  child: Row(
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: dur,
+                        curve: _kEase,
                         style: SatType.sans(
                           size: 13,
                           weight: FontWeight.w500,
                           color: isActive ? sc.bg0 : sc.textMd,
-                        )),
-                    const SizedBox(width: 10),
-                    Text(countLabel,
+                        ),
+                        child: Text(z.name),
+                      ),
+                      const SizedBox(width: 10),
+                      AnimatedDefaultTextStyle(
+                        duration: dur,
+                        curve: _kEase,
                         style: SatType.mono(
                           size: 11,
                           color: isActive ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
                           letterSpacing: 0,
-                        )),
-                  ],
+                        ),
+                        child: Text(countLabel),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -251,7 +304,7 @@ class _ZoneRow extends StatelessWidget {
   }
 }
 
-class _TableCard extends ConsumerWidget {
+class _TableCard extends ConsumerStatefulWidget {
   final VenueTable table;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -263,7 +316,46 @@ class _TableCard extends ConsumerWidget {
     this.onLongPress,
   });
 
-  String _statusLabel() => switch (table.status) {
+  @override
+  ConsumerState<_TableCard> createState() => _TableCardState();
+}
+
+class _TableCardState extends ConsumerState<_TableCard>
+    with SingleTickerProviderStateMixin {
+  bool _pressed = false;
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    if (widget.table.status == TableStatus.ready) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TableCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final shouldPulse = widget.table.status == TableStatus.ready;
+    if (shouldPulse && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!shouldPulse && _pulse.isAnimating) {
+      _pulse.stop();
+      _pulse.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  String _statusLabel(VenueTable table) => switch (table.status) {
         TableStatus.available => 'Kosong',
         TableStatus.occupied => 'Terisi',
         TableStatus.pending => 'Pesanan masuk',
@@ -271,7 +363,9 @@ class _TableCard extends ConsumerWidget {
       };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final table = widget.table;
+    final tablet = widget.tablet;
     final sc = context.sat;
     final isReady = table.status == TableStatus.ready;
     final isOccupied = table.status == TableStatus.occupied;
@@ -315,22 +409,41 @@ class _TableCard extends ConsumerWidget {
     final padding = tablet ? const EdgeInsets.fromLTRB(18, 18, 18, 16) : const EdgeInsets.fromLTRB(14, 16, 14, 14);
     final avatarSize = tablet ? 24.0 : 20.0;
 
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(radius),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(radius),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
+    final reduced = _animationsDisabled(context);
+    final xfade = reduced ? Duration.zero : _kStatusXfade;
+    final pressDur = reduced ? Duration.zero : _kPressIn;
+
+    final card = AnimatedScale(
+      scale: _pressed ? 0.97 : 1.0,
+      duration: pressDur,
+      curve: _kEase,
+      child: AnimatedContainer(
+        duration: xfade,
+        curve: _kEase,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: border),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(radius),
+          child: InkWell(
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            onTapDown: (_) {
+              if (!reduced) setState(() => _pressed = true);
+            },
+            onTapCancel: () {
+              if (_pressed) setState(() => _pressed = false);
+            },
+            onTapUp: (_) {
+              if (_pressed) setState(() => _pressed = false);
+            },
             borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: border),
-          ),
-          child: Stack(
-            children: [
-              Column(
+            child: Padding(
+              padding: padding,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -340,15 +453,21 @@ class _TableCard extends ConsumerWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: Text(table.displayName,
+                          child: AnimatedDefaultTextStyle(
+                            duration: xfade,
+                            curve: _kEase,
+                            style: SatType.mono(
+                              size: tnumSize,
+                              weight: FontWeight.w500,
+                              letterSpacing: -tnumSize * 0.02,
+                              color: numColor,
+                            ),
+                            child: Text(
+                              table.displayName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: SatType.mono(
-                                size: tnumSize,
-                                weight: FontWeight.w500,
-                                letterSpacing: -tnumSize * 0.02,
-                                color: numColor,
-                              )),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -375,19 +494,39 @@ class _TableCard extends ConsumerWidget {
                           )),
                     ),
                   const Spacer(),
+                  if (table.openedAt != null)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: tablet ? 4 : 3, left: 18),
+                      child: Builder(builder: (ctx) {
+                        ref.watch(_tableElapsedTickerProvider);
+                        final elapsed = DateTime.now().difference(table.openedAt!);
+                        return Text(
+                          _formatElapsed(elapsed),
+                          style: SatType.mono(
+                            size: tablet ? 12 : 11,
+                            color: sc.textLo,
+                            letterSpacing: 0.44,
+                          ),
+                        );
+                      }),
+                    ),
                   Row(
                     children: [
-                      Container(
+                      AnimatedContainer(
+                        duration: xfade,
+                        curve: _kEase,
                         width: 10,
                         height: 10,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: statusDot),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: statusDot,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          _statusLabel(),
-                          maxLines: isPending ? 2 : 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: AnimatedDefaultTextStyle(
+                          duration: xfade,
+                          curve: _kEase,
                           style: SatType.sans(
                             size: tablet ? 13 : 12,
                             weight: isReady ? FontWeight.w600 : FontWeight.w500,
@@ -395,17 +534,13 @@ class _TableCard extends ConsumerWidget {
                             height: isPending ? 1.15 : 1.0,
                             color: statusColor,
                           ),
+                          child: Text(
+                            _statusLabel(table),
+                            maxLines: isPending ? 2 : 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                      if (table.elapsed != null) ...[
-                        const SizedBox(width: 8),
-                        Text(table.elapsed!,
-                            style: SatType.mono(
-                              size: tablet ? 12 : 11,
-                              color: sc.textLo,
-                              letterSpacing: 0.44,
-                            )),
-                      ],
                       if (actor != null) ...[
                         const SizedBox(width: 8),
                         _ActorAvatar(actor: actor, size: avatarSize, mine: isMine),
@@ -414,10 +549,34 @@ class _TableCard extends ConsumerWidget {
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+
+    if (!isReady || reduced) return card;
+
+    // Ready: soft pulsing glow halo. Communicates "pick me up".
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_pulse.value);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius),
+            boxShadow: [
+              BoxShadow(
+                color: sc.success.withValues(alpha: 0.10 + 0.22 * t),
+                blurRadius: 10 + 10 * t,
+                spreadRadius: 0.5 + 1.5 * t,
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: card,
     );
   }
 }
@@ -465,35 +624,136 @@ class _ActorAvatar extends StatelessWidget {
   }
 }
 
-class _EmptyZone extends StatelessWidget {
+/// Fades + rises each grid card in with a per-index stagger.
+/// Re-runs whenever the key changes (e.g. switching zones).
+class _CardFadeIn extends StatefulWidget {
+  final int index;
+  final Widget child;
+  const _CardFadeIn({super.key, required this.index, required this.child});
+
+  @override
+  State<_CardFadeIn> createState() => _CardFadeInState();
+}
+
+class _CardFadeInState extends State<_CardFadeIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  bool _scheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: _kCardEnter);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_scheduled) return;
+    _scheduled = true;
+    if (_animationsDisabled(context)) {
+      _c.value = 1;
+      return;
+    }
+    final delay = Duration(milliseconds: _kStaggerStepMs * widget.index);
+    Future<void>.delayed(delay, () {
+      if (mounted) _c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = _kEase.transform(_c.value);
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 14),
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _EmptyZone extends StatefulWidget {
   final String zoneName;
   final bool tablet;
   const _EmptyZone({required this.zoneName, required this.tablet});
 
   @override
+  State<_EmptyZone> createState() => _EmptyZoneState();
+}
+
+class _EmptyZoneState extends State<_EmptyZone>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _float;
+
+  @override
+  void initState() {
+    super.initState();
+    _float = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _float.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final tablet = widget.tablet;
     final sc = context.sat;
     final pad = tablet ? 48.0 : 24.0;
+    final reduced = _animationsDisabled(context);
+    final iconBubble = Container(
+      width: tablet ? 72 : 56,
+      height: tablet ? 72 : 56,
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        shape: BoxShape.circle,
+        border: Border.all(color: sc.border0),
+      ),
+      alignment: Alignment.center,
+      child: Icon(Icons.grid_view_rounded, size: tablet ? 32 : 26, color: sc.textLo),
+    );
     return Padding(
       padding: EdgeInsets.all(pad),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: tablet ? 72 : 56,
-              height: tablet ? 72 : 56,
-              decoration: BoxDecoration(
-                color: sc.bg2,
-                shape: BoxShape.circle,
-                border: Border.all(color: sc.border0),
+            if (reduced)
+              iconBubble
+            else
+              AnimatedBuilder(
+                animation: _float,
+                builder: (_, child) {
+                  final t = Curves.easeInOut.transform(_float.value);
+                  return Transform.translate(
+                    offset: Offset(0, -4 * t),
+                    child: child,
+                  );
+                },
+                child: iconBubble,
               ),
-              alignment: Alignment.center,
-              child: Icon(Icons.grid_view_rounded, size: tablet ? 32 : 26, color: sc.textLo),
-            ),
             SizedBox(height: tablet ? 18 : 14),
             Text(
-              'Belum ada meja di $zoneName',
+              'Belum ada meja di ${widget.zoneName}',
               textAlign: TextAlign.center,
               style: SatType.sans(
                 size: tablet ? 18 : 15,

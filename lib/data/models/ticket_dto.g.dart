@@ -26,8 +26,10 @@ _$TicketDtoImpl _$$TicketDtoImplFromJson(Map<String, dynamic> json) =>
       status: json['status'] as String,
       sentAt: DateTime.parse(json['sentAt'] as String),
       voidReason: json['voidReason'] as String?,
+      voidReasonCode: json['voidReasonCode'] as String?,
       voidApprovedBy: json['voidApprovedBy'] as String?,
       createdByUserId: json['createdByUserId'] as String?,
+      voidedByUserId: json['voidedByUserId'] as String?,
     );
 
 Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
@@ -46,8 +48,10 @@ Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
       'status': instance.status,
       'sentAt': instance.sentAt.toIso8601String(),
       'voidReason': instance.voidReason,
+      'voidReasonCode': instance.voidReasonCode,
       'voidApprovedBy': instance.voidApprovedBy,
       'createdByUserId': instance.createdByUserId,
+      'voidedByUserId': instance.voidedByUserId,
     };
 
 _$TicketTransitionRequestDtoImpl _$$TicketTransitionRequestDtoImplFromJson(
@@ -55,6 +59,7 @@ _$TicketTransitionRequestDtoImpl _$$TicketTransitionRequestDtoImplFromJson(
 ) => _$TicketTransitionRequestDtoImpl(
   status: json['status'] as String,
   voidReason: json['voidReason'] as String?,
+  voidReasonCode: json['voidReasonCode'] as String?,
 );
 
 Map<String, dynamic> _$$TicketTransitionRequestDtoImplToJson(
@@ -62,4 +67,5 @@ Map<String, dynamic> _$$TicketTransitionRequestDtoImplToJson(
 ) => <String, dynamic>{
   'status': instance.status,
   'voidReason': instance.voidReason,
+  'voidReasonCode': instance.voidReasonCode,
 };

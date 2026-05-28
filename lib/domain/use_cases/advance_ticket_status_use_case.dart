@@ -46,6 +46,7 @@ class AdvanceTicketStatusUseCase {
     String ticketId,
     TicketStatus to, {
     String? voidReason,
+    String? voidReasonCode,
     String? voidApprovedBy,
   }) async {
     final current = _tickets.findTicket(tableId, ticketId);
@@ -60,6 +61,7 @@ class AdvanceTicketStatusUseCase {
       ticketId,
       to,
       voidReason: voidReason,
+      voidReasonCode: voidReasonCode,
       voidApprovedBy: voidApprovedBy,
     );
   }

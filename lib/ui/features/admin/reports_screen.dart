@@ -1311,6 +1311,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(height: 14),
           _voidReasons(context, ops.voidReasons),
         ],
+        const SizedBox(height: 14),
+        _voidByStaff(context, ops.voidByStaff),
       ],
     );
   }
@@ -1585,6 +1587,77 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               borderRadius: BorderRadius.circular(3))),
                     ),
                   ]),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _voidByStaff(BuildContext context, List<StaffVoidDto> rows) {
+    final sc = context.sat;
+    if (rows.isEmpty) {
+      return _card(context, 'Void per pelayan',
+          sub: 'Belum ada void', child: const SizedBox(height: 30));
+    }
+    final total = rows.fold<int>(0, (s, r) => s + r.count);
+    final totalRp = rows.fold<int>(0, (s, r) => s + r.lostRupiah);
+    final maxN = rows.map((r) => r.count).fold<int>(1, (a, b) => b > a ? b : a);
+    return _card(
+      context,
+      'Void per pelayan',
+      sub: '$total kejadian · ${_compactRp(totalRp)} hilang',
+      child: Column(
+        children: [
+          for (final r in rows)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                          child: Text(r.name,
+                              style: SatType.sans(size: 13, color: sc.textHi))),
+                      Text('${r.count}×',
+                          style: SatType.mono(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: sc.textHi,
+                              letterSpacing: 0.4)),
+                      const SizedBox(width: 10),
+                      Text(_compactRp(r.lostRupiah),
+                          style: SatType.mono(
+                              size: 11, color: sc.textMd, letterSpacing: 0.4)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Stack(children: [
+                          Container(
+                              height: 5,
+                              decoration: BoxDecoration(
+                                  color: sc.bg3,
+                                  borderRadius: BorderRadius.circular(3))),
+                          FractionallySizedBox(
+                            widthFactor: r.count / maxN,
+                            child: Container(
+                                height: 5,
+                                decoration: BoxDecoration(
+                                    color: sc.warn,
+                                    borderRadius: BorderRadius.circular(3))),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('alasan: ${r.topReasonLabel}',
+                          style: SatType.sans(size: 10, color: sc.textLo)),
+                    ],
+                  ),
                 ],
               ),
             ),

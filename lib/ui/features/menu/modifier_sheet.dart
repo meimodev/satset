@@ -636,12 +636,15 @@ class _Foot extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(valid ? 'Tambah ke pesanan' : 'Pilih wajib',
-                        style: SatType.sans(
-                          size: 15,
-                          weight: FontWeight.w600,
-                          color: sc.accentInk,
-                        )),
+                    if (valid)
+                      Icon(Icons.add, size: 22, color: sc.accentInk)
+                    else
+                      Text('Pilih wajib',
+                          style: SatType.sans(
+                            size: 15,
+                            weight: FontWeight.w600,
+                            color: sc.accentInk,
+                          )),
                     if (valid) ...[
                       const SizedBox(width: 10),
                       Text(totalLabel,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
-import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/menu_item.dart';
@@ -10,11 +9,13 @@ import 'package:satset/data/repositories/audit_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 
+// Canonical reason codes — must match the server taxonomy in
+// reports_routes.dart and the void_reason_code DB column (see ADR-0006).
 const _voidReasons = <Map<String, String>>[
-  {'id': 'error', 'label': 'Terkirim salah', 'desc': 'Salah meja, tap ganda, salah ring'},
-  {'id': 'changed', 'label': 'Tamu berubah pikiran', 'desc': 'Tamu batalkan permintaan'},
-  {'id': 'allergy', 'label': 'Alergi / diet', 'desc': 'Tamu beri info setelah submit'},
-  {'id': 'complaint', 'label': 'Komplain', 'desc': 'Masalah kualitas — pertimbangkan refire'},
+  {'id': 'wrongOrder', 'label': 'Terkirim salah', 'desc': 'Salah meja, tap ganda, salah ring'},
+  {'id': 'customerChange', 'label': 'Tamu berubah pikiran', 'desc': 'Tamu batalkan permintaan'},
+  {'id': 'outOfStock', 'label': 'Stok habis', 'desc': 'Item habis di stasiun'},
+  {'id': 'kitchenError', 'label': 'Komplain / kualitas dapur', 'desc': 'Masalah kualitas — pertimbangkan refire'},
   {'id': 'other', 'label': 'Lainnya', 'desc': 'Alasan bebas wajib diisi'},
 ];
 
@@ -45,7 +46,7 @@ void showLineItemActionSheet({
   );
 }
 
-enum _Step { actions, voidReason, managerPin, confirmed }
+enum _Step { actions, voidReason, confirmed }
 
 class _SheetBody extends StatefulWidget {
   final WidgetRef ref;
@@ -112,27 +113,19 @@ class _SheetBodyState extends State<_SheetBody> {
     }
   }
 
-  Future<void> _commitVoid(String approver) async {
+  Future<void> _commitVoid() async {
     final t = widget.ticket;
     final reason = _reason!;
-    final reasonStr = reason['label']! +
-        (_reasonText.isNotEmpty ? ' — "$_reasonText"' : '');
+    // Free-text rides only for `other`; fixed reasons store their label so the
+    // audit row + reports read cleanly. The server stamps the acting waiter.
+    final reasonStr = _reasonText.isNotEmpty ? _reasonText : reason['label']!;
     await widget.ref.read(advanceTicketStatusUseCaseProvider).call(
           widget.tableId,
           t.id,
           TicketStatus.voided,
-          voidReason: reason['label']!,
-          voidApprovedBy: approver,
+          voidReason: reasonStr,
+          voidReasonCode: reason['id']!,
         );
-    widget.ref.read(auditProvider.notifier).add(AuditEntry(
-          id: 'A${DateTime.now().millisecondsSinceEpoch}',
-          type: AuditType.voidItem,
-          title: 'Dibatalkan ×${t.qty} ${t.name} (${formatIDR(t.price)})',
-          tableId: widget.tableId,
-          when: _nowStamp(),
-          reason: reasonStr,
-          approvedBy: approver,
-        ));
     setState(() => _step = _Step.confirmed);
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) Navigator.of(context).pop();
@@ -166,14 +159,11 @@ class _SheetBodyState extends State<_SheetBody> {
                 _Step.actions => _ActionList(ticket: widget.ticket, onPick: _pickAction),
                 _Step.voidReason => _VoidReasonList(
                     onPick: (r, text) {
-                      setState(() {
-                        _reason = r;
-                        _reasonText = text;
-                        _step = _Step.managerPin;
-                      });
+                      _reason = r;
+                      _reasonText = text;
+                      _commitVoid();
                     },
                   ),
-                _Step.managerPin => _ManagerPinView(ticket: widget.ticket, onApprove: _commitVoid),
                 _Step.confirmed => _ConfirmedView(ticket: widget.ticket),
               },
             ),
@@ -368,7 +358,7 @@ class _ActionList extends StatelessWidget {
         id: 'void',
         icon: Icons.delete_outline,
         title: 'Batalkan item',
-        desc: 'Hapus dari pesanan · butuh PIN manajer',
+        desc: 'Hapus dari pesanan · tercatat atas nama kamu',
         tone: _Tone.danger,
       ));
     }
@@ -542,7 +532,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Pembatalan dicatat dengan sign-in kamu, alasan, dan manajer yang menyetujui. Refire mungkin lebih cocok untuk isu kualitas.',
+                    'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan. Refire mungkin lebih cocok untuk isu kualitas.',
                     style: SatType.sans(size: 12, color: sc.textMd, height: 1.4),
                   ),
                 ),
@@ -649,185 +639,19 @@ class _VoidReasonListState extends State<_VoidReasonList> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Lanjut ke PIN manajer',
+                  Text('Batalkan item',
                       style: SatType.sans(
                         size: 15,
                         weight: FontWeight.w600,
                         color: sc.accentInk,
                       )),
                   const SizedBox(width: 6),
-                  Icon(Icons.chevron_right, size: 14, color: sc.accentInk),
+                  Icon(Icons.delete_outline, size: 14, color: sc.accentInk),
                 ],
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ManagerPinView extends StatefulWidget {
-  final Ticket ticket;
-  final ValueChanged<String> onApprove;
-  const _ManagerPinView({required this.ticket, required this.onApprove});
-
-  @override
-  State<_ManagerPinView> createState() => _ManagerPinViewState();
-}
-
-class _ManagerPinViewState extends State<_ManagerPinView> {
-  String _pin = '';
-  bool _err = false;
-  static const _max = 4;
-
-  void _press(String d) {
-    setState(() => _err = false);
-    if (d == 'del') {
-      setState(() => _pin = _pin.isEmpty ? _pin : _pin.substring(0, _pin.length - 1));
-      return;
-    }
-    if (_pin.length >= _max) return;
-    setState(() => _pin = _pin + d);
-    if (_pin.length == _max) {
-      Future.delayed(const Duration(milliseconds: 220), () {
-        if (!mounted) return;
-        if (_pin == '0000') {
-          setState(() {
-            _err = true;
-            _pin = '';
-          });
-        } else {
-          widget.onApprove('Sari (Mgr)');
-        }
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 14),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: sc.urgentSoft,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(Icons.lock_outline, size: 16, color: sc.urgent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('PIN manajer dibutuhkan',
-                          style: SatType.sans(
-                            size: 15,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          )),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Membatalkan ×${widget.ticket.qty} ${widget.ticket.name} — ${formatIDR(widget.ticket.price)}',
-                        style: SatType.sans(size: 12, color: sc.textMd, height: 1.35),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(_max, (i) {
-              final filled = i < _pin.length;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _err ? sc.urgent : (filled ? sc.accent : sc.bg3),
-                  ),
-                ),
-              );
-            }),
-          ),
-          if (_err)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text('PIN salah — coba lagi',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.urgent,
-                    letterSpacing: 0.44,
-                  )),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(32, 20, 32, 8),
-            child: GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.5,
-              children: [
-                for (final k in const ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'])
-                  if (k.isEmpty)
-                    const SizedBox.shrink()
-                  else
-                    _PinKey(label: k, onTap: () => _press(k)),
-              ],
-            ),
-          ),
-          Text('COBA 0000 UNTUK SIMULASI PIN SALAH',
-              style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.6)),
-        ],
-      ),
-    );
-  }
-}
-
-class _PinKey extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _PinKey({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final muted = label == 'del';
-    return Material(
-      color: muted ? Colors.transparent : sc.bg2,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          alignment: Alignment.center,
-          child: muted
-              ? Icon(Icons.backspace_outlined, color: sc.textMd, size: 18)
-              : Text(label,
-                  style: SatType.mono(
-                    size: 22,
-                    weight: FontWeight.w500,
-                    letterSpacing: 0,
-                    color: sc.textHi,
-                  )),
-        ),
       ),
     );
   }
@@ -864,7 +688,7 @@ class _ConfirmedView extends StatelessWidget {
               )),
           const SizedBox(height: 8),
           Text(
-            'Tercatat: ×${ticket.qty} ${ticket.name} · disetujui oleh Sari (Mgr) · terlihat di audit trail',
+            'Tercatat: ×${ticket.qty} ${ticket.name} · atas nama kamu · terlihat di laporan',
             textAlign: TextAlign.center,
             style: SatType.sans(size: 13, color: sc.textMd, height: 1.45),
           ),

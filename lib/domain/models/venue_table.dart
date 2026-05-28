@@ -19,6 +19,9 @@ class VenueTable {
   final DateTime? lockedAt;
   final DateTime? lockExpiresAt;
   final DateTime? openedAt;
+  final String? guestName;
+  final String? guestNotes;
+  final String? reservationId;
 
   const VenueTable({
     required this.id,
@@ -38,6 +41,9 @@ class VenueTable {
     this.lockedAt,
     this.lockExpiresAt,
     this.openedAt,
+    this.guestName,
+    this.guestNotes,
+    this.reservationId,
   });
 
   /// True when [lockedBy] is set, not equal to [userId], and the lease has
@@ -69,6 +75,9 @@ class VenueTable {
     DateTime? lockedAt,
     DateTime? lockExpiresAt,
     DateTime? openedAt,
+    String? guestName,
+    String? guestNotes,
+    String? reservationId,
   }) {
     return VenueTable(
       id: id,
@@ -88,6 +97,9 @@ class VenueTable {
       lockedAt: lockedAt ?? this.lockedAt,
       lockExpiresAt: lockExpiresAt ?? this.lockExpiresAt,
       openedAt: openedAt ?? this.openedAt,
+      guestName: guestName ?? this.guestName,
+      guestNotes: guestNotes ?? this.guestNotes,
+      reservationId: reservationId ?? this.reservationId,
     );
   }
 }

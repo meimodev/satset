@@ -11,6 +11,7 @@ import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/ticket.dart' show TicketStatus, ticketStatusFromKey;
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 
 const _allowedTransitions = <TicketStatus, Set<TicketStatus>>{
   TicketStatus.draft: {TicketStatus.sent, TicketStatus.voided},
@@ -27,8 +28,14 @@ const _allowedTransitions = <TicketStatus, Set<TicketStatus>>{
 };
 
 Capability? _requiredCap(TicketStatus from, TicketStatus to) {
-  // Voids always go through the void-item capability regardless of source.
-  if (to == TicketStatus.voided) return Capability.voidItem;
+  // Pre-serve voids are self-served by any waiter holding voidItem (ADR-0006).
+  // Voiding an already-served item is a comp/refund — a manager power — so it
+  // routes through compItem instead.
+  if (to == TicketStatus.voided) {
+    return from == TicketStatus.served
+        ? Capability.compItem
+        : Capability.voidItem;
+  }
   // Waiter-driven transitions: serve, undo-serve, fire-from-hold.
   if (from == TicketStatus.ready && to == TicketStatus.served) {
     return Capability.takeOrder;
@@ -78,6 +85,64 @@ Future<Response?> _requireCap(
         headers: {'content-type': 'application/json'});
   }
   return null;
+}
+
+/// Resolve the bearer-token user for void attribution. Null when no auth
+/// helper is configured (server-mode boot before secret loaded).
+Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
+  if (auth == null) return null;
+  final token = req.headers['authorization']
+      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  return auth.resolveBearer(token);
+}
+
+const _voidReasonLabels = <String, String>{
+  'wrongOrder': 'Terkirim salah',
+  'customerChange': 'Tamu berubah pikiran',
+  'outOfStock': 'Stok habis',
+  'kitchenError': 'Komplain / kualitas dapur',
+  'other': 'Lainnya',
+};
+
+/// Persist + broadcast a void audit row stamped with the acting waiter.
+Future<void> _emitVoidAudit(
+  AppDatabase db,
+  WsHub hub, {
+  required Ticket ticket,
+  required String reasonCode,
+  required String? reasonText,
+  String? actorUserId,
+}) async {
+  final reason = (reasonText != null && reasonText.trim().isNotEmpty)
+      ? reasonText
+      : (_voidReasonLabels[reasonCode] ?? reasonCode);
+  final id = const Uuid().v4();
+  await db.into(db.auditEntries).insertOnConflictUpdate(
+        AuditEntriesCompanion.insert(
+          id: id,
+          type: AuditType.voidItem.name,
+          title:
+              'Dibatalkan ×${ticket.qty} ${ticket.name} (${ticket.price * ticket.qty})',
+          tableId: Value(ticket.tableId),
+          at: DateTime.now(),
+          reason: Value(reason),
+          actorUserId: Value(actorUserId),
+        ),
+      );
+  final row = await (db.select(db.auditEntries)..where((a) => a.id.equals(id)))
+      .getSingleOrNull();
+  if (row != null) {
+    hub.broadcast(WsEventTypes.auditCreated, {
+      'id': row.id,
+      'type': row.type,
+      'title': row.title,
+      'tableId': row.tableId,
+      'at': row.at.toIso8601String(),
+      'approvedBy': row.approvedBy,
+      'reason': row.reason,
+      'actorUserId': row.actorUserId,
+    });
+  }
 }
 
 Map<String, dynamic> _tableToJson(VenueTable t) => {
@@ -224,14 +289,35 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       final denied = await _requireCap(req, db, auth, needed);
       if (denied != null) return denied;
     }
+    // Void requires a reason + canonical code so reports can attribute lost
+    // revenue (ADR-0006). UI-only enforcement is insufficient now the manager
+    // gate is gone.
+    final isVoid = to == TicketStatus.voided;
+    final voidReason = body['voidReason'] as String?;
+    final voidReasonCode = body['voidReasonCode'] as String?;
+    if (isVoid &&
+        (voidReason == null ||
+            voidReason.trim().isEmpty ||
+            voidReasonCode == null ||
+            voidReasonCode.trim().isEmpty)) {
+      return Response(400,
+          body: jsonEncode({
+            'code': 'reason_required',
+            'message': 'void requires voidReason and voidReasonCode',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    final actor = isVoid ? await _actor(req, db, auth) : null;
     Ticket? row;
     VenueTable? tableRow;
     await db.transaction(() async {
       await (db.update(db.tickets)..where((t) => t.id.equals(id))).write(
         TicketsCompanion(
           status: Value(statusRaw),
-          voidReason: Value(body['voidReason'] as String?),
+          voidReason: Value(voidReason),
+          voidReasonCode: Value(voidReasonCode),
           voidApprovedBy: Value(body['voidApprovedBy'] as String?),
+          voidedByUserId: Value(actor?.id),
         ),
       );
       row = await (db.select(db.tickets)..where((t) => t.id.equals(id)))
@@ -295,6 +381,16 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               .getSingleOrNull();
     });
     if (row == null) return Response.notFound('ticket not found');
+    if (isVoid) {
+      await _emitVoidAudit(
+        db,
+        hub,
+        ticket: row!,
+        reasonCode: voidReasonCode!,
+        reasonText: voidReason,
+        actorUserId: actor?.id,
+      );
+    }
     hub.broadcast(WsEventTypes.ticketUpdated, _toJson(row!));
     if (tableRow != null) {
       hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow!));
@@ -356,6 +452,8 @@ Map<String, dynamic> _toJson(Ticket t) => {
       'status': t.status,
       'sentAt': t.sentAt.toIso8601String(),
       'voidReason': t.voidReason,
+      'voidReasonCode': t.voidReasonCode,
       'voidApprovedBy': t.voidApprovedBy,
       'createdByUserId': t.createdByUserId,
+      'voidedByUserId': t.voidedByUserId,
     };

@@ -21,6 +21,9 @@ class TableDto with _$TableDto {
     DateTime? lockedAt,
     DateTime? lockExpiresAt,
     DateTime? openedAt,
+    String? guestName,
+    String? guestNotes,
+    String? reservationId,
   }) = _TableDto;
 
   factory TableDto.fromJson(Map<String, dynamic> json) =>

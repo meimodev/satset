@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/pin_sheet.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
@@ -15,13 +14,19 @@ import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 const _kEnterDur = Duration(milliseconds: 480);
 const _kMicroDur = Duration(milliseconds: 200);
 const _kPanelDur = Duration(milliseconds: 280);
-const _kPressDur = Duration(milliseconds: 110);
-const _kShakeDur = Duration(milliseconds: 360);
 const _kEnterCurve = Curves.easeOutQuart;
 const _kPanelCurve = Curves.easeOutQuint;
 
 Duration _d(BuildContext c, Duration d) =>
     MediaQuery.disableAnimationsOf(c) ? Duration.zero : d;
+
+const _kStaffDebugCreds = PinDebugCreds([
+  (pin: '100000', name: 'Pak Nyoman', role: 'Owner'),
+  (pin: '100001', name: 'Maya', role: 'Waiter'),
+  (pin: '100002', name: 'Budi', role: 'Waiter'),
+  (pin: '100003', name: 'Rina', role: 'Waiter'),
+  (pin: '100004', name: 'Komang', role: 'Kitchen'),
+]);
 
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
@@ -36,9 +41,9 @@ class _PinScreenState extends ConsumerState<PinScreen>
   final _adminPassword = TextEditingController();
   bool _showAdminPw = false;
   bool _serverEditing = false;
+  bool _sheetOpen = false;
   String? _emailError;
   String? _passwordError;
-  late final AnimationController _shake;
 
   static final _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
@@ -47,7 +52,6 @@ class _PinScreenState extends ConsumerState<PinScreen>
     super.initState();
     _adminEmail.addListener(_clearEmailError);
     _adminPassword.addListener(_clearPasswordError);
-    _shake = AnimationController(vsync: this, duration: _kShakeDur);
   }
 
   @override
@@ -56,13 +60,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
     _adminPassword.removeListener(_clearPasswordError);
     _adminEmail.dispose();
     _adminPassword.dispose();
-    _shake.dispose();
     super.dispose();
-  }
-
-  void _triggerShake() {
-    if (MediaQuery.disableAnimationsOf(context)) return;
-    _shake.forward(from: 0);
   }
 
   void _clearEmailError() {
@@ -105,20 +103,25 @@ class _PinScreenState extends ConsumerState<PinScreen>
     if (ok) context.go('/venue');
   }
 
-  Future<void> _onDigit(String d) async {
-    final vm = ref.read(pinViewModelProvider.notifier);
-    if (d == 'del') {
-      vm.backspace();
-      return;
-    }
-    vm.onDigit(d);
-    final st = ref.read(pinViewModelProvider);
-    if (st.pin.length == PinState.pinMax) {
-      await Future<void>.delayed(const Duration(milliseconds: 220));
-      if (!mounted) return;
-      final ok = await vm.submitStaffPin();
-      if (!mounted) return;
-      if (ok) context.go('/tables');
+  Future<void> _openPinSheet(PairedServerInfo server) async {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
+    final ok = await showPinSheet(
+      context,
+      title: 'Masukkan PIN',
+      subtitle: 'Tersambung ke ${server.label}',
+      onSubmit: (pin) =>
+          ref.read(pinViewModelProvider.notifier).verifyPin(pin),
+      debugCreds: kDebugMode ? _kStaffDebugCreds : null,
+    );
+    _sheetOpen = false;
+    if (!mounted) return;
+    if (ok == true) {
+      context.go('/tables');
+    } else {
+      // Dismissed without success — flip back to server-edit so user can pick
+      // a different server or retry.
+      setState(() => _serverEditing = true);
     }
   }
 
@@ -141,27 +144,26 @@ class _PinScreenState extends ConsumerState<PinScreen>
     }
     final state = ref.watch(pinViewModelProvider);
 
-    // Auto-collapse the server editor once a paired server is selected.
     ref.listen<PinState>(pinViewModelProvider, (prev, next) {
       final wasPaired = prev?.selectedServer?.paired ?? false;
       final isPaired = next.selectedServer?.paired ?? false;
-      if (!wasPaired && isPaired && _serverEditing) {
-        setState(() => _serverEditing = false);
-      }
-      if (prev?.pinError != next.pinError && next.pinError != null) {
-        _triggerShake();
+      if (!wasPaired && isPaired) {
+        if (_serverEditing) {
+          setState(() => _serverEditing = false);
+        }
+        if (next.mode == SignInMode.staff && !_sheetOpen) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _openPinSheet(next.selectedServer!);
+          });
+        }
       }
     });
 
     final staffConnected = state.mode == SignInMode.staff &&
         (state.selectedServer?.paired ?? false);
-    // Staff editor is shown when explicitly editing OR there is nothing to
-    // connect to yet. Hides PIN input until a server is locked in.
     final staffEditing =
         state.mode == SignInMode.staff && (_serverEditing || !staffConnected);
-    // Hide mode switcher once a staff connection is locked in — the chip on
-    // the connected card already conveys the active mode, and edit re-opens
-    // the editor (which brings the switcher back).
     final showModeSwitcher =
         state.mode == SignInMode.admin || staffEditing;
 
@@ -192,46 +194,57 @@ class _PinScreenState extends ConsumerState<PinScreen>
             : _ConnectedServerCard(
                 server: state.selectedServer!,
                 onEdit: () => setState(() => _serverEditing = true),
+                onReenterPin: () => _openPinSheet(state.selectedServer!),
               );
 
     if (l.useTabletShell) {
-      final tabletAuthBody = state.mode == SignInMode.staff
-          ? (staffEditing
-              ? _SelectServerHint(sc: sc)
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _PinDots(pin: state.pin, tablet: true, shake: _shake),
-                    const SizedBox(height: 12),
-                    _PinHelper(
-                      pinLength: state.pin.length,
-                      max: PinState.pinMax,
-                      busy: state.pinBusy,
-                      error: state.pinError,
-                    ),
-                    const SizedBox(height: 22),
-                    _Pad(
-                      onPress: _onDigit,
-                      tablet: true,
-                      enabled: !state.pinBusy,
-                    ),
-                  ],
-                ))
-          : _AdminAuthForm(
-              email: _adminEmail,
-              password: _adminPassword,
-              showPassword: _showAdminPw,
-              onToggleShow: () =>
-                  setState(() => _showAdminPw = !_showAdminPw),
-              onSubmit: _signInAdmin,
-              emailError: _emailError,
-              passwordError: _passwordError,
-              busy: state.adminBusy,
-              serverError: state.adminError,
-            );
-      final swapKey = state.mode == SignInMode.admin
-          ? 'admin'
-          : (staffEditing ? 'staff-edit' : 'staff-pin');
+      // Tablet: left = brand + mode switch + server panel. Right = admin form
+      // (admin mode only). Staff PIN entry lives in the bottom sheet.
+      final rightCol = state.mode == SignInMode.admin
+          ? Container(
+              width: 480,
+              decoration: BoxDecoration(
+                border: Border(left: BorderSide(color: sc.border0)),
+              ),
+              padding: const EdgeInsets.fromLTRB(48, 56, 48, 32),
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _Reveal(
+                        delay: const Duration(milliseconds: 120),
+                        child: _ModeHeading(
+                          mode: state.mode,
+                          server: state.selectedServer,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      _Reveal(
+                        delay: const Duration(milliseconds: 180),
+                        child: _AdminAuthForm(
+                          email: _adminEmail,
+                          password: _adminPassword,
+                          showPassword: _showAdminPw,
+                          onToggleShow: () =>
+                              setState(() => _showAdminPw = !_showAdminPw),
+                          onSubmit: _signInAdmin,
+                          emailError: _emailError,
+                          passwordError: _passwordError,
+                          busy: state.adminBusy,
+                          serverError: state.adminError,
+                        ),
+                      ),
+                      _Reveal(
+                        delay: const Duration(milliseconds: 260),
+                        child: _AdminDebugCredsButton(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : const SizedBox.shrink();
       return Scaffold(
         backgroundColor: sc.bg0,
         body: Row(
@@ -275,54 +288,13 @@ class _PinScreenState extends ConsumerState<PinScreen>
                 ),
               ),
             ),
-            Container(
-              width: 480,
-              decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: sc.border0)),
-              ),
-              padding: const EdgeInsets.fromLTRB(48, 56, 48, 32),
-              child: Center(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (state.mode == SignInMode.admin) ...[
-                        _Reveal(
-                          delay: const Duration(milliseconds: 120),
-                          child: _ModeHeading(
-                            mode: state.mode,
-                            server: state.selectedServer,
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                      ],
-                      _Reveal(
-                        delay: const Duration(milliseconds: 180),
-                        child: _SwapBody(
-                          switchKey: swapKey,
-                          child: tabletAuthBody,
-                        ),
-                      ),
-                      _Reveal(
-                        delay: const Duration(milliseconds: 260),
-                        child: _DebugCredsButton(mode: state.mode),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            rightCol,
           ],
         ),
       );
     }
 
     final brand = _Brand();
-    final pad = _Pad(
-      onPress: _onDigit,
-      tablet: false,
-      enabled: !state.pinBusy,
-    );
     final modeHeading = _ModeHeading(
       mode: state.mode,
       server: state.selectedServer,
@@ -339,29 +311,11 @@ class _PinScreenState extends ConsumerState<PinScreen>
       serverError: state.adminError,
     );
     final authBody = state.mode == SignInMode.staff
-        ? (staffEditing
-            ? _SelectServerHint(sc: sc)
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _PinDots(pin: state.pin, tablet: false, shake: _shake),
-                  const SizedBox(height: 10),
-                  _PinHelper(
-                    pinLength: state.pin.length,
-                    max: PinState.pinMax,
-                    busy: state.pinBusy,
-                    error: state.pinError,
-                  ),
-                  const SizedBox(height: 18),
-                  pad,
-                ],
-              ))
+        ? const SizedBox.shrink()
         : adminForm;
 
     final twoCol = l.isLandscape && l.size.width >= 720;
-    final swapKey = state.mode == SignInMode.admin
-        ? 'admin'
-        : (staffEditing ? 'staff-edit' : 'staff-pin');
+    final swapKey = state.mode == SignInMode.admin ? 'admin' : 'staff';
 
     final modeBlock = AnimatedSize(
       duration: _d(context, _kPanelDur),
@@ -420,15 +374,15 @@ class _PinScreenState extends ConsumerState<PinScreen>
                                   child: modeHeading,
                                 ),
                                 const SizedBox(height: 22),
+                                _Reveal(
+                                  delay: const Duration(milliseconds: 180),
+                                  child: wrappedAuthBody,
+                                ),
+                                _Reveal(
+                                  delay: const Duration(milliseconds: 260),
+                                  child: _AdminDebugCredsButton(),
+                                ),
                               ],
-                              _Reveal(
-                                delay: const Duration(milliseconds: 180),
-                                child: wrappedAuthBody,
-                              ),
-                              _Reveal(
-                                delay: const Duration(milliseconds: 260),
-                                child: _DebugCredsButton(mode: state.mode),
-                              ),
                             ],
                           ),
                         ),
@@ -451,15 +405,15 @@ class _PinScreenState extends ConsumerState<PinScreen>
                             child: modeHeading,
                           ),
                           const SizedBox(height: 18),
+                          _Reveal(
+                            delay: const Duration(milliseconds: 200),
+                            child: wrappedAuthBody,
+                          ),
+                          _Reveal(
+                            delay: const Duration(milliseconds: 280),
+                            child: _AdminDebugCredsButton(),
+                          ),
                         ],
-                        _Reveal(
-                          delay: const Duration(milliseconds: 200),
-                          child: wrappedAuthBody,
-                        ),
-                        _Reveal(
-                          delay: const Duration(milliseconds: 280),
-                          child: _DebugCredsButton(mode: state.mode),
-                        ),
                       ],
                     ),
             ),
@@ -467,61 +421,6 @@ class _PinScreenState extends ConsumerState<PinScreen>
         ),
       ),
     );
-  }
-}
-
-class _PinDots extends StatelessWidget {
-  final String pin;
-  final bool tablet;
-  final Animation<double>? shake;
-  const _PinDots({required this.pin, required this.tablet, this.shake});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final size = tablet ? 16.0 : 14.0;
-    final pad = tablet ? 9.0 : 8.0;
-    final row = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(PinState.pinMax, (i) {
-        final filled = i < pin.length;
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: pad),
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: filled ? 0 : 1, end: filled ? 1 : 0),
-            duration: _d(context, const Duration(milliseconds: 180)),
-            curve: Curves.easeOutQuart,
-            builder: (context, t, _) {
-              final scale = 0.7 + 0.3 * t;
-              return Transform.scale(
-                scale: filled ? scale : 1.0,
-                child: Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color.lerp(sc.bg3, sc.accent, t)!,
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      }),
-    );
-    final shaken = shake == null
-        ? row
-        : AnimatedBuilder(
-            animation: shake!,
-            builder: (context, child) {
-              final t = shake!.value;
-              if (t == 0) return child!;
-              final dx = math.sin(t * math.pi * 4) * 8 * (1 - t);
-              return Transform.translate(offset: Offset(dx, 0), child: child);
-            },
-            child: row,
-          );
-    return Center(child: shaken);
   }
 }
 
@@ -1185,41 +1084,6 @@ class _TabletBrand extends StatelessWidget {
   }
 }
 
-class _Pad extends StatelessWidget {
-  final void Function(String) onPress;
-  final bool tablet;
-  final bool enabled;
-  const _Pad({
-    required this.onPress,
-    required this.tablet,
-    required this.enabled,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: tablet ? 12 : 10,
-      crossAxisSpacing: tablet ? 12 : 10,
-      childAspectRatio: tablet ? 1.6 : 1.4,
-      children: [
-        for (final k in keys)
-          if (k == '')
-            const SizedBox.shrink()
-          else
-            _PinKey(
-              label: k,
-              tablet: tablet,
-              onTap: enabled ? () => onPress(k) : null,
-            ),
-      ],
-    );
-  }
-}
-
 class _Field extends StatelessWidget {
   final String label;
   final String hint;
@@ -1298,115 +1162,14 @@ class _Field extends StatelessWidget {
   }
 }
 
-class _PinHelper extends StatelessWidget {
-  final int pinLength;
-  final int max;
-  final bool busy;
-  final String? error;
-  const _PinHelper({
-    required this.pinLength,
-    required this.max,
-    required this.busy,
-    this.error,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    if (error != null) {
-      return Center(
-        child: Text(error!,
-            style: SatType.mono(
-                size: 11,
-                weight: FontWeight.w600,
-                color: sc.urgent,
-                letterSpacing: 0.6)),
-      );
-    }
-    final empty = pinLength == 0;
-    final complete = pinLength >= max;
-    if (empty && !busy && !complete) {
-      return const SizedBox.shrink();
-    }
-    final text = busy || complete
-        ? 'Memverifikasi...'
-        : '$pinLength / $max digit';
-    final color = (busy || complete) ? sc.accent : sc.textLo;
-    return Center(
-      child: Text(text,
-          style: SatType.mono(
-              size: 11, color: color, letterSpacing: 0.6)),
-    );
-  }
-}
-
-class _PinKey extends StatefulWidget {
-  final String label;
-  final bool tablet;
-  final VoidCallback? onTap;
-  const _PinKey({required this.label, required this.tablet, required this.onTap});
-
-  @override
-  State<_PinKey> createState() => _PinKeyState();
-}
-
-class _PinKeyState extends State<_PinKey> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final muted = widget.label == 'del';
-    final disabled = widget.onTap == null;
-    return GestureDetector(
-      onTapDown: disabled ? null : (_) => setState(() => _pressed = true),
-      onTapCancel: disabled ? null : () => setState(() => _pressed = false),
-      onTapUp: disabled ? null : (_) => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? 0.92 : 1.0,
-        duration: _d(context, _kPressDur),
-        curve: Curves.easeOutQuart,
-        child: AnimatedContainer(
-          duration: _d(context, _kMicroDur),
-          curve: Curves.easeOutQuart,
-          decoration: BoxDecoration(
-            color: muted
-                ? Colors.transparent
-                : (disabled
-                    ? sc.bg2.withValues(alpha: 0.6)
-                    : (_pressed ? sc.accentSoft : sc.bg2)),
-            borderRadius: BorderRadius.circular(22),
-          ),
-          alignment: Alignment.center,
-          child: muted
-              ? Icon(Icons.backspace_outlined,
-                  color: disabled ? sc.textLo : sc.textMd,
-                  size: widget.tablet ? 26 : 22)
-              : Text(widget.label,
-                  style: SatType.mono(
-                    size: widget.tablet ? 32 : 26,
-                    weight: FontWeight.w500,
-                    letterSpacing: 0,
-                    color: disabled ? sc.textLo : sc.textHi,
-                  )),
-        ),
-      ),
-    );
-  }
-}
-
 // Keep `authStateProvider` import alive — surfacing auth busy/error on the
 // pad area is delegated to PinViewModel which forwards into PinState.
 // ignore: unused_element
 void _retain(WidgetRef ref) => ref.read(authStateProvider);
 
-/// Debug-only button that opens a bottom sheet with seeded credentials.
-class _DebugCredsButton extends StatelessWidget {
-  final SignInMode mode;
-  const _DebugCredsButton({required this.mode});
-
+/// Debug-only button surfacing seeded admin credentials. Staff PIN creds live
+/// inside the PIN sheet (see `_kStaffDebugCreds`).
+class _AdminDebugCredsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!kDebugMode) return const SizedBox.shrink();
@@ -1415,7 +1178,7 @@ class _DebugCredsButton extends StatelessWidget {
       padding: const EdgeInsets.only(top: 18),
       child: Center(
         child: TextButton.icon(
-          onPressed: () => _showDebugCreds(context, mode),
+          onPressed: () => _showAdminDebugCreds(context),
           style: TextButton.styleFrom(
             foregroundColor: sc.warn,
             backgroundColor: sc.warnSoft,
@@ -1438,7 +1201,7 @@ class _DebugCredsButton extends StatelessWidget {
     );
   }
 
-  static void _showDebugCreds(BuildContext context, SignInMode mode) {
+  static void _showAdminDebugCreds(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1453,9 +1216,29 @@ class _DebugCredsButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: sc.border0),
             ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-              child: _DebugCredsHint(mode: mode),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
+                    const SizedBox(width: 6),
+                    Text('DEBUG · SEEDED ADMIN',
+                        style: SatType.mono(
+                          size: 10,
+                          weight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                          color: sc.warn,
+                        )),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _DebugCredRow(label: 'EMAIL', value: 'admin@satset.local'),
+                const SizedBox(height: 4),
+                _DebugCredRow(label: 'PASS', value: 'admin123'),
+              ],
             ),
           ),
         );
@@ -1464,78 +1247,15 @@ class _DebugCredsButton extends StatelessWidget {
   }
 }
 
-/// Debug-only seeded credentials hint. Hidden in release builds.
-class _DebugCredsHint extends StatelessWidget {
-  final SignInMode mode;
-  const _DebugCredsHint({required this.mode});
-
-  static const _adminEmail = 'admin@satset.local';
-  static const _adminPassword = 'admin123';
-  static const _staffPins = <(String, String, String)>[
-    ('100000', 'Pak Nyoman', 'Owner'),
-    ('100001', 'Maya', 'Waiter'),
-    ('100002', 'Budi', 'Waiter'),
-    ('100003', 'Rina', 'Waiter'),
-    ('100004', 'Komang', 'Kitchen'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    if (!kDebugMode) return const SizedBox.shrink();
-    final sc = context.sat;
-    return Container(
-      margin: const EdgeInsets.only(top: 18),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: sc.warnSoft,
-        border: Border.all(color: sc.warn.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
-              const SizedBox(width: 6),
-              Text('DEBUG · SEEDED CREDS',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: sc.warn,
-                  )),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (mode == SignInMode.admin) ...[
-            _DebugCredRow(
-              label: 'EMAIL',
-              value: _adminEmail,
-            ),
-            const SizedBox(height: 4),
-            _DebugCredRow(
-              label: 'PASS',
-              value: _adminPassword,
-            ),
-          ] else
-            for (var i = 0; i < _staffPins.length; i++) ...[
-              if (i > 0) const SizedBox(height: 4),
-              _DebugCredRow(
-                label: _staffPins[i].$1,
-                value: '${_staffPins[i].$2} · ${_staffPins[i].$3}',
-              ),
-            ],
-        ],
-      ),
-    );
-  }
-}
-
 class _ConnectedServerCard extends StatelessWidget {
   final PairedServerInfo server;
   final VoidCallback onEdit;
-  const _ConnectedServerCard({required this.server, required this.onEdit});
+  final VoidCallback onReenterPin;
+  const _ConnectedServerCard({
+    required this.server,
+    required this.onEdit,
+    required this.onReenterPin,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1557,7 +1277,7 @@ class _ConnectedServerCard extends StatelessWidget {
           color: sc.bg2,
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
-            onTap: onEdit,
+            onTap: onReenterPin,
             borderRadius: BorderRadius.circular(14),
             child: Container(
               decoration: BoxDecoration(
@@ -1642,36 +1362,18 @@ class _ConnectedServerCard extends StatelessWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _SelectServerHint extends StatelessWidget {
-  final SatColors sc;
-  const _SelectServerHint({required this.sc});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.lock_outline_rounded, size: 18, color: sc.textMd),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Pilih server terlebih dahulu untuk memasukkan PIN.',
-              style: SatType.sans(size: 13, color: sc.textMd),
+        const SizedBox(height: 10),
+        Center(
+          child: Text(
+            'Ketuk kartu untuk masukkan PIN',
+            style: SatType.mono(
+              size: 10,
+              color: sc.textLo,
+              letterSpacing: 0.6,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

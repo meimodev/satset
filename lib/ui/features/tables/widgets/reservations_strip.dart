@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/reservations_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
+import 'package:satset/data/services/api_client.dart';
 import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -135,8 +137,6 @@ class ReservationsStrip extends ConsumerWidget {
     var party = 2;
     final now = DateTime.now();
     var expected = DateTime(now.year, now.month, now.day, 19, 0);
-    String? zoneId;
-    final zones = ref.read(zonesProvider);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -261,17 +261,6 @@ class ReservationsStrip extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                DropdownButtonFormField<String?>(
-                  initialValue: zoneId,
-                  decoration: const InputDecoration(labelText: 'Zona (opsional)'),
-                  items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Tanpa zona')),
-                    for (final z in zones)
-                      DropdownMenuItem<String?>(value: z.id, child: Text(z.name)),
-                  ],
-                  onChanged: (v) => setLocal(() => zoneId = v),
-                ),
-                const SizedBox(height: 10),
                 TextField(
                   controller: notesCtl,
                   maxLines: 2,
@@ -293,7 +282,6 @@ class ReservationsStrip extends ConsumerWidget {
                                 : phoneCtl.text.trim(),
                             partySize: party,
                             expectedAt: expected,
-                            zoneId: zoneId,
                             notes: notesCtl.text.trim().isEmpty
                                 ? null
                                 : notesCtl.text.trim(),
@@ -321,12 +309,6 @@ class ReservationsStrip extends ConsumerWidget {
   Future<void> _openActionSheet(
       BuildContext context, WidgetRef ref, Reservation r) async {
     final sc = context.sat;
-    final tables = ref.read(tablesProvider);
-    final available = tables
-        .where((t) =>
-            t.status == TableStatus.available &&
-            (r.zoneId == null || t.zoneId == r.zoneId))
-        .toList();
     await showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
@@ -362,60 +344,45 @@ class ReservationsStrip extends ConsumerWidget {
                 Text(
                     '${_fmtTime(r.expectedAt)} · ${r.partySize} tamu · ${reservationStatusLabel(r.status)}',
                     style: SatType.sans(size: 12, color: sc.textMd)),
-                if (r.notes != null && r.notes!.isNotEmpty) ...[
+                if (r.phone != null && r.phone!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.phone_outlined, size: 14, color: sc.textLo),
+                      const SizedBox(width: 6),
+                      Text(r.phone!,
+                          style: SatType.mono(
+                              size: 12, color: sc.textMd, letterSpacing: 0.2)),
+                    ],
+                  ),
+                ],
+                if (r.notes != null && r.notes!.trim().isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(r.notes!, style: SatType.sans(size: 13, color: sc.textMd)),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    decoration: BoxDecoration(
+                      color: sc.bg2,
+                      border: Border.all(color: sc.border0),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.sticky_note_2_outlined,
+                            size: 14, color: sc.textLo),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(r.notes!,
+                              style: SatType.sans(
+                                  size: 13, color: sc.textMd, height: 1.3)),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 if (r.status == ReservationStatus.pending) ...[
-                  Text('Dudukkan ke meja:',
-                      style: SatType.mono(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          letterSpacing: 1.0,
-                          color: sc.textLo)),
-                  const SizedBox(height: 8),
-                  if (available.isEmpty)
-                    Text('Tidak ada meja tersedia di zona ini.',
-                        style: SatType.sans(size: 12, color: sc.textMd))
-                  else
-                    SizedBox(
-                      height: 36,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: available.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 6),
-                        itemBuilder: (c, i) {
-                          final t = available[i];
-                          return GestureDetector(
-                            onTap: () async {
-                              await ref
-                                  .read(reservationsRepositoryProvider.notifier)
-                                  .assignTable(r.id,
-                                      zoneId: t.zoneId, tableId: t.id);
-                              await ref
-                                  .read(reservationsRepositoryProvider.notifier)
-                                  .updateStatus(r.id, ReservationStatus.seated);
-                              if (ctx.mounted) Navigator.of(ctx).pop();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: sc.bg2,
-                                border: Border.all(color: sc.border1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(t.displayName,
-                                  style: SatType.mono(
-                                      size: 12,
-                                      weight: FontWeight.w600,
-                                      color: sc.textHi)),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                  _SeatPicker(reservation: r),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -565,6 +532,178 @@ class _ReservationChip extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _SeatPicker extends ConsumerStatefulWidget {
+  final Reservation reservation;
+  const _SeatPicker({required this.reservation});
+
+  @override
+  ConsumerState<_SeatPicker> createState() => _SeatPickerState();
+}
+
+class _SeatPickerState extends ConsumerState<_SeatPicker> {
+  String? _zoneId;
+
+  @override
+  void initState() {
+    super.initState();
+    _zoneId = widget.reservation.zoneId;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final zones = ref.watch(zonesProvider);
+    final tables = ref.watch(tablesProvider);
+    final activeZoneId = _zoneId ?? (zones.isNotEmpty ? zones.first.id : null);
+    final r = widget.reservation;
+    final available = tables
+        .where((t) =>
+            t.status == TableStatus.available &&
+            t.capacity >= r.partySize &&
+            (activeZoneId == null || t.zoneId == activeZoneId))
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Pilih zona:',
+            style: SatType.mono(
+                size: 10,
+                weight: FontWeight.w600,
+                letterSpacing: 1.0,
+                color: sc.textLo)),
+        const SizedBox(height: 8),
+        if (zones.isEmpty)
+          Text('Belum ada zona.',
+              style: SatType.sans(size: 12, color: sc.textMd))
+        else
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: zones.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final z = zones[i];
+                final isActive = z.id == activeZoneId;
+                return GestureDetector(
+                  onTap: () => setState(() => _zoneId = z.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isActive ? sc.textHi : sc.bg2,
+                      border: Border.all(
+                          color: isActive ? sc.textHi : sc.border1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(z.name,
+                        style: SatType.sans(
+                            size: 12,
+                            weight: FontWeight.w500,
+                            color: isActive ? sc.bg0 : sc.textMd)),
+                  ),
+                );
+              },
+            ),
+          ),
+        const SizedBox(height: 12),
+        Text('Dudukkan ke meja:',
+            style: SatType.mono(
+                size: 10,
+                weight: FontWeight.w600,
+                letterSpacing: 1.0,
+                color: sc.textLo)),
+        const SizedBox(height: 8),
+        if (available.isEmpty)
+          Text(
+              'Tidak ada meja kapasitas ≥ ${r.partySize} di zona ini.',
+              style: SatType.sans(size: 12, color: sc.textMd))
+        else
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: available.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final t = available[i];
+                return GestureDetector(
+                  onTap: () => _seat(context, t),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: sc.bg2,
+                      border: Border.all(color: sc.border1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(t.displayName,
+                            style: SatType.mono(
+                                size: 12,
+                                weight: FontWeight.w600,
+                                color: sc.textHi)),
+                        const SizedBox(width: 6),
+                        Icon(Icons.person_outline,
+                            size: 11, color: sc.textLo),
+                        Text('${t.capacity}',
+                            style: SatType.mono(
+                                size: 10, color: sc.textLo)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _seat(BuildContext ctx, VenueTable t) async {
+    final r = widget.reservation;
+    final user = ref.read(authStateProvider).user;
+    try {
+      await ref.read(tablesProvider.notifier).seat(
+            t.id,
+            pax: r.partySize,
+            guestName: r.name,
+            guestNotes: r.notes,
+            reservationId: r.id,
+            userId: user?.id,
+            userName: user?.name,
+            // Atomically claim the lock so a second device opening the same
+            // table after the WS broadcast can't snatch it before the
+            // reservation waiter navigates over.
+            acquireLock: true,
+          );
+      await ref
+          .read(reservationsRepositoryProvider.notifier)
+          .assignTable(r.id, zoneId: t.zoneId, tableId: t.id);
+      await ref
+          .read(reservationsRepositoryProvider.notifier)
+          .updateStatus(r.id, ReservationStatus.seated);
+      if (ctx.mounted) Navigator.of(ctx).pop();
+    } on ApiException catch (e) {
+      if (ctx.mounted) {
+        final msg = e.code == 'already_seated'
+            ? 'Meja sudah diisi tamu lain'
+            : 'Gagal duduk: ${e.code ?? e.statusCode}';
+        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } catch (e) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(content: Text('Gagal duduk: $e')),
+        );
+      }
+    }
   }
 }
 

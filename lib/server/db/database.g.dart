@@ -1561,6 +1561,39 @@ class $VenueTablesTable extends VenueTables
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _guestNameMeta = const VerificationMeta(
+    'guestName',
+  );
+  @override
+  late final GeneratedColumn<String> guestName = GeneratedColumn<String>(
+    'guest_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _guestNotesMeta = const VerificationMeta(
+    'guestNotes',
+  );
+  @override
+  late final GeneratedColumn<String> guestNotes = GeneratedColumn<String>(
+    'guest_notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reservationIdMeta = const VerificationMeta(
+    'reservationId',
+  );
+  @override
+  late final GeneratedColumn<String> reservationId = GeneratedColumn<String>(
+    'reservation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1578,6 +1611,9 @@ class $VenueTablesTable extends VenueTables
     lockedAt,
     lockExpiresAt,
     openedAt,
+    guestName,
+    guestNotes,
+    reservationId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1691,6 +1727,27 @@ class $VenueTablesTable extends VenueTables
         openedAt.isAcceptableOrUnknown(data['opened_at']!, _openedAtMeta),
       );
     }
+    if (data.containsKey('guest_name')) {
+      context.handle(
+        _guestNameMeta,
+        guestName.isAcceptableOrUnknown(data['guest_name']!, _guestNameMeta),
+      );
+    }
+    if (data.containsKey('guest_notes')) {
+      context.handle(
+        _guestNotesMeta,
+        guestNotes.isAcceptableOrUnknown(data['guest_notes']!, _guestNotesMeta),
+      );
+    }
+    if (data.containsKey('reservation_id')) {
+      context.handle(
+        _reservationIdMeta,
+        reservationId.isAcceptableOrUnknown(
+          data['reservation_id']!,
+          _reservationIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1760,6 +1817,18 @@ class $VenueTablesTable extends VenueTables
         DriftSqlType.dateTime,
         data['${effectivePrefix}opened_at'],
       ),
+      guestName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guest_name'],
+      ),
+      guestNotes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guest_notes'],
+      ),
+      reservationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reservation_id'],
+      ),
     );
   }
 
@@ -1785,6 +1854,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
   final DateTime? lockedAt;
   final DateTime? lockExpiresAt;
   final DateTime? openedAt;
+  final String? guestName;
+  final String? guestNotes;
+  final String? reservationId;
   const VenueTable({
     required this.id,
     required this.zoneId,
@@ -1801,6 +1873,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     this.lockedAt,
     this.lockExpiresAt,
     this.openedAt,
+    this.guestName,
+    this.guestNotes,
+    this.reservationId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1833,6 +1908,15 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     }
     if (!nullToAbsent || openedAt != null) {
       map['opened_at'] = Variable<DateTime>(openedAt);
+    }
+    if (!nullToAbsent || guestName != null) {
+      map['guest_name'] = Variable<String>(guestName);
+    }
+    if (!nullToAbsent || guestNotes != null) {
+      map['guest_notes'] = Variable<String>(guestNotes);
+    }
+    if (!nullToAbsent || reservationId != null) {
+      map['reservation_id'] = Variable<String>(reservationId);
     }
     return map;
   }
@@ -1868,6 +1952,15 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       openedAt: openedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(openedAt),
+      guestName: guestName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guestName),
+      guestNotes: guestNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guestNotes),
+      reservationId: reservationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reservationId),
     );
   }
 
@@ -1892,6 +1985,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       lockedAt: serializer.fromJson<DateTime?>(json['lockedAt']),
       lockExpiresAt: serializer.fromJson<DateTime?>(json['lockExpiresAt']),
       openedAt: serializer.fromJson<DateTime?>(json['openedAt']),
+      guestName: serializer.fromJson<String?>(json['guestName']),
+      guestNotes: serializer.fromJson<String?>(json['guestNotes']),
+      reservationId: serializer.fromJson<String?>(json['reservationId']),
     );
   }
   @override
@@ -1913,6 +2009,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       'lockedAt': serializer.toJson<DateTime?>(lockedAt),
       'lockExpiresAt': serializer.toJson<DateTime?>(lockExpiresAt),
       'openedAt': serializer.toJson<DateTime?>(openedAt),
+      'guestName': serializer.toJson<String?>(guestName),
+      'guestNotes': serializer.toJson<String?>(guestNotes),
+      'reservationId': serializer.toJson<String?>(reservationId),
     };
   }
 
@@ -1932,6 +2031,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     Value<DateTime?> lockedAt = const Value.absent(),
     Value<DateTime?> lockExpiresAt = const Value.absent(),
     Value<DateTime?> openedAt = const Value.absent(),
+    Value<String?> guestName = const Value.absent(),
+    Value<String?> guestNotes = const Value.absent(),
+    Value<String?> reservationId = const Value.absent(),
   }) => VenueTable(
     id: id ?? this.id,
     zoneId: zoneId ?? this.zoneId,
@@ -1950,6 +2052,11 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
         ? lockExpiresAt.value
         : this.lockExpiresAt,
     openedAt: openedAt.present ? openedAt.value : this.openedAt,
+    guestName: guestName.present ? guestName.value : this.guestName,
+    guestNotes: guestNotes.present ? guestNotes.value : this.guestNotes,
+    reservationId: reservationId.present
+        ? reservationId.value
+        : this.reservationId,
   );
   VenueTable copyWithCompanion(VenueTablesCompanion data) {
     return VenueTable(
@@ -1978,6 +2085,13 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ? data.lockExpiresAt.value
           : this.lockExpiresAt,
       openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
+      guestName: data.guestName.present ? data.guestName.value : this.guestName,
+      guestNotes: data.guestNotes.present
+          ? data.guestNotes.value
+          : this.guestNotes,
+      reservationId: data.reservationId.present
+          ? data.reservationId.value
+          : this.reservationId,
     );
   }
 
@@ -1998,7 +2112,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ..write('lockedByName: $lockedByName, ')
           ..write('lockedAt: $lockedAt, ')
           ..write('lockExpiresAt: $lockExpiresAt, ')
-          ..write('openedAt: $openedAt')
+          ..write('openedAt: $openedAt, ')
+          ..write('guestName: $guestName, ')
+          ..write('guestNotes: $guestNotes, ')
+          ..write('reservationId: $reservationId')
           ..write(')'))
         .toString();
   }
@@ -2020,6 +2137,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     lockedAt,
     lockExpiresAt,
     openedAt,
+    guestName,
+    guestNotes,
+    reservationId,
   );
   @override
   bool operator ==(Object other) =>
@@ -2039,7 +2159,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           other.lockedByName == this.lockedByName &&
           other.lockedAt == this.lockedAt &&
           other.lockExpiresAt == this.lockExpiresAt &&
-          other.openedAt == this.openedAt);
+          other.openedAt == this.openedAt &&
+          other.guestName == this.guestName &&
+          other.guestNotes == this.guestNotes &&
+          other.reservationId == this.reservationId);
 }
 
 class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
@@ -2058,6 +2181,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
   final Value<DateTime?> lockedAt;
   final Value<DateTime?> lockExpiresAt;
   final Value<DateTime?> openedAt;
+  final Value<String?> guestName;
+  final Value<String?> guestNotes;
+  final Value<String?> reservationId;
   final Value<int> rowid;
   const VenueTablesCompanion({
     this.id = const Value.absent(),
@@ -2075,6 +2201,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.lockedAt = const Value.absent(),
     this.lockExpiresAt = const Value.absent(),
     this.openedAt = const Value.absent(),
+    this.guestName = const Value.absent(),
+    this.guestNotes = const Value.absent(),
+    this.reservationId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueTablesCompanion.insert({
@@ -2093,6 +2222,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.lockedAt = const Value.absent(),
     this.lockExpiresAt = const Value.absent(),
     this.openedAt = const Value.absent(),
+    this.guestName = const Value.absent(),
+    this.guestNotes = const Value.absent(),
+    this.reservationId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        zoneId = Value(zoneId);
@@ -2112,6 +2244,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Expression<DateTime>? lockedAt,
     Expression<DateTime>? lockExpiresAt,
     Expression<DateTime>? openedAt,
+    Expression<String>? guestName,
+    Expression<String>? guestNotes,
+    Expression<String>? reservationId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2130,6 +2265,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       if (lockedAt != null) 'locked_at': lockedAt,
       if (lockExpiresAt != null) 'lock_expires_at': lockExpiresAt,
       if (openedAt != null) 'opened_at': openedAt,
+      if (guestName != null) 'guest_name': guestName,
+      if (guestNotes != null) 'guest_notes': guestNotes,
+      if (reservationId != null) 'reservation_id': reservationId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2150,6 +2288,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Value<DateTime?>? lockedAt,
     Value<DateTime?>? lockExpiresAt,
     Value<DateTime?>? openedAt,
+    Value<String?>? guestName,
+    Value<String?>? guestNotes,
+    Value<String?>? reservationId,
     Value<int>? rowid,
   }) {
     return VenueTablesCompanion(
@@ -2168,6 +2309,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       lockedAt: lockedAt ?? this.lockedAt,
       lockExpiresAt: lockExpiresAt ?? this.lockExpiresAt,
       openedAt: openedAt ?? this.openedAt,
+      guestName: guestName ?? this.guestName,
+      guestNotes: guestNotes ?? this.guestNotes,
+      reservationId: reservationId ?? this.reservationId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2220,6 +2364,15 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     if (openedAt.present) {
       map['opened_at'] = Variable<DateTime>(openedAt.value);
     }
+    if (guestName.present) {
+      map['guest_name'] = Variable<String>(guestName.value);
+    }
+    if (guestNotes.present) {
+      map['guest_notes'] = Variable<String>(guestNotes.value);
+    }
+    if (reservationId.present) {
+      map['reservation_id'] = Variable<String>(reservationId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2244,6 +2397,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
           ..write('lockedAt: $lockedAt, ')
           ..write('lockExpiresAt: $lockExpiresAt, ')
           ..write('openedAt: $openedAt, ')
+          ..write('guestName: $guestName, ')
+          ..write('guestNotes: $guestNotes, ')
+          ..write('reservationId: $reservationId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3933,6 +4089,17 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _voidedByUserIdMeta = const VerificationMeta(
+    'voidedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> voidedByUserId = GeneratedColumn<String>(
+    'voided_by_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3952,6 +4119,7 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     voidReasonCode,
     voidApprovedBy,
     createdByUserId,
+    voidedByUserId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4100,6 +4268,15 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         ),
       );
     }
+    if (data.containsKey('voided_by_user_id')) {
+      context.handle(
+        _voidedByUserIdMeta,
+        voidedByUserId.isAcceptableOrUnknown(
+          data['voided_by_user_id']!,
+          _voidedByUserIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -4177,6 +4354,10 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.string,
         data['${effectivePrefix}created_by_user_id'],
       ),
+      voidedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voided_by_user_id'],
+      ),
     );
   }
 
@@ -4207,6 +4388,10 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   final String? voidReasonCode;
   final String? voidApprovedBy;
   final String? createdByUserId;
+
+  /// User who voided this ticket. Server-stamped from the JWT on the
+  /// void transition — never client-supplied. See ADR-0006.
+  final String? voidedByUserId;
   const Ticket({
     required this.id,
     required this.tableId,
@@ -4225,6 +4410,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     this.voidReasonCode,
     this.voidApprovedBy,
     this.createdByUserId,
+    this.voidedByUserId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4255,6 +4441,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     }
     if (!nullToAbsent || createdByUserId != null) {
       map['created_by_user_id'] = Variable<String>(createdByUserId);
+    }
+    if (!nullToAbsent || voidedByUserId != null) {
+      map['voided_by_user_id'] = Variable<String>(voidedByUserId);
     }
     return map;
   }
@@ -4288,6 +4477,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       createdByUserId: createdByUserId == null && nullToAbsent
           ? const Value.absent()
           : Value(createdByUserId),
+      voidedByUserId: voidedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidedByUserId),
     );
   }
 
@@ -4316,6 +4508,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       voidReasonCode: serializer.fromJson<String?>(json['voidReasonCode']),
       voidApprovedBy: serializer.fromJson<String?>(json['voidApprovedBy']),
       createdByUserId: serializer.fromJson<String?>(json['createdByUserId']),
+      voidedByUserId: serializer.fromJson<String?>(json['voidedByUserId']),
     );
   }
   @override
@@ -4339,6 +4532,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'voidReasonCode': serializer.toJson<String?>(voidReasonCode),
       'voidApprovedBy': serializer.toJson<String?>(voidApprovedBy),
       'createdByUserId': serializer.toJson<String?>(createdByUserId),
+      'voidedByUserId': serializer.toJson<String?>(voidedByUserId),
     };
   }
 
@@ -4360,6 +4554,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     Value<String?> voidReasonCode = const Value.absent(),
     Value<String?> voidApprovedBy = const Value.absent(),
     Value<String?> createdByUserId = const Value.absent(),
+    Value<String?> voidedByUserId = const Value.absent(),
   }) => Ticket(
     id: id ?? this.id,
     tableId: tableId ?? this.tableId,
@@ -4386,6 +4581,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     createdByUserId: createdByUserId.present
         ? createdByUserId.value
         : this.createdByUserId,
+    voidedByUserId: voidedByUserId.present
+        ? voidedByUserId.value
+        : this.voidedByUserId,
   );
   Ticket copyWithCompanion(TicketsCompanion data) {
     return Ticket(
@@ -4420,6 +4618,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       createdByUserId: data.createdByUserId.present
           ? data.createdByUserId.value
           : this.createdByUserId,
+      voidedByUserId: data.voidedByUserId.present
+          ? data.voidedByUserId.value
+          : this.voidedByUserId,
     );
   }
 
@@ -4442,7 +4643,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('voidReason: $voidReason, ')
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
-          ..write('createdByUserId: $createdByUserId')
+          ..write('createdByUserId: $createdByUserId, ')
+          ..write('voidedByUserId: $voidedByUserId')
           ..write(')'))
         .toString();
   }
@@ -4466,6 +4668,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     voidReasonCode,
     voidApprovedBy,
     createdByUserId,
+    voidedByUserId,
   );
   @override
   bool operator ==(Object other) =>
@@ -4487,7 +4690,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.voidReason == this.voidReason &&
           other.voidReasonCode == this.voidReasonCode &&
           other.voidApprovedBy == this.voidApprovedBy &&
-          other.createdByUserId == this.createdByUserId);
+          other.createdByUserId == this.createdByUserId &&
+          other.voidedByUserId == this.voidedByUserId);
 }
 
 class TicketsCompanion extends UpdateCompanion<Ticket> {
@@ -4508,6 +4712,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<String?> voidReasonCode;
   final Value<String?> voidApprovedBy;
   final Value<String?> createdByUserId;
+  final Value<String?> voidedByUserId;
   final Value<int> rowid;
   const TicketsCompanion({
     this.id = const Value.absent(),
@@ -4527,6 +4732,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
     this.createdByUserId = const Value.absent(),
+    this.voidedByUserId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TicketsCompanion.insert({
@@ -4547,6 +4753,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
     this.createdByUserId = const Value.absent(),
+    this.voidedByUserId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tableId = Value(tableId),
@@ -4575,6 +4782,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<String>? voidReasonCode,
     Expression<String>? voidApprovedBy,
     Expression<String>? createdByUserId,
+    Expression<String>? voidedByUserId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4596,6 +4804,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (voidReasonCode != null) 'void_reason_code': voidReasonCode,
       if (voidApprovedBy != null) 'void_approved_by': voidApprovedBy,
       if (createdByUserId != null) 'created_by_user_id': createdByUserId,
+      if (voidedByUserId != null) 'voided_by_user_id': voidedByUserId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4618,6 +4827,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<String?>? voidReasonCode,
     Value<String?>? voidApprovedBy,
     Value<String?>? createdByUserId,
+    Value<String?>? voidedByUserId,
     Value<int>? rowid,
   }) {
     return TicketsCompanion(
@@ -4638,6 +4848,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       voidReasonCode: voidReasonCode ?? this.voidReasonCode,
       voidApprovedBy: voidApprovedBy ?? this.voidApprovedBy,
       createdByUserId: createdByUserId ?? this.createdByUserId,
+      voidedByUserId: voidedByUserId ?? this.voidedByUserId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4696,6 +4907,9 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     if (createdByUserId.present) {
       map['created_by_user_id'] = Variable<String>(createdByUserId.value);
     }
+    if (voidedByUserId.present) {
+      map['voided_by_user_id'] = Variable<String>(voidedByUserId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4722,6 +4936,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
           ..write('createdByUserId: $createdByUserId, ')
+          ..write('voidedByUserId: $voidedByUserId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8898,6 +9113,17 @@ class $TableSessionTicketsTable extends TableSessionTickets
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _voidedByUserIdMeta = const VerificationMeta(
+    'voidedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> voidedByUserId = GeneratedColumn<String>(
+    'voided_by_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8918,6 +9144,7 @@ class $TableSessionTicketsTable extends TableSessionTickets
     voidReasonCode,
     voidApprovedBy,
     createdByUserId,
+    voidedByUserId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9074,6 +9301,15 @@ class $TableSessionTicketsTable extends TableSessionTickets
         ),
       );
     }
+    if (data.containsKey('voided_by_user_id')) {
+      context.handle(
+        _voidedByUserIdMeta,
+        voidedByUserId.isAcceptableOrUnknown(
+          data['voided_by_user_id']!,
+          _voidedByUserIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9155,6 +9391,10 @@ class $TableSessionTicketsTable extends TableSessionTickets
         DriftSqlType.string,
         data['${effectivePrefix}created_by_user_id'],
       ),
+      voidedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voided_by_user_id'],
+      ),
     );
   }
 
@@ -9186,6 +9426,9 @@ class TableSessionTicket extends DataClass
   final String? voidReasonCode;
   final String? voidApprovedBy;
   final String? createdByUserId;
+
+  /// Mirrors Tickets.voidedByUserId at session close.
+  final String? voidedByUserId;
   const TableSessionTicket({
     required this.id,
     required this.sessionId,
@@ -9205,6 +9448,7 @@ class TableSessionTicket extends DataClass
     this.voidReasonCode,
     this.voidApprovedBy,
     this.createdByUserId,
+    this.voidedByUserId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9236,6 +9480,9 @@ class TableSessionTicket extends DataClass
     }
     if (!nullToAbsent || createdByUserId != null) {
       map['created_by_user_id'] = Variable<String>(createdByUserId);
+    }
+    if (!nullToAbsent || voidedByUserId != null) {
+      map['voided_by_user_id'] = Variable<String>(voidedByUserId);
     }
     return map;
   }
@@ -9270,6 +9517,9 @@ class TableSessionTicket extends DataClass
       createdByUserId: createdByUserId == null && nullToAbsent
           ? const Value.absent()
           : Value(createdByUserId),
+      voidedByUserId: voidedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidedByUserId),
     );
   }
 
@@ -9299,6 +9549,7 @@ class TableSessionTicket extends DataClass
       voidReasonCode: serializer.fromJson<String?>(json['voidReasonCode']),
       voidApprovedBy: serializer.fromJson<String?>(json['voidApprovedBy']),
       createdByUserId: serializer.fromJson<String?>(json['createdByUserId']),
+      voidedByUserId: serializer.fromJson<String?>(json['voidedByUserId']),
     );
   }
   @override
@@ -9323,6 +9574,7 @@ class TableSessionTicket extends DataClass
       'voidReasonCode': serializer.toJson<String?>(voidReasonCode),
       'voidApprovedBy': serializer.toJson<String?>(voidApprovedBy),
       'createdByUserId': serializer.toJson<String?>(createdByUserId),
+      'voidedByUserId': serializer.toJson<String?>(voidedByUserId),
     };
   }
 
@@ -9345,6 +9597,7 @@ class TableSessionTicket extends DataClass
     Value<String?> voidReasonCode = const Value.absent(),
     Value<String?> voidApprovedBy = const Value.absent(),
     Value<String?> createdByUserId = const Value.absent(),
+    Value<String?> voidedByUserId = const Value.absent(),
   }) => TableSessionTicket(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
@@ -9372,6 +9625,9 @@ class TableSessionTicket extends DataClass
     createdByUserId: createdByUserId.present
         ? createdByUserId.value
         : this.createdByUserId,
+    voidedByUserId: voidedByUserId.present
+        ? voidedByUserId.value
+        : this.voidedByUserId,
   );
   TableSessionTicket copyWithCompanion(TableSessionTicketsCompanion data) {
     return TableSessionTicket(
@@ -9407,6 +9663,9 @@ class TableSessionTicket extends DataClass
       createdByUserId: data.createdByUserId.present
           ? data.createdByUserId.value
           : this.createdByUserId,
+      voidedByUserId: data.voidedByUserId.present
+          ? data.voidedByUserId.value
+          : this.voidedByUserId,
     );
   }
 
@@ -9430,7 +9689,8 @@ class TableSessionTicket extends DataClass
           ..write('voidReason: $voidReason, ')
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
-          ..write('createdByUserId: $createdByUserId')
+          ..write('createdByUserId: $createdByUserId, ')
+          ..write('voidedByUserId: $voidedByUserId')
           ..write(')'))
         .toString();
   }
@@ -9455,6 +9715,7 @@ class TableSessionTicket extends DataClass
     voidReasonCode,
     voidApprovedBy,
     createdByUserId,
+    voidedByUserId,
   );
   @override
   bool operator ==(Object other) =>
@@ -9477,7 +9738,8 @@ class TableSessionTicket extends DataClass
           other.voidReason == this.voidReason &&
           other.voidReasonCode == this.voidReasonCode &&
           other.voidApprovedBy == this.voidApprovedBy &&
-          other.createdByUserId == this.createdByUserId);
+          other.createdByUserId == this.createdByUserId &&
+          other.voidedByUserId == this.voidedByUserId);
 }
 
 class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
@@ -9499,6 +9761,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
   final Value<String?> voidReasonCode;
   final Value<String?> voidApprovedBy;
   final Value<String?> createdByUserId;
+  final Value<String?> voidedByUserId;
   final Value<int> rowid;
   const TableSessionTicketsCompanion({
     this.id = const Value.absent(),
@@ -9519,6 +9782,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
     this.createdByUserId = const Value.absent(),
+    this.voidedByUserId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TableSessionTicketsCompanion.insert({
@@ -9540,6 +9804,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
     this.createdByUserId = const Value.absent(),
+    this.voidedByUserId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sessionId = Value(sessionId),
@@ -9570,6 +9835,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Expression<String>? voidReasonCode,
     Expression<String>? voidApprovedBy,
     Expression<String>? createdByUserId,
+    Expression<String>? voidedByUserId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9592,6 +9858,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       if (voidReasonCode != null) 'void_reason_code': voidReasonCode,
       if (voidApprovedBy != null) 'void_approved_by': voidApprovedBy,
       if (createdByUserId != null) 'created_by_user_id': createdByUserId,
+      if (voidedByUserId != null) 'voided_by_user_id': voidedByUserId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9615,6 +9882,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Value<String?>? voidReasonCode,
     Value<String?>? voidApprovedBy,
     Value<String?>? createdByUserId,
+    Value<String?>? voidedByUserId,
     Value<int>? rowid,
   }) {
     return TableSessionTicketsCompanion(
@@ -9636,6 +9904,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       voidReasonCode: voidReasonCode ?? this.voidReasonCode,
       voidApprovedBy: voidApprovedBy ?? this.voidApprovedBy,
       createdByUserId: createdByUserId ?? this.createdByUserId,
+      voidedByUserId: voidedByUserId ?? this.voidedByUserId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9697,6 +9966,9 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     if (createdByUserId.present) {
       map['created_by_user_id'] = Variable<String>(createdByUserId.value);
     }
+    if (voidedByUserId.present) {
+      map['voided_by_user_id'] = Variable<String>(voidedByUserId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9724,6 +9996,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
           ..write('createdByUserId: $createdByUserId, ')
+          ..write('voidedByUserId: $voidedByUserId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11566,6 +11839,9 @@ typedef $$VenueTablesTableCreateCompanionBuilder =
       Value<DateTime?> lockedAt,
       Value<DateTime?> lockExpiresAt,
       Value<DateTime?> openedAt,
+      Value<String?> guestName,
+      Value<String?> guestNotes,
+      Value<String?> reservationId,
       Value<int> rowid,
     });
 typedef $$VenueTablesTableUpdateCompanionBuilder =
@@ -11585,6 +11861,9 @@ typedef $$VenueTablesTableUpdateCompanionBuilder =
       Value<DateTime?> lockedAt,
       Value<DateTime?> lockExpiresAt,
       Value<DateTime?> openedAt,
+      Value<String?> guestName,
+      Value<String?> guestNotes,
+      Value<String?> reservationId,
       Value<int> rowid,
     });
 
@@ -11669,6 +11948,21 @@ class $$VenueTablesTableFilterComposer
 
   ColumnFilters<DateTime> get openedAt => $composableBuilder(
     column: $table.openedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get guestName => $composableBuilder(
+    column: $table.guestName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get guestNotes => $composableBuilder(
+    column: $table.guestNotes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reservationId => $composableBuilder(
+    column: $table.reservationId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11756,6 +12050,21 @@ class $$VenueTablesTableOrderingComposer
     column: $table.openedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get guestName => $composableBuilder(
+    column: $table.guestName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get guestNotes => $composableBuilder(
+    column: $table.guestNotes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reservationId => $composableBuilder(
+    column: $table.reservationId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueTablesTableAnnotationComposer
@@ -11821,6 +12130,19 @@ class $$VenueTablesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get openedAt =>
       $composableBuilder(column: $table.openedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get guestName =>
+      $composableBuilder(column: $table.guestName, builder: (column) => column);
+
+  GeneratedColumn<String> get guestNotes => $composableBuilder(
+    column: $table.guestNotes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reservationId => $composableBuilder(
+    column: $table.reservationId,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueTablesTableTableManager
@@ -11869,6 +12191,9 @@ class $$VenueTablesTableTableManager
                 Value<DateTime?> lockedAt = const Value.absent(),
                 Value<DateTime?> lockExpiresAt = const Value.absent(),
                 Value<DateTime?> openedAt = const Value.absent(),
+                Value<String?> guestName = const Value.absent(),
+                Value<String?> guestNotes = const Value.absent(),
+                Value<String?> reservationId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion(
                 id: id,
@@ -11886,6 +12211,9 @@ class $$VenueTablesTableTableManager
                 lockedAt: lockedAt,
                 lockExpiresAt: lockExpiresAt,
                 openedAt: openedAt,
+                guestName: guestName,
+                guestNotes: guestNotes,
+                reservationId: reservationId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11905,6 +12233,9 @@ class $$VenueTablesTableTableManager
                 Value<DateTime?> lockedAt = const Value.absent(),
                 Value<DateTime?> lockExpiresAt = const Value.absent(),
                 Value<DateTime?> openedAt = const Value.absent(),
+                Value<String?> guestName = const Value.absent(),
+                Value<String?> guestNotes = const Value.absent(),
+                Value<String?> reservationId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion.insert(
                 id: id,
@@ -11922,6 +12253,9 @@ class $$VenueTablesTableTableManager
                 lockedAt: lockedAt,
                 lockExpiresAt: lockExpiresAt,
                 openedAt: openedAt,
+                guestName: guestName,
+                guestNotes: guestNotes,
+                reservationId: reservationId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -12738,6 +13072,7 @@ typedef $$TicketsTableCreateCompanionBuilder =
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
       Value<String?> createdByUserId,
+      Value<String?> voidedByUserId,
       Value<int> rowid,
     });
 typedef $$TicketsTableUpdateCompanionBuilder =
@@ -12759,6 +13094,7 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
       Value<String?> createdByUserId,
+      Value<String?> voidedByUserId,
       Value<int> rowid,
     });
 
@@ -12853,6 +13189,11 @@ class $$TicketsTableFilterComposer
 
   ColumnFilters<String> get createdByUserId => $composableBuilder(
     column: $table.createdByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidedByUserId => $composableBuilder(
+    column: $table.voidedByUserId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -12950,6 +13291,11 @@ class $$TicketsTableOrderingComposer
     column: $table.createdByUserId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get voidedByUserId => $composableBuilder(
+    column: $table.voidedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TicketsTableAnnotationComposer
@@ -13025,6 +13371,11 @@ class $$TicketsTableAnnotationComposer
     column: $table.createdByUserId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get voidedByUserId => $composableBuilder(
+    column: $table.voidedByUserId,
+    builder: (column) => column,
+  );
 }
 
 class $$TicketsTableTableManager
@@ -13072,6 +13423,7 @@ class $$TicketsTableTableManager
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
                 Value<String?> createdByUserId = const Value.absent(),
+                Value<String?> voidedByUserId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TicketsCompanion(
                 id: id,
@@ -13091,6 +13443,7 @@ class $$TicketsTableTableManager
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,
                 createdByUserId: createdByUserId,
+                voidedByUserId: voidedByUserId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13112,6 +13465,7 @@ class $$TicketsTableTableManager
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
                 Value<String?> createdByUserId = const Value.absent(),
+                Value<String?> voidedByUserId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TicketsCompanion.insert(
                 id: id,
@@ -13131,6 +13485,7 @@ class $$TicketsTableTableManager
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,
                 createdByUserId: createdByUserId,
+                voidedByUserId: voidedByUserId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15195,6 +15550,7 @@ typedef $$TableSessionTicketsTableCreateCompanionBuilder =
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
       Value<String?> createdByUserId,
+      Value<String?> voidedByUserId,
       Value<int> rowid,
     });
 typedef $$TableSessionTicketsTableUpdateCompanionBuilder =
@@ -15217,6 +15573,7 @@ typedef $$TableSessionTicketsTableUpdateCompanionBuilder =
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
       Value<String?> createdByUserId,
+      Value<String?> voidedByUserId,
       Value<int> rowid,
     });
 
@@ -15316,6 +15673,11 @@ class $$TableSessionTicketsTableFilterComposer
 
   ColumnFilters<String> get createdByUserId => $composableBuilder(
     column: $table.createdByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidedByUserId => $composableBuilder(
+    column: $table.voidedByUserId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -15418,6 +15780,11 @@ class $$TableSessionTicketsTableOrderingComposer
     column: $table.createdByUserId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get voidedByUserId => $composableBuilder(
+    column: $table.voidedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TableSessionTicketsTableAnnotationComposer
@@ -15496,6 +15863,11 @@ class $$TableSessionTicketsTableAnnotationComposer
     column: $table.createdByUserId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get voidedByUserId => $composableBuilder(
+    column: $table.voidedByUserId,
+    builder: (column) => column,
+  );
 }
 
 class $$TableSessionTicketsTableTableManager
@@ -15559,6 +15931,7 @@ class $$TableSessionTicketsTableTableManager
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
                 Value<String?> createdByUserId = const Value.absent(),
+                Value<String?> voidedByUserId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionTicketsCompanion(
                 id: id,
@@ -15579,6 +15952,7 @@ class $$TableSessionTicketsTableTableManager
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,
                 createdByUserId: createdByUserId,
+                voidedByUserId: voidedByUserId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -15601,6 +15975,7 @@ class $$TableSessionTicketsTableTableManager
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
                 Value<String?> createdByUserId = const Value.absent(),
+                Value<String?> voidedByUserId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionTicketsCompanion.insert(
                 id: id,
@@ -15621,6 +15996,7 @@ class $$TableSessionTicketsTableTableManager
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,
                 createdByUserId: createdByUserId,
+                voidedByUserId: voidedByUserId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

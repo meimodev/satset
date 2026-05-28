@@ -29,6 +29,9 @@ _$TableDtoImpl _$$TableDtoImplFromJson(Map<String, dynamic> json) =>
       openedAt: json['openedAt'] == null
           ? null
           : DateTime.parse(json['openedAt'] as String),
+      guestName: json['guestName'] as String?,
+      guestNotes: json['guestNotes'] as String?,
+      reservationId: json['reservationId'] as String?,
     );
 
 Map<String, dynamic> _$$TableDtoImplToJson(_$TableDtoImpl instance) =>
@@ -48,6 +51,9 @@ Map<String, dynamic> _$$TableDtoImplToJson(_$TableDtoImpl instance) =>
       'lockedAt': instance.lockedAt?.toIso8601String(),
       'lockExpiresAt': instance.lockExpiresAt?.toIso8601String(),
       'openedAt': instance.openedAt?.toIso8601String(),
+      'guestName': instance.guestName,
+      'guestNotes': instance.guestNotes,
+      'reservationId': instance.reservationId,
     };
 
 _$UpdateTablePaxDtoImpl _$$UpdateTablePaxDtoImplFromJson(

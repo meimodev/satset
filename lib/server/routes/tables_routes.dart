@@ -164,6 +164,59 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return _broadcast(db, hub, id);
   });
 
+  r.post('/tables/<id>/seat', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return Response.notFound('table not found');
+    if (row.status != 'available') {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'already_seated',
+            'message': 'table is already in use',
+            'table': _toJson(row),
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    final paxIn = (body['pax'] as num?)?.toInt();
+    final pax = paxIn == null
+        ? row.pax
+        : paxIn.clamp(0, row.capacity < 1 ? 1 : row.capacity);
+    final actorId = body['actorId'] as String?;
+    final actorName = body['actorName'] as String?;
+    final guestName = body['guestName'] as String?;
+    final guestNotes = body['guestNotes'] as String?;
+    final reservationId = body['reservationId'] as String?;
+    final acquireLock = body['acquireLock'] == true;
+    final now = DateTime.now();
+    await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
+      VenueTablesCompanion(
+        status: const Value('occupied'),
+        pax: Value(pax),
+        openedAt: Value(row.openedAt ?? now.toUtc()),
+        lastActorId: actorId == null ? const Value.absent() : Value(actorId),
+        guestName: Value(guestName),
+        guestNotes: Value(guestNotes),
+        reservationId: Value(reservationId),
+        lockedBy: acquireLock && actorId != null
+            ? Value(actorId)
+            : const Value.absent(),
+        lockedByName: acquireLock && actorId != null
+            ? Value(actorName)
+            : const Value.absent(),
+        lockedAt: acquireLock && actorId != null
+            ? Value(now)
+            : const Value.absent(),
+        lockExpiresAt: acquireLock && actorId != null
+            ? Value(now.add(const Duration(seconds: 7)))
+            : const Value.absent(),
+      ),
+    );
+    return _broadcast(db, hub, id);
+  });
+
   r.post('/tables/<id>/pending', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
@@ -358,8 +411,10 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
                 status: t.status,
                 sentAt: t.sentAt,
                 voidReason: Value(t.voidReason),
+                voidReasonCode: Value(t.voidReasonCode),
                 voidApprovedBy: Value(t.voidApprovedBy),
                 createdByUserId: Value(t.createdByUserId),
+                voidedByUserId: Value(t.voidedByUserId),
               ),
             );
       }
@@ -406,6 +461,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           lockedAt: const Value(null),
           lockExpiresAt: const Value(null),
           openedAt: const Value(null),
+          guestName: const Value(null),
+          guestNotes: const Value(null),
+          reservationId: const Value(null),
         ),
       );
     });
@@ -469,4 +527,7 @@ Map<String, dynamic> _toJson(VenueTable t) => {
       'lockedAt': t.lockedAt?.toIso8601String(),
       'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
       'openedAt': t.openedAt?.toIso8601String(),
+      'guestName': t.guestName,
+      'guestNotes': t.guestNotes,
+      'reservationId': t.reservationId,
     };

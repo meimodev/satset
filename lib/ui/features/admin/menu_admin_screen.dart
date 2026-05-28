@@ -43,7 +43,7 @@ class _TabletLayout extends ConsumerWidget {
       children: [
         AdminEmbeddedStrip(
           title: 'Menu',
-          sub: '${counts.total} item · ${counts.categories} kategori · ${counts.eightySixed} 86\'d',
+          sub: '${counts.total} item · ${counts.categories} kategori · ${counts.eightySixed} habis',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -134,7 +134,7 @@ class _EmptyDetail extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             staff
-                ? 'Mode staf: 86 saja, edit penuh hanya admin.'
+                ? 'Mode staf: hanya tandai habis. Edit penuh hanya admin.'
                 : 'Kelola harga, modifier, stok, dan ketersediaan.',
             style: SatType.sans(size: 12, color: sc.textLo),
             textAlign: TextAlign.center,
@@ -176,7 +176,7 @@ class _PhoneLayout extends ConsumerWidget {
                           )),
                       const SizedBox(height: 2),
                       Text(
-                        '${counts.total} item · ${counts.eightySixed} 86\'d',
+                        '${counts.total} item · ${counts.eightySixed} habis',
                         style: SatType.mono(
                           size: 11, color: sc.textLo, letterSpacing: 0.5,
                         ),
@@ -625,7 +625,7 @@ class _RoleBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        isAdmin ? 'ADMIN' : 'STAF · 86 SAJA',
+        isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
         style: SatType.mono(
           size: 10, weight: FontWeight.w600,
           letterSpacing: 0.8, color: isAdmin ? sc.accent : sc.textMd,

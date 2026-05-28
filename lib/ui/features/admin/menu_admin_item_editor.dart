@@ -715,7 +715,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text('Auto 86 saat stok = 0',
+                      child: Text('Tandai habis otomatis saat stok = 0',
                           style: SatType.sans(size: 13, color: sc.textMd)),
                     ),
                     adminToggle(context, on: _draft.autoEightySixAtZero),
@@ -730,7 +730,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 ),
               ],
             )
-          : Text('Stok tidak dilacak. 86 dikelola manual.',
+          : Text('Stok tidak dilacak. Status habis diatur manual.',
               style: SatType.sans(size: 12, color: sc.textLo)),
     );
   }
@@ -790,8 +790,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Expanded(
             child: Text(
               auto
-                  ? 'Auto 86 karena stok habis'
-                  : (_draft.unavailable ? '86\'d manual' : 'Aktif untuk dijual'),
+                  ? 'Otomatis ditandai habis (stok 0)'
+                  : (_draft.unavailable ? 'Ditandai habis manual' : 'Aktif untuk dijual'),
               style: SatType.sans(
                 size: 14,
                 weight: FontWeight.w600,

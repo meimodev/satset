@@ -505,6 +505,39 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         .toList()
       ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
+    // Void per waiter — who voided, how often, lost rupiah, top reason.
+    // Keyed by voidedByUserId (the acting waiter), distinct from the table's
+    // session actor. See ADR-0006.
+    final voidByStaff = <String, _StaffVoidAgg>{};
+    for (final t in tickets) {
+      if (t.status != 'voided') continue;
+      final who = t.voidedByUserId ?? 'unknown';
+      final agg = voidByStaff.putIfAbsent(who, () => _StaffVoidAgg());
+      agg.count += 1;
+      agg.lostRupiah += t.price * t.qty;
+      final code = t.voidReasonCode ?? 'other';
+      agg.reasonCounts[code] = (agg.reasonCounts[code] ?? 0) + 1;
+    }
+    final voidStaff = voidByStaff.entries.map((e) {
+      final topReason = e.value.reasonCounts.entries.isEmpty
+          ? 'other'
+          : (e.value.reasonCounts.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value)))
+              .first
+              .key;
+      return {
+        'id': e.key,
+        'name': e.key == 'unknown'
+            ? 'Tidak diketahui'
+            : (userById[e.key]?.name ?? e.key),
+        'count': e.value.count,
+        'lostRupiah': e.value.lostRupiah,
+        'topReasonCode': topReason,
+        'topReasonLabel': reasonLabels[topReason] ?? topReason,
+      };
+    }).toList()
+      ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+
     // Filter options (always full list — UI prepends "Semua X").
     final filterOptions = {
       'servers': [
@@ -544,6 +577,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'heatmap': heatmap,
         'reservations': reservations,
         'voidReasons': voidReasons,
+        'voidByStaff': voidStaff,
       },
     };
 
@@ -562,6 +596,12 @@ class _ItemAgg {
 class _ReasonAgg {
   int count = 0;
   int lostRupiah = 0;
+}
+
+class _StaffVoidAgg {
+  int count = 0;
+  int lostRupiah = 0;
+  final Map<String, int> reasonCounts = {};
 }
 
 int _voidLineCount(List<TableSessionTicket> tickets) =>

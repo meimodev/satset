@@ -36,6 +36,9 @@ mixin _$TableDto {
   DateTime? get lockedAt => throw _privateConstructorUsedError;
   DateTime? get lockExpiresAt => throw _privateConstructorUsedError;
   DateTime? get openedAt => throw _privateConstructorUsedError;
+  String? get guestName => throw _privateConstructorUsedError;
+  String? get guestNotes => throw _privateConstructorUsedError;
+  String? get reservationId => throw _privateConstructorUsedError;
 
   /// Serializes this TableDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -68,6 +71,9 @@ abstract class $TableDtoCopyWith<$Res> {
     DateTime? lockedAt,
     DateTime? lockExpiresAt,
     DateTime? openedAt,
+    String? guestName,
+    String? guestNotes,
+    String? reservationId,
   });
 }
 
@@ -101,6 +107,9 @@ class _$TableDtoCopyWithImpl<$Res, $Val extends TableDto>
     Object? lockedAt = freezed,
     Object? lockExpiresAt = freezed,
     Object? openedAt = freezed,
+    Object? guestName = freezed,
+    Object? guestNotes = freezed,
+    Object? reservationId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -164,6 +173,18 @@ class _$TableDtoCopyWithImpl<$Res, $Val extends TableDto>
                 ? _value.openedAt
                 : openedAt // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            guestName: freezed == guestName
+                ? _value.guestName
+                : guestName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            guestNotes: freezed == guestNotes
+                ? _value.guestNotes
+                : guestNotes // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            reservationId: freezed == reservationId
+                ? _value.reservationId
+                : reservationId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -195,6 +216,9 @@ abstract class _$$TableDtoImplCopyWith<$Res>
     DateTime? lockedAt,
     DateTime? lockExpiresAt,
     DateTime? openedAt,
+    String? guestName,
+    String? guestNotes,
+    String? reservationId,
   });
 }
 
@@ -227,6 +251,9 @@ class __$$TableDtoImplCopyWithImpl<$Res>
     Object? lockedAt = freezed,
     Object? lockExpiresAt = freezed,
     Object? openedAt = freezed,
+    Object? guestName = freezed,
+    Object? guestNotes = freezed,
+    Object? reservationId = freezed,
   }) {
     return _then(
       _$TableDtoImpl(
@@ -290,6 +317,18 @@ class __$$TableDtoImplCopyWithImpl<$Res>
             ? _value.openedAt
             : openedAt // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        guestName: freezed == guestName
+            ? _value.guestName
+            : guestName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        guestNotes: freezed == guestNotes
+            ? _value.guestNotes
+            : guestNotes // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        reservationId: freezed == reservationId
+            ? _value.reservationId
+            : reservationId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -314,6 +353,9 @@ class _$TableDtoImpl implements _TableDto {
     this.lockedAt,
     this.lockExpiresAt,
     this.openedAt,
+    this.guestName,
+    this.guestNotes,
+    this.reservationId,
   });
 
   factory _$TableDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -355,10 +397,16 @@ class _$TableDtoImpl implements _TableDto {
   final DateTime? lockExpiresAt;
   @override
   final DateTime? openedAt;
+  @override
+  final String? guestName;
+  @override
+  final String? guestNotes;
+  @override
+  final String? reservationId;
 
   @override
   String toString() {
-    return 'TableDto(id: $id, zoneId: $zoneId, label: $label, pax: $pax, capacity: $capacity, active: $active, status: $status, openAmount: $openAmount, readyCount: $readyCount, lastActorId: $lastActorId, lockedBy: $lockedBy, lockedByName: $lockedByName, lockedAt: $lockedAt, lockExpiresAt: $lockExpiresAt, openedAt: $openedAt)';
+    return 'TableDto(id: $id, zoneId: $zoneId, label: $label, pax: $pax, capacity: $capacity, active: $active, status: $status, openAmount: $openAmount, readyCount: $readyCount, lastActorId: $lastActorId, lockedBy: $lockedBy, lockedByName: $lockedByName, lockedAt: $lockedAt, lockExpiresAt: $lockExpiresAt, openedAt: $openedAt, guestName: $guestName, guestNotes: $guestNotes, reservationId: $reservationId)';
   }
 
   @override
@@ -389,7 +437,13 @@ class _$TableDtoImpl implements _TableDto {
             (identical(other.lockExpiresAt, lockExpiresAt) ||
                 other.lockExpiresAt == lockExpiresAt) &&
             (identical(other.openedAt, openedAt) ||
-                other.openedAt == openedAt));
+                other.openedAt == openedAt) &&
+            (identical(other.guestName, guestName) ||
+                other.guestName == guestName) &&
+            (identical(other.guestNotes, guestNotes) ||
+                other.guestNotes == guestNotes) &&
+            (identical(other.reservationId, reservationId) ||
+                other.reservationId == reservationId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -411,6 +465,9 @@ class _$TableDtoImpl implements _TableDto {
     lockedAt,
     lockExpiresAt,
     openedAt,
+    guestName,
+    guestNotes,
+    reservationId,
   );
 
   /// Create a copy of TableDto
@@ -444,6 +501,9 @@ abstract class _TableDto implements TableDto {
     final DateTime? lockedAt,
     final DateTime? lockExpiresAt,
     final DateTime? openedAt,
+    final String? guestName,
+    final String? guestNotes,
+    final String? reservationId,
   }) = _$TableDtoImpl;
 
   factory _TableDto.fromJson(Map<String, dynamic> json) =
@@ -479,6 +539,12 @@ abstract class _TableDto implements TableDto {
   DateTime? get lockExpiresAt;
   @override
   DateTime? get openedAt;
+  @override
+  String? get guestName;
+  @override
+  String? get guestNotes;
+  @override
+  String? get reservationId;
 
   /// Create a copy of TableDto
   /// with the given fields replaced by the non-null parameter values.

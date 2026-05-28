@@ -36,7 +36,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -156,6 +156,23 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('venue_settings', 'business_day_start_hour',
                 type: 'INTEGER NOT NULL DEFAULT 4');
             await m.createTable(reservations);
+          }
+          if (from < 16) {
+            await _safeAddColumnOn('venue_tables', 'guest_name', type: 'TEXT');
+            await _safeAddColumnOn('venue_tables', 'guest_notes', type: 'TEXT');
+            await _safeAddColumnOn(
+                'venue_tables', 'reservation_id', type: 'TEXT');
+          }
+          if (from < 17) {
+            // Wipe seeded reservations; reservations are now created entirely
+            // via the UI flow.
+            await customStatement('DELETE FROM reservations');
+          }
+          if (from < 18) {
+            await _safeAddColumnOn('tickets', 'voided_by_user_id',
+                type: 'TEXT');
+            await _safeAddColumnOn(
+                'table_session_tickets', 'voided_by_user_id', type: 'TEXT');
           }
         },
         onCreate: (m) async {

@@ -20,8 +20,10 @@ class TicketDto with _$TicketDto {
     required String status,
     required DateTime sentAt,
     String? voidReason,
+    String? voidReasonCode,
     String? voidApprovedBy,
     String? createdByUserId,
+    String? voidedByUserId,
   }) = _TicketDto;
 
   factory TicketDto.fromJson(Map<String, dynamic> json) =>
@@ -33,6 +35,7 @@ class TicketTransitionRequestDto with _$TicketTransitionRequestDto {
   const factory TicketTransitionRequestDto({
     required String status,
     String? voidReason,
+    String? voidReasonCode,
   }) = _TicketTransitionRequestDto;
 
   factory TicketTransitionRequestDto.fromJson(Map<String, dynamic> json) =>

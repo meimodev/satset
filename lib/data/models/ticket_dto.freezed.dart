@@ -35,8 +35,10 @@ mixin _$TicketDto {
   String get status => throw _privateConstructorUsedError;
   DateTime get sentAt => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
+  String? get voidReasonCode => throw _privateConstructorUsedError;
   String? get voidApprovedBy => throw _privateConstructorUsedError;
   String? get createdByUserId => throw _privateConstructorUsedError;
+  String? get voidedByUserId => throw _privateConstructorUsedError;
 
   /// Serializes this TicketDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -68,8 +70,10 @@ abstract class $TicketDtoCopyWith<$Res> {
     String status,
     DateTime sentAt,
     String? voidReason,
+    String? voidReasonCode,
     String? voidApprovedBy,
     String? createdByUserId,
+    String? voidedByUserId,
   });
 }
 
@@ -102,8 +106,10 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
     Object? status = null,
     Object? sentAt = null,
     Object? voidReason = freezed,
+    Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
     Object? createdByUserId = freezed,
+    Object? voidedByUserId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -163,6 +169,10 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
                 ? _value.voidReason
                 : voidReason // ignore: cast_nullable_to_non_nullable
                       as String?,
+            voidReasonCode: freezed == voidReasonCode
+                ? _value.voidReasonCode
+                : voidReasonCode // ignore: cast_nullable_to_non_nullable
+                      as String?,
             voidApprovedBy: freezed == voidApprovedBy
                 ? _value.voidApprovedBy
                 : voidApprovedBy // ignore: cast_nullable_to_non_nullable
@@ -170,6 +180,10 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
             createdByUserId: freezed == createdByUserId
                 ? _value.createdByUserId
                 : createdByUserId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            voidedByUserId: freezed == voidedByUserId
+                ? _value.voidedByUserId
+                : voidedByUserId // ignore: cast_nullable_to_non_nullable
                       as String?,
           )
           as $Val,
@@ -201,8 +215,10 @@ abstract class _$$TicketDtoImplCopyWith<$Res>
     String status,
     DateTime sentAt,
     String? voidReason,
+    String? voidReasonCode,
     String? voidApprovedBy,
     String? createdByUserId,
+    String? voidedByUserId,
   });
 }
 
@@ -234,8 +250,10 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
     Object? status = null,
     Object? sentAt = null,
     Object? voidReason = freezed,
+    Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
     Object? createdByUserId = freezed,
+    Object? voidedByUserId = freezed,
   }) {
     return _then(
       _$TicketDtoImpl(
@@ -295,6 +313,10 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
             ? _value.voidReason
             : voidReason // ignore: cast_nullable_to_non_nullable
                   as String?,
+        voidReasonCode: freezed == voidReasonCode
+            ? _value.voidReasonCode
+            : voidReasonCode // ignore: cast_nullable_to_non_nullable
+                  as String?,
         voidApprovedBy: freezed == voidApprovedBy
             ? _value.voidApprovedBy
             : voidApprovedBy // ignore: cast_nullable_to_non_nullable
@@ -302,6 +324,10 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
         createdByUserId: freezed == createdByUserId
             ? _value.createdByUserId
             : createdByUserId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        voidedByUserId: freezed == voidedByUserId
+            ? _value.voidedByUserId
+            : voidedByUserId // ignore: cast_nullable_to_non_nullable
                   as String?,
       ),
     );
@@ -326,8 +352,10 @@ class _$TicketDtoImpl implements _TicketDto {
     required this.status,
     required this.sentAt,
     this.voidReason,
+    this.voidReasonCode,
     this.voidApprovedBy,
     this.createdByUserId,
+    this.voidedByUserId,
   }) : _modifiers = modifiers;
 
   factory _$TicketDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -371,13 +399,17 @@ class _$TicketDtoImpl implements _TicketDto {
   @override
   final String? voidReason;
   @override
+  final String? voidReasonCode;
+  @override
   final String? voidApprovedBy;
   @override
   final String? createdByUserId;
+  @override
+  final String? voidedByUserId;
 
   @override
   String toString() {
-    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId)';
+    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
   }
 
   @override
@@ -405,10 +437,14 @@ class _$TicketDtoImpl implements _TicketDto {
             (identical(other.sentAt, sentAt) || other.sentAt == sentAt) &&
             (identical(other.voidReason, voidReason) ||
                 other.voidReason == voidReason) &&
+            (identical(other.voidReasonCode, voidReasonCode) ||
+                other.voidReasonCode == voidReasonCode) &&
             (identical(other.voidApprovedBy, voidApprovedBy) ||
                 other.voidApprovedBy == voidApprovedBy) &&
             (identical(other.createdByUserId, createdByUserId) ||
-                other.createdByUserId == createdByUserId));
+                other.createdByUserId == createdByUserId) &&
+            (identical(other.voidedByUserId, voidedByUserId) ||
+                other.voidedByUserId == voidedByUserId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -429,8 +465,10 @@ class _$TicketDtoImpl implements _TicketDto {
     status,
     sentAt,
     voidReason,
+    voidReasonCode,
     voidApprovedBy,
     createdByUserId,
+    voidedByUserId,
   );
 
   /// Create a copy of TicketDto
@@ -463,8 +501,10 @@ abstract class _TicketDto implements TicketDto {
     required final String status,
     required final DateTime sentAt,
     final String? voidReason,
+    final String? voidReasonCode,
     final String? voidApprovedBy,
     final String? createdByUserId,
+    final String? voidedByUserId,
   }) = _$TicketDtoImpl;
 
   factory _TicketDto.fromJson(Map<String, dynamic> json) =
@@ -499,9 +539,13 @@ abstract class _TicketDto implements TicketDto {
   @override
   String? get voidReason;
   @override
+  String? get voidReasonCode;
+  @override
   String? get voidApprovedBy;
   @override
   String? get createdByUserId;
+  @override
+  String? get voidedByUserId;
 
   /// Create a copy of TicketDto
   /// with the given fields replaced by the non-null parameter values.
@@ -521,6 +565,7 @@ TicketTransitionRequestDto _$TicketTransitionRequestDtoFromJson(
 mixin _$TicketTransitionRequestDto {
   String get status => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
+  String? get voidReasonCode => throw _privateConstructorUsedError;
 
   /// Serializes this TicketTransitionRequestDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -543,7 +588,7 @@ abstract class $TicketTransitionRequestDtoCopyWith<$Res> {
         TicketTransitionRequestDto
       >;
   @useResult
-  $Res call({String status, String? voidReason});
+  $Res call({String status, String? voidReason, String? voidReasonCode});
 }
 
 /// @nodoc
@@ -563,7 +608,11 @@ class _$TicketTransitionRequestDtoCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? status = null, Object? voidReason = freezed}) {
+  $Res call({
+    Object? status = null,
+    Object? voidReason = freezed,
+    Object? voidReasonCode = freezed,
+  }) {
     return _then(
       _value.copyWith(
             status: null == status
@@ -573,6 +622,10 @@ class _$TicketTransitionRequestDtoCopyWithImpl<
             voidReason: freezed == voidReason
                 ? _value.voidReason
                 : voidReason // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            voidReasonCode: freezed == voidReasonCode
+                ? _value.voidReasonCode
+                : voidReasonCode // ignore: cast_nullable_to_non_nullable
                       as String?,
           )
           as $Val,
@@ -589,7 +642,7 @@ abstract class _$$TicketTransitionRequestDtoImplCopyWith<$Res>
   ) = __$$TicketTransitionRequestDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String status, String? voidReason});
+  $Res call({String status, String? voidReason, String? voidReasonCode});
 }
 
 /// @nodoc
@@ -609,7 +662,11 @@ class __$$TicketTransitionRequestDtoImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? status = null, Object? voidReason = freezed}) {
+  $Res call({
+    Object? status = null,
+    Object? voidReason = freezed,
+    Object? voidReasonCode = freezed,
+  }) {
     return _then(
       _$TicketTransitionRequestDtoImpl(
         status: null == status
@@ -619,6 +676,10 @@ class __$$TicketTransitionRequestDtoImplCopyWithImpl<$Res>
         voidReason: freezed == voidReason
             ? _value.voidReason
             : voidReason // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        voidReasonCode: freezed == voidReasonCode
+            ? _value.voidReasonCode
+            : voidReasonCode // ignore: cast_nullable_to_non_nullable
                   as String?,
       ),
     );
@@ -631,6 +692,7 @@ class _$TicketTransitionRequestDtoImpl implements _TicketTransitionRequestDto {
   const _$TicketTransitionRequestDtoImpl({
     required this.status,
     this.voidReason,
+    this.voidReasonCode,
   });
 
   factory _$TicketTransitionRequestDtoImpl.fromJson(
@@ -641,10 +703,12 @@ class _$TicketTransitionRequestDtoImpl implements _TicketTransitionRequestDto {
   final String status;
   @override
   final String? voidReason;
+  @override
+  final String? voidReasonCode;
 
   @override
   String toString() {
-    return 'TicketTransitionRequestDto(status: $status, voidReason: $voidReason)';
+    return 'TicketTransitionRequestDto(status: $status, voidReason: $voidReason, voidReasonCode: $voidReasonCode)';
   }
 
   @override
@@ -654,12 +718,15 @@ class _$TicketTransitionRequestDtoImpl implements _TicketTransitionRequestDto {
             other is _$TicketTransitionRequestDtoImpl &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.voidReason, voidReason) ||
-                other.voidReason == voidReason));
+                other.voidReason == voidReason) &&
+            (identical(other.voidReasonCode, voidReasonCode) ||
+                other.voidReasonCode == voidReasonCode));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, status, voidReason);
+  int get hashCode =>
+      Object.hash(runtimeType, status, voidReason, voidReasonCode);
 
   /// Create a copy of TicketTransitionRequestDto
   /// with the given fields replaced by the non-null parameter values.
@@ -683,6 +750,7 @@ abstract class _TicketTransitionRequestDto
   const factory _TicketTransitionRequestDto({
     required final String status,
     final String? voidReason,
+    final String? voidReasonCode,
   }) = _$TicketTransitionRequestDtoImpl;
 
   factory _TicketTransitionRequestDto.fromJson(Map<String, dynamic> json) =
@@ -692,6 +760,8 @@ abstract class _TicketTransitionRequestDto
   String get status;
   @override
   String? get voidReason;
+  @override
+  String? get voidReasonCode;
 
   /// Create a copy of TicketTransitionRequestDto
   /// with the given fields replaced by the non-null parameter values.

@@ -3629,6 +3629,7 @@ mixin _$OpsSectionDto {
   List<List<double>> get heatmap => throw _privateConstructorUsedError;
   ReservationStatsDto get reservations => throw _privateConstructorUsedError;
   List<VoidReasonDto> get voidReasons => throw _privateConstructorUsedError;
+  List<StaffVoidDto> get voidByStaff => throw _privateConstructorUsedError;
 
   /// Serializes this OpsSectionDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -3653,6 +3654,7 @@ abstract class $OpsSectionDtoCopyWith<$Res> {
     List<List<double>> heatmap,
     ReservationStatsDto reservations,
     List<VoidReasonDto> voidReasons,
+    List<StaffVoidDto> voidByStaff,
   });
 
   $ReservationStatsDtoCopyWith<$Res> get reservations;
@@ -3678,6 +3680,7 @@ class _$OpsSectionDtoCopyWithImpl<$Res, $Val extends OpsSectionDto>
     Object? heatmap = null,
     Object? reservations = null,
     Object? voidReasons = null,
+    Object? voidByStaff = null,
   }) {
     return _then(
       _value.copyWith(
@@ -3701,6 +3704,10 @@ class _$OpsSectionDtoCopyWithImpl<$Res, $Val extends OpsSectionDto>
                 ? _value.voidReasons
                 : voidReasons // ignore: cast_nullable_to_non_nullable
                       as List<VoidReasonDto>,
+            voidByStaff: null == voidByStaff
+                ? _value.voidByStaff
+                : voidByStaff // ignore: cast_nullable_to_non_nullable
+                      as List<StaffVoidDto>,
           )
           as $Val,
     );
@@ -3732,6 +3739,7 @@ abstract class _$$OpsSectionDtoImplCopyWith<$Res>
     List<List<double>> heatmap,
     ReservationStatsDto reservations,
     List<VoidReasonDto> voidReasons,
+    List<StaffVoidDto> voidByStaff,
   });
 
   @override
@@ -3757,6 +3765,7 @@ class __$$OpsSectionDtoImplCopyWithImpl<$Res>
     Object? heatmap = null,
     Object? reservations = null,
     Object? voidReasons = null,
+    Object? voidByStaff = null,
   }) {
     return _then(
       _$OpsSectionDtoImpl(
@@ -3780,6 +3789,10 @@ class __$$OpsSectionDtoImplCopyWithImpl<$Res>
             ? _value._voidReasons
             : voidReasons // ignore: cast_nullable_to_non_nullable
                   as List<VoidReasonDto>,
+        voidByStaff: null == voidByStaff
+            ? _value._voidByStaff
+            : voidByStaff // ignore: cast_nullable_to_non_nullable
+                  as List<StaffVoidDto>,
       ),
     );
   }
@@ -3794,10 +3807,12 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
     final List<List<double>> heatmap = const <List<double>>[],
     required this.reservations,
     final List<VoidReasonDto> voidReasons = const <VoidReasonDto>[],
+    final List<StaffVoidDto> voidByStaff = const <StaffVoidDto>[],
   }) : _kpis = kpis,
        _stations = stations,
        _heatmap = heatmap,
-       _voidReasons = voidReasons;
+       _voidReasons = voidReasons,
+       _voidByStaff = voidByStaff;
 
   factory _$OpsSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$OpsSectionDtoImplFromJson(json);
@@ -3840,9 +3855,18 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
     return EqualUnmodifiableListView(_voidReasons);
   }
 
+  final List<StaffVoidDto> _voidByStaff;
+  @override
+  @JsonKey()
+  List<StaffVoidDto> get voidByStaff {
+    if (_voidByStaff is EqualUnmodifiableListView) return _voidByStaff;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_voidByStaff);
+  }
+
   @override
   String toString() {
-    return 'OpsSectionDto(kpis: $kpis, stations: $stations, heatmap: $heatmap, reservations: $reservations, voidReasons: $voidReasons)';
+    return 'OpsSectionDto(kpis: $kpis, stations: $stations, heatmap: $heatmap, reservations: $reservations, voidReasons: $voidReasons, voidByStaff: $voidByStaff)';
   }
 
   @override
@@ -3858,6 +3882,10 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
             const DeepCollectionEquality().equals(
               other._voidReasons,
               _voidReasons,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._voidByStaff,
+              _voidByStaff,
             ));
   }
 
@@ -3870,6 +3898,7 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
     const DeepCollectionEquality().hash(_heatmap),
     reservations,
     const DeepCollectionEquality().hash(_voidReasons),
+    const DeepCollectionEquality().hash(_voidByStaff),
   );
 
   /// Create a copy of OpsSectionDto
@@ -3893,6 +3922,7 @@ abstract class _OpsSectionDto implements OpsSectionDto {
     final List<List<double>> heatmap,
     required final ReservationStatsDto reservations,
     final List<VoidReasonDto> voidReasons,
+    final List<StaffVoidDto> voidByStaff,
   }) = _$OpsSectionDtoImpl;
 
   factory _OpsSectionDto.fromJson(Map<String, dynamic> json) =
@@ -3908,6 +3938,8 @@ abstract class _OpsSectionDto implements OpsSectionDto {
   ReservationStatsDto get reservations;
   @override
   List<VoidReasonDto> get voidReasons;
+  @override
+  List<StaffVoidDto> get voidByStaff;
 
   /// Create a copy of OpsSectionDto
   /// with the given fields replaced by the non-null parameter values.
@@ -4569,5 +4601,283 @@ abstract class _VoidReasonDto implements VoidReasonDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$VoidReasonDtoImplCopyWith<_$VoidReasonDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+StaffVoidDto _$StaffVoidDtoFromJson(Map<String, dynamic> json) {
+  return _StaffVoidDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$StaffVoidDto {
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  int get count => throw _privateConstructorUsedError;
+  int get lostRupiah => throw _privateConstructorUsedError;
+  String get topReasonCode => throw _privateConstructorUsedError;
+  String get topReasonLabel => throw _privateConstructorUsedError;
+
+  /// Serializes this StaffVoidDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of StaffVoidDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $StaffVoidDtoCopyWith<StaffVoidDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $StaffVoidDtoCopyWith<$Res> {
+  factory $StaffVoidDtoCopyWith(
+    StaffVoidDto value,
+    $Res Function(StaffVoidDto) then,
+  ) = _$StaffVoidDtoCopyWithImpl<$Res, StaffVoidDto>;
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    int count,
+    int lostRupiah,
+    String topReasonCode,
+    String topReasonLabel,
+  });
+}
+
+/// @nodoc
+class _$StaffVoidDtoCopyWithImpl<$Res, $Val extends StaffVoidDto>
+    implements $StaffVoidDtoCopyWith<$Res> {
+  _$StaffVoidDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of StaffVoidDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? count = null,
+    Object? lostRupiah = null,
+    Object? topReasonCode = null,
+    Object? topReasonLabel = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            count: null == count
+                ? _value.count
+                : count // ignore: cast_nullable_to_non_nullable
+                      as int,
+            lostRupiah: null == lostRupiah
+                ? _value.lostRupiah
+                : lostRupiah // ignore: cast_nullable_to_non_nullable
+                      as int,
+            topReasonCode: null == topReasonCode
+                ? _value.topReasonCode
+                : topReasonCode // ignore: cast_nullable_to_non_nullable
+                      as String,
+            topReasonLabel: null == topReasonLabel
+                ? _value.topReasonLabel
+                : topReasonLabel // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$StaffVoidDtoImplCopyWith<$Res>
+    implements $StaffVoidDtoCopyWith<$Res> {
+  factory _$$StaffVoidDtoImplCopyWith(
+    _$StaffVoidDtoImpl value,
+    $Res Function(_$StaffVoidDtoImpl) then,
+  ) = __$$StaffVoidDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    int count,
+    int lostRupiah,
+    String topReasonCode,
+    String topReasonLabel,
+  });
+}
+
+/// @nodoc
+class __$$StaffVoidDtoImplCopyWithImpl<$Res>
+    extends _$StaffVoidDtoCopyWithImpl<$Res, _$StaffVoidDtoImpl>
+    implements _$$StaffVoidDtoImplCopyWith<$Res> {
+  __$$StaffVoidDtoImplCopyWithImpl(
+    _$StaffVoidDtoImpl _value,
+    $Res Function(_$StaffVoidDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of StaffVoidDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? count = null,
+    Object? lostRupiah = null,
+    Object? topReasonCode = null,
+    Object? topReasonLabel = null,
+  }) {
+    return _then(
+      _$StaffVoidDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        count: null == count
+            ? _value.count
+            : count // ignore: cast_nullable_to_non_nullable
+                  as int,
+        lostRupiah: null == lostRupiah
+            ? _value.lostRupiah
+            : lostRupiah // ignore: cast_nullable_to_non_nullable
+                  as int,
+        topReasonCode: null == topReasonCode
+            ? _value.topReasonCode
+            : topReasonCode // ignore: cast_nullable_to_non_nullable
+                  as String,
+        topReasonLabel: null == topReasonLabel
+            ? _value.topReasonLabel
+            : topReasonLabel // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$StaffVoidDtoImpl implements _StaffVoidDto {
+  const _$StaffVoidDtoImpl({
+    required this.id,
+    required this.name,
+    this.count = 0,
+    this.lostRupiah = 0,
+    this.topReasonCode = 'other',
+    this.topReasonLabel = 'Lainnya',
+  });
+
+  factory _$StaffVoidDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$StaffVoidDtoImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  @JsonKey()
+  final int count;
+  @override
+  @JsonKey()
+  final int lostRupiah;
+  @override
+  @JsonKey()
+  final String topReasonCode;
+  @override
+  @JsonKey()
+  final String topReasonLabel;
+
+  @override
+  String toString() {
+    return 'StaffVoidDto(id: $id, name: $name, count: $count, lostRupiah: $lostRupiah, topReasonCode: $topReasonCode, topReasonLabel: $topReasonLabel)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$StaffVoidDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.count, count) || other.count == count) &&
+            (identical(other.lostRupiah, lostRupiah) ||
+                other.lostRupiah == lostRupiah) &&
+            (identical(other.topReasonCode, topReasonCode) ||
+                other.topReasonCode == topReasonCode) &&
+            (identical(other.topReasonLabel, topReasonLabel) ||
+                other.topReasonLabel == topReasonLabel));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    name,
+    count,
+    lostRupiah,
+    topReasonCode,
+    topReasonLabel,
+  );
+
+  /// Create a copy of StaffVoidDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$StaffVoidDtoImplCopyWith<_$StaffVoidDtoImpl> get copyWith =>
+      __$$StaffVoidDtoImplCopyWithImpl<_$StaffVoidDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$StaffVoidDtoImplToJson(this);
+  }
+}
+
+abstract class _StaffVoidDto implements StaffVoidDto {
+  const factory _StaffVoidDto({
+    required final String id,
+    required final String name,
+    final int count,
+    final int lostRupiah,
+    final String topReasonCode,
+    final String topReasonLabel,
+  }) = _$StaffVoidDtoImpl;
+
+  factory _StaffVoidDto.fromJson(Map<String, dynamic> json) =
+      _$StaffVoidDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+  @override
+  int get count;
+  @override
+  int get lostRupiah;
+  @override
+  String get topReasonCode;
+  @override
+  String get topReasonLabel;
+
+  /// Create a copy of StaffVoidDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$StaffVoidDtoImplCopyWith<_$StaffVoidDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

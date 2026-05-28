@@ -118,6 +118,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       lockExpiresAt: d.lockExpiresAt,
       openedAt: d.openedAt,
       elapsed: d.openedAt == null ? null : _elapsedStr(d.openedAt!),
+      guestName: d.guestName,
+      guestNotes: d.guestNotes,
+      reservationId: d.reservationId,
     );
   }
 
@@ -147,6 +150,91 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       for (final t in state)
         if (t.id == id) next else t,
     ];
+  }
+
+  /// Seat a table at [id]: marks occupied, sets pax, attaches guest info.
+  /// When [acquireLock] is true, the server atomically also writes the lock
+  /// fields for [userId] — used by the reservation seat flow which lacks an
+  /// already-open table_detail screen to auto-acquire after the WS broadcast.
+  /// Walk-in seat (caller already on table_detail) omits the flag and lets
+  /// the screen's existing auto-acquire timer claim the lock.
+  ///
+  /// Server returns 409 `already_seated` if the table is no longer
+  /// `available`; this method rolls back the optimistic update and rethrows
+  /// the [ApiException] so the caller can surface a toast.
+  Future<void> seat(
+    String id, {
+    required int pax,
+    String? guestName,
+    String? guestNotes,
+    String? reservationId,
+    String? userId,
+    String? userName,
+    bool acquireLock = false,
+  }) async {
+    SatLog.repo(
+        'tables.seat id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax acquireLock=$acquireLock');
+    final prev =
+        state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+    if (prev != null) {
+      final now = DateTime.now();
+      _replace(
+        id,
+        prev.copyWith(
+          status: TableStatus.occupied,
+          pax: pax.clamp(0, prev.capacity < 1 ? 1 : prev.capacity),
+          openedAt: prev.openedAt ?? now,
+          elapsed: prev.elapsed ?? _elapsedStr(prev.openedAt ?? now),
+          mine: true,
+          lastActorId: userId ?? prev.lastActorId,
+          guestName: guestName,
+          guestNotes: guestNotes,
+          reservationId: reservationId,
+          lockedBy: acquireLock && userId != null ? userId : prev.lockedBy,
+          lockedByName:
+              acquireLock && userId != null ? userName : prev.lockedByName,
+          lockedAt: acquireLock && userId != null ? now : prev.lockedAt,
+          lockExpiresAt: acquireLock && userId != null
+              ? now.add(const Duration(seconds: 7))
+              : prev.lockExpiresAt,
+        ),
+      );
+    }
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    try {
+      final raw = await ref.read(apiClientProvider).postJson(
+        '/tables/$id/seat',
+        {
+          'pax': pax,
+          'actorId': ?userId,
+          'actorName': ?userName,
+          'guestName': ?guestName,
+          'guestNotes': ?guestNotes,
+          'reservationId': ?reservationId,
+          if (acquireLock) 'acquireLock': true,
+        },
+      );
+      _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+    } on ApiException catch (e) {
+      // Rollback optimistic mutation. On a 409 the server payload carries the
+      // current table row — merge it so the UI shows accurate state behind
+      // the toast.
+      if (prev != null) _replace(id, prev);
+      if (e.statusCode == 409 && e.code == 'already_seated') {
+        try {
+          final body = jsonDecode(e.body) as Map<String, dynamic>;
+          final t = body['table'];
+          if (t is Map) {
+            _mergeDto(TableDto.fromJson(t.cast<String, dynamic>()));
+          }
+        } catch (_) {}
+      }
+      rethrow;
+    } catch (_) {
+      if (prev != null) _replace(id, prev);
+      rethrow;
+    }
   }
 
   Future<void> markPending(String id, {String? userId}) async {

@@ -80,7 +80,9 @@ class Ticket with _$Ticket {
     required TicketStatus status,
     required String sentAt,
     String? voidReason,
+    String? voidReasonCode,
     String? voidApprovedBy,
     String? createdBy,
+    String? voidedBy,
   }) = _Ticket;
 }

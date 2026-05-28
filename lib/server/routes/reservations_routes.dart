@@ -76,7 +76,7 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   });
 
   r.post('/reservations', (Request req) async {
-    final denied = await _requireCap(req, db, auth, Capability.editSettings);
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final name = (body['name'] as String?)?.trim() ?? '';
@@ -109,7 +109,7 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   });
 
   r.patch('/reservations/<id>', (Request req, String id) async {
-    final denied = await _requireCap(req, db, auth, Capability.editSettings);
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final existing = await (db.select(db.reservations)..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -139,7 +139,7 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   });
 
   r.delete('/reservations/<id>', (Request req, String id) async {
-    final denied = await _requireCap(req, db, auth, Capability.editSettings);
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final existing = await (db.select(db.reservations)..where((t) => t.id.equals(id))).getSingleOrNull();
     if (existing == null) return Response(404);

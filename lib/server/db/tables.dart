@@ -58,6 +58,9 @@ class VenueTables extends Table {
   DateTimeColumn get lockedAt => dateTime().nullable()();
   DateTimeColumn get lockExpiresAt => dateTime().nullable()();
   DateTimeColumn get openedAt => dateTime().nullable()();
+  TextColumn get guestName => text().nullable()();
+  TextColumn get guestNotes => text().nullable()();
+  TextColumn get reservationId => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -124,6 +127,9 @@ class Tickets extends Table {
   TextColumn get voidReasonCode => text().nullable()();
   TextColumn get voidApprovedBy => text().nullable()();
   TextColumn get createdByUserId => text().nullable()();
+  /// User who voided this ticket. Server-stamped from the JWT on the
+  /// void transition — never client-supplied. See ADR-0006.
+  TextColumn get voidedByUserId => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -271,6 +277,8 @@ class TableSessionTickets extends Table {
   TextColumn get voidReasonCode => text().nullable()();
   TextColumn get voidApprovedBy => text().nullable()();
   TextColumn get createdByUserId => text().nullable()();
+  /// Mirrors Tickets.voidedByUserId at session close.
+  TextColumn get voidedByUserId => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

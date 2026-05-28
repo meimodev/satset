@@ -22,6 +22,7 @@ String _hashPassword(String pw) =>
 /// Idempotent: skips when the dedicated admin already exists.
 Future<void> seedIfEmpty(AppDatabase db) async {
   await _seedDedicatedAdmin(db);
+  await _ensureWaiterCanVoid(db);
 
   final hasUsers = (await db.select(db.users).get()).isNotEmpty;
   // Demo seed runs only when the table holds nothing beyond the dedicated
@@ -36,7 +37,6 @@ Future<void> seedIfEmpty(AppDatabase db) async {
   // function self-skips when tableSessions already has rows.
   if (hasUsers && !onlyAdminPresent) {
     await _seedHistoricalSessions(db);
-    await _seedReservations(db);
     return;
   }
 
@@ -140,9 +140,6 @@ Future<void> seedIfEmpty(AppDatabase db) async {
   // immediate data on a fresh first boot. Idempotent — skipped if any
   // table_sessions row already exists.
   await _seedHistoricalSessions(db);
-  // Seed a handful of reservations spanning yesterday + today + tomorrow so
-  // the tables screen card and reports reservation widget have data.
-  await _seedReservations(db);
 
   // First-boot verification: every reference table the seed populates must
   // be non-empty before this future resolves, so callers can rely on the
@@ -169,6 +166,21 @@ Future<void> seedIfEmpty(AppDatabase db) async {
 
 String _hashPin(String pin) {
   return sha256.convert(utf8.encode('satset.v1::$pin')).toString();
+}
+
+/// Backfill `voidItem` onto the waiter role for installs seeded before
+/// self-served voids (ADR-0006). Idempotent: no-op once the cap is present.
+Future<void> _ensureWaiterCanVoid(AppDatabase db) async {
+  final role = await (db.select(db.roles)
+        ..where((r) => r.id.equals(seed.DummyData.roleWaiterId)))
+      .getSingleOrNull();
+  if (role == null) return;
+  final caps = (jsonDecode(role.capabilitiesJson) as List).cast<String>();
+  if (caps.contains('voidItem')) return;
+  caps.add('voidItem');
+  await (db.update(db.roles)
+        ..where((r) => r.id.equals(seed.DummyData.roleWaiterId)))
+      .write(RolesCompanion(capabilitiesJson: Value(jsonEncode(caps))));
 }
 
 Future<void> _seedDedicatedAdmin(AppDatabase db) async {
@@ -341,44 +353,3 @@ Future<void> _seedHistoricalSessions(AppDatabase db) async {
   });
 }
 
-/// Seed a small spread of reservations (yesterday/today/tomorrow) so the
-/// tables-screen card and reports reservation widget render real data.
-/// Idempotent — skipped when any reservation row already exists.
-Future<void> _seedReservations(AppDatabase db) async {
-  final existing = await (db.selectOnly(db.reservations)
-        ..addColumns([db.reservations.id]))
-      .get();
-  if (existing.isNotEmpty) return;
-
-  const uuid = Uuid();
-  final now = DateTime.now();
-  DateTime at(int dayDelta, int hour, int min) =>
-      DateTime(now.year, now.month, now.day + dayDelta, hour, min);
-
-  final seeds = <Map<String, dynamic>>[
-    {'name': 'Pak Tono', 'phone': '+62 812 1111 0001', 'party': 4, 'when': at(0, 18, 30), 'status': 'pending',  'zone': 'terrace'},
-    {'name': 'Bu Ratna', 'phone': '+62 812 1111 0002', 'party': 2, 'when': at(0, 19, 0),  'status': 'seated',   'zone': 'indoor'},
-    {'name': 'Keluarga Wijaya', 'phone': '+62 812 1111 0003', 'party': 6, 'when': at(0, 20, 0),  'status': 'pending', 'zone': 'garden'},
-    {'name': 'Andre & Sinta', 'phone': '+62 812 1111 0004', 'party': 2, 'when': at(-1, 19, 0), 'status': 'noShow',   'zone': 'indoor'},
-    {'name': 'Pak Hadi', 'phone': '+62 812 1111 0005', 'party': 3, 'when': at(-1, 20, 0), 'status': 'cancelled','zone': 'terrace'},
-    {'name': 'Komunitas Foto', 'phone': '+62 812 1111 0006', 'party': 8, 'when': at(1, 19, 30), 'status': 'pending', 'zone': 'garden'},
-  ];
-
-  await db.batch((b) {
-    for (final s in seeds) {
-      b.insert(
-        db.reservations,
-        ReservationsCompanion.insert(
-          id: uuid.v4(),
-          name: s['name'] as String,
-          phone: Value(s['phone'] as String?),
-          partySize: Value(s['party'] as int),
-          expectedAt: s['when'] as DateTime,
-          status: Value(s['status'] as String),
-          zoneId: Value(s['zone'] as String?),
-          createdAt: now,
-        ),
-      );
-    }
-  });
-}

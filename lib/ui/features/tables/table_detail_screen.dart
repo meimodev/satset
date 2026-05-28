@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/services/api_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -65,7 +66,21 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _acquireLock());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialAcquire());
+  }
+
+  /// Decide whether to acquire the lock on first frame. Kosong tables (status
+  /// = available) carry no editable state — locking them serves no purpose
+  /// and just blocks other waiters from viewing. The status listener in
+  /// build() takes over once the row transitions to non-available.
+  Future<void> _initialAcquire() async {
+    final tables = ref.read(tablesProvider);
+    final t = tables.where((x) => x.id == _tableId).cast<VenueTable?>().firstOrNull;
+    if (t != null && t.status == TableStatus.available) {
+      if (mounted) setState(() => _acquiring = false);
+      return;
+    }
+    await _acquireLock();
   }
 
   Future<void> _acquireLock() async {
@@ -193,15 +208,23 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final lockedByOther = table.isLockedByOther(actorId);
     final readOnly = lockedByOther || (!_ownsLock && !_acquiring);
 
-    // Watch for lock release by the current holder. When `lockedByOther`
-    // flips false while we're sitting read-only, schedule a short-delay
-    // auto-acquire (loser of the race gets a toast inside _tryAutoAcquire).
+    // Watch for two related transitions: (a) the current lock holder
+    // releases while we're sitting read-only, or (b) the row flips from
+    // `available` to a non-`available` status (a walk-in seat from another
+    // waiter on the same kosong screen, or a server-side mutation). In both
+    // cases we want to try to claim the lock — but only when the table is
+    // actually in a lockable state. Kosong tables are intentionally
+    // lock-free, so we skip auto-acquire on them.
     ref.listen<List<VenueTable>>(tablesProvider, (prev, next) {
       if (_ownsLock || actorId == null) return;
       final t = next.firstWhere(
         (x) => x.id == _tableId,
         orElse: () => VenueTable(id: _tableId, zoneId: ''),
       );
+      if (t.status == TableStatus.available) {
+        _autoAcquireTimer?.cancel();
+        return;
+      }
       final stillLocked = t.isLockedByOther(actorId);
       if (stillLocked) {
         _autoAcquireTimer?.cancel();
@@ -209,9 +232,38 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         _scheduleAutoAcquire();
       }
     });
+    final isKosong = table.status == TableStatus.available;
+    final canSeat = isKosong && auth.has(Capability.takeOrder) && !lockedByOther;
     // Gate by capability, not role enum: admins also have takeOrder and need
     // to be able to correct guest counts during testing/coverage.
     final canEditGuests = auth.has(Capability.takeOrder) && !readOnly;
+
+    Future<void> onSeat() async {
+      if (!canSeat || actorId == null) return;
+      try {
+        await ref.read(tablesProvider.notifier).seat(
+              _tableId,
+              pax: 1,
+              userId: actorId,
+              userName: user?.name,
+            );
+        // The status flip from `available` → `occupied` triggers the
+        // tablesProvider listener above, which schedules the auto-acquire.
+        // No explicit lock call here.
+      } on ApiException catch (e) {
+        if (!context.mounted) return;
+        final holder = table.lockedByName ?? 'pengguna lain';
+        final msg = e.code == 'already_seated'
+            ? 'Meja sudah diisi oleh $holder'
+            : 'Gagal mulai layani: ${e.code ?? e.statusCode}';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mulai layani: $e')),
+        );
+      }
+    }
 
     void onMinus() {
       if (readOnly) return;
@@ -226,7 +278,6 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     for (final t in tickets) {
       grouped.putIfAbsent(t.course, () => []).add(t);
     }
-    final total = tickets.fold<int>(0, (s, t) => s + t.price * t.qty);
     final readyAny = tickets.any((t) => t.status == TicketStatus.ready);
     final liveStatuses = {
       TicketStatus.draft,
@@ -400,11 +451,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         zone: zone,
         tickets: tickets,
         grouped: grouped,
-        total: total,
         readyAny: readyAny,
         canEditGuests: canEditGuests,
         readOnly: readOnly,
         canClose: canClose,
+        isKosong: isKosong,
+        canSeat: canSeat,
         lockBanner: lockBanner,
         onMinusPax: onMinus,
         onPlusPax: onPlus,
@@ -412,6 +464,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         onFireCourse: fireCourse,
         onTicketTap: openAction,
         onAdd: onAdd,
+        onSeat: onSeat,
         onClose: onClose,
         onBack: () => safePop(context),
       );
@@ -427,7 +480,6 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
               _Header(
                 table: table,
                 zoneName: zone.name,
-                total: total,
                 canEditGuests: canEditGuests,
                 onMinusPax: onMinus,
                 onPlusPax: onPlus,
@@ -440,75 +492,99 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
-                    child: ListView(
-                  padding: EdgeInsets.fromLTRB(0, 0, 0, l.bottomInset + 80),
-                  children: [
-                    for (final cid in Courses.stationOrder.map((c) => c.id))
-                      if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
-                        _CourseBlock(
-                          course: Courses.byId(cid),
-                          items: grouped[cid]!,
-                          readOnly: readOnly,
-                          onMarkServed: markServed,
-                          onFireCourse: () => fireCourse(cid),
-                          onTicketTap: openAction,
-                        ),
-                    if (tickets.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-                        child: Text(
-                          'Belum ada item — ketuk "Tambah ke pesanan" untuk mulai.',
-                          textAlign: TextAlign.center,
-                          style: SatType.sans(size: 13, color: sc.textLo),
-                        ),
-                      ),
-                  ],
-                ),
+                    child: isKosong
+                        ? _KosongSeatCard(
+                            tableName: table.displayName,
+                            enabled: canSeat,
+                            onTap: onSeat,
+                          )
+                        : ListView(
+                            padding: EdgeInsets.fromLTRB(
+                                0, 0, 0, l.bottomInset + 80),
+                            children: [
+                              for (final cid
+                                  in Courses.stationOrder.map((c) => c.id))
+                                if (grouped[cid] != null &&
+                                    grouped[cid]!.isNotEmpty)
+                                  _CourseBlock(
+                                    course: Courses.byId(cid),
+                                    items: grouped[cid]!,
+                                    readOnly: readOnly,
+                                    onMarkServed: markServed,
+                                    onFireCourse: () => fireCourse(cid),
+                                    onTicketTap: openAction,
+                                  ),
+                              if (tickets.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      24, 32, 24, 32),
+                                  child: Text(
+                                    'Belum ada item — ketuk "Tambah ke pesanan" untuk mulai.',
+                                    textAlign: TextAlign.center,
+                                    style: SatType.sans(
+                                        size: 13, color: sc.textLo),
+                                  ),
+                                ),
+                            ],
+                          ),
                   ),
                 ),
               ),
             ],
           ),
-          Positioned(
-            left: 16 + l.padding.left,
-            right: 16 + l.padding.right,
-            bottom: l.useSideRail
-                ? 16 + l.padding.bottom
-                : 92 + l.padding.bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (canClose)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _CloseTableButton(
-                      label: 'Tutup meja',
-                      onTap: onClose,
+          if (!isKosong)
+            Positioned(
+              left: 16 + l.padding.left,
+              right: 16 + l.padding.right,
+              bottom: l.useSideRail
+                  ? 16 + l.padding.bottom
+                  : 92 + l.padding.bottom,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (canClose)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _CloseTableButton(
+                        label: 'Tutup meja',
+                        onTap: onClose,
+                      ),
                     ),
+                  _PrimaryIconButton(
+                    icon: readOnly ? Icons.lock_outline : Icons.add,
+                    enabled: !readOnly,
+                    onTap: onAdd,
                   ),
-                _PrimaryButton(
-                  label: readOnly
-                      ? 'Hanya lihat'
-                      : (tickets.isEmpty
-                          ? 'Bangun pesanan'
-                          : 'Tambah ke pesanan'),
-                  icon: readOnly ? Icons.lock_outline : Icons.add,
-                  enabled: !readOnly,
-                  onTap: onAdd,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _Header extends StatelessWidget {
+/// Per-second tick used by the live elapsed pill in [_Header]. autoDispose so
+/// the stream stops while no table_detail screen is mounted.
+final _detailElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
+  (ref) => Stream<DateTime>.periodic(
+    const Duration(seconds: 1),
+    (_) => DateTime.now(),
+  ),
+);
+
+String _fmtSeated(Duration d) {
+  final s = d.inSeconds.abs();
+  final h = s ~/ 3600;
+  final m = (s % 3600) ~/ 60;
+  final sec = s % 60;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return h > 0 ? '$h:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
+}
+
+class _Header extends ConsumerWidget {
   final VenueTable table;
   final String zoneName;
-  final int total;
   final bool canEditGuests;
   final VoidCallback onMinusPax;
   final VoidCallback onPlusPax;
@@ -517,7 +593,6 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.table,
     required this.zoneName,
-    required this.total,
     required this.canEditGuests,
     required this.onMinusPax,
     required this.onPlusPax,
@@ -526,14 +601,21 @@ class _Header extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    // Watch the ticker so the elapsed pill rebuilds every second when
+    // `openedAt` is set. Read-only watchers don't penalize render cost.
+    ref.watch(_detailElapsedTickerProvider);
+    final elapsedStr = table.openedAt == null
+        ? null
+        : _fmtSeated(DateTime.now().difference(table.openedAt!));
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Flexible(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 96),
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -557,37 +639,125 @@ class _Header extends StatelessWidget {
                     style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.textMd)),
                 const SizedBox(height: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Flexible(
-                      child: GuestStepper(
-                        pax: table.pax,
-                        max: table.capacity,
-                        enabled: canEditGuests,
-                        onMinus: onMinusPax,
-                        onPlus: onPlusPax,
-                        size: 32,
-                      ),
+                    GuestStepper(
+                      pax: table.pax,
+                      max: table.capacity,
+                      enabled: canEditGuests,
+                      onMinus: onMinusPax,
+                      onPlus: onPlusPax,
+                      size: 32,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     _ContextTriggerBtn(
                       alertCount: alertCount,
                       onTap: onShowContext,
                     ),
+                    if (elapsedStr != null) ...[
+                      const SizedBox(width: 8),
+                      _SeatedDurationChip(label: elapsedStr),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    _HPill(
-                      icon: Icons.access_time,
-                      label: 'duduk ${table.elapsed ?? '0:00'}',
-                    ),
-                    _HPill(label: formatIDR(total)),
-                  ],
-                ),
+                if ((table.guestName != null &&
+                        table.guestName!.trim().isNotEmpty) ||
+                    (table.guestNotes != null &&
+                        table.guestNotes!.trim().isNotEmpty)) ...[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      if (table.guestName != null &&
+                          table.guestName!.trim().isNotEmpty)
+                        _HPill(
+                          icon: Icons.person_outline,
+                          label: table.guestName!,
+                        ),
+                      if (table.guestNotes != null &&
+                          table.guestNotes!.trim().isNotEmpty)
+                        _HPill(
+                          icon: Icons.sticky_note_2_outlined,
+                          label: table.guestNotes!,
+                        ),
+                    ],
+                  ),
+                ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveSeatedChip extends ConsumerWidget {
+  final DateTime openedAt;
+  final double height;
+  const _LiveSeatedChip({required this.openedAt, this.height = 32});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    ref.watch(_detailElapsedTickerProvider);
+    final label = _fmtSeated(DateTime.now().difference(openedAt));
+    return Container(
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: sc.bg3,
+        borderRadius: BorderRadius.circular(height / 2),
+        border: Border.all(color: sc.border0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.access_time, size: height * 0.42, color: sc.textMd),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: SatType.mono(
+              size: height * 0.36,
+              weight: FontWeight.w600,
+              color: sc.textMd,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeatedDurationChip extends StatelessWidget {
+  final String label;
+  const _SeatedDurationChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: sc.bg3,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: sc.border0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.access_time, size: 13, color: sc.textMd),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: SatType.mono(
+              size: 12,
+              weight: FontWeight.w600,
+              color: sc.textMd,
+              letterSpacing: 0.2,
             ),
           ),
         ],
@@ -1096,13 +1266,90 @@ class _SmallSuccessButton extends StatelessWidget {
   }
 }
 
-class _PrimaryButton extends StatelessWidget {
-  final String label;
+class _KosongSeatCard extends StatelessWidget {
+  final String tableName;
+  final bool enabled;
+  final VoidCallback onTap;
+  const _KosongSeatCard({
+    required this.tableName,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final bg = enabled ? sc.accent : sc.bg3;
+    final fg = enabled ? sc.accentInk : sc.textLo;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: sc.bg2,
+                borderRadius: BorderRadius.circular(36),
+              ),
+              child: Icon(Icons.event_seat_outlined,
+                  size: 36, color: sc.textMd),
+            ),
+            const SizedBox(height: 18),
+            Text('Meja $tableName kosong',
+                style: SatType.sans(
+                  size: 16,
+                  weight: FontWeight.w600,
+                  color: sc.textHi,
+                )),
+            const SizedBox(height: 6),
+            Text('Tap untuk mulai melayani tamu',
+                style: SatType.sans(size: 13, color: sc.textLo)),
+            const SizedBox(height: 24),
+            Opacity(
+              opacity: enabled ? 1 : 0.5,
+              child: Material(
+                color: bg,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: enabled ? onTap : null,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.play_circle_fill, size: 22, color: fg),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Mulai layani meja',
+                          style: SatType.sans(
+                            size: 15,
+                            weight: FontWeight.w700,
+                            color: fg,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool enabled;
-  const _PrimaryButton({
-    required this.label,
+  const _PrimaryIconButton({
     required this.icon,
     required this.onTap,
     this.enabled = true,
@@ -1113,27 +1360,19 @@ class _PrimaryButton extends StatelessWidget {
     final sc = context.sat;
     final fg = enabled ? sc.accentInk : sc.textLo;
     final bg = enabled ? sc.accent : sc.bg3;
-    return SizedBox(
-      height: 52,
-      child: ElevatedButton.icon(
-        onPressed: enabled ? onTap : null,
-        icon: Icon(icon, size: 18, color: fg),
-        label: Text(label,
-            style: SatType.sans(
-              size: 15,
-              weight: FontWeight.w600,
-              letterSpacing: -0.15,
-              color: fg,
-            )),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          disabledBackgroundColor: bg,
-          disabledForegroundColor: fg,
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          padding: const EdgeInsets.symmetric(horizontal: 22),
-          minimumSize: const Size.fromHeight(52),
+    return Center(
+      child: Material(
+        color: bg,
+        shape: const CircleBorder(),
+        elevation: 0,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 64,
+            height: 64,
+            child: Icon(icon, size: 28, color: fg),
+          ),
         ),
       ),
     );
@@ -1234,11 +1473,12 @@ class _TabletSplit extends StatelessWidget {
   final Zone zone;
   final List<Ticket> tickets;
   final Map<CourseId, List<Ticket>> grouped;
-  final int total;
   final bool readyAny;
   final bool canEditGuests;
   final bool readOnly;
   final bool canClose;
+  final bool isKosong;
+  final bool canSeat;
   final Widget? lockBanner;
   final VoidCallback onMinusPax;
   final VoidCallback onPlusPax;
@@ -1246,6 +1486,7 @@ class _TabletSplit extends StatelessWidget {
   final void Function(CourseId) onFireCourse;
   final void Function(Ticket) onTicketTap;
   final VoidCallback onAdd;
+  final VoidCallback onSeat;
   final VoidCallback onClose;
   final VoidCallback onBack;
 
@@ -1256,11 +1497,12 @@ class _TabletSplit extends StatelessWidget {
     required this.zone,
     required this.tickets,
     required this.grouped,
-    required this.total,
     required this.readyAny,
     required this.canEditGuests,
     required this.readOnly,
     required this.canClose,
+    required this.isKosong,
+    required this.canSeat,
     required this.lockBanner,
     required this.onMinusPax,
     required this.onPlusPax,
@@ -1268,6 +1510,7 @@ class _TabletSplit extends StatelessWidget {
     required this.onFireCourse,
     required this.onTicketTap,
     required this.onAdd,
+    required this.onSeat,
     required this.onClose,
     required this.onBack,
   });
@@ -1325,121 +1568,156 @@ class _TabletSplit extends StatelessWidget {
                                 Text(zone.name,
                                     style: SatType.sans(size: 15, color: sc.textMd)),
                                 const SizedBox(height: 6),
-                                GuestStepper(
-                                  pax: table.pax,
-                                  max: table.capacity,
-                                  enabled: canEditGuests,
-                                  onMinus: onMinusPax,
-                                  onPlus: onPlusPax,
-                                  size: 36,
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GuestStepper(
+                                      pax: table.pax,
+                                      max: table.capacity,
+                                      enabled: canEditGuests,
+                                      onMinus: onMinusPax,
+                                      onPlus: onPlusPax,
+                                      size: 36,
+                                    ),
+                                    if (table.openedAt != null) ...[
+                                      const SizedBox(width: 10),
+                                      _LiveSeatedChip(
+                                          openedAt: table.openedAt!, height: 36),
+                                    ],
+                                  ],
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _pill(context, sc, '⏱ duduk ${table.elapsed ?? '0:00'}'),
-                          _pill(context, sc, formatIDR(total)),
-                          if (readyN > 0) _pill(context, sc, '$readyN siap diambil', tone: 'success'),
-                        ],
-                      ),
+                      if (readyN > 0 ||
+                          (table.guestName != null &&
+                              table.guestName!.trim().isNotEmpty) ||
+                          (table.guestNotes != null &&
+                              table.guestNotes!.trim().isNotEmpty)) ...[
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (readyN > 0)
+                              _pill(context, sc, '$readyN siap diambil',
+                                  tone: 'success'),
+                            if (table.guestName != null &&
+                                table.guestName!.trim().isNotEmpty)
+                              _pill(context, sc, '👤 ${table.guestName!}'),
+                            if (table.guestNotes != null &&
+                                table.guestNotes!.trim().isNotEmpty)
+                              _pill(context, sc, '📝 ${table.guestNotes!}'),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
                 ?lockBanner,
                 Expanded(
-                  child: tickets.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(28),
-                            child: Text(
-                              'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
-                              textAlign: TextAlign.center,
-                              style: SatType.sans(size: 14, color: sc.textLo, height: 1.5),
+                  child: isKosong
+                      ? _KosongSeatCard(
+                          tableName: table.displayName,
+                          enabled: canSeat,
+                          onTap: onSeat,
+                        )
+                      : tickets.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(28),
+                                child: Text(
+                                  'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
+                                  textAlign: TextAlign.center,
+                                  style: SatType.sans(
+                                      size: 14, color: sc.textLo, height: 1.5),
+                                ),
+                              ),
+                            )
+                          : ListView(
+                              padding:
+                                  const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                              children: [
+                                for (final cid
+                                    in Courses.stationOrder.map((c) => c.id))
+                                  if (grouped[cid] != null &&
+                                      grouped[cid]!.isNotEmpty)
+                                    _CourseBlock(
+                                      course: Courses.byId(cid),
+                                      items: grouped[cid]!,
+                                      readOnly: readOnly,
+                                      onMarkServed: onMarkServed,
+                                      onFireCourse: () => onFireCourse(cid),
+                                      onTicketTap: onTicketTap,
+                                    ),
+                              ],
+                            ),
+                ),
+                if (!isKosong)
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: sc.border0)),
+                    ),
+                    child: Row(
+                      children: [
+                        if (canClose) ...[
+                          Expanded(
+                            child: _CloseTableButton(
+                              label: 'Tutup meja',
+                              onTap: onClose,
                             ),
                           ),
-                        )
-                      : ListView(
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                          children: [
-                            for (final cid in Courses.stationOrder.map((c) => c.id))
-                              if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
-                                _CourseBlock(
-                                  course: Courses.byId(cid),
-                                  items: grouped[cid]!,
-                                  readOnly: readOnly,
-                                  onMarkServed: onMarkServed,
-                                  onFireCourse: () => onFireCourse(cid),
-                                  onTicketTap: onTicketTap,
-                                ),
-                          ],
-                        ),
-                ),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: sc.border0)),
-                  ),
-                  child: Row(
-                    children: [
-                      if (canClose) ...[
+                          const SizedBox(width: 10),
+                        ],
                         Expanded(
-                          child: _CloseTableButton(
-                            label: 'Tutup meja',
-                            onTap: onClose,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                      ],
-                      Expanded(
-                        flex: canClose ? 1 : 1,
-                        child: Opacity(
-                          opacity: readOnly ? 0.5 : 1,
-                          child: Material(
-                            color: sc.accent,
-                            borderRadius: BorderRadius.circular(14),
-                            child: InkWell(
-                              onTap: readOnly ? null : onAdd,
+                          flex: canClose ? 1 : 1,
+                          child: Opacity(
+                            opacity: readOnly ? 0.5 : 1,
+                            child: Material(
+                              color: sc.accent,
                               borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 52,
-                                alignment: Alignment.center,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      readOnly ? Icons.lock_outline : Icons.add,
-                                      size: 18,
-                                      color: sc.accentInk,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      readOnly
-                                          ? 'Hanya lihat'
-                                          : (tickets.isEmpty
-                                              ? 'Buat pesanan'
-                                              : 'Tambah pesanan'),
-                                      style: SatType.sans(
-                                        size: 15,
-                                        weight: FontWeight.w600,
+                              child: InkWell(
+                                onTap: readOnly ? null : onAdd,
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  height: 52,
+                                  alignment: Alignment.center,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        readOnly
+                                            ? Icons.lock_outline
+                                            : Icons.add,
+                                        size: 18,
                                         color: sc.accentInk,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        readOnly
+                                            ? 'Hanya lihat'
+                                            : (tickets.isEmpty
+                                                ? 'Buat pesanan'
+                                                : 'Tambah pesanan'),
+                                        style: SatType.sans(
+                                          size: 15,
+                                          weight: FontWeight.w600,
+                                          color: sc.accentInk,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),

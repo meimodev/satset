@@ -104,8 +104,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // and seed data both rely on that format.
       sentAt: _nowStamp(d.sentAt.toLocal()),
       voidReason: d.voidReason,
+      voidReasonCode: d.voidReasonCode,
       voidApprovedBy: d.voidApprovedBy,
       createdBy: d.createdByUserId,
+      voidedBy: d.voidedByUserId,
     );
   }
 
@@ -180,6 +182,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     String ticketId,
     TicketStatus to, {
     String? voidReason,
+    String? voidReasonCode,
     String? voidApprovedBy,
   }) async {
     SatLog.repo('tickets.transition id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} → ${to.name}');
@@ -188,6 +191,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       final body = <String, dynamic>{
         'status': ticketStatusKey(to),
         'voidReason': ?voidReason,
+        'voidReasonCode': ?voidReasonCode,
         'voidApprovedBy': ?voidApprovedBy,
       };
       await ref.read(apiClientProvider).postJson(
@@ -204,6 +208,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           t.copyWith(
             status: to,
             voidReason: voidReason ?? t.voidReason,
+            voidReasonCode: voidReasonCode ?? t.voidReasonCode,
             voidApprovedBy: voidApprovedBy ?? t.voidApprovedBy,
           )
         else
@@ -360,14 +365,14 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     String tableId,
     String ticketId,
     String reason,
-    String approver,
+    String reasonCode,
   ) {
     return transition(
       tableId,
       ticketId,
       TicketStatus.voided,
       voidReason: reason,
-      voidApprovedBy: approver,
+      voidReasonCode: reasonCode,
     );
   }
 }

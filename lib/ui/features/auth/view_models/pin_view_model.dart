@@ -46,22 +46,15 @@ class PairedServerInfo {
 
 class PinState {
   final SignInMode mode;
-  final String pin;
-  final bool pinBusy;
-  final String? pinError;
   final bool adminBusy;
   final String? adminError;
   final List<PairedServerInfo> servers;
   final String? selectedServerKey;
   final bool pairingBusy;
   final String? pairingError;
-  static const int pinMax = 6;
 
   const PinState({
     this.mode = SignInMode.staff,
-    this.pin = '',
-    this.pinBusy = false,
-    this.pinError,
     this.adminBusy = false,
     this.adminError,
     this.servers = const [],
@@ -80,9 +73,6 @@ class PinState {
 
   PinState copyWith({
     SignInMode? mode,
-    String? pin,
-    bool? pinBusy,
-    Object? pinError = _unset,
     bool? adminBusy,
     Object? adminError = _unset,
     List<PairedServerInfo>? servers,
@@ -92,9 +82,6 @@ class PinState {
   }) =>
       PinState(
         mode: mode ?? this.mode,
-        pin: pin ?? this.pin,
-        pinBusy: pinBusy ?? this.pinBusy,
-        pinError: pinError == _unset ? this.pinError : pinError as String?,
         adminBusy: adminBusy ?? this.adminBusy,
         adminError:
             adminError == _unset ? this.adminError : adminError as String?,
@@ -232,17 +219,12 @@ class PinViewModel extends StateNotifier<PinState> {
     SatLog.vm('PinVM setMode ${m.name}');
     state = state.copyWith(
       mode: m,
-      pin: '',
-      pinError: null,
       adminError: null,
     );
     if (m == SignInMode.staff) {
-      // Fire-and-forget: submitStaffPin() is the authoritative gate that
-      // re-persists and blocks auth on failure. Surface any error here too
-      // so explicit Staff selection cannot silently leave stale mode.
+      // verifyPin() re-persists mode and is the authoritative gate.
       _persistMode(AppMode.client).catchError((Object e) {
         SatLog.vm('PinVM setMode persist fail $e');
-        state = state.copyWith(pinError: 'Gagal menyimpan mode: $e');
       });
     }
     // Admin server boot is deferred to submitAdmin() so a failure can be
@@ -275,7 +257,7 @@ class PinViewModel extends StateNotifier<PinState> {
     final match = state.servers.where((s) => s.key == key).toList();
     if (match.isEmpty) return;
     final picked = match.first;
-    state = state.copyWith(selectedServerKey: key, pinError: null);
+    state = state.copyWith(selectedServerKey: key);
     if (picked.paired) _publishApiConfig(picked);
   }
 
@@ -285,20 +267,6 @@ class PinViewModel extends StateNotifier<PinState> {
       trustedFingerprint: s.fingerprint,
     );
   }
-
-  void onDigit(String d) {
-    if (state.pinBusy) return;
-    if (state.pin.length >= PinState.pinMax) return;
-    state = state.copyWith(pin: state.pin + d, pinError: null);
-  }
-
-  void backspace() {
-    if (state.pinBusy) return;
-    if (state.pin.isEmpty) return;
-    state = state.copyWith(pin: state.pin.substring(0, state.pin.length - 1));
-  }
-
-  void clearPin() => state = state.copyWith(pin: '', pinError: null);
 
   void clearAdminError() {
     if (state.adminError != null) {
@@ -312,53 +280,34 @@ class PinViewModel extends StateNotifier<PinState> {
     }
   }
 
-  /// Returns true when sign-in succeeded.
-  Future<bool> submitStaffPin() async {
-    SatLog.vm('PinVM submitStaff len=${state.pin.length}');
-    if (state.pin.length < PinState.pinMax || state.pinBusy) return false;
+  /// Verifies [pin] against the currently selected server.
+  /// Returns `null` on success, or a user-facing error message on failure.
+  Future<String?> verifyPin(String pin) async {
+    SatLog.vm('PinVM verifyPin len=${pin.length}');
     final cfg = _ref.read(apiConfigProvider);
     final sel = state.selectedServer;
     if (cfg == null || sel == null || !sel.paired) {
-      state = state.copyWith(
-        pin: '',
-        pinError: 'Pilih server terlebih dahulu',
-      );
-      return false;
+      return 'Pilih server terlebih dahulu';
     }
     final deviceId = await _storage.readDeviceId();
     if (deviceId == null || deviceId.isEmpty) {
-      SatLog.vm('PinVM submitStaff missing deviceId');
-      state = state.copyWith(
-        pin: '',
-        pinError: 'Perangkat belum dipasangkan ulang',
-      );
-      return false;
+      SatLog.vm('PinVM verifyPin missing deviceId');
+      return 'Perangkat belum dipasangkan ulang';
     }
-    state = state.copyWith(pinBusy: true, pinError: null);
     try {
       await _persistMode(AppMode.client);
     } catch (e) {
-      SatLog.vm('PinVM submitStaff persist fail $e');
-      state = state.copyWith(
-        pinBusy: false,
-        pinError: 'Gagal menyimpan mode klien: $e',
-      );
-      return false;
+      SatLog.vm('PinVM verifyPin persist fail $e');
+      return 'Gagal menyimpan mode klien: $e';
     }
-    final ok = await _auth.signInWithPin(state.pin);
+    final ok = await _auth.signInWithPin(pin);
     if (ok) {
-      SatLog.vm('PinVM submitStaff result=ok');
-      state = state.copyWith(pinBusy: false);
-      return true;
+      SatLog.vm('PinVM verifyPin result=ok');
+      return null;
     }
     final err = _ref.read(authStateProvider).error;
-    SatLog.vm('PinVM submitStaff result=fail err=$err');
-    state = state.copyWith(
-      pinBusy: false,
-      pin: '',
-      pinError: err ?? 'PIN tidak dikenal',
-    );
-    return false;
+    SatLog.vm('PinVM verifyPin result=fail err=$err');
+    return err ?? 'PIN tidak dikenal';
   }
 
   Future<bool> submitAdmin({
