@@ -15,28 +15,20 @@ import 'package:satset/domain/models/modifier_group.dart';
 class MenuSnapshot {
   final List<MenuCategory> categories;
   final List<MenuItem> items;
-  final List<ModifierGroup> modifierGroups;
   const MenuSnapshot({
     required this.categories,
     required this.items,
-    required this.modifierGroups,
   });
 
-  static const empty = MenuSnapshot(
-    categories: [],
-    items: [],
-    modifierGroups: [],
-  );
+  static const empty = MenuSnapshot(categories: [], items: []);
 
   MenuSnapshot copyWith({
     List<MenuCategory>? categories,
     List<MenuItem>? items,
-    List<ModifierGroup>? modifierGroups,
   }) =>
       MenuSnapshot(
         categories: categories ?? this.categories,
         items: items ?? this.items,
-        modifierGroups: modifierGroups ?? this.modifierGroups,
       );
 }
 
@@ -99,7 +91,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     final dto = MenuSnapshotDto.fromJson(raw);
     state = _toDomain(dto);
     SatLog.repo(
-        'menu.loaded cats=${state.categories.length} items=${state.items.length} mods=${state.modifierGroups.length}');
+        'menu.loaded cats=${state.categories.length} items=${state.items.length}');
   }
 
   Future<void> refresh() {
@@ -108,26 +100,19 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   }
 
   MenuSnapshot _toDomain(MenuSnapshotDto d) {
-    final groups = [for (final g in d.modifierGroups) _modGroupFromDto(g)];
-    final groupsById = {for (final g in groups) g.id: g};
     return MenuSnapshot(
       categories: [
         for (final c in d.categories) MenuCategory(id: c.id, name: c.name),
       ],
-      items: [for (final i in d.items) _itemFromDto(i, groupsById)],
-      modifierGroups: groups,
+      items: [for (final i in d.items) _itemFromDto(i)],
     );
   }
 
-  MenuItem _itemFromDto(MenuItemDto i, Map<String, ModifierGroup> groups) {
+  MenuItem _itemFromDto(MenuItemDto i) {
     return MenuItem(
       id: i.id,
       name: i.name,
       categoryId: i.categoryId,
-      station: Station.values.firstWhere(
-        (s) => s.name == i.station,
-        orElse: () => Station.kitchen,
-      ),
       description: i.description,
       basePrice: i.basePrice,
       cost: i.cost,
@@ -136,8 +121,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
         for (final v in i.variants) Variant(id: v.id, name: v.name, price: v.price),
       ],
       modifierGroups: [
-        for (final id in i.modifierGroupIds)
-          if (groups[id] != null) groups[id]!,
+        for (final g in i.modifierGroups) _modGroupFromDto(g),
       ],
       allergens: [for (final a in i.allergens) _allergen(a)]
           .whereType<Allergen>()
@@ -191,7 +175,6 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       items: isInsert
           ? [...state.items, item]
           : [for (final i in state.items) if (i.id == item.id) item else i],
-      modifierGroups: _mergeGroups(state.modifierGroups, item.modifierGroups),
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -282,22 +265,49 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     }
   }
 
-  // ---------- helpers ----------
+  // ---------- categories ----------
 
-  List<ModifierGroup> _mergeGroups(
-    List<ModifierGroup> existing,
-    List<ModifierGroup> incoming,
-  ) {
-    final byId = {for (final g in existing) g.id: g};
-    for (final g in incoming) {
-      byId[g.id] = g;
-    }
-    return byId.values.toList();
+  Future<void> createCategory(String name) async {
+    SatLog.repo('menu.category.create $name');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    await ref.read(apiClientProvider).postJson('/menu/categories', {'name': name});
+    await _refetch();
   }
 
+  Future<void> renameCategory(String id, String name) async {
+    SatLog.repo('menu.category.rename $id → $name');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    await ref
+        .read(apiClientProvider)
+        .patchJson('/menu/categories/$id', {'name': name});
+    await _refetch();
+  }
+
+  /// Delete a category. Throws if the server rejects (e.g. non-empty → 409).
+  Future<void> deleteCategory(String id) async {
+    SatLog.repo('menu.category.delete $id');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    await ref.read(apiClientProvider).deleteJson('/menu/categories/$id');
+    await _refetch();
+  }
+
+  Future<void> reorderCategories(List<String> ids) async {
+    SatLog.repo('menu.category.reorder ${ids.length}');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) return;
+    await ref
+        .read(apiClientProvider)
+        .postJson('/menu/categories/reorder', {'ids': ids});
+    await _refetch();
+  }
+
+  // ---------- helpers ----------
+
   void _mergeServerItem(MenuItemDto dto) {
-    final groups = {for (final g in state.modifierGroups) g.id: g};
-    final merged = _itemFromDto(dto, groups);
+    final merged = _itemFromDto(dto);
     state = state.copyWith(
       items: state.items.any((i) => i.id == merged.id)
           ? [
@@ -312,7 +322,6 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
         'id': it.id,
         'name': it.name,
         'categoryId': it.categoryId,
-        'station': it.station.name,
         'description': it.description,
         'basePrice': it.basePrice,
         'cost': it.cost,
@@ -343,8 +352,10 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
 }
 
 final menuRepositoryProvider =
-    StateNotifierProvider<MenuRepository, MenuSnapshot>(
-        (ref) => MenuRepository(ref: ref));
+    StateNotifierProvider<MenuRepository, MenuSnapshot>((ref) {
+  ref.watch(apiConfigProvider);
+  return MenuRepository(ref: ref);
+});
 
 final menuCategoriesProvider = Provider<List<MenuCategory>>(
     (ref) => ref.watch(menuRepositoryProvider).categories);

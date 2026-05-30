@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
@@ -15,22 +17,29 @@ import '_common.dart';
 class _KOrder {
   final String tableId;
   final String sentAt;
+  // Full-precision fire time of the earliest ticket in the group — drives the
+  // live age counter. `sentAt` (HH:mm) stays the grouping key. See ADR-0008.
+  final DateTime sentAtTime;
   final List<Ticket> tickets;
-  const _KOrder(this.tableId, this.sentAt, this.tickets);
+  const _KOrder(this.tableId, this.sentAt, this.sentAtTime, this.tickets);
 
   int get total => tickets.length;
   int get done => tickets.where((t) => _isDone(t.status)).length;
 }
 
+// `ready` stays in the active set so a just-cooked item (now servable)
+// remains struck-through on the card instead of vanishing one-by-one. A
+// fully-ready order still clears the default view via the `done == total`
+// guard in `_buildOrders`.
 const _kitchenInProgress = {
   TicketStatus.sent,
   TicketStatus.prep,
   TicketStatus.cooked,
+  TicketStatus.ready,
 };
 
-// Completed batches (everything `cooked`) auto-promote to `ready` and may
-// later become `served`. The "show completed" filter has to include those
-// statuses or the order vanishes the instant the cook marks the last item.
+// Served items only show under the "show completed" filter — once handed to
+// the table they're done with the kitchen.
 const _kitchenCompleted = {
   TicketStatus.ready,
   TicketStatus.served,
@@ -47,7 +56,6 @@ List<_KOrder> _buildOrders(
   byTable.forEach((tableId, list) {
     final groups = <String, List<Ticket>>{};
     for (final t in list) {
-      if (t.station != Station.kitchen) continue;
       if (!visible.contains(t.status)) continue;
       groups.putIfAbsent(t.sentAt, () => []).add(t);
     }
@@ -58,7 +66,10 @@ List<_KOrder> _buildOrders(
         final bc = _isDone(b.status) ? 1 : 0;
         return ac.compareTo(bc);
       });
-      final order = _KOrder(tableId, sentAt, tickets);
+      final earliest = tickets
+          .map((t) => t.sentAtTime)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      final order = _KOrder(tableId, sentAt, earliest, tickets);
       if (!showCompleted && order.done == order.total) return;
       out.add(order);
     });
@@ -73,19 +84,66 @@ bool _isDone(TicketStatus s) =>
     s == TicketStatus.ready ||
     s == TicketStatus.served;
 
-int _ageMinutes(String hhmm) {
-  final p = hhmm.split(':');
-  if (p.length != 2) return 0;
-  final h = int.tryParse(p[0]);
-  final m = int.tryParse(p[1]);
-  if (h == null || m == null) return 0;
-  final now = DateTime.now();
-  final diff = now.difference(DateTime(now.year, now.month, now.day, h, m));
-  return diff.inMinutes < 0 ? 0 : diff.inMinutes;
+Duration _age(DateTime sentAtTime) {
+  final d = DateTime.now().difference(sentAtTime);
+  return d.isNegative ? Duration.zero : d;
 }
 
 Color _ageColor(SatColors sc, int min) =>
     min >= 10 ? sc.urgent : (min >= 5 ? sc.warn : sc.success);
+
+// Refined deceleration — no bounce/elastic (kitchen-floor tone is calm).
+const _kEaseOutQuart = Cubic(0.25, 1, 0.5, 1);
+
+/// Fade + slide a card in once when it first appears. Keyed by order identity
+/// so re-sorting or ticket updates reuse the State and don't replay the entry.
+class _CardEntrance extends StatefulWidget {
+  final Widget child;
+  final bool animate;
+  const _CardEntrance({super.key, required this.child, required this.animate});
+
+  @override
+  State<_CardEntrance> createState() => _CardEntranceState();
+}
+
+class _CardEntranceState extends State<_CardEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) {
+      _c.forward();
+    } else {
+      _c.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = _kEaseOutQuart.transform(_c.value);
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(offset: Offset(0, (1 - t) * 12), child: child),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
 
 class KitchenScreen extends ConsumerStatefulWidget {
   const KitchenScreen({super.key});
@@ -96,6 +154,23 @@ class KitchenScreen extends ConsumerStatefulWidget {
 
 class _KitchenScreenState extends ConsumerState<KitchenScreen> {
   bool _showCompleted = false;
+  // Drives the live age counters (and their color/pulse thresholds) so cards
+  // tick between ticket events, matching the other elapsed counters.
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +180,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
       showCompleted: _showCompleted,
     );
     final itemCount = orders.fold<int>(0, (n, o) => n + o.total);
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
 
     // All status changes round-trip through the server via the KDS
     // view model + AdvanceTicketStatusUseCase so other clients see them.
@@ -124,7 +200,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-              child: Text('Dapur',
+              child: Text('Antrian Persiapan',
                   style: SatType.sans(
                     size: 26,
                     weight: FontWeight.w600,
@@ -135,7 +211,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Text(
-                '${orders.length} ORDER · $itemCount ITEM DI ANTRIAN MASAK',
+                '${orders.length} ORDER · $itemCount ITEM DI ANTRIAN PERSIAPAN',
                 style: SatType.mono(
                     size: 11, color: sc.textLo, letterSpacing: 0.66),
               ),
@@ -151,8 +227,11 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
                       itemCount: orders.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) =>
-                          _OrderCard(order: orders[i], onToggle: toggle),
+                      itemBuilder: (_, i) => _CardEntrance(
+                        key: ValueKey('${orders[i].tableId}|${orders[i].sentAt}'),
+                        animate: !reduceMotion,
+                        child: _OrderCard(order: orders[i], onToggle: toggle),
+                      ),
                     ),
             ),
           ],
@@ -161,7 +240,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
     }
 
     return AdminPage(
-      title: 'Dapur · Antrian Masak',
+      title: 'Antrian Persiapan',
       sub: '${orders.length} order aktif · $itemCount item · tap untuk tandai selesai',
       topTrailing: filter,
       children: [
@@ -175,7 +254,11 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
               for (final o in orders)
                 SizedBox(
                   width: 360,
-                  child: _OrderCard(order: o, onToggle: toggle),
+                  child: _CardEntrance(
+                    key: ValueKey('${o.tableId}|${o.sentAt}'),
+                    animate: !reduceMotion,
+                    child: _OrderCard(order: o, onToggle: toggle),
+                  ),
                 ),
             ],
           ),
@@ -242,9 +325,11 @@ class _OrderCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final age = _ageMinutes(order.sentAt);
+    final ageDur = _age(order.sentAtTime);
+    final age = ageDur.inMinutes;
     final ageColor = _ageColor(sc, age);
     final progress = order.total == 0 ? 0.0 : order.done / order.total;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
     final tables = ref.watch(tablesProvider);
     final tableLabel = tables
         .firstWhere(
@@ -253,7 +338,9 @@ class _OrderCard extends ConsumerWidget {
         )
         .displayName;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
       decoration: BoxDecoration(
         color: sc.bg2,
         border: Border.all(
@@ -292,16 +379,22 @@ class _OrderCard extends ConsumerWidget {
                       color: sc.textMd,
                     )),
                 const Spacer(),
-                _AgePill(age: age, sentAt: order.sentAt, color: ageColor),
+                _AgePill(age: ageDur, sentAt: order.sentAt, color: ageColor),
               ],
             ),
           ),
           ClipRRect(
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 3,
-              backgroundColor: sc.bg3,
-              valueColor: AlwaysStoppedAnimation(sc.success),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: progress),
+              duration:
+                  reduceMotion ? Duration.zero : const Duration(milliseconds: 420),
+              curve: _kEaseOutQuart,
+              builder: (_, v, _) => LinearProgressIndicator(
+                value: v,
+                minHeight: 3,
+                backgroundColor: sc.bg3,
+                valueColor: AlwaysStoppedAnimation(sc.success),
+              ),
             ),
           ),
           AnimatedSize(
@@ -326,7 +419,7 @@ class _OrderCard extends ConsumerWidget {
 }
 
 class _AgePill extends StatelessWidget {
-  final int age;
+  final Duration age;
   final String sentAt;
   final Color color;
   const _AgePill(
@@ -344,13 +437,9 @@ class _AgePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
+          _PulseDot(color: color, pulse: age.inMinutes >= 10),
           const SizedBox(width: 6),
-          Text('${age}m',
+          Text(formatElapsedId(age),
               style: SatType.mono(
                 size: 12,
                 weight: FontWeight.w700,
@@ -370,7 +459,72 @@ class _AgePill extends StatelessWidget {
   }
 }
 
-class _ItemRow extends StatelessWidget {
+/// Status dot that gently pulses while an order is overdue (≥10m), drawing the
+/// cook's eye to the most urgent ticket. Static (no repaint) otherwise.
+class _PulseDot extends StatefulWidget {
+  final Color color;
+  final bool pulse;
+  const _PulseDot({required this.color, required this.pulse});
+
+  @override
+  State<_PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<_PulseDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PulseDot old) {
+    super.didUpdateWidget(old);
+    if (widget.pulse != old.pulse) _sync();
+  }
+
+  void _sync() {
+    final reduce = MediaQuery.of(context).disableAnimations;
+    if (widget.pulse && !reduce) {
+      if (!_c.isAnimating) _c.repeat(reverse: true);
+    } else {
+      _c.stop();
+      _c.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dot = Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+    );
+    if (!widget.pulse) return dot;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_c.value);
+        return Transform.scale(scale: 1 + t * 0.45, child: child);
+      },
+      child: dot,
+    );
+  }
+}
+
+class _ItemRow extends StatefulWidget {
   final Ticket ticket;
   final bool last;
   final VoidCallback onTap;
@@ -378,14 +532,54 @@ class _ItemRow extends StatelessWidget {
       {required this.ticket, required this.last, required this.onTap});
 
   @override
+  State<_ItemRow> createState() => _ItemRowState();
+}
+
+class _ItemRowState extends State<_ItemRow>
+    with SingleTickerProviderStateMixin {
+  // A brief green wash when an item is marked done — acknowledges the tap and
+  // softens the row's jump to the bottom of the card (done items sink).
+  late final AnimationController _flash = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 520),
+  );
+
+  @override
+  void didUpdateWidget(covariant _ItemRow old) {
+    super.didUpdateWidget(old);
+    final cooked = _isDone(widget.ticket.status);
+    final wasCooked = _isDone(old.ticket.status);
+    if (cooked &&
+        !wasCooked &&
+        !MediaQuery.of(context).disableAnimations) {
+      _flash.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _flash.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final ticket = widget.ticket;
     final cooked = _isDone(ticket.status);
+    final base = cooked ? sc.successSoft : Colors.transparent;
 
-    return Material(
-      color: cooked ? sc.successSoft : Colors.transparent,
+    return AnimatedBuilder(
+      animation: _flash,
+      builder: (_, child) {
+        final t = 1 - Curves.easeOut.transform(_flash.value);
+        return Material(
+          color: Color.alphaBlend(sc.success.withValues(alpha: 0.35 * t), base),
+          child: child,
+        );
+      },
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 60),
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -473,37 +667,106 @@ class _ItemRow extends StatelessWidget {
   }
 }
 
-class _CheckButton extends StatelessWidget {
+class _CheckButton extends StatefulWidget {
   final bool cooked;
   const _CheckButton({required this.cooked});
 
   @override
+  State<_CheckButton> createState() => _CheckButtonState();
+}
+
+class _CheckButtonState extends State<_CheckButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+  );
+
+  // A confident pop (no elastic overshoot) when the cook marks an item done.
+  late final Animation<double> _scale = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 1.0, end: 1.18).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 45,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.18, end: 1.0).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 55,
+    ),
+  ]).animate(_pop);
+
+  @override
+  void didUpdateWidget(covariant _CheckButton old) {
+    super.didUpdateWidget(old);
+    if (widget.cooked &&
+        !old.cooked &&
+        !MediaQuery.of(context).disableAnimations) {
+      _pop.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: cooked ? sc.success : Colors.transparent,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: cooked ? sc.success : sc.border2,
-          width: 2,
+    return ScaleTransition(
+      scale: _scale,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: widget.cooked ? sc.success : Colors.transparent,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: widget.cooked ? sc.success : sc.border2,
+            width: 2,
+          ),
         ),
-      ),
-      child: Icon(
-        Icons.check_rounded,
-        size: 20,
-        color: cooked ? sc.accentInk : sc.textDim,
+        child: Icon(
+          Icons.check_rounded,
+          size: 20,
+          color: widget.cooked ? sc.accentInk : sc.textDim,
+        ),
       ),
     );
   }
 }
 
-class _EmptyQueue extends StatelessWidget {
+class _EmptyQueue extends StatefulWidget {
   const _EmptyQueue();
+
+  @override
+  State<_EmptyQueue> createState() => _EmptyQueueState();
+}
+
+class _EmptyQueueState extends State<_EmptyQueue>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.of(context).disableAnimations) {
+      _c.value = 0;
+    } else if (!_c.isAnimating) {
+      _c.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -512,7 +775,17 @@ class _EmptyQueue extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.restaurant_rounded, size: 40, color: sc.textDim),
+          AnimatedBuilder(
+            animation: _c,
+            builder: (_, child) {
+              final t = Curves.easeInOut.transform(_c.value);
+              return Transform.translate(
+                offset: Offset(0, -3 * t),
+                child: child,
+              );
+            },
+            child: Icon(Icons.restaurant_rounded, size: 40, color: sc.textDim),
+          ),
           const SizedBox(height: 14),
           Text('Antrian masak kosong',
               style: SatType.sans(

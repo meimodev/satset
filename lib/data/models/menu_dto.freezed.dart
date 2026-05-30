@@ -24,8 +24,6 @@ mixin _$MenuSnapshotDto {
   int get version => throw _privateConstructorUsedError;
   List<MenuCategoryDto> get categories => throw _privateConstructorUsedError;
   List<MenuItemDto> get items => throw _privateConstructorUsedError;
-  List<ModifierGroupDto> get modifierGroups =>
-      throw _privateConstructorUsedError;
 
   /// Serializes this MenuSnapshotDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -48,7 +46,6 @@ abstract class $MenuSnapshotDtoCopyWith<$Res> {
     int version,
     List<MenuCategoryDto> categories,
     List<MenuItemDto> items,
-    List<ModifierGroupDto> modifierGroups,
   });
 }
 
@@ -70,7 +67,6 @@ class _$MenuSnapshotDtoCopyWithImpl<$Res, $Val extends MenuSnapshotDto>
     Object? version = null,
     Object? categories = null,
     Object? items = null,
-    Object? modifierGroups = null,
   }) {
     return _then(
       _value.copyWith(
@@ -86,10 +82,6 @@ class _$MenuSnapshotDtoCopyWithImpl<$Res, $Val extends MenuSnapshotDto>
                 ? _value.items
                 : items // ignore: cast_nullable_to_non_nullable
                       as List<MenuItemDto>,
-            modifierGroups: null == modifierGroups
-                ? _value.modifierGroups
-                : modifierGroups // ignore: cast_nullable_to_non_nullable
-                      as List<ModifierGroupDto>,
           )
           as $Val,
     );
@@ -109,7 +101,6 @@ abstract class _$$MenuSnapshotDtoImplCopyWith<$Res>
     int version,
     List<MenuCategoryDto> categories,
     List<MenuItemDto> items,
-    List<ModifierGroupDto> modifierGroups,
   });
 }
 
@@ -130,7 +121,6 @@ class __$$MenuSnapshotDtoImplCopyWithImpl<$Res>
     Object? version = null,
     Object? categories = null,
     Object? items = null,
-    Object? modifierGroups = null,
   }) {
     return _then(
       _$MenuSnapshotDtoImpl(
@@ -146,10 +136,6 @@ class __$$MenuSnapshotDtoImplCopyWithImpl<$Res>
             ? _value._items
             : items // ignore: cast_nullable_to_non_nullable
                   as List<MenuItemDto>,
-        modifierGroups: null == modifierGroups
-            ? _value._modifierGroups
-            : modifierGroups // ignore: cast_nullable_to_non_nullable
-                  as List<ModifierGroupDto>,
       ),
     );
   }
@@ -162,10 +148,8 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
     required this.version,
     required final List<MenuCategoryDto> categories,
     required final List<MenuItemDto> items,
-    required final List<ModifierGroupDto> modifierGroups,
   }) : _categories = categories,
-       _items = items,
-       _modifierGroups = modifierGroups;
+       _items = items;
 
   factory _$MenuSnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$MenuSnapshotDtoImplFromJson(json);
@@ -188,17 +172,9 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
     return EqualUnmodifiableListView(_items);
   }
 
-  final List<ModifierGroupDto> _modifierGroups;
-  @override
-  List<ModifierGroupDto> get modifierGroups {
-    if (_modifierGroups is EqualUnmodifiableListView) return _modifierGroups;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_modifierGroups);
-  }
-
   @override
   String toString() {
-    return 'MenuSnapshotDto(version: $version, categories: $categories, items: $items, modifierGroups: $modifierGroups)';
+    return 'MenuSnapshotDto(version: $version, categories: $categories, items: $items)';
   }
 
   @override
@@ -211,11 +187,7 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
               other._categories,
               _categories,
             ) &&
-            const DeepCollectionEquality().equals(other._items, _items) &&
-            const DeepCollectionEquality().equals(
-              other._modifierGroups,
-              _modifierGroups,
-            ));
+            const DeepCollectionEquality().equals(other._items, _items));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -225,7 +197,6 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
     version,
     const DeepCollectionEquality().hash(_categories),
     const DeepCollectionEquality().hash(_items),
-    const DeepCollectionEquality().hash(_modifierGroups),
   );
 
   /// Create a copy of MenuSnapshotDto
@@ -250,7 +221,6 @@ abstract class _MenuSnapshotDto implements MenuSnapshotDto {
     required final int version,
     required final List<MenuCategoryDto> categories,
     required final List<MenuItemDto> items,
-    required final List<ModifierGroupDto> modifierGroups,
   }) = _$MenuSnapshotDtoImpl;
 
   factory _MenuSnapshotDto.fromJson(Map<String, dynamic> json) =
@@ -262,8 +232,6 @@ abstract class _MenuSnapshotDto implements MenuSnapshotDto {
   List<MenuCategoryDto> get categories;
   @override
   List<MenuItemDto> get items;
-  @override
-  List<ModifierGroupDto> get modifierGroups;
 
   /// Create a copy of MenuSnapshotDto
   /// with the given fields replaced by the non-null parameter values.
@@ -640,13 +608,13 @@ mixin _$MenuItemDto {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get categoryId => throw _privateConstructorUsedError;
-  String get station => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   int get basePrice => throw _privateConstructorUsedError;
   int get cost => throw _privateConstructorUsedError;
   int get prepTime => throw _privateConstructorUsedError;
   List<VariantDto> get variants => throw _privateConstructorUsedError;
-  List<String> get modifierGroupIds => throw _privateConstructorUsedError;
+  List<ModifierGroupDto> get modifierGroups =>
+      throw _privateConstructorUsedError;
   List<String> get allergens => throw _privateConstructorUsedError;
   List<String> get dietary => throw _privateConstructorUsedError;
   bool get unavailable => throw _privateConstructorUsedError;
@@ -674,13 +642,12 @@ abstract class $MenuItemDtoCopyWith<$Res> {
     String id,
     String name,
     String categoryId,
-    String station,
     String description,
     int basePrice,
     int cost,
     int prepTime,
     List<VariantDto> variants,
-    List<String> modifierGroupIds,
+    List<ModifierGroupDto> modifierGroups,
     List<String> allergens,
     List<String> dietary,
     bool unavailable,
@@ -707,13 +674,12 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
     Object? id = null,
     Object? name = null,
     Object? categoryId = null,
-    Object? station = null,
     Object? description = null,
     Object? basePrice = null,
     Object? cost = null,
     Object? prepTime = null,
     Object? variants = null,
-    Object? modifierGroupIds = null,
+    Object? modifierGroups = null,
     Object? allergens = null,
     Object? dietary = null,
     Object? unavailable = null,
@@ -733,10 +699,6 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
             categoryId: null == categoryId
                 ? _value.categoryId
                 : categoryId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            station: null == station
-                ? _value.station
-                : station // ignore: cast_nullable_to_non_nullable
                       as String,
             description: null == description
                 ? _value.description
@@ -758,10 +720,10 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
                 ? _value.variants
                 : variants // ignore: cast_nullable_to_non_nullable
                       as List<VariantDto>,
-            modifierGroupIds: null == modifierGroupIds
-                ? _value.modifierGroupIds
-                : modifierGroupIds // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
+            modifierGroups: null == modifierGroups
+                ? _value.modifierGroups
+                : modifierGroups // ignore: cast_nullable_to_non_nullable
+                      as List<ModifierGroupDto>,
             allergens: null == allergens
                 ? _value.allergens
                 : allergens // ignore: cast_nullable_to_non_nullable
@@ -801,13 +763,12 @@ abstract class _$$MenuItemDtoImplCopyWith<$Res>
     String id,
     String name,
     String categoryId,
-    String station,
     String description,
     int basePrice,
     int cost,
     int prepTime,
     List<VariantDto> variants,
-    List<String> modifierGroupIds,
+    List<ModifierGroupDto> modifierGroups,
     List<String> allergens,
     List<String> dietary,
     bool unavailable,
@@ -833,13 +794,12 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? categoryId = null,
-    Object? station = null,
     Object? description = null,
     Object? basePrice = null,
     Object? cost = null,
     Object? prepTime = null,
     Object? variants = null,
-    Object? modifierGroupIds = null,
+    Object? modifierGroups = null,
     Object? allergens = null,
     Object? dietary = null,
     Object? unavailable = null,
@@ -859,10 +819,6 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
         categoryId: null == categoryId
             ? _value.categoryId
             : categoryId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        station: null == station
-            ? _value.station
-            : station // ignore: cast_nullable_to_non_nullable
                   as String,
         description: null == description
             ? _value.description
@@ -884,10 +840,10 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
             ? _value._variants
             : variants // ignore: cast_nullable_to_non_nullable
                   as List<VariantDto>,
-        modifierGroupIds: null == modifierGroupIds
-            ? _value._modifierGroupIds
-            : modifierGroupIds // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
+        modifierGroups: null == modifierGroups
+            ? _value._modifierGroups
+            : modifierGroups // ignore: cast_nullable_to_non_nullable
+                  as List<ModifierGroupDto>,
         allergens: null == allergens
             ? _value._allergens
             : allergens // ignore: cast_nullable_to_non_nullable
@@ -920,20 +876,19 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     required this.id,
     required this.name,
     required this.categoryId,
-    required this.station,
     this.description = '',
     required this.basePrice,
     this.cost = 0,
     this.prepTime = 5,
     final List<VariantDto> variants = const <VariantDto>[],
-    final List<String> modifierGroupIds = const <String>[],
+    final List<ModifierGroupDto> modifierGroups = const <ModifierGroupDto>[],
     final List<String> allergens = const <String>[],
     final List<String> dietary = const <String>[],
     this.unavailable = false,
     this.stockCount,
     this.autoEightySixAtZero = false,
   }) : _variants = variants,
-       _modifierGroupIds = modifierGroupIds,
+       _modifierGroups = modifierGroups,
        _allergens = allergens,
        _dietary = dietary;
 
@@ -946,8 +901,6 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
   final String name;
   @override
   final String categoryId;
-  @override
-  final String station;
   @override
   @JsonKey()
   final String description;
@@ -968,14 +921,13 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     return EqualUnmodifiableListView(_variants);
   }
 
-  final List<String> _modifierGroupIds;
+  final List<ModifierGroupDto> _modifierGroups;
   @override
   @JsonKey()
-  List<String> get modifierGroupIds {
-    if (_modifierGroupIds is EqualUnmodifiableListView)
-      return _modifierGroupIds;
+  List<ModifierGroupDto> get modifierGroups {
+    if (_modifierGroups is EqualUnmodifiableListView) return _modifierGroups;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_modifierGroupIds);
+    return EqualUnmodifiableListView(_modifierGroups);
   }
 
   final List<String> _allergens;
@@ -1007,7 +959,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
 
   @override
   String toString() {
-    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, station: $station, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroupIds: $modifierGroupIds, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, stockCount: $stockCount, autoEightySixAtZero: $autoEightySixAtZero)';
+    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroups: $modifierGroups, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, stockCount: $stockCount, autoEightySixAtZero: $autoEightySixAtZero)';
   }
 
   @override
@@ -1019,7 +971,6 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.categoryId, categoryId) ||
                 other.categoryId == categoryId) &&
-            (identical(other.station, station) || other.station == station) &&
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.basePrice, basePrice) ||
@@ -1029,8 +980,8 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
                 other.prepTime == prepTime) &&
             const DeepCollectionEquality().equals(other._variants, _variants) &&
             const DeepCollectionEquality().equals(
-              other._modifierGroupIds,
-              _modifierGroupIds,
+              other._modifierGroups,
+              _modifierGroups,
             ) &&
             const DeepCollectionEquality().equals(
               other._allergens,
@@ -1052,13 +1003,12 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     id,
     name,
     categoryId,
-    station,
     description,
     basePrice,
     cost,
     prepTime,
     const DeepCollectionEquality().hash(_variants),
-    const DeepCollectionEquality().hash(_modifierGroupIds),
+    const DeepCollectionEquality().hash(_modifierGroups),
     const DeepCollectionEquality().hash(_allergens),
     const DeepCollectionEquality().hash(_dietary),
     unavailable,
@@ -1085,13 +1035,12 @@ abstract class _MenuItemDto implements MenuItemDto {
     required final String id,
     required final String name,
     required final String categoryId,
-    required final String station,
     final String description,
     required final int basePrice,
     final int cost,
     final int prepTime,
     final List<VariantDto> variants,
-    final List<String> modifierGroupIds,
+    final List<ModifierGroupDto> modifierGroups,
     final List<String> allergens,
     final List<String> dietary,
     final bool unavailable,
@@ -1109,8 +1058,6 @@ abstract class _MenuItemDto implements MenuItemDto {
   @override
   String get categoryId;
   @override
-  String get station;
-  @override
   String get description;
   @override
   int get basePrice;
@@ -1121,7 +1068,7 @@ abstract class _MenuItemDto implements MenuItemDto {
   @override
   List<VariantDto> get variants;
   @override
-  List<String> get modifierGroupIds;
+  List<ModifierGroupDto> get modifierGroups;
   @override
   List<String> get allergens;
   @override

@@ -9,7 +9,6 @@ class MenuSnapshotDto with _$MenuSnapshotDto {
     required int version,
     required List<MenuCategoryDto> categories,
     required List<MenuItemDto> items,
-    required List<ModifierGroupDto> modifierGroups,
   }) = _MenuSnapshotDto;
 
   factory MenuSnapshotDto.fromJson(Map<String, dynamic> json) =>
@@ -45,13 +44,12 @@ class MenuItemDto with _$MenuItemDto {
     required String id,
     required String name,
     required String categoryId,
-    required String station,
     @Default('') String description,
     required int basePrice,
     @Default(0) int cost,
     @Default(5) int prepTime,
     @Default(<VariantDto>[]) List<VariantDto> variants,
-    @Default(<String>[]) List<String> modifierGroupIds,
+    @Default(<ModifierGroupDto>[]) List<ModifierGroupDto> modifierGroups,
     @Default(<String>[]) List<String> allergens,
     @Default(<String>[]) List<String> dietary,
     @Default(false) bool unavailable,

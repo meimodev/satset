@@ -1,7 +1,5 @@
 import 'modifier_group.dart';
 
-enum Station { kitchen, bar }
-
 enum Allergen { gluten, nut, dairy, shellfish, egg, soy, sesame, sulfites }
 
 enum DietaryTag { vegetarian, vegan, glutenFree, dairyFree, spicy, halal, signature }
@@ -47,7 +45,6 @@ class MenuItem {
   final String id;
   final String name;
   final String categoryId;
-  final Station station;
   final String description;
   final List<Allergen> allergens;
   final List<DietaryTag> dietary;
@@ -66,7 +63,6 @@ class MenuItem {
     required this.id,
     required this.name,
     required this.categoryId,
-    required this.station,
     required this.description,
     this.allergens = const [],
     this.dietary = const [],
@@ -93,7 +89,6 @@ class MenuItem {
     String? id,
     String? name,
     String? categoryId,
-    Station? station,
     String? description,
     List<Allergen>? allergens,
     List<DietaryTag>? dietary,
@@ -112,7 +107,6 @@ class MenuItem {
       id: id ?? this.id,
       name: name ?? this.name,
       categoryId: categoryId ?? this.categoryId,
-      station: station ?? this.station,
       description: description ?? this.description,
       allergens: allergens ?? this.allergens,
       dietary: dietary ?? this.dietary,

@@ -147,7 +147,6 @@ class _ModifierSheetBodyState extends State<_ModifierSheetBody> {
       id: 'C${_uuid.v4()}',
       itemId: widget.item.id,
       name: widget.item.name,
-      station: widget.item.station,
       variantId: _variantId,
       variantName: variant.name,
       modifiers: labels,

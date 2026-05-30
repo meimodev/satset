@@ -18,6 +18,12 @@ final menuAdminSearchProvider = StateProvider<String>((_) => '');
 /// Currently focused item id in tablet master-detail.
 final menuAdminSelectedItemIdProvider = StateProvider<String?>((_) => null);
 
+/// Top-level menu admin tab: items vs categories.
+enum MenuAdminTab { items, categories }
+
+final menuAdminTabProvider =
+    StateProvider<MenuAdminTab>((_) => MenuAdminTab.items);
+
 final menuPermissionProvider = Provider<MenuPermission>((ref) {
   final auth = ref.watch(authStateProvider);
   return auth.user?.role == UserRole.admin
@@ -60,4 +66,14 @@ final menuRealCategoriesProvider = Provider<List<MenuCategory>>((ref) {
       .watch(menuCategoriesProvider)
       .where((c) => c.id != 'all')
       .toList();
+});
+
+/// Item count per category id, for the categories panel.
+final menuCategoryItemCountsProvider = Provider<Map<String, int>>((ref) {
+  final items = ref.watch(menuItemsProvider);
+  final out = <String, int>{};
+  for (final i in items) {
+    out[i.categoryId] = (out[i.categoryId] ?? 0) + 1;
+  }
+  return out;
 });

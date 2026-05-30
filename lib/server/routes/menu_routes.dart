@@ -135,31 +135,105 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'});
   });
 
+  // ---------- categories ----------
+
+  // Create a category. Body: { "name": str, "id"?: str }. sortOrder appended.
+  r.post('/menu/categories', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final name = (body['name'] as String?)?.trim();
+    if (name == null || name.isEmpty) {
+      return Response(400, body: 'name required');
+    }
+    final id = (body['id'] as String?)?.trim().isNotEmpty == true
+        ? body['id'] as String
+        : _uuid.v4().substring(0, 8);
+    final maxRow = await (db.selectOnly(db.menuCategories)
+          ..addColumns([db.menuCategories.sortOrder.max()]))
+        .getSingleOrNull();
+    final nextSort =
+        (maxRow?.read(db.menuCategories.sortOrder.max()) ?? -1) + 1;
+    await db.into(db.menuCategories).insertOnConflictUpdate(
+          MenuCategoriesCompanion.insert(
+            id: id,
+            name: name,
+            sortOrder: Value(nextSort),
+          ),
+        );
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'id': id});
+    return Response.ok(jsonEncode({'id': id, 'name': name}),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Rename a category. Body: { "name": str }.
+  r.patch('/menu/categories/<id>', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final name = (body['name'] as String?)?.trim();
+    if (name == null || name.isEmpty) {
+      return Response(400, body: 'name required');
+    }
+    await (db.update(db.menuCategories)..where((c) => c.id.equals(id)))
+        .write(MenuCategoriesCompanion(name: Value(name)));
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'id': id});
+    return Response.ok(jsonEncode({'id': id, 'name': name}),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Delete a category. Rejected with 409 when any item still references it.
+  r.delete('/menu/categories/<id>', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final count = await (db.selectOnly(db.menuItems)
+          ..addColumns([db.menuItems.id.count()])
+          ..where(db.menuItems.categoryId.equals(id)))
+        .getSingle();
+    final n = count.read(db.menuItems.id.count()) ?? 0;
+    if (n > 0) {
+      return Response(409,
+          body: jsonEncode({'code': 'category_not_empty', 'count': n}),
+          headers: {'content-type': 'application/json'});
+    }
+    await (db.delete(db.menuCategories)..where((c) => c.id.equals(id))).go();
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'id': id});
+    return Response.ok(jsonEncode({'id': id}),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Reorder categories. Body: { "ids": [str, ...] } — sortOrder set by index.
+  r.post('/menu/categories/reorder', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final ids = (body['ids'] as List?)?.cast<String>();
+    if (ids == null) return Response(400, body: 'ids required');
+    for (var i = 0; i < ids.length; i++) {
+      await (db.update(db.menuCategories)..where((c) => c.id.equals(ids[i])))
+          .write(MenuCategoriesCompanion(sortOrder: Value(i)));
+    }
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'reorder': true});
+    return Response.ok(jsonEncode({'ok': true}),
+        headers: {'content-type': 'application/json'});
+  });
+
   return r;
 }
 
 // ---------- helpers ----------
 
 Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
-  final cats = await db.select(db.menuCategories).get();
+  final cats = await (db.select(db.menuCategories)
+        ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
+      .get();
   final items = await db.select(db.menuItems).get();
-  final mods = await db.select(db.modifierGroups).get();
   return {
     'version': 1,
     'categories': [
       for (final c in cats) {'id': c.id, 'name': c.name},
     ],
     'items': [for (final it in items) _itemRowToJson(it)],
-    'modifierGroups': [
-      for (final m in mods)
-        {
-          'id': m.id,
-          'name': m.name,
-          'required': m.required,
-          'multi': m.multi,
-          'options': jsonDecode(m.optionsJson),
-        }
-    ],
   };
 }
 
@@ -167,13 +241,12 @@ Map<String, dynamic> _itemRowToJson(MenuItem it) => {
       'id': it.id,
       'name': it.name,
       'categoryId': it.categoryId,
-      'station': it.station,
       'description': it.description,
       'basePrice': it.basePrice,
       'cost': it.cost,
       'prepTime': it.prepTime,
       'variants': jsonDecode(it.variantsJson),
-      'modifierGroupIds': jsonDecode(it.modifierGroupIdsJson),
+      'modifierGroups': jsonDecode(it.modifierGroupsJson),
       'allergens': jsonDecode(it.allergensJson),
       'dietary': jsonDecode(it.dietaryJson),
       'unavailable': it.unavailable,
@@ -189,53 +262,28 @@ Future<Map<String, dynamic>?> _readItem(AppDatabase db, String id) async {
 
 /// Upsert or partial-update a row.  `body` carries DTO-shaped fields. For
 /// inserts every required column needs to be present; for PATCH any subset
-/// is allowed and untouched columns stay as-is. Embedded modifier groups,
-/// when sent as full objects, are mirrored into the ModifierGroups table.
+/// is allowed and untouched columns stay as-is. Modifier groups are stored
+/// per-item as a JSON blob (private, not shared) — see
+/// docs/adr/0009-per-item-embedded-modifiers.md.
 Future<void> _writeItem(
   AppDatabase db,
   String id,
   Map<String, dynamic> body, {
   required bool isInsert,
 }) async {
-  // Embedded modifier groups → upsert into ModifierGroups table.
-  final embedded = body['modifierGroups'];
-  List<String>? modIds;
-  if (embedded is List) {
-    final ids = <String>[];
-    for (final raw in embedded) {
-      if (raw is! Map) continue;
-      final m = raw.cast<String, dynamic>();
-      final mid = (m['id'] as String?)?.trim();
-      if (mid == null || mid.isEmpty) continue;
-      await db.into(db.modifierGroups).insertOnConflictUpdate(
-            ModifierGroupsCompanion.insert(
-              id: mid,
-              name: (m['name'] as String?) ?? '',
-              required: Value((m['required'] as bool?) ?? false),
-              multi: Value((m['multi'] as bool?) ?? false),
-              optionsJson: Value(jsonEncode(m['options'] ?? const [])),
-            ),
-          );
-      ids.add(mid);
-    }
-    modIds = ids;
-  } else if (body['modifierGroupIds'] is List) {
-    modIds = (body['modifierGroupIds'] as List).cast<String>();
-  }
-
   if (isInsert) {
     await db.into(db.menuItems).insertOnConflictUpdate(
           MenuItemsCompanion.insert(
             id: id,
             name: (body['name'] as String?) ?? '',
             categoryId: (body['categoryId'] as String?) ?? '',
-            station: (body['station'] as String?) ?? 'kitchen',
             description: Value((body['description'] as String?) ?? ''),
             basePrice: (body['basePrice'] as num?)?.toInt() ?? 0,
             cost: Value((body['cost'] as num?)?.toInt() ?? 0),
             prepTime: Value((body['prepTime'] as num?)?.toInt() ?? 5),
             variantsJson: Value(jsonEncode(body['variants'] ?? const [])),
-            modifierGroupIdsJson: Value(jsonEncode(modIds ?? const [])),
+            modifierGroupsJson:
+                Value(jsonEncode(body['modifierGroups'] ?? const [])),
             allergensJson: Value(jsonEncode(body['allergens'] ?? const [])),
             dietaryJson: Value(jsonEncode(body['dietary'] ?? const [])),
             unavailable: Value((body['unavailable'] as bool?) ?? false),
@@ -253,9 +301,6 @@ Future<void> _writeItem(
         categoryId: body.containsKey('categoryId')
             ? Value(body['categoryId'] as String)
             : const Value.absent(),
-        station: body.containsKey('station')
-            ? Value(body['station'] as String)
-            : const Value.absent(),
         description: body.containsKey('description')
             ? Value(body['description'] as String)
             : const Value.absent(),
@@ -271,8 +316,9 @@ Future<void> _writeItem(
         variantsJson: body.containsKey('variants')
             ? Value(jsonEncode(body['variants']))
             : const Value.absent(),
-        modifierGroupIdsJson:
-            modIds != null ? Value(jsonEncode(modIds)) : const Value.absent(),
+        modifierGroupsJson: body.containsKey('modifierGroups')
+            ? Value(jsonEncode(body['modifierGroups']))
+            : const Value.absent(),
         allergensJson: body.containsKey('allergens')
             ? Value(jsonEncode(body['allergens']))
             : const Value.absent(),

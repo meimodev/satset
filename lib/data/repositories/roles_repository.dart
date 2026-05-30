@@ -222,5 +222,7 @@ class RolesRepository extends StateNotifier<List<Role>> {
 }
 
 final rolesRepositoryProvider =
-    StateNotifierProvider<RolesRepository, List<Role>>(
-        (ref) => RolesRepository(ref: ref));
+    StateNotifierProvider<RolesRepository, List<Role>>((ref) {
+  ref.watch(apiConfigProvider);
+  return RolesRepository(ref: ref);
+});

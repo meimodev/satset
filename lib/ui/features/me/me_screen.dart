@@ -12,7 +12,6 @@ import 'package:satset/data/repositories/roles_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/models/capability.dart';
-import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
@@ -64,12 +63,7 @@ class _ShiftMetrics {
 
   int get avgTicket => ticketCount == 0 ? 0 : (totalSales / ticketCount).round();
   int get avgPerCover => openCovers == 0 ? 0 : (totalSales / openCovers).round();
-  String get elapsedLabel {
-    final h = elapsedMinutes ~/ 60;
-    final m = elapsedMinutes % 60;
-    if (h == 0) return '${m}m';
-    return '${h}j ${m.toString().padLeft(2, '0')}m';
-  }
+  String get elapsedLabel => formatElapsedId(Duration(minutes: elapsedMinutes));
 
   double get shiftProgress {
     const targetMin = 8 * 60;
@@ -1211,10 +1205,10 @@ Ticket _stubTicket(WidgetRef ref) {
     itemId: item?.id ?? 'debug-item',
     name: item?.name ?? 'Debug item',
     course: CourseId.mains,
-    station: item?.station ?? Station.kitchen,
     qty: 1,
     price: item?.basePrice ?? 0,
     status: TicketStatus.sent,
     sentAt: '17:42',
+    sentAtTime: DateTime.now(),
   );
 }

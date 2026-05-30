@@ -16,9 +16,6 @@ _$MenuSnapshotDtoImpl _$$MenuSnapshotDtoImplFromJson(
   items: (json['items'] as List<dynamic>)
       .map((e) => MenuItemDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  modifierGroups: (json['modifierGroups'] as List<dynamic>)
-      .map((e) => ModifierGroupDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
 );
 
 Map<String, dynamic> _$$MenuSnapshotDtoImplToJson(
@@ -27,7 +24,6 @@ Map<String, dynamic> _$$MenuSnapshotDtoImplToJson(
   'version': instance.version,
   'categories': instance.categories,
   'items': instance.items,
-  'modifierGroups': instance.modifierGroups,
 };
 
 _$MenuCategoryDtoImpl _$$MenuCategoryDtoImplFromJson(
@@ -61,7 +57,6 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
   id: json['id'] as String,
   name: json['name'] as String,
   categoryId: json['categoryId'] as String,
-  station: json['station'] as String,
   description: json['description'] as String? ?? '',
   basePrice: (json['basePrice'] as num).toInt(),
   cost: (json['cost'] as num?)?.toInt() ?? 0,
@@ -71,11 +66,11 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
           ?.map((e) => VariantDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <VariantDto>[],
-  modifierGroupIds:
-      (json['modifierGroupIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
+  modifierGroups:
+      (json['modifierGroups'] as List<dynamic>?)
+          ?.map((e) => ModifierGroupDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
-      const <String>[],
+      const <ModifierGroupDto>[],
   allergens:
       (json['allergens'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
@@ -92,13 +87,12 @@ Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
       'id': instance.id,
       'name': instance.name,
       'categoryId': instance.categoryId,
-      'station': instance.station,
       'description': instance.description,
       'basePrice': instance.basePrice,
       'cost': instance.cost,
       'prepTime': instance.prepTime,
       'variants': instance.variants,
-      'modifierGroupIds': instance.modifierGroupIds,
+      'modifierGroups': instance.modifierGroups,
       'allergens': instance.allergens,
       'dietary': instance.dietary,
       'unavailable': instance.unavailable,

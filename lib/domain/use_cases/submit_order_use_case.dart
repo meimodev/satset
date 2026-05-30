@@ -5,7 +5,6 @@ import 'package:satset/data/models/order_dto.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
-import 'package:satset/domain/models/menu_item.dart';
 
 class SubmittedOrder {
   final List<String> ticketIds;
@@ -34,7 +33,6 @@ class SubmitOrderUseCase {
           name: c.name,
           variantId: c.variantId,
           variantName: c.variantName,
-          station: _stationKey(c.station),
           modifierOptionIds: c.modifierIds.values
               .expand((v) => v is List ? v.cast<String>() : <String>[])
               .toList(),
@@ -69,7 +67,3 @@ String _courseKey(CourseId c) => switch (c) {
       CourseId.fireNow => 'fire-now',
     };
 
-String _stationKey(Station s) => switch (s) {
-      Station.kitchen => 'kitchen',
-      Station.bar => 'bar',
-    };

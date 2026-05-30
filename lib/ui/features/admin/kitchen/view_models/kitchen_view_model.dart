@@ -44,37 +44,28 @@ class KitchenViewModel extends StateNotifier<KitchenScreenState> {
   }
 
   /// Walks a single kitchen line through the server transition graph:
-  /// `sent → prep → cooked`. When the whole batch is `cooked`, each item
-  /// is promoted `cooked → ready`. All steps go through
-  /// [AdvanceTicketStatusUseCase] so server, repository, and KDS stay in
-  /// lock-step.
+  /// `sent → prep → cooked → ready`. Each item is promoted to `ready` the
+  /// moment the cook marks it done, independent of the rest of its batch, so
+  /// the waiter can serve finished items without waiting for the whole order.
+  /// All steps go through [AdvanceTicketStatusUseCase] so server, repository,
+  /// and KDS stay in lock-step.
   Future<void> toggleCooked(String tableId, String ticketId) async {
     final useCase = ref.read(advanceTicketStatusUseCaseProvider);
     final current = ref
         .read(ticketsProvider.notifier)
         .findTicket(tableId, ticketId);
     if (current == null) return;
-    if (current.status == TicketStatus.cooked) return;
+    if (current.status == TicketStatus.ready ||
+        current.status == TicketStatus.served) {
+      return;
+    }
     if (current.status == TicketStatus.sent) {
       await useCase.call(tableId, ticketId, TicketStatus.prep);
     }
-    await useCase.call(tableId, ticketId, TicketStatus.cooked);
-
-    final list = ref.read(ticketsProvider)[tableId] ?? const <Ticket>[];
-    final sentAt = current.sentAt;
-    bool inBatch(Ticket t) =>
-        t.station == current.station && t.sentAt == sentAt;
-    bool active(Ticket t) =>
-        t.status == TicketStatus.sent ||
-        t.status == TicketStatus.prep ||
-        t.status == TicketStatus.cooked;
-    final batch = list.where((t) => inBatch(t) && active(t)).toList();
-    if (batch.isNotEmpty &&
-        batch.every((t) => t.status == TicketStatus.cooked)) {
-      for (final t in batch) {
-        await useCase.call(tableId, t.id, TicketStatus.ready);
-      }
+    if (current.status != TicketStatus.cooked) {
+      await useCase.call(tableId, ticketId, TicketStatus.cooked);
     }
+    await useCase.call(tableId, ticketId, TicketStatus.ready);
   }
 }
 

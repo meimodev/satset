@@ -113,3 +113,18 @@ Knowledge graph at `graphify-out/`.
 - If `graphify-out/wiki/index.md` exists, navigate that over raw files.
 - Cross-module "how does X relate to Y" → `graphify query`, `graphify path`, `graphify explain` (traverse EXTRACTED + INFERRED edges).
 - After code changes, run `graphify update .` (AST-only, no API cost).
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Standard triage label mapping is used. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout is used (CONTEXT.md + docs/adr/ at the root). See `docs/agents/domain.md`.
+

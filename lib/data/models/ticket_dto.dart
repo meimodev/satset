@@ -12,7 +12,6 @@ class TicketDto with _$TicketDto {
     required String name,
     @Default('') String variantName,
     required String course,
-    required String station,
     @Default(1) int qty,
     @Default(<String>[]) List<String> modifiers,
     String? specialInstructions,

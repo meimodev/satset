@@ -25,31 +25,22 @@ Router kdsRoutes(AppDatabase db, [ServerAuth? auth]) {
   /// signal: count of active sessions (any role).
   r.get('/kds/stations', (Request req) async {
     final now = DateTime.now();
-    final stations = await db
-        .customSelect(
-            'SELECT DISTINCT station FROM menu_items WHERE station IS NOT NULL AND station != "" ORDER BY station')
-        .get();
     final staffOnlineCount = await db.customSelect(
       'SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?',
       variables: [Variable.withDateTime(now)],
     ).getSingle();
     final placeholders = List.filled(_pendingStatuses.length, '?').join(',');
-    final result = <Map<String, dynamic>>[];
-    for (final row in stations) {
-      final name = row.read<String>('station');
-      final pending = await db.customSelect(
-        'SELECT COUNT(*) AS c FROM tickets WHERE station = ? AND status IN ($placeholders)',
-        variables: [
-          Variable.withString(name),
-          ..._pendingStatuses.map(Variable.withString),
-        ],
-      ).getSingle();
-      result.add({
-        'station': name,
+    final pending = await db.customSelect(
+      'SELECT COUNT(*) AS c FROM tickets WHERE status IN ($placeholders)',
+      variables: _pendingStatuses.map(Variable.withString).toList(),
+    ).getSingle();
+    final result = [
+      {
+        'station': 'kitchen',
         'pendingTickets': pending.read<int>('c'),
         'staffOnline': staffOnlineCount.read<int>('c'),
-      });
-    }
+      }
+    ];
     return Response.ok(
       jsonEncode(result),
       headers: {'content-type': 'application/json'},
@@ -64,18 +55,11 @@ Router kdsRoutes(AppDatabase db, [ServerAuth? auth]) {
       'SELECT COUNT(*) AS c FROM tickets WHERE status IN ($placeholders)',
       variables: _pendingStatuses.map(Variable.withString).toList(),
     ).getSingle();
-    final byStation = await db.customSelect(
-      'SELECT station, COUNT(*) AS c FROM tickets WHERE status IN ($placeholders) GROUP BY station',
-      variables: _pendingStatuses.map(Variable.withString).toList(),
-    ).get();
-    final map = <String, int>{
-      for (final row in byStation)
-        row.read<String>('station'): row.read<int>('c'),
-    };
+    final totalVal = total.read<int>('c');
     return Response.ok(
       jsonEncode({
-        'total': total.read<int>('c'),
-        'byStation': map,
+        'total': totalVal,
+        'byStation': {'kitchen': totalVal},
       }),
       headers: {'content-type': 'application/json'},
     );

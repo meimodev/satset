@@ -415,31 +415,16 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       },
     ];
 
-    // Stations: sum qty by item.station.
-    final byStation = <String, int>{};
-    for (final t in tickets) {
-      if (t.status == 'voided') continue;
-      final st = itemById[t.itemId]?.station ?? 'kitchen';
-      byStation[st] = (byStation[st] ?? 0) + t.qty;
-    }
-    final stMax = byStation.values.isEmpty
-        ? 1
-        : byStation.values.reduce((a, b) => a > b ? a : b);
-    final stationLabels = {
-      'kitchen': 'Dapur Utama',
-      'bar': 'Bar',
-      'pastry': 'Pastry',
-      'expo': 'Pass / Expo',
-    };
-    final stations = byStation.entries
-        .map((e) => {
-              'station': e.key,
-              'label': stationLabels[e.key] ?? e.key,
-              'qty': e.value,
-              'utilization': stMax == 0 ? 0.0 : (e.value / stMax).clamp(0.0, 1.0),
-            })
-        .toList()
-      ..sort((a, b) => (b['qty'] as int).compareTo(a['qty'] as int));
+    // Stations: sum qty for the unified station.
+    final totalQty = tickets.where((t) => t.status != 'voided').fold<int>(0, (a, t) => a + t.qty);
+    final stations = [
+      {
+        'station': 'kitchen',
+        'label': 'Dapur Utama',
+        'qty': totalQty,
+        'utilization': totalQty == 0 ? 0.0 : 1.0,
+      }
+    ];
 
     // Heatmap: 7 weekdays × 12 hours (11..22).
     final heatRaw = List.generate(7, (_) => List.filled(12, 0));

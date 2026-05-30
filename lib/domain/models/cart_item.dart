@@ -5,7 +5,6 @@ class CartItem {
   final String id;
   final String itemId;
   final String name;
-  final Station station;
   final String variantId;
   final String variantName;
   final List<String> modifiers;
@@ -20,7 +19,6 @@ class CartItem {
     required this.id,
     required this.itemId,
     required this.name,
-    required this.station,
     required this.variantId,
     required this.variantName,
     this.modifiers = const [],

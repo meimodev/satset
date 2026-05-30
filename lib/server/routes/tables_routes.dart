@@ -344,7 +344,8 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 
   // Settle + close: snapshots the session into TableSessions(+children),
   // hard-deletes the live tickets, then returns the table to `available`.
-  // Guarded by takeOrder; UI gates this behind "all tickets terminal".
+  // Guarded by takeOrder; rejects 409 unless >=1 ticket and every ticket
+  // is terminal (served | voided). UI gates too, server is authoritative.
   r.post('/tables/<id>/close', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
@@ -352,15 +353,36 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final actorId = body.isEmpty
         ? null
         : (jsonDecode(body) as Map<String, dynamic>)['actorId'] as String?;
+    final tableRow = await (db.select(db.venueTables)
+          ..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (tableRow == null) return Response.notFound('table not found');
+    final tickets = await (db.select(db.tickets)
+          ..where((t) => t.tableId.equals(id)))
+        .get();
+    // Settle requires a real bill: at least one ticket, all terminal
+    // (served or voided). Mirrors the UI gate; server enforces it so a
+    // stray/replayed call cannot snapshot a session mid-service.
+    if (tickets.isEmpty) {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'no_tickets',
+            'message': 'nothing to settle: table has no tickets',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    final hasLive =
+        tickets.any((t) => t.status != 'served' && t.status != 'voided');
+    if (hasLive) {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'tickets_not_terminal',
+            'message': 'all tickets must be served or voided before close',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
     String? sessionIdForBroadcast;
     await db.transaction(() async {
-      final tableRow = await (db.select(db.venueTables)
-            ..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
-      if (tableRow == null) return;
-      final tickets = await (db.select(db.tickets)
-            ..where((t) => t.tableId.equals(id)))
-          .get();
       final now = DateTime.now().toUtc();
       final openedAt = tableRow.openedAt;
       final durationSec = openedAt == null
@@ -370,7 +392,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       var voidAmount = 0;
       for (final t in tickets) {
         final line = t.price * t.qty;
-        if (t.status == 'void') {
+        if (t.status == 'voided') {
           voidAmount += line;
         } else {
           subtotal += line;
@@ -403,7 +425,6 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
                 name: t.name,
                 variantName: Value(t.variantName),
                 course: t.course,
-                station: t.station,
                 qty: Value(t.qty),
                 modifiersJson: Value(t.modifiersJson),
                 specialInstructions: Value(t.specialInstructions),
@@ -454,8 +475,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           openAmount: const Value(0),
           readyCount: const Value(0),
           pax: const Value(0),
-          lastActorId:
-              actorId == null ? const Value.absent() : Value(actorId),
+          lastActorId: const Value(null),
           lockedBy: const Value(null),
           lockedByName: const Value(null),
           lockedAt: const Value(null),
@@ -473,6 +493,48 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         'sessionId': sessionIdForBroadcast,
       });
     }
+    return _broadcast(db, hub, id);
+  });
+
+  // Release: return a seated table to `available` WITHOUT settling a session.
+  // For guests who leave before ordering — no tickets exist, so there is
+  // nothing to snapshot. Rejects 409 if any ticket is present; that path must
+  // go through /close so the bill is recorded.
+  r.post('/tables/<id>/release', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
+    if (denied != null) return denied;
+    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return Response.notFound('table not found');
+    final ticketCount = await (db.select(db.tickets)
+          ..where((t) => t.tableId.equals(id)))
+        .get()
+        .then((rows) => rows.length);
+    if (ticketCount > 0) {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'has_tickets',
+            'message': 'table has tickets; use /close to settle',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
+      const VenueTablesCompanion(
+        status: Value('available'),
+        openAmount: Value(0),
+        readyCount: Value(0),
+        pax: Value(0),
+        lastActorId: Value(null),
+        lockedBy: Value(null),
+        lockedByName: Value(null),
+        lockedAt: Value(null),
+        lockExpiresAt: Value(null),
+        openedAt: Value(null),
+        guestName: Value(null),
+        guestNotes: Value(null),
+        reservationId: Value(null),
+      ),
+    );
     return _broadcast(db, hub, id);
   });
 

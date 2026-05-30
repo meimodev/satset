@@ -34,17 +34,17 @@ const Duration _kCardEnter = Duration(milliseconds: 380);
 const Duration _kPressIn = Duration(milliseconds: 90);
 const int _kStaggerStepMs = 26;
 
+// Elapsed-time heat: linear textLo→warn (0–30min) → urgent (30–60min), clamp red past the hour.
+const Duration _kElapsedAlarm = Duration(hours: 1);
+
+Color _elapsedHeatColor(Duration elapsed, SatColors sc) {
+  final t = (elapsed.inSeconds / _kElapsedAlarm.inSeconds).clamp(0.0, 1.0);
+  if (t < 0.5) return Color.lerp(sc.textLo, sc.warn, t / 0.5)!;
+  return Color.lerp(sc.warn, sc.urgent, (t - 0.5) / 0.5)!;
+}
+
 bool _animationsDisabled(BuildContext context) =>
     MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-
-String _formatElapsed(Duration d) {
-  final s = d.inSeconds.abs();
-  final h = s ~/ 3600;
-  final m = (s % 3600) ~/ 60;
-  final sec = s % 60;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return h > 0 ? '$h:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
-}
 
 class TablesScreen extends ConsumerStatefulWidget {
   const TablesScreen({super.key});
@@ -62,14 +62,23 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final forcePhone = ref.watch(forcePhoneViewProvider);
     final tables = ref.watch(tablesProvider);
     final zones = ref.watch(zonesProvider);
+
+    // Filter active tables for the waiters' floor map
+    final activeTables = tables.where((t) => t.active).toList();
+
+    // Dynamically resolve activeZoneId if _activeZone is not in the zones list
+    final activeZoneId = zones.any((z) => z.id == _activeZone)
+        ? _activeZone
+        : (zones.isNotEmpty ? zones.first.id : _activeZone);
+
     final zone = zones.firstWhere(
-      (z) => z.id == _activeZone,
+      (z) => z.id == activeZoneId,
       orElse: () => zones.isEmpty
           ? const Zone(id: '', name: '', short: '')
           : zones.first,
     );
-    final activeZoneId = zone.id.isEmpty ? _activeZone : zone.id;
-    final zoneTables = tables.where((t) => t.zoneId == activeZoneId).toList();
+
+    final zoneTables = activeTables.where((t) => t.zoneId == activeZoneId).toList();
     final occupied = zoneTables.where((t) => t.status != TableStatus.available).length;
     final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
     final openTotal = zoneTables.fold<int>(0, (s, t) => s + t.openAmount);
@@ -90,7 +99,13 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                 sub: subLine,
               ),
               const ReservationsStrip(tablet: true),
-              _ZoneRow(tables: tables, zones: zones, active: _activeZone, onChange: (id) => setState(() => _activeZone = id), tablet: true),
+              _ZoneRow(
+                tables: activeTables,
+                zones: zones,
+                active: activeZoneId,
+                onChange: (id) => setState(() => _activeZone = id),
+                tablet: true,
+              ),
               Expanded(
                 child: zoneTables.isEmpty
                     ? _EmptyZone(zoneName: zone.name, tablet: true)
@@ -172,9 +187,9 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
         ),
         const ReservationsStrip(tablet: false),
         _ZoneRow(
-          tables: tables,
+          tables: activeTables,
           zones: zones,
-          active: _activeZone,
+          active: activeZoneId,
           onChange: (id) => setState(() => _activeZone = id),
           tablet: false,
         ),
@@ -501,10 +516,10 @@ class _TableCardState extends ConsumerState<_TableCard>
                         ref.watch(_tableElapsedTickerProvider);
                         final elapsed = DateTime.now().difference(table.openedAt!);
                         return Text(
-                          _formatElapsed(elapsed),
+                          formatElapsedId(elapsed),
                           style: SatType.mono(
                             size: tablet ? 12 : 11,
-                            color: sc.textLo,
+                            color: _elapsedHeatColor(elapsed, sc),
                             letterSpacing: 0.44,
                           ),
                         );

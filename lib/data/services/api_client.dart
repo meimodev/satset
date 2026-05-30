@@ -71,16 +71,18 @@ class ApiClient {
     String pinned, {
     required bool isLoopback,
   }) {
-    final p = pinned.toLowerCase();
+    final p = pinned.toLowerCase().replaceAll(':', '').replaceAll(' ', '');
     if (!isLoopback && p.isEmpty) {
       throw StateError(
           'trustedFingerprint required for non-loopback host');
     }
     return HttpClient()
       ..badCertificateCallback = (cert, h, port) {
-        if (isLoopback && p.isEmpty) return true;
+        if (isLoopback) return true;
         final got = sha256.convert(cert.der).toString().toLowerCase();
-        return got == p;
+        final match = got == p;
+        SatLog.http('TLS verify: got=$got expected=$p match=$match host=$h port=$port');
+        return match;
       };
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'router/app_router.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
+import 'package:satset/ui/core/widgets/alert_host.dart';
 
 class SatSetApp extends ConsumerWidget {
   const SatSetApp({super.key});
@@ -22,7 +23,9 @@ class SatSetApp extends ConsumerWidget {
         final bg = Theme.of(context).scaffoldBackgroundColor;
         return ColoredBox(
           color: bg,
-          child: SafeArea(child: child ?? const SizedBox.shrink()),
+          child: SafeArea(
+            child: AlertHost(child: child ?? const SizedBox.shrink()),
+          ),
         );
       },
     );

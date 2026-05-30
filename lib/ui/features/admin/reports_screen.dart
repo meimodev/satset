@@ -1282,20 +1282,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       children: [
         _opsKpis(context, ops.kpis),
         const SizedBox(height: 14),
-        if (isTab)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _stationsCard(context, ops.stations)),
-              const SizedBox(width: 14),
-              Expanded(child: _heatmap(context, ops.heatmap)),
-            ],
-          )
-        else ...[
-          _stationsCard(context, ops.stations),
-          const SizedBox(height: 14),
-          _heatmap(context, ops.heatmap),
-        ],
+        _heatmap(context, ops.heatmap),
         const SizedBox(height: 14),
         if (isTab)
           Row(
@@ -1356,56 +1343,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ],
       ]);
     });
-  }
-
-  Widget _stationsCard(BuildContext context, List<StationRowDto> stations) {
-    final sc = context.sat;
-    if (stations.isEmpty) {
-      return _card(context, 'Throughput stasiun',
-          sub: 'Beban vs kapasitas', child: const SizedBox(height: 30));
-    }
-    final palette = [sc.success, sc.info, sc.accent, sc.violet];
-    return _card(
-      context,
-      'Throughput stasiun',
-      sub: 'Beban vs kapasitas',
-      child: Column(
-        children: [
-          for (var i = 0; i < stations.length; i++)
-            _stationBar(
-              context,
-              stations[i].label,
-              stations[i].utilization,
-              '${stations[i].qty} item',
-              palette[i % palette.length],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _stationBar(BuildContext context, String label, double pct, String count, Color tone) {
-    final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Expanded(child: Text(label, style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.textHi))),
-            Text(count, style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0.44)),
-          ]),
-          const SizedBox(height: 6),
-          Stack(children: [
-            Container(height: 6, decoration: BoxDecoration(color: sc.bg3, borderRadius: BorderRadius.circular(3))),
-            FractionallySizedBox(
-              widthFactor: pct.clamp(0.0, 1.0),
-              child: Container(height: 6, decoration: BoxDecoration(color: tone, borderRadius: BorderRadius.circular(3))),
-            ),
-          ]),
-        ],
-      ),
-    );
   }
 
   Widget _heatmap(BuildContext context, List<List<double>> grid) {

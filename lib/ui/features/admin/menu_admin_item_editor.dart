@@ -41,6 +41,18 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   final _prep = TextEditingController();
   final _stock = TextEditingController();
 
+  /// Persistent controllers for dynamic sub-rows (variants, modifier groups,
+  /// options), keyed by a stable id so edits commit to the draft on every
+  /// keystroke without recreating controllers (which would jump the cursor)
+  /// or losing typed text on save.
+  final _subCtrls = <String, TextEditingController>{};
+
+  TextEditingController _ctrl(String key, String initial) {
+    final existing = _subCtrls[key];
+    if (existing != null) return existing;
+    return _subCtrls[key] = TextEditingController(text: initial);
+  }
+
   @override
   void dispose() {
     _name.dispose();
@@ -49,6 +61,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _cost.dispose();
     _prep.dispose();
     _stock.dispose();
+    for (final c in _subCtrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -73,11 +88,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   MenuItem _blankItem() {
     final id = const Uuid().v4().substring(0, 8);
+    final cats = ref.read(menuRealCategoriesProvider);
     return MenuItem(
       id: id,
       name: '',
-      categoryId: 'starters',
-      station: Station.kitchen,
+      categoryId: cats.isNotEmpty ? cats.first.id : '',
       description: '',
       basePrice: 0,
       variants: [Variant(id: 'reg', name: '', price: 0)],
@@ -222,8 +237,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     _pricingSection(sc, readOnly),
                     const SizedBox(height: 18),
                     _modifiersSection(sc, readOnly),
-                    const SizedBox(height: 18),
-                    _kitchenSection(sc, readOnly),
                     const SizedBox(height: 18),
                     _inventorySection(sc, readOnly),
                     const SizedBox(height: 18),
@@ -384,21 +397,19 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _variantRow(SatColors sc, int idx, bool readOnly) {
     final v = _draft.variants[idx];
-    final nameCtrl = TextEditingController(text: v.name);
-    final priceCtrl = TextEditingController(text: v.price.toString());
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              controller: nameCtrl,
+              controller: _ctrl('v:${v.id}:name', v.name),
               readOnly: readOnly,
               decoration: _fieldDeco('Nama (mis. Besar)'),
-              onSubmitted: (t) {
+              onChanged: (t) {
                 final next = List<Variant>.of(_draft.variants);
                 next[idx] = next[idx].copyWith(name: t);
-                _patch(_draft.copyWith(variants: next));
+                _draft = _draft.copyWith(variants: next);
               },
             ),
           ),
@@ -406,15 +417,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           SizedBox(
             width: 130,
             child: TextField(
-              controller: priceCtrl,
+              controller: _ctrl('v:${v.id}:price', v.price.toString()),
               readOnly: readOnly,
               keyboardType: TextInputType.number,
               decoration: _fieldDeco('Harga'),
-              onSubmitted: (t) {
+              onChanged: (t) {
                 final n = int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0;
                 final next = List<Variant>.of(_draft.variants);
                 next[idx] = next[idx].copyWith(price: n);
-                _patch(_draft.copyWith(variants: next));
+                _draft = _draft.copyWith(variants: next);
               },
             ),
           ),
@@ -432,7 +443,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   void _addVariant() {
-    final id = 'v${_draft.variants.length}';
+    final id = 'v${const Uuid().v4().substring(0, 6)}';
     final next = List<Variant>.of(_draft.variants)
       ..add(Variant(id: id, name: 'Baru', price: _draft.basePrice));
     _patch(_draft.copyWith(variants: next));
@@ -440,44 +451,48 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _happyHourEditor(SatColors sc, bool readOnly) {
     final hh = _draft.happyHour!;
-    final startCtrl = TextEditingController(text: _hhmm(hh.startMinute));
-    final endCtrl = TextEditingController(text: _hhmm(hh.endMinute));
-    final priceCtrl = TextEditingController(text: hh.price.toString());
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: TextField(
-                controller: startCtrl,
+                controller: _ctrl('hh:start', _hhmm(hh.startMinute)),
                 readOnly: readOnly,
                 decoration: _fieldDeco('Mulai (HH:MM)'),
-                onSubmitted: (t) => _patch(_draft.copyWith(
-                  happyHour: hh.copyWith(startMinute: _parseHHMM(t) ?? hh.startMinute),
-                )),
+                onChanged: (t) {
+                  final m = _parseHHMM(t);
+                  if (m == null) return;
+                  _draft = _draft.copyWith(
+                      happyHour: _draft.happyHour!.copyWith(startMinute: m));
+                },
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
-                controller: endCtrl,
+                controller: _ctrl('hh:end', _hhmm(hh.endMinute)),
                 readOnly: readOnly,
                 decoration: _fieldDeco('Selesai (HH:MM)'),
-                onSubmitted: (t) => _patch(_draft.copyWith(
-                  happyHour: hh.copyWith(endMinute: _parseHHMM(t) ?? hh.endMinute),
-                )),
+                onChanged: (t) {
+                  final m = _parseHHMM(t);
+                  if (m == null) return;
+                  _draft = _draft.copyWith(
+                      happyHour: _draft.happyHour!.copyWith(endMinute: m));
+                },
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
-                controller: priceCtrl,
+                controller: _ctrl('hh:price', hh.price.toString()),
                 readOnly: readOnly,
                 keyboardType: TextInputType.number,
                 decoration: _fieldDeco('Harga (Rp)'),
-                onSubmitted: (t) => _patch(_draft.copyWith(
-                  happyHour: hh.copyWith(price: int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0),
-                )),
+                onChanged: (t) => _draft = _draft.copyWith(
+                  happyHour: _draft.happyHour!.copyWith(
+                      price: int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0),
+                ),
               ),
             ),
           ],
@@ -509,19 +524,19 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   void _addModifierGroup() {
-    final id = 'g${_draft.modifierGroups.length}';
+    final id = 'g${const Uuid().v4().substring(0, 6)}';
+    final oid = 'o${const Uuid().v4().substring(0, 6)}';
     final next = List<ModifierGroup>.of(_draft.modifierGroups)
       ..add(ModifierGroup(
         id: id,
         name: 'Grup baru',
-        options: const [ModifierOption(id: 'o0', name: 'Opsi 1')],
+        options: [ModifierOption(id: oid, name: 'Opsi 1')],
       ));
     _patch(_draft.copyWith(modifierGroups: next));
   }
 
   Widget _modifierGroupCard(SatColors sc, int gi, bool readOnly) {
     final g = _draft.modifierGroups[gi];
-    final nameCtrl = TextEditingController(text: g.name);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -536,14 +551,14 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             children: [
               Expanded(
                 child: TextField(
-                  controller: nameCtrl,
+                  controller: _ctrl('g:${g.id}:name', g.name),
                   readOnly: readOnly,
                   style: SatType.sans(size: 14, weight: FontWeight.w600, color: sc.textHi),
                   decoration: _fieldDeco('Nama grup').copyWith(isDense: true),
-                  onSubmitted: (t) {
+                  onChanged: (t) {
                     final next = List<ModifierGroup>.of(_draft.modifierGroups);
                     next[gi] = next[gi].copyWith(name: t);
-                    _patch(_draft.copyWith(modifierGroups: next));
+                    _draft = _draft.copyWith(modifierGroups: next);
                   },
                 ),
               ),
@@ -589,7 +604,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               alignment: Alignment.centerLeft,
               child: _ghostButton('+ Opsi', onTap: () {
                 final opts = List<ModifierOption>.of(g.options)
-                  ..add(ModifierOption(id: 'o${g.options.length}', name: 'Opsi baru'));
+                  ..add(ModifierOption(
+                      id: 'o${const Uuid().v4().substring(0, 6)}',
+                      name: 'Opsi baru'));
                 final next = List<ModifierGroup>.of(_draft.modifierGroups);
                 next[gi] = next[gi].copyWith(options: opts);
                 _patch(_draft.copyWith(modifierGroups: next));
@@ -603,23 +620,21 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Widget _optionRow(SatColors sc, int gi, int oi, bool readOnly) {
     final g = _draft.modifierGroups[gi];
     final o = g.options[oi];
-    final nameCtrl = TextEditingController(text: o.name);
-    final priceCtrl = TextEditingController(text: o.priceDelta.toString());
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              controller: nameCtrl,
+              controller: _ctrl('o:${g.id}:${o.id}:name', o.name),
               readOnly: readOnly,
               decoration: _fieldDeco('Nama opsi').copyWith(isDense: true),
-              onSubmitted: (t) {
+              onChanged: (t) {
                 final opts = List<ModifierOption>.of(g.options);
                 opts[oi] = opts[oi].copyWith(name: t);
                 final next = List<ModifierGroup>.of(_draft.modifierGroups);
                 next[gi] = next[gi].copyWith(options: opts);
-                _patch(_draft.copyWith(modifierGroups: next));
+                _draft = _draft.copyWith(modifierGroups: next);
               },
             ),
           ),
@@ -627,17 +642,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           SizedBox(
             width: 110,
             child: TextField(
-              controller: priceCtrl,
+              controller: _ctrl('o:${g.id}:${o.id}:price', o.priceDelta.toString()),
               readOnly: readOnly,
               keyboardType: const TextInputType.numberWithOptions(signed: true),
               decoration: _fieldDeco('+/- Rp').copyWith(isDense: true),
-              onSubmitted: (t) {
+              onChanged: (t) {
                 final n = int.tryParse(t) ?? 0;
                 final opts = List<ModifierOption>.of(g.options);
                 opts[oi] = opts[oi].copyWith(priceDelta: n);
                 final next = List<ModifierGroup>.of(_draft.modifierGroups);
                 next[gi] = next[gi].copyWith(options: opts);
-                _patch(_draft.copyWith(modifierGroups: next));
+                _draft = _draft.copyWith(modifierGroups: next);
               },
             ),
           ),
@@ -651,40 +666,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 _patch(_draft.copyWith(modifierGroups: next));
               },
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _kitchenSection(SatColors sc, bool readOnly) {
-    return _Section(
-      title: 'Dapur',
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _label('Stasiun'),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    _chipChoice(
-                      label: 'Dapur',
-                      selected: _draft.station == Station.kitchen,
-                      onTap: readOnly ? null : () => _patch(_draft.copyWith(station: Station.kitchen)),
-                    ),
-                    const SizedBox(width: 6),
-                    _chipChoice(
-                      label: 'Bar',
-                      selected: _draft.station == Station.bar,
-                      onTap: readOnly ? null : () => _patch(_draft.copyWith(station: Station.bar)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -804,14 +785,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           TextButton(
             onPressed: auto
                 ? null
-                : () {
-                    final newVal = !_draft.unavailable;
-                    final updated = _draft.copyWith(unavailable: newVal);
-                    _patch(updated);
-                    if (!_isNew) {
-                      ref.read(menuRepositoryProvider.notifier).upsertItem(updated);
-                    }
-                  },
+                : () => _patch(_draft.copyWith(unavailable: !_draft.unavailable)),
             child: Text(_draft.unavailable ? 'Aktifkan' : '86'),
           ),
         ],

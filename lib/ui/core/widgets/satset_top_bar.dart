@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
 void safePop(BuildContext context, {String fallback = '/tables'}) {
@@ -46,15 +47,6 @@ class _LoginClockState extends ConsumerState<LoginClock> {
 
   String _clock(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}:${_two(d.second)}';
 
-  String _elapsed(Duration d) {
-    if (d.isNegative) d = Duration.zero;
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    final s = d.inSeconds.remainder(60);
-    if (h == 0) return '${m}m ${_two(s)}s';
-    return '${h}j ${_two(m)}m ${_two(s)}s';
-  }
-
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
@@ -62,7 +54,7 @@ class _LoginClockState extends ConsumerState<LoginClock> {
     final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
     final label = started == null
         ? _clock(_now)
-        : '${_clock(_now)} · ${_elapsed(_now.difference(started))}';
+        : '${_clock(_now)} · ${formatElapsedId(_now.difference(started))}';
     return Text(
       label,
       style: SatType.mono(

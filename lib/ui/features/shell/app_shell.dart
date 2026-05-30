@@ -84,7 +84,7 @@ class AppShell extends ConsumerWidget {
       case 'me':
         return ['Maya Anjani', 'Ringkasan shift'];
       case 'kitchen':
-        return ['Stasiun', 'Dapur Utama', 'Dapur · antrian masak'];
+        return ['Stasiun', 'Antrian Persiapan'];
       case 'venue':
         if (loc.startsWith('/floor')) return ['Venue', 'Atur lantai'];
         if (loc.startsWith('/menuadm')) return ['Venue', 'Menu admin'];

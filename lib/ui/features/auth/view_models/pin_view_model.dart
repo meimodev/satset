@@ -170,10 +170,27 @@ class PinViewModel extends StateNotifier<PinState> {
       final key = '${d.host}:${d.port}';
       final isPaired =
           paired != null && paired.host == d.host && paired.port == d.port;
+      
+      String fp = d.fingerprint;
+      if (isPaired && paired.fingerprint != d.fingerprint) {
+        SatLog.vm('PinVM: Stale fingerprint detected for paired server at ${d.host}:${d.port}. '
+            'Updating stored fingerprint from ${paired.fingerprint} to ${d.fingerprint}');
+        unawaited(_storage.writeServerFingerprint(d.fingerprint));
+        _pairedFromPrefs = PairedServerInfo(
+          host: paired.host,
+          port: paired.port,
+          fingerprint: d.fingerprint,
+          label: paired.label,
+          paired: true,
+        );
+      } else if (isPaired) {
+        fp = paired.fingerprint;
+      }
+
       byKey[key] = PairedServerInfo(
         host: d.host,
         port: d.port,
-        fingerprint: isPaired ? paired.fingerprint : d.fingerprint,
+        fingerprint: fp,
         label: d.label,
         paired: isPaired,
         version: d.version,

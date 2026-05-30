@@ -4,13 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
-import 'package:satset/domain/models/user.dart';
-import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
+import 'package:satset/domain/models/user.dart';
+import 'package:satset/ui/core/widgets/staff_avatar.dart';
+import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -28,28 +30,32 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final l = context.layout;
     final tickets = ref.watch(ticketsProvider);
     final tables = ref.watch(tablesProvider);
-    final user = ref.watch(authStateProvider).user;
-    final userId = user?.id;
+    final staff = ref.watch(staffRepositoryProvider);
+    final venueName = ref.watch(
+        venueSettingsProvider.select((s) => s.displayName));
 
-    // Per-waiter filter: only tickets the current user submitted. Server
-    // stamps `createdBy` from the JWT-resolved actor on `/orders`; legacy
-    // rows with NULL `createdBy` stay hidden so the screen never lies.
+    // Venue-wide board: every table's tickets, no per-waiter filter. Each card
+    // shows the line's own orderer (ticket.createdBy) — frozen to whoever sent
+    // it, not the table's current waiter. Null on legacy / offline lines.
     final all = <_Row>[];
-    if (userId != null) {
-      tickets.forEach((tableId, list) {
-        final table = tables.where((t) => t.id == tableId).firstOrNull;
-        if (table == null) return;
-        for (final t in list) {
-          if (t.createdBy != userId) continue;
-          all.add(_Row(
-            ticket: t,
-            tableId: tableId,
-            zoneId: table.zoneId,
-            pax: table.pax,
-          ));
-        }
-      });
-    }
+    tickets.forEach((tableId, list) {
+      final table = tables.where((t) => t.id == tableId).firstOrNull;
+      if (table == null) return;
+      for (final t in list) {
+        final orderer = t.createdBy == null
+            ? null
+            : staff.where((u) => u.id == t.createdBy).firstOrNull;
+        all.add(_Row(
+          ticket: t,
+          tableId: tableId,
+          tableName: table.displayName,
+          zoneId: table.zoneId,
+          pax: table.pax,
+          orderer: orderer,
+        ));
+      }
+    });
+    all.sort((a, b) => a.ticket.sentAtTime.compareTo(b.ticket.sentAtTime));
 
     Future<void> markServed(String tableId, String ticketId) async {
       try {
@@ -85,21 +91,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(32, 18, 32, 0),
-            child: Row(
-              children: [
-                _LiveChip(),
-                const Spacer(),
-                _Avatar(user: user),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(32, 14, 32, 14),
+            padding: const EdgeInsets.fromLTRB(32, 18, 32, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Pesanan saya',
+                Text(venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
                     style: SatType.sans(
                       size: 32,
                       weight: FontWeight.w600,
@@ -170,43 +166,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
-                  color: sc.bg2,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: sc.border1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.receipt_long_rounded, size: 14, color: sc.textHi),
-                    const SizedBox(width: 6),
-                    Text('Semua pesananku',
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w500,
-                          color: sc.textHi,
-                        )),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              _LiveChip(),
-              const Spacer(),
-              _Avatar(user: user),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+          padding: EdgeInsets.fromLTRB(20, l.topInset, 20, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Pesanan',
+              Text(venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
                   style: SatType.sans(
                     size: 30,
                     weight: FontWeight.w600,
@@ -271,61 +235,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 class _Row {
   final Ticket ticket;
   final String tableId;
+  final String tableName;
   final String zoneId;
   final int pax;
-  _Row({required this.ticket, required this.tableId, required this.zoneId, required this.pax});
-}
-
-class _Avatar extends StatelessWidget {
-  final AppUser? user;
-  const _Avatar({this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [base, Color.lerp(base, Colors.black, 0.18)!],
-        ),
-      ),
-      alignment: Alignment.center,
-      child: Text(user?.initials ?? '—',
-          style: SatType.sans(
-            size: 12,
-            weight: FontWeight.w600,
-            color: Colors.white,
-          )),
-    );
-  }
-}
-
-class _LiveChip extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: sc.success,
-            boxShadow: [BoxShadow(color: sc.successSoft, spreadRadius: 3)],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text('LIVE · LAN',
-            style: SatType.mono(
-                size: 10, color: sc.textMd, letterSpacing: 0.6)),
-      ],
-    );
-  }
+  final AppUser? orderer;
+  _Row({required this.ticket, required this.tableId, required this.tableName, required this.zoneId, required this.pax, this.orderer});
 }
 
 class _Segments extends StatelessWidget {
@@ -456,7 +370,7 @@ class _OrderRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,
-                    child: Text(row.tableId,
+                    child: Text(row.tableName,
                         style: SatType.mono(
                           size: 16,
                           weight: FontWeight.w600,
@@ -512,14 +426,16 @@ class _OrderRow extends StatelessWidget {
                           children: [
                             _StatusChip(status: t.status),
                             const SizedBox(width: 8),
-                            Text(
-                              '${t.station == Station.kitchen ? 'DPR' : 'BAR'} · ${t.sentAt}',
-                              style: SatType.mono(
-                                size: 10,
-                                color: sc.textLo,
-                                letterSpacing: 0.4,
-                              ),
+                            ElapsedPill(
+                              sentAtTime: t.sentAtTime,
+                              sentAtClock: t.sentAt,
+                              terminal: isVoided ||
+                                  t.status == TicketStatus.served,
                             ),
+                            if (row.orderer != null) ...[
+                              const SizedBox(width: 8),
+                              StaffAvatar(actor: row.orderer!, size: 20),
+                            ],
                           ],
                         ),
                       ],

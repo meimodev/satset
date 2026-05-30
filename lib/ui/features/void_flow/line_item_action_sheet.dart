@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/audit_entry.dart';
-import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/audit_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
@@ -198,7 +197,7 @@ class _Head extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'MEJA $tableId · ${ticket.station == Station.kitchen ? 'DAPUR' : 'BAR'} · ${ticket.sentAt}',
+                        'MEJA $tableId · ${ticket.sentAt}',
                         style: SatType.mono(
                           size: 10,
                           color: sc.textLo,

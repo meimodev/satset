@@ -10,7 +10,6 @@ class CartLineDto with _$CartLineDto {
     required String name,
     required String variantId,
     required String variantName,
-    required String station,
     required List<String> modifierOptionIds,
     required String? specialInstructions,
     required String course,

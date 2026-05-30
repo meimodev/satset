@@ -586,8 +586,8 @@ class _TabletCartPane extends ConsumerWidget {
     final cart = ref.watch(cartProvider(tableId));
     final count = cart.fold<int>(0, (s, c) => s + c.qty);
     final subtotal = cart.fold<int>(0, (s, c) => s + c.unitPrice * c.qty);
-    final kit = cart.where((c) => c.station == Station.kitchen).fold<int>(0, (s, c) => s + c.qty);
-    final bar = cart.where((c) => c.station == Station.bar).fold<int>(0, (s, c) => s + c.qty);
+    final kit = count;
+    final bar = 0;
     final taxService = (subtotal * 0.18).round();
     final est = subtotal + taxService;
 

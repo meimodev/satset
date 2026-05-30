@@ -49,6 +49,9 @@ dependencies:
   # Logging
   logging: ^1.2.0
 
+  # Audio alerts
+  audioplayers: ^6.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -62,3 +65,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sounds/

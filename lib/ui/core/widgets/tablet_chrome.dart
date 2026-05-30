@@ -68,7 +68,7 @@ class TabletSideRail extends StatelessWidget {
                 children: [
                   _RailBtn(id: 'tables', label: 'Meja', icon: Icons.grid_view_rounded, route: '/tables', active: active),
                   _RailBtn(id: 'orders', label: 'Pesanan', icon: Icons.description_outlined, route: '/orders', active: active, badge: readyCount, alert: readyCount > 0),
-                  _RailBtn(id: 'kitchen', label: 'Dapur', icon: Icons.local_fire_department_outlined, route: '/kitchen', active: active),
+                  _RailBtn(id: 'kitchen', label: 'Antrian', icon: Icons.receipt_long_outlined, route: '/kitchen', active: active),
                   _RailDiv(),
                   _RailBtn(id: 'venue', label: 'Venue', icon: Icons.storefront_outlined, route: '/venue', active: active),
                 ],

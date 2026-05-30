@@ -9,7 +9,6 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
-import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/ticket.dart';
 
 /// Surfaces bootstrap progress for the per-table ticket list.
@@ -91,10 +90,6 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       name: d.name,
       variantName: d.variantName,
       course: _courseFromKey(d.course),
-      station: Station.values.firstWhere(
-        (s) => s.name == d.station,
-        orElse: () => Station.kitchen,
-      ),
       qty: d.qty,
       modifiers: d.modifiers,
       specialInstructions: d.specialInstructions,
@@ -103,6 +98,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // Domain stores sentAt as `HH:mm` local; the KDS age computation
       // and seed data both rely on that format.
       sentAt: _nowStamp(d.sentAt.toLocal()),
+      // Full-precision twin of sentAt — drives the live KDS age counter
+      // (sentAt's HH:mm has no seconds). See ADR-0008.
+      sentAtTime: d.sentAt.toLocal(),
       voidReason: d.voidReason,
       voidReasonCode: d.voidReasonCode,
       voidApprovedBy: d.voidApprovedBy,
@@ -147,7 +145,6 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             id: l.itemId,
             itemId: l.itemId,
             name: l.name,
-            station: l.station == 'bar' ? Station.bar : Station.kitchen,
             variantId: l.variantId,
             variantName: l.variantName,
             course: _courseFromKey(l.course),
@@ -223,7 +220,8 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }
 
   List<Ticket> sendOrder(String tableId, List<CartItem> cart, {String? actorId}) {
-    final stamp = _nowStamp(DateTime.now());
+    final now = DateTime.now();
+    final stamp = _nowStamp(now);
     final newTickets = [
       for (var i = 0; i < cart.length; i++)
         Ticket(
@@ -232,7 +230,6 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           name: cart[i].name,
           variantName: cart[i].variantName,
           course: cart[i].course,
-          station: cart[i].station,
           qty: cart[i].qty,
           modifiers: cart[i].modifiers,
           specialInstructions: cart[i].special.isEmpty ? null : cart[i].special,
@@ -241,6 +238,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
               ? TicketStatus.sent
               : TicketStatus.held,
           sentAt: stamp,
+          sentAtTime: now,
           createdBy: actorId,
         ),
     ];
@@ -341,7 +339,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
 
     final list = state[tableId] ?? const <Ticket>[];
     bool inBatch(Ticket t) =>
-        t.station == Station.kitchen && t.sentAt == target.sentAt;
+        t.sentAt == target.sentAt;
     bool active(Ticket t) =>
         t.status == TicketStatus.sent ||
         t.status == TicketStatus.prep ||
@@ -378,5 +376,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
 }
 
 final ticketsProvider =
-    StateNotifierProvider<TicketsRepository, Map<String, List<Ticket>>>(
-        (ref) => TicketsRepository(ref: ref));
+    StateNotifierProvider<TicketsRepository, Map<String, List<Ticket>>>((ref) {
+  ref.watch(apiConfigProvider);
+  return TicketsRepository(ref: ref);
+});

@@ -25,7 +25,6 @@ mixin _$CartLineDto {
   String get name => throw _privateConstructorUsedError;
   String get variantId => throw _privateConstructorUsedError;
   String get variantName => throw _privateConstructorUsedError;
-  String get station => throw _privateConstructorUsedError;
   List<String> get modifierOptionIds => throw _privateConstructorUsedError;
   String? get specialInstructions => throw _privateConstructorUsedError;
   String get course => throw _privateConstructorUsedError;
@@ -54,7 +53,6 @@ abstract class $CartLineDtoCopyWith<$Res> {
     String name,
     String variantId,
     String variantName,
-    String station,
     List<String> modifierOptionIds,
     String? specialInstructions,
     String course,
@@ -82,7 +80,6 @@ class _$CartLineDtoCopyWithImpl<$Res, $Val extends CartLineDto>
     Object? name = null,
     Object? variantId = null,
     Object? variantName = null,
-    Object? station = null,
     Object? modifierOptionIds = null,
     Object? specialInstructions = freezed,
     Object? course = null,
@@ -106,10 +103,6 @@ class _$CartLineDtoCopyWithImpl<$Res, $Val extends CartLineDto>
             variantName: null == variantName
                 ? _value.variantName
                 : variantName // ignore: cast_nullable_to_non_nullable
-                      as String,
-            station: null == station
-                ? _value.station
-                : station // ignore: cast_nullable_to_non_nullable
                       as String,
             modifierOptionIds: null == modifierOptionIds
                 ? _value.modifierOptionIds
@@ -151,7 +144,6 @@ abstract class _$$CartLineDtoImplCopyWith<$Res>
     String name,
     String variantId,
     String variantName,
-    String station,
     List<String> modifierOptionIds,
     String? specialInstructions,
     String course,
@@ -178,7 +170,6 @@ class __$$CartLineDtoImplCopyWithImpl<$Res>
     Object? name = null,
     Object? variantId = null,
     Object? variantName = null,
-    Object? station = null,
     Object? modifierOptionIds = null,
     Object? specialInstructions = freezed,
     Object? course = null,
@@ -202,10 +193,6 @@ class __$$CartLineDtoImplCopyWithImpl<$Res>
         variantName: null == variantName
             ? _value.variantName
             : variantName // ignore: cast_nullable_to_non_nullable
-                  as String,
-        station: null == station
-            ? _value.station
-            : station // ignore: cast_nullable_to_non_nullable
                   as String,
         modifierOptionIds: null == modifierOptionIds
             ? _value._modifierOptionIds
@@ -240,7 +227,6 @@ class _$CartLineDtoImpl implements _CartLineDto {
     required this.name,
     required this.variantId,
     required this.variantName,
-    required this.station,
     required final List<String> modifierOptionIds,
     required this.specialInstructions,
     required this.course,
@@ -259,8 +245,6 @@ class _$CartLineDtoImpl implements _CartLineDto {
   final String variantId;
   @override
   final String variantName;
-  @override
-  final String station;
   final List<String> _modifierOptionIds;
   @override
   List<String> get modifierOptionIds {
@@ -281,7 +265,7 @@ class _$CartLineDtoImpl implements _CartLineDto {
 
   @override
   String toString() {
-    return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, station: $station, modifierOptionIds: $modifierOptionIds, specialInstructions: $specialInstructions, course: $course, qty: $qty, unitPrice: $unitPrice)';
+    return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, modifierOptionIds: $modifierOptionIds, specialInstructions: $specialInstructions, course: $course, qty: $qty, unitPrice: $unitPrice)';
   }
 
   @override
@@ -295,7 +279,6 @@ class _$CartLineDtoImpl implements _CartLineDto {
                 other.variantId == variantId) &&
             (identical(other.variantName, variantName) ||
                 other.variantName == variantName) &&
-            (identical(other.station, station) || other.station == station) &&
             const DeepCollectionEquality().equals(
               other._modifierOptionIds,
               _modifierOptionIds,
@@ -316,7 +299,6 @@ class _$CartLineDtoImpl implements _CartLineDto {
     name,
     variantId,
     variantName,
-    station,
     const DeepCollectionEquality().hash(_modifierOptionIds),
     specialInstructions,
     course,
@@ -344,7 +326,6 @@ abstract class _CartLineDto implements CartLineDto {
     required final String name,
     required final String variantId,
     required final String variantName,
-    required final String station,
     required final List<String> modifierOptionIds,
     required final String? specialInstructions,
     required final String course,
@@ -363,8 +344,6 @@ abstract class _CartLineDto implements CartLineDto {
   String get variantId;
   @override
   String get variantName;
-  @override
-  String get station;
   @override
   List<String> get modifierOptionIds;
   @override

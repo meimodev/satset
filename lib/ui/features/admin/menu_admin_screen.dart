@@ -38,6 +38,8 @@ class _TabletLayout extends ConsumerWidget {
     final counts = ref.watch(menuAdminCountsProvider);
     final perm = ref.watch(menuPermissionProvider);
     final selectedId = ref.watch(menuAdminSelectedItemIdProvider);
+    final tab = ref.watch(menuAdminTabProvider);
+    final onCats = perm == MenuPermission.admin && tab == MenuAdminTab.categories;
 
     return Column(
       children: [
@@ -47,8 +49,12 @@ class _TabletLayout extends ConsumerWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _RoleBadge(perm: perm),
               if (perm == MenuPermission.admin) ...[
+                const _TabSwitcher(),
+                const SizedBox(width: 10),
+              ],
+              _RoleBadge(perm: perm),
+              if (perm == MenuPermission.admin && !onCats) ...[
                 const SizedBox(width: 10),
                 _PrimaryButton(
                   label: '+ Tambah item',
@@ -58,37 +64,40 @@ class _TabletLayout extends ConsumerWidget {
             ],
           ),
         ),
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 5,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border(right: BorderSide(color: sc.border0)),
+        if (onCats)
+          const Expanded(child: _CategoriesPanel())
+        else
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border(right: BorderSide(color: sc.border0)),
+                    ),
+                    child: const _ListPane(),
                   ),
-                  child: const _ListPane(),
                 ),
-              ),
-              Expanded(
-                flex: 6,
-                child: selectedId == null && perm == MenuPermission.staff
-                    ? const _EmptyDetail(staff: true)
-                    : MenuAdminItemEditor(
-                        key: ValueKey(selectedId ?? '__new__'),
-                        itemId: selectedId,
-                        onClose: () => ref
-                            .read(menuAdminSelectedItemIdProvider.notifier)
-                            .state = null,
-                        onDeleted: () => ref
-                            .read(menuAdminSelectedItemIdProvider.notifier)
-                            .state = null,
-                      ),
-              ),
-            ],
+                Expanded(
+                  flex: 6,
+                  child: selectedId == null && perm == MenuPermission.staff
+                      ? const _EmptyDetail(staff: true)
+                      : MenuAdminItemEditor(
+                          key: ValueKey(selectedId ?? '__new__'),
+                          itemId: selectedId,
+                          onClose: () => ref
+                              .read(menuAdminSelectedItemIdProvider.notifier)
+                              .state = null,
+                          onDeleted: () => ref
+                              .read(menuAdminSelectedItemIdProvider.notifier)
+                              .state = null,
+                        ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -157,6 +166,8 @@ class _PhoneLayout extends ConsumerWidget {
     final sc = context.sat;
     final counts = ref.watch(menuAdminCountsProvider);
     final perm = ref.watch(menuPermissionProvider);
+    final tab = ref.watch(menuAdminTabProvider);
+    final onCats = perm == MenuPermission.admin && tab == MenuAdminTab.categories;
 
     return SafeArea(
       child: Column(
@@ -188,13 +199,23 @@ class _PhoneLayout extends ConsumerWidget {
               ],
             ),
           ),
-          const _Toolbar(),
-          const _CategoryRail(),
-          const Expanded(child: _ItemList(compact: true)),
+          if (perm == MenuPermission.admin)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _TabSwitcher(),
+              ),
+            ),
+          if (onCats)
+            const Expanded(child: _CategoriesPanel())
+          else ...[
+            const _Toolbar(),
+            const _CategoryRail(),
+            const Expanded(child: _ItemList(compact: true)),
+          ],
         ],
       ),
-      // FAB rendered via floatingActionButton would need a Scaffold; admin
-      // adds new items via the editor route opened from the toolbar instead.
     );
   }
 }
@@ -437,16 +458,6 @@ class _ItemRow extends ConsumerWidget {
                       Row(
                         children: [
                           Text(
-                            item.station == Station.kitchen ? 'Dapur' : 'Bar',
-                            style: SatType.mono(
-                              size: 10,
-                              color: sc.textLo,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                          Text(' · ',
-                              style: SatType.mono(size: 10, color: sc.textDim)),
-                          Text(
                             formatIDR(item.basePrice),
                             style: SatType.mono(
                               size: 11,
@@ -604,6 +615,197 @@ class _PrimaryButton extends StatelessWidget {
                 color: sc.accentInk,
               )),
         ),
+      ),
+    );
+  }
+}
+
+class _TabSwitcher extends ConsumerWidget {
+  const _TabSwitcher();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final tab = ref.watch(menuAdminTabProvider);
+    Widget seg(String label, MenuAdminTab value) {
+      final on = tab == value;
+      return GestureDetector(
+        onTap: () => ref.read(menuAdminTabProvider.notifier).state = value,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: on ? sc.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(label,
+              style: SatType.sans(
+                size: 12,
+                weight: FontWeight.w600,
+                color: on ? sc.accentInk : sc.textMd,
+              )),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: sc.bg3,
+        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          seg('Item', MenuAdminTab.items),
+          seg('Kategori', MenuAdminTab.categories),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoriesPanel extends ConsumerWidget {
+  const _CategoriesPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final cats = ref.watch(menuRealCategoriesProvider);
+    final counts = ref.watch(menuCategoryItemCountsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ReorderableListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            itemCount: cats.length,
+            onReorder: (oldIndex, newIndex) {
+              if (newIndex > oldIndex) newIndex -= 1;
+              final ids = [for (final c in cats) c.id];
+              final moved = ids.removeAt(oldIndex);
+              ids.insert(newIndex, moved);
+              ref.read(menuRepositoryProvider.notifier).reorderCategories(ids);
+            },
+            itemBuilder: (ctx, i) {
+              final c = cats[i];
+              final n = counts[c.id] ?? 0;
+              return Padding(
+                key: ValueKey(c.id),
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: sc.bg2,
+                    border: Border.all(color: sc.border0),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
+                  child: Row(
+                    children: [
+                      ReorderableDragStartListener(
+                        index: i,
+                        child: Icon(Icons.drag_handle, size: 20, color: sc.textLo),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(c.name,
+                            style: SatType.sans(
+                              size: 14, weight: FontWeight.w600, color: sc.textHi,
+                            )),
+                      ),
+                      Text('$n item',
+                          style: SatType.mono(
+                            size: 11, color: sc.textLo, letterSpacing: 0.4,
+                          )),
+                      IconButton(
+                        icon: Icon(Icons.edit_outlined, size: 18, color: sc.textMd),
+                        onPressed: () => _rename(context, ref, c.id, c.name),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline, size: 18,
+                            color: n > 0 ? sc.textDim : sc.urgent),
+                        onPressed: () => _delete(context, ref, c.id, c.name, n),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _PrimaryButton(
+              label: '+ Tambah kategori',
+              onTap: () => _add(context, ref),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final name = await _nameDialog(context, title: 'Kategori baru', initial: '');
+    if (name == null || name.trim().isEmpty) return;
+    await ref.read(menuRepositoryProvider.notifier).createCategory(name.trim());
+  }
+
+  Future<void> _rename(
+      BuildContext context, WidgetRef ref, String id, String current) async {
+    final name =
+        await _nameDialog(context, title: 'Ubah nama kategori', initial: current);
+    if (name == null || name.trim().isEmpty || name.trim() == current) return;
+    await ref
+        .read(menuRepositoryProvider.notifier)
+        .renameCategory(id, name.trim());
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref, String id,
+      String name, int count) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (count > 0) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Pindahkan $count item dulu sebelum hapus "$name"')),
+      );
+      return;
+    }
+    try {
+      await ref.read(menuRepositoryProvider.notifier).deleteCategory(id);
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Gagal hapus kategori — masih dipakai item')),
+      );
+    }
+  }
+
+  Future<String?> _nameDialog(BuildContext context,
+      {required String title, required String initial}) {
+    final ctrl = TextEditingController(text: initial);
+    final sc = context.sat;
+    return showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: sc.bg1,
+        title: Text(title, style: SatType.sans(size: 16, color: sc.textHi)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          style: SatType.sans(size: 14, color: sc.textHi),
+          decoration: const InputDecoration(hintText: 'Nama kategori'),
+          onSubmitted: (t) => Navigator.pop(ctx, t),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text),
+              child: const Text('Simpan')),
+        ],
       ),
     );
   }

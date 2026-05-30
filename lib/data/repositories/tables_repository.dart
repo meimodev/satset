@@ -522,8 +522,8 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   /// Close + settle the table. Clears lock and resets status to `available`.
-  /// UI gates this behind "no live tickets" but the server applies it
-  /// unconditionally.
+  /// UI gates this behind "no live tickets"; server also rejects 409
+  /// (no_tickets | tickets_not_terminal) if the bill isn't fully terminal.
   Future<void> closeTable(String id, {String? actorId}) async {
     SatLog.repo('tables.close id=${id.substring(0, id.length.clamp(0, 6))}');
     final cfg = ref.read(apiConfigProvider);
@@ -544,6 +544,33 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     }
     final raw = await ref.read(apiClientProvider).postJson(
       '/tables/$id/close',
+      {'actorId': ?actorId},
+    );
+    _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+  }
+
+  /// Return a seated table to `available` without settling a session. Used
+  /// when a guest leaves before placing any order (no tickets to record).
+  Future<void> releaseTable(String id, {String? actorId}) async {
+    SatLog.repo('tables.release id=${id.substring(0, id.length.clamp(0, 6))}');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) {
+      final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      if (prev != null) {
+        _replace(
+          id,
+          prev.copyWith(
+            status: TableStatus.available,
+            readyCount: 0,
+            openAmount: 0,
+            pax: 0,
+          ),
+        );
+      }
+      return;
+    }
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/tables/$id/release',
       {'actorId': ?actorId},
     );
     _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
@@ -602,8 +629,10 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
 }
 
 final tablesProvider =
-    StateNotifierProvider<TablesRepository, List<VenueTable>>(
-        (ref) => TablesRepository(ref: ref));
+    StateNotifierProvider<TablesRepository, List<VenueTable>>((ref) {
+  ref.watch(apiConfigProvider);
+  return TablesRepository(ref: ref);
+});
 
 final totalReadyCountProvider = Provider<int>((ref) {
   final tables = ref.watch(tablesProvider);

@@ -1,11 +1,9 @@
 import 'package:satset/domain/models/audit_entry.dart';
-import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/modifier_group.dart';
 import 'package:satset/domain/models/role.dart';
-import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
@@ -213,7 +211,6 @@ class DummyData {
       id: 'gado-gado',
       name: 'Gado-Gado',
       categoryId: 'starters',
-      station: Station.kitchen,
       description: 'Sayur kukus, tahu, tempe, telur rebus, saus kacang',
       allergens: const [Allergen.nut, Allergen.soy, Allergen.egg],
       prepTime: 8,
@@ -237,7 +234,6 @@ class DummyData {
       id: 'lumpia',
       name: 'Lumpia Renyah (4 buah)',
       categoryId: 'starters',
-      station: Station.kitchen,
       description: 'Lumpia goreng isi sayur dan ayam, saus cabai manis',
       allergens: const [Allergen.gluten, Allergen.egg],
       prepTime: 7,
@@ -248,7 +244,6 @@ class DummyData {
       id: 'sate-ayam',
       name: 'Sate Ayam (4 tusuk)',
       categoryId: 'starters',
-      station: Station.kitchen,
       description: 'Sate ayam bakar, saus kacang, lontong',
       allergens: const [Allergen.nut, Allergen.soy],
       prepTime: 10,
@@ -259,7 +254,6 @@ class DummyData {
       id: 'nasi-goreng',
       name: 'Nasi Goreng',
       categoryId: 'mains',
-      station: Station.kitchen,
       description: 'Nasi goreng dengan terasi, bawang goreng, telur, krupuk',
       allergens: const [Allergen.shellfish, Allergen.egg, Allergen.gluten],
       prepTime: 12,
@@ -310,7 +304,6 @@ class DummyData {
       id: 'rendang',
       name: 'Rendang Sapi',
       categoryId: 'mains',
-      station: Station.kitchen,
       description: 'Sapi rendang Padang, santan, serai, cabai. Dengan nasi uduk.',
       allergens: const [Allergen.nut],
       prepTime: 14,
@@ -333,7 +326,6 @@ class DummyData {
       id: 'mie-goreng',
       name: 'Mie Goreng',
       categoryId: 'mains',
-      station: Station.kitchen,
       description: 'Mie telur tumis, sayur, bawang goreng',
       allergens: const [Allergen.gluten, Allergen.egg, Allergen.soy],
       prepTime: 10,
@@ -344,7 +336,6 @@ class DummyData {
       id: 'burger',
       name: 'Burger Wagyu',
       categoryId: 'mains',
-      station: Station.kitchen,
       description: 'Daging wagyu, keju, roti brioche, acar rumahan, kentang goreng',
       allergens: const [Allergen.gluten, Allergen.dairy, Allergen.egg],
       prepTime: 13,
@@ -356,7 +347,6 @@ class DummyData {
       id: 'crispy-tempeh',
       name: 'Tempe Sambal Bowl',
       categoryId: 'mains',
-      station: Station.kitchen,
       description: 'Tempe sambal, nasi uduk, sayur acar, telur ceplok',
       allergens: const [Allergen.soy, Allergen.egg, Allergen.gluten],
       prepTime: 11,
@@ -367,7 +357,6 @@ class DummyData {
       id: 'krupuk-side',
       name: 'Krupuk',
       categoryId: 'sides',
-      station: Station.kitchen,
       description: 'Krupuk udang',
       allergens: const [Allergen.shellfish],
       prepTime: 2,
@@ -378,7 +367,6 @@ class DummyData {
       id: 'pisang',
       name: 'Pisang Goreng',
       categoryId: 'desserts',
-      station: Station.kitchen,
       description: 'Pisang goreng, saus gula merah, es krim vanila',
       allergens: const [Allergen.gluten, Allergen.dairy, Allergen.egg],
       prepTime: 8,
@@ -401,7 +389,6 @@ class DummyData {
       id: 'es-teh',
       name: 'Es Teh Manis',
       categoryId: 'soft',
-      station: Station.bar,
       description: 'Iced sweet jasmine tea',
       prepTime: 2,
       basePrice: 25000,
@@ -422,7 +409,6 @@ class DummyData {
       id: 'bintang',
       name: 'Bintang Pilsner',
       categoryId: 'beer',
-      station: Station.bar,
       description: '330ml. Lager paling populer di Indonesia.',
       allergens: const [Allergen.gluten],
       prepTime: 1,
@@ -433,7 +419,6 @@ class DummyData {
       id: 'margarita',
       name: 'Spicy Margarita',
       categoryId: 'cocktails',
-      station: Station.bar,
       description: 'Tequila, lime, agave, cabai segar, garam asap',
       prepTime: 4,
       basePrice: 110000,
@@ -443,7 +428,6 @@ class DummyData {
       id: 'negroni',
       name: 'Negroni',
       categoryId: 'cocktails',
-      station: Station.bar,
       description: 'Gin, Campari, sweet vermouth, kulit jeruk',
       prepTime: 4,
       basePrice: 130000,
@@ -453,7 +437,6 @@ class DummyData {
       id: 'rose',
       name: 'House Rosé',
       categoryId: 'wine',
-      station: Station.bar,
       description: 'Crisp, dry, Provence-style',
       allergens: const [Allergen.sulfites],
       prepTime: 1,
@@ -467,7 +450,6 @@ class DummyData {
       id: 'kombucha',
       name: 'House Kombucha',
       categoryId: 'soft',
-      station: Station.bar,
       description: 'Jahe-jeruk nipis, fermentasi di tempat',
       prepTime: 1,
       basePrice: 38000,
@@ -476,26 +458,6 @@ class DummyData {
   ];
 
   static MenuItem itemById(String id) => items.firstWhere((i) => i.id == id);
-
-  static Map<String, List<Ticket>> initialTicketsByTable() => {
-        'T1': const [
-          Ticket(id: 'L01', itemId: 'gado-gado', name: 'Gado-Gado', course: CourseId.starters, station: Station.kitchen, qty: 1, modifiers: ['Sedikit pedas'], price: 65000, status: TicketStatus.ready, sentAt: '17:42'),
-          Ticket(id: 'L02', itemId: 'es-teh', name: 'Es Teh Manis', course: CourseId.drinksNow, station: Station.bar, qty: 2, modifiers: ['Kurang manis'], price: 25000, status: TicketStatus.served, sentAt: '17:42'),
-          Ticket(id: 'L03', itemId: 'nasi-goreng', name: 'Nasi Goreng', variantName: 'Reguler', course: CourseId.mains, station: Station.kitchen, qty: 1, modifiers: ['Ayam', 'Sedang', '+ Krupuk'], price: 93000, status: TicketStatus.cooked, sentAt: '17:46'),
-          Ticket(id: 'L04', itemId: 'rendang', name: 'Rendang Sapi', course: CourseId.mains, station: Station.kitchen, qty: 1, modifiers: ['Tanpa nasi uduk', 'Tambah nasi putih'], specialInstructions: 'Alergi kacang tamu — tanpa garnish sate', price: 145000, status: TicketStatus.prep, sentAt: '17:46'),
-          Ticket(id: 'L05', itemId: 'pisang', name: 'Pisang Goreng + Es Krim', course: CourseId.desserts, station: Station.kitchen, qty: 2, modifiers: ['Vanila'], price: 55000, status: TicketStatus.held, sentAt: '17:46'),
-        ],
-        'T2': const [
-          Ticket(id: 'L10', itemId: 'sate-ayam', name: 'Sate Ayam', course: CourseId.starters, station: Station.kitchen, qty: 2, price: 75000, status: TicketStatus.served, sentAt: '17:21'),
-          Ticket(id: 'L11', itemId: 'rose', name: 'House Rosé', variantName: 'Botol', course: CourseId.drinksNow, station: Station.bar, qty: 1, price: 485000, status: TicketStatus.served, sentAt: '17:22'),
-          Ticket(id: 'L12', itemId: 'crispy-tempeh', name: 'Tempe Sambal Bowl', course: CourseId.mains, station: Station.kitchen, qty: 1, modifiers: ['Sambal di pinggir'], price: 95000, status: TicketStatus.ready, sentAt: '17:48'),
-          Ticket(id: 'L13', itemId: 'mie-goreng', name: 'Mie Goreng', course: CourseId.mains, station: Station.kitchen, qty: 1, price: 80000, status: TicketStatus.ready, sentAt: '17:48'),
-        ],
-        'T4': const [
-          Ticket(id: 'L20', itemId: 'bintang', name: 'Bintang Pilsner', course: CourseId.drinksNow, station: Station.bar, qty: 6, price: 45000, status: TicketStatus.sent, sentAt: '18:02'),
-          Ticket(id: 'L21', itemId: 'lumpia', name: 'Lumpia Renyah', course: CourseId.starters, station: Station.kitchen, qty: 2, price: 55000, status: TicketStatus.sent, sentAt: '18:02'),
-        ],
-      };
 
   static List<AuditEntry> initialAudit() => const [
         AuditEntry(id: 'A0', type: AuditType.fire, title: 'Course Utama dibakar untuk Meja T1', tableId: 'T1', when: '17:46'),

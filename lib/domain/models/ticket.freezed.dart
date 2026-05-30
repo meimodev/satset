@@ -22,13 +22,13 @@ mixin _$Ticket {
   String get name => throw _privateConstructorUsedError;
   String get variantName => throw _privateConstructorUsedError;
   CourseId get course => throw _privateConstructorUsedError;
-  Station get station => throw _privateConstructorUsedError;
   int get qty => throw _privateConstructorUsedError;
   List<String> get modifiers => throw _privateConstructorUsedError;
   String? get specialInstructions => throw _privateConstructorUsedError;
   int get price => throw _privateConstructorUsedError;
   TicketStatus get status => throw _privateConstructorUsedError;
   String get sentAt => throw _privateConstructorUsedError;
+  DateTime get sentAtTime => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
   String? get voidReasonCode => throw _privateConstructorUsedError;
   String? get voidApprovedBy => throw _privateConstructorUsedError;
@@ -52,13 +52,13 @@ abstract class $TicketCopyWith<$Res> {
     String name,
     String variantName,
     CourseId course,
-    Station station,
     int qty,
     List<String> modifiers,
     String? specialInstructions,
     int price,
     TicketStatus status,
     String sentAt,
+    DateTime sentAtTime,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
@@ -87,13 +87,13 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
     Object? name = null,
     Object? variantName = null,
     Object? course = null,
-    Object? station = null,
     Object? qty = null,
     Object? modifiers = null,
     Object? specialInstructions = freezed,
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? sentAtTime = null,
     Object? voidReason = freezed,
     Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
@@ -122,10 +122,6 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.course
                 : course // ignore: cast_nullable_to_non_nullable
                       as CourseId,
-            station: null == station
-                ? _value.station
-                : station // ignore: cast_nullable_to_non_nullable
-                      as Station,
             qty: null == qty
                 ? _value.qty
                 : qty // ignore: cast_nullable_to_non_nullable
@@ -150,6 +146,10 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.sentAt
                 : sentAt // ignore: cast_nullable_to_non_nullable
                       as String,
+            sentAtTime: null == sentAtTime
+                ? _value.sentAtTime
+                : sentAtTime // ignore: cast_nullable_to_non_nullable
+                      as DateTime,
             voidReason: freezed == voidReason
                 ? _value.voidReason
                 : voidReason // ignore: cast_nullable_to_non_nullable
@@ -190,13 +190,13 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
     String name,
     String variantName,
     CourseId course,
-    Station station,
     int qty,
     List<String> modifiers,
     String? specialInstructions,
     int price,
     TicketStatus status,
     String sentAt,
+    DateTime sentAtTime,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
@@ -224,13 +224,13 @@ class __$$TicketImplCopyWithImpl<$Res>
     Object? name = null,
     Object? variantName = null,
     Object? course = null,
-    Object? station = null,
     Object? qty = null,
     Object? modifiers = null,
     Object? specialInstructions = freezed,
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? sentAtTime = null,
     Object? voidReason = freezed,
     Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
@@ -259,10 +259,6 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.course
             : course // ignore: cast_nullable_to_non_nullable
                   as CourseId,
-        station: null == station
-            ? _value.station
-            : station // ignore: cast_nullable_to_non_nullable
-                  as Station,
         qty: null == qty
             ? _value.qty
             : qty // ignore: cast_nullable_to_non_nullable
@@ -287,6 +283,10 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.sentAt
             : sentAt // ignore: cast_nullable_to_non_nullable
                   as String,
+        sentAtTime: null == sentAtTime
+            ? _value.sentAtTime
+            : sentAtTime // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
         voidReason: freezed == voidReason
             ? _value.voidReason
             : voidReason // ignore: cast_nullable_to_non_nullable
@@ -321,13 +321,13 @@ class _$TicketImpl implements _Ticket {
     required this.name,
     this.variantName = '',
     required this.course,
-    required this.station,
     this.qty = 1,
     final List<String> modifiers = const <String>[],
     this.specialInstructions,
     required this.price,
     required this.status,
     required this.sentAt,
+    required this.sentAtTime,
     this.voidReason,
     this.voidReasonCode,
     this.voidApprovedBy,
@@ -346,8 +346,6 @@ class _$TicketImpl implements _Ticket {
   final String variantName;
   @override
   final CourseId course;
-  @override
-  final Station station;
   @override
   @JsonKey()
   final int qty;
@@ -369,6 +367,8 @@ class _$TicketImpl implements _Ticket {
   @override
   final String sentAt;
   @override
+  final DateTime sentAtTime;
+  @override
   final String? voidReason;
   @override
   final String? voidReasonCode;
@@ -381,7 +381,7 @@ class _$TicketImpl implements _Ticket {
 
   @override
   String toString() {
-    return 'Ticket(id: $id, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
+    return 'Ticket(id: $id, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
   }
 
   @override
@@ -395,7 +395,6 @@ class _$TicketImpl implements _Ticket {
             (identical(other.variantName, variantName) ||
                 other.variantName == variantName) &&
             (identical(other.course, course) || other.course == course) &&
-            (identical(other.station, station) || other.station == station) &&
             (identical(other.qty, qty) || other.qty == qty) &&
             const DeepCollectionEquality().equals(
               other._modifiers,
@@ -406,6 +405,8 @@ class _$TicketImpl implements _Ticket {
             (identical(other.price, price) || other.price == price) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.sentAt, sentAt) || other.sentAt == sentAt) &&
+            (identical(other.sentAtTime, sentAtTime) ||
+                other.sentAtTime == sentAtTime) &&
             (identical(other.voidReason, voidReason) ||
                 other.voidReason == voidReason) &&
             (identical(other.voidReasonCode, voidReasonCode) ||
@@ -426,13 +427,13 @@ class _$TicketImpl implements _Ticket {
     name,
     variantName,
     course,
-    station,
     qty,
     const DeepCollectionEquality().hash(_modifiers),
     specialInstructions,
     price,
     status,
     sentAt,
+    sentAtTime,
     voidReason,
     voidReasonCode,
     voidApprovedBy,
@@ -456,13 +457,13 @@ abstract class _Ticket implements Ticket {
     required final String name,
     final String variantName,
     required final CourseId course,
-    required final Station station,
     final int qty,
     final List<String> modifiers,
     final String? specialInstructions,
     required final int price,
     required final TicketStatus status,
     required final String sentAt,
+    required final DateTime sentAtTime,
     final String? voidReason,
     final String? voidReasonCode,
     final String? voidApprovedBy,
@@ -481,8 +482,6 @@ abstract class _Ticket implements Ticket {
   @override
   CourseId get course;
   @override
-  Station get station;
-  @override
   int get qty;
   @override
   List<String> get modifiers;
@@ -494,6 +493,8 @@ abstract class _Ticket implements Ticket {
   TicketStatus get status;
   @override
   String get sentAt;
+  @override
+  DateTime get sentAtTime;
   @override
   String? get voidReason;
   @override

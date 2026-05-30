@@ -77,7 +77,6 @@ class MenuItems extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get categoryId => text()();
-  TextColumn get station => text()();
   TextColumn get description => text().withDefault(const Constant(''))();
   IntColumn get basePrice => integer()();
   /// Cost of goods (same int-cents unit as `basePrice`). Used for margin
@@ -85,7 +84,10 @@ class MenuItems extends Table {
   IntColumn get cost => integer().withDefault(const Constant(0))();
   IntColumn get prepTime => integer().withDefault(const Constant(5))();
   TextColumn get variantsJson => text().withDefault(const Constant('[]'))();
-  TextColumn get modifierGroupIdsJson =>
+  /// Full modifier groups embedded per-item (private, not a shared library).
+  /// JSON: [{id,name,required,multi,options:[{id,name,priceDelta}]}]. See
+  /// docs/adr/0009-per-item-embedded-modifiers.md.
+  TextColumn get modifierGroupsJson =>
       text().withDefault(const Constant('[]'))();
   TextColumn get allergensJson => text().withDefault(const Constant('[]'))();
   TextColumn get dietaryJson => text().withDefault(const Constant('[]'))();
@@ -97,16 +99,6 @@ class MenuItems extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class ModifierGroups extends Table {
-  TextColumn get id => text()();
-  TextColumn get name => text()();
-  BoolColumn get required => boolean().withDefault(const Constant(false))();
-  BoolColumn get multi => boolean().withDefault(const Constant(false))();
-  TextColumn get optionsJson => text().withDefault(const Constant('[]'))();
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
 class Tickets extends Table {
   TextColumn get id => text()();
   TextColumn get tableId => text()();
@@ -114,7 +106,6 @@ class Tickets extends Table {
   TextColumn get name => text()();
   TextColumn get variantName => text().withDefault(const Constant(''))();
   TextColumn get course => text()();
-  TextColumn get station => text()();
   IntColumn get qty => integer().withDefault(const Constant(1))();
   TextColumn get modifiersJson => text().withDefault(const Constant('[]'))();
   TextColumn get specialInstructions => text().nullable()();
@@ -265,7 +256,6 @@ class TableSessionTickets extends Table {
   TextColumn get name => text()();
   TextColumn get variantName => text().withDefault(const Constant(''))();
   TextColumn get course => text()();
-  TextColumn get station => text()();
   IntColumn get qty => integer().withDefault(const Constant(1))();
   TextColumn get modifiersJson => text().withDefault(const Constant('[]'))();
   TextColumn get specialInstructions => text().nullable()();

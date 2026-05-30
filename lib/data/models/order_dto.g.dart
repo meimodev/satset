@@ -12,7 +12,6 @@ _$CartLineDtoImpl _$$CartLineDtoImplFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       variantId: json['variantId'] as String,
       variantName: json['variantName'] as String,
-      station: json['station'] as String,
       modifierOptionIds: (json['modifierOptionIds'] as List<dynamic>)
           .map((e) => e as String)
           .toList(),
@@ -28,7 +27,6 @@ Map<String, dynamic> _$$CartLineDtoImplToJson(_$CartLineDtoImpl instance) =>
       'name': instance.name,
       'variantId': instance.variantId,
       'variantName': instance.variantName,
-      'station': instance.station,
       'modifierOptionIds': instance.modifierOptionIds,
       'specialInstructions': instance.specialInstructions,
       'course': instance.course,

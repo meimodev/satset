@@ -60,11 +60,8 @@ class ReviewScreen extends ConsumerWidget {
     for (final c in cart) {
       allergens.addAll(c.allergens);
     }
-    final kitchenCt = cart
-        .where((c) => c.station == Station.kitchen)
-        .fold<int>(0, (s, c) => s + c.qty);
-    final barCt =
-        cart.where((c) => c.station == Station.bar).fold<int>(0, (s, c) => s + c.qty);
+    final kitchenCt = cart.fold<int>(0, (s, c) => s + c.qty);
+    final barCt = 0;
 
     String sendTarget;
     if (kitchenCt > 0 && barCt > 0) {
@@ -238,7 +235,7 @@ class ReviewScreen extends ConsumerWidget {
                         }.join(',');
                         ref.read(cartProvider(tableId).notifier).clear();
                         if (context.mounted) {
-                          context.go('/table/$tableId/sent?stations=$stations');
+                          context.push('/table/$tableId/sent?stations=$stations');
                         }
                       },
                 style: ElevatedButton.styleFrom(

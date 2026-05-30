@@ -27,7 +27,6 @@ mixin _$TicketDto {
   String get name => throw _privateConstructorUsedError;
   String get variantName => throw _privateConstructorUsedError;
   String get course => throw _privateConstructorUsedError;
-  String get station => throw _privateConstructorUsedError;
   int get qty => throw _privateConstructorUsedError;
   List<String> get modifiers => throw _privateConstructorUsedError;
   String? get specialInstructions => throw _privateConstructorUsedError;
@@ -62,7 +61,6 @@ abstract class $TicketDtoCopyWith<$Res> {
     String name,
     String variantName,
     String course,
-    String station,
     int qty,
     List<String> modifiers,
     String? specialInstructions,
@@ -98,7 +96,6 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
     Object? name = null,
     Object? variantName = null,
     Object? course = null,
-    Object? station = null,
     Object? qty = null,
     Object? modifiers = null,
     Object? specialInstructions = freezed,
@@ -136,10 +133,6 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
             course: null == course
                 ? _value.course
                 : course // ignore: cast_nullable_to_non_nullable
-                      as String,
-            station: null == station
-                ? _value.station
-                : station // ignore: cast_nullable_to_non_nullable
                       as String,
             qty: null == qty
                 ? _value.qty
@@ -207,7 +200,6 @@ abstract class _$$TicketDtoImplCopyWith<$Res>
     String name,
     String variantName,
     String course,
-    String station,
     int qty,
     List<String> modifiers,
     String? specialInstructions,
@@ -242,7 +234,6 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
     Object? name = null,
     Object? variantName = null,
     Object? course = null,
-    Object? station = null,
     Object? qty = null,
     Object? modifiers = null,
     Object? specialInstructions = freezed,
@@ -280,10 +271,6 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
         course: null == course
             ? _value.course
             : course // ignore: cast_nullable_to_non_nullable
-                  as String,
-        station: null == station
-            ? _value.station
-            : station // ignore: cast_nullable_to_non_nullable
                   as String,
         qty: null == qty
             ? _value.qty
@@ -344,7 +331,6 @@ class _$TicketDtoImpl implements _TicketDto {
     required this.name,
     this.variantName = '',
     required this.course,
-    required this.station,
     this.qty = 1,
     final List<String> modifiers = const <String>[],
     this.specialInstructions,
@@ -374,8 +360,6 @@ class _$TicketDtoImpl implements _TicketDto {
   final String variantName;
   @override
   final String course;
-  @override
-  final String station;
   @override
   @JsonKey()
   final int qty;
@@ -409,7 +393,7 @@ class _$TicketDtoImpl implements _TicketDto {
 
   @override
   String toString() {
-    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, station: $station, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
+    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
   }
 
   @override
@@ -424,7 +408,6 @@ class _$TicketDtoImpl implements _TicketDto {
             (identical(other.variantName, variantName) ||
                 other.variantName == variantName) &&
             (identical(other.course, course) || other.course == course) &&
-            (identical(other.station, station) || other.station == station) &&
             (identical(other.qty, qty) || other.qty == qty) &&
             const DeepCollectionEquality().equals(
               other._modifiers,
@@ -457,7 +440,6 @@ class _$TicketDtoImpl implements _TicketDto {
     name,
     variantName,
     course,
-    station,
     qty,
     const DeepCollectionEquality().hash(_modifiers),
     specialInstructions,
@@ -493,7 +475,6 @@ abstract class _TicketDto implements TicketDto {
     required final String name,
     final String variantName,
     required final String course,
-    required final String station,
     final int qty,
     final List<String> modifiers,
     final String? specialInstructions,
@@ -522,8 +503,6 @@ abstract class _TicketDto implements TicketDto {
   String get variantName;
   @override
   String get course;
-  @override
-  String get station;
   @override
   int get qty;
   @override

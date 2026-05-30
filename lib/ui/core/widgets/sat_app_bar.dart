@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/domain/models/user.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -84,34 +85,46 @@ class SatAppBar extends ConsumerWidget {
         border: Border(bottom: BorderSide(color: sc.border0)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const LoginClock(),
-          const SizedBox(width: 14),
-          if (onBack != null) ...[
-            SatBackButton(onTap: onBack!),
-            const SizedBox(width: 10),
-          ],
-          if (crumbs.isNotEmpty)
-            Flexible(child: _Crumbs(items: crumbs))
-          else if (title != null)
-            Flexible(
-              child: Text(
-                title!,
-                overflow: TextOverflow.ellipsis,
-                style: SatType.sans(
-                  size: 14,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+          Expanded(
+            child: Row(
+              children: [
+                if (onBack != null) ...[
+                  SatBackButton(onTap: onBack!),
+                  const SizedBox(width: 10),
+                ],
+                const LoginClock(),
+                const SizedBox(width: 14),
+                if (crumbs.isNotEmpty)
+                  Flexible(child: _Crumbs(items: crumbs))
+                else if (title != null)
+                  Flexible(
+                    child: Text(
+                      title!,
+                      overflow: TextOverflow.ellipsis,
+                      style: SatType.sans(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: sc.textHi,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          const Spacer(),
-          for (final p in trailingPills) ...[p, const SizedBox(width: 8)],
-          const _NetworkPill(),
-          if (showAvatar) ...[
-            const SizedBox(width: 10),
-            const _AvatarBtn(size: 36),
-          ],
+          ),
+          const SizedBox(width: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final p in trailingPills) ...[p, const SizedBox(width: 8)],
+              const _NetworkPill(),
+              if (showAvatar) ...[
+                const SizedBox(width: 10),
+                const _AvatarBtn(size: 36),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -125,8 +138,13 @@ class _NetworkPill extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final state = ref.watch(wsConnStateProvider).value;
+    final isAdmin = ref.watch(authStateProvider).user?.role == UserRole.admin;
     final (dotColor, softColor, label) = switch (state) {
-      WsConnState.open => (sc.success, sc.successSoft, 'LIVE · LAN'),
+      WsConnState.open => (
+        sc.success,
+        sc.successSoft,
+        isAdmin ? 'LIVE · LAN' : 'LIVE',
+      ),
       WsConnState.connecting => (sc.warn, sc.warnSoft, 'MENGHUBUNGKAN…'),
       _ => (sc.urgent, sc.urgentSoft, 'OFFLINE'),
     };
@@ -148,7 +166,7 @@ class _NetworkPill extends ConsumerWidget {
               color: dotColor,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: softColor, blurRadius: 0, spreadRadius: 3)
+                BoxShadow(color: softColor, blurRadius: 0, spreadRadius: 3),
               ],
             ),
           ),
@@ -175,8 +193,9 @@ class _AvatarBtn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
-    final initials =
-        (user?.initials.isNotEmpty ?? false) ? user!.initials : '—';
+    final initials = (user?.initials.isNotEmpty ?? false)
+        ? user!.initials
+        : '—';
     final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
     final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base);
     return Material(
@@ -223,21 +242,25 @@ class _Crumbs extends StatelessWidget {
     final children = <Widget>[];
     for (var i = 0; i < items.length; i++) {
       if (i > 0) {
-        children.add(Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text('›', style: SatType.mono(size: 12, color: sc.textDim)),
-        ));
+        children.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text('›', style: SatType.mono(size: 12, color: sc.textDim)),
+          ),
+        );
       }
-      children.add(Text(
-        items[i],
-        overflow: TextOverflow.ellipsis,
-        style: SatType.mono(
-          size: 12,
-          weight: i == items.length - 1 ? FontWeight.w500 : FontWeight.w400,
-          letterSpacing: 0.48,
-          color: i == items.length - 1 ? sc.textHi : sc.textMd,
+      children.add(
+        Text(
+          items[i],
+          overflow: TextOverflow.ellipsis,
+          style: SatType.mono(
+            size: 12,
+            weight: i == items.length - 1 ? FontWeight.w500 : FontWeight.w400,
+            letterSpacing: 0.48,
+            color: i == items.length - 1 ? sc.textHi : sc.textMd,
+          ),
         ),
-      ));
+      );
     }
     return Row(mainAxisSize: MainAxisSize.min, children: children);
   }

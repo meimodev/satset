@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -18,7 +19,6 @@ part 'database.g.dart';
   VenueTables,
   MenuCategories,
   MenuItems,
-  ModifierGroups,
   Tickets,
   Sessions,
   Devices,
@@ -36,7 +36,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -174,6 +174,22 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn(
                 'table_session_tickets', 'voided_by_user_id', type: 'TEXT');
           }
+          if (from < 19) {
+            await _safeDropColumnOn('menu_items', 'station');
+            await _safeDropColumnOn('tickets', 'station');
+            await _safeDropColumnOn('table_session_tickets', 'station');
+          }
+          if (from < 20) {
+            // Modifier groups become per-item private, embedded as JSON on the
+            // item. Backfill from the now-removed shared ModifierGroups table,
+            // resolving each item's id list, then drop the table + id column.
+            // See docs/adr/0009-per-item-embedded-modifiers.md.
+            await _safeAddColumnOn('menu_items', 'modifier_groups_json',
+                type: "TEXT NOT NULL DEFAULT '[]'");
+            await _backfillEmbeddedModifiers();
+            await _safeDropColumnOn('menu_items', 'modifier_group_ids_json');
+            await customStatement('DROP TABLE IF EXISTS modifier_groups');
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -227,16 +243,59 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  Future<void> _safeDropColumn(String column) async {
+  /// Resolve each item's `modifier_group_ids_json` against the shared
+  /// `modifier_groups` table and write the full groups into the new
+  /// `modifier_groups_json` column. Tolerant of a missing old column/table
+  /// (leaves the default '[]').
+  Future<void> _backfillEmbeddedModifiers() async {
+    final itemCols =
+        await customSelect("PRAGMA table_info('menu_items')").get();
+    final hasIds = itemCols
+        .any((r) => r.read<String>('name') == 'modifier_group_ids_json');
+    if (!hasIds) return;
+    final groupRows = await customSelect(
+            'SELECT id, name, required, multi, options_json FROM modifier_groups')
+        .get();
+    final groupsById = {
+      for (final g in groupRows)
+        g.read<String>('id'): {
+          'id': g.read<String>('id'),
+          'name': g.read<String>('name'),
+          'required': g.read<bool>('required'),
+          'multi': g.read<bool>('multi'),
+          'options': jsonDecode(g.read<String>('options_json')),
+        },
+    };
+    final items = await customSelect(
+            'SELECT id, modifier_group_ids_json FROM menu_items')
+        .get();
+    for (final it in items) {
+      final ids =
+          (jsonDecode(it.read<String>('modifier_group_ids_json')) as List)
+              .cast<String>();
+      final embedded = [
+        for (final id in ids)
+          if (groupsById[id] != null) groupsById[id]!,
+      ];
+      await customStatement(
+        'UPDATE menu_items SET modifier_groups_json = ? WHERE id = ?',
+        [jsonEncode(embedded), it.read<String>('id')],
+      );
+    }
+  }
+
+  Future<void> _safeDropColumn(String column) => _safeDropColumnOn('users', column);
+
+  Future<void> _safeDropColumnOn(String table, String column) async {
     final cols = await customSelect(
-      "PRAGMA table_info('users')",
+      "PRAGMA table_info('$table')",
     ).get();
     final exists = cols.any((r) => r.read<String>('name') == column);
     if (!exists) return;
     // SQLite 3.35+ supports DROP COLUMN. Wrap in try so older runtimes
     // degrade to a no-op rather than blocking boot.
     try {
-      await customStatement('ALTER TABLE users DROP COLUMN $column');
+      await customStatement('ALTER TABLE $table DROP COLUMN $column');
     } catch (_) {}
   }
 

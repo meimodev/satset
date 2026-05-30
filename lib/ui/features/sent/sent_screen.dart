@@ -31,7 +31,15 @@ class _SentScreenState extends ConsumerState<SentScreen>
       if (mounted) setState(() => _progress = 2);
     });
     Future.delayed(const Duration(milliseconds: 1900), () {
-      if (mounted) context.go('/tables');
+      if (!mounted) return;
+      // Pop back to the original table detail (sent → review → menu → detail)
+      // instead of go(), so the still-mounted detail keeps its lock rather
+      // than disposing and re-acquiring. Router ref is captured because this
+      // screen's context unmounts after the first pop.
+      final router = GoRouter.of(context);
+      for (var i = 0; i < 3 && router.canPop(); i++) {
+        router.pop();
+      }
     });
   }
 

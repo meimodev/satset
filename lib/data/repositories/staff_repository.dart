@@ -372,5 +372,7 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
 }
 
 final staffRepositoryProvider =
-    StateNotifierProvider<StaffRepository, List<AppUser>>(
-        (ref) => StaffRepository(ref));
+    StateNotifierProvider<StaffRepository, List<AppUser>>((ref) {
+  ref.watch(apiConfigProvider);
+  return StaffRepository(ref);
+});

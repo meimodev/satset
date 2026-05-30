@@ -210,7 +210,6 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           name: (l['name'] as String?) ?? l['itemId'] as String,
           variantName: Value((l['variantName'] as String?) ?? ''),
           course: course,
-          station: (l['station'] as String?) ?? 'kitchen',
           qty: Value((l['qty'] as num?)?.toInt() ?? 1),
           modifiersJson: Value(jsonEncode(l['modifierOptionIds'] ?? const [])),
           specialInstructions: Value(l['specialInstructions'] as String?),
@@ -351,31 +350,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           status: Value(nextStatus),
         ));
       }
-      // Auto-release: when no live tickets remain on the table, clear it
-      // back to `available`. Live = anything still moving through the
-      // kitchen/serve graph; `served` and `voided` are terminal.
-      const liveStatuses = [
-        'draft',
-        'acknowledged',
-        'held',
-        'sent',
-        'prep',
-        'cooked',
-        'ready',
-      ];
-      final liveRemaining = await (db.select(db.tickets)
-            ..where((t) =>
-                t.tableId.equals(tableId) & t.status.isIn(liveStatuses)))
-          .get();
-      if (liveRemaining.isEmpty) {
-        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
-            .write(const VenueTablesCompanion(
-          status: Value('available'),
-          readyCount: Value(0),
-          openAmount: Value(0),
-          openedAt: Value(null),
-        ));
-      }
+
       tableRow =
           await (db.select(db.venueTables)..where((t) => t.id.equals(tableId)))
               .getSingleOrNull();
@@ -444,7 +419,7 @@ Map<String, dynamic> _toJson(Ticket t) => {
       'name': t.name,
       'variantName': t.variantName,
       'course': t.course,
-      'station': t.station,
+      'station': 'kitchen',
       'qty': t.qty,
       'modifiers': jsonDecode(t.modifiersJson),
       'specialInstructions': t.specialInstructions,

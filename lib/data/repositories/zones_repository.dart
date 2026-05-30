@@ -214,5 +214,7 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
   }
 }
 
-final zonesProvider = StateNotifierProvider<ZonesRepository, List<Zone>>(
-    (ref) => ZonesRepository(ref: ref));
+final zonesProvider = StateNotifierProvider<ZonesRepository, List<Zone>>((ref) {
+  ref.watch(apiConfigProvider);
+  return ZonesRepository(ref: ref);
+});

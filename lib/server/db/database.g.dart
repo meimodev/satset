@@ -2698,17 +2698,6 @@ class $MenuItemsTable extends MenuItems
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _stationMeta = const VerificationMeta(
-    'station',
-  );
-  @override
-  late final GeneratedColumn<String> station = GeneratedColumn<String>(
-    'station',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _descriptionMeta = const VerificationMeta(
     'description',
   );
@@ -2766,12 +2755,12 @@ class $MenuItemsTable extends MenuItems
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
-  static const VerificationMeta _modifierGroupIdsJsonMeta =
-      const VerificationMeta('modifierGroupIdsJson');
+  static const VerificationMeta _modifierGroupsJsonMeta =
+      const VerificationMeta('modifierGroupsJson');
   @override
-  late final GeneratedColumn<String> modifierGroupIdsJson =
+  late final GeneratedColumn<String> modifierGroupsJson =
       GeneratedColumn<String>(
-        'modifier_group_ids_json',
+        'modifier_groups_json',
         aliasedName,
         false,
         type: DriftSqlType.string,
@@ -2847,13 +2836,12 @@ class $MenuItemsTable extends MenuItems
     id,
     name,
     categoryId,
-    station,
     description,
     basePrice,
     cost,
     prepTime,
     variantsJson,
-    modifierGroupIdsJson,
+    modifierGroupsJson,
     allergensJson,
     dietaryJson,
     unavailable,
@@ -2893,14 +2881,6 @@ class $MenuItemsTable extends MenuItems
     } else if (isInserting) {
       context.missing(_categoryIdMeta);
     }
-    if (data.containsKey('station')) {
-      context.handle(
-        _stationMeta,
-        station.isAcceptableOrUnknown(data['station']!, _stationMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_stationMeta);
-    }
     if (data.containsKey('description')) {
       context.handle(
         _descriptionMeta,
@@ -2939,12 +2919,12 @@ class $MenuItemsTable extends MenuItems
         ),
       );
     }
-    if (data.containsKey('modifier_group_ids_json')) {
+    if (data.containsKey('modifier_groups_json')) {
       context.handle(
-        _modifierGroupIdsJsonMeta,
-        modifierGroupIdsJson.isAcceptableOrUnknown(
-          data['modifier_group_ids_json']!,
-          _modifierGroupIdsJsonMeta,
+        _modifierGroupsJsonMeta,
+        modifierGroupsJson.isAcceptableOrUnknown(
+          data['modifier_groups_json']!,
+          _modifierGroupsJsonMeta,
         ),
       );
     }
@@ -3011,10 +2991,6 @@ class $MenuItemsTable extends MenuItems
         DriftSqlType.string,
         data['${effectivePrefix}category_id'],
       )!,
-      station: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}station'],
-      )!,
       description: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}description'],
@@ -3035,9 +3011,9 @@ class $MenuItemsTable extends MenuItems
         DriftSqlType.string,
         data['${effectivePrefix}variants_json'],
       )!,
-      modifierGroupIdsJson: attachedDatabase.typeMapping.read(
+      modifierGroupsJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}modifier_group_ids_json'],
+        data['${effectivePrefix}modifier_groups_json'],
       )!,
       allergensJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -3072,7 +3048,6 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
   final String id;
   final String name;
   final String categoryId;
-  final String station;
   final String description;
   final int basePrice;
 
@@ -3081,7 +3056,11 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
   final int cost;
   final int prepTime;
   final String variantsJson;
-  final String modifierGroupIdsJson;
+
+  /// Full modifier groups embedded per-item (private, not a shared library).
+  /// JSON: [{id,name,required,multi,options:[{id,name,priceDelta}]}]. See
+  /// docs/adr/0009-per-item-embedded-modifiers.md.
+  final String modifierGroupsJson;
   final String allergensJson;
   final String dietaryJson;
   final bool unavailable;
@@ -3091,13 +3070,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     required this.id,
     required this.name,
     required this.categoryId,
-    required this.station,
     required this.description,
     required this.basePrice,
     required this.cost,
     required this.prepTime,
     required this.variantsJson,
-    required this.modifierGroupIdsJson,
+    required this.modifierGroupsJson,
     required this.allergensJson,
     required this.dietaryJson,
     required this.unavailable,
@@ -3110,13 +3088,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['category_id'] = Variable<String>(categoryId);
-    map['station'] = Variable<String>(station);
     map['description'] = Variable<String>(description);
     map['base_price'] = Variable<int>(basePrice);
     map['cost'] = Variable<int>(cost);
     map['prep_time'] = Variable<int>(prepTime);
     map['variants_json'] = Variable<String>(variantsJson);
-    map['modifier_group_ids_json'] = Variable<String>(modifierGroupIdsJson);
+    map['modifier_groups_json'] = Variable<String>(modifierGroupsJson);
     map['allergens_json'] = Variable<String>(allergensJson);
     map['dietary_json'] = Variable<String>(dietaryJson);
     map['unavailable'] = Variable<bool>(unavailable);
@@ -3132,13 +3109,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       id: Value(id),
       name: Value(name),
       categoryId: Value(categoryId),
-      station: Value(station),
       description: Value(description),
       basePrice: Value(basePrice),
       cost: Value(cost),
       prepTime: Value(prepTime),
       variantsJson: Value(variantsJson),
-      modifierGroupIdsJson: Value(modifierGroupIdsJson),
+      modifierGroupsJson: Value(modifierGroupsJson),
       allergensJson: Value(allergensJson),
       dietaryJson: Value(dietaryJson),
       unavailable: Value(unavailable),
@@ -3158,14 +3134,13 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       categoryId: serializer.fromJson<String>(json['categoryId']),
-      station: serializer.fromJson<String>(json['station']),
       description: serializer.fromJson<String>(json['description']),
       basePrice: serializer.fromJson<int>(json['basePrice']),
       cost: serializer.fromJson<int>(json['cost']),
       prepTime: serializer.fromJson<int>(json['prepTime']),
       variantsJson: serializer.fromJson<String>(json['variantsJson']),
-      modifierGroupIdsJson: serializer.fromJson<String>(
-        json['modifierGroupIdsJson'],
+      modifierGroupsJson: serializer.fromJson<String>(
+        json['modifierGroupsJson'],
       ),
       allergensJson: serializer.fromJson<String>(json['allergensJson']),
       dietaryJson: serializer.fromJson<String>(json['dietaryJson']),
@@ -3183,13 +3158,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'categoryId': serializer.toJson<String>(categoryId),
-      'station': serializer.toJson<String>(station),
       'description': serializer.toJson<String>(description),
       'basePrice': serializer.toJson<int>(basePrice),
       'cost': serializer.toJson<int>(cost),
       'prepTime': serializer.toJson<int>(prepTime),
       'variantsJson': serializer.toJson<String>(variantsJson),
-      'modifierGroupIdsJson': serializer.toJson<String>(modifierGroupIdsJson),
+      'modifierGroupsJson': serializer.toJson<String>(modifierGroupsJson),
       'allergensJson': serializer.toJson<String>(allergensJson),
       'dietaryJson': serializer.toJson<String>(dietaryJson),
       'unavailable': serializer.toJson<bool>(unavailable),
@@ -3202,13 +3176,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     String? id,
     String? name,
     String? categoryId,
-    String? station,
     String? description,
     int? basePrice,
     int? cost,
     int? prepTime,
     String? variantsJson,
-    String? modifierGroupIdsJson,
+    String? modifierGroupsJson,
     String? allergensJson,
     String? dietaryJson,
     bool? unavailable,
@@ -3218,13 +3191,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     id: id ?? this.id,
     name: name ?? this.name,
     categoryId: categoryId ?? this.categoryId,
-    station: station ?? this.station,
     description: description ?? this.description,
     basePrice: basePrice ?? this.basePrice,
     cost: cost ?? this.cost,
     prepTime: prepTime ?? this.prepTime,
     variantsJson: variantsJson ?? this.variantsJson,
-    modifierGroupIdsJson: modifierGroupIdsJson ?? this.modifierGroupIdsJson,
+    modifierGroupsJson: modifierGroupsJson ?? this.modifierGroupsJson,
     allergensJson: allergensJson ?? this.allergensJson,
     dietaryJson: dietaryJson ?? this.dietaryJson,
     unavailable: unavailable ?? this.unavailable,
@@ -3238,7 +3210,6 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       categoryId: data.categoryId.present
           ? data.categoryId.value
           : this.categoryId,
-      station: data.station.present ? data.station.value : this.station,
       description: data.description.present
           ? data.description.value
           : this.description,
@@ -3248,9 +3219,9 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       variantsJson: data.variantsJson.present
           ? data.variantsJson.value
           : this.variantsJson,
-      modifierGroupIdsJson: data.modifierGroupIdsJson.present
-          ? data.modifierGroupIdsJson.value
-          : this.modifierGroupIdsJson,
+      modifierGroupsJson: data.modifierGroupsJson.present
+          ? data.modifierGroupsJson.value
+          : this.modifierGroupsJson,
       allergensJson: data.allergensJson.present
           ? data.allergensJson.value
           : this.allergensJson,
@@ -3275,13 +3246,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('categoryId: $categoryId, ')
-          ..write('station: $station, ')
           ..write('description: $description, ')
           ..write('basePrice: $basePrice, ')
           ..write('cost: $cost, ')
           ..write('prepTime: $prepTime, ')
           ..write('variantsJson: $variantsJson, ')
-          ..write('modifierGroupIdsJson: $modifierGroupIdsJson, ')
+          ..write('modifierGroupsJson: $modifierGroupsJson, ')
           ..write('allergensJson: $allergensJson, ')
           ..write('dietaryJson: $dietaryJson, ')
           ..write('unavailable: $unavailable, ')
@@ -3296,13 +3266,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     id,
     name,
     categoryId,
-    station,
     description,
     basePrice,
     cost,
     prepTime,
     variantsJson,
-    modifierGroupIdsJson,
+    modifierGroupsJson,
     allergensJson,
     dietaryJson,
     unavailable,
@@ -3316,13 +3285,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           other.id == this.id &&
           other.name == this.name &&
           other.categoryId == this.categoryId &&
-          other.station == this.station &&
           other.description == this.description &&
           other.basePrice == this.basePrice &&
           other.cost == this.cost &&
           other.prepTime == this.prepTime &&
           other.variantsJson == this.variantsJson &&
-          other.modifierGroupIdsJson == this.modifierGroupIdsJson &&
+          other.modifierGroupsJson == this.modifierGroupsJson &&
           other.allergensJson == this.allergensJson &&
           other.dietaryJson == this.dietaryJson &&
           other.unavailable == this.unavailable &&
@@ -3334,13 +3302,12 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
   final Value<String> id;
   final Value<String> name;
   final Value<String> categoryId;
-  final Value<String> station;
   final Value<String> description;
   final Value<int> basePrice;
   final Value<int> cost;
   final Value<int> prepTime;
   final Value<String> variantsJson;
-  final Value<String> modifierGroupIdsJson;
+  final Value<String> modifierGroupsJson;
   final Value<String> allergensJson;
   final Value<String> dietaryJson;
   final Value<bool> unavailable;
@@ -3351,13 +3318,12 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.categoryId = const Value.absent(),
-    this.station = const Value.absent(),
     this.description = const Value.absent(),
     this.basePrice = const Value.absent(),
     this.cost = const Value.absent(),
     this.prepTime = const Value.absent(),
     this.variantsJson = const Value.absent(),
-    this.modifierGroupIdsJson = const Value.absent(),
+    this.modifierGroupsJson = const Value.absent(),
     this.allergensJson = const Value.absent(),
     this.dietaryJson = const Value.absent(),
     this.unavailable = const Value.absent(),
@@ -3369,13 +3335,12 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     required String id,
     required String name,
     required String categoryId,
-    required String station,
     this.description = const Value.absent(),
     required int basePrice,
     this.cost = const Value.absent(),
     this.prepTime = const Value.absent(),
     this.variantsJson = const Value.absent(),
-    this.modifierGroupIdsJson = const Value.absent(),
+    this.modifierGroupsJson = const Value.absent(),
     this.allergensJson = const Value.absent(),
     this.dietaryJson = const Value.absent(),
     this.unavailable = const Value.absent(),
@@ -3385,19 +3350,17 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
   }) : id = Value(id),
        name = Value(name),
        categoryId = Value(categoryId),
-       station = Value(station),
        basePrice = Value(basePrice);
   static Insertable<MenuItem> custom({
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? categoryId,
-    Expression<String>? station,
     Expression<String>? description,
     Expression<int>? basePrice,
     Expression<int>? cost,
     Expression<int>? prepTime,
     Expression<String>? variantsJson,
-    Expression<String>? modifierGroupIdsJson,
+    Expression<String>? modifierGroupsJson,
     Expression<String>? allergensJson,
     Expression<String>? dietaryJson,
     Expression<bool>? unavailable,
@@ -3409,14 +3372,13 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (categoryId != null) 'category_id': categoryId,
-      if (station != null) 'station': station,
       if (description != null) 'description': description,
       if (basePrice != null) 'base_price': basePrice,
       if (cost != null) 'cost': cost,
       if (prepTime != null) 'prep_time': prepTime,
       if (variantsJson != null) 'variants_json': variantsJson,
-      if (modifierGroupIdsJson != null)
-        'modifier_group_ids_json': modifierGroupIdsJson,
+      if (modifierGroupsJson != null)
+        'modifier_groups_json': modifierGroupsJson,
       if (allergensJson != null) 'allergens_json': allergensJson,
       if (dietaryJson != null) 'dietary_json': dietaryJson,
       if (unavailable != null) 'unavailable': unavailable,
@@ -3431,13 +3393,12 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Value<String>? id,
     Value<String>? name,
     Value<String>? categoryId,
-    Value<String>? station,
     Value<String>? description,
     Value<int>? basePrice,
     Value<int>? cost,
     Value<int>? prepTime,
     Value<String>? variantsJson,
-    Value<String>? modifierGroupIdsJson,
+    Value<String>? modifierGroupsJson,
     Value<String>? allergensJson,
     Value<String>? dietaryJson,
     Value<bool>? unavailable,
@@ -3449,13 +3410,12 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       id: id ?? this.id,
       name: name ?? this.name,
       categoryId: categoryId ?? this.categoryId,
-      station: station ?? this.station,
       description: description ?? this.description,
       basePrice: basePrice ?? this.basePrice,
       cost: cost ?? this.cost,
       prepTime: prepTime ?? this.prepTime,
       variantsJson: variantsJson ?? this.variantsJson,
-      modifierGroupIdsJson: modifierGroupIdsJson ?? this.modifierGroupIdsJson,
+      modifierGroupsJson: modifierGroupsJson ?? this.modifierGroupsJson,
       allergensJson: allergensJson ?? this.allergensJson,
       dietaryJson: dietaryJson ?? this.dietaryJson,
       unavailable: unavailable ?? this.unavailable,
@@ -3477,9 +3437,6 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     if (categoryId.present) {
       map['category_id'] = Variable<String>(categoryId.value);
     }
-    if (station.present) {
-      map['station'] = Variable<String>(station.value);
-    }
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
@@ -3495,10 +3452,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     if (variantsJson.present) {
       map['variants_json'] = Variable<String>(variantsJson.value);
     }
-    if (modifierGroupIdsJson.present) {
-      map['modifier_group_ids_json'] = Variable<String>(
-        modifierGroupIdsJson.value,
-      );
+    if (modifierGroupsJson.present) {
+      map['modifier_groups_json'] = Variable<String>(modifierGroupsJson.value);
     }
     if (allergensJson.present) {
       map['allergens_json'] = Variable<String>(allergensJson.value);
@@ -3529,381 +3484,17 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('categoryId: $categoryId, ')
-          ..write('station: $station, ')
           ..write('description: $description, ')
           ..write('basePrice: $basePrice, ')
           ..write('cost: $cost, ')
           ..write('prepTime: $prepTime, ')
           ..write('variantsJson: $variantsJson, ')
-          ..write('modifierGroupIdsJson: $modifierGroupIdsJson, ')
+          ..write('modifierGroupsJson: $modifierGroupsJson, ')
           ..write('allergensJson: $allergensJson, ')
           ..write('dietaryJson: $dietaryJson, ')
           ..write('unavailable: $unavailable, ')
           ..write('stockCount: $stockCount, ')
           ..write('autoEightySixAtZero: $autoEightySixAtZero, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $ModifierGroupsTable extends ModifierGroups
-    with TableInfo<$ModifierGroupsTable, ModifierGroup> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ModifierGroupsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _requiredMeta = const VerificationMeta(
-    'required',
-  );
-  @override
-  late final GeneratedColumn<bool> required = GeneratedColumn<bool>(
-    'required',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("required" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _multiMeta = const VerificationMeta('multi');
-  @override
-  late final GeneratedColumn<bool> multi = GeneratedColumn<bool>(
-    'multi',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("multi" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _optionsJsonMeta = const VerificationMeta(
-    'optionsJson',
-  );
-  @override
-  late final GeneratedColumn<String> optionsJson = GeneratedColumn<String>(
-    'options_json',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('[]'),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    name,
-    required,
-    multi,
-    optionsJson,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'modifier_groups';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ModifierGroup> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('required')) {
-      context.handle(
-        _requiredMeta,
-        required.isAcceptableOrUnknown(data['required']!, _requiredMeta),
-      );
-    }
-    if (data.containsKey('multi')) {
-      context.handle(
-        _multiMeta,
-        multi.isAcceptableOrUnknown(data['multi']!, _multiMeta),
-      );
-    }
-    if (data.containsKey('options_json')) {
-      context.handle(
-        _optionsJsonMeta,
-        optionsJson.isAcceptableOrUnknown(
-          data['options_json']!,
-          _optionsJsonMeta,
-        ),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  ModifierGroup map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ModifierGroup(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      required: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}required'],
-      )!,
-      multi: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}multi'],
-      )!,
-      optionsJson: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}options_json'],
-      )!,
-    );
-  }
-
-  @override
-  $ModifierGroupsTable createAlias(String alias) {
-    return $ModifierGroupsTable(attachedDatabase, alias);
-  }
-}
-
-class ModifierGroup extends DataClass implements Insertable<ModifierGroup> {
-  final String id;
-  final String name;
-  final bool required;
-  final bool multi;
-  final String optionsJson;
-  const ModifierGroup({
-    required this.id,
-    required this.name,
-    required this.required,
-    required this.multi,
-    required this.optionsJson,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['name'] = Variable<String>(name);
-    map['required'] = Variable<bool>(required);
-    map['multi'] = Variable<bool>(multi);
-    map['options_json'] = Variable<String>(optionsJson);
-    return map;
-  }
-
-  ModifierGroupsCompanion toCompanion(bool nullToAbsent) {
-    return ModifierGroupsCompanion(
-      id: Value(id),
-      name: Value(name),
-      required: Value(required),
-      multi: Value(multi),
-      optionsJson: Value(optionsJson),
-    );
-  }
-
-  factory ModifierGroup.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ModifierGroup(
-      id: serializer.fromJson<String>(json['id']),
-      name: serializer.fromJson<String>(json['name']),
-      required: serializer.fromJson<bool>(json['required']),
-      multi: serializer.fromJson<bool>(json['multi']),
-      optionsJson: serializer.fromJson<String>(json['optionsJson']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'name': serializer.toJson<String>(name),
-      'required': serializer.toJson<bool>(required),
-      'multi': serializer.toJson<bool>(multi),
-      'optionsJson': serializer.toJson<String>(optionsJson),
-    };
-  }
-
-  ModifierGroup copyWith({
-    String? id,
-    String? name,
-    bool? required,
-    bool? multi,
-    String? optionsJson,
-  }) => ModifierGroup(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    required: required ?? this.required,
-    multi: multi ?? this.multi,
-    optionsJson: optionsJson ?? this.optionsJson,
-  );
-  ModifierGroup copyWithCompanion(ModifierGroupsCompanion data) {
-    return ModifierGroup(
-      id: data.id.present ? data.id.value : this.id,
-      name: data.name.present ? data.name.value : this.name,
-      required: data.required.present ? data.required.value : this.required,
-      multi: data.multi.present ? data.multi.value : this.multi,
-      optionsJson: data.optionsJson.present
-          ? data.optionsJson.value
-          : this.optionsJson,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ModifierGroup(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('required: $required, ')
-          ..write('multi: $multi, ')
-          ..write('optionsJson: $optionsJson')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, name, required, multi, optionsJson);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ModifierGroup &&
-          other.id == this.id &&
-          other.name == this.name &&
-          other.required == this.required &&
-          other.multi == this.multi &&
-          other.optionsJson == this.optionsJson);
-}
-
-class ModifierGroupsCompanion extends UpdateCompanion<ModifierGroup> {
-  final Value<String> id;
-  final Value<String> name;
-  final Value<bool> required;
-  final Value<bool> multi;
-  final Value<String> optionsJson;
-  final Value<int> rowid;
-  const ModifierGroupsCompanion({
-    this.id = const Value.absent(),
-    this.name = const Value.absent(),
-    this.required = const Value.absent(),
-    this.multi = const Value.absent(),
-    this.optionsJson = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ModifierGroupsCompanion.insert({
-    required String id,
-    required String name,
-    this.required = const Value.absent(),
-    this.multi = const Value.absent(),
-    this.optionsJson = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       name = Value(name);
-  static Insertable<ModifierGroup> custom({
-    Expression<String>? id,
-    Expression<String>? name,
-    Expression<bool>? required,
-    Expression<bool>? multi,
-    Expression<String>? optionsJson,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (name != null) 'name': name,
-      if (required != null) 'required': required,
-      if (multi != null) 'multi': multi,
-      if (optionsJson != null) 'options_json': optionsJson,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ModifierGroupsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? name,
-    Value<bool>? required,
-    Value<bool>? multi,
-    Value<String>? optionsJson,
-    Value<int>? rowid,
-  }) {
-    return ModifierGroupsCompanion(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      required: required ?? this.required,
-      multi: multi ?? this.multi,
-      optionsJson: optionsJson ?? this.optionsJson,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (required.present) {
-      map['required'] = Variable<bool>(required.value);
-    }
-    if (multi.present) {
-      map['multi'] = Variable<bool>(multi.value);
-    }
-    if (optionsJson.present) {
-      map['options_json'] = Variable<String>(optionsJson.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ModifierGroupsCompanion(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('required: $required, ')
-          ..write('multi: $multi, ')
-          ..write('optionsJson: $optionsJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3969,17 +3560,6 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
   @override
   late final GeneratedColumn<String> course = GeneratedColumn<String>(
     'course',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _stationMeta = const VerificationMeta(
-    'station',
-  );
-  @override
-  late final GeneratedColumn<String> station = GeneratedColumn<String>(
-    'station',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -4108,7 +3688,6 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     name,
     variantName,
     course,
-    station,
     qty,
     modifiersJson,
     specialInstructions,
@@ -4178,14 +3757,6 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
       );
     } else if (isInserting) {
       context.missing(_courseMeta);
-    }
-    if (data.containsKey('station')) {
-      context.handle(
-        _stationMeta,
-        station.isAcceptableOrUnknown(data['station']!, _stationMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_stationMeta);
     }
     if (data.containsKey('qty')) {
       context.handle(
@@ -4310,10 +3881,6 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.string,
         data['${effectivePrefix}course'],
       )!,
-      station: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}station'],
-      )!,
       qty: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}qty'],
@@ -4374,7 +3941,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   final String name;
   final String variantName;
   final String course;
-  final String station;
   final int qty;
   final String modifiersJson;
   final String? specialInstructions;
@@ -4399,7 +3965,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     required this.name,
     required this.variantName,
     required this.course,
-    required this.station,
     required this.qty,
     required this.modifiersJson,
     this.specialInstructions,
@@ -4421,7 +3986,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     map['name'] = Variable<String>(name);
     map['variant_name'] = Variable<String>(variantName);
     map['course'] = Variable<String>(course);
-    map['station'] = Variable<String>(station);
     map['qty'] = Variable<int>(qty);
     map['modifiers_json'] = Variable<String>(modifiersJson);
     if (!nullToAbsent || specialInstructions != null) {
@@ -4456,7 +4020,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       name: Value(name),
       variantName: Value(variantName),
       course: Value(course),
-      station: Value(station),
       qty: Value(qty),
       modifiersJson: Value(modifiersJson),
       specialInstructions: specialInstructions == null && nullToAbsent
@@ -4495,7 +4058,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       name: serializer.fromJson<String>(json['name']),
       variantName: serializer.fromJson<String>(json['variantName']),
       course: serializer.fromJson<String>(json['course']),
-      station: serializer.fromJson<String>(json['station']),
       qty: serializer.fromJson<int>(json['qty']),
       modifiersJson: serializer.fromJson<String>(json['modifiersJson']),
       specialInstructions: serializer.fromJson<String?>(
@@ -4521,7 +4083,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'name': serializer.toJson<String>(name),
       'variantName': serializer.toJson<String>(variantName),
       'course': serializer.toJson<String>(course),
-      'station': serializer.toJson<String>(station),
       'qty': serializer.toJson<int>(qty),
       'modifiersJson': serializer.toJson<String>(modifiersJson),
       'specialInstructions': serializer.toJson<String?>(specialInstructions),
@@ -4543,7 +4104,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     String? name,
     String? variantName,
     String? course,
-    String? station,
     int? qty,
     String? modifiersJson,
     Value<String?> specialInstructions = const Value.absent(),
@@ -4562,7 +4122,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     name: name ?? this.name,
     variantName: variantName ?? this.variantName,
     course: course ?? this.course,
-    station: station ?? this.station,
     qty: qty ?? this.qty,
     modifiersJson: modifiersJson ?? this.modifiersJson,
     specialInstructions: specialInstructions.present
@@ -4595,7 +4154,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ? data.variantName.value
           : this.variantName,
       course: data.course.present ? data.course.value : this.course,
-      station: data.station.present ? data.station.value : this.station,
       qty: data.qty.present ? data.qty.value : this.qty,
       modifiersJson: data.modifiersJson.present
           ? data.modifiersJson.value
@@ -4633,7 +4191,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
           ..write('course: $course, ')
-          ..write('station: $station, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
           ..write('specialInstructions: $specialInstructions, ')
@@ -4657,7 +4214,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     name,
     variantName,
     course,
-    station,
     qty,
     modifiersJson,
     specialInstructions,
@@ -4680,7 +4236,6 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.name == this.name &&
           other.variantName == this.variantName &&
           other.course == this.course &&
-          other.station == this.station &&
           other.qty == this.qty &&
           other.modifiersJson == this.modifiersJson &&
           other.specialInstructions == this.specialInstructions &&
@@ -4701,7 +4256,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<String> name;
   final Value<String> variantName;
   final Value<String> course;
-  final Value<String> station;
   final Value<int> qty;
   final Value<String> modifiersJson;
   final Value<String?> specialInstructions;
@@ -4721,7 +4275,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.name = const Value.absent(),
     this.variantName = const Value.absent(),
     this.course = const Value.absent(),
-    this.station = const Value.absent(),
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
     this.specialInstructions = const Value.absent(),
@@ -4742,7 +4295,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     required String name,
     this.variantName = const Value.absent(),
     required String course,
-    required String station,
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
     this.specialInstructions = const Value.absent(),
@@ -4760,7 +4312,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
        itemId = Value(itemId),
        name = Value(name),
        course = Value(course),
-       station = Value(station),
        price = Value(price),
        status = Value(status),
        sentAt = Value(sentAt);
@@ -4771,7 +4322,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<String>? name,
     Expression<String>? variantName,
     Expression<String>? course,
-    Expression<String>? station,
     Expression<int>? qty,
     Expression<String>? modifiersJson,
     Expression<String>? specialInstructions,
@@ -4792,7 +4342,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (name != null) 'name': name,
       if (variantName != null) 'variant_name': variantName,
       if (course != null) 'course': course,
-      if (station != null) 'station': station,
       if (qty != null) 'qty': qty,
       if (modifiersJson != null) 'modifiers_json': modifiersJson,
       if (specialInstructions != null)
@@ -4816,7 +4365,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<String>? name,
     Value<String>? variantName,
     Value<String>? course,
-    Value<String>? station,
     Value<int>? qty,
     Value<String>? modifiersJson,
     Value<String?>? specialInstructions,
@@ -4837,7 +4385,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       name: name ?? this.name,
       variantName: variantName ?? this.variantName,
       course: course ?? this.course,
-      station: station ?? this.station,
       qty: qty ?? this.qty,
       modifiersJson: modifiersJson ?? this.modifiersJson,
       specialInstructions: specialInstructions ?? this.specialInstructions,
@@ -4873,9 +4420,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     }
     if (course.present) {
       map['course'] = Variable<String>(course.value);
-    }
-    if (station.present) {
-      map['station'] = Variable<String>(station.value);
     }
     if (qty.present) {
       map['qty'] = Variable<int>(qty.value);
@@ -4925,7 +4469,6 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
           ..write('course: $course, ')
-          ..write('station: $station, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
           ..write('specialInstructions: $specialInstructions, ')
@@ -8998,17 +8541,6 @@ class $TableSessionTicketsTable extends TableSessionTickets
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _stationMeta = const VerificationMeta(
-    'station',
-  );
-  @override
-  late final GeneratedColumn<String> station = GeneratedColumn<String>(
-    'station',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
   @override
   late final GeneratedColumn<int> qty = GeneratedColumn<int>(
@@ -9133,7 +8665,6 @@ class $TableSessionTicketsTable extends TableSessionTickets
     name,
     variantName,
     course,
-    station,
     qty,
     modifiersJson,
     specialInstructions,
@@ -9211,14 +8742,6 @@ class $TableSessionTicketsTable extends TableSessionTickets
       );
     } else if (isInserting) {
       context.missing(_courseMeta);
-    }
-    if (data.containsKey('station')) {
-      context.handle(
-        _stationMeta,
-        station.isAcceptableOrUnknown(data['station']!, _stationMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_stationMeta);
     }
     if (data.containsKey('qty')) {
       context.handle(
@@ -9347,10 +8870,6 @@ class $TableSessionTicketsTable extends TableSessionTickets
         DriftSqlType.string,
         data['${effectivePrefix}course'],
       )!,
-      station: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}station'],
-      )!,
       qty: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}qty'],
@@ -9413,7 +8932,6 @@ class TableSessionTicket extends DataClass
   final String name;
   final String variantName;
   final String course;
-  final String station;
   final int qty;
   final String modifiersJson;
   final String? specialInstructions;
@@ -9437,7 +8955,6 @@ class TableSessionTicket extends DataClass
     required this.name,
     required this.variantName,
     required this.course,
-    required this.station,
     required this.qty,
     required this.modifiersJson,
     this.specialInstructions,
@@ -9460,7 +8977,6 @@ class TableSessionTicket extends DataClass
     map['name'] = Variable<String>(name);
     map['variant_name'] = Variable<String>(variantName);
     map['course'] = Variable<String>(course);
-    map['station'] = Variable<String>(station);
     map['qty'] = Variable<int>(qty);
     map['modifiers_json'] = Variable<String>(modifiersJson);
     if (!nullToAbsent || specialInstructions != null) {
@@ -9496,7 +9012,6 @@ class TableSessionTicket extends DataClass
       name: Value(name),
       variantName: Value(variantName),
       course: Value(course),
-      station: Value(station),
       qty: Value(qty),
       modifiersJson: Value(modifiersJson),
       specialInstructions: specialInstructions == null && nullToAbsent
@@ -9536,7 +9051,6 @@ class TableSessionTicket extends DataClass
       name: serializer.fromJson<String>(json['name']),
       variantName: serializer.fromJson<String>(json['variantName']),
       course: serializer.fromJson<String>(json['course']),
-      station: serializer.fromJson<String>(json['station']),
       qty: serializer.fromJson<int>(json['qty']),
       modifiersJson: serializer.fromJson<String>(json['modifiersJson']),
       specialInstructions: serializer.fromJson<String?>(
@@ -9563,7 +9077,6 @@ class TableSessionTicket extends DataClass
       'name': serializer.toJson<String>(name),
       'variantName': serializer.toJson<String>(variantName),
       'course': serializer.toJson<String>(course),
-      'station': serializer.toJson<String>(station),
       'qty': serializer.toJson<int>(qty),
       'modifiersJson': serializer.toJson<String>(modifiersJson),
       'specialInstructions': serializer.toJson<String?>(specialInstructions),
@@ -9586,7 +9099,6 @@ class TableSessionTicket extends DataClass
     String? name,
     String? variantName,
     String? course,
-    String? station,
     int? qty,
     String? modifiersJson,
     Value<String?> specialInstructions = const Value.absent(),
@@ -9606,7 +9118,6 @@ class TableSessionTicket extends DataClass
     name: name ?? this.name,
     variantName: variantName ?? this.variantName,
     course: course ?? this.course,
-    station: station ?? this.station,
     qty: qty ?? this.qty,
     modifiersJson: modifiersJson ?? this.modifiersJson,
     specialInstructions: specialInstructions.present
@@ -9640,7 +9151,6 @@ class TableSessionTicket extends DataClass
           ? data.variantName.value
           : this.variantName,
       course: data.course.present ? data.course.value : this.course,
-      station: data.station.present ? data.station.value : this.station,
       qty: data.qty.present ? data.qty.value : this.qty,
       modifiersJson: data.modifiersJson.present
           ? data.modifiersJson.value
@@ -9679,7 +9189,6 @@ class TableSessionTicket extends DataClass
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
           ..write('course: $course, ')
-          ..write('station: $station, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
           ..write('specialInstructions: $specialInstructions, ')
@@ -9704,7 +9213,6 @@ class TableSessionTicket extends DataClass
     name,
     variantName,
     course,
-    station,
     qty,
     modifiersJson,
     specialInstructions,
@@ -9728,7 +9236,6 @@ class TableSessionTicket extends DataClass
           other.name == this.name &&
           other.variantName == this.variantName &&
           other.course == this.course &&
-          other.station == this.station &&
           other.qty == this.qty &&
           other.modifiersJson == this.modifiersJson &&
           other.specialInstructions == this.specialInstructions &&
@@ -9750,7 +9257,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
   final Value<String> name;
   final Value<String> variantName;
   final Value<String> course;
-  final Value<String> station;
   final Value<int> qty;
   final Value<String> modifiersJson;
   final Value<String?> specialInstructions;
@@ -9771,7 +9277,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     this.name = const Value.absent(),
     this.variantName = const Value.absent(),
     this.course = const Value.absent(),
-    this.station = const Value.absent(),
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
     this.specialInstructions = const Value.absent(),
@@ -9793,7 +9298,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     required String name,
     this.variantName = const Value.absent(),
     required String course,
-    required String station,
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
     this.specialInstructions = const Value.absent(),
@@ -9812,7 +9316,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
        itemId = Value(itemId),
        name = Value(name),
        course = Value(course),
-       station = Value(station),
        price = Value(price),
        status = Value(status),
        sentAt = Value(sentAt);
@@ -9824,7 +9327,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Expression<String>? name,
     Expression<String>? variantName,
     Expression<String>? course,
-    Expression<String>? station,
     Expression<int>? qty,
     Expression<String>? modifiersJson,
     Expression<String>? specialInstructions,
@@ -9846,7 +9348,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       if (name != null) 'name': name,
       if (variantName != null) 'variant_name': variantName,
       if (course != null) 'course': course,
-      if (station != null) 'station': station,
       if (qty != null) 'qty': qty,
       if (modifiersJson != null) 'modifiers_json': modifiersJson,
       if (specialInstructions != null)
@@ -9871,7 +9372,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Value<String>? name,
     Value<String>? variantName,
     Value<String>? course,
-    Value<String>? station,
     Value<int>? qty,
     Value<String>? modifiersJson,
     Value<String?>? specialInstructions,
@@ -9893,7 +9393,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       name: name ?? this.name,
       variantName: variantName ?? this.variantName,
       course: course ?? this.course,
-      station: station ?? this.station,
       qty: qty ?? this.qty,
       modifiersJson: modifiersJson ?? this.modifiersJson,
       specialInstructions: specialInstructions ?? this.specialInstructions,
@@ -9932,9 +9431,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     }
     if (course.present) {
       map['course'] = Variable<String>(course.value);
-    }
-    if (station.present) {
-      map['station'] = Variable<String>(station.value);
     }
     if (qty.present) {
       map['qty'] = Variable<int>(qty.value);
@@ -9985,7 +9481,6 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
           ..write('course: $course, ')
-          ..write('station: $station, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
           ..write('specialInstructions: $specialInstructions, ')
@@ -11077,7 +10572,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $VenueTablesTable venueTables = $VenueTablesTable(this);
   late final $MenuCategoriesTable menuCategories = $MenuCategoriesTable(this);
   late final $MenuItemsTable menuItems = $MenuItemsTable(this);
-  late final $ModifierGroupsTable modifierGroups = $ModifierGroupsTable(this);
   late final $TicketsTable tickets = $TicketsTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
@@ -11103,7 +10597,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     venueTables,
     menuCategories,
     menuItems,
-    modifierGroups,
     tickets,
     sessions,
     devices,
@@ -12452,13 +11945,12 @@ typedef $$MenuItemsTableCreateCompanionBuilder =
       required String id,
       required String name,
       required String categoryId,
-      required String station,
       Value<String> description,
       required int basePrice,
       Value<int> cost,
       Value<int> prepTime,
       Value<String> variantsJson,
-      Value<String> modifierGroupIdsJson,
+      Value<String> modifierGroupsJson,
       Value<String> allergensJson,
       Value<String> dietaryJson,
       Value<bool> unavailable,
@@ -12471,13 +11963,12 @@ typedef $$MenuItemsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String> categoryId,
-      Value<String> station,
       Value<String> description,
       Value<int> basePrice,
       Value<int> cost,
       Value<int> prepTime,
       Value<String> variantsJson,
-      Value<String> modifierGroupIdsJson,
+      Value<String> modifierGroupsJson,
       Value<String> allergensJson,
       Value<String> dietaryJson,
       Value<bool> unavailable,
@@ -12510,11 +12001,6 @@ class $$MenuItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get station => $composableBuilder(
-    column: $table.station,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get description => $composableBuilder(
     column: $table.description,
     builder: (column) => ColumnFilters(column),
@@ -12540,8 +12026,8 @@ class $$MenuItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get modifierGroupIdsJson => $composableBuilder(
-    column: $table.modifierGroupIdsJson,
+  ColumnFilters<String> get modifierGroupsJson => $composableBuilder(
+    column: $table.modifierGroupsJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12595,11 +12081,6 @@ class $$MenuItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get station => $composableBuilder(
-    column: $table.station,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get description => $composableBuilder(
     column: $table.description,
     builder: (column) => ColumnOrderings(column),
@@ -12625,8 +12106,8 @@ class $$MenuItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get modifierGroupIdsJson => $composableBuilder(
-    column: $table.modifierGroupIdsJson,
+  ColumnOrderings<String> get modifierGroupsJson => $composableBuilder(
+    column: $table.modifierGroupsJson,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -12676,9 +12157,6 @@ class $$MenuItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get station =>
-      $composableBuilder(column: $table.station, builder: (column) => column);
-
   GeneratedColumn<String> get description => $composableBuilder(
     column: $table.description,
     builder: (column) => column,
@@ -12698,8 +12176,8 @@ class $$MenuItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get modifierGroupIdsJson => $composableBuilder(
-    column: $table.modifierGroupIdsJson,
+  GeneratedColumn<String> get modifierGroupsJson => $composableBuilder(
+    column: $table.modifierGroupsJson,
     builder: (column) => column,
   );
 
@@ -12760,13 +12238,12 @@ class $$MenuItemsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> categoryId = const Value.absent(),
-                Value<String> station = const Value.absent(),
                 Value<String> description = const Value.absent(),
                 Value<int> basePrice = const Value.absent(),
                 Value<int> cost = const Value.absent(),
                 Value<int> prepTime = const Value.absent(),
                 Value<String> variantsJson = const Value.absent(),
-                Value<String> modifierGroupIdsJson = const Value.absent(),
+                Value<String> modifierGroupsJson = const Value.absent(),
                 Value<String> allergensJson = const Value.absent(),
                 Value<String> dietaryJson = const Value.absent(),
                 Value<bool> unavailable = const Value.absent(),
@@ -12777,13 +12254,12 @@ class $$MenuItemsTableTableManager
                 id: id,
                 name: name,
                 categoryId: categoryId,
-                station: station,
                 description: description,
                 basePrice: basePrice,
                 cost: cost,
                 prepTime: prepTime,
                 variantsJson: variantsJson,
-                modifierGroupIdsJson: modifierGroupIdsJson,
+                modifierGroupsJson: modifierGroupsJson,
                 allergensJson: allergensJson,
                 dietaryJson: dietaryJson,
                 unavailable: unavailable,
@@ -12796,13 +12272,12 @@ class $$MenuItemsTableTableManager
                 required String id,
                 required String name,
                 required String categoryId,
-                required String station,
                 Value<String> description = const Value.absent(),
                 required int basePrice,
                 Value<int> cost = const Value.absent(),
                 Value<int> prepTime = const Value.absent(),
                 Value<String> variantsJson = const Value.absent(),
-                Value<String> modifierGroupIdsJson = const Value.absent(),
+                Value<String> modifierGroupsJson = const Value.absent(),
                 Value<String> allergensJson = const Value.absent(),
                 Value<String> dietaryJson = const Value.absent(),
                 Value<bool> unavailable = const Value.absent(),
@@ -12813,13 +12288,12 @@ class $$MenuItemsTableTableManager
                 id: id,
                 name: name,
                 categoryId: categoryId,
-                station: station,
                 description: description,
                 basePrice: basePrice,
                 cost: cost,
                 prepTime: prepTime,
                 variantsJson: variantsJson,
-                modifierGroupIdsJson: modifierGroupIdsJson,
+                modifierGroupsJson: modifierGroupsJson,
                 allergensJson: allergensJson,
                 dietaryJson: dietaryJson,
                 unavailable: unavailable,
@@ -12849,210 +12323,6 @@ typedef $$MenuItemsTableProcessedTableManager =
       MenuItem,
       PrefetchHooks Function()
     >;
-typedef $$ModifierGroupsTableCreateCompanionBuilder =
-    ModifierGroupsCompanion Function({
-      required String id,
-      required String name,
-      Value<bool> required,
-      Value<bool> multi,
-      Value<String> optionsJson,
-      Value<int> rowid,
-    });
-typedef $$ModifierGroupsTableUpdateCompanionBuilder =
-    ModifierGroupsCompanion Function({
-      Value<String> id,
-      Value<String> name,
-      Value<bool> required,
-      Value<bool> multi,
-      Value<String> optionsJson,
-      Value<int> rowid,
-    });
-
-class $$ModifierGroupsTableFilterComposer
-    extends Composer<_$AppDatabase, $ModifierGroupsTable> {
-  $$ModifierGroupsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get required => $composableBuilder(
-    column: $table.required,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get multi => $composableBuilder(
-    column: $table.multi,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get optionsJson => $composableBuilder(
-    column: $table.optionsJson,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$ModifierGroupsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ModifierGroupsTable> {
-  $$ModifierGroupsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get required => $composableBuilder(
-    column: $table.required,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get multi => $composableBuilder(
-    column: $table.multi,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get optionsJson => $composableBuilder(
-    column: $table.optionsJson,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$ModifierGroupsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ModifierGroupsTable> {
-  $$ModifierGroupsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<bool> get required =>
-      $composableBuilder(column: $table.required, builder: (column) => column);
-
-  GeneratedColumn<bool> get multi =>
-      $composableBuilder(column: $table.multi, builder: (column) => column);
-
-  GeneratedColumn<String> get optionsJson => $composableBuilder(
-    column: $table.optionsJson,
-    builder: (column) => column,
-  );
-}
-
-class $$ModifierGroupsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ModifierGroupsTable,
-          ModifierGroup,
-          $$ModifierGroupsTableFilterComposer,
-          $$ModifierGroupsTableOrderingComposer,
-          $$ModifierGroupsTableAnnotationComposer,
-          $$ModifierGroupsTableCreateCompanionBuilder,
-          $$ModifierGroupsTableUpdateCompanionBuilder,
-          (
-            ModifierGroup,
-            BaseReferences<_$AppDatabase, $ModifierGroupsTable, ModifierGroup>,
-          ),
-          ModifierGroup,
-          PrefetchHooks Function()
-        > {
-  $$ModifierGroupsTableTableManager(
-    _$AppDatabase db,
-    $ModifierGroupsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ModifierGroupsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ModifierGroupsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ModifierGroupsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<bool> required = const Value.absent(),
-                Value<bool> multi = const Value.absent(),
-                Value<String> optionsJson = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ModifierGroupsCompanion(
-                id: id,
-                name: name,
-                required: required,
-                multi: multi,
-                optionsJson: optionsJson,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String name,
-                Value<bool> required = const Value.absent(),
-                Value<bool> multi = const Value.absent(),
-                Value<String> optionsJson = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ModifierGroupsCompanion.insert(
-                id: id,
-                name: name,
-                required: required,
-                multi: multi,
-                optionsJson: optionsJson,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$ModifierGroupsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ModifierGroupsTable,
-      ModifierGroup,
-      $$ModifierGroupsTableFilterComposer,
-      $$ModifierGroupsTableOrderingComposer,
-      $$ModifierGroupsTableAnnotationComposer,
-      $$ModifierGroupsTableCreateCompanionBuilder,
-      $$ModifierGroupsTableUpdateCompanionBuilder,
-      (
-        ModifierGroup,
-        BaseReferences<_$AppDatabase, $ModifierGroupsTable, ModifierGroup>,
-      ),
-      ModifierGroup,
-      PrefetchHooks Function()
-    >;
 typedef $$TicketsTableCreateCompanionBuilder =
     TicketsCompanion Function({
       required String id,
@@ -13061,7 +12331,6 @@ typedef $$TicketsTableCreateCompanionBuilder =
       required String name,
       Value<String> variantName,
       required String course,
-      required String station,
       Value<int> qty,
       Value<String> modifiersJson,
       Value<String?> specialInstructions,
@@ -13083,7 +12352,6 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> variantName,
       Value<String> course,
-      Value<String> station,
       Value<int> qty,
       Value<String> modifiersJson,
       Value<String?> specialInstructions,
@@ -13134,11 +12402,6 @@ class $$TicketsTableFilterComposer
 
   ColumnFilters<String> get course => $composableBuilder(
     column: $table.course,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get station => $composableBuilder(
-    column: $table.station,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13237,11 +12500,6 @@ class $$TicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get station => $composableBuilder(
-    column: $table.station,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get qty => $composableBuilder(
     column: $table.qty,
     builder: (column) => ColumnOrderings(column),
@@ -13327,9 +12585,6 @@ class $$TicketsTableAnnotationComposer
   GeneratedColumn<String> get course =>
       $composableBuilder(column: $table.course, builder: (column) => column);
 
-  GeneratedColumn<String> get station =>
-      $composableBuilder(column: $table.station, builder: (column) => column);
-
   GeneratedColumn<int> get qty =>
       $composableBuilder(column: $table.qty, builder: (column) => column);
 
@@ -13412,7 +12667,6 @@ class $$TicketsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> variantName = const Value.absent(),
                 Value<String> course = const Value.absent(),
-                Value<String> station = const Value.absent(),
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
                 Value<String?> specialInstructions = const Value.absent(),
@@ -13432,7 +12686,6 @@ class $$TicketsTableTableManager
                 name: name,
                 variantName: variantName,
                 course: course,
-                station: station,
                 qty: qty,
                 modifiersJson: modifiersJson,
                 specialInstructions: specialInstructions,
@@ -13454,7 +12707,6 @@ class $$TicketsTableTableManager
                 required String name,
                 Value<String> variantName = const Value.absent(),
                 required String course,
-                required String station,
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
                 Value<String?> specialInstructions = const Value.absent(),
@@ -13474,7 +12726,6 @@ class $$TicketsTableTableManager
                 name: name,
                 variantName: variantName,
                 course: course,
-                station: station,
                 qty: qty,
                 modifiersJson: modifiersJson,
                 specialInstructions: specialInstructions,
@@ -15539,7 +14790,6 @@ typedef $$TableSessionTicketsTableCreateCompanionBuilder =
       required String name,
       Value<String> variantName,
       required String course,
-      required String station,
       Value<int> qty,
       Value<String> modifiersJson,
       Value<String?> specialInstructions,
@@ -15562,7 +14812,6 @@ typedef $$TableSessionTicketsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> variantName,
       Value<String> course,
-      Value<String> station,
       Value<int> qty,
       Value<String> modifiersJson,
       Value<String?> specialInstructions,
@@ -15618,11 +14867,6 @@ class $$TableSessionTicketsTableFilterComposer
 
   ColumnFilters<String> get course => $composableBuilder(
     column: $table.course,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get station => $composableBuilder(
-    column: $table.station,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15726,11 +14970,6 @@ class $$TableSessionTicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get station => $composableBuilder(
-    column: $table.station,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get qty => $composableBuilder(
     column: $table.qty,
     builder: (column) => ColumnOrderings(column),
@@ -15818,9 +15057,6 @@ class $$TableSessionTicketsTableAnnotationComposer
 
   GeneratedColumn<String> get course =>
       $composableBuilder(column: $table.course, builder: (column) => column);
-
-  GeneratedColumn<String> get station =>
-      $composableBuilder(column: $table.station, builder: (column) => column);
 
   GeneratedColumn<int> get qty =>
       $composableBuilder(column: $table.qty, builder: (column) => column);
@@ -15920,7 +15156,6 @@ class $$TableSessionTicketsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> variantName = const Value.absent(),
                 Value<String> course = const Value.absent(),
-                Value<String> station = const Value.absent(),
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
                 Value<String?> specialInstructions = const Value.absent(),
@@ -15941,7 +15176,6 @@ class $$TableSessionTicketsTableTableManager
                 name: name,
                 variantName: variantName,
                 course: course,
-                station: station,
                 qty: qty,
                 modifiersJson: modifiersJson,
                 specialInstructions: specialInstructions,
@@ -15964,7 +15198,6 @@ class $$TableSessionTicketsTableTableManager
                 required String name,
                 Value<String> variantName = const Value.absent(),
                 required String course,
-                required String station,
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
                 Value<String?> specialInstructions = const Value.absent(),
@@ -15985,7 +15218,6 @@ class $$TableSessionTicketsTableTableManager
                 name: name,
                 variantName: variantName,
                 course: course,
-                station: station,
                 qty: qty,
                 modifiersJson: modifiersJson,
                 specialInstructions: specialInstructions,
@@ -16597,8 +15829,6 @@ class $AppDatabaseManager {
       $$MenuCategoriesTableTableManager(_db, _db.menuCategories);
   $$MenuItemsTableTableManager get menuItems =>
       $$MenuItemsTableTableManager(_db, _db.menuItems);
-  $$ModifierGroupsTableTableManager get modifierGroups =>
-      $$ModifierGroupsTableTableManager(_db, _db.modifierGroups);
   $$TicketsTableTableManager get tickets =>
       $$TicketsTableTableManager(_db, _db.tickets);
   $$SessionsTableTableManager get sessions =>

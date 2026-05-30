@@ -94,7 +94,6 @@ Future<void> seedIfEmpty(AppDatabase db) async {
               id: it.id,
               name: it.name,
               categoryId: it.categoryId,
-              station: it.station.name,
               description: Value(it.description),
               basePrice: it.basePrice,
               // Heuristic seed cost: 35% of base price. Manager can override
@@ -105,8 +104,21 @@ Future<void> seedIfEmpty(AppDatabase db) async {
               variantsJson: Value(jsonEncode(it.variants
                   .map((v) => {'id': v.id, 'name': v.name, 'price': v.price})
                   .toList())),
-              modifierGroupIdsJson:
-                  Value(jsonEncode(it.modifierGroups.map((m) => m.id).toList())),
+              modifierGroupsJson: Value(jsonEncode(it.modifierGroups
+                  .map((m) => {
+                        'id': m.id,
+                        'name': m.name,
+                        'required': m.required,
+                        'multi': m.multi,
+                        'options': m.options
+                            .map((o) => {
+                                  'id': o.id,
+                                  'name': o.name,
+                                  'priceDelta': o.priceDelta,
+                                })
+                            .toList(),
+                      })
+                  .toList())),
               allergensJson:
                   Value(jsonEncode(it.allergens.map((a) => a.name).toList())),
               dietaryJson:
@@ -116,23 +128,6 @@ Future<void> seedIfEmpty(AppDatabase db) async {
               autoEightySixAtZero: Value(it.autoEightySixAtZero),
             ),
           );
-      for (final mg in it.modifierGroups) {
-        await db.into(db.modifierGroups).insertOnConflictUpdate(
-              ModifierGroupsCompanion.insert(
-                id: mg.id,
-                name: mg.name,
-                required: Value(mg.required),
-                multi: Value(mg.multi),
-                optionsJson: Value(jsonEncode(mg.options
-                    .map((o) => {
-                          'id': o.id,
-                          'name': o.name,
-                          'priceDelta': o.priceDelta,
-                        })
-                    .toList())),
-              ),
-            );
-      }
     }
   });
 
@@ -150,17 +145,15 @@ Future<void> seedIfEmpty(AppDatabase db) async {
   final zones = await db.select(db.zones).get();
   final cats = await db.select(db.menuCategories).get();
   final menu = await db.select(db.menuItems).get();
-  final mods = await db.select(db.modifierGroups).get();
   if (users.isEmpty ||
       roles.isEmpty ||
       zones.isEmpty ||
       cats.isEmpty ||
-      menu.isEmpty ||
-      mods.isEmpty) {
+      menu.isEmpty) {
     throw StateError(
         'seedIfEmpty: post-seed verification failed (users=${users.length} '
         'roles=${roles.length} zones=${zones.length} '
-        'cats=${cats.length} menu=${menu.length} mods=${mods.length})');
+        'cats=${cats.length} menu=${menu.length})');
   }
 }
 
@@ -318,7 +311,6 @@ Future<void> _seedHistoricalSessions(AppDatabase db) async {
             itemId: item.id,
             name: item.name,
             course: 'mains',
-            station: item.station,
             qty: Value(qty),
             modifiersJson: Value(jsonEncode(modifiers)),
             price: item.basePrice,

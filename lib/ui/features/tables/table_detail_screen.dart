@@ -20,12 +20,29 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/repositories/staff_repository.dart';
+import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
+import 'package:satset/ui/core/widgets/staff_avatar.dart';
+import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
+
+// Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
+// Mirrors the constants in tables_screen.dart so the grid → detail transition
+// feels like one continuous surface.
+const Curve _kEase = Curves.easeOutQuart;
+const Duration _kStatusXfade = Duration(milliseconds: 280);
+const Duration _kChipMorph = Duration(milliseconds: 220);
+const Duration _kBlockEnter = Duration(milliseconds: 360);
+const Duration _kPressIn = Duration(milliseconds: 90);
+const int _kStaggerStepMs = 50;
+
+bool _animationsDisabled(BuildContext c) =>
+    MediaQuery.maybeOf(c)?.disableAnimations ?? false;
 
 class TableDetailScreen extends ConsumerStatefulWidget {
   final String tableId;
@@ -289,7 +306,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       TicketStatus.ready,
     };
     final hasLive = tickets.any((t) => liveStatuses.contains(t.status));
-    final canClose = !readOnly && tickets.isNotEmpty && !hasLive;
+    // Allow closing a seated table that never got an order (guest leaves
+    // before ordering) as well as one whose tickets are all done. The only
+    // block is an in-flight ticket.
+    final canClose = !readOnly && !hasLive;
+    final isEmptyClose = tickets.isEmpty;
+    final closeLabel = isEmptyClose ? 'Lepaskan Meja' : 'Selesaikan Layanan';
 
     final menuItems = ref.watch(menuItemsProvider);
     final ctxAllergens = <String>{};
@@ -396,24 +418,28 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Tutup meja?'),
-          content: Text(
-              'Semua tiket sudah selesai. Tutup meja ${table.displayName} dan kembalikan ke status tersedia?'),
+          title: Text(isEmptyClose ? 'Lepaskan Meja?' : 'Selesaikan Layanan?'),
+          content: Text(isEmptyClose
+              ? 'Belum ada pesanan. Kosongkan meja ${table.displayName}?'
+              : 'Semua tiket telah selesai. Selesaikan layanan meja ${table.displayName} dan kosongkan meja?'),
           actions: [
             TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
                 child: const Text('Batal')),
             FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Tutup meja')),
+                child: Text(closeLabel)),
           ],
         ),
       );
       if (confirm != true || !context.mounted) return;
       try {
-        await ref
-            .read(tablesProvider.notifier)
-            .closeTable(_tableId, actorId: actorId);
+        final notifier = ref.read(tablesProvider.notifier);
+        if (isEmptyClose) {
+          await notifier.releaseTable(_tableId, actorId: actorId);
+        } else {
+          await notifier.closeTable(_tableId, actorId: actorId);
+        }
         if (context.mounted) safePop(context);
       } catch (e) {
         if (context.mounted) {
@@ -455,6 +481,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         canEditGuests: canEditGuests,
         readOnly: readOnly,
         canClose: canClose,
+        closeLabel: closeLabel,
         isKosong: isKosong,
         canSeat: canSeat,
         lockBanner: lockBanner,
@@ -502,17 +529,21 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                             padding: EdgeInsets.fromLTRB(
                                 0, 0, 0, l.bottomInset + 80),
                             children: [
-                              for (final cid
-                                  in Courses.stationOrder.map((c) => c.id))
+                              for (final (i, cid) in Courses.stationOrder
+                                  .map((c) => c.id)
+                                  .indexed)
                                 if (grouped[cid] != null &&
                                     grouped[cid]!.isNotEmpty)
-                                  _CourseBlock(
-                                    course: Courses.byId(cid),
-                                    items: grouped[cid]!,
-                                    readOnly: readOnly,
-                                    onMarkServed: markServed,
-                                    onFireCourse: () => fireCourse(cid),
-                                    onTicketTap: openAction,
+                                  _EntranceFade(
+                                    delayMs: i * _kStaggerStepMs,
+                                    child: _CourseBlock(
+                                      course: Courses.byId(cid),
+                                      items: grouped[cid]!,
+                                      readOnly: readOnly,
+                                      onMarkServed: markServed,
+                                      onFireCourse: () => fireCourse(cid),
+                                      onTicketTap: openAction,
+                                    ),
                                   ),
                               if (tickets.isEmpty)
                                 Padding(
@@ -546,7 +577,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _CloseTableButton(
-                        label: 'Tutup meja',
+                        label: closeLabel,
                         onTap: onClose,
                       ),
                     ),
@@ -572,15 +603,6 @@ final _detailElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
     (_) => DateTime.now(),
   ),
 );
-
-String _fmtSeated(Duration d) {
-  final s = d.inSeconds.abs();
-  final h = s ~/ 3600;
-  final m = (s % 3600) ~/ 60;
-  final sec = s % 60;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return h > 0 ? '$h:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
-}
 
 class _Header extends ConsumerWidget {
   final VenueTable table;
@@ -608,7 +630,7 @@ class _Header extends ConsumerWidget {
     ref.watch(_detailElapsedTickerProvider);
     final elapsedStr = table.openedAt == null
         ? null
-        : _fmtSeated(DateTime.now().difference(table.openedAt!));
+        : formatElapsedId(DateTime.now().difference(table.openedAt!));
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Row(
@@ -702,7 +724,7 @@ class _LiveSeatedChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     ref.watch(_detailElapsedTickerProvider);
-    final label = _fmtSeated(DateTime.now().difference(openedAt));
+    final label = formatElapsedId(DateTime.now().difference(openedAt));
     return Container(
       height: height,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -828,30 +850,47 @@ class _ContextTriggerBtn extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Icon(Icons.info_outline, size: 16, color: sc.textMd),
               ),
-              if (alertCount > 0)
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: sc.urgent,
-                      shape: alertCount < 10 ? BoxShape.circle : BoxShape.rectangle,
-                      borderRadius: alertCount < 10 ? null : BorderRadius.circular(8),
-                      border: Border.all(color: sc.bg0, width: 1.5),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '$alertCount',
-                      style: SatType.mono(
-                        size: 9,
-                        weight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+              Positioned(
+                top: -2,
+                right: -2,
+                child: AnimatedSwitcher(
+                  duration: _animationsDisabled(context)
+                      ? Duration.zero
+                      : _kChipMorph,
+                  switchInCurve: _kEase,
+                  transitionBuilder: (child, anim) => ScaleTransition(
+                    scale: anim,
+                    child: FadeTransition(opacity: anim, child: child),
                   ),
+                  child: alertCount == 0
+                      ? const SizedBox.shrink()
+                      : Container(
+                          key: ValueKey(alertCount),
+                          constraints: const BoxConstraints(
+                              minWidth: 16, minHeight: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: sc.urgent,
+                            shape: alertCount < 10
+                                ? BoxShape.circle
+                                : BoxShape.rectangle,
+                            borderRadius: alertCount < 10
+                                ? null
+                                : BorderRadius.circular(8),
+                            border: Border.all(color: sc.bg0, width: 1.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$alertCount',
+                            style: SatType.mono(
+                              size: 9,
+                              weight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                 ),
+              ),
             ],
           ),
         ),
@@ -912,7 +951,7 @@ class _ContextSheet extends StatelessWidget {
                         color: sc.textHi,
                       )),
                   const SizedBox(height: 4),
-                  Text('DUDUK ${table.elapsed ?? '0:00'} · ${table.pax} TAMU',
+                  Text('DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
                       style: SatType.mono(
                         size: 11,
                         color: sc.textLo,
@@ -1003,7 +1042,7 @@ class _CourseBlock extends StatelessWidget {
   }
 }
 
-class _LineItem extends StatelessWidget {
+class _LineItem extends ConsumerStatefulWidget {
   final Ticket ticket;
   final VoidCallback onTap;
   final void Function(String) onMarkServed;
@@ -1016,8 +1055,58 @@ class _LineItem extends StatelessWidget {
   });
 
   @override
+  ConsumerState<_LineItem> createState() => _LineItemState();
+}
+
+class _LineItemState extends ConsumerState<_LineItem>
+    with SingleTickerProviderStateMixin {
+  // Soft breathing glow on ready items — the one signal a waiter scans for.
+  late final AnimationController _glow;
+
+  bool get _isReady => widget.ticket.status == TicketStatus.ready;
+
+  @override
+  void initState() {
+    super.initState();
+    _glow = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    if (_isReady) _glow.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LineItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isReady && !_glow.isAnimating) {
+      _glow.repeat(reverse: true);
+    } else if (!_isReady && _glow.isAnimating) {
+      _glow.stop();
+      _glow.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _glow.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final ticket = widget.ticket;
+    final readOnly = widget.readOnly;
+    final onTap = widget.onTap;
+    final onMarkServed = widget.onMarkServed;
     final sc = context.sat;
+    // The line's own orderer (createdBy), so everyone sees who sent each item.
+    final AppUser? orderer = ticket.createdBy == null
+        ? null
+        : ref
+            .watch(staffRepositoryProvider)
+            .where((u) => u.id == ticket.createdBy)
+            .firstOrNull;
+    final reduced = _animationsDisabled(context);
     final isReady = ticket.status == TicketStatus.ready;
     final isCooked = ticket.status == TicketStatus.cooked;
     final isVoided = ticket.status == TicketStatus.voided;
@@ -1030,21 +1119,44 @@ class _LineItem extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Opacity(
+      child: AnimatedOpacity(
         opacity: isVoided ? 0.5 : 1,
-        child: Material(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            onTap: readOnly ? null : onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.all(14),
+        duration: reduced ? Duration.zero : _kStatusXfade,
+        curve: _kEase,
+        child: AnimatedBuilder(
+          animation: _glow,
+          builder: (context, child) {
+            final glowT = (isReady && !reduced) ? _glow.value : 0.0;
+            return AnimatedContainer(
+              duration: reduced ? Duration.zero : _kStatusXfade,
+              curve: _kEase,
               decoration: BoxDecoration(
+                color: bg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: border),
+                boxShadow: glowT > 0
+                    ? [
+                        BoxShadow(
+                          color: sc.success
+                              .withValues(alpha: 0.10 + 0.14 * glowT),
+                          blurRadius: 8 + 8 * glowT,
+                          spreadRadius: 0.5 * glowT,
+                        ),
+                      ]
+                    : null,
               ),
-              child: Row(
+              child: child,
+            );
+          },
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: readOnly ? null : onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
@@ -1103,14 +1215,16 @@ class _LineItem extends StatelessWidget {
                           children: [
                             _StatusChip(status: ticket.status),
                             const SizedBox(width: 8),
-                            Text(
-                              '${ticket.station.name == 'kitchen' ? 'DPR' : 'BAR'} · ${ticket.sentAt}',
-                              style: SatType.mono(
-                                size: 10,
-                                color: sc.textLo,
-                                letterSpacing: 0.4,
-                              ),
+                            ElapsedPill(
+                              sentAtTime: ticket.sentAtTime,
+                              sentAtClock: ticket.sentAt,
+                              terminal: isVoided ||
+                                  ticket.status == TicketStatus.served,
                             ),
+                            if (orderer != null) ...[
+                              const SizedBox(width: 8),
+                              StaffAvatar(actor: orderer, size: 18),
+                            ],
                             const Spacer(),
                             Text(formatIDR(ticket.price * ticket.qty),
                                 style: SatType.mono(
@@ -1122,12 +1236,14 @@ class _LineItem extends StatelessWidget {
                           ],
                         ),
                         if (isReady && !readOnly)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: _SmallSuccessButton(
-                              label: 'Tandai disajikan',
-                              icon: Icons.check,
-                              onTap: () => onMarkServed(ticket.id),
+                          _EntranceFade(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: _SmallSuccessButton(
+                                label: 'Tandai disajikan',
+                                icon: Icons.check,
+                                onTap: () => onMarkServed(ticket.id),
+                              ),
                             ),
                           ),
                       ],
@@ -1137,6 +1253,7 @@ class _LineItem extends StatelessWidget {
               ),
             ),
           ),
+        ),
         ),
       ),
     );
@@ -1184,16 +1301,30 @@ class _StatusChip extends StatelessWidget {
         fg = sc.urgent;
         break;
     }
-    return Container(
+    final reduced = _animationsDisabled(context);
+    final label = ticketStatusLabel(status).toUpperCase();
+    return AnimatedContainer(
+      duration: reduced ? Duration.zero : _kChipMorph,
+      curve: _kEase,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
-      child: Text(
-        ticketStatusLabel(status).toUpperCase(),
-        style: SatType.mono(
-          size: 10,
-          weight: FontWeight.w600,
-          letterSpacing: 1.0,
-          color: fg,
+      child: AnimatedSwitcher(
+        duration: reduced ? Duration.zero : _kChipMorph,
+        switchInCurve: _kEase,
+        switchOutCurve: _kEase,
+        transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(anim), child: child),
+        ),
+        child: Text(
+          label,
+          key: ValueKey(label),
+          style: SatType.mono(
+            size: 10,
+            weight: FontWeight.w600,
+            letterSpacing: 1.0,
+            color: fg,
+          ),
         ),
       ),
     );
@@ -1266,7 +1397,7 @@ class _SmallSuccessButton extends StatelessWidget {
   }
 }
 
-class _KosongSeatCard extends StatelessWidget {
+class _KosongSeatCard extends StatefulWidget {
   final String tableName;
   final bool enabled;
   final VoidCallback onTap;
@@ -1277,10 +1408,51 @@ class _KosongSeatCard extends StatelessWidget {
   });
 
   @override
+  State<_KosongSeatCard> createState() => _KosongSeatCardState();
+}
+
+class _KosongSeatCardState extends State<_KosongSeatCard>
+    with SingleTickerProviderStateMixin {
+  // Slow breathing on the CTA — a calm "ready when you are" invitation, not a
+  // nag. Pauses entirely when disabled or reduced-motion is on.
+  late final AnimationController _breathe;
+  bool _pressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _breathe = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    if (widget.enabled) _breathe.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _KosongSeatCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.enabled && !_breathe.isAnimating) {
+      _breathe.repeat(reverse: true);
+    } else if (!widget.enabled && _breathe.isAnimating) {
+      _breathe.stop();
+      _breathe.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _breathe.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final enabled = widget.enabled;
+    final reduced = _animationsDisabled(context);
     final bg = enabled ? sc.accent : sc.bg3;
     final fg = enabled ? sc.accentInk : sc.textLo;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
@@ -1298,7 +1470,7 @@ class _KosongSeatCard extends StatelessWidget {
                   size: 36, color: sc.textMd),
             ),
             const SizedBox(height: 18),
-            Text('Meja $tableName kosong',
+            Text('Meja ${widget.tableName} kosong',
                 style: SatType.sans(
                   size: 16,
                   weight: FontWeight.w600,
@@ -1310,29 +1482,60 @@ class _KosongSeatCard extends StatelessWidget {
             const SizedBox(height: 24),
             Opacity(
               opacity: enabled ? 1 : 0.5,
-              child: Material(
-                color: bg,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  onTap: enabled ? onTap : null,
+              child: AnimatedBuilder(
+                animation: _breathe,
+                builder: (context, child) {
+                  final breath =
+                      (enabled && !reduced) ? 1 + 0.025 * _breathe.value : 1.0;
+                  final scale = _pressed ? 0.96 : breath;
+                  final glow = (enabled && !reduced) ? _breathe.value : 0.0;
+                  return Transform.scale(
+                    scale: scale,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: glow > 0
+                            ? [
+                                BoxShadow(
+                                  color: sc.accent
+                                      .withValues(alpha: 0.18 + 0.16 * glow),
+                                  blurRadius: 12 + 10 * glow,
+                                  spreadRadius: glow,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Material(
+                  color: bg,
                   borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 28, vertical: 16),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.play_circle_fill, size: 22, color: fg),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Mulai layani meja',
-                          style: SatType.sans(
-                            size: 15,
-                            weight: FontWeight.w700,
-                            color: fg,
+                  child: InkWell(
+                    onTap: enabled ? widget.onTap : null,
+                    onHighlightChanged: (h) {
+                      if (enabled) setState(() => _pressed = h);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 28, vertical: 16),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.play_circle_fill, size: 22, color: fg),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Mulai layani meja',
+                            style: SatType.sans(
+                              size: 15,
+                              weight: FontWeight.w700,
+                              color: fg,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1345,7 +1548,7 @@ class _KosongSeatCard extends StatelessWidget {
   }
 }
 
-class _PrimaryIconButton extends StatelessWidget {
+class _PrimaryIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool enabled;
@@ -1356,22 +1559,44 @@ class _PrimaryIconButton extends StatelessWidget {
   });
 
   @override
+  State<_PrimaryIconButton> createState() => _PrimaryIconButtonState();
+}
+
+class _PrimaryIconButtonState extends State<_PrimaryIconButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final enabled = widget.enabled;
+    final reduced = _animationsDisabled(context);
     final fg = enabled ? sc.accentInk : sc.textLo;
     final bg = enabled ? sc.accent : sc.bg3;
     return Center(
-      child: Material(
-        color: bg,
-        shape: const CircleBorder(),
-        elevation: 0,
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 64,
-            height: 64,
-            child: Icon(icon, size: 28, color: fg),
+      child: AnimatedScale(
+        scale: _pressed ? 0.92 : 1.0,
+        duration: reduced ? Duration.zero : _kPressIn,
+        curve: _kEase,
+        child: AnimatedContainer(
+          duration: reduced ? Duration.zero : _kStatusXfade,
+          curve: _kEase,
+          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            elevation: 0,
+            child: InkWell(
+              onTap: enabled ? widget.onTap : null,
+              onHighlightChanged: (h) {
+                if (enabled) setState(() => _pressed = h);
+              },
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: Icon(widget.icon, size: 28, color: fg),
+              ),
+            ),
           ),
         ),
       ),
@@ -1379,24 +1604,37 @@ class _PrimaryIconButton extends StatelessWidget {
   }
 }
 
-class _CloseTableButton extends StatelessWidget {
+class _CloseTableButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   const _CloseTableButton({required this.label, required this.onTap});
 
   @override
+  State<_CloseTableButton> createState() => _CloseTableButtonState();
+}
+
+class _CloseTableButtonState extends State<_CloseTableButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return SizedBox(
-      height: 52,
-      child: Material(
-        color: sc.success,
-        borderRadius: BorderRadius.circular(18),
-        elevation: 0,
-        child: InkWell(
-          onTap: onTap,
+    final reduced = _animationsDisabled(context);
+    return AnimatedScale(
+      scale: _pressed ? 0.97 : 1.0,
+      duration: reduced ? Duration.zero : _kPressIn,
+      curve: _kEase,
+      child: SizedBox(
+        height: 52,
+        child: Material(
+          color: sc.success,
           borderRadius: BorderRadius.circular(18),
-          child: Container(
+          elevation: 0,
+          child: InkWell(
+            onTap: widget.onTap,
+            onHighlightChanged: (h) => setState(() => _pressed = h),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 22),
             alignment: Alignment.center,
             child: Row(
@@ -1405,7 +1643,7 @@ class _CloseTableButton extends StatelessWidget {
                 Icon(Icons.check_circle, size: 20, color: Colors.white),
                 const SizedBox(width: 10),
                 Text(
-                  label,
+                  widget.label,
                   style: SatType.sans(
                     size: 15,
                     weight: FontWeight.w700,
@@ -1417,6 +1655,7 @@ class _CloseTableButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -1437,30 +1676,32 @@ class _LockedBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final sinceLabel = since == null ? '' : ' · sejak ${_hhmm(since!)}';
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: sc.warnSoft,
-        border: Border.all(color: sc.warn.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.lock_outline, size: 16, color: sc.warn),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Terkunci oleh $holderName$sinceLabel · hanya lihat',
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: sc.warn,
+    return _EntranceFade(
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: sc.warnSoft,
+          border: Border.all(color: sc.warn.withValues(alpha: 0.35)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.lock_outline, size: 16, color: sc.warn),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Terkunci oleh $holderName$sinceLabel · hanya lihat',
+                style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w500,
+                  color: sc.warn,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1477,6 +1718,7 @@ class _TabletSplit extends StatelessWidget {
   final bool canEditGuests;
   final bool readOnly;
   final bool canClose;
+  final String closeLabel;
   final bool isKosong;
   final bool canSeat;
   final Widget? lockBanner;
@@ -1501,6 +1743,7 @@ class _TabletSplit extends StatelessWidget {
     required this.canEditGuests,
     required this.readOnly,
     required this.canClose,
+    required this.closeLabel,
     required this.isKosong,
     required this.canSeat,
     required this.lockBanner,
@@ -1640,17 +1883,21 @@ class _TabletSplit extends StatelessWidget {
                               padding:
                                   const EdgeInsets.fromLTRB(24, 16, 24, 16),
                               children: [
-                                for (final cid
-                                    in Courses.stationOrder.map((c) => c.id))
+                                for (final (i, cid) in Courses.stationOrder
+                                    .map((c) => c.id)
+                                    .indexed)
                                   if (grouped[cid] != null &&
                                       grouped[cid]!.isNotEmpty)
-                                    _CourseBlock(
-                                      course: Courses.byId(cid),
-                                      items: grouped[cid]!,
-                                      readOnly: readOnly,
-                                      onMarkServed: onMarkServed,
-                                      onFireCourse: () => onFireCourse(cid),
-                                      onTicketTap: onTicketTap,
+                                    _EntranceFade(
+                                      delayMs: i * _kStaggerStepMs,
+                                      child: _CourseBlock(
+                                        course: Courses.byId(cid),
+                                        items: grouped[cid]!,
+                                        readOnly: readOnly,
+                                        onMarkServed: onMarkServed,
+                                        onFireCourse: () => onFireCourse(cid),
+                                        onTicketTap: onTicketTap,
+                                      ),
                                     ),
                               ],
                             ),
@@ -1666,7 +1913,7 @@ class _TabletSplit extends StatelessWidget {
                         if (canClose) ...[
                           Expanded(
                             child: _CloseTableButton(
-                              label: 'Tutup meja',
+                              label: closeLabel,
                               onTap: onClose,
                             ),
                           ),
@@ -1901,7 +2148,7 @@ class _ContextPane extends StatelessWidget {
                     color: sc.textHi,
                   )),
               const SizedBox(height: 4),
-              Text('DUDUK ${table.elapsed ?? '0:00'} · ${table.pax} TAMU',
+              Text('DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
                   style: SatType.mono(
                     size: 11,
                     color: sc.textLo,
@@ -1997,6 +2244,54 @@ class _ContextPane extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// One-shot entrance: fade + small upward slide. Animates once on mount —
+/// [TweenAnimationBuilder]-style behaviour via a post-frame flip, so the
+/// frequent WS-driven rebuilds of this screen never re-trigger it. [delayMs]
+/// staggers siblings for a gentle cascade.
+class _EntranceFade extends StatefulWidget {
+  final Widget child;
+  final int delayMs;
+  const _EntranceFade({required this.child, this.delayMs = 0});
+
+  @override
+  State<_EntranceFade> createState() => _EntranceFadeState();
+}
+
+class _EntranceFadeState extends State<_EntranceFade> {
+  bool _shown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.delayMs == 0) {
+        setState(() => _shown = true);
+      } else {
+        Future<void>.delayed(Duration(milliseconds: widget.delayMs), () {
+          if (mounted) setState(() => _shown = true);
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_animationsDisabled(context)) return widget.child;
+    return AnimatedSlide(
+      offset: _shown ? Offset.zero : const Offset(0, 0.05),
+      duration: _kBlockEnter,
+      curve: _kEase,
+      child: AnimatedOpacity(
+        opacity: _shown ? 1 : 0,
+        duration: _kBlockEnter,
+        curve: _kEase,
+        child: widget.child,
       ),
     );
   }
