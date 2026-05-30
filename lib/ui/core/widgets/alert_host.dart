@@ -22,20 +22,30 @@ class AlertHost extends ConsumerStatefulWidget {
 
 class _AlertHostState extends ConsumerState<AlertHost>
     with SingleTickerProviderStateMixin {
+  // Created in initState (not a `late final` initializer) so the controller
+  // always exists by dispose(). A lazy initializer would otherwise fire from
+  // dispose() if no toast ever showed, running createTicker() against a
+  // deactivated element → "Looking up a deactivated widget's ancestor".
   // Refined drop-in: confident ease-out on enter, snappier (shorter) exit.
-  late final AnimationController _ac = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 400),
-    reverseDuration: const Duration(milliseconds: 260),
-  );
+  late final AnimationController _ac;
   // ease-out-expo — decisive deceleration, no bounce.
-  late final Animation<double> _curve =
-      CurvedAnimation(parent: _ac, curve: const Cubic(0.16, 1, 0.3, 1));
+  late final Animation<double> _curve;
 
   // Held separately from the provider so the toast stays mounted through its
   // exit animation after the provider is cleared.
   ReadyAlert? _shown;
   Timer? _dwell;
+
+  @override
+  void initState() {
+    super.initState();
+    _ac = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+      reverseDuration: const Duration(milliseconds: 260),
+    );
+    _curve = CurvedAnimation(parent: _ac, curve: const Cubic(0.16, 1, 0.3, 1));
+  }
 
   @override
   void dispose() {

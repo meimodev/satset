@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/domain/models/menu_tag.dart';
 import 'package:satset/domain/models/modifier_group.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -79,8 +80,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     }
     _name.text = _draft.name;
     _desc.text = _draft.description;
-    _basePrice.text = _draft.basePrice.toString();
-    _cost.text = _draft.cost.toString();
+    _basePrice.text = groupRupiah(_draft.basePrice);
+    _cost.text = groupRupiah(_draft.cost);
     _prep.text = _draft.prepTime.toString();
     _stock.text = (_draft.stockCount ?? 0).toString();
     _initialized = true;
@@ -218,13 +219,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: ClipRect(
         child: Column(
           children: [
-            Flexible(
-              fit: FlexFit.loose,
-              child: _Header(
-                title: _isNew ? 'Item baru' : _draft.name,
-                sub: readOnly ? 'Hanya admin yang bisa edit' : 'Edit lengkap',
-                onClose: widget.onClose,
-              ),
+            _Header(
+              title: _isNew ? 'Item baru' : _draft.name,
+              sub: readOnly ? 'Hanya admin yang bisa edit' : 'Edit lengkap',
+              onClose: widget.onClose,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -248,10 +246,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
             ),
             if (!readOnly)
-              Flexible(
-                fit: FlexFit.loose,
-                child: _Footer(onSave: _save, onDelete: _isNew ? null : _delete),
-              ),
+              _Footer(onSave: _save, onDelete: _isNew ? null : _delete),
           ],
         ),
       ),
@@ -347,7 +342,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         children: [
           Row(
             children: [
-              Expanded(child: _input(_basePrice, 'Harga dasar (Rp)', keyboard: TextInputType.number, readOnly: readOnly, onChanged: (_) => setState(() {}))),
+              Expanded(child: _input(_basePrice, 'Harga dasar (Rp)', keyboard: TextInputType.number, amount: true, readOnly: readOnly, onChanged: (_) => setState(() {}))),
               const SizedBox(width: 12),
               Expanded(child: _input(_prep, 'Prep (menit)', keyboard: TextInputType.number, readOnly: readOnly)),
             ],
@@ -355,7 +350,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _input(_cost, 'HPP (Rp)', keyboard: TextInputType.number, readOnly: readOnly, onChanged: (_) => setState(() {}))),
+              Expanded(child: _input(_cost, 'HPP (Rp)', keyboard: TextInputType.number, amount: true, readOnly: readOnly, onChanged: (_) => setState(() {}))),
               const SizedBox(width: 12),
               Expanded(child: _marginPreview(sc)),
             ],
@@ -417,9 +412,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           SizedBox(
             width: 130,
             child: TextField(
-              controller: _ctrl('v:${v.id}:price', v.price.toString()),
+              controller: _ctrl('v:${v.id}:price', groupRupiah(v.price)),
               readOnly: readOnly,
               keyboardType: TextInputType.number,
+              inputFormatters: const [RupiahInputFormatter()],
               decoration: _fieldDeco('Harga'),
               onChanged: (t) {
                 final n = int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0;
@@ -485,9 +481,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
-                controller: _ctrl('hh:price', hh.price.toString()),
+                controller: _ctrl('hh:price', groupRupiah(hh.price)),
                 readOnly: readOnly,
                 keyboardType: TextInputType.number,
+                inputFormatters: const [RupiahInputFormatter()],
                 decoration: _fieldDeco('Harga (Rp)'),
                 onChanged: (t) => _draft = _draft.copyWith(
                   happyHour: _draft.happyHour!.copyWith(
@@ -642,12 +639,18 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           SizedBox(
             width: 110,
             child: TextField(
-              controller: _ctrl('o:${g.id}:${o.id}:price', o.priceDelta.toString()),
+              controller: _ctrl('o:${g.id}:${o.id}:price',
+                  o.priceDelta < 0
+                      ? '-${groupRupiah(-o.priceDelta)}'
+                      : groupRupiah(o.priceDelta)),
               readOnly: readOnly,
               keyboardType: const TextInputType.numberWithOptions(signed: true),
+              inputFormatters: const [RupiahInputFormatter(allowNegative: true)],
               decoration: _fieldDeco('+/- Rp').copyWith(isDense: true),
               onChanged: (t) {
-                final n = int.tryParse(t) ?? 0;
+                final neg = t.trimLeft().startsWith('-');
+                final digits = t.replaceAll(RegExp(r'[^0-9]'), '');
+                final n = (int.tryParse(digits) ?? 0) * (neg ? -1 : 1);
                 final opts = List<ModifierOption>.of(g.options);
                 opts[oi] = opts[oi].copyWith(priceDelta: n);
                 final next = List<ModifierGroup>.of(_draft.modifierGroups);
@@ -680,7 +683,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         on: tracked,
         onTap: readOnly ? null : () => _patch(_draft.copyWith(
           stockCount: tracked ? null : 0,
-          autoEightySixAtZero: tracked ? false : _draft.autoEightySixAtZero,
+          autoSoldOutAtZero: tracked ? false : _draft.autoSoldOutAtZero,
         )),
       ),
       child: tracked
@@ -699,13 +702,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                       child: Text('Tandai habis otomatis saat stok = 0',
                           style: SatType.sans(size: 13, color: sc.textMd)),
                     ),
-                    adminToggle(context, on: _draft.autoEightySixAtZero),
+                    adminToggle(context, on: _draft.autoSoldOutAtZero),
                     const SizedBox(width: 6),
                     if (!readOnly)
                       TextButton(
                         onPressed: () => _patch(_draft.copyWith(
-                            autoEightySixAtZero: !_draft.autoEightySixAtZero)),
-                        child: Text(_draft.autoEightySixAtZero ? 'Off' : 'On'),
+                            autoSoldOutAtZero: !_draft.autoSoldOutAtZero)),
+                        child: Text(_draft.autoSoldOutAtZero ? 'Off' : 'On'),
                       ),
                   ],
                 ),
@@ -717,6 +720,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   Widget _tagsSection(SatColors sc, bool readOnly) {
+    final allTags = ref.watch(menuTagsProvider);
+    final allergens = menuTagsOfKind(allTags, MenuTagKind.allergen);
+    final diets = menuTagsOfKind(allTags, MenuTagKind.diet);
     return _Section(
       title: 'Tag',
       child: Column(
@@ -727,13 +733,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Wrap(
             spacing: 6, runSpacing: 6,
             children: [
-              for (final a in Allergen.values)
+              for (final t in allergens)
                 _toggleChip(
-                  label: allergenNames[a] ?? a.name,
-                  on: _draft.allergens.contains(a),
+                  label: t.name,
+                  on: _draft.allergens.contains(t.id),
                   onTap: readOnly ? null : () {
-                    final set = List<Allergen>.of(_draft.allergens);
-                    set.contains(a) ? set.remove(a) : set.add(a);
+                    final set = List<String>.of(_draft.allergens);
+                    set.contains(t.id) ? set.remove(t.id) : set.add(t.id);
                     _patch(_draft.copyWith(allergens: set));
                   },
                 ),
@@ -745,13 +751,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Wrap(
             spacing: 6, runSpacing: 6,
             children: [
-              for (final d in DietaryTag.values)
+              for (final t in diets)
                 _toggleChip(
-                  label: dietaryNames[d] ?? d.name,
-                  on: _draft.dietary.contains(d),
+                  label: t.name,
+                  on: _draft.dietary.contains(t.id),
                   onTap: readOnly ? null : () {
-                    final set = List<DietaryTag>.of(_draft.dietary);
-                    set.contains(d) ? set.remove(d) : set.add(d);
+                    final set = List<String>.of(_draft.dietary);
+                    set.contains(t.id) ? set.remove(t.id) : set.add(t.id);
                     _patch(_draft.copyWith(dietary: set));
                   },
                 ),
@@ -763,7 +769,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   Widget _availabilitySection(SatColors sc) {
-    final auto = _draft.autoEightySixed;
+    final auto = _draft.isAutoSoldOut;
     return _Section(
       title: 'Ketersediaan',
       child: Row(
@@ -776,17 +782,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               style: SatType.sans(
                 size: 14,
                 weight: FontWeight.w600,
-                color: _draft.isEightySixed ? sc.urgent : sc.success,
+                color: _draft.isSoldOut ? sc.urgent : sc.success,
               ),
             ),
           ),
-          adminToggle(context, on: !_draft.isEightySixed),
+          adminToggle(context, on: !_draft.isSoldOut),
           const SizedBox(width: 6),
           TextButton(
             onPressed: auto
                 ? null
                 : () => _patch(_draft.copyWith(unavailable: !_draft.unavailable)),
-            child: Text(_draft.unavailable ? 'Aktifkan' : '86'),
+            child: Text(_draft.unavailable ? 'Aktifkan' : 'Habis'),
           ),
         ],
       ),
@@ -824,6 +830,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     int maxLines = 1,
     TextInputType? keyboard,
     bool readOnly = false,
+    bool amount = false,
     ValueChanged<String>? onChanged,
   }) {
     return TextField(
@@ -834,9 +841,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       onChanged: onChanged,
       style: SatType.sans(size: 14, color: context.sat.textHi),
       decoration: _fieldDeco(hint),
-      inputFormatters: keyboard == TextInputType.number
-          ? [FilteringTextInputFormatter.digitsOnly]
-          : null,
+      inputFormatters: amount
+          ? const [RupiahInputFormatter()]
+          : keyboard == TextInputType.number
+              ? [FilteringTextInputFormatter.digitsOnly]
+              : null,
     );
   }
 

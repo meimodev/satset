@@ -16,6 +16,11 @@ _$MenuSnapshotDtoImpl _$$MenuSnapshotDtoImplFromJson(
   items: (json['items'] as List<dynamic>)
       .map((e) => MenuItemDto.fromJson(e as Map<String, dynamic>))
       .toList(),
+  tags:
+      (json['tags'] as List<dynamic>?)
+          ?.map((e) => MenuTagDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <MenuTagDto>[],
 );
 
 Map<String, dynamic> _$$MenuSnapshotDtoImplToJson(
@@ -24,6 +29,7 @@ Map<String, dynamic> _$$MenuSnapshotDtoImplToJson(
   'version': instance.version,
   'categories': instance.categories,
   'items': instance.items,
+  'tags': instance.tags,
 };
 
 _$MenuCategoryDtoImpl _$$MenuCategoryDtoImplFromJson(
@@ -79,7 +85,7 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
       const <String>[],
   unavailable: json['unavailable'] as bool? ?? false,
   stockCount: (json['stockCount'] as num?)?.toInt(),
-  autoEightySixAtZero: json['autoEightySixAtZero'] as bool? ?? false,
+  autoSoldOutAtZero: json['autoSoldOutAtZero'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
@@ -97,7 +103,25 @@ Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
       'dietary': instance.dietary,
       'unavailable': instance.unavailable,
       'stockCount': instance.stockCount,
-      'autoEightySixAtZero': instance.autoEightySixAtZero,
+      'autoSoldOutAtZero': instance.autoSoldOutAtZero,
+    };
+
+_$MenuTagDtoImpl _$$MenuTagDtoImplFromJson(Map<String, dynamic> json) =>
+    _$MenuTagDtoImpl(
+      id: json['id'] as String,
+      kind: json['kind'] as String,
+      name: json['name'] as String,
+      code: json['code'] as String? ?? '',
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$$MenuTagDtoImplToJson(_$MenuTagDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'kind': instance.kind,
+      'name': instance.name,
+      'code': instance.code,
+      'sortOrder': instance.sortOrder,
     };
 
 _$ModifierOptionDtoImpl _$$ModifierOptionDtoImplFromJson(

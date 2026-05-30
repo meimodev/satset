@@ -1,5 +1,4 @@
 import 'course.dart';
-import 'menu_item.dart';
 
 class CartItem {
   final String id;
@@ -13,7 +12,8 @@ class CartItem {
   final CourseId course;
   final int qty;
   final int unitPrice;
-  final List<Allergen> allergens;
+  /// Allergen tag ids (resolve against the menu snapshot's tags).
+  final List<String> allergens;
 
   const CartItem({
     required this.id,

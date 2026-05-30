@@ -317,7 +317,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final ctxAllergens = <String>{};
     for (final t in tickets) {
       final it = menuItems.where((i) => i.id == t.itemId).firstOrNull;
-      if (it != null) ctxAllergens.addAll(it.allergens.map((a) => a.name));
+      if (it != null) ctxAllergens.addAll(it.allergens);
     }
     final ctxNotes = <String>{
       for (final t in tickets)
@@ -2023,7 +2023,7 @@ class _ContextPane extends StatelessWidget {
     final allergens = <String>{};
     for (final t in tickets) {
       final it = menu.where((i) => i.id == t.itemId).firstOrNull;
-      if (it != null) allergens.addAll(it.allergens.map((a) => a.name));
+      if (it != null) allergens.addAll(it.allergens);
     }
     final guestNotes = <String>{
       for (final t in tickets)

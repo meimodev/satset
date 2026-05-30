@@ -8,7 +8,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
-import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
@@ -56,7 +56,8 @@ class ReviewScreen extends ConsumerWidget {
         ? 'Layanan'
         : 'Layanan · ${_fmtPct(venue.serviceRateBps)}';
     final taxLabel = 'Pajak · ${_fmtPct(venue.taxRateBps)}';
-    final allergens = <Allergen>{};
+    final tagsById = ref.watch(menuTagsByIdProvider);
+    final allergens = <String>{};
     for (final c in cart) {
       allergens.addAll(c.allergens);
     }
@@ -122,7 +123,8 @@ class ReviewScreen extends ConsumerWidget {
                       _Pill(
                         icon: Icons.warning_amber_rounded,
                         label: allergens
-                            .map((a) => allergenNames[a] ?? '')
+                            .map((a) => tagsById[a]?.name ?? '')
+                            .where((s) => s.isNotEmpty)
                             .join(' · '),
                         tone: _Tone.urgent,
                       ),

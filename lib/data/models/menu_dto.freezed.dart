@@ -24,6 +24,7 @@ mixin _$MenuSnapshotDto {
   int get version => throw _privateConstructorUsedError;
   List<MenuCategoryDto> get categories => throw _privateConstructorUsedError;
   List<MenuItemDto> get items => throw _privateConstructorUsedError;
+  List<MenuTagDto> get tags => throw _privateConstructorUsedError;
 
   /// Serializes this MenuSnapshotDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -46,6 +47,7 @@ abstract class $MenuSnapshotDtoCopyWith<$Res> {
     int version,
     List<MenuCategoryDto> categories,
     List<MenuItemDto> items,
+    List<MenuTagDto> tags,
   });
 }
 
@@ -67,6 +69,7 @@ class _$MenuSnapshotDtoCopyWithImpl<$Res, $Val extends MenuSnapshotDto>
     Object? version = null,
     Object? categories = null,
     Object? items = null,
+    Object? tags = null,
   }) {
     return _then(
       _value.copyWith(
@@ -82,6 +85,10 @@ class _$MenuSnapshotDtoCopyWithImpl<$Res, $Val extends MenuSnapshotDto>
                 ? _value.items
                 : items // ignore: cast_nullable_to_non_nullable
                       as List<MenuItemDto>,
+            tags: null == tags
+                ? _value.tags
+                : tags // ignore: cast_nullable_to_non_nullable
+                      as List<MenuTagDto>,
           )
           as $Val,
     );
@@ -101,6 +108,7 @@ abstract class _$$MenuSnapshotDtoImplCopyWith<$Res>
     int version,
     List<MenuCategoryDto> categories,
     List<MenuItemDto> items,
+    List<MenuTagDto> tags,
   });
 }
 
@@ -121,6 +129,7 @@ class __$$MenuSnapshotDtoImplCopyWithImpl<$Res>
     Object? version = null,
     Object? categories = null,
     Object? items = null,
+    Object? tags = null,
   }) {
     return _then(
       _$MenuSnapshotDtoImpl(
@@ -136,6 +145,10 @@ class __$$MenuSnapshotDtoImplCopyWithImpl<$Res>
             ? _value._items
             : items // ignore: cast_nullable_to_non_nullable
                   as List<MenuItemDto>,
+        tags: null == tags
+            ? _value._tags
+            : tags // ignore: cast_nullable_to_non_nullable
+                  as List<MenuTagDto>,
       ),
     );
   }
@@ -148,8 +161,10 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
     required this.version,
     required final List<MenuCategoryDto> categories,
     required final List<MenuItemDto> items,
+    final List<MenuTagDto> tags = const <MenuTagDto>[],
   }) : _categories = categories,
-       _items = items;
+       _items = items,
+       _tags = tags;
 
   factory _$MenuSnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$MenuSnapshotDtoImplFromJson(json);
@@ -172,9 +187,18 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
     return EqualUnmodifiableListView(_items);
   }
 
+  final List<MenuTagDto> _tags;
+  @override
+  @JsonKey()
+  List<MenuTagDto> get tags {
+    if (_tags is EqualUnmodifiableListView) return _tags;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_tags);
+  }
+
   @override
   String toString() {
-    return 'MenuSnapshotDto(version: $version, categories: $categories, items: $items)';
+    return 'MenuSnapshotDto(version: $version, categories: $categories, items: $items, tags: $tags)';
   }
 
   @override
@@ -187,7 +211,8 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
               other._categories,
               _categories,
             ) &&
-            const DeepCollectionEquality().equals(other._items, _items));
+            const DeepCollectionEquality().equals(other._items, _items) &&
+            const DeepCollectionEquality().equals(other._tags, _tags));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -197,6 +222,7 @@ class _$MenuSnapshotDtoImpl implements _MenuSnapshotDto {
     version,
     const DeepCollectionEquality().hash(_categories),
     const DeepCollectionEquality().hash(_items),
+    const DeepCollectionEquality().hash(_tags),
   );
 
   /// Create a copy of MenuSnapshotDto
@@ -221,6 +247,7 @@ abstract class _MenuSnapshotDto implements MenuSnapshotDto {
     required final int version,
     required final List<MenuCategoryDto> categories,
     required final List<MenuItemDto> items,
+    final List<MenuTagDto> tags,
   }) = _$MenuSnapshotDtoImpl;
 
   factory _MenuSnapshotDto.fromJson(Map<String, dynamic> json) =
@@ -232,6 +259,8 @@ abstract class _MenuSnapshotDto implements MenuSnapshotDto {
   List<MenuCategoryDto> get categories;
   @override
   List<MenuItemDto> get items;
+  @override
+  List<MenuTagDto> get tags;
 
   /// Create a copy of MenuSnapshotDto
   /// with the given fields replaced by the non-null parameter values.
@@ -619,7 +648,7 @@ mixin _$MenuItemDto {
   List<String> get dietary => throw _privateConstructorUsedError;
   bool get unavailable => throw _privateConstructorUsedError;
   int? get stockCount => throw _privateConstructorUsedError;
-  bool get autoEightySixAtZero => throw _privateConstructorUsedError;
+  bool get autoSoldOutAtZero => throw _privateConstructorUsedError;
 
   /// Serializes this MenuItemDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -652,7 +681,7 @@ abstract class $MenuItemDtoCopyWith<$Res> {
     List<String> dietary,
     bool unavailable,
     int? stockCount,
-    bool autoEightySixAtZero,
+    bool autoSoldOutAtZero,
   });
 }
 
@@ -684,7 +713,7 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
     Object? dietary = null,
     Object? unavailable = null,
     Object? stockCount = freezed,
-    Object? autoEightySixAtZero = null,
+    Object? autoSoldOutAtZero = null,
   }) {
     return _then(
       _value.copyWith(
@@ -740,9 +769,9 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
                 ? _value.stockCount
                 : stockCount // ignore: cast_nullable_to_non_nullable
                       as int?,
-            autoEightySixAtZero: null == autoEightySixAtZero
-                ? _value.autoEightySixAtZero
-                : autoEightySixAtZero // ignore: cast_nullable_to_non_nullable
+            autoSoldOutAtZero: null == autoSoldOutAtZero
+                ? _value.autoSoldOutAtZero
+                : autoSoldOutAtZero // ignore: cast_nullable_to_non_nullable
                       as bool,
           )
           as $Val,
@@ -773,7 +802,7 @@ abstract class _$$MenuItemDtoImplCopyWith<$Res>
     List<String> dietary,
     bool unavailable,
     int? stockCount,
-    bool autoEightySixAtZero,
+    bool autoSoldOutAtZero,
   });
 }
 
@@ -804,7 +833,7 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
     Object? dietary = null,
     Object? unavailable = null,
     Object? stockCount = freezed,
-    Object? autoEightySixAtZero = null,
+    Object? autoSoldOutAtZero = null,
   }) {
     return _then(
       _$MenuItemDtoImpl(
@@ -860,9 +889,9 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
             ? _value.stockCount
             : stockCount // ignore: cast_nullable_to_non_nullable
                   as int?,
-        autoEightySixAtZero: null == autoEightySixAtZero
-            ? _value.autoEightySixAtZero
-            : autoEightySixAtZero // ignore: cast_nullable_to_non_nullable
+        autoSoldOutAtZero: null == autoSoldOutAtZero
+            ? _value.autoSoldOutAtZero
+            : autoSoldOutAtZero // ignore: cast_nullable_to_non_nullable
                   as bool,
       ),
     );
@@ -886,7 +915,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     final List<String> dietary = const <String>[],
     this.unavailable = false,
     this.stockCount,
-    this.autoEightySixAtZero = false,
+    this.autoSoldOutAtZero = false,
   }) : _variants = variants,
        _modifierGroups = modifierGroups,
        _allergens = allergens,
@@ -955,11 +984,11 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
   final int? stockCount;
   @override
   @JsonKey()
-  final bool autoEightySixAtZero;
+  final bool autoSoldOutAtZero;
 
   @override
   String toString() {
-    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroups: $modifierGroups, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, stockCount: $stockCount, autoEightySixAtZero: $autoEightySixAtZero)';
+    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroups: $modifierGroups, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, stockCount: $stockCount, autoSoldOutAtZero: $autoSoldOutAtZero)';
   }
 
   @override
@@ -992,8 +1021,8 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
                 other.unavailable == unavailable) &&
             (identical(other.stockCount, stockCount) ||
                 other.stockCount == stockCount) &&
-            (identical(other.autoEightySixAtZero, autoEightySixAtZero) ||
-                other.autoEightySixAtZero == autoEightySixAtZero));
+            (identical(other.autoSoldOutAtZero, autoSoldOutAtZero) ||
+                other.autoSoldOutAtZero == autoSoldOutAtZero));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1013,7 +1042,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     const DeepCollectionEquality().hash(_dietary),
     unavailable,
     stockCount,
-    autoEightySixAtZero,
+    autoSoldOutAtZero,
   );
 
   /// Create a copy of MenuItemDto
@@ -1045,7 +1074,7 @@ abstract class _MenuItemDto implements MenuItemDto {
     final List<String> dietary,
     final bool unavailable,
     final int? stockCount,
-    final bool autoEightySixAtZero,
+    final bool autoSoldOutAtZero,
   }) = _$MenuItemDtoImpl;
 
   factory _MenuItemDto.fromJson(Map<String, dynamic> json) =
@@ -1078,13 +1107,247 @@ abstract class _MenuItemDto implements MenuItemDto {
   @override
   int? get stockCount;
   @override
-  bool get autoEightySixAtZero;
+  bool get autoSoldOutAtZero;
 
   /// Create a copy of MenuItemDto
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MenuItemDtoImplCopyWith<_$MenuItemDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+MenuTagDto _$MenuTagDtoFromJson(Map<String, dynamic> json) {
+  return _MenuTagDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MenuTagDto {
+  String get id => throw _privateConstructorUsedError;
+  String get kind => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String get code => throw _privateConstructorUsedError;
+  int get sortOrder => throw _privateConstructorUsedError;
+
+  /// Serializes this MenuTagDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of MenuTagDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $MenuTagDtoCopyWith<MenuTagDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MenuTagDtoCopyWith<$Res> {
+  factory $MenuTagDtoCopyWith(
+    MenuTagDto value,
+    $Res Function(MenuTagDto) then,
+  ) = _$MenuTagDtoCopyWithImpl<$Res, MenuTagDto>;
+  @useResult
+  $Res call({String id, String kind, String name, String code, int sortOrder});
+}
+
+/// @nodoc
+class _$MenuTagDtoCopyWithImpl<$Res, $Val extends MenuTagDto>
+    implements $MenuTagDtoCopyWith<$Res> {
+  _$MenuTagDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of MenuTagDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? kind = null,
+    Object? name = null,
+    Object? code = null,
+    Object? sortOrder = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            kind: null == kind
+                ? _value.kind
+                : kind // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            code: null == code
+                ? _value.code
+                : code // ignore: cast_nullable_to_non_nullable
+                      as String,
+            sortOrder: null == sortOrder
+                ? _value.sortOrder
+                : sortOrder // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$MenuTagDtoImplCopyWith<$Res>
+    implements $MenuTagDtoCopyWith<$Res> {
+  factory _$$MenuTagDtoImplCopyWith(
+    _$MenuTagDtoImpl value,
+    $Res Function(_$MenuTagDtoImpl) then,
+  ) = __$$MenuTagDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String id, String kind, String name, String code, int sortOrder});
+}
+
+/// @nodoc
+class __$$MenuTagDtoImplCopyWithImpl<$Res>
+    extends _$MenuTagDtoCopyWithImpl<$Res, _$MenuTagDtoImpl>
+    implements _$$MenuTagDtoImplCopyWith<$Res> {
+  __$$MenuTagDtoImplCopyWithImpl(
+    _$MenuTagDtoImpl _value,
+    $Res Function(_$MenuTagDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of MenuTagDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? kind = null,
+    Object? name = null,
+    Object? code = null,
+    Object? sortOrder = null,
+  }) {
+    return _then(
+      _$MenuTagDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        kind: null == kind
+            ? _value.kind
+            : kind // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        code: null == code
+            ? _value.code
+            : code // ignore: cast_nullable_to_non_nullable
+                  as String,
+        sortOrder: null == sortOrder
+            ? _value.sortOrder
+            : sortOrder // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MenuTagDtoImpl implements _MenuTagDto {
+  const _$MenuTagDtoImpl({
+    required this.id,
+    required this.kind,
+    required this.name,
+    this.code = '',
+    this.sortOrder = 0,
+  });
+
+  factory _$MenuTagDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MenuTagDtoImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String kind;
+  @override
+  final String name;
+  @override
+  @JsonKey()
+  final String code;
+  @override
+  @JsonKey()
+  final int sortOrder;
+
+  @override
+  String toString() {
+    return 'MenuTagDto(id: $id, kind: $kind, name: $name, code: $code, sortOrder: $sortOrder)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MenuTagDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.code, code) || other.code == code) &&
+            (identical(other.sortOrder, sortOrder) ||
+                other.sortOrder == sortOrder));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, kind, name, code, sortOrder);
+
+  /// Create a copy of MenuTagDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MenuTagDtoImplCopyWith<_$MenuTagDtoImpl> get copyWith =>
+      __$$MenuTagDtoImplCopyWithImpl<_$MenuTagDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MenuTagDtoImplToJson(this);
+  }
+}
+
+abstract class _MenuTagDto implements MenuTagDto {
+  const factory _MenuTagDto({
+    required final String id,
+    required final String kind,
+    required final String name,
+    final String code,
+    final int sortOrder,
+  }) = _$MenuTagDtoImpl;
+
+  factory _MenuTagDto.fromJson(Map<String, dynamic> json) =
+      _$MenuTagDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get kind;
+  @override
+  String get name;
+  @override
+  String get code;
+  @override
+  int get sortOrder;
+
+  /// Create a copy of MenuTagDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$MenuTagDtoImplCopyWith<_$MenuTagDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

@@ -9,6 +9,7 @@ class MenuSnapshotDto with _$MenuSnapshotDto {
     required int version,
     required List<MenuCategoryDto> categories,
     required List<MenuItemDto> items,
+    @Default(<MenuTagDto>[]) List<MenuTagDto> tags,
   }) = _MenuSnapshotDto;
 
   factory MenuSnapshotDto.fromJson(Map<String, dynamic> json) =>
@@ -54,11 +55,25 @@ class MenuItemDto with _$MenuItemDto {
     @Default(<String>[]) List<String> dietary,
     @Default(false) bool unavailable,
     int? stockCount,
-    @Default(false) bool autoEightySixAtZero,
+    @Default(false) bool autoSoldOutAtZero,
   }) = _MenuItemDto;
 
   factory MenuItemDto.fromJson(Map<String, dynamic> json) =>
       _$MenuItemDtoFromJson(json);
+}
+
+@freezed
+class MenuTagDto with _$MenuTagDto {
+  const factory MenuTagDto({
+    required String id,
+    required String kind,
+    required String name,
+    @Default('') String code,
+    @Default(0) int sortOrder,
+  }) = _MenuTagDto;
+
+  factory MenuTagDto.fromJson(Map<String, dynamic> json) =>
+      _$MenuTagDtoFromJson(json);
 }
 
 @freezed

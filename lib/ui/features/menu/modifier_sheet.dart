@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -39,7 +41,7 @@ Future<void> showModifierSheet({
   );
 }
 
-class _ModifierSheetBody extends StatefulWidget {
+class _ModifierSheetBody extends ConsumerStatefulWidget {
   final MenuItem item;
   final ValueChanged<CartItem> onAdd;
   final ScrollController scrollController;
@@ -47,10 +49,10 @@ class _ModifierSheetBody extends StatefulWidget {
       {required this.item, required this.onAdd, required this.scrollController});
 
   @override
-  State<_ModifierSheetBody> createState() => _ModifierSheetBodyState();
+  ConsumerState<_ModifierSheetBody> createState() => _ModifierSheetBodyState();
 }
 
-class _ModifierSheetBodyState extends State<_ModifierSheetBody> {
+class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
   late String _variantId;
   final Map<String, dynamic> _selections = {};
   String _special = '';
@@ -162,6 +164,7 @@ class _ModifierSheetBodyState extends State<_ModifierSheetBody> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final tagsById = ref.watch(menuTagsByIdProvider);
     return Container(
       decoration: BoxDecoration(
         color: sc.bg1,
@@ -201,7 +204,7 @@ class _ModifierSheetBodyState extends State<_ModifierSheetBody> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Mengandung ${widget.item.allergens.map((a) => allergenNames[a]!.toLowerCase()).join(', ')} — konfirmasi ke tamu',
+                              'Mengandung ${widget.item.allergens.map((a) => (tagsById[a]?.name ?? '').toLowerCase()).where((s) => s.isNotEmpty).join(', ')} — konfirmasi ke tamu',
                               style: SatType.sans(
                                 size: 12,
                                 weight: FontWeight.w500,

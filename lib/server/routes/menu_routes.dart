@@ -90,10 +90,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'});
   });
 
-  // 86 toggle. Body: { "unavailable": bool }. Permission: toggle86 (staff
-  // can flip availability without full editMenu).
+  // Sold-out toggle. Body: { "unavailable": bool }. Permission: markSoldOut
+  // (staff can flip availability without full editMenu).
   r.post('/menu/items/<id>/availability', (Request req, String id) async {
-    final denied = await _requireCap(req, db, auth, Capability.toggle86);
+    final denied = await _requireCap(req, db, auth, Capability.markSoldOut);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final value = body['unavailable'] as bool?;
@@ -218,6 +218,103 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'});
   });
 
+  // ---------- tags (allergen / diet) ----------
+
+  // Create a tag. Body: { "kind": "allergen"|"diet", "name": str,
+  // "code"?: str, "id"?: str }. sortOrder appended within its kind.
+  r.post('/menu/tags', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final kind = (body['kind'] as String?)?.trim();
+    final name = (body['name'] as String?)?.trim();
+    if (kind != 'allergen' && kind != 'diet') {
+      return Response(400, body: 'kind must be allergen or diet');
+    }
+    if (name == null || name.isEmpty) return Response(400, body: 'name required');
+    final id = (body['id'] as String?)?.trim().isNotEmpty == true
+        ? body['id'] as String
+        : _uuid.v4().substring(0, 8);
+    final maxRow = await (db.selectOnly(db.menuTags)
+          ..addColumns([db.menuTags.sortOrder.max()])
+          ..where(db.menuTags.kind.equals(kind!)))
+        .getSingleOrNull();
+    final nextSort = (maxRow?.read(db.menuTags.sortOrder.max()) ?? -1) + 1;
+    await db.into(db.menuTags).insertOnConflictUpdate(
+          MenuTagsCompanion.insert(
+            id: id,
+            kind: kind,
+            name: name,
+            code: Value((body['code'] as String?)?.trim() ?? ''),
+            sortOrder: Value(nextSort),
+          ),
+        );
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'id': id});
+    return Response.ok(jsonEncode({'id': id}),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Update a tag. Body: any subset of { name, code }.
+  r.patch('/menu/tags/<id>', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    await (db.update(db.menuTags)..where((t) => t.id.equals(id))).write(
+      MenuTagsCompanion(
+        name: body.containsKey('name')
+            ? Value(body['name'] as String)
+            : const Value.absent(),
+        code: body.containsKey('code')
+            ? Value(body['code'] as String)
+            : const Value.absent(),
+      ),
+    );
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'id': id});
+    return Response.ok(jsonEncode({'id': id}),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Delete a tag. Cascade-strips its id from every item's allergens/dietary.
+  r.delete('/menu/tags/<id>', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    await (db.delete(db.menuTags)..where((t) => t.id.equals(id))).go();
+    final items = await db.select(db.menuItems).get();
+    for (final it in items) {
+      final allergens =
+          (jsonDecode(it.allergensJson) as List).cast<String>();
+      final dietary = (jsonDecode(it.dietaryJson) as List).cast<String>();
+      if (!allergens.contains(id) && !dietary.contains(id)) continue;
+      await (db.update(db.menuItems)..where((i) => i.id.equals(it.id))).write(
+        MenuItemsCompanion(
+          allergensJson:
+              Value(jsonEncode(allergens.where((t) => t != id).toList())),
+          dietaryJson:
+              Value(jsonEncode(dietary.where((t) => t != id).toList())),
+        ),
+      );
+    }
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'id': id});
+    return Response.ok(jsonEncode({'id': id}),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Reorder tags within a kind. Body: { "ids": [str, ...] } — sortOrder = index.
+  r.post('/menu/tags/reorder', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final ids = (body['ids'] as List?)?.cast<String>();
+    if (ids == null) return Response(400, body: 'ids required');
+    for (var i = 0; i < ids.length; i++) {
+      await (db.update(db.menuTags)..where((t) => t.id.equals(ids[i])))
+          .write(MenuTagsCompanion(sortOrder: Value(i)));
+    }
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'reorder': true});
+    return Response.ok(jsonEncode({'ok': true}),
+        headers: {'content-type': 'application/json'});
+  });
+
   return r;
 }
 
@@ -228,14 +325,26 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
         ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
       .get();
   final items = await db.select(db.menuItems).get();
+  final tags = await (db.select(db.menuTags)
+        ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+      .get();
   return {
     'version': 1,
     'categories': [
       for (final c in cats) {'id': c.id, 'name': c.name},
     ],
     'items': [for (final it in items) _itemRowToJson(it)],
+    'tags': [for (final t in tags) _tagRowToJson(t)],
   };
 }
+
+Map<String, dynamic> _tagRowToJson(MenuTag t) => {
+      'id': t.id,
+      'kind': t.kind,
+      'name': t.name,
+      'code': t.code,
+      'sortOrder': t.sortOrder,
+    };
 
 Map<String, dynamic> _itemRowToJson(MenuItem it) => {
       'id': it.id,
@@ -251,7 +360,7 @@ Map<String, dynamic> _itemRowToJson(MenuItem it) => {
       'dietary': jsonDecode(it.dietaryJson),
       'unavailable': it.unavailable,
       'stockCount': it.stockCount,
-      'autoEightySixAtZero': it.autoEightySixAtZero,
+      'autoSoldOutAtZero': it.autoSoldOutAtZero,
     };
 
 Future<Map<String, dynamic>?> _readItem(AppDatabase db, String id) async {
@@ -288,8 +397,8 @@ Future<void> _writeItem(
             dietaryJson: Value(jsonEncode(body['dietary'] ?? const [])),
             unavailable: Value((body['unavailable'] as bool?) ?? false),
             stockCount: Value((body['stockCount'] as num?)?.toInt()),
-            autoEightySixAtZero:
-                Value((body['autoEightySixAtZero'] as bool?) ?? false),
+            autoSoldOutAtZero:
+                Value((body['autoSoldOutAtZero'] as bool?) ?? false),
           ),
         );
   } else {
@@ -331,8 +440,8 @@ Future<void> _writeItem(
         stockCount: body.containsKey('stockCount')
             ? Value((body['stockCount'] as num?)?.toInt())
             : const Value.absent(),
-        autoEightySixAtZero: body.containsKey('autoEightySixAtZero')
-            ? Value(body['autoEightySixAtZero'] as bool)
+        autoSoldOutAtZero: body.containsKey('autoSoldOutAtZero')
+            ? Value(body['autoSoldOutAtZero'] as bool)
             : const Value.absent(),
       ),
     );

@@ -63,7 +63,16 @@ dev_dependencies:
   json_serializable: ^6.8.0
   drift_dev: ^2.20.3
 
+  # Native integration testing
+  patrol: ^4.6.1
+
 flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+
+# Patrol native UI test config — driven by patrol_cli.
+patrol:
+  app_name: SatSet
+  android:
+    package_name: id.satset.satset

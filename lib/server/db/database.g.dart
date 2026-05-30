@@ -2817,17 +2817,18 @@ class $MenuItemsTable extends MenuItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _autoEightySixAtZeroMeta =
-      const VerificationMeta('autoEightySixAtZero');
+  static const VerificationMeta _autoSoldOutAtZeroMeta = const VerificationMeta(
+    'autoSoldOutAtZero',
+  );
   @override
-  late final GeneratedColumn<bool> autoEightySixAtZero = GeneratedColumn<bool>(
-    'auto_eighty_six_at_zero',
+  late final GeneratedColumn<bool> autoSoldOutAtZero = GeneratedColumn<bool>(
+    'auto_sold_out_at_zero',
     aliasedName,
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("auto_eighty_six_at_zero" IN (0, 1))',
+      'CHECK ("auto_sold_out_at_zero" IN (0, 1))',
     ),
     defaultValue: const Constant(false),
   );
@@ -2846,7 +2847,7 @@ class $MenuItemsTable extends MenuItems
     dietaryJson,
     unavailable,
     stockCount,
-    autoEightySixAtZero,
+    autoSoldOutAtZero,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2961,12 +2962,12 @@ class $MenuItemsTable extends MenuItems
         stockCount.isAcceptableOrUnknown(data['stock_count']!, _stockCountMeta),
       );
     }
-    if (data.containsKey('auto_eighty_six_at_zero')) {
+    if (data.containsKey('auto_sold_out_at_zero')) {
       context.handle(
-        _autoEightySixAtZeroMeta,
-        autoEightySixAtZero.isAcceptableOrUnknown(
-          data['auto_eighty_six_at_zero']!,
-          _autoEightySixAtZeroMeta,
+        _autoSoldOutAtZeroMeta,
+        autoSoldOutAtZero.isAcceptableOrUnknown(
+          data['auto_sold_out_at_zero']!,
+          _autoSoldOutAtZeroMeta,
         ),
       );
     }
@@ -3031,9 +3032,9 @@ class $MenuItemsTable extends MenuItems
         DriftSqlType.int,
         data['${effectivePrefix}stock_count'],
       ),
-      autoEightySixAtZero: attachedDatabase.typeMapping.read(
+      autoSoldOutAtZero: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
-        data['${effectivePrefix}auto_eighty_six_at_zero'],
+        data['${effectivePrefix}auto_sold_out_at_zero'],
       )!,
     );
   }
@@ -3065,7 +3066,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
   final String dietaryJson;
   final bool unavailable;
   final int? stockCount;
-  final bool autoEightySixAtZero;
+  final bool autoSoldOutAtZero;
   const MenuItem({
     required this.id,
     required this.name,
@@ -3080,7 +3081,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     required this.dietaryJson,
     required this.unavailable,
     this.stockCount,
-    required this.autoEightySixAtZero,
+    required this.autoSoldOutAtZero,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3100,7 +3101,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     if (!nullToAbsent || stockCount != null) {
       map['stock_count'] = Variable<int>(stockCount);
     }
-    map['auto_eighty_six_at_zero'] = Variable<bool>(autoEightySixAtZero);
+    map['auto_sold_out_at_zero'] = Variable<bool>(autoSoldOutAtZero);
     return map;
   }
 
@@ -3121,7 +3122,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       stockCount: stockCount == null && nullToAbsent
           ? const Value.absent()
           : Value(stockCount),
-      autoEightySixAtZero: Value(autoEightySixAtZero),
+      autoSoldOutAtZero: Value(autoSoldOutAtZero),
     );
   }
 
@@ -3146,9 +3147,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       dietaryJson: serializer.fromJson<String>(json['dietaryJson']),
       unavailable: serializer.fromJson<bool>(json['unavailable']),
       stockCount: serializer.fromJson<int?>(json['stockCount']),
-      autoEightySixAtZero: serializer.fromJson<bool>(
-        json['autoEightySixAtZero'],
-      ),
+      autoSoldOutAtZero: serializer.fromJson<bool>(json['autoSoldOutAtZero']),
     );
   }
   @override
@@ -3168,7 +3167,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       'dietaryJson': serializer.toJson<String>(dietaryJson),
       'unavailable': serializer.toJson<bool>(unavailable),
       'stockCount': serializer.toJson<int?>(stockCount),
-      'autoEightySixAtZero': serializer.toJson<bool>(autoEightySixAtZero),
+      'autoSoldOutAtZero': serializer.toJson<bool>(autoSoldOutAtZero),
     };
   }
 
@@ -3186,7 +3185,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     String? dietaryJson,
     bool? unavailable,
     Value<int?> stockCount = const Value.absent(),
-    bool? autoEightySixAtZero,
+    bool? autoSoldOutAtZero,
   }) => MenuItem(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -3201,7 +3200,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     dietaryJson: dietaryJson ?? this.dietaryJson,
     unavailable: unavailable ?? this.unavailable,
     stockCount: stockCount.present ? stockCount.value : this.stockCount,
-    autoEightySixAtZero: autoEightySixAtZero ?? this.autoEightySixAtZero,
+    autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
   );
   MenuItem copyWithCompanion(MenuItemsCompanion data) {
     return MenuItem(
@@ -3234,9 +3233,9 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       stockCount: data.stockCount.present
           ? data.stockCount.value
           : this.stockCount,
-      autoEightySixAtZero: data.autoEightySixAtZero.present
-          ? data.autoEightySixAtZero.value
-          : this.autoEightySixAtZero,
+      autoSoldOutAtZero: data.autoSoldOutAtZero.present
+          ? data.autoSoldOutAtZero.value
+          : this.autoSoldOutAtZero,
     );
   }
 
@@ -3256,7 +3255,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           ..write('dietaryJson: $dietaryJson, ')
           ..write('unavailable: $unavailable, ')
           ..write('stockCount: $stockCount, ')
-          ..write('autoEightySixAtZero: $autoEightySixAtZero')
+          ..write('autoSoldOutAtZero: $autoSoldOutAtZero')
           ..write(')'))
         .toString();
   }
@@ -3276,7 +3275,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     dietaryJson,
     unavailable,
     stockCount,
-    autoEightySixAtZero,
+    autoSoldOutAtZero,
   );
   @override
   bool operator ==(Object other) =>
@@ -3295,7 +3294,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           other.dietaryJson == this.dietaryJson &&
           other.unavailable == this.unavailable &&
           other.stockCount == this.stockCount &&
-          other.autoEightySixAtZero == this.autoEightySixAtZero);
+          other.autoSoldOutAtZero == this.autoSoldOutAtZero);
 }
 
 class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
@@ -3312,7 +3311,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
   final Value<String> dietaryJson;
   final Value<bool> unavailable;
   final Value<int?> stockCount;
-  final Value<bool> autoEightySixAtZero;
+  final Value<bool> autoSoldOutAtZero;
   final Value<int> rowid;
   const MenuItemsCompanion({
     this.id = const Value.absent(),
@@ -3328,7 +3327,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     this.dietaryJson = const Value.absent(),
     this.unavailable = const Value.absent(),
     this.stockCount = const Value.absent(),
-    this.autoEightySixAtZero = const Value.absent(),
+    this.autoSoldOutAtZero = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MenuItemsCompanion.insert({
@@ -3345,7 +3344,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     this.dietaryJson = const Value.absent(),
     this.unavailable = const Value.absent(),
     this.stockCount = const Value.absent(),
-    this.autoEightySixAtZero = const Value.absent(),
+    this.autoSoldOutAtZero = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -3365,7 +3364,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Expression<String>? dietaryJson,
     Expression<bool>? unavailable,
     Expression<int>? stockCount,
-    Expression<bool>? autoEightySixAtZero,
+    Expression<bool>? autoSoldOutAtZero,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3383,8 +3382,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       if (dietaryJson != null) 'dietary_json': dietaryJson,
       if (unavailable != null) 'unavailable': unavailable,
       if (stockCount != null) 'stock_count': stockCount,
-      if (autoEightySixAtZero != null)
-        'auto_eighty_six_at_zero': autoEightySixAtZero,
+      if (autoSoldOutAtZero != null) 'auto_sold_out_at_zero': autoSoldOutAtZero,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3403,7 +3401,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Value<String>? dietaryJson,
     Value<bool>? unavailable,
     Value<int?>? stockCount,
-    Value<bool>? autoEightySixAtZero,
+    Value<bool>? autoSoldOutAtZero,
     Value<int>? rowid,
   }) {
     return MenuItemsCompanion(
@@ -3420,7 +3418,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       dietaryJson: dietaryJson ?? this.dietaryJson,
       unavailable: unavailable ?? this.unavailable,
       stockCount: stockCount ?? this.stockCount,
-      autoEightySixAtZero: autoEightySixAtZero ?? this.autoEightySixAtZero,
+      autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3467,10 +3465,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     if (stockCount.present) {
       map['stock_count'] = Variable<int>(stockCount.value);
     }
-    if (autoEightySixAtZero.present) {
-      map['auto_eighty_six_at_zero'] = Variable<bool>(
-        autoEightySixAtZero.value,
-      );
+    if (autoSoldOutAtZero.present) {
+      map['auto_sold_out_at_zero'] = Variable<bool>(autoSoldOutAtZero.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -3494,7 +3490,352 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
           ..write('dietaryJson: $dietaryJson, ')
           ..write('unavailable: $unavailable, ')
           ..write('stockCount: $stockCount, ')
-          ..write('autoEightySixAtZero: $autoEightySixAtZero, ')
+          ..write('autoSoldOutAtZero: $autoSoldOutAtZero, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MenuTagsTable extends MenuTags with TableInfo<$MenuTagsTable, MenuTag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MenuTagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, kind, name, code, sortOrder];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'menu_tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MenuTag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MenuTag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MenuTag(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $MenuTagsTable createAlias(String alias) {
+    return $MenuTagsTable(attachedDatabase, alias);
+  }
+}
+
+class MenuTag extends DataClass implements Insertable<MenuTag> {
+  final String id;
+  final String kind;
+  final String name;
+  final String code;
+  final int sortOrder;
+  const MenuTag({
+    required this.id,
+    required this.kind,
+    required this.name,
+    required this.code,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['kind'] = Variable<String>(kind);
+    map['name'] = Variable<String>(name);
+    map['code'] = Variable<String>(code);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  MenuTagsCompanion toCompanion(bool nullToAbsent) {
+    return MenuTagsCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      name: Value(name),
+      code: Value(code),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory MenuTag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MenuTag(
+      id: serializer.fromJson<String>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      name: serializer.fromJson<String>(json['name']),
+      code: serializer.fromJson<String>(json['code']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'kind': serializer.toJson<String>(kind),
+      'name': serializer.toJson<String>(name),
+      'code': serializer.toJson<String>(code),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  MenuTag copyWith({
+    String? id,
+    String? kind,
+    String? name,
+    String? code,
+    int? sortOrder,
+  }) => MenuTag(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    name: name ?? this.name,
+    code: code ?? this.code,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  MenuTag copyWithCompanion(MenuTagsCompanion data) {
+    return MenuTag(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      name: data.name.present ? data.name.value : this.name,
+      code: data.code.present ? data.code.value : this.code,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MenuTag(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('name: $name, ')
+          ..write('code: $code, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, kind, name, code, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MenuTag &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.name == this.name &&
+          other.code == this.code &&
+          other.sortOrder == this.sortOrder);
+}
+
+class MenuTagsCompanion extends UpdateCompanion<MenuTag> {
+  final Value<String> id;
+  final Value<String> kind;
+  final Value<String> name;
+  final Value<String> code;
+  final Value<int> sortOrder;
+  final Value<int> rowid;
+  const MenuTagsCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.name = const Value.absent(),
+    this.code = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MenuTagsCompanion.insert({
+    required String id,
+    required String kind,
+    required String name,
+    this.code = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       kind = Value(kind),
+       name = Value(name);
+  static Insertable<MenuTag> custom({
+    Expression<String>? id,
+    Expression<String>? kind,
+    Expression<String>? name,
+    Expression<String>? code,
+    Expression<int>? sortOrder,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (name != null) 'name': name,
+      if (code != null) 'code': code,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MenuTagsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? kind,
+    Value<String>? name,
+    Value<String>? code,
+    Value<int>? sortOrder,
+    Value<int>? rowid,
+  }) {
+    return MenuTagsCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      name: name ?? this.name,
+      code: code ?? this.code,
+      sortOrder: sortOrder ?? this.sortOrder,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MenuTagsCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('name: $name, ')
+          ..write('code: $code, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10572,6 +10913,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $VenueTablesTable venueTables = $VenueTablesTable(this);
   late final $MenuCategoriesTable menuCategories = $MenuCategoriesTable(this);
   late final $MenuItemsTable menuItems = $MenuItemsTable(this);
+  late final $MenuTagsTable menuTags = $MenuTagsTable(this);
   late final $TicketsTable tickets = $TicketsTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
@@ -10597,6 +10939,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     venueTables,
     menuCategories,
     menuItems,
+    menuTags,
     tickets,
     sessions,
     devices,
@@ -11955,7 +12298,7 @@ typedef $$MenuItemsTableCreateCompanionBuilder =
       Value<String> dietaryJson,
       Value<bool> unavailable,
       Value<int?> stockCount,
-      Value<bool> autoEightySixAtZero,
+      Value<bool> autoSoldOutAtZero,
       Value<int> rowid,
     });
 typedef $$MenuItemsTableUpdateCompanionBuilder =
@@ -11973,7 +12316,7 @@ typedef $$MenuItemsTableUpdateCompanionBuilder =
       Value<String> dietaryJson,
       Value<bool> unavailable,
       Value<int?> stockCount,
-      Value<bool> autoEightySixAtZero,
+      Value<bool> autoSoldOutAtZero,
       Value<int> rowid,
     });
 
@@ -12051,8 +12394,8 @@ class $$MenuItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get autoEightySixAtZero => $composableBuilder(
-    column: $table.autoEightySixAtZero,
+  ColumnFilters<bool> get autoSoldOutAtZero => $composableBuilder(
+    column: $table.autoSoldOutAtZero,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -12131,8 +12474,8 @@ class $$MenuItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get autoEightySixAtZero => $composableBuilder(
-    column: $table.autoEightySixAtZero,
+  ColumnOrderings<bool> get autoSoldOutAtZero => $composableBuilder(
+    column: $table.autoSoldOutAtZero,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -12201,8 +12544,8 @@ class $$MenuItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get autoEightySixAtZero => $composableBuilder(
-    column: $table.autoEightySixAtZero,
+  GeneratedColumn<bool> get autoSoldOutAtZero => $composableBuilder(
+    column: $table.autoSoldOutAtZero,
     builder: (column) => column,
   );
 }
@@ -12248,7 +12591,7 @@ class $$MenuItemsTableTableManager
                 Value<String> dietaryJson = const Value.absent(),
                 Value<bool> unavailable = const Value.absent(),
                 Value<int?> stockCount = const Value.absent(),
-                Value<bool> autoEightySixAtZero = const Value.absent(),
+                Value<bool> autoSoldOutAtZero = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuItemsCompanion(
                 id: id,
@@ -12264,7 +12607,7 @@ class $$MenuItemsTableTableManager
                 dietaryJson: dietaryJson,
                 unavailable: unavailable,
                 stockCount: stockCount,
-                autoEightySixAtZero: autoEightySixAtZero,
+                autoSoldOutAtZero: autoSoldOutAtZero,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -12282,7 +12625,7 @@ class $$MenuItemsTableTableManager
                 Value<String> dietaryJson = const Value.absent(),
                 Value<bool> unavailable = const Value.absent(),
                 Value<int?> stockCount = const Value.absent(),
-                Value<bool> autoEightySixAtZero = const Value.absent(),
+                Value<bool> autoSoldOutAtZero = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuItemsCompanion.insert(
                 id: id,
@@ -12298,7 +12641,7 @@ class $$MenuItemsTableTableManager
                 dietaryJson: dietaryJson,
                 unavailable: unavailable,
                 stockCount: stockCount,
-                autoEightySixAtZero: autoEightySixAtZero,
+                autoSoldOutAtZero: autoSoldOutAtZero,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -12321,6 +12664,200 @@ typedef $$MenuItemsTableProcessedTableManager =
       $$MenuItemsTableUpdateCompanionBuilder,
       (MenuItem, BaseReferences<_$AppDatabase, $MenuItemsTable, MenuItem>),
       MenuItem,
+      PrefetchHooks Function()
+    >;
+typedef $$MenuTagsTableCreateCompanionBuilder =
+    MenuTagsCompanion Function({
+      required String id,
+      required String kind,
+      required String name,
+      Value<String> code,
+      Value<int> sortOrder,
+      Value<int> rowid,
+    });
+typedef $$MenuTagsTableUpdateCompanionBuilder =
+    MenuTagsCompanion Function({
+      Value<String> id,
+      Value<String> kind,
+      Value<String> name,
+      Value<String> code,
+      Value<int> sortOrder,
+      Value<int> rowid,
+    });
+
+class $$MenuTagsTableFilterComposer
+    extends Composer<_$AppDatabase, $MenuTagsTable> {
+  $$MenuTagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MenuTagsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MenuTagsTable> {
+  $$MenuTagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MenuTagsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MenuTagsTable> {
+  $$MenuTagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+}
+
+class $$MenuTagsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MenuTagsTable,
+          MenuTag,
+          $$MenuTagsTableFilterComposer,
+          $$MenuTagsTableOrderingComposer,
+          $$MenuTagsTableAnnotationComposer,
+          $$MenuTagsTableCreateCompanionBuilder,
+          $$MenuTagsTableUpdateCompanionBuilder,
+          (MenuTag, BaseReferences<_$AppDatabase, $MenuTagsTable, MenuTag>),
+          MenuTag,
+          PrefetchHooks Function()
+        > {
+  $$MenuTagsTableTableManager(_$AppDatabase db, $MenuTagsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MenuTagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MenuTagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MenuTagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MenuTagsCompanion(
+                id: id,
+                kind: kind,
+                name: name,
+                code: code,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String kind,
+                required String name,
+                Value<String> code = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MenuTagsCompanion.insert(
+                id: id,
+                kind: kind,
+                name: name,
+                code: code,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MenuTagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MenuTagsTable,
+      MenuTag,
+      $$MenuTagsTableFilterComposer,
+      $$MenuTagsTableOrderingComposer,
+      $$MenuTagsTableAnnotationComposer,
+      $$MenuTagsTableCreateCompanionBuilder,
+      $$MenuTagsTableUpdateCompanionBuilder,
+      (MenuTag, BaseReferences<_$AppDatabase, $MenuTagsTable, MenuTag>),
+      MenuTag,
       PrefetchHooks Function()
     >;
 typedef $$TicketsTableCreateCompanionBuilder =
@@ -15829,6 +16366,8 @@ class $AppDatabaseManager {
       $$MenuCategoriesTableTableManager(_db, _db.menuCategories);
   $$MenuItemsTableTableManager get menuItems =>
       $$MenuItemsTableTableManager(_db, _db.menuItems);
+  $$MenuTagsTableTableManager get menuTags =>
+      $$MenuTagsTableTableManager(_db, _db.menuTags);
   $$TicketsTableTableManager get tickets =>
       $$TicketsTableTableManager(_db, _db.tickets);
   $$SessionsTableTableManager get sessions =>

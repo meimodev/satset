@@ -119,13 +119,11 @@ Future<void> seedIfEmpty(AppDatabase db) async {
                             .toList(),
                       })
                   .toList())),
-              allergensJson:
-                  Value(jsonEncode(it.allergens.map((a) => a.name).toList())),
-              dietaryJson:
-                  Value(jsonEncode(it.dietary.map((d) => d.name).toList())),
+              allergensJson: Value(jsonEncode(it.allergens)),
+              dietaryJson: Value(jsonEncode(it.dietary)),
               unavailable: Value(it.unavailable),
               stockCount: Value(it.stockCount),
-              autoEightySixAtZero: Value(it.autoEightySixAtZero),
+              autoSoldOutAtZero: Value(it.autoSoldOutAtZero),
             ),
           );
     }

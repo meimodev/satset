@@ -19,6 +19,7 @@ part 'database.g.dart';
   VenueTables,
   MenuCategories,
   MenuItems,
+  MenuTags,
   Tickets,
   Sessions,
   Devices,
@@ -36,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -190,6 +191,28 @@ class AppDatabase extends _$AppDatabase {
             await _safeDropColumnOn('menu_items', 'modifier_group_ids_json');
             await customStatement('DROP TABLE IF EXISTS modifier_groups');
           }
+          if (from < 21) {
+            // Rename auto_eighty_six_at_zero → auto_sold_out_at_zero
+            // (add + copy + drop; DROP no-ops on pre-3.35 SQLite, leaving a
+            // harmless dead column). See docs/adr/0010 + the "Habis" rename.
+            await _safeAddColumnOn('menu_items', 'auto_sold_out_at_zero',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            final oldCols =
+                await customSelect("PRAGMA table_info('menu_items')").get();
+            if (oldCols.any(
+                (r) => r.read<String>('name') == 'auto_eighty_six_at_zero')) {
+              await customStatement('UPDATE menu_items '
+                  'SET auto_sold_out_at_zero = auto_eighty_six_at_zero');
+            }
+            await _safeDropColumnOn('menu_items', 'auto_eighty_six_at_zero');
+            // Capability rename: rewrite the stored string in every role.
+            await customStatement(
+                'UPDATE roles SET capabilities_json = '
+                "replace(capabilities_json, '\"toggle86\"', '\"markSoldOut\"')");
+            // Allergen / diet enums become data rows.
+            await m.createTable(menuTags);
+            await _seedMenuTags();
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -209,8 +232,46 @@ class AppDatabase extends _$AppDatabase {
                   const Value('Terima kasih · Sampai jumpa lagi'),
             ),
           );
+          await _seedMenuTags();
         },
       );
+
+  /// Default allergen / diet tags. Ids equal the legacy enum names so existing
+  /// items' `allergens_json` / `dietary_json` refs stay valid with no item
+  /// migration. INSERT OR IGNORE preserves any admin edits on re-run.
+  Future<void> _seedMenuTags() async {
+    const allergens = [
+      ['gluten', 'Gluten', 'GL'],
+      ['nut', 'Kacang', 'NU'],
+      ['dairy', 'Susu', 'DA'],
+      ['shellfish', 'Kerang', 'SH'],
+      ['egg', 'Telur', 'EG'],
+      ['soy', 'Kedelai', 'SO'],
+      ['sesame', 'Wijen', 'SE'],
+      ['sulfites', 'Sulfit', 'SU'],
+    ];
+    const diets = [
+      ['vegetarian', 'Vegetarian', 'VG'],
+      ['vegan', 'Vegan', 'VN'],
+      ['glutenFree', 'Bebas gluten', 'GF'],
+      ['dairyFree', 'Bebas susu', 'DF'],
+      ['spicy', 'Pedas', 'PD'],
+      ['halal', 'Halal', 'HL'],
+      ['signature', 'Andalan', 'AD'],
+    ];
+    Future<void> ins(List<List<String>> rows, String kind) async {
+      for (var i = 0; i < rows.length; i++) {
+        await customStatement(
+          'INSERT OR IGNORE INTO menu_tags(id, kind, name, code, sort_order) '
+          'VALUES(?, ?, ?, ?, ?)',
+          [rows[i][0], kind, rows[i][1], rows[i][2], i],
+        );
+      }
+    }
+
+    await ins(allergens, 'allergen');
+    await ins(diets, 'diet');
+  }
 
   Future<void> _safeAddColumn(String column, {String type = 'TEXT'}) =>
       _safeAddColumnOn('users', column, type: type);

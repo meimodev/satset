@@ -93,8 +93,20 @@ class MenuItems extends Table {
   TextColumn get dietaryJson => text().withDefault(const Constant('[]'))();
   BoolColumn get unavailable => boolean().withDefault(const Constant(false))();
   IntColumn get stockCount => integer().nullable()();
-  BoolColumn get autoEightySixAtZero =>
+  BoolColumn get autoSoldOutAtZero =>
       boolean().withDefault(const Constant(false))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Admin-managed allergen / diet labels. See
+/// docs/adr/0010-customizable-menu-tags.md. `kind` ∈ {allergen, diet}.
+class MenuTags extends Table {
+  TextColumn get id => text()();
+  TextColumn get kind => text()();
+  TextColumn get name => text()();
+  TextColumn get code => text().withDefault(const Constant(''))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   @override
   Set<Column> get primaryKey => {id};
 }

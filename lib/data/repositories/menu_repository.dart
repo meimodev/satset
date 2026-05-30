@@ -9,26 +9,31 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/domain/models/menu_tag.dart';
 import 'package:satset/domain/models/modifier_group.dart';
 
 /// Snapshot held by the repository so UI can subscribe to one source.
 class MenuSnapshot {
   final List<MenuCategory> categories;
   final List<MenuItem> items;
+  final List<MenuTag> tags;
   const MenuSnapshot({
     required this.categories,
     required this.items,
+    this.tags = const [],
   });
 
-  static const empty = MenuSnapshot(categories: [], items: []);
+  static const empty = MenuSnapshot(categories: [], items: [], tags: []);
 
   MenuSnapshot copyWith({
     List<MenuCategory>? categories,
     List<MenuItem>? items,
+    List<MenuTag>? tags,
   }) =>
       MenuSnapshot(
         categories: categories ?? this.categories,
         items: items ?? this.items,
+        tags: tags ?? this.tags,
       );
 }
 
@@ -105,6 +110,16 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
         for (final c in d.categories) MenuCategory(id: c.id, name: c.name),
       ],
       items: [for (final i in d.items) _itemFromDto(i)],
+      tags: [
+        for (final t in d.tags)
+          MenuTag(
+            id: t.id,
+            kind: menuTagKindFromKey(t.kind),
+            name: t.name,
+            code: t.code,
+            sortOrder: t.sortOrder,
+          ),
+      ],
     );
   }
 
@@ -123,15 +138,11 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       modifierGroups: [
         for (final g in i.modifierGroups) _modGroupFromDto(g),
       ],
-      allergens: [for (final a in i.allergens) _allergen(a)]
-          .whereType<Allergen>()
-          .toList(),
-      dietary: [for (final d in i.dietary) _dietary(d)]
-          .whereType<DietaryTag>()
-          .toList(),
+      allergens: List<String>.of(i.allergens),
+      dietary: List<String>.of(i.dietary),
       unavailable: i.unavailable,
       stockCount: i.stockCount,
-      autoEightySixAtZero: i.autoEightySixAtZero,
+      autoSoldOutAtZero: i.autoSoldOutAtZero,
     );
   }
 
@@ -145,11 +156,6 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
             ModifierOption(id: o.id, name: o.name, priceDelta: o.priceDelta),
         ],
       );
-
-  Allergen? _allergen(String name) =>
-      Allergen.values.where((a) => a.name == name).cast<Allergen?>().firstOrNull;
-  DietaryTag? _dietary(String name) =>
-      DietaryTag.values.where((d) => d.name == name).cast<DietaryTag?>().firstOrNull;
 
   /// Lookup an item by id from the snapshot. Returns null when the
   /// repository has not yet loaded the item — callers must handle the
@@ -215,7 +221,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     final cur = state.items.where((i) => i.id == id).firstOrNull;
     if (cur == null) return;
     final next = !cur.unavailable;
-    SatLog.repo('menu.toggle86 id=$id → $next');
+    SatLog.repo('menu.soldOut id=$id → $next');
     final prev = state;
     state = state.copyWith(
       items: [
@@ -232,7 +238,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
       _mergeServerItem(dto);
     } catch (e) {
-      SatLog.repo('menu.toggle86 fail $e');
+      SatLog.repo('menu.soldOut fail $e');
       state = prev;
       rethrow;
     }
@@ -343,12 +349,49 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
               ],
             }
         ],
-        'allergens': [for (final a in it.allergens) a.name],
-        'dietary': [for (final d in it.dietary) d.name],
+        'allergens': it.allergens,
+        'dietary': it.dietary,
         'unavailable': it.unavailable,
         'stockCount': it.stockCount,
-        'autoEightySixAtZero': it.autoEightySixAtZero,
+        'autoSoldOutAtZero': it.autoSoldOutAtZero,
       };
+
+  // ---------- tags ----------
+
+  Future<void> createTag(MenuTagKind kind, String name, String code) async {
+    SatLog.repo('menu.tag.create $name');
+    if (ref.read(apiConfigProvider) == null) return;
+    await ref.read(apiClientProvider).postJson('/menu/tags', {
+      'kind': kind == MenuTagKind.diet ? 'diet' : 'allergen',
+      'name': name,
+      'code': code,
+    });
+    await _refetch();
+  }
+
+  Future<void> updateTag(String id, {String? name, String? code}) async {
+    SatLog.repo('menu.tag.update $id');
+    if (ref.read(apiConfigProvider) == null) return;
+    await ref.read(apiClientProvider).patchJson('/menu/tags/$id', {
+      'name': ?name,
+      'code': ?code,
+    });
+    await _refetch();
+  }
+
+  Future<void> deleteTag(String id) async {
+    SatLog.repo('menu.tag.delete $id');
+    if (ref.read(apiConfigProvider) == null) return;
+    await ref.read(apiClientProvider).deleteJson('/menu/tags/$id');
+    await _refetch();
+  }
+
+  Future<void> reorderTags(List<String> ids) async {
+    SatLog.repo('menu.tag.reorder ${ids.length}');
+    if (ref.read(apiConfigProvider) == null) return;
+    await ref.read(apiClientProvider).postJson('/menu/tags/reorder', {'ids': ids});
+    await _refetch();
+  }
 }
 
 final menuRepositoryProvider =
@@ -362,3 +405,16 @@ final menuCategoriesProvider = Provider<List<MenuCategory>>(
 
 final menuItemsProvider = Provider<List<MenuItem>>(
     (ref) => ref.watch(menuRepositoryProvider).items);
+
+/// All tags, snapshot order (sorted server-side by kind+sortOrder).
+final menuTagsProvider = Provider<List<MenuTag>>(
+    (ref) => ref.watch(menuRepositoryProvider).tags);
+
+/// Tag id → tag, for resolving the ids stored on items.
+final menuTagsByIdProvider = Provider<Map<String, MenuTag>>((ref) {
+  return {for (final t in ref.watch(menuTagsProvider)) t.id: t};
+});
+
+/// Tags of a given kind, in sort order.
+List<MenuTag> menuTagsOfKind(List<MenuTag> all, MenuTagKind kind) =>
+    [for (final t in all) if (t.kind == kind) t];

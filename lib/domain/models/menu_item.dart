@@ -1,9 +1,5 @@
 import 'modifier_group.dart';
 
-enum Allergen { gluten, nut, dairy, shellfish, egg, soy, sesame, sulfites }
-
-enum DietaryTag { vegetarian, vegan, glutenFree, dairyFree, spicy, halal, signature }
-
 class Variant {
   final String id;
   final String name;
@@ -46,8 +42,12 @@ class MenuItem {
   final String name;
   final String categoryId;
   final String description;
-  final List<Allergen> allergens;
-  final List<DietaryTag> dietary;
+
+  /// Allergen tag ids (resolve against the menu snapshot's [MenuTag] list).
+  final List<String> allergens;
+
+  /// Diet tag ids (resolve against the menu snapshot's [MenuTag] list).
+  final List<String> dietary;
   final int prepTime;
   final int basePrice;
   final int cost;
@@ -56,7 +56,7 @@ class MenuItem {
   final bool unavailable;
   final String? photoUrl;
   final int? stockCount;
-  final bool autoEightySixAtZero;
+  final bool autoSoldOutAtZero;
   final HappyHourRule? happyHour;
 
   const MenuItem({
@@ -74,24 +74,24 @@ class MenuItem {
     this.unavailable = false,
     this.photoUrl,
     this.stockCount,
-    this.autoEightySixAtZero = false,
+    this.autoSoldOutAtZero = false,
     this.happyHour,
   });
 
   /// True when stock is being tracked and depleted.
-  bool get autoEightySixed =>
-      autoEightySixAtZero && stockCount != null && stockCount! <= 0;
+  bool get isAutoSoldOut =>
+      autoSoldOutAtZero && stockCount != null && stockCount! <= 0;
 
-  /// Effective unavailability: manual toggle OR auto-86 from stock.
-  bool get isEightySixed => unavailable || autoEightySixed;
+  /// Effective unavailability: manual toggle OR auto sold-out from stock.
+  bool get isSoldOut => unavailable || isAutoSoldOut;
 
   MenuItem copyWith({
     String? id,
     String? name,
     String? categoryId,
     String? description,
-    List<Allergen>? allergens,
-    List<DietaryTag>? dietary,
+    List<String>? allergens,
+    List<String>? dietary,
     int? prepTime,
     int? basePrice,
     int? cost,
@@ -100,7 +100,7 @@ class MenuItem {
     bool? unavailable,
     Object? photoUrl = _unset,
     Object? stockCount = _unset,
-    bool? autoEightySixAtZero,
+    bool? autoSoldOutAtZero,
     Object? happyHour = _unset,
   }) {
     return MenuItem(
@@ -118,52 +118,10 @@ class MenuItem {
       unavailable: unavailable ?? this.unavailable,
       photoUrl: identical(photoUrl, _unset) ? this.photoUrl : photoUrl as String?,
       stockCount: identical(stockCount, _unset) ? this.stockCount : stockCount as int?,
-      autoEightySixAtZero: autoEightySixAtZero ?? this.autoEightySixAtZero,
+      autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
       happyHour: identical(happyHour, _unset) ? this.happyHour : happyHour as HappyHourRule?,
     );
   }
 }
 
 const Object _unset = Object();
-
-const allergenCodes = <Allergen, String>{
-  Allergen.gluten: 'GL',
-  Allergen.nut: 'NU',
-  Allergen.dairy: 'DA',
-  Allergen.shellfish: 'SH',
-  Allergen.egg: 'EG',
-  Allergen.soy: 'SO',
-  Allergen.sesame: 'SE',
-  Allergen.sulfites: 'SU',
-};
-
-const allergenNames = <Allergen, String>{
-  Allergen.gluten: 'Gluten',
-  Allergen.nut: 'Kacang',
-  Allergen.dairy: 'Susu',
-  Allergen.shellfish: 'Kerang',
-  Allergen.egg: 'Telur',
-  Allergen.soy: 'Kedelai',
-  Allergen.sesame: 'Wijen',
-  Allergen.sulfites: 'Sulfit',
-};
-
-const dietaryNames = <DietaryTag, String>{
-  DietaryTag.vegetarian: 'Vegetarian',
-  DietaryTag.vegan: 'Vegan',
-  DietaryTag.glutenFree: 'Bebas gluten',
-  DietaryTag.dairyFree: 'Bebas susu',
-  DietaryTag.spicy: 'Pedas',
-  DietaryTag.halal: 'Halal',
-  DietaryTag.signature: 'Andalan',
-};
-
-const dietaryCodes = <DietaryTag, String>{
-  DietaryTag.vegetarian: 'VG',
-  DietaryTag.vegan: 'VN',
-  DietaryTag.glutenFree: 'GF',
-  DietaryTag.dairyFree: 'DF',
-  DietaryTag.spicy: 'PD',
-  DietaryTag.halal: 'HL',
-  DietaryTag.signature: 'AD',
-};

@@ -350,15 +350,16 @@ class _CatTabs extends ConsumerWidget {
   }
 }
 
-class _ItemCard extends StatelessWidget {
+class _ItemCard extends ConsumerWidget {
   final MenuItem item;
   final int inCart;
   final VoidCallback onTap;
   const _ItemCard({required this.item, required this.inCart, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final tagsById = ref.watch(menuTagsByIdProvider);
     final disabled = item.unavailable;
     return Opacity(
       opacity: disabled ? 0.4 : 1,
@@ -412,7 +413,7 @@ class _ItemCard extends StatelessWidget {
                               color: Colors.black.withValues(alpha: 0.7),
                               borderRadius: BorderRadius.circular(999),
                             ),
-                            child: Text("86'D",
+                            child: Text("HABIS",
                                 style: SatType.mono(
                                   size: 9,
                                   color: sc.urgent,
@@ -487,7 +488,7 @@ class _ItemCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 alignment: Alignment.center,
-                                child: Text(allergenCodes[a] ?? '?',
+                                child: Text(tagsById[a]?.code ?? '?',
                                     style: SatType.mono(
                                       size: 8,
                                       weight: FontWeight.w600,

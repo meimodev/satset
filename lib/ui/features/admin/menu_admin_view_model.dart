@@ -18,8 +18,8 @@ final menuAdminSearchProvider = StateProvider<String>((_) => '');
 /// Currently focused item id in tablet master-detail.
 final menuAdminSelectedItemIdProvider = StateProvider<String?>((_) => null);
 
-/// Top-level menu admin tab: items vs categories.
-enum MenuAdminTab { items, categories }
+/// Top-level menu admin tab: items, categories, or tags (allergen/diet).
+enum MenuAdminTab { items, categories, tags }
 
 final menuAdminTabProvider =
     StateProvider<MenuAdminTab>((_) => MenuAdminTab.items);
@@ -47,17 +47,17 @@ final menuAdminFilteredItemsProvider = Provider<List<MenuItem>>((ref) {
 /// Counts shown in the header strip.
 class MenuAdminCounts {
   final int total;
-  final int eightySixed;
+  final int soldOut;
   final int categories;
-  const MenuAdminCounts(this.total, this.eightySixed, this.categories);
+  const MenuAdminCounts(this.total, this.soldOut, this.categories);
 }
 
 final menuAdminCountsProvider = Provider<MenuAdminCounts>((ref) {
   final all = ref.watch(menuItemsProvider);
-  final eightySix = all.where((i) => i.isEightySixed).length;
+  final soldOut = all.where((i) => i.isSoldOut).length;
   // Excludes the synthetic "Semua" pseudo-category surfaced by the seed.
   final cats = ref.watch(menuCategoriesProvider).where((c) => c.id != 'all').length;
-  return MenuAdminCounts(all.length, eightySix, cats);
+  return MenuAdminCounts(all.length, soldOut, cats);
 });
 
 /// Real categories without the "all" pseudo-row, for the rail.

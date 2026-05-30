@@ -28,6 +28,15 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Patrol native UI testing.
+        // NOTE: no `clearPackageData` / ANDROIDX_TEST_ORCHESTRATOR. On MIUI/HyperOS
+        // the orchestrator wipes the app's appops before every test, which resets
+        // the MIUI background-activity-start grant and re-blocks the instrumented
+        // launch (app bounced to launcher, PatrolAppService :8082 never binds).
+        // Plain host-run keeps the grant, so the test can foreground. See
+        // docs/testing/patrol.md.
+        testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
     }
 
     buildTypes {

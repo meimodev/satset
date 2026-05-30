@@ -44,6 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Patrol — generated test bundle (regenerated every run, never commit)
+patrol_test/test_bundle.dart
+
 # Agent/tooling caches
 .claude/
 .codegraph/

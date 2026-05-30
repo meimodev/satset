@@ -11,7 +11,7 @@ enum Capability {
   refund(CapabilityGroup.money, 'Refund'),
   closeShift(CapabilityGroup.money, 'Close shift'),
   editMenu(CapabilityGroup.inventory, 'Edit menu'),
-  toggle86(CapabilityGroup.inventory, 'Toggle 86'),
+  markSoldOut(CapabilityGroup.inventory, 'Mark sold out'),
   adjustStock(CapabilityGroup.inventory, 'Adjust stock'),
   manageStaff(CapabilityGroup.admin, 'Manage staff'),
   manageRoles(CapabilityGroup.admin, 'Manage roles'),

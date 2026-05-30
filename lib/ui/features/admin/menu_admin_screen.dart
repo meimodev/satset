@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/domain/models/menu_tag.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -39,22 +40,24 @@ class _TabletLayout extends ConsumerWidget {
     final perm = ref.watch(menuPermissionProvider);
     final selectedId = ref.watch(menuAdminSelectedItemIdProvider);
     final tab = ref.watch(menuAdminTabProvider);
-    final onCats = perm == MenuPermission.admin && tab == MenuAdminTab.categories;
+    final admin = perm == MenuPermission.admin;
+    final onCats = admin && tab == MenuAdminTab.categories;
+    final onTags = admin && tab == MenuAdminTab.tags;
 
     return Column(
       children: [
         AdminEmbeddedStrip(
           title: 'Menu',
-          sub: '${counts.total} item · ${counts.categories} kategori · ${counts.eightySixed} habis',
+          sub: '${counts.total} item · ${counts.categories} kategori · ${counts.soldOut} habis',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (perm == MenuPermission.admin) ...[
+              if (admin) ...[
                 const _TabSwitcher(),
                 const SizedBox(width: 10),
               ],
               _RoleBadge(perm: perm),
-              if (perm == MenuPermission.admin && !onCats) ...[
+              if (admin && !onCats && !onTags) ...[
                 const SizedBox(width: 10),
                 _PrimaryButton(
                   label: '+ Tambah item',
@@ -66,6 +69,8 @@ class _TabletLayout extends ConsumerWidget {
         ),
         if (onCats)
           const Expanded(child: _CategoriesPanel())
+        else if (onTags)
+          const Expanded(child: _TagsPanel())
         else
           Expanded(
             child: Row(
@@ -167,7 +172,9 @@ class _PhoneLayout extends ConsumerWidget {
     final counts = ref.watch(menuAdminCountsProvider);
     final perm = ref.watch(menuPermissionProvider);
     final tab = ref.watch(menuAdminTabProvider);
-    final onCats = perm == MenuPermission.admin && tab == MenuAdminTab.categories;
+    final admin = perm == MenuPermission.admin;
+    final onCats = admin && tab == MenuAdminTab.categories;
+    final onTags = admin && tab == MenuAdminTab.tags;
 
     return SafeArea(
       child: Column(
@@ -187,7 +194,7 @@ class _PhoneLayout extends ConsumerWidget {
                           )),
                       const SizedBox(height: 2),
                       Text(
-                        '${counts.total} item · ${counts.eightySixed} habis',
+                        '${counts.total} item · ${counts.soldOut} habis',
                         style: SatType.mono(
                           size: 11, color: sc.textLo, letterSpacing: 0.5,
                         ),
@@ -209,6 +216,8 @@ class _PhoneLayout extends ConsumerWidget {
             ),
           if (onCats)
             const Expanded(child: _CategoriesPanel())
+          else if (onTags)
+            const Expanded(child: _TagsPanel())
           else ...[
             const _Toolbar(),
             const _CategoryRail(),
@@ -402,7 +411,8 @@ class _ItemRow extends ConsumerWidget {
     final selectedId = ref.watch(menuAdminSelectedItemIdProvider);
     final isSelected = selectedId == item.id && !compact;
 
-    final disabled = item.isEightySixed;
+    final disabled = item.isSoldOut;
+    final tagsById = ref.watch(menuTagsByIdProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
@@ -485,9 +495,9 @@ class _ItemRow extends ConsumerWidget {
                           spacing: 3, runSpacing: 3,
                           children: [
                             for (final a in item.allergens)
-                              _miniBadge(sc, allergenCodes[a] ?? '', sc.warnSoft, sc.warn),
+                              _miniBadge(sc, tagsById[a]?.code ?? '', sc.warnSoft, sc.warn),
                             for (final d in item.dietary)
-                              _miniBadge(sc, dietaryCodes[d] ?? '', sc.infoSoft, sc.info),
+                              _miniBadge(sc, tagsById[d]?.code ?? '', sc.infoSoft, sc.info),
                           ],
                         ),
                       ],
@@ -549,7 +559,7 @@ class _StatusToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final auto = item.autoEightySixed;
+    final auto = item.isAutoSoldOut;
     final canToggle = !auto;
     return GestureDetector(
       onTap: canToggle
@@ -562,8 +572,8 @@ class _StatusToggle extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: item.isEightySixed ? sc.urgentSoft : sc.successSoft,
-          border: Border.all(color: item.isEightySixed ? sc.urgent : sc.success),
+          color: item.isSoldOut ? sc.urgentSoft : sc.successSoft,
+          border: Border.all(color: item.isSoldOut ? sc.urgent : sc.success),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Row(
@@ -572,18 +582,18 @@ class _StatusToggle extends ConsumerWidget {
             Container(
               width: 6, height: 6,
               decoration: BoxDecoration(
-                color: item.isEightySixed ? sc.urgent : sc.success,
+                color: item.isSoldOut ? sc.urgent : sc.success,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 6),
             Text(
-              auto ? 'AUTO 86' : (item.unavailable ? '86\'D' : 'AKTIF'),
+              auto ? 'AUTO HABIS' : (item.unavailable ? 'HABIS' : 'AKTIF'),
               style: SatType.mono(
                 size: 10,
                 weight: FontWeight.w600,
                 letterSpacing: 0.8,
-                color: item.isEightySixed ? sc.urgent : sc.success,
+                color: item.isSoldOut ? sc.urgent : sc.success,
               ),
             ),
           ],
@@ -659,6 +669,7 @@ class _TabSwitcher extends ConsumerWidget {
         children: [
           seg('Item', MenuAdminTab.items),
           seg('Kategori', MenuAdminTab.categories),
+          seg('Tag', MenuAdminTab.tags),
         ],
       ),
     );
@@ -805,6 +816,186 @@ class _CategoriesPanel extends ConsumerWidget {
           FilledButton(
               onPressed: () => Navigator.pop(ctx, ctrl.text),
               child: const Text('Simpan')),
+        ],
+      ),
+    );
+  }
+}
+
+class _TagsPanel extends ConsumerWidget {
+  const _TagsPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final all = ref.watch(menuTagsProvider);
+    final allergens = menuTagsOfKind(all, MenuTagKind.allergen);
+    final diets = menuTagsOfKind(all, MenuTagKind.diet);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        _group(context, ref, 'Alergen', MenuTagKind.allergen, allergens),
+        const SizedBox(height: 20),
+        _group(context, ref, 'Diet', MenuTagKind.diet, diets),
+      ],
+    );
+  }
+
+  Widget _group(BuildContext context, WidgetRef ref, String title,
+      MenuTagKind kind, List<MenuTag> tags) {
+    final sc = context.sat;
+    final tint = kind == MenuTagKind.allergen ? sc.warn : sc.info;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(title,
+              style: SatType.sans(
+                size: 13, weight: FontWeight.w600, color: sc.textMd,
+              )),
+        ),
+        for (final t in tags)
+          Padding(
+            key: ValueKey(t.id),
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: sc.bg2,
+                border: Border.all(color: sc.border0),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: tint.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(t.code,
+                        style: SatType.mono(
+                          size: 10, weight: FontWeight.w600,
+                          letterSpacing: 0.4, color: tint,
+                        )),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(t.name,
+                        style: SatType.sans(
+                          size: 14, weight: FontWeight.w600, color: sc.textHi,
+                        )),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.edit_outlined, size: 18, color: sc.textMd),
+                    onPressed: () => _edit(context, ref, t),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.delete_outline, size: 18, color: sc.urgent),
+                    onPressed: () => _delete(context, ref, t),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: _PrimaryButton(
+            label: '+ Tambah ${title.toLowerCase()}',
+            onTap: () => _edit(context, ref, null, kind: kind),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _edit(BuildContext context, WidgetRef ref, MenuTag? tag,
+      {MenuTagKind? kind}) async {
+    final result = await _tagDialog(context, tag);
+    if (result == null) return;
+    final notifier = ref.read(menuRepositoryProvider.notifier);
+    if (tag == null) {
+      await notifier.createTag(kind!, result.$1, result.$2);
+    } else {
+      await notifier.updateTag(tag.id, name: result.$1, code: result.$2);
+    }
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref, MenuTag tag) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.sat.bg1,
+        title: Text('Hapus "${tag.name}"?',
+            style: SatType.sans(size: 16, color: context.sat.textHi)),
+        content: Text(
+          'Tag ini akan dilepas dari semua item yang memakainya.',
+          style: SatType.sans(size: 13, color: context.sat.textMd),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Batal')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Hapus')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(menuRepositoryProvider.notifier).deleteTag(tag.id);
+    messenger.showSnackBar(SnackBar(content: Text('"${tag.name}" dihapus')));
+  }
+
+  /// Returns (name, code) or null if cancelled.
+  Future<(String, String)?> _tagDialog(BuildContext context, MenuTag? tag) {
+    final nameCtrl = TextEditingController(text: tag?.name ?? '');
+    final codeCtrl = TextEditingController(text: tag?.code ?? '');
+    final sc = context.sat;
+    return showDialog<(String, String)>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: sc.bg1,
+        title: Text(tag == null ? 'Tag baru' : 'Ubah tag',
+            style: SatType.sans(size: 16, color: sc.textHi)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                style: SatType.sans(size: 14, color: sc.textHi),
+                decoration: const InputDecoration(labelText: 'Nama'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: codeCtrl,
+                maxLength: 3,
+                textCapitalization: TextCapitalization.characters,
+                style: SatType.sans(size: 14, color: sc.textHi),
+                decoration: const InputDecoration(
+                    labelText: 'Kode badge', hintText: 'GL'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          FilledButton(
+            onPressed: () {
+              final n = nameCtrl.text.trim();
+              if (n.isEmpty) return;
+              Navigator.pop(
+                  ctx, (n, codeCtrl.text.trim().toUpperCase()));
+            },
+            child: const Text('Simpan'),
+          ),
         ],
       ),
     );
