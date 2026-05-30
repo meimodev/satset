@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'course.dart';
+import 'ticket_modifier.dart';
 
 part 'ticket.freezed.dart';
 
@@ -72,8 +73,8 @@ class Ticket with _$Ticket {
     @Default('') String variantName,
     required CourseId course,
     @Default(1) int qty,
-    @Default(<String>[]) List<String> modifiers,
-    String? specialInstructions,
+    @Default(<TicketModifier>[]) List<TicketModifier> modifiers,
+    String? note,
     required int price,
     required TicketStatus status,
     required String sentAt,

@@ -72,3 +72,20 @@ class KitchenViewModel extends StateNotifier<KitchenScreenState> {
 final kitchenViewModelProvider =
     StateNotifierProvider.autoDispose<KitchenViewModel, KitchenScreenState>(
         (ref) => KitchenViewModel(ref));
+
+/// New-order count for the Antrian nav badge: number of `(table, sentAt)`
+/// batches that still hold at least one untouched (`sent`) item — the cook's
+/// "unstarted orders" inbox. A batch drops off once every item has been
+/// started (`prep`/`cooked`) or finished. See CONTEXT.md › Batch.
+final kitchenNewOrderCountProvider = Provider<int>((ref) {
+  final by = ref.watch(ticketsProvider);
+  var count = 0;
+  by.forEach((_, list) {
+    final newBatches = <String>{};
+    for (final t in list) {
+      if (t.status == TicketStatus.sent) newBatches.add(t.sentAt);
+    }
+    count += newBatches.length;
+  });
+  return count;
+});

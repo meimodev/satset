@@ -415,7 +415,7 @@ class _OrderRow extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 3),
                             child: Text(
-                              t.modifiers.take(2).join(' · ') +
+                              t.modifiers.take(2).map((m) => m.display).join(' · ') +
                                   (t.modifiers.length > 2 ? ' · …' : ''),
                               style: SatType.sans(
                                   size: 11, color: sc.textMd, height: 1.3),

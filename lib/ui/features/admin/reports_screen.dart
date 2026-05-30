@@ -1282,6 +1282,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       children: [
         _opsKpis(context, ops.kpis),
         const SizedBox(height: 14),
+        _speedOfService(context, ops.speed),
+        const SizedBox(height: 14),
         _heatmap(context, ops.heatmap),
         const SizedBox(height: 14),
         if (isTab)
@@ -1308,8 +1310,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final tiles = kpis.isEmpty
         ? const [
             KpiTileDto(label: 'Avg turn time', value: '—', sub: 'belum ada data'),
-            KpiTileDto(label: 'Time to ready', value: '—', sub: '—'),
-            KpiTileDto(label: 'Ready alerts', value: '—', sub: '—'),
+            KpiTileDto(label: 'Prep dapur', value: '—', sub: '—'),
+            KpiTileDto(label: 'Tunggu antar', value: '—', sub: '—'),
             KpiTileDto(label: 'Reservasi', value: '—', sub: '—'),
           ]
         : kpis;
@@ -1343,6 +1345,125 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ],
       ]);
     });
+  }
+
+  Widget _speedOfService(BuildContext context, SpeedSectionDto s) {
+    final sc = context.sat;
+    if (s.sampleSize == 0) {
+      return _card(context, 'Kecepatan layanan',
+          sub: 'Belum ada item siap/disajikan',
+          child: const SizedBox(height: 30));
+    }
+    // SLA color: green when most plates beat the target, amber mid, red poor.
+    final slaColor = s.slaPct >= 80
+        ? sc.success
+        : (s.slaPct >= 60 ? sc.warn : sc.urgent);
+    final maxAvg = s.slowItems.isEmpty
+        ? 1.0
+        : s.slowItems
+            .map((i) => i.avgPrepMin)
+            .fold<double>(0.1, (a, b) => b > a ? b : a);
+    return _card(
+      context,
+      'Kecepatan layanan',
+      sub: 'Median prep ${s.prepMedianMin}m · antar ${s.pickupMedianMin}m · '
+          '${s.sampleSize} item',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // SLA hit-rate against the configurable target.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('${s.slaPct.round()}%',
+                  style: SatType.mono(
+                      size: 26, weight: FontWeight.w700, color: slaColor)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                    'siap di bawah target ${s.prepTargetMins} menit',
+                    style: SatType.sans(size: 12, color: sc.textMd)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Stack(children: [
+            Container(
+                height: 6,
+                decoration: BoxDecoration(
+                    color: sc.bg3, borderRadius: BorderRadius.circular(3))),
+            FractionallySizedBox(
+              widthFactor: (s.slaPct / 100).clamp(0.0, 1.0),
+              child: Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                      color: slaColor,
+                      borderRadius: BorderRadius.circular(3))),
+            ),
+          ]),
+          if (s.slowItems.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('Menu paling lambat (rata-rata prep)',
+                style: SatType.sans(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: sc.textLo,
+                    letterSpacing: 0.4)),
+            const SizedBox(height: 8),
+            for (final it in s.slowItems)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                            child: Text(it.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: SatType.sans(
+                                    size: 13, color: sc.textHi))),
+                        Text('${it.avgPrepMin.toStringAsFixed(1)}m',
+                            style: SatType.mono(
+                                size: 12,
+                                weight: FontWeight.w600,
+                                color: it.avgPrepMin > s.prepTargetMins
+                                    ? sc.urgent
+                                    : sc.textHi,
+                                letterSpacing: 0.4)),
+                        const SizedBox(width: 8),
+                        Text('×${it.count}',
+                            style: SatType.mono(
+                                size: 11, color: sc.textLo, letterSpacing: 0.4)),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Stack(children: [
+                      Container(
+                          height: 5,
+                          decoration: BoxDecoration(
+                              color: sc.bg3,
+                              borderRadius: BorderRadius.circular(3))),
+                      FractionallySizedBox(
+                        widthFactor: (it.avgPrepMin / maxAvg).clamp(0.0, 1.0),
+                        child: Container(
+                            height: 5,
+                            decoration: BoxDecoration(
+                                color: it.avgPrepMin > s.prepTargetMins
+                                    ? sc.urgent
+                                    : sc.info,
+                                borderRadius: BorderRadius.circular(3))),
+                      ),
+                    ]),
+                  ],
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
   }
 
   Widget _heatmap(BuildContext context, List<List<double>> grid) {

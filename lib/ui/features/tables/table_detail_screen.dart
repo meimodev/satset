@@ -28,6 +28,8 @@ import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
+import 'package:satset/ui/core/widgets/tag_badge_row.dart';
+import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
 
@@ -319,12 +321,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       final it = menuItems.where((i) => i.id == t.itemId).firstOrNull;
       if (it != null) ctxAllergens.addAll(it.allergens);
     }
-    final ctxNotes = <String>{
-      for (final t in tickets)
-        if (t.specialInstructions != null && t.specialInstructions!.trim().isNotEmpty)
-          t.specialInstructions!.trim(),
-    };
-    final ctxAlertCount = ctxAllergens.length + ctxNotes.length;
+    // Notes are reference text, not alerts — only allergens drive the header
+    // attention badge. See CONTEXT.md "Guest note / Item note".
+    final ctxAlertCount = ctxAllergens.length;
 
     void showContextSheet() {
       showModalBottomSheet(
@@ -402,7 +401,6 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       if (readOnly) return;
       showLineItemActionSheet(
         context: context,
-        ref: ref,
         tableId: _tableId,
         ticket: t,
       );
@@ -699,10 +697,7 @@ class _Header extends ConsumerWidget {
                         ),
                       if (table.guestNotes != null &&
                           table.guestNotes!.trim().isNotEmpty)
-                        _HPill(
-                          icon: Icons.sticky_note_2_outlined,
-                          label: table.guestNotes!,
-                        ),
+                        NoteLine(text: table.guestNotes!),
                     ],
                   ),
                 ],
@@ -1186,21 +1181,21 @@ class _LineItemState extends ConsumerState<_LineItem>
                           ).copyWith(
                               decoration: isVoided ? TextDecoration.lineThrough : null),
                         ),
+                        if (!isVoided) MenuTagBadges(itemId: ticket.itemId),
                         if (ticket.modifiers.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 3),
-                            child: Text(ticket.modifiers.join(' · '),
+                            child: Text(
+                                ticket.modifiers.map((m) => m.display).join(' · '),
                                 style: SatType.sans(size: 12, color: sc.textMd, height: 1.4)),
                           ),
-                        if (ticket.specialInstructions != null)
+                        if (ticket.note != null && ticket.note!.trim().isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text('⚠ ${ticket.specialInstructions!}',
-                                style: SatType.sans(
-                                  size: 12,
-                                  weight: FontWeight.w500,
-                                  color: sc.urgent,
-                                )),
+                            child: NoteLine(
+                              label: 'Instruksi khusus',
+                              text: ticket.note!,
+                            ),
                           ),
                         if (ticket.voidReason != null)
                           Padding(
@@ -1852,7 +1847,7 @@ class _TabletSplit extends StatelessWidget {
                               _pill(context, sc, '👤 ${table.guestName!}'),
                             if (table.guestNotes != null &&
                                 table.guestNotes!.trim().isNotEmpty)
-                              _pill(context, sc, '📝 ${table.guestNotes!}'),
+                              NoteLine(text: table.guestNotes!),
                           ],
                         ),
                       ],
@@ -2027,8 +2022,8 @@ class _ContextPane extends StatelessWidget {
     }
     final guestNotes = <String>{
       for (final t in tickets)
-        if (t.specialInstructions != null && t.specialInstructions!.trim().isNotEmpty)
-          t.specialInstructions!.trim(),
+        if (t.note != null && t.note!.trim().isNotEmpty)
+          t.note!.trim(),
     }.toList();
 
     final body = Column(
@@ -2057,21 +2052,12 @@ class _ContextPane extends StatelessWidget {
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: sc.urgentSoft,
-                                      border: Border.all(color: sc.urgent.withValues(alpha: 0.25)),
+                                      color: sc.bg2,
+                                      border: Border.all(color: sc.border0),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(Icons.warning_amber_rounded, size: 16, color: sc.urgent),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(note,
-                                              style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.urgent)),
-                                        ),
-                                      ],
-                                    ),
+                                    child: NoteLine(
+                                        label: 'Instruksi khusus', text: note),
                                   ),
                                 ),
                             ],

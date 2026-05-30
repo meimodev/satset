@@ -29,13 +29,13 @@ Per `lastActorId` on the table row — the user who most recently performed an o
 The single staff member who submitted one specific order line. Stored per-ticket as `createdBy` (a userId, stamped server-side from the JWT at submit). Distinct from [[Waiter]]: the **Waiter** is the table's *current* actor (`lastActorId`, overwritten on every table op), while the **Orderer** is frozen to whoever sent that line — so two waiters serving one table show as different orderers across its tickets. Surfaced on order cards (Pesanan board) and table-detail line items as the orderer's **avatar** (initials in their account color; nothing shown when `createdBy` is absent on legacy/offline lines). _Avoid_: showing the table Waiter as if they authored a line.
 
 ### Order elapsed time
-How long a line has been live, measured from its `sentAtTime` (when sent to the kitchen). Ticks live while the line is active; **freezes** once the line is `served` or `voided` (the frozen value is its total time-to-serve). Shares the venue's **overdue** threshold — calm under 10 minutes, urgent at/after — so the Pesanan board, the floor highlight, and the overdue [[Audio alert]] all agree on "late". Replaces the older display of the raw clock time the line was sent.
+How long a line has been live, measured from its `sentAtTime` (when sent to the kitchen). Ticks live while the line is active; **freezes** once the line is `served` or `voided` (the frozen value is its total time-to-serve). Shares the venue's **overdue** threshold (the configurable [[Service target]], default 15 min) — so the Pesanan board, the floor highlight, and the overdue [[Audio alert]] all agree on "late". Replaces the older display of the raw clock time the line was sent.
 
 ### Orderer (line author)
 The single staff member who submitted one specific order line. Stored per-ticket as `createdBy` (a userId, stamped server-side from the JWT at submit). Distinct from [[Waiter]]: the **Waiter** is the table's *current* actor (`lastActorId`, overwritten on every table op), while the **Orderer** is frozen to whoever sent that line — so two waiters serving one table show as different orderers across its tickets. Surfaced on order cards (Pesanan board) and table-detail line items as the orderer's **avatar** (initials in their account color; nothing shown when `createdBy` is absent on legacy/offline lines). _Avoid_: showing the table Waiter as if they authored a line.
 
 ### Order elapsed time
-How long a line has been live, measured from its `sentAtTime` (when sent to the kitchen). Ticks live while the line is active; **freezes** once the line is `served` or `voided` (shown as the static sent clock, since the Ticket carries no terminal timestamp). Shares the venue's **overdue** threshold — calm under 10 minutes, urgent at/after — so the Pesanan board, the floor highlight, and the overdue [[Audio alert]] all agree on "late". Replaces the older display of the raw clock time the line was sent.
+How long a line has been live, measured from its `sentAtTime` (when sent to the kitchen). Ticks live while the line is active; **freezes** once the line is `served` or `voided` (shown as the static sent clock, since the Ticket carries no terminal timestamp). Shares the venue's **overdue** threshold (the configurable [[Service target]], default 15 min) — so the Pesanan board, the floor highlight, and the overdue [[Audio alert]] all agree on "late". Replaces the older display of the raw clock time the line was sent.
 
 ### Table lock
 Per-user advisory lease on a table's detail screen. Prevents two waiters editing the same table simultaneously. Held by the user actively viewing the detail; 7s TTL with a 3s client heartbeat. Anyone else opening the detail sees a read-only banner ("Meja diambil oleh X").
@@ -59,13 +59,26 @@ A named, ordered grouping of menu items — e.g. "Starters", "Mains", "Drinks". 
 ### Modifier group (add-on)
 A named set of choices attached to a menu item — e.g. "Tingkat pedas", "Pilih protein". Has flags **wajib** (required) and **pilih banyak** (multi-select), and a list of **options**, each with an optional price delta. Modifier groups are **private to one item** — not a shared library. Editing a group on one item never affects another, even if both happen to have a "Tingkat pedas". User-facing copy: **"Grup modifier"**. _Avoid_: treating modifiers as reusable/global.
 
+### Modifier snapshot (on a sent line)
+The frozen record of the add-ons a guest actually chose, captured onto a [[Order elapsed time|line]] at the moment it is sent to the kitchen. Each chosen [[Modifier group (add-on)|option]] is snapshotted with its **group**, the **option** picked, the **label** as it read at order time, and its **price delta**. The snapshot is **self-contained**: renaming, re-pricing, or deleting that modifier on the menu afterward never alters an already-sent line. The KDS reads the **label** off the snapshot (it has no menu to resolve against); reports group by the snapshotted **group**. _Avoid_: storing only the option id on the line (a reference, not a snapshot — leaves the kitchen with an unresolvable id and breaks when the menu is edited).
+
 ### Variant (variation)
 A size/format choice for an item that sets an absolute price — e.g. "Reguler", "Besar". Distinct from a **modifier option**, which adjusts price by a delta. Variants are private to one item. User-facing copy: **"Varian"**.
 
 ### Menu tag (allergen / diet)
-An admin-managed label attached to menu items, of one **kind**: **allergen** (a warning — e.g. Gluten, Kacang) or **diet** (a property — e.g. Vegan, Halal). Each tag has a stable `id`, a `name` (display), a `code` (2-char badge, e.g. "GL"), a `kind`, and a `sortOrder`. Colour is **kind-derived** (allergen → warn, diet → info), not per-tag.
+An admin-managed label attached to menu items, of one **kind**: **allergen** (a warning, rendered red/`urgent` — e.g. Gluten, Kacang) or **diet** (a property, rendered blue/`info` — e.g. Vegan, Halal). Each tag has a stable `id`, a `name` (display), a `code` (2-char badge, e.g. "GL"), a `kind`, and a `sortOrder`. Colour is **kind-derived** (allergen → `urgent`/red, diet → `info`/blue), not per-tag — matching the allergen banner in the modifier sheet and the allergen chip on the review screen.
+
+Tags surface in three forms: the **menu card** badge rows, the **per-line-item** badge rows (under each dish name on the review/order-confirmation and table-detail line items — both rows, allergen then diet), and the **aggregate** (review's top pill, table-detail's context sheet). Per-line-item and aggregate both **live-resolve** the item's tag ids against the current menu snapshot by `itemId` — they are *not* frozen onto the sent line the way modifiers are (see [[Modifier snapshot (on a sent line)]]). A voided line shows no tag badges.
 
 Tags are **customizable**: created/renamed/recoloured-by-kind/reordered/deleted from the menu admin's **Tag** panel (third tab beside Items / Kategori), gated by `Capability.editMenu`. Stored in one `menu_tags` table (single table, `kind` discriminator). Items reference tags by **id** (in `allergensJson` / `dietaryJson`), so a rename never breaks an item's refs. Seed tag ids equal the legacy enum names (`gluten`, `vegan`, …) so existing items need no migration. Deleting a tag **cascade-strips** its id from every item. Tags ride the `/menu` snapshot and broadcast `menuUpdated`, so every device live-refreshes. _Avoid_: a fixed `Allergen`/`DietaryTag` enum (removed) or per-tag custom colour.
+
+### Guest note / Item note
+Free-text remarks staff attach to a visit or a dish. Two distinct concepts, **same plain visual treatment** — a note is reference text, not an alert; it never uses the allergen `urgent`/red or any attention colour (see [[Menu tag (allergen / diet)]] for what *does* warrant attention).
+
+- **Guest note** — table/visit level. Carried onto a table at seat time (a [[Reservation]]'s `notes`), held as `VenueTable.guestNotes`. Shown on the table detail (header, context sheet) alongside the guest name.
+- **Item note** — per-line, the guest's special instruction for one dish. Captured in the modifier sheet ("Instruksi khusus"), frozen onto the sent line, shown under that line on review, the Pesanan board, and the KDS.
+
+User-facing copy: **"Catatan"** (guest note), **"Instruksi khusus"** (item note). _Avoid_: rendering either in an allergen/warning colour, or with loud iconography — they are notes, not warnings.
 
 ### Floor
 The screen that lists all tables with status chips and the reservations strip across the top. The primary jumping-off point for waiters during service.
@@ -89,7 +102,21 @@ The unified digital preparation queue displayed on the Main Device showing all s
 _Avoid_: "Dapur" as the screen name (Dapur is one station, not the screen), Bar screen, multi-station KDS (separate per-station screens).
 
 ### Station (Stasiun)
-A prep destination an item routes to — currently **Dapur** (kitchen) and **Bar**. Stations feed the single Antrian Persiapan queue; they are not separate screens.
+A prep destination an item routes to — currently **Dapur** (kitchen) and **Bar**. Stations feed the single Antrian Persiapan queue; they are not separate screens. _Note_: per-item station **routing data was removed** (migration v19 dropped the `station` column from items/tickets); the concept survives but reports cannot split metrics per station until routing returns. Per-station [[Speed of service]] is deferred for this reason.
+
+### Speed of service (prep time / pickup lag)
+How fast food moves from order to guest, measured on a [[Order elapsed time|sent line]] from its lifecycle timestamps. Two distinct durations:
+
+- **Prep time** — `sentAt → readyAt`. The kitchen producing the dish. The headline kitchen-throughput number.
+- **Pickup lag** — `readyAt → servedAt`. Food sitting at the pass waiting for a waiter — the quality killer (cold plates, complaints).
+
+`readyAt` is stamped **once** (first entry into `ready`, so a waiter's unserve→reserve never inflates prep time); `servedAt` is **last-write** (most recent serve). A voided line carries neither. Reports surface **median** (not mean — service times are right-skewed), a per-item slowest table, an SLA hit-rate against the [[Service target]], and a per-hour degradation curve. _Avoid_: a single mean, or treating the whole-visit length (`closedAt − first sentAt`) as kitchen speed — that conflates kitchen, waiter, and guest dwell.
+
+### Service target (prepTargetMins)
+The single configurable threshold (`VenueSettings.prepTargetMins`, default **15 min**) defining "the kitchen should have this ready by now". One source of truth for two surfaces: the floor/audio **overdue** alert (a [[Order elapsed time|line]] still not ready N minutes after send) and the report **SLA hit-rate** (% of lines whose [[Speed of service|prep time]] stayed under N). Replaces the formerly hardcoded 10-minute overdue line — **on upgrade this relaxes the alert from 10→15 min** unless the owner tunes it down. _Avoid_: separate, drifting thresholds for the alert and the report.
+
+### Batch (kitchen order)
+The set of tickets a table sends together in one go — the unit a cook reads as a single "order" on the [[KDS / Antrian Persiapan]]. Identified by `(table, sentAt)`: same table, same send. One table may have several open batches across a visit (each fire/send is its own batch). A batch is **new** while it holds at least one untouched (`sent`) item, and stops being new once every item has been started (`prep`/`cooked`) or finished. The **Antrian nav badge** counts new batches across all tables — the cook's "unstarted orders" inbox. _Avoid_: equating one batch with one table (a table can hold many) or with one item (a batch is usually several items).
 
 ### Audio alert
 An audible (and on waiter devices, haptic) cue that draws a staff member's attention to an event without them watching the screen. Three semantic cues:
@@ -103,5 +130,5 @@ An audible (and on waiter devices, haptic) cue that draws a staff member's atten
 - The **kitchen** (the Main Device) hears all kitchen cues: new order, recall, and overdue.
 - **Waiters** hear **ready** for any table (shared "someone grab it" awareness), but a **void/comp** cue reaches only the **responsible waiter** (the table's current waiter — see [[Waiter]]).
 
-**Overdue** reuses the floor's existing 10-minute line: a ticket sounds the alert once when it first crosses 10 minutes unhandled, never again for that ticket. Bursts (a fired course landing as many tickets at once) collapse to a single cue. Cues are one-shot — they never loop or demand acknowledgement. Each device may silence its own cues (the venue's "Alert audio" toggle).
+**Overdue** reuses the configurable [[Service target]] (default 10 min): a ticket sounds the alert once when it first crosses the target unhandled, never again for that ticket. Bursts (a fired course landing as many tickets at once) collapse to a single cue. Cues are one-shot — they never loop or demand acknowledgement. Each device may silence its own cues (the venue's "Alert audio" toggle).
 

@@ -287,13 +287,26 @@ Future<void> _seedHistoricalSessions(AppDatabase db) async {
           final sentAt = openedAt.add(Duration(minutes: sentAtOffset));
           final isVoid = rng.nextDouble() < 0.06;
           final status = isVoid ? 'voided' : 'served';
+          // Speed-of-service stamps (ADR-0013). Served lines get a kitchen
+          // prep span (3..22 min — median ~13 straddles the 15-min target so
+          // the SLA hit-rate demos around ~60%) and a short pickup lag.
+          // Voided lines never reached ready → both NULL.
+          final prepMins = isVoid ? 0 : 3 + rng.nextInt(20);
+          final pickupMins = isVoid ? 0 : 1 + rng.nextInt(8);
+          final readyAt = isVoid ? null : sentAt.add(Duration(minutes: prepMins));
+          final servedAt =
+              isVoid ? null : readyAt!.add(Duration(minutes: pickupMins));
           final reasonCode = isVoid ? reasonCodes[rng.nextInt(reasonCodes.length)] : null;
-          // Each session gets at most 2 modifiers picked from a fixed pool
-          // so the modifier-attach report has something to count.
-          final modifiers = <String>[
-            if (rng.nextDouble() < 0.55) 'spice:md',
-            if (rng.nextDouble() < 0.30) 'extras:krupuk',
-            if (rng.nextDouble() < 0.20) 'sauce:medium',
+          // Each session gets a few add-ons from a fixed pool so the
+          // modifier-attach report has something to count. Structured
+          // snapshot shape — see docs/adr/0011-ticket-modifier-snapshot.md.
+          final modifiers = <Map<String, dynamic>>[
+            if (rng.nextDouble() < 0.55)
+              {'groupId': 'spice', 'optionId': 'md', 'label': 'Pedas sedang', 'priceDelta': 0},
+            if (rng.nextDouble() < 0.30)
+              {'groupId': 'extras', 'optionId': 'krupuk', 'label': 'Kerupuk', 'priceDelta': 3000},
+            if (rng.nextDouble() < 0.20)
+              {'groupId': 'sauce', 'optionId': 'medium', 'label': 'Saus sedang', 'priceDelta': 0},
           ];
 
           if (isVoid) {
@@ -314,6 +327,8 @@ Future<void> _seedHistoricalSessions(AppDatabase db) async {
             price: item.basePrice,
             status: status,
             sentAt: sentAt,
+            readyAt: Value(readyAt),
+            servedAt: Value(servedAt),
             voidReason:
                 reasonCode == null ? const Value.absent() : Value(reasonText[reasonCode]),
             voidReasonCode:

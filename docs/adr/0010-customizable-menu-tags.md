@@ -11,7 +11,7 @@ We seed the new table with ids equal to the legacy enum names (`gluten`, `vegan`
 ## Considered and rejected
 
 - **Two tables (`allergens` + `diet_tags`).** Cleaner separation, but doubles routes, repo, and UI for two structurally identical entities. One table with a `kind` discriminator reproduces the existing two-map split with half the plumbing.
-- **Per-tag custom colour.** Rejected: colour stays kind-derived (allergen → warn, diet → info), matching today's render. Free colour invites unreadable badges and adds a picker for little value.
+- **Per-tag custom colour.** Rejected: colour stays kind-derived (allergen → `urgent`/red, diet → `info`/blue), matching today's render (sheet allergen banner, review allergen chip). Free colour invites unreadable badges and adds a picker for little value.
 - **Free-form string tags (level C).** Items already carry `List<String>`, so bare tags were tempting. Rejected because the UI renders **code badges** ("GL", "VG") and kind-based colour — that metadata needs a stable entity, not an ad-hoc string.
 - **A separate `tagsProvider` + `tagsUpdated` WS event.** Rejected in favour of folding tags into the `/menu` snapshot: the menu repo already refetches the whole (small) snapshot on any `menuUpdated`, and tags are tiny.
 

@@ -3625,6 +3625,7 @@ OpsSectionDto _$OpsSectionDtoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$OpsSectionDto {
   List<KpiTileDto> get kpis => throw _privateConstructorUsedError;
+  SpeedSectionDto get speed => throw _privateConstructorUsedError;
   List<StationRowDto> get stations => throw _privateConstructorUsedError;
   List<List<double>> get heatmap => throw _privateConstructorUsedError;
   ReservationStatsDto get reservations => throw _privateConstructorUsedError;
@@ -3650,6 +3651,7 @@ abstract class $OpsSectionDtoCopyWith<$Res> {
   @useResult
   $Res call({
     List<KpiTileDto> kpis,
+    SpeedSectionDto speed,
     List<StationRowDto> stations,
     List<List<double>> heatmap,
     ReservationStatsDto reservations,
@@ -3657,6 +3659,7 @@ abstract class $OpsSectionDtoCopyWith<$Res> {
     List<StaffVoidDto> voidByStaff,
   });
 
+  $SpeedSectionDtoCopyWith<$Res> get speed;
   $ReservationStatsDtoCopyWith<$Res> get reservations;
 }
 
@@ -3676,6 +3679,7 @@ class _$OpsSectionDtoCopyWithImpl<$Res, $Val extends OpsSectionDto>
   @override
   $Res call({
     Object? kpis = null,
+    Object? speed = null,
     Object? stations = null,
     Object? heatmap = null,
     Object? reservations = null,
@@ -3688,6 +3692,10 @@ class _$OpsSectionDtoCopyWithImpl<$Res, $Val extends OpsSectionDto>
                 ? _value.kpis
                 : kpis // ignore: cast_nullable_to_non_nullable
                       as List<KpiTileDto>,
+            speed: null == speed
+                ? _value.speed
+                : speed // ignore: cast_nullable_to_non_nullable
+                      as SpeedSectionDto,
             stations: null == stations
                 ? _value.stations
                 : stations // ignore: cast_nullable_to_non_nullable
@@ -3717,6 +3725,16 @@ class _$OpsSectionDtoCopyWithImpl<$Res, $Val extends OpsSectionDto>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $SpeedSectionDtoCopyWith<$Res> get speed {
+    return $SpeedSectionDtoCopyWith<$Res>(_value.speed, (value) {
+      return _then(_value.copyWith(speed: value) as $Val);
+    });
+  }
+
+  /// Create a copy of OpsSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $ReservationStatsDtoCopyWith<$Res> get reservations {
     return $ReservationStatsDtoCopyWith<$Res>(_value.reservations, (value) {
       return _then(_value.copyWith(reservations: value) as $Val);
@@ -3735,6 +3753,7 @@ abstract class _$$OpsSectionDtoImplCopyWith<$Res>
   @useResult
   $Res call({
     List<KpiTileDto> kpis,
+    SpeedSectionDto speed,
     List<StationRowDto> stations,
     List<List<double>> heatmap,
     ReservationStatsDto reservations,
@@ -3742,6 +3761,8 @@ abstract class _$$OpsSectionDtoImplCopyWith<$Res>
     List<StaffVoidDto> voidByStaff,
   });
 
+  @override
+  $SpeedSectionDtoCopyWith<$Res> get speed;
   @override
   $ReservationStatsDtoCopyWith<$Res> get reservations;
 }
@@ -3761,6 +3782,7 @@ class __$$OpsSectionDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? kpis = null,
+    Object? speed = null,
     Object? stations = null,
     Object? heatmap = null,
     Object? reservations = null,
@@ -3773,6 +3795,10 @@ class __$$OpsSectionDtoImplCopyWithImpl<$Res>
             ? _value._kpis
             : kpis // ignore: cast_nullable_to_non_nullable
                   as List<KpiTileDto>,
+        speed: null == speed
+            ? _value.speed
+            : speed // ignore: cast_nullable_to_non_nullable
+                  as SpeedSectionDto,
         stations: null == stations
             ? _value._stations
             : stations // ignore: cast_nullable_to_non_nullable
@@ -3803,6 +3829,7 @@ class __$$OpsSectionDtoImplCopyWithImpl<$Res>
 class _$OpsSectionDtoImpl implements _OpsSectionDto {
   const _$OpsSectionDtoImpl({
     final List<KpiTileDto> kpis = const <KpiTileDto>[],
+    this.speed = const SpeedSectionDto(),
     final List<StationRowDto> stations = const <StationRowDto>[],
     final List<List<double>> heatmap = const <List<double>>[],
     required this.reservations,
@@ -3826,6 +3853,9 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
     return EqualUnmodifiableListView(_kpis);
   }
 
+  @override
+  @JsonKey()
+  final SpeedSectionDto speed;
   final List<StationRowDto> _stations;
   @override
   @JsonKey()
@@ -3866,7 +3896,7 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
 
   @override
   String toString() {
-    return 'OpsSectionDto(kpis: $kpis, stations: $stations, heatmap: $heatmap, reservations: $reservations, voidReasons: $voidReasons, voidByStaff: $voidByStaff)';
+    return 'OpsSectionDto(kpis: $kpis, speed: $speed, stations: $stations, heatmap: $heatmap, reservations: $reservations, voidReasons: $voidReasons, voidByStaff: $voidByStaff)';
   }
 
   @override
@@ -3875,6 +3905,7 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
         (other.runtimeType == runtimeType &&
             other is _$OpsSectionDtoImpl &&
             const DeepCollectionEquality().equals(other._kpis, _kpis) &&
+            (identical(other.speed, speed) || other.speed == speed) &&
             const DeepCollectionEquality().equals(other._stations, _stations) &&
             const DeepCollectionEquality().equals(other._heatmap, _heatmap) &&
             (identical(other.reservations, reservations) ||
@@ -3894,6 +3925,7 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
   int get hashCode => Object.hash(
     runtimeType,
     const DeepCollectionEquality().hash(_kpis),
+    speed,
     const DeepCollectionEquality().hash(_stations),
     const DeepCollectionEquality().hash(_heatmap),
     reservations,
@@ -3918,6 +3950,7 @@ class _$OpsSectionDtoImpl implements _OpsSectionDto {
 abstract class _OpsSectionDto implements OpsSectionDto {
   const factory _OpsSectionDto({
     final List<KpiTileDto> kpis,
+    final SpeedSectionDto speed,
     final List<StationRowDto> stations,
     final List<List<double>> heatmap,
     required final ReservationStatsDto reservations,
@@ -3930,6 +3963,8 @@ abstract class _OpsSectionDto implements OpsSectionDto {
 
   @override
   List<KpiTileDto> get kpis;
+  @override
+  SpeedSectionDto get speed;
   @override
   List<StationRowDto> get stations;
   @override
@@ -3946,6 +3981,516 @@ abstract class _OpsSectionDto implements OpsSectionDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$OpsSectionDtoImplCopyWith<_$OpsSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+SpeedSectionDto _$SpeedSectionDtoFromJson(Map<String, dynamic> json) {
+  return _SpeedSectionDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$SpeedSectionDto {
+  int get prepMedianMin => throw _privateConstructorUsedError;
+  int get pickupMedianMin => throw _privateConstructorUsedError;
+  double get slaPct => throw _privateConstructorUsedError;
+  int get prepTargetMins => throw _privateConstructorUsedError;
+  int get sampleSize => throw _privateConstructorUsedError;
+  List<SpeedItemDto> get slowItems => throw _privateConstructorUsedError;
+
+  /// Serializes this SpeedSectionDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of SpeedSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $SpeedSectionDtoCopyWith<SpeedSectionDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $SpeedSectionDtoCopyWith<$Res> {
+  factory $SpeedSectionDtoCopyWith(
+    SpeedSectionDto value,
+    $Res Function(SpeedSectionDto) then,
+  ) = _$SpeedSectionDtoCopyWithImpl<$Res, SpeedSectionDto>;
+  @useResult
+  $Res call({
+    int prepMedianMin,
+    int pickupMedianMin,
+    double slaPct,
+    int prepTargetMins,
+    int sampleSize,
+    List<SpeedItemDto> slowItems,
+  });
+}
+
+/// @nodoc
+class _$SpeedSectionDtoCopyWithImpl<$Res, $Val extends SpeedSectionDto>
+    implements $SpeedSectionDtoCopyWith<$Res> {
+  _$SpeedSectionDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of SpeedSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? prepMedianMin = null,
+    Object? pickupMedianMin = null,
+    Object? slaPct = null,
+    Object? prepTargetMins = null,
+    Object? sampleSize = null,
+    Object? slowItems = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            prepMedianMin: null == prepMedianMin
+                ? _value.prepMedianMin
+                : prepMedianMin // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pickupMedianMin: null == pickupMedianMin
+                ? _value.pickupMedianMin
+                : pickupMedianMin // ignore: cast_nullable_to_non_nullable
+                      as int,
+            slaPct: null == slaPct
+                ? _value.slaPct
+                : slaPct // ignore: cast_nullable_to_non_nullable
+                      as double,
+            prepTargetMins: null == prepTargetMins
+                ? _value.prepTargetMins
+                : prepTargetMins // ignore: cast_nullable_to_non_nullable
+                      as int,
+            sampleSize: null == sampleSize
+                ? _value.sampleSize
+                : sampleSize // ignore: cast_nullable_to_non_nullable
+                      as int,
+            slowItems: null == slowItems
+                ? _value.slowItems
+                : slowItems // ignore: cast_nullable_to_non_nullable
+                      as List<SpeedItemDto>,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$SpeedSectionDtoImplCopyWith<$Res>
+    implements $SpeedSectionDtoCopyWith<$Res> {
+  factory _$$SpeedSectionDtoImplCopyWith(
+    _$SpeedSectionDtoImpl value,
+    $Res Function(_$SpeedSectionDtoImpl) then,
+  ) = __$$SpeedSectionDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    int prepMedianMin,
+    int pickupMedianMin,
+    double slaPct,
+    int prepTargetMins,
+    int sampleSize,
+    List<SpeedItemDto> slowItems,
+  });
+}
+
+/// @nodoc
+class __$$SpeedSectionDtoImplCopyWithImpl<$Res>
+    extends _$SpeedSectionDtoCopyWithImpl<$Res, _$SpeedSectionDtoImpl>
+    implements _$$SpeedSectionDtoImplCopyWith<$Res> {
+  __$$SpeedSectionDtoImplCopyWithImpl(
+    _$SpeedSectionDtoImpl _value,
+    $Res Function(_$SpeedSectionDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of SpeedSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? prepMedianMin = null,
+    Object? pickupMedianMin = null,
+    Object? slaPct = null,
+    Object? prepTargetMins = null,
+    Object? sampleSize = null,
+    Object? slowItems = null,
+  }) {
+    return _then(
+      _$SpeedSectionDtoImpl(
+        prepMedianMin: null == prepMedianMin
+            ? _value.prepMedianMin
+            : prepMedianMin // ignore: cast_nullable_to_non_nullable
+                  as int,
+        pickupMedianMin: null == pickupMedianMin
+            ? _value.pickupMedianMin
+            : pickupMedianMin // ignore: cast_nullable_to_non_nullable
+                  as int,
+        slaPct: null == slaPct
+            ? _value.slaPct
+            : slaPct // ignore: cast_nullable_to_non_nullable
+                  as double,
+        prepTargetMins: null == prepTargetMins
+            ? _value.prepTargetMins
+            : prepTargetMins // ignore: cast_nullable_to_non_nullable
+                  as int,
+        sampleSize: null == sampleSize
+            ? _value.sampleSize
+            : sampleSize // ignore: cast_nullable_to_non_nullable
+                  as int,
+        slowItems: null == slowItems
+            ? _value._slowItems
+            : slowItems // ignore: cast_nullable_to_non_nullable
+                  as List<SpeedItemDto>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SpeedSectionDtoImpl implements _SpeedSectionDto {
+  const _$SpeedSectionDtoImpl({
+    this.prepMedianMin = 0,
+    this.pickupMedianMin = 0,
+    this.slaPct = 0.0,
+    this.prepTargetMins = 15,
+    this.sampleSize = 0,
+    final List<SpeedItemDto> slowItems = const <SpeedItemDto>[],
+  }) : _slowItems = slowItems;
+
+  factory _$SpeedSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SpeedSectionDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final int prepMedianMin;
+  @override
+  @JsonKey()
+  final int pickupMedianMin;
+  @override
+  @JsonKey()
+  final double slaPct;
+  @override
+  @JsonKey()
+  final int prepTargetMins;
+  @override
+  @JsonKey()
+  final int sampleSize;
+  final List<SpeedItemDto> _slowItems;
+  @override
+  @JsonKey()
+  List<SpeedItemDto> get slowItems {
+    if (_slowItems is EqualUnmodifiableListView) return _slowItems;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_slowItems);
+  }
+
+  @override
+  String toString() {
+    return 'SpeedSectionDto(prepMedianMin: $prepMedianMin, pickupMedianMin: $pickupMedianMin, slaPct: $slaPct, prepTargetMins: $prepTargetMins, sampleSize: $sampleSize, slowItems: $slowItems)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SpeedSectionDtoImpl &&
+            (identical(other.prepMedianMin, prepMedianMin) ||
+                other.prepMedianMin == prepMedianMin) &&
+            (identical(other.pickupMedianMin, pickupMedianMin) ||
+                other.pickupMedianMin == pickupMedianMin) &&
+            (identical(other.slaPct, slaPct) || other.slaPct == slaPct) &&
+            (identical(other.prepTargetMins, prepTargetMins) ||
+                other.prepTargetMins == prepTargetMins) &&
+            (identical(other.sampleSize, sampleSize) ||
+                other.sampleSize == sampleSize) &&
+            const DeepCollectionEquality().equals(
+              other._slowItems,
+              _slowItems,
+            ));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    prepMedianMin,
+    pickupMedianMin,
+    slaPct,
+    prepTargetMins,
+    sampleSize,
+    const DeepCollectionEquality().hash(_slowItems),
+  );
+
+  /// Create a copy of SpeedSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SpeedSectionDtoImplCopyWith<_$SpeedSectionDtoImpl> get copyWith =>
+      __$$SpeedSectionDtoImplCopyWithImpl<_$SpeedSectionDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SpeedSectionDtoImplToJson(this);
+  }
+}
+
+abstract class _SpeedSectionDto implements SpeedSectionDto {
+  const factory _SpeedSectionDto({
+    final int prepMedianMin,
+    final int pickupMedianMin,
+    final double slaPct,
+    final int prepTargetMins,
+    final int sampleSize,
+    final List<SpeedItemDto> slowItems,
+  }) = _$SpeedSectionDtoImpl;
+
+  factory _SpeedSectionDto.fromJson(Map<String, dynamic> json) =
+      _$SpeedSectionDtoImpl.fromJson;
+
+  @override
+  int get prepMedianMin;
+  @override
+  int get pickupMedianMin;
+  @override
+  double get slaPct;
+  @override
+  int get prepTargetMins;
+  @override
+  int get sampleSize;
+  @override
+  List<SpeedItemDto> get slowItems;
+
+  /// Create a copy of SpeedSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$SpeedSectionDtoImplCopyWith<_$SpeedSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+SpeedItemDto _$SpeedItemDtoFromJson(Map<String, dynamic> json) {
+  return _SpeedItemDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$SpeedItemDto {
+  String get itemId => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  double get avgPrepMin => throw _privateConstructorUsedError;
+  int get count => throw _privateConstructorUsedError;
+
+  /// Serializes this SpeedItemDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of SpeedItemDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $SpeedItemDtoCopyWith<SpeedItemDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $SpeedItemDtoCopyWith<$Res> {
+  factory $SpeedItemDtoCopyWith(
+    SpeedItemDto value,
+    $Res Function(SpeedItemDto) then,
+  ) = _$SpeedItemDtoCopyWithImpl<$Res, SpeedItemDto>;
+  @useResult
+  $Res call({String itemId, String name, double avgPrepMin, int count});
+}
+
+/// @nodoc
+class _$SpeedItemDtoCopyWithImpl<$Res, $Val extends SpeedItemDto>
+    implements $SpeedItemDtoCopyWith<$Res> {
+  _$SpeedItemDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of SpeedItemDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemId = null,
+    Object? name = null,
+    Object? avgPrepMin = null,
+    Object? count = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            itemId: null == itemId
+                ? _value.itemId
+                : itemId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            avgPrepMin: null == avgPrepMin
+                ? _value.avgPrepMin
+                : avgPrepMin // ignore: cast_nullable_to_non_nullable
+                      as double,
+            count: null == count
+                ? _value.count
+                : count // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$SpeedItemDtoImplCopyWith<$Res>
+    implements $SpeedItemDtoCopyWith<$Res> {
+  factory _$$SpeedItemDtoImplCopyWith(
+    _$SpeedItemDtoImpl value,
+    $Res Function(_$SpeedItemDtoImpl) then,
+  ) = __$$SpeedItemDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String itemId, String name, double avgPrepMin, int count});
+}
+
+/// @nodoc
+class __$$SpeedItemDtoImplCopyWithImpl<$Res>
+    extends _$SpeedItemDtoCopyWithImpl<$Res, _$SpeedItemDtoImpl>
+    implements _$$SpeedItemDtoImplCopyWith<$Res> {
+  __$$SpeedItemDtoImplCopyWithImpl(
+    _$SpeedItemDtoImpl _value,
+    $Res Function(_$SpeedItemDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of SpeedItemDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemId = null,
+    Object? name = null,
+    Object? avgPrepMin = null,
+    Object? count = null,
+  }) {
+    return _then(
+      _$SpeedItemDtoImpl(
+        itemId: null == itemId
+            ? _value.itemId
+            : itemId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        avgPrepMin: null == avgPrepMin
+            ? _value.avgPrepMin
+            : avgPrepMin // ignore: cast_nullable_to_non_nullable
+                  as double,
+        count: null == count
+            ? _value.count
+            : count // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SpeedItemDtoImpl implements _SpeedItemDto {
+  const _$SpeedItemDtoImpl({
+    this.itemId = '',
+    this.name = '',
+    this.avgPrepMin = 0.0,
+    this.count = 0,
+  });
+
+  factory _$SpeedItemDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SpeedItemDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String itemId;
+  @override
+  @JsonKey()
+  final String name;
+  @override
+  @JsonKey()
+  final double avgPrepMin;
+  @override
+  @JsonKey()
+  final int count;
+
+  @override
+  String toString() {
+    return 'SpeedItemDto(itemId: $itemId, name: $name, avgPrepMin: $avgPrepMin, count: $count)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SpeedItemDtoImpl &&
+            (identical(other.itemId, itemId) || other.itemId == itemId) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.avgPrepMin, avgPrepMin) ||
+                other.avgPrepMin == avgPrepMin) &&
+            (identical(other.count, count) || other.count == count));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, itemId, name, avgPrepMin, count);
+
+  /// Create a copy of SpeedItemDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SpeedItemDtoImplCopyWith<_$SpeedItemDtoImpl> get copyWith =>
+      __$$SpeedItemDtoImplCopyWithImpl<_$SpeedItemDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SpeedItemDtoImplToJson(this);
+  }
+}
+
+abstract class _SpeedItemDto implements SpeedItemDto {
+  const factory _SpeedItemDto({
+    final String itemId,
+    final String name,
+    final double avgPrepMin,
+    final int count,
+  }) = _$SpeedItemDtoImpl;
+
+  factory _SpeedItemDto.fromJson(Map<String, dynamic> json) =
+      _$SpeedItemDtoImpl.fromJson;
+
+  @override
+  String get itemId;
+  @override
+  String get name;
+  @override
+  double get avgPrepMin;
+  @override
+  int get count;
+
+  /// Create a copy of SpeedItemDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$SpeedItemDtoImplCopyWith<_$SpeedItemDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

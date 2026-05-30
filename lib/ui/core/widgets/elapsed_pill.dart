@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
@@ -18,7 +19,8 @@ final elapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
 /// line is active; once it's terminal (served / voided) we have no end stamp
 /// on the Ticket, so the pill freezes to the static sent clock instead of an
 /// ever-growing number. Active pills escalate to the urgent color at the
-/// venue's 10-minute overdue line so the board agrees with the floor + audio.
+/// venue's configurable service target (prepTargetMins) so the board agrees
+/// with the floor + audio. See docs/adr/0013.
 class ElapsedPill extends ConsumerWidget {
   /// When the line was sent to the kitchen — the elapsed anchor.
   final DateTime sentAtTime;
@@ -28,9 +30,6 @@ class ElapsedPill extends ConsumerWidget {
 
   /// True for served / voided lines: stop ticking, show the sent clock.
   final bool terminal;
-
-  /// Minutes since send at which the pill turns urgent.
-  static const _overdueMinutes = 10;
 
   /// Minute-granularity label: "<1m", "8m", "1j 5m". No seconds — the 30s
   /// ticker would make a seconds field jitter.
@@ -64,8 +63,10 @@ class ElapsedPill extends ConsumerWidget {
 
     // Live: rebuild on each heartbeat so the elapsed label stays current.
     ref.watch(elapsedTickerProvider);
+    // Overdue line = the venue's configurable service target (ADR-0013).
+    final overdueMinutes = ref.watch(venueSettingsProvider).prepTargetMins;
     final d = DateTime.now().difference(sentAtTime);
-    final overdue = d.inMinutes >= _overdueMinutes;
+    final overdue = d.inMinutes >= overdueMinutes;
     return _pill(
       context,
       icon: overdue ? Icons.timer_outlined : Icons.access_time,

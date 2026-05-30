@@ -219,7 +219,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                 _phoneRow(context, sc,
                     label: 'Laporan & shift',
                     value:
-                        'Hari kerja mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00',
+                        'Mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00 · target ${s.prepTargetMins}m',
                     onTap: () => _openDetail(context, 'Laporan & shift',
                         (c, _) => _ReportsHourCard()),
                     last: true),
@@ -909,6 +909,67 @@ class _ReportsHourCard extends ConsumerWidget {
                       Icons.add,
                       hour < 23
                           ? () => n.patch(businessDayStartHour: hour + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(height: 1, color: sc.border0),
+          const SizedBox(height: 16),
+          // Service target (ADR-0013): one threshold for the overdue alert
+          // AND the speed-of-service SLA hit-rate in reports.
+          Row(
+            children: [
+              SizedBox(
+                width: 200,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Target kecepatan dapur',
+                        style: SatType.sans(size: 13, color: sc.textMd)),
+                    const SizedBox(height: 2),
+                    Text('Batas "telat" di lantai + SLA laporan',
+                        style: SatType.sans(size: 11, color: sc.textLo)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    _stepBtn(
+                      sc,
+                      Icons.remove,
+                      s.prepTargetMins > 5
+                          ? () => n.patch(
+                              prepTargetMins: s.prepTargetMins - 5)
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: sc.bg3,
+                        border: Border.all(color: sc.border1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${s.prepTargetMins} min',
+                          style: SatType.mono(
+                            size: 13,
+                            weight: FontWeight.w600,
+                            color: sc.textHi,
+                          )),
+                    ),
+                    const SizedBox(width: 10),
+                    _stepBtn(
+                      sc,
+                      Icons.add,
+                      s.prepTargetMins < 60
+                          ? () => n.patch(
+                              prepTargetMins: s.prepTargetMins + 5)
                           : null,
                     ),
                   ],

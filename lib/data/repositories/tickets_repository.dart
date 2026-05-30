@@ -10,6 +10,7 @@ import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/models/ticket_modifier.dart';
 
 /// Surfaces bootstrap progress for the per-table ticket list.
 final ticketsStatusProvider =
@@ -91,8 +92,16 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       variantName: d.variantName,
       course: _courseFromKey(d.course),
       qty: d.qty,
-      modifiers: d.modifiers,
-      specialInstructions: d.specialInstructions,
+      modifiers: [
+        for (final m in d.modifiers)
+          TicketModifier(
+            groupId: m.groupId,
+            optionId: m.optionId,
+            label: m.label,
+            priceDelta: m.priceDelta,
+          ),
+      ],
+      note: d.note,
       price: d.price,
       status: ticketStatusFromKey(d.status),
       // Domain stores sentAt as `HH:mm` local; the KDS age computation
@@ -150,6 +159,15 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             course: _courseFromKey(l.course),
             qty: l.qty,
             unitPrice: l.unitPrice,
+            selectedModifiers: [
+              for (final m in l.modifiers)
+                TicketModifier(
+                  groupId: m.groupId,
+                  optionId: m.optionId,
+                  label: m.label,
+                  priceDelta: m.priceDelta,
+                ),
+            ],
           ),
       ];
       return sendOrder(tableId, cart, actorId: actorId)
@@ -231,8 +249,8 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           variantName: cart[i].variantName,
           course: cart[i].course,
           qty: cart[i].qty,
-          modifiers: cart[i].modifiers,
-          specialInstructions: cart[i].special.isEmpty ? null : cart[i].special,
+          modifiers: cart[i].selectedModifiers,
+          note: cart[i].note.isEmpty ? null : cart[i].note,
           price: cart[i].unitPrice,
           status: (cart[i].course == CourseId.fireNow || cart[i].course == CourseId.drinksNow)
               ? TicketStatus.sent

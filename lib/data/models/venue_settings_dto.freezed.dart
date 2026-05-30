@@ -35,6 +35,7 @@ mixin _$VenueSettingsDto {
   int get serviceRateBps => throw _privateConstructorUsedError;
   int get serviceFixedAmount => throw _privateConstructorUsedError;
   int get businessDayStartHour => throw _privateConstructorUsedError;
+  int get prepTargetMins => throw _privateConstructorUsedError;
 
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -68,6 +69,7 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     int serviceRateBps,
     int serviceFixedAmount,
     int businessDayStartHour,
+    int prepTargetMins,
   });
 }
 
@@ -100,6 +102,7 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? serviceRateBps = null,
     Object? serviceFixedAmount = null,
     Object? businessDayStartHour = null,
+    Object? prepTargetMins = null,
   }) {
     return _then(
       _value.copyWith(
@@ -159,6 +162,10 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.businessDayStartHour
                 : businessDayStartHour // ignore: cast_nullable_to_non_nullable
                       as int,
+            prepTargetMins: null == prepTargetMins
+                ? _value.prepTargetMins
+                : prepTargetMins // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -189,6 +196,7 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     int serviceRateBps,
     int serviceFixedAmount,
     int businessDayStartHour,
+    int prepTargetMins,
   });
 }
 
@@ -220,6 +228,7 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? serviceRateBps = null,
     Object? serviceFixedAmount = null,
     Object? businessDayStartHour = null,
+    Object? prepTargetMins = null,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -279,6 +288,10 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.businessDayStartHour
             : businessDayStartHour // ignore: cast_nullable_to_non_nullable
                   as int,
+        prepTargetMins: null == prepTargetMins
+            ? _value.prepTargetMins
+            : prepTargetMins // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -302,6 +315,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.serviceRateBps = 500,
     this.serviceFixedAmount = 0,
     this.businessDayStartHour = 4,
+    this.prepTargetMins = 15,
   });
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -349,10 +363,13 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final int businessDayStartHour;
+  @override
+  @JsonKey()
+  final int prepTargetMins;
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, businessDayStartHour: $businessDayStartHour)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins)';
   }
 
   @override
@@ -384,7 +401,9 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
             (identical(other.serviceFixedAmount, serviceFixedAmount) ||
                 other.serviceFixedAmount == serviceFixedAmount) &&
             (identical(other.businessDayStartHour, businessDayStartHour) ||
-                other.businessDayStartHour == businessDayStartHour));
+                other.businessDayStartHour == businessDayStartHour) &&
+            (identical(other.prepTargetMins, prepTargetMins) ||
+                other.prepTargetMins == prepTargetMins));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -405,6 +424,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     serviceRateBps,
     serviceFixedAmount,
     businessDayStartHour,
+    prepTargetMins,
   );
 
   /// Create a copy of VenueSettingsDto
@@ -440,6 +460,7 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final int serviceRateBps,
     final int serviceFixedAmount,
     final int businessDayStartHour,
+    final int prepTargetMins,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -473,6 +494,8 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   int get serviceFixedAmount;
   @override
   int get businessDayStartHour;
+  @override
+  int get prepTargetMins;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

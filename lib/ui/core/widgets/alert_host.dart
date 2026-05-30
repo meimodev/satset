@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:satset/router/app_router.dart';
 
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/alert_sound_service.dart';
@@ -59,6 +60,23 @@ class _AlertHostState extends ConsumerState<AlertHost>
     setState(() => _shown = alert);
     _ac.forward();
     _dwell = Timer(const Duration(seconds: 3), _hide);
+  }
+
+  /// "Ambil" tapped: jump to the ready table's detail unless already there,
+  /// then dismiss. Opening the detail acquires the table lock — the waiter is
+  /// grabbing the handoff.
+  void _grab() {
+    final id = _shown?.tableId;
+    if (id != null && id.isNotEmpty) {
+      // AlertHost sits above the route subtree (MaterialApp.router builder), so
+      // GoRouterState.of(context) has no ancestor here. Reach the router via the
+      // provider instead.
+      final router = ref.read(routerProvider);
+      final loc = router.routerDelegate.currentConfiguration.uri.path;
+      final inIt = loc == '/table/$id' || loc.startsWith('/table/$id/');
+      if (!inIt) router.push('/table/$id');
+    }
+    _hide();
   }
 
   void _hide() {
@@ -123,7 +141,7 @@ class _AlertHostState extends ConsumerState<AlertHost>
                   color: Colors.transparent,
                   child: ReadyToast(
                     alert: _shown!,
-                    onView: _hide,
+                    onView: _grab,
                     onDismiss: _hide,
                   ),
                 ),

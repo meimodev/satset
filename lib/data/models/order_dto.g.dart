@@ -6,16 +6,34 @@ part of 'order_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_$CartModifierDtoImpl _$$CartModifierDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$CartModifierDtoImpl(
+  groupId: json['groupId'] as String,
+  optionId: json['optionId'] as String,
+  label: json['label'] as String,
+  priceDelta: (json['priceDelta'] as num).toInt(),
+);
+
+Map<String, dynamic> _$$CartModifierDtoImplToJson(
+  _$CartModifierDtoImpl instance,
+) => <String, dynamic>{
+  'groupId': instance.groupId,
+  'optionId': instance.optionId,
+  'label': instance.label,
+  'priceDelta': instance.priceDelta,
+};
+
 _$CartLineDtoImpl _$$CartLineDtoImplFromJson(Map<String, dynamic> json) =>
     _$CartLineDtoImpl(
       itemId: json['itemId'] as String,
       name: json['name'] as String,
       variantId: json['variantId'] as String,
       variantName: json['variantName'] as String,
-      modifierOptionIds: (json['modifierOptionIds'] as List<dynamic>)
-          .map((e) => e as String)
+      modifiers: (json['modifiers'] as List<dynamic>)
+          .map((e) => CartModifierDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      specialInstructions: json['specialInstructions'] as String?,
+      note: json['note'] as String?,
       course: json['course'] as String,
       qty: (json['qty'] as num).toInt(),
       unitPrice: (json['unitPrice'] as num).toInt(),
@@ -27,8 +45,8 @@ Map<String, dynamic> _$$CartLineDtoImplToJson(_$CartLineDtoImpl instance) =>
       'name': instance.name,
       'variantId': instance.variantId,
       'variantName': instance.variantName,
-      'modifierOptionIds': instance.modifierOptionIds,
-      'specialInstructions': instance.specialInstructions,
+      'modifiers': instance.modifiers,
+      'note': instance.note,
       'course': instance.course,
       'qty': instance.qty,
       'unitPrice': instance.unitPrice,

@@ -5,10 +5,13 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/domain/models/menu_tag.dart';
 import 'package:satset/domain/models/modifier_group.dart';
+import 'package:satset/domain/models/ticket_modifier.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
 
 const _uuid = Uuid();
@@ -18,6 +21,37 @@ Future<void> showModifierSheet({
   required MenuItem item,
   required ValueChanged<CartItem> onAdd,
 }) {
+  final l = context.layout;
+  if (l.useTabletShell) {
+    return showDialog(
+      context: context,
+      useRootNavigator: true,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: Container(
+              color: ctx.sat.bg1,
+              child: _ModifierSheetBody(
+                item: item,
+                scrollController: ScrollController(),
+                onAdd: (ci) {
+                  onAdd(ci);
+                  Navigator.of(ctx).pop();
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   return showModalBottomSheet(
     context: context,
     useRootNavigator: true,
@@ -123,25 +157,28 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
   }
 
   void _submit() {
-    final labels = <String>[];
+    // Build the structured snapshot once; the display labels derive from it
+    // (clean label + sign from priceDelta). Both single- and multi-select
+    // groups are captured — the old id-flatten dropped single-select. See
+    // docs/adr/0011-ticket-modifier-snapshot.md.
+    final selected = <TicketModifier>[];
     for (final g in widget.item.modifierGroups) {
       final v = _selections[g.id];
-      if (g.multi && v is List<String>) {
-        for (final id in v) {
-          final o = g.options.firstWhere(
-            (o) => o.id == id,
-            orElse: () => const ModifierOption(id: '', name: ''),
-          );
-          if (o.id.isNotEmpty) {
-            labels.add('${o.priceDelta > 0 ? '+ ' : ''}${o.name}');
-          }
-        }
-      } else if (v is String) {
+      final ids = g.multi && v is List<String>
+          ? v
+          : (v is String ? [v] : const <String>[]);
+      for (final id in ids) {
         final o = g.options.firstWhere(
-          (o) => o.id == v,
+          (o) => o.id == id,
           orElse: () => const ModifierOption(id: '', name: ''),
         );
-        if (o.id.isNotEmpty) labels.add(o.name);
+        if (o.id.isEmpty) continue;
+        selected.add(TicketModifier(
+          groupId: g.id,
+          optionId: o.id,
+          label: o.name,
+          priceDelta: o.priceDelta,
+        ));
       }
     }
     final variant = widget.item.variants.firstWhere((v) => v.id == _variantId);
@@ -151,9 +188,9 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
       name: widget.item.name,
       variantId: _variantId,
       variantName: variant.name,
-      modifiers: labels,
-      modifierIds: Map<String, dynamic>.from(_selections),
-      special: _special,
+      modifiers: [for (final m in selected) m.display],
+      selectedModifiers: selected,
+      note: _special,
       course: _course,
       qty: _qty,
       unitPrice: _unit,
@@ -164,23 +201,28 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final l = context.layout;
     final tagsById = ref.watch(menuTagsByIdProvider);
+    final isTablet = l.useTabletShell;
     return Container(
       decoration: BoxDecoration(
         color: sc.bg1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: isTablet
+            ? BorderRadius.circular(28)
+            : const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 10, 0, 4),
-            child: Container(
-              width: 38,
-              height: 4,
-              decoration:
-                  BoxDecoration(color: sc.textDim, borderRadius: BorderRadius.circular(4)),
+          if (!isTablet)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 4),
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration:
+                    BoxDecoration(color: sc.textDim, borderRadius: BorderRadius.circular(4)),
+              ),
             ),
-          ),
           _Head(item: widget.item, onClose: () => Navigator.of(context).pop()),
           Expanded(
             child: SingleChildScrollView(
@@ -189,29 +231,37 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.item.allergens.isNotEmpty)
+                  if (widget.item.allergens.isNotEmpty ||
+                      widget.item.dietary.isNotEmpty)
                     Container(
                       margin: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: sc.urgentSoft,
+                        color: sc.bg2,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: sc.urgent.withValues(alpha: 0.3)),
+                        border: Border.all(color: sc.border0),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.warning_amber_rounded, size: 14, color: sc.urgent),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Mengandung ${widget.item.allergens.map((a) => (tagsById[a]?.name ?? '').toLowerCase()).where((s) => s.isNotEmpty).join(', ')} — konfirmasi ke tamu',
-                              style: SatType.sans(
-                                size: 12,
-                                weight: FontWeight.w500,
-                                color: sc.urgent,
-                              ),
+                          if (widget.item.dietary.isNotEmpty)
+                            _TagLine(
+                              icon: Icons.eco_outlined,
+                              color: sc.info,
+                              text:
+                                  'Cocok untuk ${_tagNames(widget.item.dietary, tagsById)}',
                             ),
-                          ),
+                          if (widget.item.allergens.isNotEmpty &&
+                              widget.item.dietary.isNotEmpty)
+                            const SizedBox(height: 8),
+                          if (widget.item.allergens.isNotEmpty)
+                            _TagLine(
+                              icon: Icons.warning_amber_rounded,
+                              color: sc.urgent,
+                              text:
+                                  'Mengandung ${_tagNames(widget.item.allergens, tagsById)} — konfirmasi ke tamu',
+                            ),
                         ],
                       ),
                     ),
@@ -298,12 +348,12 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide:
-                                  BorderSide(color: _special.isEmpty ? sc.border0 : sc.urgent),
+                                  BorderSide(color: _special.isEmpty ? sc.border0 : sc.accentBorder),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide:
-                                  BorderSide(color: _special.isEmpty ? sc.border0 : sc.urgent),
+                                  BorderSide(color: _special.isEmpty ? sc.border0 : sc.accentBorder),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -316,7 +366,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                           style: SatType.sans(size: 13, color: sc.textHi),
                         ),
                         const SizedBox(height: 4),
-                        Text('${_special.length} / 80 · merah di KDS',
+                        Text('${_special.length} / 80 · tampil ke dapur',
                             style: SatType.mono(
                               size: 10,
                               color: sc.textLo,
@@ -339,6 +389,41 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Comma-joined, lowercased tag names, resolving ids against the snapshot.
+String _tagNames(List<String> ids, Map<String, MenuTag> tagsById) => ids
+    .map((id) => (tagsById[id]?.name ?? '').toLowerCase())
+    .where((s) => s.isNotEmpty)
+    .join(', ');
+
+/// One coloured icon+text line in the merged diet/allergen block.
+class _TagLine extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String text;
+  const _TagLine({required this.icon, required this.color, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: SatType.sans(
+              size: 12,
+              weight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -205,6 +205,7 @@ class BasketPairDto with _$BasketPairDto {
 class OpsSectionDto with _$OpsSectionDto {
   const factory OpsSectionDto({
     @Default(<KpiTileDto>[]) List<KpiTileDto> kpis,
+    @Default(SpeedSectionDto()) SpeedSectionDto speed,
     @Default(<StationRowDto>[]) List<StationRowDto> stations,
     @Default(<List<double>>[]) List<List<double>> heatmap,
     required ReservationStatsDto reservations,
@@ -214,6 +215,37 @@ class OpsSectionDto with _$OpsSectionDto {
 
   factory OpsSectionDto.fromJson(Map<String, dynamic> json) =>
       _$OpsSectionDtoFromJson(json);
+}
+
+/// Speed-of-service rollup (ADR-0013). Prep time = sent→ready (kitchen),
+/// pickup lag = ready→served (food at the pass). Medians, since service
+/// times are right-skewed.
+@freezed
+class SpeedSectionDto with _$SpeedSectionDto {
+  const factory SpeedSectionDto({
+    @Default(0) int prepMedianMin,
+    @Default(0) int pickupMedianMin,
+    @Default(0.0) double slaPct,
+    @Default(15) int prepTargetMins,
+    @Default(0) int sampleSize,
+    @Default(<SpeedItemDto>[]) List<SpeedItemDto> slowItems,
+  }) = _SpeedSectionDto;
+
+  factory SpeedSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$SpeedSectionDtoFromJson(json);
+}
+
+@freezed
+class SpeedItemDto with _$SpeedItemDto {
+  const factory SpeedItemDto({
+    @Default('') String itemId,
+    @Default('') String name,
+    @Default(0.0) double avgPrepMin,
+    @Default(0) int count,
+  }) = _SpeedItemDto;
+
+  factory SpeedItemDto.fromJson(Map<String, dynamic> json) =>
+      _$SpeedItemDtoFromJson(json);
 }
 
 @freezed

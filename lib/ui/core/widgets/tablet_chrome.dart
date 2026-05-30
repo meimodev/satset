@@ -9,6 +9,7 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 class TabletShell extends StatelessWidget {
   final String activeTab;
   final int readyCount;
+  final int kitchenCount;
   final Widget child;
   final List<String> crumbs;
 
@@ -16,6 +17,7 @@ class TabletShell extends StatelessWidget {
     super.key,
     required this.activeTab,
     required this.readyCount,
+    required this.kitchenCount,
     required this.child,
     required this.crumbs,
   });
@@ -27,7 +29,10 @@ class TabletShell extends StatelessWidget {
       backgroundColor: sc.bg0,
       body: Row(
         children: [
-          TabletSideRail(active: activeTab, readyCount: readyCount),
+          TabletSideRail(
+              active: activeTab,
+              readyCount: readyCount,
+              kitchenCount: kitchenCount),
           Expanded(
             child: Column(
               children: [
@@ -45,7 +50,13 @@ class TabletShell extends StatelessWidget {
 class TabletSideRail extends StatelessWidget {
   final String active;
   final int readyCount;
-  const TabletSideRail({super.key, required this.active, required this.readyCount});
+  final int kitchenCount;
+  const TabletSideRail({
+    super.key,
+    required this.active,
+    required this.readyCount,
+    required this.kitchenCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +79,7 @@ class TabletSideRail extends StatelessWidget {
                 children: [
                   _RailBtn(id: 'tables', label: 'Meja', icon: Icons.grid_view_rounded, route: '/tables', active: active),
                   _RailBtn(id: 'orders', label: 'Pesanan', icon: Icons.description_outlined, route: '/orders', active: active, badge: readyCount, alert: readyCount > 0),
-                  _RailBtn(id: 'kitchen', label: 'Antrian', icon: Icons.receipt_long_outlined, route: '/kitchen', active: active),
+                  _RailBtn(id: 'kitchen', label: 'Antrian', icon: Icons.receipt_long_outlined, route: '/kitchen', active: active, badge: kitchenCount),
                   _RailDiv(),
                   _RailBtn(id: 'venue', label: 'Venue', icon: Icons.storefront_outlined, route: '/venue', active: active),
                 ],

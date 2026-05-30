@@ -322,6 +322,9 @@ _$OpsSectionDtoImpl _$$OpsSectionDtoImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => KpiTileDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <KpiTileDto>[],
+      speed: json['speed'] == null
+          ? const SpeedSectionDto()
+          : SpeedSectionDto.fromJson(json['speed'] as Map<String, dynamic>),
       stations:
           (json['stations'] as List<dynamic>?)
               ?.map((e) => StationRowDto.fromJson(e as Map<String, dynamic>))
@@ -354,11 +357,54 @@ _$OpsSectionDtoImpl _$$OpsSectionDtoImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$OpsSectionDtoImplToJson(_$OpsSectionDtoImpl instance) =>
     <String, dynamic>{
       'kpis': instance.kpis,
+      'speed': instance.speed,
       'stations': instance.stations,
       'heatmap': instance.heatmap,
       'reservations': instance.reservations,
       'voidReasons': instance.voidReasons,
       'voidByStaff': instance.voidByStaff,
+    };
+
+_$SpeedSectionDtoImpl _$$SpeedSectionDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$SpeedSectionDtoImpl(
+  prepMedianMin: (json['prepMedianMin'] as num?)?.toInt() ?? 0,
+  pickupMedianMin: (json['pickupMedianMin'] as num?)?.toInt() ?? 0,
+  slaPct: (json['slaPct'] as num?)?.toDouble() ?? 0.0,
+  prepTargetMins: (json['prepTargetMins'] as num?)?.toInt() ?? 15,
+  sampleSize: (json['sampleSize'] as num?)?.toInt() ?? 0,
+  slowItems:
+      (json['slowItems'] as List<dynamic>?)
+          ?.map((e) => SpeedItemDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <SpeedItemDto>[],
+);
+
+Map<String, dynamic> _$$SpeedSectionDtoImplToJson(
+  _$SpeedSectionDtoImpl instance,
+) => <String, dynamic>{
+  'prepMedianMin': instance.prepMedianMin,
+  'pickupMedianMin': instance.pickupMedianMin,
+  'slaPct': instance.slaPct,
+  'prepTargetMins': instance.prepTargetMins,
+  'sampleSize': instance.sampleSize,
+  'slowItems': instance.slowItems,
+};
+
+_$SpeedItemDtoImpl _$$SpeedItemDtoImplFromJson(Map<String, dynamic> json) =>
+    _$SpeedItemDtoImpl(
+      itemId: json['itemId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      avgPrepMin: (json['avgPrepMin'] as num?)?.toDouble() ?? 0.0,
+      count: (json['count'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$$SpeedItemDtoImplToJson(_$SpeedItemDtoImpl instance) =>
+    <String, dynamic>{
+      'itemId': instance.itemId,
+      'name': instance.name,
+      'avgPrepMin': instance.avgPrepMin,
+      'count': instance.count,
     };
 
 _$StationRowDtoImpl _$$StationRowDtoImplFromJson(Map<String, dynamic> json) =>

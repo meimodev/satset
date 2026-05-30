@@ -72,6 +72,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     int? serviceRateBps,
     int? serviceFixedAmount,
     int? businessDayStartHour,
+    int? prepTargetMins,
   }) async {
     final prev = state;
     state = state.copyWith(
@@ -89,6 +90,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       serviceFixedAmount: serviceFixedAmount ?? state.serviceFixedAmount,
       businessDayStartHour:
           businessDayStartHour ?? state.businessDayStartHour,
+      prepTargetMins: prepTargetMins ?? state.prepTargetMins,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -107,6 +109,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'serviceRateBps': ?serviceRateBps,
         'serviceFixedAmount': ?serviceFixedAmount,
         'businessDayStartHour': ?businessDayStartHour,
+        'prepTargetMins': ?prepTargetMins,
       };
       final raw = await ref
           .read(apiClientProvider)

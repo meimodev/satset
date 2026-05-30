@@ -268,7 +268,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final menuTop = menuRows(itemList.take(5));
     final menuSlow = menuRows(itemList.reversed.take(5));
 
-    // Modifier attach: group key before colon.
+    // Modifier attach: count by the snapshotted groupId (ADR-0011).
+    // Tolerant of legacy bare-string rows ("group:option") just in case a
+    // pre-v22 row slipped through.
     final modCounts = <String, int>{};
     final modLabels = {
       'spice': 'Tingkat pedas',
@@ -278,9 +280,12 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     };
     for (final t in tickets) {
       try {
-        final mods = (jsonDecode(t.modifiersJson) as List).cast<String>();
+        final mods = jsonDecode(t.modifiersJson) as List;
         for (final m in mods) {
-          final key = m.split(':').first;
+          final key = m is Map
+              ? (m['groupId'] as String? ?? '')
+              : m.toString().split(':').first;
+          if (key.isEmpty) continue;
           modCounts[key] = (modCounts[key] ?? 0) + 1;
         }
       } catch (_) {}
@@ -393,21 +398,67 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         ? 0
         : sessions.fold<int>(0, (a, s) => a + s.durationSec) ~/ sessions.length;
     final avgTurnMin = avgTurnSec ~/ 60;
-    // Time-to-ready proxy: avg (closedAt - earliest sentAt) per session.
-    var ttrSecSum = 0;
-    var ttrCount = 0;
-    for (final s in sessions) {
-      final ts = ticketsBySession[s.id];
-      if (ts == null || ts.isEmpty) continue;
-      final earliest = ts.map((t) => t.sentAt).reduce((a, b) => a.isBefore(b) ? a : b);
-      ttrSecSum += s.closedAt.difference(earliest).inSeconds;
-      ttrCount++;
+
+    // ─── SPEED OF SERVICE (ADR-0013) ─────────────────────────────
+    // Real lifecycle timing off readyAt / servedAt, not a sentAt proxy.
+    // Voided lines and lines that never reached ready drop out (NULL stamp).
+    final prepTargetMins = settings?.prepTargetMins ?? 15;
+    final prepSecs = <double>[]; // sentAt → readyAt (kitchen prep)
+    final pickupSecs = <double>[]; // readyAt → servedAt (food at the pass)
+    final prepByItem = <String, _SpeedAgg>{};
+    for (final t in tickets) {
+      if (t.status == 'voided' || t.readyAt == null) continue;
+      final prep = t.readyAt!.difference(t.sentAt).inSeconds;
+      if (prep < 0) continue; // clock skew guard
+      prepSecs.add(prep.toDouble());
+      final agg = prepByItem.putIfAbsent(t.itemId, () => _SpeedAgg());
+      agg.totalSec += prep;
+      agg.count += 1;
+      if (t.servedAt != null) {
+        final lag = t.servedAt!.difference(t.readyAt!).inSeconds;
+        if (lag >= 0) pickupSecs.add(lag.toDouble());
+      }
     }
-    final ttrMin = ttrCount == 0 ? 0 : (ttrSecSum ~/ ttrCount ~/ 60);
+    final prepMedianMin = prepSecs.isEmpty ? 0 : (_median(prepSecs) ~/ 60);
+    final pickupMedianMin =
+        pickupSecs.isEmpty ? 0 : (_median(pickupSecs) ~/ 60);
+    final slaTargetSec = prepTargetMins * 60;
+    final slaHits =
+        prepSecs.where((s) => s <= slaTargetSec).length;
+    final slaPct =
+        prepSecs.isEmpty ? 0.0 : (slaHits / prepSecs.length * 100);
+    // Slowest dishes by average prep time (min 1 sample shown, top 5).
+    final slowItems = prepByItem.entries
+        .map((e) => {
+              'itemId': e.key,
+              'name': itemById[e.key]?.name ?? e.key,
+              'avgPrepMin': (e.value.totalSec / e.value.count / 60),
+              'count': e.value.count,
+            })
+        .toList()
+      ..sort((a, b) =>
+          (b['avgPrepMin'] as double).compareTo(a['avgPrepMin'] as double));
+    final speed = {
+      'prepMedianMin': prepMedianMin,
+      'pickupMedianMin': pickupMedianMin,
+      'slaPct': slaPct,
+      'prepTargetMins': prepTargetMins,
+      'sampleSize': prepSecs.length,
+      'slowItems': slowItems.take(5).toList(),
+    };
+
     final opsKpis = [
-      {'label': 'Avg turn time', 'value': '$avgTurnMin min', 'sub': 'Target 45 min'},
-      {'label': 'Time to ready', 'value': '$ttrMin min', 'sub': 'Median order → pass'},
-      {'label': 'Ready alerts', 'value': '—', 'sub': 'P2 — perlu event log'},
+      {'label': 'Avg turn time', 'value': '$avgTurnMin min', 'sub': 'Lama tamu duduk'},
+      {
+        'label': 'Prep dapur',
+        'value': prepSecs.isEmpty ? '—' : '$prepMedianMin min',
+        'sub': 'Median kirim → siap'
+      },
+      {
+        'label': 'Tunggu antar',
+        'value': pickupSecs.isEmpty ? '—' : '$pickupMedianMin min',
+        'sub': 'Median siap → disajikan'
+      },
       {
         'label': 'Reservasi',
         'value': '—',
@@ -558,6 +609,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       },
       'ops': {
         'kpis': opsKpis,
+        'speed': speed,
         'stations': stations,
         'heatmap': heatmap,
         'reservations': reservations,
@@ -581,6 +633,11 @@ class _ItemAgg {
 class _ReasonAgg {
   int count = 0;
   int lostRupiah = 0;
+}
+
+class _SpeedAgg {
+  int totalSec = 0;
+  int count = 0;
 }
 
 class _StaffVoidAgg {

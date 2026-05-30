@@ -6,6 +6,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/cart_item.dart';
+import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
@@ -16,6 +17,7 @@ import 'package:satset/ui/features/review/view_models/review_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
+import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
@@ -410,6 +412,7 @@ class _CourseBlock extends StatelessWidget {
                               color: sc.textHi,
                             ),
                           ),
+                          MenuTagBadges(itemId: c.itemId),
                           if (c.modifiers.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 3),
@@ -417,15 +420,13 @@ class _CourseBlock extends StatelessWidget {
                                   style: SatType.sans(
                                       size: 12, color: sc.textMd, height: 1.4)),
                             ),
-                          if (c.special.isNotEmpty)
+                          if (c.note.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
-                              child: Text('⚠ ${c.special}',
-                                  style: SatType.sans(
-                                    size: 12,
-                                    weight: FontWeight.w500,
-                                    color: sc.urgent,
-                                  )),
+                              child: NoteLine(
+                                label: 'Instruksi khusus',
+                                text: c.note,
+                              ),
                             ),
                           const SizedBox(height: 8),
                           Row(

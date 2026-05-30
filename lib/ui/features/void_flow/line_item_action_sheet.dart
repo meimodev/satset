@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/ticket.dart';
-import 'package:satset/data/repositories/audit_repository.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 
@@ -20,7 +19,6 @@ const _voidReasons = <Map<String, String>>[
 
 void showLineItemActionSheet({
   required BuildContext context,
-  required WidgetRef ref,
   required String tableId,
   required Ticket ticket,
 }) {
@@ -36,7 +34,6 @@ void showLineItemActionSheet({
       maxChildSize: 0.85,
       expand: false,
       builder: (ctx, scroll) => _SheetBody(
-        ref: ref,
         tableId: tableId,
         ticket: ticket,
         scrollController: scroll,
@@ -47,51 +44,44 @@ void showLineItemActionSheet({
 
 enum _Step { actions, voidReason, confirmed }
 
-class _SheetBody extends StatefulWidget {
-  final WidgetRef ref;
+class _SheetBody extends ConsumerStatefulWidget {
   final String tableId;
   final Ticket ticket;
   final ScrollController scrollController;
   const _SheetBody({
-    required this.ref,
     required this.tableId,
     required this.ticket,
     required this.scrollController,
   });
 
   @override
-  State<_SheetBody> createState() => _SheetBodyState();
+  ConsumerState<_SheetBody> createState() => _SheetBodyState();
 }
 
-class _SheetBodyState extends State<_SheetBody> {
+class _SheetBodyState extends ConsumerState<_SheetBody> {
   _Step _step = _Step.actions;
   Map<String, String>? _reason;
   String _reasonText = '';
 
-  String _nowStamp() {
-    final d = DateTime.now();
-    String pad(int n) => n.toString().padLeft(2, '0');
-    return '${pad(d.hour)}:${pad(d.minute)}';
+  // Re-resolves the ticket from live state each build so kitchen status
+  // changes (sent → prep → ready …) refresh the sheet's chip + action list.
+  // Falls back to the open-time snapshot if the line is gone (e.g. removed
+  // after void), keeping the confirmed view intact.
+  Ticket get _live {
+    final list = ref.watch(ticketsProvider)[widget.tableId];
+    if (list != null) {
+      for (final t in list) {
+        if (t.id == widget.ticket.id) return t;
+      }
+    }
+    return widget.ticket;
   }
 
   Future<void> _pickAction(String id) async {
-    final t = widget.ticket;
-    final notifier = widget.ref.read(ticketsProvider.notifier);
-    final useCase = widget.ref.read(advanceTicketStatusUseCaseProvider);
-    final audit = widget.ref.read(auditProvider.notifier);
+    final t = _live;
+    final notifier = ref.read(ticketsProvider.notifier);
+    final useCase = ref.read(advanceTicketStatusUseCaseProvider);
     switch (id) {
-      case 'modify':
-      case 'request-modify':
-        audit.add(AuditEntry(
-          id: 'A${DateTime.now().millisecondsSinceEpoch}',
-          type: AuditType.modify,
-          title: 'Modifikasi ×${t.qty} ${t.name}',
-          tableId: widget.tableId,
-          when: _nowStamp(),
-          reason: id == 'request-modify' ? 'Menunggu konfirmasi stasiun' : 'Edit pra-prep',
-        ));
-        if (mounted) Navigator.of(context).pop();
-        break;
       case 'fire':
         await notifier.fireCourse(widget.tableId, t.course);
         if (mounted) Navigator.of(context).pop();
@@ -113,12 +103,12 @@ class _SheetBodyState extends State<_SheetBody> {
   }
 
   Future<void> _commitVoid() async {
-    final t = widget.ticket;
+    final t = _live;
     final reason = _reason!;
     // Free-text rides only for `other`; fixed reasons store their label so the
     // audit row + reports read cleanly. The server stamps the acting waiter.
     final reasonStr = _reasonText.isNotEmpty ? _reasonText : reason['label']!;
-    await widget.ref.read(advanceTicketStatusUseCaseProvider).call(
+    await ref.read(advanceTicketStatusUseCaseProvider).call(
           widget.tableId,
           t.id,
           TicketStatus.voided,
@@ -134,6 +124,7 @@ class _SheetBodyState extends State<_SheetBody> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final ticket = _live;
     return Container(
       decoration: BoxDecoration(
         color: sc.bg1,
@@ -150,12 +141,21 @@ class _SheetBodyState extends State<_SheetBody> {
                   BoxDecoration(color: sc.textDim, borderRadius: BorderRadius.circular(4)),
             ),
           ),
-          _Head(ticket: widget.ticket, tableId: widget.tableId, onClose: () => Navigator.of(context).pop()),
+          _Head(
+            ticket: ticket,
+            tableName: ref
+                .watch(tablesProvider)
+                .where((t) => t.id == widget.tableId)
+                .map((t) => t.displayName)
+                .firstOrNull ??
+                widget.tableId,
+            onClose: () => Navigator.of(context).pop(),
+          ),
           Expanded(
             child: SingleChildScrollView(
               controller: widget.scrollController,
               child: switch (_step) {
-                _Step.actions => _ActionList(ticket: widget.ticket, onPick: _pickAction),
+                _Step.actions => _ActionList(ticket: ticket, onPick: _pickAction),
                 _Step.voidReason => _VoidReasonList(
                     onPick: (r, text) {
                       _reason = r;
@@ -163,7 +163,7 @@ class _SheetBodyState extends State<_SheetBody> {
                       _commitVoid();
                     },
                   ),
-                _Step.confirmed => _ConfirmedView(ticket: widget.ticket),
+                _Step.confirmed => _ConfirmedView(ticket: ticket),
               },
             ),
           ),
@@ -175,9 +175,9 @@ class _SheetBodyState extends State<_SheetBody> {
 
 class _Head extends StatelessWidget {
   final Ticket ticket;
-  final String tableId;
+  final String tableName;
   final VoidCallback onClose;
-  const _Head({required this.ticket, required this.tableId, required this.onClose});
+  const _Head({required this.ticket, required this.tableName, required this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +197,7 @@ class _Head extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'MEJA $tableId · ${ticket.sentAt}',
+                        'MEJA $tableName · ${ticket.sentAt}',
                         style: SatType.mono(
                           size: 10,
                           color: sc.textLo,
@@ -221,7 +221,7 @@ class _Head extends StatelessWidget {
                 if (ticket.modifiers.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(ticket.modifiers.join(' · '),
+                    child: Text(ticket.modifiers.map((m) => m.display).join(' · '),
                         style: SatType.sans(
                           size: 12,
                           color: sc.textMd,
@@ -307,15 +307,6 @@ class _ActionList extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final rows = <_ActionItem>[];
-    if (ticket.status == TicketStatus.sent || ticket.status == TicketStatus.held) {
-      rows.add(_ActionItem(
-        id: 'modify',
-        icon: Icons.edit,
-        title: 'Modifikasi item',
-        desc: 'Edit opsi & catatan — tanpa approval',
-        tone: _Tone.normal,
-      ));
-    }
     if (ticket.status == TicketStatus.held) {
       rows.add(_ActionItem(
         id: 'fire',
@@ -323,15 +314,6 @@ class _ActionList extends StatelessWidget {
         title: 'Bakar sekarang',
         desc: 'Kirim course ke line langsung',
         tone: _Tone.accent,
-      ));
-    }
-    if (ticket.status == TicketStatus.prep) {
-      rows.add(_ActionItem(
-        id: 'request-modify',
-        icon: Icons.edit,
-        title: 'Minta perubahan',
-        desc: 'Stasiun harus konfirmasi — "masih bisa" / "terlambat"',
-        tone: _Tone.warn,
       ));
     }
     if (ticket.status == TicketStatus.ready) {

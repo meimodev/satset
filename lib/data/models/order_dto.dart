@@ -3,6 +3,22 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'order_dto.freezed.dart';
 part 'order_dto.g.dart';
 
+/// One chosen add-on on an outgoing order line. The client builds these
+/// (it holds the menu); the server stores them verbatim. See
+/// docs/adr/0011-ticket-modifier-snapshot.md.
+@freezed
+class CartModifierDto with _$CartModifierDto {
+  const factory CartModifierDto({
+    required String groupId,
+    required String optionId,
+    required String label,
+    required int priceDelta,
+  }) = _CartModifierDto;
+
+  factory CartModifierDto.fromJson(Map<String, dynamic> json) =>
+      _$CartModifierDtoFromJson(json);
+}
+
 @freezed
 class CartLineDto with _$CartLineDto {
   const factory CartLineDto({
@@ -10,8 +26,8 @@ class CartLineDto with _$CartLineDto {
     required String name,
     required String variantId,
     required String variantName,
-    required List<String> modifierOptionIds,
-    required String? specialInstructions,
+    required List<CartModifierDto> modifiers,
+    required String? note,
     required String course,
     required int qty,
     required int unitPrice,

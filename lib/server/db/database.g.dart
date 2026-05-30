@@ -3928,17 +3928,15 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
-  static const VerificationMeta _specialInstructionsMeta =
-      const VerificationMeta('specialInstructions');
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
-  late final GeneratedColumn<String> specialInstructions =
-      GeneratedColumn<String>(
-        'special_instructions',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _priceMeta = const VerificationMeta('price');
   @override
   late final GeneratedColumn<int> price = GeneratedColumn<int>(
@@ -3965,6 +3963,28 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     false,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _readyAtMeta = const VerificationMeta(
+    'readyAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> readyAt = GeneratedColumn<DateTime>(
+    'ready_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _servedAtMeta = const VerificationMeta(
+    'servedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> servedAt = GeneratedColumn<DateTime>(
+    'served_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _voidReasonMeta = const VerificationMeta(
     'voidReason',
@@ -4031,10 +4051,12 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     course,
     qty,
     modifiersJson,
-    specialInstructions,
+    note,
     price,
     status,
     sentAt,
+    readyAt,
+    servedAt,
     voidReason,
     voidReasonCode,
     voidApprovedBy,
@@ -4114,13 +4136,10 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         ),
       );
     }
-    if (data.containsKey('special_instructions')) {
+    if (data.containsKey('note')) {
       context.handle(
-        _specialInstructionsMeta,
-        specialInstructions.isAcceptableOrUnknown(
-          data['special_instructions']!,
-          _specialInstructionsMeta,
-        ),
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
       );
     }
     if (data.containsKey('price')) {
@@ -4146,6 +4165,18 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
       );
     } else if (isInserting) {
       context.missing(_sentAtMeta);
+    }
+    if (data.containsKey('ready_at')) {
+      context.handle(
+        _readyAtMeta,
+        readyAt.isAcceptableOrUnknown(data['ready_at']!, _readyAtMeta),
+      );
+    }
+    if (data.containsKey('served_at')) {
+      context.handle(
+        _servedAtMeta,
+        servedAt.isAcceptableOrUnknown(data['served_at']!, _servedAtMeta),
+      );
     }
     if (data.containsKey('void_reason')) {
       context.handle(
@@ -4230,9 +4261,9 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.string,
         data['${effectivePrefix}modifiers_json'],
       )!,
-      specialInstructions: attachedDatabase.typeMapping.read(
+      note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}special_instructions'],
+        data['${effectivePrefix}note'],
       ),
       price: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -4246,6 +4277,14 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}sent_at'],
       )!,
+      readyAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ready_at'],
+      ),
+      servedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}served_at'],
+      ),
       voidReason: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}void_reason'],
@@ -4284,10 +4323,17 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   final String course;
   final int qty;
   final String modifiersJson;
-  final String? specialInstructions;
+  final String? note;
   final int price;
   final String status;
   final DateTime sentAt;
+
+  /// Set once, on first entry into `ready` (prep time = readyAt − sentAt).
+  /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
+  final DateTime? readyAt;
+
+  /// Last-write, most recent `served` (pickup lag = servedAt − readyAt).
+  final DateTime? servedAt;
   final String? voidReason;
 
   /// Canonical enum slug for void/comp analytics. One of:
@@ -4308,10 +4354,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     required this.course,
     required this.qty,
     required this.modifiersJson,
-    this.specialInstructions,
+    this.note,
     required this.price,
     required this.status,
     required this.sentAt,
+    this.readyAt,
+    this.servedAt,
     this.voidReason,
     this.voidReasonCode,
     this.voidApprovedBy,
@@ -4329,12 +4377,18 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     map['course'] = Variable<String>(course);
     map['qty'] = Variable<int>(qty);
     map['modifiers_json'] = Variable<String>(modifiersJson);
-    if (!nullToAbsent || specialInstructions != null) {
-      map['special_instructions'] = Variable<String>(specialInstructions);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
     }
     map['price'] = Variable<int>(price);
     map['status'] = Variable<String>(status);
     map['sent_at'] = Variable<DateTime>(sentAt);
+    if (!nullToAbsent || readyAt != null) {
+      map['ready_at'] = Variable<DateTime>(readyAt);
+    }
+    if (!nullToAbsent || servedAt != null) {
+      map['served_at'] = Variable<DateTime>(servedAt);
+    }
     if (!nullToAbsent || voidReason != null) {
       map['void_reason'] = Variable<String>(voidReason);
     }
@@ -4363,12 +4417,16 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       course: Value(course),
       qty: Value(qty),
       modifiersJson: Value(modifiersJson),
-      specialInstructions: specialInstructions == null && nullToAbsent
-          ? const Value.absent()
-          : Value(specialInstructions),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       price: Value(price),
       status: Value(status),
       sentAt: Value(sentAt),
+      readyAt: readyAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readyAt),
+      servedAt: servedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(servedAt),
       voidReason: voidReason == null && nullToAbsent
           ? const Value.absent()
           : Value(voidReason),
@@ -4401,12 +4459,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       course: serializer.fromJson<String>(json['course']),
       qty: serializer.fromJson<int>(json['qty']),
       modifiersJson: serializer.fromJson<String>(json['modifiersJson']),
-      specialInstructions: serializer.fromJson<String?>(
-        json['specialInstructions'],
-      ),
+      note: serializer.fromJson<String?>(json['note']),
       price: serializer.fromJson<int>(json['price']),
       status: serializer.fromJson<String>(json['status']),
       sentAt: serializer.fromJson<DateTime>(json['sentAt']),
+      readyAt: serializer.fromJson<DateTime?>(json['readyAt']),
+      servedAt: serializer.fromJson<DateTime?>(json['servedAt']),
       voidReason: serializer.fromJson<String?>(json['voidReason']),
       voidReasonCode: serializer.fromJson<String?>(json['voidReasonCode']),
       voidApprovedBy: serializer.fromJson<String?>(json['voidApprovedBy']),
@@ -4426,10 +4484,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'course': serializer.toJson<String>(course),
       'qty': serializer.toJson<int>(qty),
       'modifiersJson': serializer.toJson<String>(modifiersJson),
-      'specialInstructions': serializer.toJson<String?>(specialInstructions),
+      'note': serializer.toJson<String?>(note),
       'price': serializer.toJson<int>(price),
       'status': serializer.toJson<String>(status),
       'sentAt': serializer.toJson<DateTime>(sentAt),
+      'readyAt': serializer.toJson<DateTime?>(readyAt),
+      'servedAt': serializer.toJson<DateTime?>(servedAt),
       'voidReason': serializer.toJson<String?>(voidReason),
       'voidReasonCode': serializer.toJson<String?>(voidReasonCode),
       'voidApprovedBy': serializer.toJson<String?>(voidApprovedBy),
@@ -4447,10 +4507,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     String? course,
     int? qty,
     String? modifiersJson,
-    Value<String?> specialInstructions = const Value.absent(),
+    Value<String?> note = const Value.absent(),
     int? price,
     String? status,
     DateTime? sentAt,
+    Value<DateTime?> readyAt = const Value.absent(),
+    Value<DateTime?> servedAt = const Value.absent(),
     Value<String?> voidReason = const Value.absent(),
     Value<String?> voidReasonCode = const Value.absent(),
     Value<String?> voidApprovedBy = const Value.absent(),
@@ -4465,12 +4527,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     course: course ?? this.course,
     qty: qty ?? this.qty,
     modifiersJson: modifiersJson ?? this.modifiersJson,
-    specialInstructions: specialInstructions.present
-        ? specialInstructions.value
-        : this.specialInstructions,
+    note: note.present ? note.value : this.note,
     price: price ?? this.price,
     status: status ?? this.status,
     sentAt: sentAt ?? this.sentAt,
+    readyAt: readyAt.present ? readyAt.value : this.readyAt,
+    servedAt: servedAt.present ? servedAt.value : this.servedAt,
     voidReason: voidReason.present ? voidReason.value : this.voidReason,
     voidReasonCode: voidReasonCode.present
         ? voidReasonCode.value
@@ -4499,12 +4561,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       modifiersJson: data.modifiersJson.present
           ? data.modifiersJson.value
           : this.modifiersJson,
-      specialInstructions: data.specialInstructions.present
-          ? data.specialInstructions.value
-          : this.specialInstructions,
+      note: data.note.present ? data.note.value : this.note,
       price: data.price.present ? data.price.value : this.price,
       status: data.status.present ? data.status.value : this.status,
       sentAt: data.sentAt.present ? data.sentAt.value : this.sentAt,
+      readyAt: data.readyAt.present ? data.readyAt.value : this.readyAt,
+      servedAt: data.servedAt.present ? data.servedAt.value : this.servedAt,
       voidReason: data.voidReason.present
           ? data.voidReason.value
           : this.voidReason,
@@ -4534,10 +4596,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('course: $course, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
-          ..write('specialInstructions: $specialInstructions, ')
+          ..write('note: $note, ')
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('readyAt: $readyAt, ')
+          ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
@@ -4557,10 +4621,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     course,
     qty,
     modifiersJson,
-    specialInstructions,
+    note,
     price,
     status,
     sentAt,
+    readyAt,
+    servedAt,
     voidReason,
     voidReasonCode,
     voidApprovedBy,
@@ -4579,10 +4645,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.course == this.course &&
           other.qty == this.qty &&
           other.modifiersJson == this.modifiersJson &&
-          other.specialInstructions == this.specialInstructions &&
+          other.note == this.note &&
           other.price == this.price &&
           other.status == this.status &&
           other.sentAt == this.sentAt &&
+          other.readyAt == this.readyAt &&
+          other.servedAt == this.servedAt &&
           other.voidReason == this.voidReason &&
           other.voidReasonCode == this.voidReasonCode &&
           other.voidApprovedBy == this.voidApprovedBy &&
@@ -4599,10 +4667,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<String> course;
   final Value<int> qty;
   final Value<String> modifiersJson;
-  final Value<String?> specialInstructions;
+  final Value<String?> note;
   final Value<int> price;
   final Value<String> status;
   final Value<DateTime> sentAt;
+  final Value<DateTime?> readyAt;
+  final Value<DateTime?> servedAt;
   final Value<String?> voidReason;
   final Value<String?> voidReasonCode;
   final Value<String?> voidApprovedBy;
@@ -4618,10 +4688,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.course = const Value.absent(),
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
-    this.specialInstructions = const Value.absent(),
+    this.note = const Value.absent(),
     this.price = const Value.absent(),
     this.status = const Value.absent(),
     this.sentAt = const Value.absent(),
+    this.readyAt = const Value.absent(),
+    this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
@@ -4638,10 +4710,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     required String course,
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
-    this.specialInstructions = const Value.absent(),
+    this.note = const Value.absent(),
     required int price,
     required String status,
     required DateTime sentAt,
+    this.readyAt = const Value.absent(),
+    this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
@@ -4665,10 +4739,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<String>? course,
     Expression<int>? qty,
     Expression<String>? modifiersJson,
-    Expression<String>? specialInstructions,
+    Expression<String>? note,
     Expression<int>? price,
     Expression<String>? status,
     Expression<DateTime>? sentAt,
+    Expression<DateTime>? readyAt,
+    Expression<DateTime>? servedAt,
     Expression<String>? voidReason,
     Expression<String>? voidReasonCode,
     Expression<String>? voidApprovedBy,
@@ -4685,11 +4761,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (course != null) 'course': course,
       if (qty != null) 'qty': qty,
       if (modifiersJson != null) 'modifiers_json': modifiersJson,
-      if (specialInstructions != null)
-        'special_instructions': specialInstructions,
+      if (note != null) 'note': note,
       if (price != null) 'price': price,
       if (status != null) 'status': status,
       if (sentAt != null) 'sent_at': sentAt,
+      if (readyAt != null) 'ready_at': readyAt,
+      if (servedAt != null) 'served_at': servedAt,
       if (voidReason != null) 'void_reason': voidReason,
       if (voidReasonCode != null) 'void_reason_code': voidReasonCode,
       if (voidApprovedBy != null) 'void_approved_by': voidApprovedBy,
@@ -4708,10 +4785,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<String>? course,
     Value<int>? qty,
     Value<String>? modifiersJson,
-    Value<String?>? specialInstructions,
+    Value<String?>? note,
     Value<int>? price,
     Value<String>? status,
     Value<DateTime>? sentAt,
+    Value<DateTime?>? readyAt,
+    Value<DateTime?>? servedAt,
     Value<String?>? voidReason,
     Value<String?>? voidReasonCode,
     Value<String?>? voidApprovedBy,
@@ -4728,10 +4807,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       course: course ?? this.course,
       qty: qty ?? this.qty,
       modifiersJson: modifiersJson ?? this.modifiersJson,
-      specialInstructions: specialInstructions ?? this.specialInstructions,
+      note: note ?? this.note,
       price: price ?? this.price,
       status: status ?? this.status,
       sentAt: sentAt ?? this.sentAt,
+      readyAt: readyAt ?? this.readyAt,
+      servedAt: servedAt ?? this.servedAt,
       voidReason: voidReason ?? this.voidReason,
       voidReasonCode: voidReasonCode ?? this.voidReasonCode,
       voidApprovedBy: voidApprovedBy ?? this.voidApprovedBy,
@@ -4768,8 +4849,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     if (modifiersJson.present) {
       map['modifiers_json'] = Variable<String>(modifiersJson.value);
     }
-    if (specialInstructions.present) {
-      map['special_instructions'] = Variable<String>(specialInstructions.value);
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
     }
     if (price.present) {
       map['price'] = Variable<int>(price.value);
@@ -4779,6 +4860,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     }
     if (sentAt.present) {
       map['sent_at'] = Variable<DateTime>(sentAt.value);
+    }
+    if (readyAt.present) {
+      map['ready_at'] = Variable<DateTime>(readyAt.value);
+    }
+    if (servedAt.present) {
+      map['served_at'] = Variable<DateTime>(servedAt.value);
     }
     if (voidReason.present) {
       map['void_reason'] = Variable<String>(voidReason.value);
@@ -4812,10 +4899,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('course: $course, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
-          ..write('specialInstructions: $specialInstructions, ')
+          ..write('note: $note, ')
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('readyAt: $readyAt, ')
+          ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
@@ -6889,6 +6978,18 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(4),
   );
+  static const VerificationMeta _prepTargetMinsMeta = const VerificationMeta(
+    'prepTargetMins',
+  );
+  @override
+  late final GeneratedColumn<int> prepTargetMins = GeneratedColumn<int>(
+    'prep_target_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(15),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6905,6 +7006,7 @@ class $VenueSettingsTable extends VenueSettings
     serviceRateBps,
     serviceFixedAmount,
     businessDayStartHour,
+    prepTargetMins,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7028,6 +7130,15 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('prep_target_mins')) {
+      context.handle(
+        _prepTargetMinsMeta,
+        prepTargetMins.isAcceptableOrUnknown(
+          data['prep_target_mins']!,
+          _prepTargetMinsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7093,6 +7204,10 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.int,
         data['${effectivePrefix}business_day_start_hour'],
       )!,
+      prepTargetMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}prep_target_mins'],
+      )!,
     );
   }
 
@@ -7120,6 +7235,11 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// Business-day rollover hour (0..23). Reports bucket "today" as
   /// [hour, hour+24h). Default 4 covers late-night service.
   final int businessDayStartHour;
+
+  /// Single configurable "kitchen should be ready by now" threshold (minutes).
+  /// Drives BOTH the floor/audio overdue alert and the report SLA hit-rate.
+  /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
+  final int prepTargetMins;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -7135,6 +7255,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.serviceRateBps,
     required this.serviceFixedAmount,
     required this.businessDayStartHour,
+    required this.prepTargetMins,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7153,6 +7274,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['service_rate_bps'] = Variable<int>(serviceRateBps);
     map['service_fixed_amount'] = Variable<int>(serviceFixedAmount);
     map['business_day_start_hour'] = Variable<int>(businessDayStartHour);
+    map['prep_target_mins'] = Variable<int>(prepTargetMins);
     return map;
   }
 
@@ -7172,6 +7294,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       serviceRateBps: Value(serviceRateBps),
       serviceFixedAmount: Value(serviceFixedAmount),
       businessDayStartHour: Value(businessDayStartHour),
+      prepTargetMins: Value(prepTargetMins),
     );
   }
 
@@ -7197,6 +7320,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       businessDayStartHour: serializer.fromJson<int>(
         json['businessDayStartHour'],
       ),
+      prepTargetMins: serializer.fromJson<int>(json['prepTargetMins']),
     );
   }
   @override
@@ -7217,6 +7341,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'serviceRateBps': serializer.toJson<int>(serviceRateBps),
       'serviceFixedAmount': serializer.toJson<int>(serviceFixedAmount),
       'businessDayStartHour': serializer.toJson<int>(businessDayStartHour),
+      'prepTargetMins': serializer.toJson<int>(prepTargetMins),
     };
   }
 
@@ -7235,6 +7360,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     int? serviceRateBps,
     int? serviceFixedAmount,
     int? businessDayStartHour,
+    int? prepTargetMins,
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -7250,6 +7376,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     serviceRateBps: serviceRateBps ?? this.serviceRateBps,
     serviceFixedAmount: serviceFixedAmount ?? this.serviceFixedAmount,
     businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
+    prepTargetMins: prepTargetMins ?? this.prepTargetMins,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -7287,6 +7414,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       businessDayStartHour: data.businessDayStartHour.present
           ? data.businessDayStartHour.value
           : this.businessDayStartHour,
+      prepTargetMins: data.prepTargetMins.present
+          ? data.prepTargetMins.value
+          : this.prepTargetMins,
     );
   }
 
@@ -7306,7 +7436,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('serviceMode: $serviceMode, ')
           ..write('serviceRateBps: $serviceRateBps, ')
           ..write('serviceFixedAmount: $serviceFixedAmount, ')
-          ..write('businessDayStartHour: $businessDayStartHour')
+          ..write('businessDayStartHour: $businessDayStartHour, ')
+          ..write('prepTargetMins: $prepTargetMins')
           ..write(')'))
         .toString();
   }
@@ -7327,6 +7458,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     serviceRateBps,
     serviceFixedAmount,
     businessDayStartHour,
+    prepTargetMins,
   );
   @override
   bool operator ==(Object other) =>
@@ -7345,7 +7477,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.serviceMode == this.serviceMode &&
           other.serviceRateBps == this.serviceRateBps &&
           other.serviceFixedAmount == this.serviceFixedAmount &&
-          other.businessDayStartHour == this.businessDayStartHour);
+          other.businessDayStartHour == this.businessDayStartHour &&
+          other.prepTargetMins == this.prepTargetMins);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -7363,6 +7496,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<int> serviceRateBps;
   final Value<int> serviceFixedAmount;
   final Value<int> businessDayStartHour;
+  final Value<int> prepTargetMins;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -7379,6 +7513,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.serviceRateBps = const Value.absent(),
     this.serviceFixedAmount = const Value.absent(),
     this.businessDayStartHour = const Value.absent(),
+    this.prepTargetMins = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -7396,6 +7531,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.serviceRateBps = const Value.absent(),
     this.serviceFixedAmount = const Value.absent(),
     this.businessDayStartHour = const Value.absent(),
+    this.prepTargetMins = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -7413,6 +7549,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<int>? serviceRateBps,
     Expression<int>? serviceFixedAmount,
     Expression<int>? businessDayStartHour,
+    Expression<int>? prepTargetMins,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7432,6 +7569,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
         'service_fixed_amount': serviceFixedAmount,
       if (businessDayStartHour != null)
         'business_day_start_hour': businessDayStartHour,
+      if (prepTargetMins != null) 'prep_target_mins': prepTargetMins,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7451,6 +7589,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<int>? serviceRateBps,
     Value<int>? serviceFixedAmount,
     Value<int>? businessDayStartHour,
+    Value<int>? prepTargetMins,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -7468,6 +7607,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       serviceRateBps: serviceRateBps ?? this.serviceRateBps,
       serviceFixedAmount: serviceFixedAmount ?? this.serviceFixedAmount,
       businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
+      prepTargetMins: prepTargetMins ?? this.prepTargetMins,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7519,6 +7659,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
         businessDayStartHour.value,
       );
     }
+    if (prepTargetMins.present) {
+      map['prep_target_mins'] = Variable<int>(prepTargetMins.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7542,6 +7685,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('serviceRateBps: $serviceRateBps, ')
           ..write('serviceFixedAmount: $serviceFixedAmount, ')
           ..write('businessDayStartHour: $businessDayStartHour, ')
+          ..write('prepTargetMins: $prepTargetMins, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8904,17 +9048,15 @@ class $TableSessionTicketsTable extends TableSessionTickets
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
-  static const VerificationMeta _specialInstructionsMeta =
-      const VerificationMeta('specialInstructions');
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
-  late final GeneratedColumn<String> specialInstructions =
-      GeneratedColumn<String>(
-        'special_instructions',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _priceMeta = const VerificationMeta('price');
   @override
   late final GeneratedColumn<int> price = GeneratedColumn<int>(
@@ -8941,6 +9083,28 @@ class $TableSessionTicketsTable extends TableSessionTickets
     false,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _readyAtMeta = const VerificationMeta(
+    'readyAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> readyAt = GeneratedColumn<DateTime>(
+    'ready_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _servedAtMeta = const VerificationMeta(
+    'servedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> servedAt = GeneratedColumn<DateTime>(
+    'served_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _voidReasonMeta = const VerificationMeta(
     'voidReason',
@@ -9008,10 +9172,12 @@ class $TableSessionTicketsTable extends TableSessionTickets
     course,
     qty,
     modifiersJson,
-    specialInstructions,
+    note,
     price,
     status,
     sentAt,
+    readyAt,
+    servedAt,
     voidReason,
     voidReasonCode,
     voidApprovedBy,
@@ -9099,13 +9265,10 @@ class $TableSessionTicketsTable extends TableSessionTickets
         ),
       );
     }
-    if (data.containsKey('special_instructions')) {
+    if (data.containsKey('note')) {
       context.handle(
-        _specialInstructionsMeta,
-        specialInstructions.isAcceptableOrUnknown(
-          data['special_instructions']!,
-          _specialInstructionsMeta,
-        ),
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
       );
     }
     if (data.containsKey('price')) {
@@ -9131,6 +9294,18 @@ class $TableSessionTicketsTable extends TableSessionTickets
       );
     } else if (isInserting) {
       context.missing(_sentAtMeta);
+    }
+    if (data.containsKey('ready_at')) {
+      context.handle(
+        _readyAtMeta,
+        readyAt.isAcceptableOrUnknown(data['ready_at']!, _readyAtMeta),
+      );
+    }
+    if (data.containsKey('served_at')) {
+      context.handle(
+        _servedAtMeta,
+        servedAt.isAcceptableOrUnknown(data['served_at']!, _servedAtMeta),
+      );
     }
     if (data.containsKey('void_reason')) {
       context.handle(
@@ -9219,9 +9394,9 @@ class $TableSessionTicketsTable extends TableSessionTickets
         DriftSqlType.string,
         data['${effectivePrefix}modifiers_json'],
       )!,
-      specialInstructions: attachedDatabase.typeMapping.read(
+      note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}special_instructions'],
+        data['${effectivePrefix}note'],
       ),
       price: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -9235,6 +9410,14 @@ class $TableSessionTicketsTable extends TableSessionTickets
         DriftSqlType.dateTime,
         data['${effectivePrefix}sent_at'],
       )!,
+      readyAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ready_at'],
+      ),
+      servedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}served_at'],
+      ),
       voidReason: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}void_reason'],
@@ -9275,10 +9458,15 @@ class TableSessionTicket extends DataClass
   final String course;
   final int qty;
   final String modifiersJson;
-  final String? specialInstructions;
+  final String? note;
   final int price;
   final String status;
   final DateTime sentAt;
+
+  /// Mirrors Tickets.readyAt / Tickets.servedAt at session close, so speed-of-
+  /// service survives the live-ticket delete. See ADR-0013.
+  final DateTime? readyAt;
+  final DateTime? servedAt;
   final String? voidReason;
 
   /// Canonical enum slug — mirrors Tickets.voidReasonCode at session close.
@@ -9298,10 +9486,12 @@ class TableSessionTicket extends DataClass
     required this.course,
     required this.qty,
     required this.modifiersJson,
-    this.specialInstructions,
+    this.note,
     required this.price,
     required this.status,
     required this.sentAt,
+    this.readyAt,
+    this.servedAt,
     this.voidReason,
     this.voidReasonCode,
     this.voidApprovedBy,
@@ -9320,12 +9510,18 @@ class TableSessionTicket extends DataClass
     map['course'] = Variable<String>(course);
     map['qty'] = Variable<int>(qty);
     map['modifiers_json'] = Variable<String>(modifiersJson);
-    if (!nullToAbsent || specialInstructions != null) {
-      map['special_instructions'] = Variable<String>(specialInstructions);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
     }
     map['price'] = Variable<int>(price);
     map['status'] = Variable<String>(status);
     map['sent_at'] = Variable<DateTime>(sentAt);
+    if (!nullToAbsent || readyAt != null) {
+      map['ready_at'] = Variable<DateTime>(readyAt);
+    }
+    if (!nullToAbsent || servedAt != null) {
+      map['served_at'] = Variable<DateTime>(servedAt);
+    }
     if (!nullToAbsent || voidReason != null) {
       map['void_reason'] = Variable<String>(voidReason);
     }
@@ -9355,12 +9551,16 @@ class TableSessionTicket extends DataClass
       course: Value(course),
       qty: Value(qty),
       modifiersJson: Value(modifiersJson),
-      specialInstructions: specialInstructions == null && nullToAbsent
-          ? const Value.absent()
-          : Value(specialInstructions),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       price: Value(price),
       status: Value(status),
       sentAt: Value(sentAt),
+      readyAt: readyAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readyAt),
+      servedAt: servedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(servedAt),
       voidReason: voidReason == null && nullToAbsent
           ? const Value.absent()
           : Value(voidReason),
@@ -9394,12 +9594,12 @@ class TableSessionTicket extends DataClass
       course: serializer.fromJson<String>(json['course']),
       qty: serializer.fromJson<int>(json['qty']),
       modifiersJson: serializer.fromJson<String>(json['modifiersJson']),
-      specialInstructions: serializer.fromJson<String?>(
-        json['specialInstructions'],
-      ),
+      note: serializer.fromJson<String?>(json['note']),
       price: serializer.fromJson<int>(json['price']),
       status: serializer.fromJson<String>(json['status']),
       sentAt: serializer.fromJson<DateTime>(json['sentAt']),
+      readyAt: serializer.fromJson<DateTime?>(json['readyAt']),
+      servedAt: serializer.fromJson<DateTime?>(json['servedAt']),
       voidReason: serializer.fromJson<String?>(json['voidReason']),
       voidReasonCode: serializer.fromJson<String?>(json['voidReasonCode']),
       voidApprovedBy: serializer.fromJson<String?>(json['voidApprovedBy']),
@@ -9420,10 +9620,12 @@ class TableSessionTicket extends DataClass
       'course': serializer.toJson<String>(course),
       'qty': serializer.toJson<int>(qty),
       'modifiersJson': serializer.toJson<String>(modifiersJson),
-      'specialInstructions': serializer.toJson<String?>(specialInstructions),
+      'note': serializer.toJson<String?>(note),
       'price': serializer.toJson<int>(price),
       'status': serializer.toJson<String>(status),
       'sentAt': serializer.toJson<DateTime>(sentAt),
+      'readyAt': serializer.toJson<DateTime?>(readyAt),
+      'servedAt': serializer.toJson<DateTime?>(servedAt),
       'voidReason': serializer.toJson<String?>(voidReason),
       'voidReasonCode': serializer.toJson<String?>(voidReasonCode),
       'voidApprovedBy': serializer.toJson<String?>(voidApprovedBy),
@@ -9442,10 +9644,12 @@ class TableSessionTicket extends DataClass
     String? course,
     int? qty,
     String? modifiersJson,
-    Value<String?> specialInstructions = const Value.absent(),
+    Value<String?> note = const Value.absent(),
     int? price,
     String? status,
     DateTime? sentAt,
+    Value<DateTime?> readyAt = const Value.absent(),
+    Value<DateTime?> servedAt = const Value.absent(),
     Value<String?> voidReason = const Value.absent(),
     Value<String?> voidReasonCode = const Value.absent(),
     Value<String?> voidApprovedBy = const Value.absent(),
@@ -9461,12 +9665,12 @@ class TableSessionTicket extends DataClass
     course: course ?? this.course,
     qty: qty ?? this.qty,
     modifiersJson: modifiersJson ?? this.modifiersJson,
-    specialInstructions: specialInstructions.present
-        ? specialInstructions.value
-        : this.specialInstructions,
+    note: note.present ? note.value : this.note,
     price: price ?? this.price,
     status: status ?? this.status,
     sentAt: sentAt ?? this.sentAt,
+    readyAt: readyAt.present ? readyAt.value : this.readyAt,
+    servedAt: servedAt.present ? servedAt.value : this.servedAt,
     voidReason: voidReason.present ? voidReason.value : this.voidReason,
     voidReasonCode: voidReasonCode.present
         ? voidReasonCode.value
@@ -9496,12 +9700,12 @@ class TableSessionTicket extends DataClass
       modifiersJson: data.modifiersJson.present
           ? data.modifiersJson.value
           : this.modifiersJson,
-      specialInstructions: data.specialInstructions.present
-          ? data.specialInstructions.value
-          : this.specialInstructions,
+      note: data.note.present ? data.note.value : this.note,
       price: data.price.present ? data.price.value : this.price,
       status: data.status.present ? data.status.value : this.status,
       sentAt: data.sentAt.present ? data.sentAt.value : this.sentAt,
+      readyAt: data.readyAt.present ? data.readyAt.value : this.readyAt,
+      servedAt: data.servedAt.present ? data.servedAt.value : this.servedAt,
       voidReason: data.voidReason.present
           ? data.voidReason.value
           : this.voidReason,
@@ -9532,10 +9736,12 @@ class TableSessionTicket extends DataClass
           ..write('course: $course, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
-          ..write('specialInstructions: $specialInstructions, ')
+          ..write('note: $note, ')
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('readyAt: $readyAt, ')
+          ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
@@ -9556,10 +9762,12 @@ class TableSessionTicket extends DataClass
     course,
     qty,
     modifiersJson,
-    specialInstructions,
+    note,
     price,
     status,
     sentAt,
+    readyAt,
+    servedAt,
     voidReason,
     voidReasonCode,
     voidApprovedBy,
@@ -9579,10 +9787,12 @@ class TableSessionTicket extends DataClass
           other.course == this.course &&
           other.qty == this.qty &&
           other.modifiersJson == this.modifiersJson &&
-          other.specialInstructions == this.specialInstructions &&
+          other.note == this.note &&
           other.price == this.price &&
           other.status == this.status &&
           other.sentAt == this.sentAt &&
+          other.readyAt == this.readyAt &&
+          other.servedAt == this.servedAt &&
           other.voidReason == this.voidReason &&
           other.voidReasonCode == this.voidReasonCode &&
           other.voidApprovedBy == this.voidApprovedBy &&
@@ -9600,10 +9810,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
   final Value<String> course;
   final Value<int> qty;
   final Value<String> modifiersJson;
-  final Value<String?> specialInstructions;
+  final Value<String?> note;
   final Value<int> price;
   final Value<String> status;
   final Value<DateTime> sentAt;
+  final Value<DateTime?> readyAt;
+  final Value<DateTime?> servedAt;
   final Value<String?> voidReason;
   final Value<String?> voidReasonCode;
   final Value<String?> voidApprovedBy;
@@ -9620,10 +9832,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     this.course = const Value.absent(),
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
-    this.specialInstructions = const Value.absent(),
+    this.note = const Value.absent(),
     this.price = const Value.absent(),
     this.status = const Value.absent(),
     this.sentAt = const Value.absent(),
+    this.readyAt = const Value.absent(),
+    this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
@@ -9641,10 +9855,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     required String course,
     this.qty = const Value.absent(),
     this.modifiersJson = const Value.absent(),
-    this.specialInstructions = const Value.absent(),
+    this.note = const Value.absent(),
     required int price,
     required String status,
     required DateTime sentAt,
+    this.readyAt = const Value.absent(),
+    this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
     this.voidReasonCode = const Value.absent(),
     this.voidApprovedBy = const Value.absent(),
@@ -9670,10 +9886,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Expression<String>? course,
     Expression<int>? qty,
     Expression<String>? modifiersJson,
-    Expression<String>? specialInstructions,
+    Expression<String>? note,
     Expression<int>? price,
     Expression<String>? status,
     Expression<DateTime>? sentAt,
+    Expression<DateTime>? readyAt,
+    Expression<DateTime>? servedAt,
     Expression<String>? voidReason,
     Expression<String>? voidReasonCode,
     Expression<String>? voidApprovedBy,
@@ -9691,11 +9909,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       if (course != null) 'course': course,
       if (qty != null) 'qty': qty,
       if (modifiersJson != null) 'modifiers_json': modifiersJson,
-      if (specialInstructions != null)
-        'special_instructions': specialInstructions,
+      if (note != null) 'note': note,
       if (price != null) 'price': price,
       if (status != null) 'status': status,
       if (sentAt != null) 'sent_at': sentAt,
+      if (readyAt != null) 'ready_at': readyAt,
+      if (servedAt != null) 'served_at': servedAt,
       if (voidReason != null) 'void_reason': voidReason,
       if (voidReasonCode != null) 'void_reason_code': voidReasonCode,
       if (voidApprovedBy != null) 'void_approved_by': voidApprovedBy,
@@ -9715,10 +9934,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Value<String>? course,
     Value<int>? qty,
     Value<String>? modifiersJson,
-    Value<String?>? specialInstructions,
+    Value<String?>? note,
     Value<int>? price,
     Value<String>? status,
     Value<DateTime>? sentAt,
+    Value<DateTime?>? readyAt,
+    Value<DateTime?>? servedAt,
     Value<String?>? voidReason,
     Value<String?>? voidReasonCode,
     Value<String?>? voidApprovedBy,
@@ -9736,10 +9957,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       course: course ?? this.course,
       qty: qty ?? this.qty,
       modifiersJson: modifiersJson ?? this.modifiersJson,
-      specialInstructions: specialInstructions ?? this.specialInstructions,
+      note: note ?? this.note,
       price: price ?? this.price,
       status: status ?? this.status,
       sentAt: sentAt ?? this.sentAt,
+      readyAt: readyAt ?? this.readyAt,
+      servedAt: servedAt ?? this.servedAt,
       voidReason: voidReason ?? this.voidReason,
       voidReasonCode: voidReasonCode ?? this.voidReasonCode,
       voidApprovedBy: voidApprovedBy ?? this.voidApprovedBy,
@@ -9779,8 +10002,8 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     if (modifiersJson.present) {
       map['modifiers_json'] = Variable<String>(modifiersJson.value);
     }
-    if (specialInstructions.present) {
-      map['special_instructions'] = Variable<String>(specialInstructions.value);
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
     }
     if (price.present) {
       map['price'] = Variable<int>(price.value);
@@ -9790,6 +10013,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     }
     if (sentAt.present) {
       map['sent_at'] = Variable<DateTime>(sentAt.value);
+    }
+    if (readyAt.present) {
+      map['ready_at'] = Variable<DateTime>(readyAt.value);
+    }
+    if (servedAt.present) {
+      map['served_at'] = Variable<DateTime>(servedAt.value);
     }
     if (voidReason.present) {
       map['void_reason'] = Variable<String>(voidReason.value);
@@ -9824,10 +10053,12 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
           ..write('course: $course, ')
           ..write('qty: $qty, ')
           ..write('modifiersJson: $modifiersJson, ')
-          ..write('specialInstructions: $specialInstructions, ')
+          ..write('note: $note, ')
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('readyAt: $readyAt, ')
+          ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
           ..write('voidReasonCode: $voidReasonCode, ')
           ..write('voidApprovedBy: $voidApprovedBy, ')
@@ -12870,10 +13101,12 @@ typedef $$TicketsTableCreateCompanionBuilder =
       required String course,
       Value<int> qty,
       Value<String> modifiersJson,
-      Value<String?> specialInstructions,
+      Value<String?> note,
       required int price,
       required String status,
       required DateTime sentAt,
+      Value<DateTime?> readyAt,
+      Value<DateTime?> servedAt,
       Value<String?> voidReason,
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
@@ -12891,10 +13124,12 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<String> course,
       Value<int> qty,
       Value<String> modifiersJson,
-      Value<String?> specialInstructions,
+      Value<String?> note,
       Value<int> price,
       Value<String> status,
       Value<DateTime> sentAt,
+      Value<DateTime?> readyAt,
+      Value<DateTime?> servedAt,
       Value<String?> voidReason,
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
@@ -12952,8 +13187,8 @@ class $$TicketsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get specialInstructions => $composableBuilder(
-    column: $table.specialInstructions,
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12969,6 +13204,16 @@ class $$TicketsTableFilterComposer
 
   ColumnFilters<DateTime> get sentAt => $composableBuilder(
     column: $table.sentAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get readyAt => $composableBuilder(
+    column: $table.readyAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get servedAt => $composableBuilder(
+    column: $table.servedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13047,8 +13292,8 @@ class $$TicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get specialInstructions => $composableBuilder(
-    column: $table.specialInstructions,
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13064,6 +13309,16 @@ class $$TicketsTableOrderingComposer
 
   ColumnOrderings<DateTime> get sentAt => $composableBuilder(
     column: $table.sentAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get readyAt => $composableBuilder(
+    column: $table.readyAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get servedAt => $composableBuilder(
+    column: $table.servedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13130,10 +13385,8 @@ class $$TicketsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get specialInstructions => $composableBuilder(
-    column: $table.specialInstructions,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
 
   GeneratedColumn<int> get price =>
       $composableBuilder(column: $table.price, builder: (column) => column);
@@ -13143,6 +13396,12 @@ class $$TicketsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get sentAt =>
       $composableBuilder(column: $table.sentAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get readyAt =>
+      $composableBuilder(column: $table.readyAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get servedAt =>
+      $composableBuilder(column: $table.servedAt, builder: (column) => column);
 
   GeneratedColumn<String> get voidReason => $composableBuilder(
     column: $table.voidReason,
@@ -13206,10 +13465,12 @@ class $$TicketsTableTableManager
                 Value<String> course = const Value.absent(),
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
-                Value<String?> specialInstructions = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 Value<int> price = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> sentAt = const Value.absent(),
+                Value<DateTime?> readyAt = const Value.absent(),
+                Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
@@ -13225,10 +13486,12 @@ class $$TicketsTableTableManager
                 course: course,
                 qty: qty,
                 modifiersJson: modifiersJson,
-                specialInstructions: specialInstructions,
+                note: note,
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                readyAt: readyAt,
+                servedAt: servedAt,
                 voidReason: voidReason,
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,
@@ -13246,10 +13509,12 @@ class $$TicketsTableTableManager
                 required String course,
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
-                Value<String?> specialInstructions = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 required int price,
                 required String status,
                 required DateTime sentAt,
+                Value<DateTime?> readyAt = const Value.absent(),
+                Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
@@ -13265,10 +13530,12 @@ class $$TicketsTableTableManager
                 course: course,
                 qty: qty,
                 modifiersJson: modifiersJson,
-                specialInstructions: specialInstructions,
+                note: note,
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                readyAt: readyAt,
+                servedAt: servedAt,
                 voidReason: voidReason,
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,
@@ -14328,6 +14595,7 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<int> serviceRateBps,
       Value<int> serviceFixedAmount,
       Value<int> businessDayStartHour,
+      Value<int> prepTargetMins,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -14346,6 +14614,7 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<int> serviceRateBps,
       Value<int> serviceFixedAmount,
       Value<int> businessDayStartHour,
+      Value<int> prepTargetMins,
       Value<int> rowid,
     });
 
@@ -14425,6 +14694,11 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<int> get businessDayStartHour => $composableBuilder(
     column: $table.businessDayStartHour,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get prepTargetMins => $composableBuilder(
+    column: $table.prepTargetMins,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14507,6 +14781,11 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.businessDayStartHour,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get prepTargetMins => $composableBuilder(
+    column: $table.prepTargetMins,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -14579,6 +14858,11 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.businessDayStartHour,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get prepTargetMins => $composableBuilder(
+    column: $table.prepTargetMins,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -14626,6 +14910,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> serviceRateBps = const Value.absent(),
                 Value<int> serviceFixedAmount = const Value.absent(),
                 Value<int> businessDayStartHour = const Value.absent(),
+                Value<int> prepTargetMins = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -14642,6 +14927,7 @@ class $$VenueSettingsTableTableManager
                 serviceRateBps: serviceRateBps,
                 serviceFixedAmount: serviceFixedAmount,
                 businessDayStartHour: businessDayStartHour,
+                prepTargetMins: prepTargetMins,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14660,6 +14946,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> serviceRateBps = const Value.absent(),
                 Value<int> serviceFixedAmount = const Value.absent(),
                 Value<int> businessDayStartHour = const Value.absent(),
+                Value<int> prepTargetMins = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -14676,6 +14963,7 @@ class $$VenueSettingsTableTableManager
                 serviceRateBps: serviceRateBps,
                 serviceFixedAmount: serviceFixedAmount,
                 businessDayStartHour: businessDayStartHour,
+                prepTargetMins: prepTargetMins,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15329,10 +15617,12 @@ typedef $$TableSessionTicketsTableCreateCompanionBuilder =
       required String course,
       Value<int> qty,
       Value<String> modifiersJson,
-      Value<String?> specialInstructions,
+      Value<String?> note,
       required int price,
       required String status,
       required DateTime sentAt,
+      Value<DateTime?> readyAt,
+      Value<DateTime?> servedAt,
       Value<String?> voidReason,
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
@@ -15351,10 +15641,12 @@ typedef $$TableSessionTicketsTableUpdateCompanionBuilder =
       Value<String> course,
       Value<int> qty,
       Value<String> modifiersJson,
-      Value<String?> specialInstructions,
+      Value<String?> note,
       Value<int> price,
       Value<String> status,
       Value<DateTime> sentAt,
+      Value<DateTime?> readyAt,
+      Value<DateTime?> servedAt,
       Value<String?> voidReason,
       Value<String?> voidReasonCode,
       Value<String?> voidApprovedBy,
@@ -15417,8 +15709,8 @@ class $$TableSessionTicketsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get specialInstructions => $composableBuilder(
-    column: $table.specialInstructions,
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15434,6 +15726,16 @@ class $$TableSessionTicketsTableFilterComposer
 
   ColumnFilters<DateTime> get sentAt => $composableBuilder(
     column: $table.sentAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get readyAt => $composableBuilder(
+    column: $table.readyAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get servedAt => $composableBuilder(
+    column: $table.servedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15517,8 +15819,8 @@ class $$TableSessionTicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get specialInstructions => $composableBuilder(
-    column: $table.specialInstructions,
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -15534,6 +15836,16 @@ class $$TableSessionTicketsTableOrderingComposer
 
   ColumnOrderings<DateTime> get sentAt => $composableBuilder(
     column: $table.sentAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get readyAt => $composableBuilder(
+    column: $table.readyAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get servedAt => $composableBuilder(
+    column: $table.servedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -15603,10 +15915,8 @@ class $$TableSessionTicketsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get specialInstructions => $composableBuilder(
-    column: $table.specialInstructions,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
 
   GeneratedColumn<int> get price =>
       $composableBuilder(column: $table.price, builder: (column) => column);
@@ -15616,6 +15926,12 @@ class $$TableSessionTicketsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get sentAt =>
       $composableBuilder(column: $table.sentAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get readyAt =>
+      $composableBuilder(column: $table.readyAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get servedAt =>
+      $composableBuilder(column: $table.servedAt, builder: (column) => column);
 
   GeneratedColumn<String> get voidReason => $composableBuilder(
     column: $table.voidReason,
@@ -15695,10 +16011,12 @@ class $$TableSessionTicketsTableTableManager
                 Value<String> course = const Value.absent(),
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
-                Value<String?> specialInstructions = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 Value<int> price = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> sentAt = const Value.absent(),
+                Value<DateTime?> readyAt = const Value.absent(),
+                Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
@@ -15715,10 +16033,12 @@ class $$TableSessionTicketsTableTableManager
                 course: course,
                 qty: qty,
                 modifiersJson: modifiersJson,
-                specialInstructions: specialInstructions,
+                note: note,
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                readyAt: readyAt,
+                servedAt: servedAt,
                 voidReason: voidReason,
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,
@@ -15737,10 +16057,12 @@ class $$TableSessionTicketsTableTableManager
                 required String course,
                 Value<int> qty = const Value.absent(),
                 Value<String> modifiersJson = const Value.absent(),
-                Value<String?> specialInstructions = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 required int price,
                 required String status,
                 required DateTime sentAt,
+                Value<DateTime?> readyAt = const Value.absent(),
+                Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
                 Value<String?> voidReasonCode = const Value.absent(),
                 Value<String?> voidApprovedBy = const Value.absent(),
@@ -15757,10 +16079,12 @@ class $$TableSessionTicketsTableTableManager
                 course: course,
                 qty: qty,
                 modifiersJson: modifiersJson,
-                specialInstructions: specialInstructions,
+                note: note,
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                readyAt: readyAt,
+                servedAt: servedAt,
                 voidReason: voidReason,
                 voidReasonCode: voidReasonCode,
                 voidApprovedBy: voidApprovedBy,

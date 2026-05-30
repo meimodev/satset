@@ -11,6 +11,7 @@ import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
+import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'modifier_sheet.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
@@ -174,20 +175,25 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     child: _CatTabs(active: _cat, onChange: (id) => setState(() => _cat = id)),
                   ),
                   Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 0.85,
-                      padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
-                      children: [
-                        for (final it in items)
-                          _ItemCard(
-                            item: it,
-                            inCart: inCartQty[it.id] ?? 0,
-                            onTap: () => _openItem(it),
-                          ),
-                      ],
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final dynamicCols = l.responsiveColumns(constraints.maxWidth, minTileWidth: 175);
+                        return GridView.count(
+                          crossAxisCount: dynamicCols,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.80,
+                          padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
+                          children: [
+                            for (final it in items)
+                              _ItemCard(
+                                item: it,
+                                inCart: inCartQty[it.id] ?? 0,
+                                onTap: () => _openItem(it),
+                              ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -475,29 +481,20 @@ class _ItemCard extends ConsumerWidget {
                       ),
                       if (item.allergens.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Flexible(
-                          child: Wrap(
-                          spacing: 4,
-                          children: [
-                            for (final a in item.allergens)
-                              Container(
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: sc.bg4,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(tagsById[a]?.code ?? '?',
-                                    style: SatType.mono(
-                                      size: 8,
-                                      weight: FontWeight.w600,
-                                      color: sc.textLo,
-                                      letterSpacing: 0,
-                                    )),
-                              ),
-                          ],
+                        TagBadgeRow(
+                          ids: item.allergens,
+                          tagsById: tagsById,
+                          fg: sc.urgent,
+                          bg: sc.urgentSoft,
                         ),
+                      ],
+                      if (item.dietary.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        TagBadgeRow(
+                          ids: item.dietary,
+                          tagsById: tagsById,
+                          fg: sc.info,
+                          bg: sc.infoSoft,
                         ),
                       ],
                     ],

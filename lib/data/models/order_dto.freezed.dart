@@ -15,6 +15,225 @@ final _privateConstructorUsedError = UnsupportedError(
   'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
 );
 
+CartModifierDto _$CartModifierDtoFromJson(Map<String, dynamic> json) {
+  return _CartModifierDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$CartModifierDto {
+  String get groupId => throw _privateConstructorUsedError;
+  String get optionId => throw _privateConstructorUsedError;
+  String get label => throw _privateConstructorUsedError;
+  int get priceDelta => throw _privateConstructorUsedError;
+
+  /// Serializes this CartModifierDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of CartModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $CartModifierDtoCopyWith<CartModifierDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $CartModifierDtoCopyWith<$Res> {
+  factory $CartModifierDtoCopyWith(
+    CartModifierDto value,
+    $Res Function(CartModifierDto) then,
+  ) = _$CartModifierDtoCopyWithImpl<$Res, CartModifierDto>;
+  @useResult
+  $Res call({String groupId, String optionId, String label, int priceDelta});
+}
+
+/// @nodoc
+class _$CartModifierDtoCopyWithImpl<$Res, $Val extends CartModifierDto>
+    implements $CartModifierDtoCopyWith<$Res> {
+  _$CartModifierDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of CartModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? groupId = null,
+    Object? optionId = null,
+    Object? label = null,
+    Object? priceDelta = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            groupId: null == groupId
+                ? _value.groupId
+                : groupId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            optionId: null == optionId
+                ? _value.optionId
+                : optionId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            label: null == label
+                ? _value.label
+                : label // ignore: cast_nullable_to_non_nullable
+                      as String,
+            priceDelta: null == priceDelta
+                ? _value.priceDelta
+                : priceDelta // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$CartModifierDtoImplCopyWith<$Res>
+    implements $CartModifierDtoCopyWith<$Res> {
+  factory _$$CartModifierDtoImplCopyWith(
+    _$CartModifierDtoImpl value,
+    $Res Function(_$CartModifierDtoImpl) then,
+  ) = __$$CartModifierDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String groupId, String optionId, String label, int priceDelta});
+}
+
+/// @nodoc
+class __$$CartModifierDtoImplCopyWithImpl<$Res>
+    extends _$CartModifierDtoCopyWithImpl<$Res, _$CartModifierDtoImpl>
+    implements _$$CartModifierDtoImplCopyWith<$Res> {
+  __$$CartModifierDtoImplCopyWithImpl(
+    _$CartModifierDtoImpl _value,
+    $Res Function(_$CartModifierDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of CartModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? groupId = null,
+    Object? optionId = null,
+    Object? label = null,
+    Object? priceDelta = null,
+  }) {
+    return _then(
+      _$CartModifierDtoImpl(
+        groupId: null == groupId
+            ? _value.groupId
+            : groupId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        optionId: null == optionId
+            ? _value.optionId
+            : optionId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        label: null == label
+            ? _value.label
+            : label // ignore: cast_nullable_to_non_nullable
+                  as String,
+        priceDelta: null == priceDelta
+            ? _value.priceDelta
+            : priceDelta // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$CartModifierDtoImpl implements _CartModifierDto {
+  const _$CartModifierDtoImpl({
+    required this.groupId,
+    required this.optionId,
+    required this.label,
+    required this.priceDelta,
+  });
+
+  factory _$CartModifierDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CartModifierDtoImplFromJson(json);
+
+  @override
+  final String groupId;
+  @override
+  final String optionId;
+  @override
+  final String label;
+  @override
+  final int priceDelta;
+
+  @override
+  String toString() {
+    return 'CartModifierDto(groupId: $groupId, optionId: $optionId, label: $label, priceDelta: $priceDelta)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CartModifierDtoImpl &&
+            (identical(other.groupId, groupId) || other.groupId == groupId) &&
+            (identical(other.optionId, optionId) ||
+                other.optionId == optionId) &&
+            (identical(other.label, label) || other.label == label) &&
+            (identical(other.priceDelta, priceDelta) ||
+                other.priceDelta == priceDelta));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, groupId, optionId, label, priceDelta);
+
+  /// Create a copy of CartModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CartModifierDtoImplCopyWith<_$CartModifierDtoImpl> get copyWith =>
+      __$$CartModifierDtoImplCopyWithImpl<_$CartModifierDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$CartModifierDtoImplToJson(this);
+  }
+}
+
+abstract class _CartModifierDto implements CartModifierDto {
+  const factory _CartModifierDto({
+    required final String groupId,
+    required final String optionId,
+    required final String label,
+    required final int priceDelta,
+  }) = _$CartModifierDtoImpl;
+
+  factory _CartModifierDto.fromJson(Map<String, dynamic> json) =
+      _$CartModifierDtoImpl.fromJson;
+
+  @override
+  String get groupId;
+  @override
+  String get optionId;
+  @override
+  String get label;
+  @override
+  int get priceDelta;
+
+  /// Create a copy of CartModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$CartModifierDtoImplCopyWith<_$CartModifierDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 CartLineDto _$CartLineDtoFromJson(Map<String, dynamic> json) {
   return _CartLineDto.fromJson(json);
 }
@@ -25,8 +244,8 @@ mixin _$CartLineDto {
   String get name => throw _privateConstructorUsedError;
   String get variantId => throw _privateConstructorUsedError;
   String get variantName => throw _privateConstructorUsedError;
-  List<String> get modifierOptionIds => throw _privateConstructorUsedError;
-  String? get specialInstructions => throw _privateConstructorUsedError;
+  List<CartModifierDto> get modifiers => throw _privateConstructorUsedError;
+  String? get note => throw _privateConstructorUsedError;
   String get course => throw _privateConstructorUsedError;
   int get qty => throw _privateConstructorUsedError;
   int get unitPrice => throw _privateConstructorUsedError;
@@ -53,8 +272,8 @@ abstract class $CartLineDtoCopyWith<$Res> {
     String name,
     String variantId,
     String variantName,
-    List<String> modifierOptionIds,
-    String? specialInstructions,
+    List<CartModifierDto> modifiers,
+    String? note,
     String course,
     int qty,
     int unitPrice,
@@ -80,8 +299,8 @@ class _$CartLineDtoCopyWithImpl<$Res, $Val extends CartLineDto>
     Object? name = null,
     Object? variantId = null,
     Object? variantName = null,
-    Object? modifierOptionIds = null,
-    Object? specialInstructions = freezed,
+    Object? modifiers = null,
+    Object? note = freezed,
     Object? course = null,
     Object? qty = null,
     Object? unitPrice = null,
@@ -104,13 +323,13 @@ class _$CartLineDtoCopyWithImpl<$Res, $Val extends CartLineDto>
                 ? _value.variantName
                 : variantName // ignore: cast_nullable_to_non_nullable
                       as String,
-            modifierOptionIds: null == modifierOptionIds
-                ? _value.modifierOptionIds
-                : modifierOptionIds // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
-            specialInstructions: freezed == specialInstructions
-                ? _value.specialInstructions
-                : specialInstructions // ignore: cast_nullable_to_non_nullable
+            modifiers: null == modifiers
+                ? _value.modifiers
+                : modifiers // ignore: cast_nullable_to_non_nullable
+                      as List<CartModifierDto>,
+            note: freezed == note
+                ? _value.note
+                : note // ignore: cast_nullable_to_non_nullable
                       as String?,
             course: null == course
                 ? _value.course
@@ -144,8 +363,8 @@ abstract class _$$CartLineDtoImplCopyWith<$Res>
     String name,
     String variantId,
     String variantName,
-    List<String> modifierOptionIds,
-    String? specialInstructions,
+    List<CartModifierDto> modifiers,
+    String? note,
     String course,
     int qty,
     int unitPrice,
@@ -170,8 +389,8 @@ class __$$CartLineDtoImplCopyWithImpl<$Res>
     Object? name = null,
     Object? variantId = null,
     Object? variantName = null,
-    Object? modifierOptionIds = null,
-    Object? specialInstructions = freezed,
+    Object? modifiers = null,
+    Object? note = freezed,
     Object? course = null,
     Object? qty = null,
     Object? unitPrice = null,
@@ -194,13 +413,13 @@ class __$$CartLineDtoImplCopyWithImpl<$Res>
             ? _value.variantName
             : variantName // ignore: cast_nullable_to_non_nullable
                   as String,
-        modifierOptionIds: null == modifierOptionIds
-            ? _value._modifierOptionIds
-            : modifierOptionIds // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
-        specialInstructions: freezed == specialInstructions
-            ? _value.specialInstructions
-            : specialInstructions // ignore: cast_nullable_to_non_nullable
+        modifiers: null == modifiers
+            ? _value._modifiers
+            : modifiers // ignore: cast_nullable_to_non_nullable
+                  as List<CartModifierDto>,
+        note: freezed == note
+            ? _value.note
+            : note // ignore: cast_nullable_to_non_nullable
                   as String?,
         course: null == course
             ? _value.course
@@ -227,12 +446,12 @@ class _$CartLineDtoImpl implements _CartLineDto {
     required this.name,
     required this.variantId,
     required this.variantName,
-    required final List<String> modifierOptionIds,
-    required this.specialInstructions,
+    required final List<CartModifierDto> modifiers,
+    required this.note,
     required this.course,
     required this.qty,
     required this.unitPrice,
-  }) : _modifierOptionIds = modifierOptionIds;
+  }) : _modifiers = modifiers;
 
   factory _$CartLineDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$CartLineDtoImplFromJson(json);
@@ -245,17 +464,16 @@ class _$CartLineDtoImpl implements _CartLineDto {
   final String variantId;
   @override
   final String variantName;
-  final List<String> _modifierOptionIds;
+  final List<CartModifierDto> _modifiers;
   @override
-  List<String> get modifierOptionIds {
-    if (_modifierOptionIds is EqualUnmodifiableListView)
-      return _modifierOptionIds;
+  List<CartModifierDto> get modifiers {
+    if (_modifiers is EqualUnmodifiableListView) return _modifiers;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_modifierOptionIds);
+    return EqualUnmodifiableListView(_modifiers);
   }
 
   @override
-  final String? specialInstructions;
+  final String? note;
   @override
   final String course;
   @override
@@ -265,7 +483,7 @@ class _$CartLineDtoImpl implements _CartLineDto {
 
   @override
   String toString() {
-    return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, modifierOptionIds: $modifierOptionIds, specialInstructions: $specialInstructions, course: $course, qty: $qty, unitPrice: $unitPrice)';
+    return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
   }
 
   @override
@@ -280,11 +498,10 @@ class _$CartLineDtoImpl implements _CartLineDto {
             (identical(other.variantName, variantName) ||
                 other.variantName == variantName) &&
             const DeepCollectionEquality().equals(
-              other._modifierOptionIds,
-              _modifierOptionIds,
+              other._modifiers,
+              _modifiers,
             ) &&
-            (identical(other.specialInstructions, specialInstructions) ||
-                other.specialInstructions == specialInstructions) &&
+            (identical(other.note, note) || other.note == note) &&
             (identical(other.course, course) || other.course == course) &&
             (identical(other.qty, qty) || other.qty == qty) &&
             (identical(other.unitPrice, unitPrice) ||
@@ -299,8 +516,8 @@ class _$CartLineDtoImpl implements _CartLineDto {
     name,
     variantId,
     variantName,
-    const DeepCollectionEquality().hash(_modifierOptionIds),
-    specialInstructions,
+    const DeepCollectionEquality().hash(_modifiers),
+    note,
     course,
     qty,
     unitPrice,
@@ -326,8 +543,8 @@ abstract class _CartLineDto implements CartLineDto {
     required final String name,
     required final String variantId,
     required final String variantName,
-    required final List<String> modifierOptionIds,
-    required final String? specialInstructions,
+    required final List<CartModifierDto> modifiers,
+    required final String? note,
     required final String course,
     required final int qty,
     required final int unitPrice,
@@ -345,9 +562,9 @@ abstract class _CartLineDto implements CartLineDto {
   @override
   String get variantName;
   @override
-  List<String> get modifierOptionIds;
+  List<CartModifierDto> get modifiers;
   @override
-  String? get specialInstructions;
+  String? get note;
   @override
   String get course;
   @override

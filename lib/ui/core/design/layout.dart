@@ -69,6 +69,11 @@ class SatLayout {
     final c = ((usable - rail) / minTileWidth).floor();
     return c.clamp(2, 6);
   }
+
+  int responsiveColumns(double containerWidth, {double minTileWidth = 170}) {
+    final c = (containerWidth / minTileWidth).floor();
+    return c.clamp(2, 6);
+  }
 }
 
 extension SatLayoutX on BuildContext {

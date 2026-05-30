@@ -120,10 +120,15 @@ class Tickets extends Table {
   TextColumn get course => text()();
   IntColumn get qty => integer().withDefault(const Constant(1))();
   TextColumn get modifiersJson => text().withDefault(const Constant('[]'))();
-  TextColumn get specialInstructions => text().nullable()();
+  TextColumn get note => text().nullable()();
   IntColumn get price => integer()();
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
+  /// Set once, on first entry into `ready` (prep time = readyAt − sentAt).
+  /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
+  DateTimeColumn get readyAt => dateTime().nullable()();
+  /// Last-write, most recent `served` (pickup lag = servedAt − readyAt).
+  DateTimeColumn get servedAt => dateTime().nullable()();
   TextColumn get voidReason => text().nullable()();
   /// Canonical enum slug for void/comp analytics. One of:
   /// outOfStock | wrongOrder | customerChange | kitchenError | comp | other.
@@ -201,6 +206,12 @@ class VenueSettings extends Table {
   /// [hour, hour+24h). Default 4 covers late-night service.
   IntColumn get businessDayStartHour =>
       integer().withDefault(const Constant(4))();
+
+  /// Single configurable "kitchen should be ready by now" threshold (minutes).
+  /// Drives BOTH the floor/audio overdue alert and the report SLA hit-rate.
+  /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
+  IntColumn get prepTargetMins =>
+      integer().withDefault(const Constant(15))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -270,10 +281,14 @@ class TableSessionTickets extends Table {
   TextColumn get course => text()();
   IntColumn get qty => integer().withDefault(const Constant(1))();
   TextColumn get modifiersJson => text().withDefault(const Constant('[]'))();
-  TextColumn get specialInstructions => text().nullable()();
+  TextColumn get note => text().nullable()();
   IntColumn get price => integer()();
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
+  /// Mirrors Tickets.readyAt / Tickets.servedAt at session close, so speed-of-
+  /// service survives the live-ticket delete. See ADR-0013.
+  DateTimeColumn get readyAt => dateTime().nullable()();
+  DateTimeColumn get servedAt => dateTime().nullable()();
   TextColumn get voidReason => text().nullable()();
   /// Canonical enum slug — mirrors Tickets.voidReasonCode at session close.
   TextColumn get voidReasonCode => text().nullable()();

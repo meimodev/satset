@@ -11,6 +11,7 @@ import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
+import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -20,6 +21,7 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final ready = ref.watch(totalReadyCountProvider);
+    final kitchenCount = ref.watch(kitchenNewOrderCountProvider);
     final loc = GoRouterState.of(context).uri.path;
     final l = context.layout;
 
@@ -34,6 +36,7 @@ class AppShell extends ConsumerWidget {
       return TabletShell(
         activeTab: activeTab,
         readyCount: ready,
+        kitchenCount: kitchenCount,
         crumbs: _crumbsFor(loc, activeTab, zoneName, venueName),
         child: child,
       );

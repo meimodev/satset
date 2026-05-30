@@ -97,6 +97,9 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         businessDayStartHour: body.containsKey('businessDayStartHour')
             ? Value(((body['businessDayStartHour'] as num).toInt()).clamp(0, 23))
             : const Value.absent(),
+        prepTargetMins: body.containsKey('prepTargetMins')
+            ? Value(((body['prepTargetMins'] as num).toInt()).clamp(1, 120))
+            : const Value.absent(),
       ),
     );
     final row = await _readOrSeed(db);
@@ -140,4 +143,5 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
       'serviceRateBps': s.serviceRateBps,
       'serviceFixedAmount': s.serviceFixedAmount,
       'businessDayStartHour': s.businessDayStartHour,
+      'prepTargetMins': s.prepTargetMins,
     };

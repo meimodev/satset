@@ -1,4 +1,5 @@
 import 'course.dart';
+import 'ticket_modifier.dart';
 
 class CartItem {
   final String id;
@@ -6,9 +7,12 @@ class CartItem {
   final String name;
   final String variantId;
   final String variantName;
+  /// Display labels (with derived sign) for the cart/review screens.
   final List<String> modifiers;
-  final Map<String, dynamic> modifierIds;
-  final String special;
+  /// Structured snapshot of each chosen option — what rides the wire and
+  /// freezes onto the sent line. See ADR-0011.
+  final List<TicketModifier> selectedModifiers;
+  final String note;
   final CourseId course;
   final int qty;
   final int unitPrice;
@@ -22,8 +26,8 @@ class CartItem {
     required this.variantId,
     required this.variantName,
     this.modifiers = const [],
-    this.modifierIds = const {},
-    this.special = '',
+    this.selectedModifiers = const [],
+    this.note = '',
     required this.course,
     this.qty = 1,
     required this.unitPrice,

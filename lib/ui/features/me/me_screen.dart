@@ -1140,6 +1140,7 @@ void _showReadyToast(BuildContext context) {
           child: ReadyToast(
             alert: const ReadyAlert(
               tableId: 'T2',
+              tableLabel: 'T2',
               zone: 'Teras',
               what: '2 item',
             ),
@@ -1191,7 +1192,6 @@ void _showLineItemSheetDebug(BuildContext context, WidgetRef ref) {
   ticket ??= _stubTicket(ref);
   showLineItemActionSheet(
     context: context,
-    ref: ref,
     tableId: tableId,
     ticket: ticket,
   );

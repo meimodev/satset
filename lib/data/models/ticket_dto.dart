@@ -3,6 +3,21 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'ticket_dto.freezed.dart';
 part 'ticket_dto.g.dart';
 
+/// Wire shape of one snapshotted add-on on a sent line. See
+/// docs/adr/0011-ticket-modifier-snapshot.md.
+@freezed
+class TicketModifierDto with _$TicketModifierDto {
+  const factory TicketModifierDto({
+    @Default('') String groupId,
+    @Default('') String optionId,
+    @Default('') String label,
+    @Default(0) int priceDelta,
+  }) = _TicketModifierDto;
+
+  factory TicketModifierDto.fromJson(Map<String, dynamic> json) =>
+      _$TicketModifierDtoFromJson(json);
+}
+
 @freezed
 class TicketDto with _$TicketDto {
   const factory TicketDto({
@@ -13,11 +28,13 @@ class TicketDto with _$TicketDto {
     @Default('') String variantName,
     required String course,
     @Default(1) int qty,
-    @Default(<String>[]) List<String> modifiers,
-    String? specialInstructions,
+    @Default(<TicketModifierDto>[]) List<TicketModifierDto> modifiers,
+    String? note,
     required int price,
     required String status,
     required DateTime sentAt,
+    DateTime? readyAt,
+    DateTime? servedAt,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,

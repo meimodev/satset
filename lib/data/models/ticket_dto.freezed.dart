@@ -15,6 +15,229 @@ final _privateConstructorUsedError = UnsupportedError(
   'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
 );
 
+TicketModifierDto _$TicketModifierDtoFromJson(Map<String, dynamic> json) {
+  return _TicketModifierDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TicketModifierDto {
+  String get groupId => throw _privateConstructorUsedError;
+  String get optionId => throw _privateConstructorUsedError;
+  String get label => throw _privateConstructorUsedError;
+  int get priceDelta => throw _privateConstructorUsedError;
+
+  /// Serializes this TicketModifierDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TicketModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TicketModifierDtoCopyWith<TicketModifierDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TicketModifierDtoCopyWith<$Res> {
+  factory $TicketModifierDtoCopyWith(
+    TicketModifierDto value,
+    $Res Function(TicketModifierDto) then,
+  ) = _$TicketModifierDtoCopyWithImpl<$Res, TicketModifierDto>;
+  @useResult
+  $Res call({String groupId, String optionId, String label, int priceDelta});
+}
+
+/// @nodoc
+class _$TicketModifierDtoCopyWithImpl<$Res, $Val extends TicketModifierDto>
+    implements $TicketModifierDtoCopyWith<$Res> {
+  _$TicketModifierDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TicketModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? groupId = null,
+    Object? optionId = null,
+    Object? label = null,
+    Object? priceDelta = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            groupId: null == groupId
+                ? _value.groupId
+                : groupId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            optionId: null == optionId
+                ? _value.optionId
+                : optionId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            label: null == label
+                ? _value.label
+                : label // ignore: cast_nullable_to_non_nullable
+                      as String,
+            priceDelta: null == priceDelta
+                ? _value.priceDelta
+                : priceDelta // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TicketModifierDtoImplCopyWith<$Res>
+    implements $TicketModifierDtoCopyWith<$Res> {
+  factory _$$TicketModifierDtoImplCopyWith(
+    _$TicketModifierDtoImpl value,
+    $Res Function(_$TicketModifierDtoImpl) then,
+  ) = __$$TicketModifierDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String groupId, String optionId, String label, int priceDelta});
+}
+
+/// @nodoc
+class __$$TicketModifierDtoImplCopyWithImpl<$Res>
+    extends _$TicketModifierDtoCopyWithImpl<$Res, _$TicketModifierDtoImpl>
+    implements _$$TicketModifierDtoImplCopyWith<$Res> {
+  __$$TicketModifierDtoImplCopyWithImpl(
+    _$TicketModifierDtoImpl _value,
+    $Res Function(_$TicketModifierDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TicketModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? groupId = null,
+    Object? optionId = null,
+    Object? label = null,
+    Object? priceDelta = null,
+  }) {
+    return _then(
+      _$TicketModifierDtoImpl(
+        groupId: null == groupId
+            ? _value.groupId
+            : groupId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        optionId: null == optionId
+            ? _value.optionId
+            : optionId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        label: null == label
+            ? _value.label
+            : label // ignore: cast_nullable_to_non_nullable
+                  as String,
+        priceDelta: null == priceDelta
+            ? _value.priceDelta
+            : priceDelta // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TicketModifierDtoImpl implements _TicketModifierDto {
+  const _$TicketModifierDtoImpl({
+    this.groupId = '',
+    this.optionId = '',
+    this.label = '',
+    this.priceDelta = 0,
+  });
+
+  factory _$TicketModifierDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TicketModifierDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String groupId;
+  @override
+  @JsonKey()
+  final String optionId;
+  @override
+  @JsonKey()
+  final String label;
+  @override
+  @JsonKey()
+  final int priceDelta;
+
+  @override
+  String toString() {
+    return 'TicketModifierDto(groupId: $groupId, optionId: $optionId, label: $label, priceDelta: $priceDelta)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TicketModifierDtoImpl &&
+            (identical(other.groupId, groupId) || other.groupId == groupId) &&
+            (identical(other.optionId, optionId) ||
+                other.optionId == optionId) &&
+            (identical(other.label, label) || other.label == label) &&
+            (identical(other.priceDelta, priceDelta) ||
+                other.priceDelta == priceDelta));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, groupId, optionId, label, priceDelta);
+
+  /// Create a copy of TicketModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TicketModifierDtoImplCopyWith<_$TicketModifierDtoImpl> get copyWith =>
+      __$$TicketModifierDtoImplCopyWithImpl<_$TicketModifierDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TicketModifierDtoImplToJson(this);
+  }
+}
+
+abstract class _TicketModifierDto implements TicketModifierDto {
+  const factory _TicketModifierDto({
+    final String groupId,
+    final String optionId,
+    final String label,
+    final int priceDelta,
+  }) = _$TicketModifierDtoImpl;
+
+  factory _TicketModifierDto.fromJson(Map<String, dynamic> json) =
+      _$TicketModifierDtoImpl.fromJson;
+
+  @override
+  String get groupId;
+  @override
+  String get optionId;
+  @override
+  String get label;
+  @override
+  int get priceDelta;
+
+  /// Create a copy of TicketModifierDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TicketModifierDtoImplCopyWith<_$TicketModifierDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 TicketDto _$TicketDtoFromJson(Map<String, dynamic> json) {
   return _TicketDto.fromJson(json);
 }
@@ -28,11 +251,13 @@ mixin _$TicketDto {
   String get variantName => throw _privateConstructorUsedError;
   String get course => throw _privateConstructorUsedError;
   int get qty => throw _privateConstructorUsedError;
-  List<String> get modifiers => throw _privateConstructorUsedError;
-  String? get specialInstructions => throw _privateConstructorUsedError;
+  List<TicketModifierDto> get modifiers => throw _privateConstructorUsedError;
+  String? get note => throw _privateConstructorUsedError;
   int get price => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
   DateTime get sentAt => throw _privateConstructorUsedError;
+  DateTime? get readyAt => throw _privateConstructorUsedError;
+  DateTime? get servedAt => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
   String? get voidReasonCode => throw _privateConstructorUsedError;
   String? get voidApprovedBy => throw _privateConstructorUsedError;
@@ -62,11 +287,13 @@ abstract class $TicketDtoCopyWith<$Res> {
     String variantName,
     String course,
     int qty,
-    List<String> modifiers,
-    String? specialInstructions,
+    List<TicketModifierDto> modifiers,
+    String? note,
     int price,
     String status,
     DateTime sentAt,
+    DateTime? readyAt,
+    DateTime? servedAt,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
@@ -98,10 +325,12 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
     Object? course = null,
     Object? qty = null,
     Object? modifiers = null,
-    Object? specialInstructions = freezed,
+    Object? note = freezed,
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? readyAt = freezed,
+    Object? servedAt = freezed,
     Object? voidReason = freezed,
     Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
@@ -141,10 +370,10 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
             modifiers: null == modifiers
                 ? _value.modifiers
                 : modifiers // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
-            specialInstructions: freezed == specialInstructions
-                ? _value.specialInstructions
-                : specialInstructions // ignore: cast_nullable_to_non_nullable
+                      as List<TicketModifierDto>,
+            note: freezed == note
+                ? _value.note
+                : note // ignore: cast_nullable_to_non_nullable
                       as String?,
             price: null == price
                 ? _value.price
@@ -158,6 +387,14 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
                 ? _value.sentAt
                 : sentAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            readyAt: freezed == readyAt
+                ? _value.readyAt
+                : readyAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            servedAt: freezed == servedAt
+                ? _value.servedAt
+                : servedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             voidReason: freezed == voidReason
                 ? _value.voidReason
                 : voidReason // ignore: cast_nullable_to_non_nullable
@@ -201,11 +438,13 @@ abstract class _$$TicketDtoImplCopyWith<$Res>
     String variantName,
     String course,
     int qty,
-    List<String> modifiers,
-    String? specialInstructions,
+    List<TicketModifierDto> modifiers,
+    String? note,
     int price,
     String status,
     DateTime sentAt,
+    DateTime? readyAt,
+    DateTime? servedAt,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
@@ -236,10 +475,12 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
     Object? course = null,
     Object? qty = null,
     Object? modifiers = null,
-    Object? specialInstructions = freezed,
+    Object? note = freezed,
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? readyAt = freezed,
+    Object? servedAt = freezed,
     Object? voidReason = freezed,
     Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
@@ -279,10 +520,10 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
         modifiers: null == modifiers
             ? _value._modifiers
             : modifiers // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
-        specialInstructions: freezed == specialInstructions
-            ? _value.specialInstructions
-            : specialInstructions // ignore: cast_nullable_to_non_nullable
+                  as List<TicketModifierDto>,
+        note: freezed == note
+            ? _value.note
+            : note // ignore: cast_nullable_to_non_nullable
                   as String?,
         price: null == price
             ? _value.price
@@ -296,6 +537,14 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
             ? _value.sentAt
             : sentAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        readyAt: freezed == readyAt
+            ? _value.readyAt
+            : readyAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        servedAt: freezed == servedAt
+            ? _value.servedAt
+            : servedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         voidReason: freezed == voidReason
             ? _value.voidReason
             : voidReason // ignore: cast_nullable_to_non_nullable
@@ -332,11 +581,13 @@ class _$TicketDtoImpl implements _TicketDto {
     this.variantName = '',
     required this.course,
     this.qty = 1,
-    final List<String> modifiers = const <String>[],
-    this.specialInstructions,
+    final List<TicketModifierDto> modifiers = const <TicketModifierDto>[],
+    this.note,
     required this.price,
     required this.status,
     required this.sentAt,
+    this.readyAt,
+    this.servedAt,
     this.voidReason,
     this.voidReasonCode,
     this.voidApprovedBy,
@@ -363,23 +614,27 @@ class _$TicketDtoImpl implements _TicketDto {
   @override
   @JsonKey()
   final int qty;
-  final List<String> _modifiers;
+  final List<TicketModifierDto> _modifiers;
   @override
   @JsonKey()
-  List<String> get modifiers {
+  List<TicketModifierDto> get modifiers {
     if (_modifiers is EqualUnmodifiableListView) return _modifiers;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_modifiers);
   }
 
   @override
-  final String? specialInstructions;
+  final String? note;
   @override
   final int price;
   @override
   final String status;
   @override
   final DateTime sentAt;
+  @override
+  final DateTime? readyAt;
+  @override
+  final DateTime? servedAt;
   @override
   final String? voidReason;
   @override
@@ -393,7 +648,7 @@ class _$TicketDtoImpl implements _TicketDto {
 
   @override
   String toString() {
-    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, specialInstructions: $specialInstructions, price: $price, status: $status, sentAt: $sentAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
+    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
   }
 
   @override
@@ -413,11 +668,13 @@ class _$TicketDtoImpl implements _TicketDto {
               other._modifiers,
               _modifiers,
             ) &&
-            (identical(other.specialInstructions, specialInstructions) ||
-                other.specialInstructions == specialInstructions) &&
+            (identical(other.note, note) || other.note == note) &&
             (identical(other.price, price) || other.price == price) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.sentAt, sentAt) || other.sentAt == sentAt) &&
+            (identical(other.readyAt, readyAt) || other.readyAt == readyAt) &&
+            (identical(other.servedAt, servedAt) ||
+                other.servedAt == servedAt) &&
             (identical(other.voidReason, voidReason) ||
                 other.voidReason == voidReason) &&
             (identical(other.voidReasonCode, voidReasonCode) ||
@@ -432,7 +689,7 @@ class _$TicketDtoImpl implements _TicketDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     tableId,
@@ -442,16 +699,18 @@ class _$TicketDtoImpl implements _TicketDto {
     course,
     qty,
     const DeepCollectionEquality().hash(_modifiers),
-    specialInstructions,
+    note,
     price,
     status,
     sentAt,
+    readyAt,
+    servedAt,
     voidReason,
     voidReasonCode,
     voidApprovedBy,
     createdByUserId,
     voidedByUserId,
-  );
+  ]);
 
   /// Create a copy of TicketDto
   /// with the given fields replaced by the non-null parameter values.
@@ -476,11 +735,13 @@ abstract class _TicketDto implements TicketDto {
     final String variantName,
     required final String course,
     final int qty,
-    final List<String> modifiers,
-    final String? specialInstructions,
+    final List<TicketModifierDto> modifiers,
+    final String? note,
     required final int price,
     required final String status,
     required final DateTime sentAt,
+    final DateTime? readyAt,
+    final DateTime? servedAt,
     final String? voidReason,
     final String? voidReasonCode,
     final String? voidApprovedBy,
@@ -506,15 +767,19 @@ abstract class _TicketDto implements TicketDto {
   @override
   int get qty;
   @override
-  List<String> get modifiers;
+  List<TicketModifierDto> get modifiers;
   @override
-  String? get specialInstructions;
+  String? get note;
   @override
   int get price;
   @override
   String get status;
   @override
   DateTime get sentAt;
+  @override
+  DateTime? get readyAt;
+  @override
+  DateTime? get servedAt;
   @override
   String? get voidReason;
   @override

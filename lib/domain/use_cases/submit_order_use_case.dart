@@ -33,10 +33,16 @@ class SubmitOrderUseCase {
           name: c.name,
           variantId: c.variantId,
           variantName: c.variantName,
-          modifierOptionIds: c.modifierIds.values
-              .expand((v) => v is List ? v.cast<String>() : <String>[])
-              .toList(),
-          specialInstructions: c.special.isEmpty ? null : c.special,
+          modifiers: [
+            for (final m in c.selectedModifiers)
+              CartModifierDto(
+                groupId: m.groupId,
+                optionId: m.optionId,
+                label: m.label,
+                priceDelta: m.priceDelta,
+              ),
+          ],
+          note: c.note.isEmpty ? null : c.note,
           course: _courseKey(c.course),
           qty: c.qty,
           unitPrice: c.unitPrice,

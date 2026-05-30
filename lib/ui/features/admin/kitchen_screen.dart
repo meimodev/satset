@@ -7,6 +7,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/models/venue_table.dart';
@@ -635,23 +636,21 @@ class _ItemRowState extends State<_ItemRow>
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 3),
-                          child: Text(ticket.modifiers.join(' · '),
+                          child: Text(
+                              ticket.modifiers.map((m) => m.display).join(' · '),
                               style: SatType.sans(
                                 size: 13,
                                 color: sc.textMd,
                                 height: 1.4,
                               )),
                         ),
-                      if (ticket.specialInstructions != null)
+                      if (ticket.note != null && ticket.note!.trim().isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 5),
-                          child: Text('⚠ ${ticket.specialInstructions!}',
-                              style: SatType.sans(
-                                size: 13,
-                                weight: FontWeight.w600,
-                                color: sc.urgent,
-                                height: 1.35,
-                              )),
+                          child: NoteLine(
+                            label: 'Instruksi khusus',
+                            text: ticket.note!,
+                          ),
                         ),
                     ],
                   ),

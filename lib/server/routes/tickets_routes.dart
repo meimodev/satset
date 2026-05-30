@@ -211,8 +211,10 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           variantName: Value((l['variantName'] as String?) ?? ''),
           course: course,
           qty: Value((l['qty'] as num?)?.toInt() ?? 1),
-          modifiersJson: Value(jsonEncode(l['modifierOptionIds'] ?? const [])),
-          specialInstructions: Value(l['specialInstructions'] as String?),
+          // Structured add-on snapshot, built client-side and stored
+          // verbatim. See docs/adr/0011-ticket-modifier-snapshot.md.
+          modifiersJson: Value(jsonEncode(l['modifiers'] ?? const [])),
+          note: Value(l['note'] as String?),
           price: (l['unitPrice'] as num).toInt(),
           status: 'sent',
           sentAt: DateTime.now(),
@@ -307,12 +309,20 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           headers: {'content-type': 'application/json'});
     }
     final actor = isVoid ? await _actor(req, db, auth) : null;
+    // Speed-of-service stamps (ADR-0013). readyAt set-once on first entry into
+    // `ready` (so a served→ready undo never inflates prep time); servedAt
+    // last-write on every entry into `served`.
+    final stampNow = DateTime.now();
+    final stampReady = to == TicketStatus.ready && current.readyAt == null;
+    final stampServed = to == TicketStatus.served;
     Ticket? row;
     VenueTable? tableRow;
     await db.transaction(() async {
       await (db.update(db.tickets)..where((t) => t.id.equals(id))).write(
         TicketsCompanion(
           status: Value(statusRaw),
+          readyAt: stampReady ? Value(stampNow) : const Value.absent(),
+          servedAt: stampServed ? Value(stampNow) : const Value.absent(),
           voidReason: Value(voidReason),
           voidReasonCode: Value(voidReasonCode),
           voidApprovedBy: Value(body['voidApprovedBy'] as String?),
@@ -422,10 +432,12 @@ Map<String, dynamic> _toJson(Ticket t) => {
       'station': 'kitchen',
       'qty': t.qty,
       'modifiers': jsonDecode(t.modifiersJson),
-      'specialInstructions': t.specialInstructions,
+      'note': t.note,
       'price': t.price,
       'status': t.status,
       'sentAt': t.sentAt.toIso8601String(),
+      'readyAt': t.readyAt?.toIso8601String(),
+      'servedAt': t.servedAt?.toIso8601String(),
       'voidReason': t.voidReason,
       'voidReasonCode': t.voidReasonCode,
       'voidApprovedBy': t.voidApprovedBy,

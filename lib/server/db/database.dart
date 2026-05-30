@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -213,6 +213,46 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(menuTags);
             await _seedMenuTags();
           }
+          if (from < 22) {
+            // Modifier snapshots become structured objects
+            // ({groupId, optionId, label, priceDelta}) on both the live and
+            // closed-session ticket tables. Rewrite any legacy bare-string
+            // entries in place. See docs/adr/0011-ticket-modifier-snapshot.md.
+            await _migrateModifierSnapshots('tickets');
+            await _migrateModifierSnapshots('table_session_tickets');
+          }
+          if (from < 23) {
+            // Ticket lifecycle timestamps for speed-of-service + a unified,
+            // configurable service target. No backfill: pre-v23 rows never
+            // captured ready/served events, so they stay NULL and drop out of
+            // speed metrics. See docs/adr/0013.
+            await _safeAddColumnOn('tickets', 'ready_at', type: 'INTEGER');
+            await _safeAddColumnOn('tickets', 'served_at', type: 'INTEGER');
+            await _safeAddColumnOn(
+                'table_session_tickets', 'ready_at', type: 'INTEGER');
+            await _safeAddColumnOn(
+                'table_session_tickets', 'served_at', type: 'INTEGER');
+            await _safeAddColumnOn('venue_settings', 'prep_target_mins',
+                type: 'INTEGER NOT NULL DEFAULT 15');
+          }
+          if (from < 24) {
+            // Item note column renamed special_instructions → note (single
+            // canonical name across all layers). Add + copy + drop; DROP
+            // no-ops on pre-3.35 SQLite, leaving a harmless dead column.
+            // See CONTEXT.md "Guest note / Item note".
+            await _safeAddColumnOn('tickets', 'note', type: 'TEXT');
+            await _safeAddColumnOn('table_session_tickets', 'note',
+                type: 'TEXT');
+            await customStatement(
+                'UPDATE tickets SET note = special_instructions '
+                'WHERE special_instructions IS NOT NULL');
+            await customStatement(
+                'UPDATE table_session_tickets SET note = special_instructions '
+                'WHERE special_instructions IS NOT NULL');
+            await _safeDropColumnOn('tickets', 'special_instructions');
+            await _safeDropColumnOn(
+                'table_session_tickets', 'special_instructions');
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -342,6 +382,50 @@ class AppDatabase extends _$AppDatabase {
         'UPDATE menu_items SET modifier_groups_json = ? WHERE id = ?',
         [jsonEncode(embedded), it.read<String>('id')],
       );
+    }
+  }
+
+  /// Rewrite legacy `modifiers_json` entries into the structured snapshot
+  /// shape. A bare-string entry becomes `{groupId, optionId, label,
+  /// priceDelta}`; a `"group:option"` string keeps its two parts. Entries
+  /// already objects pass through untouched. Shallow — does not resolve
+  /// bare ids against the (possibly edited) menu. See ADR-0011.
+  Future<void> _migrateModifierSnapshots(String table) async {
+    final rows =
+        await customSelect('SELECT id, modifiers_json FROM $table').get();
+    for (final r in rows) {
+      final id = r.read<String>('id');
+      List<dynamic> decoded;
+      try {
+        decoded = jsonDecode(r.read<String>('modifiers_json')) as List;
+      } catch (_) {
+        continue;
+      }
+      var changed = false;
+      final out = <Map<String, dynamic>>[];
+      for (final e in decoded) {
+        if (e is Map) {
+          out.add(Map<String, dynamic>.from(e));
+          continue;
+        }
+        changed = true;
+        final s = e.toString();
+        final parts = s.split(':');
+        out.add(parts.length == 2
+            ? {
+                'groupId': parts[0],
+                'optionId': parts[1],
+                'label': parts[1],
+                'priceDelta': 0,
+              }
+            : {'groupId': '', 'optionId': '', 'label': s, 'priceDelta': 0});
+      }
+      if (changed) {
+        await customStatement(
+          'UPDATE $table SET modifiers_json = ? WHERE id = ?',
+          [jsonEncode(out), id],
+        );
+      }
     }
   }
 

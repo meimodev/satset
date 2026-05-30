@@ -10,6 +10,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
@@ -26,9 +27,6 @@ const _cueAsset = <AlertCue, String>{
   AlertCue.chime: 'sounds/chime.wav',
   AlertCue.alert: 'sounds/alert.wav',
 };
-
-/// Overdue line shared with the KDS age pill (`kitchen_screen.dart`).
-const _overdueMinutes = 10;
 
 /// Burst-coalescing window: bunched events of one cue collapse to a single
 /// play (a fired course = one ding, not eight).
@@ -146,7 +144,8 @@ class AlertSoundService {
                 ?.name ??
             '');
     ref.read(readyAlertProvider.notifier).state = ReadyAlert(
-      tableId: table?.displayName ?? dto.tableId,
+      tableId: dto.tableId,
+      tableLabel: table?.displayName ?? dto.tableId,
       zone: zone,
       what: '${dto.qty} ${dto.name}',
     );
@@ -155,6 +154,8 @@ class AlertSoundService {
   void _scanOverdue() {
     final byTable = ref.read(ticketsProvider);
     final now = DateTime.now();
+    // Overdue line = the venue's configurable service target (ADR-0013).
+    final overdueMinutes = ref.read(venueSettingsProvider).prepTargetMins;
     for (final list in byTable.values) {
       for (final t in list) {
         final kitchenActive = t.status == TicketStatus.sent ||
@@ -162,7 +163,7 @@ class AlertSoundService {
             t.status == TicketStatus.cooked;
         if (!kitchenActive) continue;
         if (_overdueAlerted.contains(t.id)) continue;
-        if (_ageMinutes(t.sentAt, now) >= _overdueMinutes) {
+        if (_ageMinutes(t.sentAt, now) >= overdueMinutes) {
           _overdueAlerted.add(t.id);
           _play(AlertCue.alert);
         }
