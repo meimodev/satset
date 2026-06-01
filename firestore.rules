@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// SatSet fleet model. See:
+//   docs/adr/0015-firebase-admin-auth-and-server-kill-switch.md (auth + kill switch)
+//   docs/adr/0016-fleet-superadmin-cloud-control-plane.md (super admin + venues)
+//
+// Privileged mutations (create/disable/delete admins, create/edit venues, flip
+// the kill switch, set billing) go through Cloud Functions (Admin SDK), which
+// BYPASS these rules. The client only ever: reads its own docs, the super admin
+// reads everything, and a normal admin writes ONLY its own venue's heartbeat.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // True when the requester's own admin doc is flagged as the fleet operator.
+    // Costs one get() per evaluation — accepted for a low-traffic console.
+    function isSuper() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super';
+    }
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Only the named fields changed between before/after.
+    function onlyFields(allowed) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
+
+    match /admins/{uid} {
+      // An admin reads its own doc (identity + eligibility + venueId); the super
+      // admin reads every admin doc for the fleet console.
+      allow read: if signedIn() && (request.auth.uid == uid || isSuper());
+      // No client writes. role/status/venueId are set only via Cloud Functions.
+      allow write: if false;
+    }
+
+    match /venues/{vid} {
+      // The super admin reads all venues; a normal admin reads only the venue it
+      // belongs to (its own kill switch + billing state).
+      allow read: if isSuper()
+        || (signedIn()
+            && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.venueId == vid);
+
+      // Heartbeat ONLY: a normal admin bound to this venue may touch lastSeenAt
+      // and nothing else. The kill switch (status), billing, etc. stay
+      // function-only so this write path can never reopen a suspended venue.
+      allow update: if signedIn()
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.venueId == vid
+        && onlyFields(['lastSeenAt']);
+
+      // create/delete/status/billing → Cloud Functions only.
+      allow create, delete: if false;
+    }
+
+    // Everything else denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

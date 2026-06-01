@@ -11,6 +11,7 @@ class SecureStorageService {
 
   static const _kToken = 'satset.session.jwt';
   static const _kLoginAt = 'satset.session.loginAt';
+  static const _kAdminConfirmedAt = 'satset.admin.confirmedAt';
   static const _kDeviceId = 'satset.device.id';
   static const _kDeviceCert = 'satset.device.cert.pem';
   static const _kDeviceKey = 'satset.device.key.pem';
@@ -30,6 +31,17 @@ class SecureStorageService {
   Future<void> writeLoginAt(DateTime? v) => v == null
       ? _s.delete(key: _kLoginAt)
       : _s.write(key: _kLoginAt, value: v.toIso8601String());
+
+  /// Last time the Firebase admin eligibility listener confirmed `active`
+  /// *from the server* (not cache). Drives the offline staleness guard.
+  Future<DateTime?> readAdminConfirmedAt() async {
+    final s = await _s.read(key: _kAdminConfirmedAt);
+    if (s == null || s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+
+  Future<void> writeAdminConfirmedAt(DateTime v) =>
+      _s.write(key: _kAdminConfirmedAt, value: v.toIso8601String());
 
   Future<String?> readDeviceId() => _s.read(key: _kDeviceId);
   Future<void> writeDeviceId(String v) => _s.write(key: _kDeviceId, value: v);

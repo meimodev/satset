@@ -9,6 +9,7 @@ import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/features/auth/views/pin_screen.dart';
+import 'package:satset/ui/features/fleet/fleet_console_screen.dart';
 import 'package:satset/ui/features/onboarding/views/forbidden_screen.dart';
 import 'package:satset/ui/features/onboarding/views/mode_select_screen.dart';
 import 'package:satset/ui/features/onboarding/views/pair_screen.dart';
@@ -75,6 +76,20 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       const onboardingRoutes = {'/pin', '/onboarding', '/pair', '/forbidden'};
 
+      // Fleet super admin: a cloud-only session with no local server and no
+      // pairing. It bypasses the hard pair gate entirely and owns `/fleet`.
+      // See ADR-0016.
+      if (auth.isSuperAdmin) {
+        if (loc != '/fleet') decision = '/fleet';
+        if (decision != null && decision != loc) {
+          SatLog.nav('redirect $loc → $decision');
+        }
+        return decision;
+      }
+      // A non-super may never sit on the fleet route.
+      if (loc == '/fleet') {
+        decision = '/pin';
+      } else
       // Hard pair-required gate: until ApiConfig is populated nothing else
       // may render — repos start empty so any data screen would be blank
       // anyway, and we never want to ship UI that depends on stale memory.
@@ -104,6 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/pair', builder: (_, _) => const PairScreen()),
       GoRoute(path: '/forbidden', builder: (_, _) => const ForbiddenScreen()),
       GoRoute(path: '/pin', builder: (_, _) => const PinScreen()),
+      GoRoute(path: '/fleet', builder: (_, _) => const FleetConsoleScreen()),
       ShellRoute(
         builder: (_, _, child) => AppShell(child: child),
         routes: [

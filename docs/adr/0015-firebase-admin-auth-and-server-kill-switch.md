@@ -1,6 +1,6 @@
 # Firebase-gated admin auth + admin-bound server lifecycle
 
-**Status:** accepted
+**Status:** accepted — partly superseded by [0016](0016-fleet-superadmin-cloud-control-plane.md), which moves the kill switch from `admins/{uid}.status` to `venues/{vid}.status` (one venue now holds many admins). The Firebase-gated auth + admin-bound server lifecycle below still hold; only the kill-switch *location* changes.
 
 SatSet is a LAN-first, offline-capable app whose admin previously signed in against the embedded local server. We are moving **admin** sign-in (only) to **Firebase Authentication** (email/password, project `satset-3a795`), with a Firestore `admins/{uid}` doc (`status: active|suspended|banned`, `name`, `avatarColorHex?`) acting as a **remote terms-of-service kill switch**. The embedded server stays the capability authority: once Firebase confirms identity + eligibility, the app mints the local admin JWT in-process and all admin screens keep talking to the local server as before. Staff PIN auth is untouched and stays fully local/offline.
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "164691917298",
+    "project_id": "satset-3a795",
+    "storage_bucket": "satset-3a795.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:164691917298:android:9f10db18f53e89f04b536b",
+        "android_client_info": {
+          "package_name": "id.satset.satset"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGMOH-X9yudsi9wThH-_pwUw1zNtBwDiQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,34 +8,19 @@ import 'package:uuid/uuid.dart';
 import 'database.dart';
 import 'seed_data.dart' as seed;
 
-/// Default admin email/password seeded on first boot. PIN-only sign-in is
-/// for demo users; the dedicated admin row uses email+password.
-const String defaultAdminId = 'admin';
-const String defaultAdminEmail = 'admin@satset.local';
-const String defaultAdminPassword = 'admin123';
-
-String _hashPassword(String pw) =>
-    sha256.convert(utf8.encode('satset.v1.pw::$pw')).toString();
-
-/// Seed the database on first boot using the existing in-memory `DummyData`,
-/// plus a dedicated admin row with email+password credentials.
-/// Idempotent: skips when the dedicated admin already exists.
+/// Seed the database on first boot using the existing in-memory `DummyData`.
+/// Admin sign-in is now Firebase-backed (per-uid local rows are provisioned on
+/// first sign-in — see ADR-0015), so no email/password admin row is seeded.
+/// Idempotent.
 Future<void> seedIfEmpty(AppDatabase db) async {
-  await _seedDedicatedAdmin(db);
   await _ensureWaiterCanVoid(db);
+  await _ensureAdminRole(db);
 
   final hasUsers = (await db.select(db.users).get()).isNotEmpty;
-  // Demo seed runs only when the table holds nothing beyond the dedicated
-  // admin row (i.e. exactly one user with the well-known admin id).
-  final onlyAdminPresent = hasUsers &&
-      (await (db.select(db.users)..where((u) => u.id.equals(defaultAdminId)))
-              .getSingleOrNull()) !=
-          null &&
-      (await db.select(db.users).get()).length == 1;
   // Historical session seed is independent of the demo-user gate so existing
-  // dev installs upgraded to v14 also pick up plausible reports data. The
-  // function self-skips when tableSessions already has rows.
-  if (hasUsers && !onlyAdminPresent) {
+  // dev installs also pick up plausible reports data. Self-skips when
+  // tableSessions already has rows.
+  if (hasUsers) {
     await _seedHistoricalSessions(db);
     return;
   }
@@ -174,36 +159,24 @@ Future<void> _ensureWaiterCanVoid(AppDatabase db) async {
       .write(RolesCompanion(capabilitiesJson: Value(jsonEncode(caps))));
 }
 
-Future<void> _seedDedicatedAdmin(AppDatabase db) async {
-  final existing =
-      await (db.select(db.users)..where((u) => u.id.equals(defaultAdminId)))
-          .getSingleOrNull();
-  if (existing != null) return;
-  // Ensure the admin role is present so the FK-like join in /auth/me resolves.
+/// Ensure the shared admin role exists so Firebase-provisioned admin users
+/// (ServerAuth.provisionAdminUser) and the `/auth/me` role join resolve, even
+/// on an upgraded install that predates a given role seed. See ADR-0015.
+Future<void> _ensureAdminRole(AppDatabase db) async {
   final adminRole = await (db.select(db.roles)
         ..where((r) => r.id.equals(seed.DummyData.roleAdminId)))
       .getSingleOrNull();
-  if (adminRole == null) {
-    await db.into(db.roles).insertOnConflictUpdate(RolesCompanion.insert(
-          id: seed.DummyData.roleAdminId,
-          name: 'Admin',
-          colorHex: const Value('#C08AFF'),
-          capabilitiesJson: Value(jsonEncode([
-            for (final c in seed.DummyData.initialRoles()
-                .firstWhere((r) => r.id == seed.DummyData.roleAdminId)
-                .capabilities)
-              c.name,
-          ])),
-        ));
-  }
-  await db.into(db.users).insert(UsersCompanion.insert(
-        id: defaultAdminId,
-        name: 'Administrator',
-        initials: 'AD',
-        roleId: seed.DummyData.roleAdminId,
-        pinHash: '',
-        email: const Value(defaultAdminEmail),
-        passwordHash: Value(_hashPassword(defaultAdminPassword)),
+  if (adminRole != null) return;
+  await db.into(db.roles).insertOnConflictUpdate(RolesCompanion.insert(
+        id: seed.DummyData.roleAdminId,
+        name: 'Admin',
+        colorHex: const Value('#C08AFF'),
+        capabilitiesJson: Value(jsonEncode([
+          for (final c in seed.DummyData.initialRoles()
+              .firstWhere((r) => r.id == seed.DummyData.roleAdminId)
+              .capabilities)
+            c.name,
+        ])),
       ));
 }
 

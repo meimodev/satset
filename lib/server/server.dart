@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
@@ -30,6 +31,11 @@ import 'routes/tickets_routes.dart';
 import 'routes/venue_settings_routes.dart';
 import 'tls.dart';
 import 'ws_hub.dart';
+
+/// App-level handle to the in-process server. Boot wires this for
+/// AppMode.server; the admin auth flow reads it to mint sessions in-process
+/// and to tear the server down on admin logout / loss of eligibility.
+final serverRuntimeProvider = StateProvider<ServerRuntime?>((_) => null);
 
 /// In-app shelf server runtime. Owns DB, TLS, hub, and lifecycle.
 class ServerRuntime {
@@ -396,7 +402,6 @@ Middleware _authMiddleware(ServerAuth auth) {
   const skip = {
     '/healthz',
     '/auth/login',
-    '/auth/admin/login',
     '/pair/claim',
     '/pair/auto-claim',
   };

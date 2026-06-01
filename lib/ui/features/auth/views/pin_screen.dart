@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -37,7 +37,7 @@ class PinScreen extends ConsumerStatefulWidget {
 
 class _PinScreenState extends ConsumerState<PinScreen>
     with TickerProviderStateMixin {
-  final _adminEmail = TextEditingController(text: 'admin@warungsebelah.id');
+  final _adminEmail = TextEditingController();
   final _adminPassword = TextEditingController();
   bool _showAdminPw = false;
   bool _serverEditing = false;
@@ -103,6 +103,30 @@ class _PinScreenState extends ConsumerState<PinScreen>
     if (ok) context.go('/venue');
   }
 
+  Future<void> _forgotPassword() async {
+    final emailErr = _validateEmail(_adminEmail.text);
+    if (emailErr != null) {
+      setState(() => _emailError = emailErr);
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    final email = _adminEmail.text.trim();
+    try {
+      await ref
+          .read(authStateProvider.notifier)
+          .sendAdminPasswordReset(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Link reset dikirim ke $email'),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Gagal kirim link reset. Cek email & koneksi.'),
+      ));
+    }
+  }
+
   Future<void> _openPinSheet(PairedServerInfo server) async {
     if (_sheetOpen) return;
     _sheetOpen = true;
@@ -143,6 +167,11 @@ class _PinScreenState extends ConsumerState<PinScreen>
       );
     }
     final state = ref.watch(pinViewModelProvider);
+
+    // A cached admin session blocked at cold boot (stale offline / ineligible)
+    // surfaces under the admin form. Live sign-in errors take precedence.
+    final adminServerError =
+        state.adminError ?? _bootBlockText(ref.watch(adminBootBlockProvider));
 
     // Admin auto-login: while the boot-time session restore is in flight, mask
     // the sign-in form behind a loading screen so the form never flashes before
@@ -239,15 +268,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
                           onToggleShow: () =>
                               setState(() => _showAdminPw = !_showAdminPw),
                           onSubmit: _signInAdmin,
+                          onForgotPassword: _forgotPassword,
                           emailError: _emailError,
                           passwordError: _passwordError,
                           busy: state.adminBusy,
-                          serverError: state.adminError,
+                          serverError: adminServerError,
                         ),
-                      ),
-                      _Reveal(
-                        delay: const Duration(milliseconds: 260),
-                        child: _AdminDebugCredsButton(),
                       ),
                     ],
                   ),
@@ -315,10 +341,11 @@ class _PinScreenState extends ConsumerState<PinScreen>
       showPassword: _showAdminPw,
       onToggleShow: () => setState(() => _showAdminPw = !_showAdminPw),
       onSubmit: _signInAdmin,
+      onForgotPassword: _forgotPassword,
       emailError: _emailError,
       passwordError: _passwordError,
       busy: state.adminBusy,
-      serverError: state.adminError,
+      serverError: adminServerError,
     );
     final authBody = state.mode == SignInMode.staff
         ? const SizedBox.shrink()
@@ -388,10 +415,6 @@ class _PinScreenState extends ConsumerState<PinScreen>
                                   delay: const Duration(milliseconds: 180),
                                   child: wrappedAuthBody,
                                 ),
-                                _Reveal(
-                                  delay: const Duration(milliseconds: 260),
-                                  child: _AdminDebugCredsButton(),
-                                ),
                               ],
                             ],
                           ),
@@ -418,10 +441,6 @@ class _PinScreenState extends ConsumerState<PinScreen>
                           _Reveal(
                             delay: const Duration(milliseconds: 200),
                             child: wrappedAuthBody,
-                          ),
-                          _Reveal(
-                            delay: const Duration(milliseconds: 280),
-                            child: _AdminDebugCredsButton(),
                           ),
                         ],
                       ],
@@ -494,12 +513,14 @@ class _AdminAuthForm extends StatelessWidget {
   final String? passwordError;
   final bool busy;
   final String? serverError;
+  final VoidCallback onForgotPassword;
   const _AdminAuthForm({
     required this.email,
     required this.password,
     required this.showPassword,
     required this.onToggleShow,
     required this.onSubmit,
+    required this.onForgotPassword,
     this.emailError,
     this.passwordError,
     this.busy = false,
@@ -592,7 +613,7 @@ class _AdminAuthForm extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {},
+            onPressed: onForgotPassword,
             style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 4)),
             child: Text('Lupa password?',
@@ -1215,85 +1236,13 @@ class _Field extends StatelessWidget {
 // ignore: unused_element
 void _retain(WidgetRef ref) => ref.read(authStateProvider);
 
-/// Debug-only button surfacing seeded admin credentials. Staff PIN creds live
-/// inside the PIN sheet (see `_kStaffDebugCreds`).
-class _AdminDebugCredsButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    if (!kDebugMode) return const SizedBox.shrink();
-    final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.only(top: 18),
-      child: Center(
-        child: TextButton.icon(
-          onPressed: () => _showAdminDebugCreds(context),
-          style: TextButton.styleFrom(
-            foregroundColor: sc.warn,
-            backgroundColor: sc.warnSoft,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-              side: BorderSide(color: sc.warn.withValues(alpha: 0.4)),
-            ),
-          ),
-          icon: Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
-          label: Text('DEBUG · SEEDED CREDS',
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w600,
-                letterSpacing: 1.2,
-                color: sc.warn,
-              )),
-        ),
-      ),
-    );
-  }
-
-  static void _showAdminDebugCreds(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        final sc = ctx.sat;
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: sc.bg1,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: sc.border0),
-            ),
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
-                    const SizedBox(width: 6),
-                    Text('DEBUG · SEEDED ADMIN',
-                        style: SatType.mono(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                          color: sc.warn,
-                        )),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _DebugCredRow(label: 'EMAIL', value: 'admin@satset.local'),
-                const SizedBox(height: 4),
-                _DebugCredRow(label: 'PASS', value: 'admin123'),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
+/// Maps a cold-boot admin block code to user-facing copy. See ADR-0015.
+String? _bootBlockText(String? code) => switch (code) {
+      'stale' =>
+        'Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.',
+      'ineligible' => 'Akses admin dicabut. Hubungi pengelola.',
+      _ => null,
+    };
 
 class _ConnectedServerCard extends StatelessWidget {
   final PairedServerInfo server;
@@ -1422,50 +1371,6 @@ class _ConnectedServerCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _DebugCredRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _DebugCredRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return InkWell(
-      onTap: () {
-        Clipboard.setData(ClipboardData(text: label));
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text('Disalin: $label'),
-            duration: const Duration(milliseconds: 800),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 76,
-              child: Text(label,
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w700,
-                    color: sc.textHi,
-                  )),
-            ),
-            Expanded(
-              child: Text(value,
-                  style: SatType.sans(size: 11, color: sc.textMd)),
-            ),
-            Icon(Icons.copy_rounded, size: 12, color: sc.textLo),
-          ],
-        ),
-      ),
     );
   }
 }

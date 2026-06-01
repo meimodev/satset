@@ -12,6 +12,11 @@ class Users extends Table {
   TextColumn get pinHash => text()();
   TextColumn get email => text().nullable()();
   TextColumn get passwordHash => text().nullable()();
+
+  /// Firebase Auth uid for admin rows auto-provisioned on first Firebase
+  /// sign-in. Null for PIN/demo staff. Unique when present. See
+  /// docs/adr/0015-firebase-admin-auth-and-server-kill-switch.md.
+  TextColumn get firebaseUid => text().nullable()();
   BoolColumn get disabled => boolean().withDefault(const Constant(false))();
   IntColumn get avatarColorHex => integer().nullable()();
   DateTimeColumn get shiftStartedAt => dateTime().nullable()();

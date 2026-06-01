@@ -17,6 +17,7 @@ import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/server/server.dart' show serverRuntimeProvider;
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -189,9 +190,40 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       ref.read(themeModeProvider.notifier).state = next;
     }
 
-    void endShift() {
-      ref.read(authStateProvider.notifier).signOut();
-      context.go('/pin');
+    Future<void> endShift() async {
+      // Admin (Server mode): logout kills the embedded server — every staff
+      // device disconnects and cannot reconnect until an admin re-signs-in.
+      // Confirm first, warning about live tables. See ADR-0015.
+      final isServer = ref.read(serverRuntimeProvider) != null;
+      if (isServer) {
+        final liveCount =
+            tables.where((t) => t.status != TableStatus.available).length;
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Akhiri sesi admin?'),
+            content: Text(liveCount > 0
+                ? '$liveCount meja masih aktif. Keluar akan mematikan server — '
+                    'semua staff terputus dan tidak bisa menyambung sampai '
+                    'admin masuk lagi.'
+                : 'Keluar akan mematikan server. Staff tidak bisa menyambung '
+                    'sampai admin masuk lagi.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Keluar & matikan'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true) return;
+      }
+      await ref.read(authStateProvider.notifier).signOut();
+      if (context.mounted) context.go('/pin');
     }
 
     if (context.layout.useTabletShell) {

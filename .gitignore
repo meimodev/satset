@@ -52,3 +52,18 @@ patrol_test/test_bundle.dart
 .codegraph/
 .cursor/
 graphify-out/
+
+# Firebase / Cloud Functions
+.firebase/
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/.env.*
+*-debug.log
+
+# Android local credentials and configuration
+/android/local.properties
+*.keystore
+*.jks
+
+# Other OS files
+Thumbs.db

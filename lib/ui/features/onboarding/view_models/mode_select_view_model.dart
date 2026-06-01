@@ -8,9 +8,10 @@ import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/server/server.dart';
 
-/// App-level handle to the in-process server. Mode-select boots it for
-/// AppMode.server; main() reuses an existing runtime on cold start.
-final serverRuntimeProvider = StateProvider<ServerRuntime?>((_) => null);
+// `serverRuntimeProvider` now lives in server.dart (the runtime's own home) so
+// the data-layer admin auth flow can reach it. Re-exported here for the
+// existing importers (pin_view_model, main).
+export 'package:satset/server/server.dart' show serverRuntimeProvider;
 
 class ModeSelectState {
   final AppMode current;

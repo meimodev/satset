@@ -88,6 +88,17 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _firebaseUidMeta = const VerificationMeta(
+    'firebaseUid',
+  );
+  @override
+  late final GeneratedColumn<String> firebaseUid = GeneratedColumn<String>(
+    'firebase_uid',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _disabledMeta = const VerificationMeta(
     'disabled',
   );
@@ -136,6 +147,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     pinHash,
     email,
     passwordHash,
+    firebaseUid,
     disabled,
     avatarColorHex,
     shiftStartedAt,
@@ -213,6 +225,15 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         ),
       );
     }
+    if (data.containsKey('firebase_uid')) {
+      context.handle(
+        _firebaseUidMeta,
+        firebaseUid.isAcceptableOrUnknown(
+          data['firebase_uid']!,
+          _firebaseUidMeta,
+        ),
+      );
+    }
     if (data.containsKey('disabled')) {
       context.handle(
         _disabledMeta,
@@ -278,6 +299,10 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.string,
         data['${effectivePrefix}password_hash'],
       ),
+      firebaseUid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}firebase_uid'],
+      ),
       disabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}disabled'],
@@ -308,6 +333,11 @@ class User extends DataClass implements Insertable<User> {
   final String pinHash;
   final String? email;
   final String? passwordHash;
+
+  /// Firebase Auth uid for admin rows auto-provisioned on first Firebase
+  /// sign-in. Null for PIN/demo staff. Unique when present. See
+  /// docs/adr/0015-firebase-admin-auth-and-server-kill-switch.md.
+  final String? firebaseUid;
   final bool disabled;
   final int? avatarColorHex;
   final DateTime? shiftStartedAt;
@@ -320,6 +350,7 @@ class User extends DataClass implements Insertable<User> {
     required this.pinHash,
     this.email,
     this.passwordHash,
+    this.firebaseUid,
     required this.disabled,
     this.avatarColorHex,
     this.shiftStartedAt,
@@ -340,6 +371,9 @@ class User extends DataClass implements Insertable<User> {
     }
     if (!nullToAbsent || passwordHash != null) {
       map['password_hash'] = Variable<String>(passwordHash);
+    }
+    if (!nullToAbsent || firebaseUid != null) {
+      map['firebase_uid'] = Variable<String>(firebaseUid);
     }
     map['disabled'] = Variable<bool>(disabled);
     if (!nullToAbsent || avatarColorHex != null) {
@@ -367,6 +401,9 @@ class User extends DataClass implements Insertable<User> {
       passwordHash: passwordHash == null && nullToAbsent
           ? const Value.absent()
           : Value(passwordHash),
+      firebaseUid: firebaseUid == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firebaseUid),
       disabled: Value(disabled),
       avatarColorHex: avatarColorHex == null && nullToAbsent
           ? const Value.absent()
@@ -391,6 +428,7 @@ class User extends DataClass implements Insertable<User> {
       pinHash: serializer.fromJson<String>(json['pinHash']),
       email: serializer.fromJson<String?>(json['email']),
       passwordHash: serializer.fromJson<String?>(json['passwordHash']),
+      firebaseUid: serializer.fromJson<String?>(json['firebaseUid']),
       disabled: serializer.fromJson<bool>(json['disabled']),
       avatarColorHex: serializer.fromJson<int?>(json['avatarColorHex']),
       shiftStartedAt: serializer.fromJson<DateTime?>(json['shiftStartedAt']),
@@ -408,6 +446,7 @@ class User extends DataClass implements Insertable<User> {
       'pinHash': serializer.toJson<String>(pinHash),
       'email': serializer.toJson<String?>(email),
       'passwordHash': serializer.toJson<String?>(passwordHash),
+      'firebaseUid': serializer.toJson<String?>(firebaseUid),
       'disabled': serializer.toJson<bool>(disabled),
       'avatarColorHex': serializer.toJson<int?>(avatarColorHex),
       'shiftStartedAt': serializer.toJson<DateTime?>(shiftStartedAt),
@@ -423,6 +462,7 @@ class User extends DataClass implements Insertable<User> {
     String? pinHash,
     Value<String?> email = const Value.absent(),
     Value<String?> passwordHash = const Value.absent(),
+    Value<String?> firebaseUid = const Value.absent(),
     bool? disabled,
     Value<int?> avatarColorHex = const Value.absent(),
     Value<DateTime?> shiftStartedAt = const Value.absent(),
@@ -435,6 +475,7 @@ class User extends DataClass implements Insertable<User> {
     pinHash: pinHash ?? this.pinHash,
     email: email.present ? email.value : this.email,
     passwordHash: passwordHash.present ? passwordHash.value : this.passwordHash,
+    firebaseUid: firebaseUid.present ? firebaseUid.value : this.firebaseUid,
     disabled: disabled ?? this.disabled,
     avatarColorHex: avatarColorHex.present
         ? avatarColorHex.value
@@ -457,6 +498,9 @@ class User extends DataClass implements Insertable<User> {
       passwordHash: data.passwordHash.present
           ? data.passwordHash.value
           : this.passwordHash,
+      firebaseUid: data.firebaseUid.present
+          ? data.firebaseUid.value
+          : this.firebaseUid,
       disabled: data.disabled.present ? data.disabled.value : this.disabled,
       avatarColorHex: data.avatarColorHex.present
           ? data.avatarColorHex.value
@@ -478,6 +522,7 @@ class User extends DataClass implements Insertable<User> {
           ..write('pinHash: $pinHash, ')
           ..write('email: $email, ')
           ..write('passwordHash: $passwordHash, ')
+          ..write('firebaseUid: $firebaseUid, ')
           ..write('disabled: $disabled, ')
           ..write('avatarColorHex: $avatarColorHex, ')
           ..write('shiftStartedAt: $shiftStartedAt')
@@ -495,6 +540,7 @@ class User extends DataClass implements Insertable<User> {
     pinHash,
     email,
     passwordHash,
+    firebaseUid,
     disabled,
     avatarColorHex,
     shiftStartedAt,
@@ -511,6 +557,7 @@ class User extends DataClass implements Insertable<User> {
           other.pinHash == this.pinHash &&
           other.email == this.email &&
           other.passwordHash == this.passwordHash &&
+          other.firebaseUid == this.firebaseUid &&
           other.disabled == this.disabled &&
           other.avatarColorHex == this.avatarColorHex &&
           other.shiftStartedAt == this.shiftStartedAt);
@@ -525,6 +572,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> pinHash;
   final Value<String?> email;
   final Value<String?> passwordHash;
+  final Value<String?> firebaseUid;
   final Value<bool> disabled;
   final Value<int?> avatarColorHex;
   final Value<DateTime?> shiftStartedAt;
@@ -538,6 +586,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.pinHash = const Value.absent(),
     this.email = const Value.absent(),
     this.passwordHash = const Value.absent(),
+    this.firebaseUid = const Value.absent(),
     this.disabled = const Value.absent(),
     this.avatarColorHex = const Value.absent(),
     this.shiftStartedAt = const Value.absent(),
@@ -552,6 +601,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     required String pinHash,
     this.email = const Value.absent(),
     this.passwordHash = const Value.absent(),
+    this.firebaseUid = const Value.absent(),
     this.disabled = const Value.absent(),
     this.avatarColorHex = const Value.absent(),
     this.shiftStartedAt = const Value.absent(),
@@ -570,6 +620,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? pinHash,
     Expression<String>? email,
     Expression<String>? passwordHash,
+    Expression<String>? firebaseUid,
     Expression<bool>? disabled,
     Expression<int>? avatarColorHex,
     Expression<DateTime>? shiftStartedAt,
@@ -584,6 +635,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (pinHash != null) 'pin_hash': pinHash,
       if (email != null) 'email': email,
       if (passwordHash != null) 'password_hash': passwordHash,
+      if (firebaseUid != null) 'firebase_uid': firebaseUid,
       if (disabled != null) 'disabled': disabled,
       if (avatarColorHex != null) 'avatar_color_hex': avatarColorHex,
       if (shiftStartedAt != null) 'shift_started_at': shiftStartedAt,
@@ -600,6 +652,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Value<String>? pinHash,
     Value<String?>? email,
     Value<String?>? passwordHash,
+    Value<String?>? firebaseUid,
     Value<bool>? disabled,
     Value<int?>? avatarColorHex,
     Value<DateTime?>? shiftStartedAt,
@@ -614,6 +667,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       pinHash: pinHash ?? this.pinHash,
       email: email ?? this.email,
       passwordHash: passwordHash ?? this.passwordHash,
+      firebaseUid: firebaseUid ?? this.firebaseUid,
       disabled: disabled ?? this.disabled,
       avatarColorHex: avatarColorHex ?? this.avatarColorHex,
       shiftStartedAt: shiftStartedAt ?? this.shiftStartedAt,
@@ -648,6 +702,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (passwordHash.present) {
       map['password_hash'] = Variable<String>(passwordHash.value);
     }
+    if (firebaseUid.present) {
+      map['firebase_uid'] = Variable<String>(firebaseUid.value);
+    }
     if (disabled.present) {
       map['disabled'] = Variable<bool>(disabled.value);
     }
@@ -674,6 +731,7 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('pinHash: $pinHash, ')
           ..write('email: $email, ')
           ..write('passwordHash: $passwordHash, ')
+          ..write('firebaseUid: $firebaseUid, ')
           ..write('disabled: $disabled, ')
           ..write('avatarColorHex: $avatarColorHex, ')
           ..write('shiftStartedAt: $shiftStartedAt, ')
@@ -11297,6 +11355,7 @@ typedef $$UsersTableCreateCompanionBuilder =
       required String pinHash,
       Value<String?> email,
       Value<String?> passwordHash,
+      Value<String?> firebaseUid,
       Value<bool> disabled,
       Value<int?> avatarColorHex,
       Value<DateTime?> shiftStartedAt,
@@ -11312,6 +11371,7 @@ typedef $$UsersTableUpdateCompanionBuilder =
       Value<String> pinHash,
       Value<String?> email,
       Value<String?> passwordHash,
+      Value<String?> firebaseUid,
       Value<bool> disabled,
       Value<int?> avatarColorHex,
       Value<DateTime?> shiftStartedAt,
@@ -11363,6 +11423,11 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<String> get passwordHash => $composableBuilder(
     column: $table.passwordHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get firebaseUid => $composableBuilder(
+    column: $table.firebaseUid,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11431,6 +11496,11 @@ class $$UsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get firebaseUid => $composableBuilder(
+    column: $table.firebaseUid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get disabled => $composableBuilder(
     column: $table.disabled,
     builder: (column) => ColumnOrderings(column),
@@ -11484,6 +11554,11 @@ class $$UsersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get firebaseUid => $composableBuilder(
+    column: $table.firebaseUid,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get disabled =>
       $composableBuilder(column: $table.disabled, builder: (column) => column);
 
@@ -11534,6 +11609,7 @@ class $$UsersTableTableManager
                 Value<String> pinHash = const Value.absent(),
                 Value<String?> email = const Value.absent(),
                 Value<String?> passwordHash = const Value.absent(),
+                Value<String?> firebaseUid = const Value.absent(),
                 Value<bool> disabled = const Value.absent(),
                 Value<int?> avatarColorHex = const Value.absent(),
                 Value<DateTime?> shiftStartedAt = const Value.absent(),
@@ -11547,6 +11623,7 @@ class $$UsersTableTableManager
                 pinHash: pinHash,
                 email: email,
                 passwordHash: passwordHash,
+                firebaseUid: firebaseUid,
                 disabled: disabled,
                 avatarColorHex: avatarColorHex,
                 shiftStartedAt: shiftStartedAt,
@@ -11562,6 +11639,7 @@ class $$UsersTableTableManager
                 required String pinHash,
                 Value<String?> email = const Value.absent(),
                 Value<String?> passwordHash = const Value.absent(),
+                Value<String?> firebaseUid = const Value.absent(),
                 Value<bool> disabled = const Value.absent(),
                 Value<int?> avatarColorHex = const Value.absent(),
                 Value<DateTime?> shiftStartedAt = const Value.absent(),
@@ -11575,6 +11653,7 @@ class $$UsersTableTableManager
                 pinHash: pinHash,
                 email: email,
                 passwordHash: passwordHash,
+                firebaseUid: firebaseUid,
                 disabled: disabled,
                 avatarColorHex: avatarColorHex,
                 shiftStartedAt: shiftStartedAt,

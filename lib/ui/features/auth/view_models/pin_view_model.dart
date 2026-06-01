@@ -334,18 +334,32 @@ class PinViewModel extends StateNotifier<PinState> {
     SatLog.vm('PinVM submitAdmin');
     if (state.adminBusy) return false;
     state = state.copyWith(adminBusy: true, adminError: null);
-    try {
-      await _bootServerMode();
-    } catch (e) {
-      SatLog.vm('PinVM submitAdmin boot fail $e');
+    // NB: do NOT persist Server mode up front — a super-admin login must not
+    // mark this device as a server. The admin path persists Server mode inside
+    // bootServer (ModeSelect.choose); a super admin boots no server. ADR-0016.
+    // Firebase gates entry + eligibility first; the embedded server boots only
+    // once that passes (see ADR-0015). Boot failure surfaces as adminError.
+    StateError? bootError;
+    final ok = await _auth.signInAsAdmin(
+      email: email,
+      password: password,
+      bootServer: () async {
+        try {
+          await _bootServerMode();
+        } catch (e) {
+          bootError = StateError('$e');
+          rethrow;
+        }
+      },
+    );
+    if (bootError != null) {
+      SatLog.vm('PinVM submitAdmin boot fail $bootError');
       state = state.copyWith(
         adminBusy: false,
         adminError: 'Gagal menjalankan server di HP ini. Coba lagi.',
       );
       return false;
     }
-    await _persistMode(AppMode.server);
-    final ok = await _auth.signInAsAdmin(email: email, password: password);
     if (ok) {
       SatLog.vm('PinVM submitAdmin result=ok');
       state = state.copyWith(adminBusy: false);

@@ -70,23 +70,54 @@ class ServerAuth {
     );
   }
 
-  /// Returns a fresh session for an admin authenticated via email+password.
-  /// Null on bad credentials or disabled account.
-  Future<Session?> signInWithEmailPassword({
-    required String email,
-    required String password,
+  /// Provision (or refresh) the local admin user row bound to a Firebase
+  /// [firebaseUid]. All Firebase admins map to the shared admin role; per-uid
+  /// rows exist only for audit identity. Capabilities stay local — never
+  /// carried by Firebase. Returns the local userId. See ADR-0015.
+  Future<String> provisionAdminUser({
+    required String firebaseUid,
+    required String name,
+    int? avatarColorHex,
+  }) async {
+    final cleanName = name.trim();
+    final initials = _initialsFor(cleanName);
+    final existing = await (db.select(db.users)
+          ..where((u) => u.firebaseUid.equals(firebaseUid)))
+        .getSingleOrNull();
+    if (existing != null) {
+      await (db.update(db.users)..where((u) => u.id.equals(existing.id))).write(
+        UsersCompanion(
+          name: Value(cleanName.isEmpty ? existing.name : cleanName),
+          initials: Value(cleanName.isEmpty ? existing.initials : initials),
+          avatarColorHex: Value(avatarColorHex),
+          roleId: Value(adminRoleId),
+          disabled: const Value(false),
+        ),
+      );
+      return existing.id;
+    }
+    final id = const Uuid().v4();
+    await db.into(db.users).insert(UsersCompanion.insert(
+          id: id,
+          name: cleanName.isEmpty ? 'Admin' : cleanName,
+          initials: initials.isEmpty ? 'AD' : initials,
+          roleId: adminRoleId,
+          pinHash: '',
+          firebaseUid: Value(firebaseUid),
+          avatarColorHex: Value(avatarColorHex),
+        ));
+    return id;
+  }
+
+  /// Mint a session + JWT for an already-resolved local [userId]. Used by the
+  /// in-process admin sign-in (no HTTP, no token round-trip — same process,
+  /// same device, loopback only). See ADR-0015.
+  Future<Session> mintSession({
+    required String userId,
     required String deviceId,
   }) async {
-    final e = email.trim().toLowerCase();
-    if (e.isEmpty || password.isEmpty) return null;
-    final h = hashPassword(password);
-    final user = await (db.select(db.users)
-          ..where((u) =>
-              u.email.equals(e) &
-              u.passwordHash.equals(h) &
-              u.disabled.equals(false)))
-        .getSingleOrNull();
-    if (user == null) return null;
+    final user = await (db.select(db.users)..where((u) => u.id.equals(userId)))
+        .getSingle();
     final now = DateTime.now();
     final expiry = now.add(tokenTtl);
     final jwt = JWT({
@@ -111,6 +142,15 @@ class ServerAuth {
       issuedAt: now,
       expiresAt: expiry,
     );
+  }
+
+  static const adminRoleId = 'role-admin';
+
+  static String _initialsFor(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    if (parts.isEmpty) return '';
+    final letters = parts.map((p) => p[0].toUpperCase()).take(2).join();
+    return letters;
   }
 
   /// Resolve a bearer token to a user row. Returns null when the token is

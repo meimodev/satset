@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,11 +12,11 @@ import 'app.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/server/server.dart';
-import 'package:satset/ui/features/onboarding/view_models/mode_select_view_model.dart';
 
 Future<void> main() async {
   runZonedGuarded<Future<void>>(() async {
@@ -30,6 +31,8 @@ Future<void> main() async {
       return false;
     };
 
+    await Firebase.initializeApp();
+
     final sp = await SharedPreferences.getInstance();
     final prefs = PrefsService(sp);
     final storage = SecureStorageService();
@@ -41,13 +44,36 @@ Future<void> main() async {
 
     ServerRuntime? server;
     ApiConfig? apiConfig;
+    // Set when a cached admin session was blocked at boot ('stale' |
+    // 'ineligible') so the PIN screen can explain why. See ADR-0015.
+    String? adminBootBlock;
 
     if (mode == AppMode.server && Platform.isAndroid) {
-      server = await ServerRuntime.boot();
-      apiConfig = ApiConfig(
-        baseUri: Uri.parse('https://127.0.0.1:${server.port}'),
-        trustedFingerprint: server.tls.fingerprint,
-      );
+      // The embedded server is bound to a valid admin session: gate its start
+      // on the Firebase eligibility snapshot (with a 7-day offline staleness
+      // guard). No cached/eligible admin ⇒ stay on the sign-in screen.
+      final fbAdmin = FirebaseAdminService();
+      final decision = await fbAdmin.evaluateForBoot(storage);
+      switch (decision.gate) {
+        case AdminBootGate.ok:
+          server = await ServerRuntime.boot();
+          apiConfig = ApiConfig(
+            baseUri: Uri.parse('https://127.0.0.1:${server.port}'),
+            trustedFingerprint: server.tls.fingerprint,
+          );
+        case AdminBootGate.ineligible:
+          await fbAdmin.signOut();
+          adminBootBlock = 'ineligible';
+        case AdminBootGate.staleOffline:
+          adminBootBlock = 'stale';
+        case AdminBootGate.superAdmin:
+          // A fleet operator has no local server; sign out the cached session
+          // so the PIN screen shows the admin form and the super re-signs in to
+          // reach the Fleet console. See ADR-0016.
+          await fbAdmin.signOut();
+        case AdminBootGate.noUser:
+          break;
+      }
     } else if (mode == AppMode.client) {
       final host = prefs.pairedHost();
       final port = prefs.pairedPort();
@@ -72,6 +98,8 @@ Future<void> main() async {
         if (apiConfig != null) apiConfigProvider.overrideWith((_) => apiConfig),
         if (server != null)
           serverRuntimeProvider.overrideWith((_) => server),
+        if (adminBootBlock != null)
+          adminBootBlockProvider.overrideWith((_) => adminBootBlock),
       ],
     );
 

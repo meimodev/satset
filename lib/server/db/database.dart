@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -260,12 +260,24 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('menu_items', 'photo_rev',
                 type: 'INTEGER NOT NULL DEFAULT 0');
           }
+          if (from < 26) {
+            // Firebase admin identity. Per-uid local user rows are
+            // auto-provisioned on first Firebase sign-in (audit identity);
+            // capabilities stay local. See ADR-0015.
+            await _safeAddColumn('firebase_uid');
+            await customStatement(
+                'CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid_unique '
+                'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL');
+          }
         },
         onCreate: (m) async {
           await m.createAll();
           await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique '
               'ON users(email) WHERE email IS NOT NULL');
+          await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid_unique '
+              'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL');
           await into(venueSettings).insertOnConflictUpdate(
             VenueSettingsCompanion.insert(
               id: 'default',
