@@ -6,12 +6,21 @@ import 'package:satset/data/repositories/reports_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/skeleton_card.dart';
 import '_common.dart';
 
 enum _Section { sales, staff, menu, ops }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
+
+class _BucketSpec {
+  const _BucketSpec(this.key, this.label, this.action, this.color);
+  final String key;
+  final String label;
+  final String action;
+  final Color color;
+}
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -109,12 +118,49 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ? null
                 : () =>
                     ref.read(reportsRepositoryProvider.notifier).refresh(),
-            child: adminPill(context, 'Refresh',
-                on: false),
+            child: _refreshPill(context, status.isLoading),
           ),
         ],
       ),
       children: body,
+    );
+  }
+
+  Widget _refreshPill(BuildContext context, bool loading) {
+    final sc = context.sat;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: kSatEase,
+      height: 30,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: loading ? sc.accentSoft : sc.bg3,
+        border: Border.all(color: loading ? sc.accentBorder : sc.border1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (loading) ...[
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.6,
+                valueColor: AlwaysStoppedAnimation(sc.accent),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Text(loading ? 'Memuat' : 'Refresh',
+              style: SatType.sans(
+                size: 11,
+                weight: FontWeight.w500,
+                color: loading ? sc.accent : sc.textMd,
+              )),
+        ],
+      ),
     );
   }
 
@@ -151,32 +197,107 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       const SizedBox(height: 12),
       _sectionTabs(context),
       const SizedBox(height: 14),
-      if (snapshot == null) ...[
-        const SkeletonCard(height: 180),
-        const SizedBox(height: 12),
-        const SkeletonCard(height: 180),
-        const SizedBox(height: 12),
-        const SkeletonCard(height: 180),
-      ] else ...[
-        if (_on.contains(_Section.sales)) ...[
-          _salesSection(context, isTab, snapshot.sales),
-          const SizedBox(height: 14)
-        ],
-        if (_on.contains(_Section.staff)) ...[
-          _staffSection(context, snapshot.staff),
-          const SizedBox(height: 14)
-        ],
-        if (_on.contains(_Section.menu)) ...[
-          _menuSection(context, isTab, snapshot.menu),
-          const SizedBox(height: 14)
-        ],
-        if (_on.contains(_Section.ops)) ...[
-          _opsSection(context, isTab, snapshot.ops),
-          const SizedBox(height: 14)
-        ],
-        if (_on.isEmpty) _emptyState(context),
-      ],
+      if (snapshot == null)
+        const ReportsSkeleton()
+      else
+        _sections(context, isTab, snapshot, status.isLoading),
     ];
+  }
+
+  Widget _sections(
+    BuildContext context,
+    bool isTab,
+    ReportsSnapshotDto snapshot,
+    bool loading,
+  ) {
+    if (_on.isEmpty) return _emptyState(context);
+    final blocks = <Widget>[
+      if (_on.contains(_Section.sales))
+        Reveal(
+            key: const ValueKey('sales'),
+            index: 0,
+            child: _salesSection(context, isTab, snapshot.sales)),
+      if (_on.contains(_Section.staff))
+        Reveal(
+            key: const ValueKey('staff'),
+            index: 1,
+            child: _staffSection(context, snapshot.staff)),
+      if (_on.contains(_Section.menu))
+        Reveal(
+            key: const ValueKey('menu'),
+            index: 2,
+            child: _menuSection(context, isTab, snapshot.menu)),
+      if (_on.contains(_Section.ops))
+        Reveal(
+            key: const ValueKey('ops'),
+            index: 3,
+            child: _opsSection(context, isTab, snapshot.ops)),
+    ];
+    final col = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var k = 0; k < blocks.length; k++) ...[
+          blocks[k],
+          if (k != blocks.length - 1) const SizedBox(height: 14),
+        ],
+      ],
+    );
+    return Stack(
+      children: [
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 220),
+          curve: kSatEase,
+          opacity: loading ? 0.45 : 1,
+          child: IgnorePointer(ignoring: loading, child: col),
+        ),
+        if (loading)
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 48),
+                child: _loadingChip(context),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _loadingChip(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 13,
+            height: 13,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.8,
+              valueColor: AlwaysStoppedAnimation(sc.accent),
+            ),
+          ),
+          const SizedBox(width: 9),
+          Text('Memperbarui…',
+              style: SatType.sans(
+                  size: 12, weight: FontWeight.w500, color: sc.textHi)),
+        ],
+      ),
+    );
   }
 
   Widget _errorBanner(BuildContext context, AsyncValue<void> status) {
@@ -565,24 +686,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Container(
+                            GrowBarV(
                               width: 9,
                               height: 100 * pairs[i].lastWeek / maxVal,
-                              decoration: BoxDecoration(
-                                color: sc.bg4,
-                                borderRadius:
-                                    const BorderRadius.vertical(top: Radius.circular(2)),
-                              ),
+                              color: sc.bg4,
+                              radius: const BorderRadius.vertical(
+                                  top: Radius.circular(2)),
                             ),
                             const SizedBox(width: 3),
-                            Container(
+                            GrowBarV(
                               width: 9,
                               height: 100 * pairs[i].thisWeek / maxVal,
-                              decoration: BoxDecoration(
-                                color: sc.accent,
-                                borderRadius:
-                                    const BorderRadius.vertical(top: Radius.circular(2)),
-                              ),
+                              color: sc.accent,
+                              radius: const BorderRadius.vertical(
+                                  top: Radius.circular(2)),
                             ),
                           ],
                         ),
@@ -634,13 +751,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Container(
+                    GrowBarV(
                       height: 100 * safe[i],
-                      decoration: BoxDecoration(
-                        color: safe[i] >= 0.9 ? sc.accent : sc.bg4,
-                        borderRadius:
-                            const BorderRadius.vertical(top: Radius.circular(3)),
-                      ),
+                      color: safe[i] >= 0.9 ? sc.accent : sc.bg4,
+                      radius:
+                          const BorderRadius.vertical(top: Radius.circular(3)),
                     ),
                     const SizedBox(height: 6),
                     Text(hours[i],
@@ -853,17 +968,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Stack(children: [
-                    Container(height: 5, decoration: BoxDecoration(color: sc.bg3, borderRadius: BorderRadius.circular(3))),
-                    FractionallySizedBox(
-                      widthFactor: r.rate.clamp(0.0, 1.0),
-                      child: Container(
-                          height: 5,
-                          decoration: BoxDecoration(
-                              color: r.rate >= avg ? sc.success : sc.accent,
-                              borderRadius: BorderRadius.circular(3))),
-                    ),
-                  ]),
+                  AnimatedBarFill(
+                    factor: r.rate,
+                    color: r.rate >= avg ? sc.success : sc.accent,
+                    track: sc.bg3,
+                  ),
                 ],
               ),
             ),
@@ -1008,13 +1117,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Stack(children: [
-                    Container(height: 5, decoration: BoxDecoration(color: sc.bg3, borderRadius: BorderRadius.circular(3))),
-                    FractionallySizedBox(
-                      widthFactor: m.rate.clamp(0.0, 1.0),
-                      child: Container(height: 5, decoration: BoxDecoration(color: sc.info, borderRadius: BorderRadius.circular(3))),
-                    ),
-                  ]),
+                  AnimatedBarFill(
+                      factor: m.rate, color: sc.info, track: sc.bg3),
                 ],
               ),
             ),
@@ -1023,102 +1127,111 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  // Menu classification ("Klasifikasi menu") — four popularity×margin buckets,
+  // action-priority order, top items per bucket. Replaces the old scatter matrix.
   Widget _menuMatrix(BuildContext context, List<MatrixItemDto> items) {
     final sc = context.sat;
-    final quadColor = {
-      'star': sc.success,
-      'puzzle': sc.info,
-      'plow': sc.warn,
-      'dog': sc.textLo,
-    };
+    final buckets = <_BucketSpec>[
+      _BucketSpec('star', 'LAKU & UNTUNG', 'jaga & sorot', sc.success),
+      _BucketSpec('plow', 'LAKU TAPI TIPIS', 'reprice / kurangi porsi', sc.warn),
+      _BucketSpec('puzzle', 'UNTUNG TAPI SEPI', 'promosikan', sc.info),
+      _BucketSpec('dog', 'SEPI & TIPIS', 'kandidat dipangkas', sc.textLo),
+    ];
     return _card(
       context,
-      'Menu engineering matrix',
-      sub: 'Populer × margin · klasifikasi item',
+      'Klasifikasi menu',
+      sub: 'Populer × margin',
       child: items.isEmpty
           ? _emptyChunk(context, 'Belum ada data.')
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                AspectRatio(
-                  aspectRatio: 1.6,
-                  child: LayoutBuilder(builder: (c, cons) {
-                    final w = cons.maxWidth;
-                    final h = cons.maxHeight;
-                    return Stack(
-                      children: [
-                        Positioned(left: 0, top: 0, width: w / 2, height: h / 2,
-                            child: Container(color: sc.info.withValues(alpha: 0.06))),
-                        Positioned(right: 0, top: 0, width: w / 2, height: h / 2,
-                            child: Container(color: sc.success.withValues(alpha: 0.08))),
-                        Positioned(left: 0, bottom: 0, width: w / 2, height: h / 2,
-                            child: Container(color: sc.bg3.withValues(alpha: 0.5))),
-                        Positioned(right: 0, bottom: 0, width: w / 2, height: h / 2,
-                            child: Container(color: sc.warn.withValues(alpha: 0.06))),
-                        Positioned(left: 0, right: 0, top: h / 2 - 0.5,
-                            child: Container(height: 1, color: sc.border1)),
-                        Positioned(top: 0, bottom: 0, left: w / 2 - 0.5,
-                            child: Container(width: 1, color: sc.border1)),
-                        Positioned(left: 8, top: 6, child: Text('PUZZLE', style: SatType.mono(size: 9, color: sc.info, letterSpacing: 1.0, weight: FontWeight.w600))),
-                        Positioned(right: 8, top: 6, child: Text('STAR', style: SatType.mono(size: 9, color: sc.success, letterSpacing: 1.0, weight: FontWeight.w600))),
-                        Positioned(left: 8, bottom: 6, child: Text('DOG', style: SatType.mono(size: 9, color: sc.textLo, letterSpacing: 1.0, weight: FontWeight.w600))),
-                        Positioned(right: 8, bottom: 6, child: Text('PLOWHORSE', style: SatType.mono(size: 9, color: sc.warn, letterSpacing: 1.0, weight: FontWeight.w600))),
-                        for (final it in items)
-                          Positioned(
-                            left: it.popularity * (w - 18) + 4,
-                            top: (1 - it.margin) * (h - 18) + 4,
-                            child: Tooltip(
-                              message:
-                                  '${it.name} · pop ${(it.popularity * 100).round()} · margin ${(it.margin * 100).round()}',
-                              child: Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: quadColor[it.quadrant] ?? sc.textLo,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: sc.bg2, width: 1.5),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  }),
-                ),
-                const SizedBox(height: 10),
-                Text('← MARGIN RENDAH   |   MARGIN TINGGI →',
-                    textAlign: TextAlign.center,
-                    style: SatType.mono(size: 9, color: sc.textLo, letterSpacing: 1.0)),
-                const SizedBox(height: 4),
-                Text('POPULARITAS RENDAH ↑ TINGGI',
-                    textAlign: TextAlign.center,
-                    style: SatType.mono(size: 9, color: sc.textLo, letterSpacing: 1.0)),
-                const SizedBox(height: 12),
-                for (final entry in {
-                  'Stars': 'jaga & sorot di menu',
-                  'Puzzles': 'promosi · margin tinggi tapi sepi',
-                  'Plowhorses': 'reprice / kurangi porsi · margin tipis',
-                  'Dogs': 'kandidat dipangkas dari menu',
-                }.entries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      children: [
-                        Text(entry.key,
-                            style: SatType.mono(
-                                size: 10,
-                                weight: FontWeight.w600,
-                                letterSpacing: 0.8,
-                                color: sc.textMd)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: Text(entry.value,
-                                style: SatType.sans(size: 11, color: sc.textLo))),
-                      ],
-                    ),
+                for (var i = 0; i < buckets.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 16),
+                  _bucketBlock(
+                    context,
+                    buckets[i],
+                    items.where((it) => it.quadrant == buckets[i].key).toList()
+                      ..sort((a, b) => b.popularity.compareTo(a.popularity)),
                   ),
+                ],
               ],
             ),
+    );
+  }
+
+  Widget _bucketBlock(
+      BuildContext context, _BucketSpec spec, List<MatrixItemDto> rows) {
+    final sc = context.sat;
+    const cap = 5;
+    final shown = rows.take(cap).toList();
+    final extra = rows.length - shown.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(spec.label,
+                style: SatType.mono(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: spec.color)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('· ${spec.action}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: SatType.sans(size: 11, color: sc.textLo)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        if (rows.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text('tidak ada item',
+                style: SatType.sans(size: 12, color: sc.textLo)),
+          )
+        else ...[
+          for (final it in shown)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration:
+                        BoxDecoration(color: spec.color, shape: BoxShape.circle),
+                  ),
+                  Expanded(
+                    child: Text(it.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: SatType.sans(
+                            size: 13,
+                            weight: FontWeight.w500,
+                            color: sc.textHi)),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                      'pop ${(it.popularity * 100).round()} · margin ${(it.margin * 100).round()}%',
+                      style: SatType.mono(
+                          size: 10, color: sc.textMd, letterSpacing: 0.4)),
+                ],
+              ),
+            ),
+          if (extra > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 14),
+              child: Text('+$extra lainnya',
+                  style: SatType.mono(
+                      size: 10, color: sc.textLo, letterSpacing: 0.4)),
+            ),
+        ],
+      ],
     );
   }
 
@@ -1388,20 +1501,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          Stack(children: [
-            Container(
-                height: 6,
-                decoration: BoxDecoration(
-                    color: sc.bg3, borderRadius: BorderRadius.circular(3))),
-            FractionallySizedBox(
-              widthFactor: (s.slaPct / 100).clamp(0.0, 1.0),
-              child: Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                      color: slaColor,
-                      borderRadius: BorderRadius.circular(3))),
-            ),
-          ]),
+          AnimatedBarFill(
+              factor: s.slaPct / 100,
+              color: slaColor,
+              track: sc.bg3,
+              height: 6),
           if (s.slowItems.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('Menu paling lambat (rata-rata prep)',
@@ -1440,23 +1544,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       ],
                     ),
                     const SizedBox(height: 5),
-                    Stack(children: [
-                      Container(
-                          height: 5,
-                          decoration: BoxDecoration(
-                              color: sc.bg3,
-                              borderRadius: BorderRadius.circular(3))),
-                      FractionallySizedBox(
-                        widthFactor: (it.avgPrepMin / maxAvg).clamp(0.0, 1.0),
-                        child: Container(
-                            height: 5,
-                            decoration: BoxDecoration(
-                                color: it.avgPrepMin > s.prepTargetMins
-                                    ? sc.urgent
-                                    : sc.info,
-                                borderRadius: BorderRadius.circular(3))),
-                      ),
-                    ]),
+                    AnimatedBarFill(
+                      factor: it.avgPrepMin / maxAvg,
+                      color:
+                          it.avgPrepMin > s.prepTargetMins ? sc.urgent : sc.info,
+                      track: sc.bg3,
+                    ),
                   ],
                 ),
               ),
@@ -1634,17 +1727,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Stack(children: [
-                    Container(height: 5, decoration: BoxDecoration(color: sc.bg3, borderRadius: BorderRadius.circular(3))),
-                    FractionallySizedBox(
-                      widthFactor: rows[i].count / maxN,
-                      child: Container(
-                          height: 5,
-                          decoration: BoxDecoration(
-                              color: palette[i % palette.length],
-                              borderRadius: BorderRadius.circular(3))),
-                    ),
-                  ]),
+                  AnimatedBarFill(
+                    factor: rows[i].count / maxN,
+                    color: palette[i % palette.length],
+                    track: sc.bg3,
+                  ),
                 ],
               ),
             ),
@@ -1695,21 +1782,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Stack(children: [
-                          Container(
-                              height: 5,
-                              decoration: BoxDecoration(
-                                  color: sc.bg3,
-                                  borderRadius: BorderRadius.circular(3))),
-                          FractionallySizedBox(
-                            widthFactor: r.count / maxN,
-                            child: Container(
-                                height: 5,
-                                decoration: BoxDecoration(
-                                    color: sc.warn,
-                                    borderRadius: BorderRadius.circular(3))),
-                          ),
-                        ]),
+                        child: AnimatedBarFill(
+                            factor: r.count / maxN,
+                            color: sc.warn,
+                            track: sc.bg3),
                       ),
                       const SizedBox(width: 10),
                       Text('alasan: ${r.topReasonLabel}',

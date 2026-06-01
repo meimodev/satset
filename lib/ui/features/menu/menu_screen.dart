@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
@@ -387,27 +388,15 @@ class _ItemCard extends ConsumerWidget {
                   aspectRatio: 1.15,
                   child: Stack(
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(21)),
-                          gradient: LinearGradient(
-                            colors: [sc.bg3, sc.bg4],
-                            stops: const [0.5, 0.5],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            tileMode: TileMode.repeated,
-                          ),
+                      Positioned.fill(
+                        child: MenuPhoto(
+                          itemId: item.id,
+                          name: item.name,
+                          photoRev: item.photoRev,
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(21)),
+                          initialsSize: 30,
                         ),
-                      ),
-                      Positioned(
-                        left: 8,
-                        bottom: 8,
-                        child: Text('PHOTO',
-                            style: SatType.mono(
-                              size: 9,
-                              color: sc.textDim,
-                              letterSpacing: 0.72,
-                            )),
                       ),
                       if (item.unavailable)
                         Positioned(

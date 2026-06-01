@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:intl/intl.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,11 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/ticket.dart' show TicketStatus, ticketStatusFromKey;
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+
+/// Rupiah formatter for audit titles. Mirrors the client's `formatIDR`
+/// (`lib/ui/core/design/format.dart`) so void amounts read "Rp. 50.000".
+final _auditRupiah =
+    NumberFormat.currency(locale: 'id_ID', symbol: 'Rp. ', decimalDigits: 0);
 
 const _allowedTransitions = <TicketStatus, Set<TicketStatus>>{
   TicketStatus.draft: {TicketStatus.sent, TicketStatus.voided},
@@ -117,12 +123,12 @@ Future<void> _emitVoidAudit(
       ? reasonText
       : (_voidReasonLabels[reasonCode] ?? reasonCode);
   final id = const Uuid().v4();
+  final amount = _auditRupiah.format(ticket.price * ticket.qty);
   await db.into(db.auditEntries).insertOnConflictUpdate(
         AuditEntriesCompanion.insert(
           id: id,
           type: AuditType.voidItem.name,
-          title:
-              'Dibatalkan ×${ticket.qty} ${ticket.name} (${ticket.price * ticket.qty})',
+          title: 'Dibatalkan ×${ticket.qty} ${ticket.name} · $amount',
           tableId: Value(ticket.tableId),
           at: DateTime.now(),
           reason: Value(reason),

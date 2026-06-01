@@ -84,6 +84,7 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
       (json['dietary'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
   unavailable: json['unavailable'] as bool? ?? false,
+  photoRev: (json['photoRev'] as num?)?.toInt() ?? 0,
   stockCount: (json['stockCount'] as num?)?.toInt(),
   autoSoldOutAtZero: json['autoSoldOutAtZero'] as bool? ?? false,
 );
@@ -102,6 +103,7 @@ Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
       'allergens': instance.allergens,
       'dietary': instance.dietary,
       'unavailable': instance.unavailable,
+      'photoRev': instance.photoRev,
       'stockCount': instance.stockCount,
       'autoSoldOutAtZero': instance.autoSoldOutAtZero,
     };

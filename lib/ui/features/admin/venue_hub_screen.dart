@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
 import '_common.dart';
 
 class _Section {
@@ -77,7 +78,7 @@ class VenueHubScreen extends StatelessWidget {
         sub: 'Konfigurasi · lantai · menu · sistem · staf',
         children: [
           for (var i = 0; i < _sections.length; i++) ...[
-            _HubRow(section: _sections[i], big: true),
+            Reveal(index: i, child: _HubRow(section: _sections[i], big: true)),
             if (i != _sections.length - 1) const SizedBox(height: 12),
           ],
         ],
@@ -98,36 +99,42 @@ class _PhoneHub extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(16, l.topInset, 16, l.bottomInset + 40),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
-          child: Row(
-            children: [
-              Icon(Icons.storefront_outlined, size: 14, color: sc.textHi),
-              const SizedBox(width: 6),
-              Text('Venue',
-                  style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w500,
-                      color: sc.textHi)),
-            ],
+        Reveal(
+          index: 0,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+            child: Row(
+              children: [
+                Icon(Icons.storefront_outlined, size: 14, color: sc.textHi),
+                const SizedBox(width: 6),
+                Text('Venue',
+                    style: SatType.sans(
+                        size: 14,
+                        weight: FontWeight.w500,
+                        color: sc.textHi)),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
-          child: Text(
-            'Konfigurasi',
-            style: SatType.sans(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.44,
-              height: 1.05,
-              color: sc.textHi,
+        Reveal(
+          index: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
+            child: Text(
+              'Konfigurasi',
+              style: SatType.sans(
+                size: 22,
+                weight: FontWeight.w600,
+                letterSpacing: -0.44,
+                height: 1.05,
+                color: sc.textHi,
+              ),
             ),
           ),
         ),
         for (var i = 0; i < sections.length; i++) ...[
-          _HubRow(section: sections[i], big: false),
+          Reveal(index: i + 2, child: _HubRow(section: sections[i], big: false)),
           if (i != sections.length - 1) const SizedBox(height: 8),
         ],
       ],
@@ -151,7 +158,8 @@ class _HubRow extends StatelessWidget {
     final subSize = big ? 12.0 : 11.5;
     final padV = big ? 18.0 : 14.0;
     final padH = big ? 20.0 : 14.0;
-    return Material(
+    return PressScale(
+      child: Material(
       color: sc.bg2,
       borderRadius: BorderRadius.circular(radius),
       child: InkWell(
@@ -206,6 +214,7 @@ class _HubRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

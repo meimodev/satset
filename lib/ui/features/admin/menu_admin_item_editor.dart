@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/menu_tag.dart';
@@ -8,6 +10,7 @@ import 'package:satset/domain/models/modifier_group.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
@@ -35,6 +38,12 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   bool _initialized = false;
   String? _lastLoadedFor;
 
+  /// Picked photo bytes not yet committed (preview from memory). Null = no
+  /// pending change. [_pendingPhotoClear] is set when the user removes an
+  /// existing photo. Both are applied on Save, after the item row exists.
+  Uint8List? _pendingPhoto;
+  bool _pendingPhotoClear = false;
+
   final _name = TextEditingController();
   final _desc = TextEditingController();
   final _basePrice = TextEditingController();
@@ -55,6 +64,32 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Android may destroy the host activity while the camera is open (memory
+    // pressure), in which case pickImage returns null and the capture is
+    // delivered here instead. Recover it so the photo isn't silently lost.
+    _recoverLostPhoto();
+  }
+
+  Future<void> _recoverLostPhoto() async {
+    try {
+      final lost = await ImagePicker().retrieveLostData();
+      final file = lost.file;
+      if (lost.isEmpty || file == null) return;
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _pendingPhoto = bytes;
+        _pendingPhotoClear = false;
+      });
+      await _commitPhotoIfExisting();
+    } catch (_) {
+      // Nothing recoverable; ignore.
+    }
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     _desc.dispose();
@@ -72,6 +107,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final id = widget.itemId;
     if (id == _lastLoadedFor && _initialized) return;
     _lastLoadedFor = id;
+    _pendingPhoto = null;
+    _pendingPhotoClear = false;
     if (id == null) {
       _draft = _blankItem();
     } else {
@@ -104,7 +141,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   void _patch(MenuItem next) => setState(() => _draft = next);
 
-  void _save() {
+  Future<void> _save() async {
     final priceCents = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final costCents = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final prep = int.tryParse(_prep.text) ?? _draft.prepTime;
@@ -125,12 +162,27 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       variants: variants,
       stockCount: stockN,
     );
-    ref.read(menuRepositoryProvider.notifier).upsertItem(saved);
-    if (_isNew) {
+    final repo = ref.read(menuRepositoryProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+    final wasNew = _isNew;
+    try {
+      // Item row first, then the photo side-call (PUT/DELETE need an
+      // existing row). See ADR-0014.
+      await repo.upsertItem(saved);
+      if (_pendingPhoto != null) {
+        await repo.uploadPhoto(saved.id, _pendingPhoto!);
+      } else if (_pendingPhotoClear) {
+        await repo.deletePhoto(saved.id);
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      return;
+    }
+    if (wasNew) {
       ref.read(menuAdminSelectedItemIdProvider.notifier).state = saved.id;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_isNew ? 'Item ditambahkan' : 'Perubahan tersimpan')),
+    messenger.showSnackBar(
+      SnackBar(content: Text(wasNew ? 'Item ditambahkan' : 'Perubahan tersimpan')),
     );
     widget.onClose?.call();
   }
@@ -230,17 +282,23 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _identitySection(sc, cats, readOnly),
-                    const SizedBox(height: 18),
-                    _pricingSection(sc, readOnly),
-                    const SizedBox(height: 18),
-                    _modifiersSection(sc, readOnly),
-                    const SizedBox(height: 18),
-                    _inventorySection(sc, readOnly),
-                    const SizedBox(height: 18),
-                    _tagsSection(sc, readOnly),
-                    const SizedBox(height: 18),
-                    _availabilitySection(sc),
+                    for (final (i, section) in [
+                      _identitySection(sc, cats, readOnly),
+                      _pricingSection(sc, readOnly),
+                      _modifiersSection(sc, readOnly),
+                      _inventorySection(sc, readOnly),
+                      _tagsSection(sc, readOnly),
+                      _availabilitySection(sc),
+                    ].indexed) ...[
+                      if (i > 0) const SizedBox(height: 18),
+                      // Cascade sections in on load; animKey carries the draft
+                      // id so the stagger replays when a new item is selected.
+                      Reveal(
+                        index: i,
+                        animKey: '${_draft.id}:sec:$i',
+                        child: section,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -296,42 +354,197 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     );
   }
 
+  /// Whether a photo would show after the current pending edits.
+  bool get _hasPhotoNow =>
+      _pendingPhoto != null || (!_pendingPhotoClear && _draft.hasPhoto);
+
   Widget _photoSlot(SatColors sc, bool readOnly) {
-    final initials = _draft.name.isEmpty
-        ? '?'
-        : _draft.name.trim().split(RegExp(r'\s+')).take(2).map((w) => w[0]).join().toUpperCase();
+    final radius = BorderRadius.circular(14);
+    Widget preview;
+    String sig;
+    if (_pendingPhoto != null) {
+      sig = 'pending:${_pendingPhoto!.length}';
+      preview = ClipRRect(
+        borderRadius: radius,
+        child: Image.memory(_pendingPhoto!,
+            fit: BoxFit.cover, width: 92, height: 92, gaplessPlayback: true),
+      );
+    } else {
+      sig = 'rev:${_pendingPhotoClear ? 0 : _draft.photoRev}';
+      preview = MenuPhoto(
+        itemId: _draft.id,
+        name: _draft.name,
+        photoRev: _pendingPhotoClear ? 0 : _draft.photoRev,
+        borderRadius: radius,
+      );
+    }
+    // Crossfade when the photo changes (pick / clear / revision bump).
+    preview = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      switchInCurve: kSatEase,
+      switchOutCurve: kSatEase,
+      child: KeyedSubtree(key: ValueKey(sig), child: preview),
+    );
     return GestureDetector(
-      onTap: readOnly
-          ? null
-          : () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Upload foto belum tersedia (placeholder)')),
+      onTap: readOnly ? null : _showPhotoSheet,
+      child: Stack(
+        children: [
+          Container(
+            width: 92, height: 92,
+            decoration: BoxDecoration(
+              border: Border.all(color: sc.border1),
+              borderRadius: radius,
+            ),
+            child: preview,
+          ),
+          if (!readOnly)
+            Positioned(
+              right: 0, bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    bottomRight: Radius.circular(13),
+                  ),
+                ),
+                child: Text(_hasPhotoNow ? 'UBAH' : 'FOTO',
+                    style: SatType.mono(
+                      size: 8, weight: FontWeight.w600,
+                      letterSpacing: 1.0, color: Colors.white,
+                    )),
               ),
-      child: Container(
-        width: 92, height: 92,
-        decoration: BoxDecoration(
-          color: sc.bg2,
-          border: Border.all(color: sc.border1, style: BorderStyle.solid),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        alignment: Alignment.center,
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showPhotoSheet() {
+    final sc = context.sat;
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: sc.bg1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(initials,
-                style: SatType.sans(
-                  size: 22, weight: FontWeight.w600,
-                  letterSpacing: -0.4, color: sc.textMd,
-                )),
-            const SizedBox(height: 4),
-            Text('FOTO',
-                style: SatType.mono(
-                  size: 9, weight: FontWeight.w600,
-                  letterSpacing: 1.2, color: sc.textLo,
-                )),
+            const SizedBox(height: 12),
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: sc.border1, borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(Icons.photo_library_outlined, color: sc.textMd),
+              title: const Text('Pilih dari galeri'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickPhoto(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_camera_outlined, color: sc.textMd),
+              title: const Text('Ambil foto'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickPhoto(ImageSource.camera);
+              },
+            ),
+            if (_hasPhotoNow)
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: sc.urgent),
+                title: Text('Hapus foto',
+                    style: SatType.sans(color: sc.urgent)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  setState(() {
+                    _pendingPhoto = null;
+                    _pendingPhotoClear = true;
+                  });
+                  _commitPhotoIfExisting();
+                },
+              ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    try {
+      final x = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        imageQuality: 80,
+      );
+      if (x == null) return;
+      final bytes = await x.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _pendingPhoto = bytes;
+        _pendingPhotoClear = false;
+      });
+      await _commitPhotoIfExisting();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal memuat foto: $e')));
+    }
+  }
+
+  /// On an **existing** item, photo edits apply immediately (ADR-0014): the
+  /// picked bytes are PUT — or a clear is DELETE'd — the moment the action
+  /// completes, not on Save. On failure the optimistic memory preview is
+  /// reverted to the prior photo and a snackbar shown; on success the pending
+  /// state is cleared and the draft's `photoRev` adopted from the merged server
+  /// item, so the explicit Save never re-sends the photo. New items have no row
+  /// yet, so their pending state rides the first Save instead.
+  Future<void> _commitPhotoIfExisting() async {
+    if (_isNew) return;
+    final repo = ref.read(menuRepositoryProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      if (_pendingPhoto != null) {
+        await repo.uploadPhoto(_draft.id, _pendingPhoto!);
+      } else if (_pendingPhotoClear) {
+        await repo.deletePhoto(_draft.id);
+      } else {
+        return;
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _pendingPhoto = null;
+        _pendingPhotoClear = false;
+      });
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Gagal menyimpan foto')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    MenuItem? merged;
+    for (final i in ref.read(menuRepositoryProvider).items) {
+      if (i.id == _draft.id) {
+        merged = i;
+        break;
+      }
+    }
+    setState(() {
+      _pendingPhoto = null;
+      _pendingPhotoClear = false;
+      if (merged != null) _draft = _draft.copyWith(photoRev: merged.photoRev);
+    });
   }
 
   Widget _pricingSection(SatColors sc, bool readOnly) {
@@ -358,17 +571,25 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(height: 14),
           _subhead('Varian ukuran', trailing: readOnly ? null : _ghostButton('+ Varian', onTap: _addVariant)),
           const SizedBox(height: 6),
-          if (_draft.variants.where((v) => v.name.isNotEmpty).isEmpty)
-            Text('Belum ada varian. Hanya pakai harga dasar.',
-                style: SatType.sans(size: 12, color: sc.textLo))
-          else
-            Column(
-              children: [
-                for (var i = 0; i < _draft.variants.length; i++)
-                  if (_draft.variants[i].name.isNotEmpty)
-                    _variantRow(sc, i, readOnly),
-              ],
-            ),
+          ExpandFade(
+            child: _draft.variants.where((v) => v.name.isNotEmpty).isEmpty
+                ? Text('Belum ada varian. Hanya pakai harga dasar.',
+                    key: const ValueKey('var-empty'),
+                    style: SatType.sans(size: 12, color: sc.textLo))
+                : AnimatedReflow(
+                    key: const ValueKey('var-list'),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < _draft.variants.length; i++)
+                          if (_draft.variants[i].name.isNotEmpty)
+                            KeyedSubtree(
+                              key: ValueKey('v:${_draft.variants[i].id}'),
+                              child: _variantRow(sc, i, readOnly),
+                            ),
+                      ],
+                    ),
+                  ),
+          ),
           const SizedBox(height: 18),
           _subhead(
             'Happy hour',
@@ -381,10 +602,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               )),
             ),
           ),
-          if (_draft.happyHour != null) ...[
-            const SizedBox(height: 8),
-            _happyHourEditor(sc, readOnly),
-          ],
+          ExpandFade(
+            child: _draft.happyHour != null
+                ? Padding(
+                    key: const ValueKey('hh-on'),
+                    padding: const EdgeInsets.only(top: 8),
+                    child: _happyHourEditor(sc, readOnly),
+                  )
+                : const SizedBox(width: double.infinity, key: ValueKey('hh-off')),
+          ),
         ],
       ),
     );
@@ -508,15 +734,24 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     return _Section(
       title: 'Grup modifier',
       trailing: readOnly ? null : _ghostButton('+ Grup', onTap: _addModifierGroup),
-      child: _draft.modifierGroups.isEmpty
-          ? Text('Belum ada grup modifier (mis. tingkat pedas, pilih protein).',
-              style: SatType.sans(size: 12, color: sc.textLo))
-          : Column(
-              children: [
-                for (var i = 0; i < _draft.modifierGroups.length; i++)
-                  _modifierGroupCard(sc, i, readOnly),
-              ],
-            ),
+      child: ExpandFade(
+        child: _draft.modifierGroups.isEmpty
+            ? Text('Belum ada grup modifier (mis. tingkat pedas, pilih protein).',
+                key: const ValueKey('mod-empty'),
+                style: SatType.sans(size: 12, color: sc.textLo))
+            : AnimatedReflow(
+                key: const ValueKey('mod-list'),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < _draft.modifierGroups.length; i++)
+                      KeyedSubtree(
+                        key: ValueKey('g:${_draft.modifierGroups[i].id}'),
+                        child: _modifierGroupCard(sc, i, readOnly),
+                      ),
+                  ],
+                ),
+              ),
+      ),
     );
   }
 
@@ -594,8 +829,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ],
           ),
           const SizedBox(height: 10),
-          for (var oi = 0; oi < g.options.length; oi++)
-            _optionRow(sc, gi, oi, readOnly),
+          AnimatedReflow(
+            child: Column(
+              children: [
+                for (var oi = 0; oi < g.options.length; oi++)
+                  KeyedSubtree(
+                    key: ValueKey('o:${g.options[oi].id}'),
+                    child: _optionRow(sc, gi, oi, readOnly),
+                  ),
+              ],
+            ),
+          ),
           if (!readOnly)
             Align(
               alignment: Alignment.centerLeft,
@@ -686,36 +930,40 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           autoSoldOutAtZero: tracked ? false : _draft.autoSoldOutAtZero,
         )),
       ),
-      child: tracked
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: _input(_stock, 'Sisa stok', keyboard: TextInputType.number, readOnly: readOnly)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('Tandai habis otomatis saat stok = 0',
-                          style: SatType.sans(size: 13, color: sc.textMd)),
-                    ),
-                    adminToggle(context, on: _draft.autoSoldOutAtZero),
-                    const SizedBox(width: 6),
-                    if (!readOnly)
-                      TextButton(
-                        onPressed: () => _patch(_draft.copyWith(
-                            autoSoldOutAtZero: !_draft.autoSoldOutAtZero)),
-                        child: Text(_draft.autoSoldOutAtZero ? 'Off' : 'On'),
+      child: ExpandFade(
+        child: tracked
+            ? Column(
+                key: const ValueKey('inv-on'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _input(_stock, 'Sisa stok', keyboard: TextInputType.number, readOnly: readOnly)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Tandai habis otomatis saat stok = 0',
+                            style: SatType.sans(size: 13, color: sc.textMd)),
                       ),
-                  ],
-                ),
-              ],
-            )
-          : Text('Stok tidak dilacak. Status habis diatur manual.',
-              style: SatType.sans(size: 12, color: sc.textLo)),
+                      adminToggle(context, on: _draft.autoSoldOutAtZero),
+                      const SizedBox(width: 6),
+                      if (!readOnly)
+                        TextButton(
+                          onPressed: () => _patch(_draft.copyWith(
+                              autoSoldOutAtZero: !_draft.autoSoldOutAtZero)),
+                          child: Text(_draft.autoSoldOutAtZero ? 'Off' : 'On'),
+                        ),
+                    ],
+                  ),
+                ],
+              )
+            : Text('Stok tidak dilacak. Status habis diatur manual.',
+                key: const ValueKey('inv-off'),
+                style: SatType.sans(size: 12, color: sc.textLo)),
+      ),
     );
   }
 
@@ -870,7 +1118,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       tone = sc.urgent;
       hint = 'Margin kritis';
     }
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      curve: kSatEase,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: 0.08),
@@ -886,9 +1136,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 letterSpacing: 1.0, color: sc.textLo,
               )),
           const SizedBox(height: 4),
-          Text(hasData ? '${marginPct.toStringAsFixed(0)}%' : '—',
-              style: SatType.sans(
-                  size: 18, weight: FontWeight.w600, color: tone)),
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 240),
+            style: SatType.sans(size: 18, weight: FontWeight.w600, color: tone),
+            child: hasData
+                ? AnimatedCount(
+                    value: marginPct.round(),
+                    duration: const Duration(milliseconds: 360),
+                    builder: (_, v) => Text('$v%'),
+                  )
+                : const Text('—'),
+          ),
           const SizedBox(height: 2),
           Text(hasData ? 'Rp $marginRp · $hint' : hint,
               style: SatType.sans(size: 11, color: sc.textMd)),
@@ -917,49 +1175,68 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _chipChoice({required String label, required bool selected, VoidCallback? onTap}) {
     final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: selected ? sc.accentSoft : sc.bg2,
-          border: Border.all(color: selected ? sc.accentBorder : sc.border1),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(label,
+    return PressScale(
+      pressedScale: onTap == null ? 1.0 : 0.95,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: kSatEase,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? sc.accentSoft : sc.bg2,
+            border: Border.all(color: selected ? sc.accentBorder : sc.border1),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
             style: SatType.sans(
               size: 12,
               weight: FontWeight.w500,
               color: selected ? sc.accent : sc.textMd,
-            )),
+            ),
+            child: Text(label),
+          ),
+        ),
       ),
     );
   }
 
   Widget _toggleChip({required String label, required bool on, VoidCallback? onTap}) {
     final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: on ? sc.successSoft : sc.bg2,
-          border: Border.all(color: on ? sc.success : sc.border1),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6, height: 6,
-              decoration: BoxDecoration(
-                color: on ? sc.success : sc.textLo,
-                shape: BoxShape.circle,
+    return PressScale(
+      pressedScale: onTap == null ? 1.0 : 0.95,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: kSatEase,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: on ? sc.successSoft : sc.bg2,
+            border: Border.all(color: on ? sc.success : sc.border1),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: kSatEase,
+                width: 6, height: 6,
+                decoration: BoxDecoration(
+                  color: on ? sc.success : sc.textLo,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Text(label, style: SatType.sans(size: 11, weight: FontWeight.w500, color: on ? sc.success : sc.textMd)),
-          ],
+              const SizedBox(width: 6),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: SatType.sans(size: 11, weight: FontWeight.w500, color: on ? sc.success : sc.textMd),
+                child: Text(label),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1062,14 +1339,58 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Footer extends StatelessWidget {
-  final VoidCallback onSave;
+class _Footer extends StatefulWidget {
+  final Future<void> Function() onSave;
   final VoidCallback? onDelete;
   const _Footer({required this.onSave, this.onDelete});
 
   @override
+  State<_Footer> createState() => _FooterState();
+}
+
+enum _SaveState { idle, saving, done }
+
+class _FooterState extends State<_Footer> {
+  _SaveState _state = _SaveState.idle;
+
+  Future<void> _run() async {
+    if (_state != _SaveState.idle) return;
+    setState(() => _state = _SaveState.saving);
+    try {
+      await widget.onSave();
+    } catch (_) {
+      // Errors surface via snackbar in onSave; just reset the button.
+    }
+    if (!mounted) return;
+    // Brief success tick before the pane closes / resets.
+    setState(() => _state = _SaveState.done);
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (mounted) setState(() => _state = _SaveState.idle);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final saving = _state == _SaveState.saving;
+    final done = _state == _SaveState.done;
+
+    Widget label;
+    if (saving) {
+      label = SizedBox(
+        key: const ValueKey('saving'),
+        width: 16, height: 16,
+        child: CircularProgressIndicator(strokeWidth: 2, color: sc.accentInk),
+      );
+    } else if (done) {
+      label = Icon(Icons.check_rounded,
+          key: const ValueKey('done'), size: 18, color: sc.accentInk);
+    } else {
+      label = Text('Simpan',
+          key: const ValueKey('idle'),
+          style: SatType.sans(
+              size: 13, weight: FontWeight.w600, color: sc.accentInk));
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
@@ -1078,23 +1399,35 @@ class _Footer extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (onDelete != null)
-            TextButton.icon(
-              onPressed: onDelete,
-              icon: Icon(Icons.delete_outline, color: sc.urgent, size: 18),
-              label: Text('Hapus', style: SatType.sans(size: 13, weight: FontWeight.w600, color: sc.urgent)),
+          if (widget.onDelete != null)
+            PressScale(
+              pressedScale: 0.96,
+              child: TextButton.icon(
+                onPressed: widget.onDelete,
+                icon: Icon(Icons.delete_outline, color: sc.urgent, size: 18),
+                label: Text('Hapus', style: SatType.sans(size: 13, weight: FontWeight.w600, color: sc.urgent)),
+              ),
             ),
           const Spacer(),
-          ElevatedButton(
-            onPressed: onSave,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: sc.accent,
-              foregroundColor: sc.accentInk,
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          PressScale(
+            pressedScale: 0.96,
+            child: ElevatedButton(
+              onPressed: _state == _SaveState.idle ? _run : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: done ? sc.success : sc.accent,
+                foregroundColor: sc.accentInk,
+                disabledBackgroundColor: done ? sc.success : sc.accent,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                switchInCurve: kSatEase,
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(anim), child: child)),
+                child: label,
+              ),
             ),
-            child: Text('Simpan',
-                style: SatType.sans(size: 13, weight: FontWeight.w600, color: sc.accentInk)),
           ),
         ],
       ),

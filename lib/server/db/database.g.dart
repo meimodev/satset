@@ -2832,6 +2832,27 @@ class $MenuItemsTable extends MenuItems
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _photoMeta = const VerificationMeta('photo');
+  @override
+  late final GeneratedColumn<Uint8List> photo = GeneratedColumn<Uint8List>(
+    'photo',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _photoRevMeta = const VerificationMeta(
+    'photoRev',
+  );
+  @override
+  late final GeneratedColumn<int> photoRev = GeneratedColumn<int>(
+    'photo_rev',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2848,6 +2869,8 @@ class $MenuItemsTable extends MenuItems
     unavailable,
     stockCount,
     autoSoldOutAtZero,
+    photo,
+    photoRev,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2971,6 +2994,18 @@ class $MenuItemsTable extends MenuItems
         ),
       );
     }
+    if (data.containsKey('photo')) {
+      context.handle(
+        _photoMeta,
+        photo.isAcceptableOrUnknown(data['photo']!, _photoMeta),
+      );
+    }
+    if (data.containsKey('photo_rev')) {
+      context.handle(
+        _photoRevMeta,
+        photoRev.isAcceptableOrUnknown(data['photo_rev']!, _photoRevMeta),
+      );
+    }
     return context;
   }
 
@@ -3036,6 +3071,14 @@ class $MenuItemsTable extends MenuItems
         DriftSqlType.bool,
         data['${effectivePrefix}auto_sold_out_at_zero'],
       )!,
+      photo: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}photo'],
+      ),
+      photoRev: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}photo_rev'],
+      )!,
     );
   }
 
@@ -3067,6 +3110,16 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
   final bool unavailable;
   final int? stockCount;
   final bool autoSoldOutAtZero;
+
+  /// Optional photo as a JPEG blob. Null = no photo (UI falls back to the
+  /// initials avatar). Read ONLY by the photo route — never select this in
+  /// the `/menu` snapshot or item upsert path; use `selectOnly` excluding it.
+  /// See docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
+  final Uint8List? photo;
+
+  /// Monotonic revision bumped on every photo write/clear. Rides the snapshot
+  /// (the bytes do not) so clients cache-bust by `(itemId, photoRev)`.
+  final int photoRev;
   const MenuItem({
     required this.id,
     required this.name,
@@ -3082,6 +3135,8 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     required this.unavailable,
     this.stockCount,
     required this.autoSoldOutAtZero,
+    this.photo,
+    required this.photoRev,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3102,6 +3157,10 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       map['stock_count'] = Variable<int>(stockCount);
     }
     map['auto_sold_out_at_zero'] = Variable<bool>(autoSoldOutAtZero);
+    if (!nullToAbsent || photo != null) {
+      map['photo'] = Variable<Uint8List>(photo);
+    }
+    map['photo_rev'] = Variable<int>(photoRev);
     return map;
   }
 
@@ -3123,6 +3182,10 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           ? const Value.absent()
           : Value(stockCount),
       autoSoldOutAtZero: Value(autoSoldOutAtZero),
+      photo: photo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(photo),
+      photoRev: Value(photoRev),
     );
   }
 
@@ -3148,6 +3211,8 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       unavailable: serializer.fromJson<bool>(json['unavailable']),
       stockCount: serializer.fromJson<int?>(json['stockCount']),
       autoSoldOutAtZero: serializer.fromJson<bool>(json['autoSoldOutAtZero']),
+      photo: serializer.fromJson<Uint8List?>(json['photo']),
+      photoRev: serializer.fromJson<int>(json['photoRev']),
     );
   }
   @override
@@ -3168,6 +3233,8 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       'unavailable': serializer.toJson<bool>(unavailable),
       'stockCount': serializer.toJson<int?>(stockCount),
       'autoSoldOutAtZero': serializer.toJson<bool>(autoSoldOutAtZero),
+      'photo': serializer.toJson<Uint8List?>(photo),
+      'photoRev': serializer.toJson<int>(photoRev),
     };
   }
 
@@ -3186,6 +3253,8 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     bool? unavailable,
     Value<int?> stockCount = const Value.absent(),
     bool? autoSoldOutAtZero,
+    Value<Uint8List?> photo = const Value.absent(),
+    int? photoRev,
   }) => MenuItem(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -3201,6 +3270,8 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     unavailable: unavailable ?? this.unavailable,
     stockCount: stockCount.present ? stockCount.value : this.stockCount,
     autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
+    photo: photo.present ? photo.value : this.photo,
+    photoRev: photoRev ?? this.photoRev,
   );
   MenuItem copyWithCompanion(MenuItemsCompanion data) {
     return MenuItem(
@@ -3236,6 +3307,8 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       autoSoldOutAtZero: data.autoSoldOutAtZero.present
           ? data.autoSoldOutAtZero.value
           : this.autoSoldOutAtZero,
+      photo: data.photo.present ? data.photo.value : this.photo,
+      photoRev: data.photoRev.present ? data.photoRev.value : this.photoRev,
     );
   }
 
@@ -3255,7 +3328,9 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           ..write('dietaryJson: $dietaryJson, ')
           ..write('unavailable: $unavailable, ')
           ..write('stockCount: $stockCount, ')
-          ..write('autoSoldOutAtZero: $autoSoldOutAtZero')
+          ..write('autoSoldOutAtZero: $autoSoldOutAtZero, ')
+          ..write('photo: $photo, ')
+          ..write('photoRev: $photoRev')
           ..write(')'))
         .toString();
   }
@@ -3276,6 +3351,8 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     unavailable,
     stockCount,
     autoSoldOutAtZero,
+    $driftBlobEquality.hash(photo),
+    photoRev,
   );
   @override
   bool operator ==(Object other) =>
@@ -3294,7 +3371,9 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           other.dietaryJson == this.dietaryJson &&
           other.unavailable == this.unavailable &&
           other.stockCount == this.stockCount &&
-          other.autoSoldOutAtZero == this.autoSoldOutAtZero);
+          other.autoSoldOutAtZero == this.autoSoldOutAtZero &&
+          $driftBlobEquality.equals(other.photo, this.photo) &&
+          other.photoRev == this.photoRev);
 }
 
 class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
@@ -3312,6 +3391,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
   final Value<bool> unavailable;
   final Value<int?> stockCount;
   final Value<bool> autoSoldOutAtZero;
+  final Value<Uint8List?> photo;
+  final Value<int> photoRev;
   final Value<int> rowid;
   const MenuItemsCompanion({
     this.id = const Value.absent(),
@@ -3328,6 +3409,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     this.unavailable = const Value.absent(),
     this.stockCount = const Value.absent(),
     this.autoSoldOutAtZero = const Value.absent(),
+    this.photo = const Value.absent(),
+    this.photoRev = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MenuItemsCompanion.insert({
@@ -3345,6 +3428,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     this.unavailable = const Value.absent(),
     this.stockCount = const Value.absent(),
     this.autoSoldOutAtZero = const Value.absent(),
+    this.photo = const Value.absent(),
+    this.photoRev = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -3365,6 +3450,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Expression<bool>? unavailable,
     Expression<int>? stockCount,
     Expression<bool>? autoSoldOutAtZero,
+    Expression<Uint8List>? photo,
+    Expression<int>? photoRev,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3383,6 +3470,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       if (unavailable != null) 'unavailable': unavailable,
       if (stockCount != null) 'stock_count': stockCount,
       if (autoSoldOutAtZero != null) 'auto_sold_out_at_zero': autoSoldOutAtZero,
+      if (photo != null) 'photo': photo,
+      if (photoRev != null) 'photo_rev': photoRev,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3402,6 +3491,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Value<bool>? unavailable,
     Value<int?>? stockCount,
     Value<bool>? autoSoldOutAtZero,
+    Value<Uint8List?>? photo,
+    Value<int>? photoRev,
     Value<int>? rowid,
   }) {
     return MenuItemsCompanion(
@@ -3419,6 +3510,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       unavailable: unavailable ?? this.unavailable,
       stockCount: stockCount ?? this.stockCount,
       autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
+      photo: photo ?? this.photo,
+      photoRev: photoRev ?? this.photoRev,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3468,6 +3561,12 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     if (autoSoldOutAtZero.present) {
       map['auto_sold_out_at_zero'] = Variable<bool>(autoSoldOutAtZero.value);
     }
+    if (photo.present) {
+      map['photo'] = Variable<Uint8List>(photo.value);
+    }
+    if (photoRev.present) {
+      map['photo_rev'] = Variable<int>(photoRev.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3491,6 +3590,8 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
           ..write('unavailable: $unavailable, ')
           ..write('stockCount: $stockCount, ')
           ..write('autoSoldOutAtZero: $autoSoldOutAtZero, ')
+          ..write('photo: $photo, ')
+          ..write('photoRev: $photoRev, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12530,6 +12631,8 @@ typedef $$MenuItemsTableCreateCompanionBuilder =
       Value<bool> unavailable,
       Value<int?> stockCount,
       Value<bool> autoSoldOutAtZero,
+      Value<Uint8List?> photo,
+      Value<int> photoRev,
       Value<int> rowid,
     });
 typedef $$MenuItemsTableUpdateCompanionBuilder =
@@ -12548,6 +12651,8 @@ typedef $$MenuItemsTableUpdateCompanionBuilder =
       Value<bool> unavailable,
       Value<int?> stockCount,
       Value<bool> autoSoldOutAtZero,
+      Value<Uint8List?> photo,
+      Value<int> photoRev,
       Value<int> rowid,
     });
 
@@ -12627,6 +12732,16 @@ class $$MenuItemsTableFilterComposer
 
   ColumnFilters<bool> get autoSoldOutAtZero => $composableBuilder(
     column: $table.autoSoldOutAtZero,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get photoRev => $composableBuilder(
+    column: $table.photoRev,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -12709,6 +12824,16 @@ class $$MenuItemsTableOrderingComposer
     column: $table.autoSoldOutAtZero,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get photoRev => $composableBuilder(
+    column: $table.photoRev,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MenuItemsTableAnnotationComposer
@@ -12779,6 +12904,12 @@ class $$MenuItemsTableAnnotationComposer
     column: $table.autoSoldOutAtZero,
     builder: (column) => column,
   );
+
+  GeneratedColumn<Uint8List> get photo =>
+      $composableBuilder(column: $table.photo, builder: (column) => column);
+
+  GeneratedColumn<int> get photoRev =>
+      $composableBuilder(column: $table.photoRev, builder: (column) => column);
 }
 
 class $$MenuItemsTableTableManager
@@ -12823,6 +12954,8 @@ class $$MenuItemsTableTableManager
                 Value<bool> unavailable = const Value.absent(),
                 Value<int?> stockCount = const Value.absent(),
                 Value<bool> autoSoldOutAtZero = const Value.absent(),
+                Value<Uint8List?> photo = const Value.absent(),
+                Value<int> photoRev = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuItemsCompanion(
                 id: id,
@@ -12839,6 +12972,8 @@ class $$MenuItemsTableTableManager
                 unavailable: unavailable,
                 stockCount: stockCount,
                 autoSoldOutAtZero: autoSoldOutAtZero,
+                photo: photo,
+                photoRev: photoRev,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -12857,6 +12992,8 @@ class $$MenuItemsTableTableManager
                 Value<bool> unavailable = const Value.absent(),
                 Value<int?> stockCount = const Value.absent(),
                 Value<bool> autoSoldOutAtZero = const Value.absent(),
+                Value<Uint8List?> photo = const Value.absent(),
+                Value<int> photoRev = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuItemsCompanion.insert(
                 id: id,
@@ -12873,6 +13010,8 @@ class $$MenuItemsTableTableManager
                 unavailable: unavailable,
                 stockCount: stockCount,
                 autoSoldOutAtZero: autoSoldOutAtZero,
+                photo: photo,
+                photoRev: photoRev,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

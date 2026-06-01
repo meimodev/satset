@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/auth_dto.dart';
+import 'package:satset/data/repositories/auth_error.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -28,12 +29,18 @@ class AuthState {
   final AppUser? user;
   final String? error;
   final bool busy;
+
+  /// True while [AuthRepository.restoreFromStoredToken] is checking an existing
+  /// session at boot. Used to mask the sign-in form behind a loading screen so
+  /// an auto-login admin never sees the form flash before redirecting.
+  final bool restoring;
   final Set<Capability> capabilities;
   const AuthState({
     this.isAuthenticated = false,
     this.user,
     this.error,
     this.busy = false,
+    this.restoring = false,
     this.capabilities = const {},
   });
 
@@ -42,6 +49,7 @@ class AuthState {
     AppUser? user,
     String? error,
     bool? busy,
+    bool? restoring,
     Set<Capability>? capabilities,
   }) =>
       AuthState(
@@ -49,6 +57,7 @@ class AuthState {
         user: user ?? this.user,
         error: error,
         busy: busy ?? this.busy,
+        restoring: restoring ?? this.restoring,
         capabilities: capabilities ?? this.capabilities,
       );
 
@@ -72,7 +81,9 @@ class AuthRepository extends StateNotifier<AuthState> {
     state = state.copyWith(busy: true, error: null);
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      state = state.copyWith(busy: false, error: 'Server belum siap');
+      state = state.copyWith(
+          busy: false,
+          error: 'Server belum siap. Tunggu sebentar lalu coba lagi.');
       return false;
     }
     try {
@@ -110,7 +121,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       SatLog.repo('auth.signIn fail ${e.toString()}');
-      state = state.copyWith(busy: false, error: e.toString());
+      state = state.copyWith(busy: false, error: authErrorMessage(e, pin: true));
       return false;
     }
   }
@@ -129,7 +140,9 @@ class AuthRepository extends StateNotifier<AuthState> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       SatLog.repo('auth.signInAsAdmin no ApiConfig');
-      state = state.copyWith(busy: false, error: 'Server admin tidak siap');
+      state = state.copyWith(
+          busy: false,
+          error: 'Server belum siap. Tunggu sebentar lalu coba lagi.');
       return false;
     }
     try {
@@ -173,7 +186,8 @@ class AuthRepository extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       SatLog.repo('auth.signInAsAdmin fail $e');
-      state = state.copyWith(busy: false, error: e.toString());
+      state =
+          state.copyWith(busy: false, error: authErrorMessage(e, pin: false));
       return false;
     }
   }
@@ -184,8 +198,12 @@ class AuthRepository extends StateNotifier<AuthState> {
     SatLog.repo('auth.restore');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
+    state = state.copyWith(restoring: true);
     final token = await storage.readToken();
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(restoring: false);
+      return;
+    }
     try {
       final api = ref.read(apiClientProvider);
       final me = MeDto.fromJson(
@@ -215,6 +233,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       );
     } catch (_) {
       await storage.clearSession();
+      state = state.copyWith(restoring: false);
     }
   }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -130,6 +131,64 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         .write(MenuItemsCompanion(stockCount: Value(next)));
     final out = await _readItem(db, id);
     if (out == null) return Response.notFound('item not found');
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
+    return Response.ok(jsonEncode(out),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // ---------- photo (binary side-endpoints) ----------
+  // Bytes stay OUT of the item-upsert JSON; the snapshot carries only photoRev.
+  // See docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
+
+  // Stream the JPEG bytes. Ungated, matching the open GET /menu snapshot.
+  r.get('/menu/items/<id>/photo', (Request req, String id) async {
+    final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null || row.photo == null) return Response.notFound('no photo');
+    return Response.ok(row.photo, headers: {
+      'content-type': 'image/jpeg',
+      'cache-control': 'no-cache',
+    });
+  });
+
+  // Replace the photo. Body = raw JPEG bytes. Bumps photoRev, broadcasts.
+  r.put('/menu/items/<id>/photo', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return Response.notFound('item not found');
+    final builder = await req
+        .read()
+        .fold<BytesBuilder>(BytesBuilder(), (b, chunk) => b..add(chunk));
+    final bytes = builder.takeBytes();
+    if (bytes.isEmpty) return Response(400, body: 'empty body');
+    await (db.update(db.menuItems)..where((i) => i.id.equals(id))).write(
+      MenuItemsCompanion(
+        photo: Value(bytes),
+        photoRev: Value(row.photoRev + 1),
+      ),
+    );
+    final out = await _readItem(db, id);
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
+    return Response.ok(jsonEncode(out),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Clear the photo (back to the avatar fallback). Bumps photoRev, broadcasts.
+  r.delete('/menu/items/<id>/photo', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.editMenu);
+    if (denied != null) return denied;
+    final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return Response.notFound('item not found');
+    await (db.update(db.menuItems)..where((i) => i.id.equals(id))).write(
+      MenuItemsCompanion(
+        photo: const Value(null),
+        photoRev: Value(row.photoRev + 1),
+      ),
+    );
+    final out = await _readItem(db, id);
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
     return Response.ok(jsonEncode(out),
         headers: {'content-type': 'application/json'});
@@ -324,7 +383,7 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
   final cats = await (db.select(db.menuCategories)
         ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
       .get();
-  final items = await db.select(db.menuItems).get();
+  final items = await _selectItemsNoBlob(db);
   final tags = await (db.select(db.menuTags)
         ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
       .get();
@@ -333,10 +392,55 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
     'categories': [
       for (final c in cats) {'id': c.id, 'name': c.name},
     ],
-    'items': [for (final it in items) _itemRowToJson(it)],
+    'items': [for (final r in items) _itemResultToJson(db, r)],
     'tags': [for (final t in tags) _tagRowToJson(t)],
   };
 }
+
+/// Every item column EXCEPT the `photo` blob. The blob is read only by the
+/// photo route — keeping it out of the hot snapshot/read path is mandatory
+/// (see docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md).
+List<Expression> _itemCols(AppDatabase db) => [
+      db.menuItems.id,
+      db.menuItems.name,
+      db.menuItems.categoryId,
+      db.menuItems.description,
+      db.menuItems.basePrice,
+      db.menuItems.cost,
+      db.menuItems.prepTime,
+      db.menuItems.variantsJson,
+      db.menuItems.modifierGroupsJson,
+      db.menuItems.allergensJson,
+      db.menuItems.dietaryJson,
+      db.menuItems.unavailable,
+      db.menuItems.stockCount,
+      db.menuItems.autoSoldOutAtZero,
+      db.menuItems.photoRev,
+    ];
+
+Future<List<TypedResult>> _selectItemsNoBlob(AppDatabase db, {String? id}) {
+  final q = db.selectOnly(db.menuItems)..addColumns(_itemCols(db));
+  if (id != null) q.where(db.menuItems.id.equals(id));
+  return q.get();
+}
+
+Map<String, dynamic> _itemResultToJson(AppDatabase db, TypedResult r) => {
+      'id': r.read(db.menuItems.id)!,
+      'name': r.read(db.menuItems.name)!,
+      'categoryId': r.read(db.menuItems.categoryId)!,
+      'description': r.read(db.menuItems.description)!,
+      'basePrice': r.read(db.menuItems.basePrice)!,
+      'cost': r.read(db.menuItems.cost)!,
+      'prepTime': r.read(db.menuItems.prepTime)!,
+      'variants': jsonDecode(r.read(db.menuItems.variantsJson)!),
+      'modifierGroups': jsonDecode(r.read(db.menuItems.modifierGroupsJson)!),
+      'allergens': jsonDecode(r.read(db.menuItems.allergensJson)!),
+      'dietary': jsonDecode(r.read(db.menuItems.dietaryJson)!),
+      'unavailable': r.read(db.menuItems.unavailable)!,
+      'stockCount': r.read(db.menuItems.stockCount),
+      'autoSoldOutAtZero': r.read(db.menuItems.autoSoldOutAtZero)!,
+      'photoRev': r.read(db.menuItems.photoRev)!,
+    };
 
 Map<String, dynamic> _tagRowToJson(MenuTag t) => {
       'id': t.id,
@@ -346,27 +450,9 @@ Map<String, dynamic> _tagRowToJson(MenuTag t) => {
       'sortOrder': t.sortOrder,
     };
 
-Map<String, dynamic> _itemRowToJson(MenuItem it) => {
-      'id': it.id,
-      'name': it.name,
-      'categoryId': it.categoryId,
-      'description': it.description,
-      'basePrice': it.basePrice,
-      'cost': it.cost,
-      'prepTime': it.prepTime,
-      'variants': jsonDecode(it.variantsJson),
-      'modifierGroups': jsonDecode(it.modifierGroupsJson),
-      'allergens': jsonDecode(it.allergensJson),
-      'dietary': jsonDecode(it.dietaryJson),
-      'unavailable': it.unavailable,
-      'stockCount': it.stockCount,
-      'autoSoldOutAtZero': it.autoSoldOutAtZero,
-    };
-
 Future<Map<String, dynamic>?> _readItem(AppDatabase db, String id) async {
-  final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
-      .getSingleOrNull();
-  return row == null ? null : _itemRowToJson(row);
+  final rows = await _selectItemsNoBlob(db, id: id);
+  return rows.isEmpty ? null : _itemResultToJson(db, rows.first);
 }
 
 /// Upsert or partial-update a row.  `body` carries DTO-shaped fields. For

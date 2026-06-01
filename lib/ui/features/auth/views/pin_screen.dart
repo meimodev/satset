@@ -73,14 +73,14 @@ class _PinScreenState extends ConsumerState<PinScreen>
 
   String? _validateEmail(String v) {
     final e = v.trim();
-    if (e.isEmpty) return 'Email wajib diisi';
-    if (!_emailRegex.hasMatch(e)) return 'Format email tidak valid';
+    if (e.isEmpty) return 'Email belum diisi.';
+    if (!_emailRegex.hasMatch(e)) return 'Email tidak valid.';
     return null;
   }
 
   String? _validatePassword(String v) {
-    if (v.isEmpty) return 'Kata sandi wajib diisi';
-    if (v.length < 6) return 'Minimal 6 karakter';
+    if (v.isEmpty) return 'Password belum diisi.';
+    if (v.length < 6) return 'Minimal 6 karakter.';
     return null;
   }
 
@@ -143,6 +143,16 @@ class _PinScreenState extends ConsumerState<PinScreen>
       );
     }
     final state = ref.watch(pinViewModelProvider);
+
+    // Admin auto-login: while the boot-time session restore is in flight, mask
+    // the sign-in form behind a loading screen so the form never flashes before
+    // the router redirects an already-authenticated admin into the app.
+    final restoring = ref.watch(
+      authStateProvider.select((s) => s.restoring),
+    );
+    if (state.mode == SignInMode.admin && restoring) {
+      return const _RestoreLoadingScreen();
+    }
 
     ref.listen<PinState>(pinViewModelProvider, (prev, next) {
       final wasPaired = prev?.selectedServer?.paired ?? false;
@@ -436,7 +446,7 @@ class _ModeHeading extends StatelessWidget {
     final label = isAdmin ? 'MODE ADMIN' : 'MODE STAFF';
     final title = isAdmin ? 'Masuk admin' : 'Masukkan PIN';
     final sub = isAdmin
-        ? 'Login dengan email & kata sandi'
+        ? 'Login pakai email & password'
         : server != null
             ? 'Tersambung ke ${server!.label}'
             : 'Pilih server lebih dulu';
@@ -516,7 +526,7 @@ class _AdminAuthForm extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('KATA SANDI',
+            Text('PASSWORD',
                 style: SatType.mono(
                     size: 10,
                     weight: FontWeight.w500,
@@ -585,7 +595,7 @@ class _AdminAuthForm extends StatelessWidget {
             onPressed: () {},
             style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 4)),
-            child: Text('Lupa kata sandi?',
+            child: Text('Lupa password?',
                 style: SatType.sans(
                     size: 12,
                     weight: FontWeight.w500,
@@ -1005,6 +1015,44 @@ class _ServerRow extends StatelessWidget {
           ),
         ),
       ),
+      ),
+    );
+  }
+}
+
+/// Full-screen loader shown to an auto-login admin while the boot-time session
+/// restore runs, masking the sign-in form until the router redirects.
+class _RestoreLoadingScreen extends StatelessWidget {
+  const _RestoreLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Scaffold(
+      backgroundColor: sc.bg0,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _TabletBrand(),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: sc.accent),
+              ),
+              const SizedBox(height: 16),
+              Text('Memeriksa sesi…',
+                  style: SatType.mono(
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0.6,
+                  )),
+            ],
+          ),
+        ),
       ),
     );
   }

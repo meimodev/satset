@@ -54,10 +54,16 @@ class MenuItem {
   final List<Variant> variants;
   final List<ModifierGroup> modifierGroups;
   final bool unavailable;
-  final String? photoUrl;
+  /// Photo revision. 0 = no photo (UI shows the initials avatar). >0 means a
+  /// photo exists, fetched as bytes from `GET /menu/items/:id/photo` and
+  /// cache-keyed by this rev. The bytes never ride the model — see
+  /// docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
+  final int photoRev;
   final int? stockCount;
   final bool autoSoldOutAtZero;
   final HappyHourRule? happyHour;
+
+  bool get hasPhoto => photoRev > 0;
 
   const MenuItem({
     required this.id,
@@ -72,7 +78,7 @@ class MenuItem {
     required this.variants,
     this.modifierGroups = const [],
     this.unavailable = false,
-    this.photoUrl,
+    this.photoRev = 0,
     this.stockCount,
     this.autoSoldOutAtZero = false,
     this.happyHour,
@@ -98,7 +104,7 @@ class MenuItem {
     List<Variant>? variants,
     List<ModifierGroup>? modifierGroups,
     bool? unavailable,
-    Object? photoUrl = _unset,
+    int? photoRev,
     Object? stockCount = _unset,
     bool? autoSoldOutAtZero,
     Object? happyHour = _unset,
@@ -116,7 +122,7 @@ class MenuItem {
       variants: variants ?? this.variants,
       modifierGroups: modifierGroups ?? this.modifierGroups,
       unavailable: unavailable ?? this.unavailable,
-      photoUrl: identical(photoUrl, _unset) ? this.photoUrl : photoUrl as String?,
+      photoRev: photoRev ?? this.photoRev,
       stockCount: identical(stockCount, _unset) ? this.stockCount : stockCount as int?,
       autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
       happyHour: identical(happyHour, _unset) ? this.happyHour : happyHour as HappyHourRule?,

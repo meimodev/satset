@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -112,6 +113,29 @@ class ApiClient {
   }
 
   Future<dynamic> deleteJson(String path) => _send('DELETE', path);
+
+  /// Fetch raw bytes over the pinned client (e.g. a menu photo). Plain
+  /// `Image.network` cannot be used — it bypasses TLS pinning and fails the
+  /// self-signed cert. See docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
+  Future<Uint8List> getBytes(String path) async {
+    final uri = _config.baseUri.resolve(path);
+    final headers = await _headers();
+    final r = await _inner.get(uri, headers: headers);
+    if (r.statusCode >= 200 && r.statusCode < 300) return r.bodyBytes;
+    throw ApiException(r.statusCode, r.body);
+  }
+
+  /// PUT raw bytes (e.g. a menu photo upload). Body is sent verbatim.
+  Future<dynamic> putBytes(
+    String path,
+    List<int> bytes, {
+    String contentType = 'image/jpeg',
+  }) async {
+    final uri = _config.baseUri.resolve(path);
+    final headers = await _headers(extra: {'Content-Type': contentType});
+    final r = await _inner.put(uri, headers: headers, body: bytes);
+    return _decode(r);
+  }
 
   Future<dynamic> _send(
     String method,

@@ -7,6 +7,8 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/features/admin/menu_admin_item_editor.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
@@ -67,43 +69,105 @@ class _TabletLayout extends ConsumerWidget {
             ],
           ),
         ),
-        if (onCats)
-          const Expanded(child: _CategoriesPanel())
-        else if (onTags)
-          const Expanded(child: _TagsPanel())
-        else
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border(right: BorderSide(color: sc.border0)),
-                    ),
-                    child: const _ListPane(),
-                  ),
-                ),
-                Expanded(
-                  flex: 6,
-                  child: selectedId == null && perm == MenuPermission.staff
-                      ? const _EmptyDetail(staff: true)
-                      : MenuAdminItemEditor(
-                          key: ValueKey(selectedId ?? '__new__'),
-                          itemId: selectedId,
-                          onClose: () => ref
-                              .read(menuAdminSelectedItemIdProvider.notifier)
-                              .state = null,
-                          onDeleted: () => ref
-                              .read(menuAdminSelectedItemIdProvider.notifier)
-                              .state = null,
-                        ),
-                ),
-              ],
-            ),
+        Expanded(
+          child: _TabFade(
+            tabKey: onCats ? 'cats' : (onTags ? 'tags' : 'items'),
+            child: onCats
+                ? const _CategoriesPanel()
+                : onTags
+                    ? const _TagsPanel()
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border(
+                                    right: BorderSide(color: sc.border0)),
+                              ),
+                              child: const _ListPane(),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 6,
+                            // Crossfade + soft slide when the selected item
+                            // changes, so the detail pane swaps instead of
+                            // hard-cutting between items.
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 240),
+                              switchInCurve: kSatEase,
+                              switchOutCurve: kSatEase,
+                              transitionBuilder: (child, anim) => FadeTransition(
+                                opacity: anim,
+                                child: SlideTransition(
+                                  position: Tween(
+                                          begin: const Offset(0.012, 0),
+                                          end: Offset.zero)
+                                      .animate(anim),
+                                  child: child,
+                                ),
+                              ),
+                              layoutBuilder: (current, previous) => Stack(
+                                alignment: Alignment.topCenter,
+                                children: [...previous, ?current],
+                              ),
+                              child: selectedId == null &&
+                                      perm == MenuPermission.staff
+                                  ? const _EmptyDetail(
+                                      key: ValueKey('__empty__'), staff: true)
+                                  : MenuAdminItemEditor(
+                                      key: ValueKey(selectedId ?? '__new__'),
+                                      itemId: selectedId,
+                                      onClose: () => ref
+                                          .read(menuAdminSelectedItemIdProvider
+                                              .notifier)
+                                          .state = null,
+                                      onDeleted: () => ref
+                                          .read(menuAdminSelectedItemIdProvider
+                                              .notifier)
+                                          .state = null,
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
           ),
+        ),
       ],
+    );
+  }
+}
+
+/// Crossfade + soft vertical slide between the Item / Kategori / Tag panels.
+/// [tabKey] identifies the active panel; changing it triggers the transition.
+class _TabFade extends StatelessWidget {
+  final String tabKey;
+  final Widget child;
+  const _TabFade({required this.tabKey, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      switchInCurve: kSatEase,
+      switchOutCurve: kSatEase,
+      transitionBuilder: (child, anim) => FadeTransition(
+        opacity: anim,
+        child: SlideTransition(
+          position: Tween(begin: const Offset(0, 0.015), end: Offset.zero)
+              .animate(anim),
+          child: child,
+        ),
+      ),
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          ...previous,
+          ?current,
+        ],
+      ),
+      child: KeyedSubtree(key: ValueKey(tabKey), child: child),
     );
   }
 }
@@ -126,7 +190,7 @@ class _ListPane extends ConsumerWidget {
 
 class _EmptyDetail extends StatelessWidget {
   final bool staff;
-  const _EmptyDetail({required this.staff});
+  const _EmptyDetail({super.key, required this.staff});
 
   @override
   Widget build(BuildContext context) {
@@ -214,15 +278,22 @@ class _PhoneLayout extends ConsumerWidget {
                 child: _TabSwitcher(),
               ),
             ),
-          if (onCats)
-            const Expanded(child: _CategoriesPanel())
-          else if (onTags)
-            const Expanded(child: _TagsPanel())
-          else ...[
-            const _Toolbar(),
-            const _CategoryRail(),
-            const Expanded(child: _ItemList(compact: true)),
-          ],
+          Expanded(
+            child: _TabFade(
+              tabKey: onCats ? 'cats' : (onTags ? 'tags' : 'items'),
+              child: onCats
+                  ? const _CategoriesPanel()
+                  : onTags
+                      ? const _TagsPanel()
+                      : const Column(
+                          children: [
+                            _Toolbar(),
+                            _CategoryRail(),
+                            Expanded(child: _ItemList(compact: true)),
+                          ],
+                        ),
+            ),
+          ),
         ],
       ),
     );
@@ -338,32 +409,44 @@ class _CategoryRail extends ConsumerWidget {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-      child: GestureDetector(
-        onTap: () => ref.read(menuAdminCategoryFilterProvider.notifier).state = id,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: on ? sc.accentSoft : sc.bg2,
-            border: Border.all(color: on ? sc.accentBorder : sc.border1),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(name,
+      child: PressScale(
+        pressedScale: 0.93,
+        child: GestureDetector(
+          onTap: () =>
+              ref.read(menuAdminCategoryFilterProvider.notifier).state = id,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: kSatEase,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: on ? sc.accentSoft : sc.bg2,
+              border: Border.all(color: on ? sc.accentBorder : sc.border1),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
                   style: SatType.sans(
                     size: 12,
                     weight: FontWeight.w500,
                     color: on ? sc.accent : sc.textMd,
-                  )),
-              const SizedBox(width: 6),
-              Text('$n',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    color: on ? sc.accent : sc.textLo,
-                  )),
-            ],
+                  ),
+                  child: Text(name),
+                ),
+                const SizedBox(width: 6),
+                AnimatedCount(
+                  value: n,
+                  builder: (_, v) => Text('$v',
+                      style: SatType.mono(
+                        size: 10,
+                        weight: FontWeight.w600,
+                        color: on ? sc.accent : sc.textLo,
+                      )),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -379,22 +462,40 @@ class _ItemList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(menuAdminFilteredItemsProvider);
+    final cat = ref.watch(menuAdminCategoryFilterProvider);
+    final search = ref.watch(menuAdminSearchProvider);
     final sc = context.sat;
-    if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Text(
-            'Tidak ada item cocok.',
-            style: SatType.sans(size: 13, color: sc.textLo),
-          ),
-        ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      itemCount: items.length,
-      itemBuilder: (_, i) => _ItemRow(item: items[i], compact: compact),
+
+    final Widget body = items.isEmpty
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Text(
+                'Tidak ada item cocok.',
+                style: SatType.sans(size: 13, color: sc.textLo),
+              ),
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+            itemCount: items.length,
+            itemBuilder: (_, i) => Reveal(
+              index: i.clamp(0, 11),
+              animKey: items[i].id,
+              child: _ItemRow(item: items[i], compact: compact),
+            ),
+          );
+
+    // Crossfade the whole list when the active filter changes; rows that have
+    // already entered won't re-cascade (Reveal keys on item id).
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: kSatEase,
+      switchOutCurve: kSatEase,
+      child: KeyedSubtree(
+        key: ValueKey('$cat|$search'),
+        child: body,
+      ),
     );
   }
 }
@@ -416,7 +517,9 @@ class _ItemRow extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-      child: Material(
+      child: PressScale(
+        pressedScale: 0.985,
+        child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -432,7 +535,9 @@ class _ItemRow extends ConsumerWidget {
                   .read(menuRepositoryProvider.notifier)
                   .toggleAvailability(item.id)
               : null,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: kSatEase,
             decoration: BoxDecoration(
               color: isSelected ? sc.accentSoft : sc.bg2,
               border: Border.all(
@@ -513,25 +618,26 @@ class _ItemRow extends ConsumerWidget {
           ),
         ),
       ),
+      ),
     );
   }
 
   Widget _thumb(SatColors sc) {
-    final letter = item.name.isEmpty ? '?' : item.name.substring(0, 1);
+    final radius = BorderRadius.circular(8);
     return Container(
       width: 42, height: 42,
       decoration: BoxDecoration(
         color: sc.bg3,
         border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: radius,
       ),
-      alignment: Alignment.center,
-      child: Text(letter.toUpperCase(),
-          style: SatType.sans(
-            size: 16,
-            weight: FontWeight.w600,
-            color: sc.textMd,
-          )),
+      child: MenuPhoto(
+        itemId: item.id,
+        name: item.name,
+        photoRev: item.photoRev,
+        borderRadius: radius,
+        initialsSize: 16,
+      ),
     );
   }
 
@@ -561,42 +667,66 @@ class _StatusToggle extends ConsumerWidget {
     final sc = context.sat;
     final auto = item.isAutoSoldOut;
     final canToggle = !auto;
-    return GestureDetector(
-      onTap: canToggle
-          ? () => ref
-              .read(menuRepositoryProvider.notifier)
-              .toggleAvailability(item.id)
-          : null,
-      child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: item.isSoldOut ? sc.urgentSoft : sc.successSoft,
-          border: Border.all(color: item.isSoldOut ? sc.urgent : sc.success),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6, height: 6,
-              decoration: BoxDecoration(
-                color: item.isSoldOut ? sc.urgent : sc.success,
-                shape: BoxShape.circle,
+    final out = item.isSoldOut;
+    final fg = out ? sc.urgent : sc.success;
+    final label = auto ? 'AUTO HABIS' : (item.unavailable ? 'HABIS' : 'AKTIF');
+    return PressScale(
+      pressedScale: canToggle ? 0.94 : 1.0,
+      child: GestureDetector(
+        onTap: canToggle
+            ? () => ref
+                .read(menuRepositoryProvider.notifier)
+                .toggleAvailability(item.id)
+            : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: kSatEase,
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: out ? sc.urgentSoft : sc.successSoft,
+            border: Border.all(color: fg),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: kSatEase,
+                width: 6, height: 6,
+                decoration: BoxDecoration(
+                  color: fg,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              auto ? 'AUTO HABIS' : (item.unavailable ? 'HABIS' : 'AKTIF'),
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w600,
-                letterSpacing: 0.8,
-                color: item.isSoldOut ? sc.urgent : sc.success,
+              const SizedBox(width: 6),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                switchInCurve: kSatEase,
+                transitionBuilder: (child, anim) => FadeTransition(
+                  opacity: anim,
+                  child: SizeTransition(
+                    sizeFactor: anim,
+                    axis: Axis.horizontal,
+                    axisAlignment: -1,
+                    child: child,
+                  ),
+                ),
+                child: Text(
+                  label,
+                  key: ValueKey(label),
+                  style: SatType.mono(
+                    size: 10,
+                    weight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                    color: fg,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -611,19 +741,22 @@ class _PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Material(
-      color: sc.accent,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
+    return PressScale(
+      pressedScale: 0.95,
+      child: Material(
+        color: sc.accent,
         borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          child: Text(label,
-              style: SatType.sans(
-                size: 12, weight: FontWeight.w600,
-                color: sc.accentInk,
-              )),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Text(label,
+                style: SatType.sans(
+                  size: 12, weight: FontWeight.w600,
+                  color: sc.accentInk,
+                )),
+          ),
         ),
       ),
     );
@@ -639,20 +772,28 @@ class _TabSwitcher extends ConsumerWidget {
     final tab = ref.watch(menuAdminTabProvider);
     Widget seg(String label, MenuAdminTab value) {
       final on = tab == value;
-      return GestureDetector(
-        onTap: () => ref.read(menuAdminTabProvider.notifier).state = value,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: on ? sc.accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(label,
+      return PressScale(
+        pressedScale: 0.95,
+        child: GestureDetector(
+          onTap: () => ref.read(menuAdminTabProvider.notifier).state = value,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: kSatEase,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: on ? sc.accent : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 220),
               style: SatType.sans(
                 size: 12,
                 weight: FontWeight.w600,
                 color: on ? sc.accentInk : sc.textMd,
-              )),
+              ),
+              child: Text(label),
+            ),
+          ),
         ),
       );
     }
@@ -705,7 +846,10 @@ class _CategoriesPanel extends ConsumerWidget {
               return Padding(
                 key: ValueKey(c.id),
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
+                child: Reveal(
+                  index: i.clamp(0, 11),
+                  animKey: 'cat:${c.id}',
+                  child: Container(
                   decoration: BoxDecoration(
                     color: sc.bg2,
                     border: Border.all(color: sc.border0),
@@ -740,6 +884,7 @@ class _CategoriesPanel extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ),
                 ),
               );
             },
@@ -854,11 +999,14 @@ class _TagsPanel extends ConsumerWidget {
                 size: 13, weight: FontWeight.w600, color: sc.textMd,
               )),
         ),
-        for (final t in tags)
+        for (final (i, t) in tags.indexed)
           Padding(
             key: ValueKey(t.id),
             padding: const EdgeInsets.only(bottom: 8),
-            child: Container(
+            child: Reveal(
+              index: i.clamp(0, 11),
+              animKey: 'tag:${t.id}',
+              child: Container(
               decoration: BoxDecoration(
                 color: sc.bg2,
                 border: Border.all(color: sc.border0),
@@ -897,6 +1045,7 @@ class _TagsPanel extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
             ),
           ),
         Align(

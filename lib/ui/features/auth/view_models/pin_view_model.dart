@@ -304,18 +304,18 @@ class PinViewModel extends StateNotifier<PinState> {
     final cfg = _ref.read(apiConfigProvider);
     final sel = state.selectedServer;
     if (cfg == null || sel == null || !sel.paired) {
-      return 'Pilih server terlebih dahulu';
+      return 'Pilih server dulu.';
     }
     final deviceId = await _storage.readDeviceId();
     if (deviceId == null || deviceId.isEmpty) {
       SatLog.vm('PinVM verifyPin missing deviceId');
-      return 'Perangkat belum dipasangkan ulang';
+      return 'HP belum tersambung. Scan QR lagi untuk pasangkan.';
     }
     try {
       await _persistMode(AppMode.client);
     } catch (e) {
       SatLog.vm('PinVM verifyPin persist fail $e');
-      return 'Gagal menyimpan mode klien: $e';
+      return 'Gagal menyiapkan aplikasi. Coba lagi.';
     }
     final ok = await _auth.signInWithPin(pin);
     if (ok) {
@@ -324,7 +324,7 @@ class PinViewModel extends StateNotifier<PinState> {
     }
     final err = _ref.read(authStateProvider).error;
     SatLog.vm('PinVM verifyPin result=fail err=$err');
-    return err ?? 'PIN tidak dikenal';
+    return err ?? 'PIN salah. Coba lagi.';
   }
 
   Future<bool> submitAdmin({
@@ -340,7 +340,7 @@ class PinViewModel extends StateNotifier<PinState> {
       SatLog.vm('PinVM submitAdmin boot fail $e');
       state = state.copyWith(
         adminBusy: false,
-        adminError: 'Gagal memulai server: $e',
+        adminError: 'Gagal menjalankan server di HP ini. Coba lagi.',
       );
       return false;
     }
@@ -355,7 +355,7 @@ class PinViewModel extends StateNotifier<PinState> {
     SatLog.vm('PinVM submitAdmin result=fail err=$err');
     state = state.copyWith(
       adminBusy: false,
-      adminError: err ?? 'Login admin gagal',
+      adminError: err ?? 'Email atau password salah.',
     );
     return false;
   }

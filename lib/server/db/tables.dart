@@ -95,6 +95,14 @@ class MenuItems extends Table {
   IntColumn get stockCount => integer().nullable()();
   BoolColumn get autoSoldOutAtZero =>
       boolean().withDefault(const Constant(false))();
+  /// Optional photo as a JPEG blob. Null = no photo (UI falls back to the
+  /// initials avatar). Read ONLY by the photo route — never select this in
+  /// the `/menu` snapshot or item upsert path; use `selectOnly` excluding it.
+  /// See docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
+  BlobColumn get photo => blob().nullable()();
+  /// Monotonic revision bumped on every photo write/clear. Rides the snapshot
+  /// (the bytes do not) so clients cache-bust by `(itemId, photoRev)`.
+  IntColumn get photoRev => integer().withDefault(const Constant(0))();
   @override
   Set<Column> get primaryKey => {id};
 }

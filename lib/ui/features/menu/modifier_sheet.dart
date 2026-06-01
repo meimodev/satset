@@ -13,6 +13,7 @@ import 'package:satset/domain/models/menu_tag.dart';
 import 'package:satset/domain/models/modifier_group.dart';
 import 'package:satset/domain/models/ticket_modifier.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
+import 'package:satset/ui/core/widgets/menu_photo.dart';
 
 const _uuid = Uuid();
 
@@ -441,11 +442,13 @@ class _Head extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          SizedBox(
             width: 64,
             height: 64,
-            decoration: BoxDecoration(
-              color: sc.bg3,
+            child: MenuPhoto(
+              itemId: item.id,
+              name: item.name,
+              photoRev: item.photoRev,
               borderRadius: BorderRadius.circular(14),
             ),
           ),

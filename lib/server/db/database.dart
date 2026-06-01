@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -252,6 +252,13 @@ class AppDatabase extends _$AppDatabase {
             await _safeDropColumnOn('tickets', 'special_instructions');
             await _safeDropColumnOn(
                 'table_session_tickets', 'special_instructions');
+          }
+          if (from < 25) {
+            // Menu item photos: JPEG blob + monotonic rev for cache-busting.
+            // See docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
+            await _safeAddColumnOn('menu_items', 'photo', type: 'BLOB');
+            await _safeAddColumnOn('menu_items', 'photo_rev',
+                type: 'INTEGER NOT NULL DEFAULT 0');
           }
         },
         onCreate: (m) async {

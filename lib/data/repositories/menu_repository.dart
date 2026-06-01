@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -141,6 +142,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       allergens: List<String>.of(i.allergens),
       dietary: List<String>.of(i.dietary),
       unavailable: i.unavailable,
+      photoRev: i.photoRev,
       stockCount: i.stockCount,
       autoSoldOutAtZero: i.autoSoldOutAtZero,
     );
@@ -197,6 +199,30 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       SatLog.repo('menu.upsert fail $e');
       state = prev;
       rethrow;
+    }
+  }
+
+  /// Upload (replace) an item's photo. Server bumps photoRev and returns the
+  /// updated item, which we merge so the new rev busts the bytes cache.
+  /// The item row must already exist — callers save the item first.
+  Future<void> uploadPhoto(String id, List<int> bytes) async {
+    SatLog.repo('menu.photo.upload id=$id bytes=${bytes.length}');
+    if (ref.read(apiConfigProvider) == null) return;
+    final raw =
+        await ref.read(apiClientProvider).putBytes('/menu/items/$id/photo', bytes);
+    if (raw is Map) {
+      _mergeServerItem(MenuItemDto.fromJson(raw.cast<String, dynamic>()));
+    }
+  }
+
+  /// Clear an item's photo (back to the avatar fallback).
+  Future<void> deletePhoto(String id) async {
+    SatLog.repo('menu.photo.delete id=$id');
+    if (ref.read(apiConfigProvider) == null) return;
+    final raw =
+        await ref.read(apiClientProvider).deleteJson('/menu/items/$id/photo');
+    if (raw is Map) {
+      _mergeServerItem(MenuItemDto.fromJson(raw.cast<String, dynamic>()));
     }
   }
 
@@ -398,6 +424,20 @@ final menuRepositoryProvider =
     StateNotifierProvider<MenuRepository, MenuSnapshot>((ref) {
   ref.watch(apiConfigProvider);
   return MenuRepository(ref: ref);
+});
+
+/// Photo bytes for one menu item, keyed by `(id, rev)`. A photoRev change
+/// produces a new key → fresh fetch; the stale-rev entry auto-disposes. Only
+/// invoked when rev > 0 (MenuPhoto shows the avatar otherwise). Fetched over
+/// the pinned client (see ApiClient.getBytes). Returns null when unpaired.
+final menuPhotoBytesProvider = FutureProvider.autoDispose
+    .family<Uint8List?, ({String id, int rev})>((ref, key) async {
+  if (key.rev <= 0) return null;
+  if (ref.watch(apiConfigProvider) == null) return null;
+  final bytes =
+      await ref.read(apiClientProvider).getBytes('/menu/items/${key.id}/photo');
+  ref.keepAlive();
+  return bytes;
 });
 
 final menuCategoriesProvider = Provider<List<MenuCategory>>(

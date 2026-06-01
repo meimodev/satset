@@ -54,6 +54,7 @@ class MenuItemDto with _$MenuItemDto {
     @Default(<String>[]) List<String> allergens,
     @Default(<String>[]) List<String> dietary,
     @Default(false) bool unavailable,
+    @Default(0) int photoRev,
     int? stockCount,
     @Default(false) bool autoSoldOutAtZero,
   }) = _MenuItemDto;

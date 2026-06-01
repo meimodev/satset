@@ -15,6 +15,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -34,15 +35,12 @@ class _ShiftMetrics {
   final String initials;
   final int? avatarColorHex;
   final String shiftStart;
-  final int elapsedMinutes;
-  final int totalSales;
+  final Duration elapsed;
   final int ticketCount;
   final int openCovers;
   final int voidCount;
   final int compCount;
   final int modifyCount;
-  final int peakSentInWindow;
-  final String peakWindowLabel;
 
   const _ShiftMetrics({
     required this.name,
@@ -50,24 +48,20 @@ class _ShiftMetrics {
     required this.initials,
     required this.avatarColorHex,
     required this.shiftStart,
-    required this.elapsedMinutes,
-    required this.totalSales,
+    required this.elapsed,
     required this.ticketCount,
     required this.openCovers,
     required this.voidCount,
     required this.compCount,
     required this.modifyCount,
-    required this.peakSentInWindow,
-    required this.peakWindowLabel,
   });
 
-  int get avgTicket => ticketCount == 0 ? 0 : (totalSales / ticketCount).round();
-  int get avgPerCover => openCovers == 0 ? 0 : (totalSales / openCovers).round();
-  String get elapsedLabel => formatElapsedId(Duration(minutes: elapsedMinutes));
+  int get elapsedMinutes => elapsed.inMinutes;
+  String get elapsedLabel => formatElapsedId(elapsed);
 
   double get shiftProgress {
     const targetMin = 8 * 60;
-    return (elapsedMinutes / targetMin).clamp(0.0, 1.0);
+    return (elapsed.inMinutes / targetMin).clamp(0.0, 1.0);
   }
 }
 
@@ -78,15 +72,15 @@ _ShiftMetrics _computeMetrics({
   required String userName,
   required String userInitials,
   required int? userAvatarColorHex,
+  required String roleLabel,
   required String shiftStart,
+  required Duration elapsed,
 }) {
   final myTables = tables.where((t) => t.mine).toList();
-  int totalSales = 0;
   int ticketCount = 0;
   for (final t in myTables) {
     for (final tk in tickets[t.id] ?? const <Ticket>[]) {
       if (tk.status == TicketStatus.voided) continue;
-      totalSales += tk.price * tk.qty;
       ticketCount++;
     }
   }
@@ -98,27 +92,47 @@ _ShiftMetrics _computeMetrics({
 
   return _ShiftMetrics(
     name: userName,
-    roleLabel: 'Pelayan · Zona Teras',
+    roleLabel: roleLabel,
     initials: userInitials,
     avatarColorHex: userAvatarColorHex,
     shiftStart: shiftStart,
-    elapsedMinutes: 47,
-    totalSales: totalSales,
+    elapsed: elapsed,
     ticketCount: ticketCount,
     openCovers: openCovers,
     voidCount: voidCount,
     compCount: compCount,
     modifyCount: modifyCount,
-    peakSentInWindow: math.max(ticketCount, 5),
-    peakWindowLabel: '18:10 – 18:20',
   );
 }
 
-class MeScreen extends ConsumerWidget {
+class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MeScreen> createState() => _MeScreenState();
+}
+
+class _MeScreenState extends ConsumerState<MeScreen> {
+  // Drives the live shift counter so elapsed ticks between provider events,
+  // matching the other elapsed counters (kitchen, table detail).
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tables = ref.watch(tablesProvider);
     final tickets = ref.watch(ticketsProvider);
     final rawAudit = ref.watch(auditProvider);
@@ -132,6 +146,31 @@ class MeScreen extends ConsumerWidget {
     final audit = canManageStaff
         ? rawAudit
         : [for (final e in rawAudit) if (!isAdminAuditType(e.type)) e];
+
+    // Role · zone label. Prefer the custom role name; fall back to the generic
+    // role label. Drop the zone segment when unassigned ('—' / empty).
+    final String roleName;
+    if (user == null) {
+      roleName = '—';
+    } else {
+      final match = roles.where((r) => r.id == user.roleId);
+      roleName = match.isNotEmpty ? match.first.name : userRoleLabel(user.role);
+    }
+    final zone = user?.zoneAssigned ?? '';
+    final roleLabel = (zone.isEmpty || zone == '—') ? roleName : '$roleName · $zone';
+
+    // Elapsed from login. shiftStartedAt is the login ISO timestamp.
+    final shiftIso = user?.shiftStartedAt ?? '';
+    final shiftStartedDt = DateTime.tryParse(shiftIso);
+    var elapsed = shiftStartedDt == null
+        ? Duration.zero
+        : DateTime.now().difference(shiftStartedDt);
+    if (elapsed.isNegative) elapsed = Duration.zero;
+    final shiftStart = shiftIso.isEmpty ? '—' : formatClockId(shiftIso);
+
+    // tableId → display label for audit rows.
+    final tableNames = {for (final t in tables) t.id: t.displayName};
+
     final m = _computeMetrics(
       tables: tables,
       tickets: tickets,
@@ -139,7 +178,9 @@ class MeScreen extends ConsumerWidget {
       userName: user?.name ?? '—',
       userInitials: user?.initials ?? '—',
       userAvatarColorHex: user?.avatarColorHex,
-      shiftStart: user?.shiftStartedAt ?? '',
+      roleLabel: roleLabel,
+      shiftStart: shiftStart,
+      elapsed: elapsed,
     );
 
     void toggleTheme() {
@@ -157,6 +198,7 @@ class MeScreen extends ConsumerWidget {
       return _MeTablet(
         m: m,
         audit: audit,
+        tableNames: tableNames,
         themeMode: themeMode,
         onToggleTheme: toggleTheme,
         onEndShift: endShift,
@@ -165,6 +207,7 @@ class MeScreen extends ConsumerWidget {
     return _MePhone(
       m: m,
       audit: audit,
+      tableNames: tableNames,
       themeMode: themeMode,
       onToggleTheme: toggleTheme,
       onEndShift: endShift,
@@ -177,6 +220,7 @@ class MeScreen extends ConsumerWidget {
 class _MePhone extends StatelessWidget {
   final _ShiftMetrics m;
   final List<AuditEntry> audit;
+  final Map<String, String> tableNames;
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
   final VoidCallback onEndShift;
@@ -184,6 +228,7 @@ class _MePhone extends StatelessWidget {
   const _MePhone({
     required this.m,
     required this.audit,
+    required this.tableNames,
     required this.themeMode,
     required this.onToggleTheme,
     required this.onEndShift,
@@ -191,7 +236,6 @@ class _MePhone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     final l = context.layout;
 
     return Center(
@@ -212,11 +256,6 @@ class _MePhone extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SalesHero(m: m),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _KpiGrid(m: m),
             ),
             const SizedBox(height: 12),
@@ -227,7 +266,7 @@ class _MePhone extends StatelessWidget {
             const _SectionLabel(label: 'AKTIVITAS TERBARU'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _ActivityCard(audit: audit, max: 5),
+              child: _ActivityCard(audit: audit, tableNames: tableNames, max: 5),
             ),
             if (kDebugMode) ...[
               const _SectionLabel(label: 'DEBUG · TRIGGER UI'),
@@ -236,16 +275,7 @@ class _MePhone extends StatelessWidget {
                 child: _DebugSection(),
               ),
             ],
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Center(
-                child: Text(
-                  'BYOD · TIDAK ADA DATA PESANAN TERSIMPAN LOKAL · v2.0.0',
-                  style: SatType.mono(
-                      size: 10, color: sc.textLo, letterSpacing: 0.6),
-                ),
-              ),
-            ),
+            SizedBox(height: l.bottomInset),
           ],
         ),
       ),
@@ -258,6 +288,7 @@ class _MePhone extends StatelessWidget {
 class _MeTablet extends StatelessWidget {
   final _ShiftMetrics m;
   final List<AuditEntry> audit;
+  final Map<String, String> tableNames;
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
   final VoidCallback onEndShift;
@@ -265,6 +296,7 @@ class _MeTablet extends StatelessWidget {
   const _MeTablet({
     required this.m,
     required this.audit,
+    required this.tableNames,
     required this.themeMode,
     required this.onToggleTheme,
     required this.onEndShift,
@@ -279,34 +311,18 @@ class _MeTablet extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(32, 22, 32, 14),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Ringkasan shift',
-                        style: SatType.sans(
-                          size: 32,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.8,
-                          height: 1.05,
-                          color: sc.textHi,
-                        )),
-                    const SizedBox(height: 6),
-                    Text(
-                        'SABTU, 21 MEI · MULAI ${m.shiftStart} · ${m.elapsedLabel} BERJALAN'
-                            .toUpperCase(),
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.textLo,
-                          letterSpacing: 0.66,
-                        )),
-                  ],
-                ),
+                child: Text(
+                    'MULAI ${m.shiftStart} · ${m.elapsedLabel} BERJALAN'
+                        .toUpperCase(),
+                    style: SatType.mono(
+                      size: 11,
+                      color: sc.textLo,
+                      letterSpacing: 0.66,
+                    )),
               ),
-              _LivePill(),
-              const SizedBox(width: 10),
               _ThemeIconButton(themeMode: themeMode, onTap: onToggleTheme),
             ],
           ),
@@ -322,12 +338,10 @@ class _MeTablet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Identity(m: m, big: true),
+                      _Identity(m: m, big: true, showShiftLine: false),
                       const SizedBox(height: 14),
                       _EndShiftButton(onPressed: onEndShift),
                       const SizedBox(height: 14),
-                      _SalesHero(m: m, big: true),
-                      const SizedBox(height: 12),
                       _KpiGrid(m: m, columns: 4),
                       const SizedBox(height: 12),
                       _PacingCard(m: m, big: true),
@@ -341,7 +355,11 @@ class _MeTablet extends StatelessWidget {
                 const SizedBox(width: 22),
                 Expanded(
                   flex: 4,
-                  child: _ActivityCard(audit: audit, max: 9, padded: true),
+                  child: _ActivityCard(
+                      audit: audit,
+                      tableNames: tableNames,
+                      max: 9,
+                      padded: true),
                 ),
               ],
             ),
@@ -361,48 +379,12 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 16, 0),
       child: Row(
         children: [
-          Icon(Icons.person_outline, size: 14, color: sc.textMd),
-          const SizedBox(width: 6),
-          Text('Ringkasan shift',
-              style: SatType.sans(
-                  size: 14, weight: FontWeight.w500, color: sc.textHi)),
           const Spacer(),
-          _LivePill(),
-          const SizedBox(width: 8),
           _ThemeIconButton(themeMode: themeMode, onTap: onToggleTheme),
-        ],
-      ),
-    );
-  }
-}
-
-class _LivePill extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
-      decoration: BoxDecoration(
-        color: sc.successSoft,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle, color: sc.success)),
-          const SizedBox(width: 6),
-          Text('LIVE · LAN',
-              style: SatType.mono(
-                  size: 10, color: sc.success, letterSpacing: 0.6)),
         ],
       ),
     );
@@ -446,7 +428,8 @@ class _ThemeIconButton extends StatelessWidget {
 class _Identity extends StatelessWidget {
   final _ShiftMetrics m;
   final bool big;
-  const _Identity({required this.m, this.big = false});
+  final bool showShiftLine;
+  const _Identity({required this.m, this.big = false, this.showShiftLine = true});
 
   @override
   Widget build(BuildContext context) {
@@ -510,96 +493,20 @@ class _Identity extends StatelessWidget {
               const SizedBox(height: 2),
               Text(m.roleLabel,
                   style: SatType.sans(size: 13, color: sc.textMd)),
-              const SizedBox(height: 6),
-              Text(
-                'MULAI ${m.shiftStart} · ${m.elapsedLabel.toUpperCase()} BERJALAN',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.44,
+              if (showShiftLine) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'MULAI ${m.shiftStart} · ${m.elapsedLabel.toUpperCase()} BERJALAN',
+                  style: SatType.mono(
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0.44,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _SalesHero extends StatelessWidget {
-  final _ShiftMetrics m;
-  final bool big;
-  const _SalesHero({required this.m, this.big = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, big ? 22 : 18, 20, big ? 22 : 18),
-      decoration: BoxDecoration(
-        color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.payments_outlined, size: 14, color: sc.textLo),
-              const SizedBox(width: 6),
-              Text('PENJUALAN SHIFT',
-                  style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w500,
-                      letterSpacing: 1.2,
-                      color: sc.textLo)),
-              const Spacer(),
-              Text('${m.ticketCount} tiket',
-                  style: SatType.mono(
-                      size: 10, color: sc.textLo, letterSpacing: 0.4)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(formatIDR(m.totalSales),
-              style: SatType.sans(
-                size: big ? 38 : 32,
-                weight: FontWeight.w600,
-                letterSpacing: -0.96,
-                height: 1.0,
-                color: sc.textHi,
-              )),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 16,
-            runSpacing: 6,
-            children: [
-              _heroPair(context, 'Avg / tiket', formatIDR(m.avgTicket)),
-              _heroPair(context, 'Avg / cover', formatIDR(m.avgPerCover)),
-              _heroPair(context, 'Cover aktif', '${m.openCovers}'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _heroPair(BuildContext context, String label, String value) {
-    final sc = context.sat;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label.toUpperCase(),
-            style: SatType.mono(
-                size: 9, letterSpacing: 0.72, color: sc.textLo)),
-        const SizedBox(height: 2),
-        Text(value,
-            style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w600,
-                letterSpacing: -0.14,
-                color: sc.textHi)),
       ],
     );
   }
@@ -613,18 +520,16 @@ class _KpiGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <_Kpi>[
-      _Kpi(label: 'Tiket dikirim', value: '${m.ticketCount}', sub: 'sejak mulai'),
-      _Kpi(label: 'Cover dilayani', value: '${m.openCovers}', sub: 'aktif sekarang'),
+      _Kpi(label: 'Tiket dikirim', value: '${m.ticketCount}'),
+      _Kpi(label: 'Cover dilayani', value: '${m.openCovers}'),
       _Kpi(
         label: 'Pembatalan',
         value: '${m.voidCount}',
-        sub: m.voidCount == 0 ? 'bersih' : 'perlu review',
         tone: m.voidCount > 0 ? _Tone.urgent : _Tone.normal,
       ),
       _Kpi(
         label: 'Comp / modif',
         value: '${m.compCount + m.modifyCount}',
-        sub: '${m.compCount} comp · ${m.modifyCount} modif',
         tone: m.compCount > 0 ? _Tone.warn : _Tone.normal,
       ),
     ];
@@ -662,12 +567,10 @@ enum _Tone { normal, urgent, warn }
 class _Kpi {
   final String label;
   final String value;
-  final String sub;
   final _Tone tone;
   const _Kpi({
     required this.label,
     required this.value,
-    required this.sub,
     this.tone = _Tone.normal,
   });
 }
@@ -725,9 +628,6 @@ class _KpiBox extends StatelessWidget {
                 height: 1,
                 color: valColor,
               )),
-          const SizedBox(height: 6),
-          Text(kpi.sub,
-              style: SatType.sans(size: 11, color: subColor, height: 1.2)),
         ],
       ),
     );
@@ -765,40 +665,21 @@ class _PacingCard extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$perHour tiket / jam',
-                  style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.15,
-                      color: sc.textHi),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Puncak ${m.peakWindowLabel} · ${m.peakSentInWindow} tiket di window 10 menit',
-                  style: SatType.mono(
-                      size: 10, color: sc.textLo, letterSpacing: 0.36),
-                ),
-              ],
+            child: Text(
+              '$perHour tiket / jam',
+              style: SatType.sans(
+                  size: 15,
+                  weight: FontWeight.w600,
+                  letterSpacing: -0.15,
+                  color: sc.textHi),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(m.elapsedLabel,
-                  style: SatType.mono(
-                      size: 16,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                      color: sc.textHi)),
-              Text('TERPAKAI',
-                  style: SatType.mono(
-                      size: 9, color: sc.textLo, letterSpacing: 0.72)),
-            ],
-          ),
+          Text(m.elapsedLabel,
+              style: SatType.mono(
+                  size: 16,
+                  weight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: sc.textHi)),
         ],
       ),
     );
@@ -807,10 +688,14 @@ class _PacingCard extends StatelessWidget {
 
 class _ActivityCard extends StatelessWidget {
   final List<AuditEntry> audit;
+  final Map<String, String> tableNames;
   final int max;
   final bool padded;
   const _ActivityCard(
-      {required this.audit, required this.max, this.padded = false});
+      {required this.audit,
+      required this.tableNames,
+      required this.max,
+      this.padded = false});
 
   @override
   Widget build(BuildContext context) {
@@ -826,7 +711,7 @@ class _ActivityCard extends StatelessWidget {
         : Column(
             children: [
               for (var i = 0; i < audit.length && i < max; i++) ...[
-                _AuditRow(entry: audit[i]),
+                _AuditRow(entry: audit[i], tableNames: tableNames),
                 if (i < (audit.length - 1).clamp(0, max - 1))
                   Divider(height: 1, color: sc.border0),
               ],
@@ -899,11 +784,19 @@ class _SectionLabel extends StatelessWidget {
 
 class _AuditRow extends StatelessWidget {
   final AuditEntry entry;
-  const _AuditRow({required this.entry});
+  final Map<String, String> tableNames;
+  const _AuditRow({required this.entry, required this.tableNames});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final meta = <String>[
+      if (entry.tableId.isNotEmpty)
+        'Meja ${tableNames[entry.tableId] ?? entry.tableId}',
+      formatClockId(entry.when),
+      if (entry.approvedBy != null) 'disetujui ${entry.approvedBy}',
+      if (entry.reason != null) entry.reason!,
+    ].join(' · ');
     final (icon, bg, fg) = switch (entry.type) {
       AuditType.voidItem => (Icons.delete_outline, sc.urgentSoft, sc.urgent),
       AuditType.comp => (Icons.card_giftcard_rounded, sc.warnSoft, sc.warn),
@@ -950,9 +843,7 @@ class _AuditRow extends StatelessWidget {
                     )),
                 const SizedBox(height: 3),
                 Text(
-                  'Meja ${entry.tableId} · ${entry.when}'
-                  '${entry.approvedBy != null ? ' · disetujui ${entry.approvedBy}' : ''}'
-                  '${entry.reason != null ? ' · ${entry.reason}' : ''}',
+                  meta,
                   style: SatType.mono(
                       size: 10, color: sc.textLo, letterSpacing: 0.3),
                 ),

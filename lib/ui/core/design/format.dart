@@ -38,6 +38,13 @@ class RupiahInputFormatter extends TextInputFormatter {
   }
 }
 
+/// ISO8601 timestamp → 24h clock "17:42". Falls back to the raw string when
+/// unparseable (e.g. a legacy "17:30" value already in clock form).
+String formatClockId(String iso) {
+  final dt = DateTime.tryParse(iso);
+  return dt == null ? iso : DateFormat.Hm().format(dt.toLocal());
+}
+
 /// Indonesian relative label for a count-up duration (table seated, shift, etc).
 /// <1m: "20d" · <1h: "12m 20d" · <1d: "1j 12m 20d" · 24-48h: "kemarin" · 2d+: "N hari lalu".
 String formatElapsedId(Duration d) {

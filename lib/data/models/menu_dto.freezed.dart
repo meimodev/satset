@@ -647,6 +647,7 @@ mixin _$MenuItemDto {
   List<String> get allergens => throw _privateConstructorUsedError;
   List<String> get dietary => throw _privateConstructorUsedError;
   bool get unavailable => throw _privateConstructorUsedError;
+  int get photoRev => throw _privateConstructorUsedError;
   int? get stockCount => throw _privateConstructorUsedError;
   bool get autoSoldOutAtZero => throw _privateConstructorUsedError;
 
@@ -680,6 +681,7 @@ abstract class $MenuItemDtoCopyWith<$Res> {
     List<String> allergens,
     List<String> dietary,
     bool unavailable,
+    int photoRev,
     int? stockCount,
     bool autoSoldOutAtZero,
   });
@@ -712,6 +714,7 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
     Object? allergens = null,
     Object? dietary = null,
     Object? unavailable = null,
+    Object? photoRev = null,
     Object? stockCount = freezed,
     Object? autoSoldOutAtZero = null,
   }) {
@@ -765,6 +768,10 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
                 ? _value.unavailable
                 : unavailable // ignore: cast_nullable_to_non_nullable
                       as bool,
+            photoRev: null == photoRev
+                ? _value.photoRev
+                : photoRev // ignore: cast_nullable_to_non_nullable
+                      as int,
             stockCount: freezed == stockCount
                 ? _value.stockCount
                 : stockCount // ignore: cast_nullable_to_non_nullable
@@ -801,6 +808,7 @@ abstract class _$$MenuItemDtoImplCopyWith<$Res>
     List<String> allergens,
     List<String> dietary,
     bool unavailable,
+    int photoRev,
     int? stockCount,
     bool autoSoldOutAtZero,
   });
@@ -832,6 +840,7 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
     Object? allergens = null,
     Object? dietary = null,
     Object? unavailable = null,
+    Object? photoRev = null,
     Object? stockCount = freezed,
     Object? autoSoldOutAtZero = null,
   }) {
@@ -885,6 +894,10 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
             ? _value.unavailable
             : unavailable // ignore: cast_nullable_to_non_nullable
                   as bool,
+        photoRev: null == photoRev
+            ? _value.photoRev
+            : photoRev // ignore: cast_nullable_to_non_nullable
+                  as int,
         stockCount: freezed == stockCount
             ? _value.stockCount
             : stockCount // ignore: cast_nullable_to_non_nullable
@@ -914,6 +927,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     final List<String> allergens = const <String>[],
     final List<String> dietary = const <String>[],
     this.unavailable = false,
+    this.photoRev = 0,
     this.stockCount,
     this.autoSoldOutAtZero = false,
   }) : _variants = variants,
@@ -981,6 +995,9 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
   @JsonKey()
   final bool unavailable;
   @override
+  @JsonKey()
+  final int photoRev;
+  @override
   final int? stockCount;
   @override
   @JsonKey()
@@ -988,7 +1005,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
 
   @override
   String toString() {
-    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroups: $modifierGroups, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, stockCount: $stockCount, autoSoldOutAtZero: $autoSoldOutAtZero)';
+    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroups: $modifierGroups, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, photoRev: $photoRev, stockCount: $stockCount, autoSoldOutAtZero: $autoSoldOutAtZero)';
   }
 
   @override
@@ -1019,6 +1036,8 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
             const DeepCollectionEquality().equals(other._dietary, _dietary) &&
             (identical(other.unavailable, unavailable) ||
                 other.unavailable == unavailable) &&
+            (identical(other.photoRev, photoRev) ||
+                other.photoRev == photoRev) &&
             (identical(other.stockCount, stockCount) ||
                 other.stockCount == stockCount) &&
             (identical(other.autoSoldOutAtZero, autoSoldOutAtZero) ||
@@ -1041,6 +1060,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     const DeepCollectionEquality().hash(_allergens),
     const DeepCollectionEquality().hash(_dietary),
     unavailable,
+    photoRev,
     stockCount,
     autoSoldOutAtZero,
   );
@@ -1073,6 +1093,7 @@ abstract class _MenuItemDto implements MenuItemDto {
     final List<String> allergens,
     final List<String> dietary,
     final bool unavailable,
+    final int photoRev,
     final int? stockCount,
     final bool autoSoldOutAtZero,
   }) = _$MenuItemDtoImpl;
@@ -1104,6 +1125,8 @@ abstract class _MenuItemDto implements MenuItemDto {
   List<String> get dietary;
   @override
   bool get unavailable;
+  @override
+  int get photoRev;
   @override
   int? get stockCount;
   @override

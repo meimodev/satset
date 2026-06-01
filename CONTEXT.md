@@ -72,6 +72,13 @@ Tags surface in three forms: the **menu card** badge rows, the **per-line-item**
 
 Tags are **customizable**: created/renamed/recoloured-by-kind/reordered/deleted from the menu admin's **Tag** panel (third tab beside Items / Kategori), gated by `Capability.editMenu`. Stored in one `menu_tags` table (single table, `kind` discriminator). Items reference tags by **id** (in `allergensJson` / `dietaryJson`), so a rename never breaks an item's refs. Seed tag ids equal the legacy enum names (`gluten`, `vegan`, …) so existing items need no migration. Deleting a tag **cascade-strips** its id from every item. Tags ride the `/menu` snapshot and broadcast `menuUpdated`, so every device live-refreshes. _Avoid_: a fixed `Allergen`/`DietaryTag` enum (removed) or per-tag custom colour.
 
+### Menu photo
+An optional photograph of a [[Menu category|menu item]] — a single image the admin attaches in the menu editor, sourced from the device **gallery** or shot live with the **camera**. Surfaced on the customer-facing menu card (banner) and the admin item editor (square slot). An item has **at most one** photo.
+
+When an item has no photo, every surface falls back to the same **initials avatar** (the item name's initials on a neutral tile) — never a broken-image or empty box. Removing a photo returns the item to that fallback. The photo is **per item**: deleting the item removes its photo; it is never shared between items. _Avoid_: treating the photo as required, or showing a different placeholder per surface.
+
+Photo edits have **commit semantics distinct from the rest of the editor**. On an **existing** item, picking or removing the photo **applies immediately** — the change is saved and broadcast to every device the moment the action completes, independent of the editor's Save button (which still governs name, price, tags, etc.). On a **brand-new** item (no row yet) the photo stays staged in the draft and lands on the first explicit Save, since the photo can only attach to a persisted item. _Avoid_: assuming the photo follows the form's staged-until-Save behaviour on an existing item.
+
 ### Guest note / Item note
 Free-text remarks staff attach to a visit or a dish. Two distinct concepts, **same plain visual treatment** — a note is reference text, not an alert; it never uses the allergen `urgent`/red or any attention colour (see [[Menu tag (allergen / diet)]] for what *does* warrant attention).
 
@@ -79,6 +86,16 @@ Free-text remarks staff attach to a visit or a dish. Two distinct concepts, **sa
 - **Item note** — per-line, the guest's special instruction for one dish. Captured in the modifier sheet ("Instruksi khusus"), frozen onto the sent line, shown under that line on review, the Pesanan board, and the KDS.
 
 User-facing copy: **"Catatan"** (guest note), **"Instruksi khusus"** (item note). _Avoid_: rendering either in an allergen/warning colour, or with loud iconography — they are notes, not warnings.
+
+### Menu classification (Klasifikasi menu)
+The report's verdict on each menu item, crossing two traits: **popularitas** (how much it sells, `qty` relative to the range's top seller) and **margin** (`(basePrice − cost) / basePrice`). Each item lands in one of four buckets, split at the **median** of each trait across the range:
+
+- **Laku & untung** (star) → jaga & sorot.
+- **Laku tapi tipis** (plowhorse) → reprice / kurangi porsi.
+- **Untung tapi sepi** (puzzle) → promosikan.
+- **Sepi & tipis** (dog) → kandidat dipangkas.
+
+User-facing copy is **"Klasifikasi menu"** with the plain-meaning bucket labels above (describe the trait, no metaphor); the English menu-engineering terms (Star/Plowhorse/Puzzle/Dog) stay as code/internal identifiers only. Presented as four labeled, colour-coded sections (Andalan→success, Kuda Beban→warn, Teka-teki→info, Buntung→textLo) each listing its **top items** with pop/margin, action-priority order, empty buckets shown as "tidak ada item". _Avoid_: the prior two-axis scatter "Menu engineering matrix" plot (replaced — too hard to decode) and the English jargon title in user-facing copy.
 
 ### Floor
 The screen that lists all tables with status chips and the reservations strip across the top. The primary jumping-off point for waiters during service.
@@ -131,4 +148,25 @@ An audible (and on waiter devices, haptic) cue that draws a staff member's atten
 - **Waiters** hear **ready** for any table (shared "someone grab it" awareness), but a **void/comp** cue reaches only the **responsible waiter** (the table's current waiter — see [[Waiter]]).
 
 **Overdue** reuses the configurable [[Service target]] (default 10 min): a ticket sounds the alert once when it first crosses the target unhandled, never again for that ticket. Bursts (a fired course landing as many tickets at once) collapse to a single cue. Cues are one-shot — they never loop or demand acknowledgement. Each device may silence its own cues (the venue's "Alert audio" toggle).
+
+### Cover
+A single seated guest — one diner, not one table. A table's cover count is its **pax**; "covers served" across a [[Shift]] is the sum of pax on that waiter's non-empty tables. The unit behind per-cover averages (e.g. sales ÷ covers). User-facing copy: **"Cover"**. _Avoid_: conflating cover with table (one table seats many covers) or with [[Batch (kitchen order)|order]].
+
+### Admin session (Firebase-gated)
+An **admin** signs in with **email + password against Firebase Authentication** (project `satset-3a795`), not the local server. Firebase is the *identity and eligibility gate*; the embedded [[Local server lifecycle|local server]] remains the *capability authority* — once Firebase confirms the admin, the app still obtains a local admin JWT and every admin screen keeps talking to the local server as before. Staff [[PIN]] sign-in is unaffected and stays fully local/offline. Firebase is only exercised on a device running in **Server mode** (the admin's device); Client devices never touch it.
+
+First sign-in needs internet; the Firebase session is then cached, so later app restarts tolerate offline operation. _Avoid_: routing staff PIN auth through Firebase, or treating the local server as merely a dumb relay — it still owns capabilities.
+
+### Admin eligibility (T&C kill switch)
+Whether an admin is currently allowed to operate, held in Firestore at `admins/{uid}` — doc shape `{ status, name, avatarColorHex? }` where **`status`** is `active` | `suspended` | `banned`. Only `active` permits operation; `suspended`/`banned` represent a terms-of-service violation and **block the venue**. The app holds a **live snapshot listener** on this doc: the instant `status` leaves `active`, the app triggers the same teardown as an explicit admin logout — see [[Local server lifecycle]]. This is a *remote* kill switch, flippable from the Firebase console mid-service, not merely a login-time check.
+
+Admins are **provisioned only from the Firebase console** (create the Auth user + the `admins/{uid}` doc) — there is no in-app signup. Security rules let a signed-in admin **read only their own doc** and **never write** it, so the kill switch can't be self-cleared; `status` is changed only via console/Admin SDK. On first sign-in a uid is **auto-provisioned a local user row** (for [[Audit]] identity) pointing at one shared local admin role — capabilities stay local, Firestore never carries them. Name/colour for that row come from the Firestore doc.
+
+**Staleness guard:** the app records the last time the listener confirmed `active` *from the server* (not cache). If that is older than **7 days** while offline, the server **refuses to start** ("Perlu koneksi internet untuk verifikasi admin") until the admin gets online once — closing the dodge where a suspended admin stays offline to keep running.
+
+### Local server lifecycle (tied to admin session)
+The embedded LAN server's running state is bound to a valid admin session. It starts when an [[Admin session (Firebase-gated)|admin]] signs in, and is **killed on admin logout or loss of [[Admin eligibility (T&C kill switch)|eligibility]]** — connected staff/client devices are disconnected and **cannot reconnect until an admin successfully re-signs-in**. The admin session is thus the venue's on/off switch. A logout while live tables exist warns first ("X meja aktif, staff akan terputus") but still proceeds — the kill is intentional. _Avoid_: leaving the server running after the admin signs out.
+
+### Shift
+One staff member's working session, bounded by login and logout — **not** a fixed roster block. Begins at PIN sign-in (`shiftStartedAt` = the login timestamp) and ends at **"Akhiri shift & keluar"** (sign-out). Elapsed time is `now − shiftStartedAt`. The **Ringkasan shift** ("Saya" tab) summarises the current session for its owner: their identity, sales, [[Cover|covers]], and recent [[Void (item)|void]]/comp/modify [[Audit|audit]] activity. _Avoid_: treating a shift as a scheduled shift-pattern, or as venue-wide (it is per-account, this-session only).
 

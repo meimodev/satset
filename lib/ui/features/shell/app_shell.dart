@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
+import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
@@ -33,34 +34,38 @@ class AppShell extends ConsumerWidget {
         venueSettingsProvider.select((s) => s.displayName));
 
     if (l.useTabletShell && !forcePhone) {
-      return TabletShell(
-        activeTab: activeTab,
-        readyCount: ready,
-        kitchenCount: kitchenCount,
-        crumbs: _crumbsFor(loc, activeTab, zoneName, venueName),
-        child: child,
+      return ExitGuard(
+        child: TabletShell(
+          activeTab: activeTab,
+          readyCount: ready,
+          kitchenCount: kitchenCount,
+          crumbs: _crumbsFor(loc, activeTab, zoneName, venueName),
+          child: child,
+        ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: sc.bg0,
-      body: Column(
-        children: [
-          const SatAppBar(),
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(child: child),
-                Positioned(
-                  left: 8,
-                  right: 8,
-                  bottom: 12,
-                  child: _FloatingTabBar(active: activeTab, readyCount: ready),
-                ),
-              ],
+    return ExitGuard(
+      child: Scaffold(
+        backgroundColor: sc.bg0,
+        body: Column(
+          children: [
+            const SatAppBar(),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(child: child),
+                  Positioned(
+                    left: 8,
+                    right: 8,
+                    bottom: 12,
+                    child: _FloatingTabBar(active: activeTab, readyCount: ready),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
