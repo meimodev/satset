@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
+import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
 import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
@@ -27,6 +30,8 @@ class AppShell extends ConsumerWidget {
     final l = context.layout;
 
     final activeTab = _activeFor(loc);
+    final showKasir =
+        ref.watch(authStateProvider).has(Capability.settleBill);
     final forcePhone = ref.watch(forcePhoneViewProvider);
     final zones = ref.watch(zonesProvider);
     final zoneName = zones.isEmpty ? '—' : zones.first.name;
@@ -39,8 +44,14 @@ class AppShell extends ConsumerWidget {
           activeTab: activeTab,
           readyCount: ready,
           kitchenCount: kitchenCount,
+          showKasir: showKasir,
           crumbs: _crumbsFor(loc, activeTab, zoneName, venueName),
-          child: child,
+          child: Column(
+            children: [
+              const AdminGraceBanner(),
+              Expanded(child: child),
+            ],
+          ),
         ),
       );
     }
@@ -51,6 +62,7 @@ class AppShell extends ConsumerWidget {
         body: Column(
           children: [
             const SatAppBar(),
+            const AdminGraceBanner(),
             Expanded(
               child: Stack(
                 children: [
@@ -59,7 +71,10 @@ class AppShell extends ConsumerWidget {
                     left: 8,
                     right: 8,
                     bottom: 12,
-                    child: _FloatingTabBar(active: activeTab, readyCount: ready),
+                    child: _FloatingTabBar(
+                        active: activeTab,
+                        readyCount: ready,
+                        showKasir: showKasir),
                   ),
                 ],
               ),
@@ -79,6 +94,7 @@ class AppShell extends ConsumerWidget {
     if (loc.startsWith('/system')) return 'venue';
     if (loc.startsWith('/staff')) return 'venue';
     if (loc.startsWith('/reports')) return 'venue';
+    if (loc.startsWith('/kasir')) return 'kasir';
     if (loc.startsWith('/me')) return 'me';
     return 'tables';
   }
@@ -109,7 +125,11 @@ class AppShell extends ConsumerWidget {
 class _FloatingTabBar extends StatelessWidget {
   final String active;
   final int readyCount;
-  const _FloatingTabBar({required this.active, required this.readyCount});
+  final bool showKasir;
+  const _FloatingTabBar(
+      {required this.active,
+      required this.readyCount,
+      this.showKasir = false});
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +175,14 @@ class _FloatingTabBar extends StatelessWidget {
                 badgeAlert: readyCount > 0,
                 onTap: () => context.go('/orders'),
               ),
+              if (showKasir)
+                _Tab(
+                  id: 'kasir',
+                  label: 'Kasir',
+                  icon: Icons.point_of_sale_rounded,
+                  active: active == 'kasir',
+                  onTap: () => context.go('/kasir'),
+                ),
               _Tab(
                 id: 'me',
                 label: 'Saya',

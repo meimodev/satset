@@ -24,6 +24,7 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
 
   final Ref ref;
   StreamSubscription? _wsSub;
+  bool _resyncing = false;
 
   @override
   void dispose() {
@@ -35,6 +36,11 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
     if (_wsSub != null) return;
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       switch (ev.type) {
+        case WsEventTypes.connected:
+          // Full-resync on every socket (re)connect. Incremental zone events
+          // are lossy — a zone created while we were down (or before our
+          // bootstrap GET succeeded) would never otherwise appear. ADR-0021.
+          unawaited(_resync());
         case WsEventTypes.zoneCreated:
           final z = _fromJson(ev.payload);
           if (state.any((x) => x.id == z.id)) return;
@@ -61,19 +67,42 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
     ref.read(zonesStatusProvider.notifier).state =
         const AsyncValue.loading();
     try {
-      final api = ref.read(apiClientProvider);
-      final raw = await api.getJson('/zones') as List;
-      state = [
-        for (final e in raw) _fromJson((e as Map).cast<String, dynamic>()),
-      ];
-      SatLog.repo('zones.loaded n=${state.length}');
+      await _refetch();
       ref.read(zonesStatusProvider.notifier).state =
           const AsyncValue.data(null);
-      _wireWs();
     } catch (e, st) {
       SatLog.repo('zones.bootstrap fail $e');
       ref.read(zonesStatusProvider.notifier).state =
           AsyncValue.error(e, st);
+    }
+    // Wire WS even if the bootstrap GET failed: the `connected` resync is the
+    // recovery path for an empty/401 bootstrap. See ADR-0021.
+    _wireWs();
+  }
+
+  /// Pull the authoritative zone list and replace state. Shared by the initial
+  /// [_bootstrap] and the WS-reconnect [_resync].
+  Future<void> _refetch() async {
+    final api = ref.read(apiClientProvider);
+    final raw = await api.getJson('/zones') as List;
+    state = [
+      for (final e in raw) _fromJson((e as Map).cast<String, dynamic>()),
+    ];
+    SatLog.repo('zones.loaded n=${state.length}');
+  }
+
+  /// Full-resync on socket (re)connect. Guarded against overlap; never throws
+  /// (a transient failure waits for the next connect). See ADR-0021.
+  Future<void> _resync() async {
+    if (_resyncing) return;
+    _resyncing = true;
+    try {
+      await _refetch();
+      SatLog.repo('zones.resync ok');
+    } catch (e) {
+      SatLog.repo('zones.resync fail $e');
+    } finally {
+      _resyncing = false;
     }
   }
 

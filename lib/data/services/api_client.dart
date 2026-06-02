@@ -20,6 +20,21 @@ class ApiConfig {
   final String trustedFingerprint;
 
   const ApiConfig({required this.baseUri, required this.trustedFingerprint});
+
+  /// Value equality so re-publishing an identical config (e.g. mDNS re-selects
+  /// the same paired server on the PIN screen after a sign-out) can be treated
+  /// as a no-op. Without this, every re-select churns `apiConfigProvider` and
+  /// rebuilds every repository keyed on it — re-running their one-shot
+  /// `_bootstrap` while still unauthenticated, which 401s and strands the
+  /// list empty until app restart.
+  @override
+  bool operator ==(Object other) =>
+      other is ApiConfig &&
+      other.baseUri == baseUri &&
+      other.trustedFingerprint == trustedFingerprint;
+
+  @override
+  int get hashCode => Object.hash(baseUri, trustedFingerprint);
 }
 
 class ApiException implements Exception {
@@ -35,6 +50,12 @@ class ApiException implements Exception {
 /// REST client with bearer auth, device ID header and TLS fingerprint
 /// pinning. Stateless — repositories own the lifecycle of cached responses.
 class ApiClient {
+  /// Per-request ceiling. Without it a dead/stale server host blocks on the
+  /// OS connect timeout (~110s, errno 110) — long enough that the PIN screen
+  /// freezes on "verifying". Fail fast so the error surfaces and the user can
+  /// re-pick a reachable server.
+  static const Duration requestTimeout = Duration(seconds: 8);
+
   ApiClient({
     required ApiConfig config,
     required SecureStorageService storage,
@@ -148,13 +169,14 @@ class ApiClient {
     final encoded = body == null ? null : jsonEncode(body);
     final sw = Stopwatch()..start();
     try {
-      final r = switch (method) {
-        'GET' => await _inner.get(uri, headers: headers),
-        'POST' => await _inner.post(uri, headers: headers, body: encoded),
-        'PATCH' => await _inner.patch(uri, headers: headers, body: encoded),
-        'DELETE' => await _inner.delete(uri, headers: headers),
+      final r = await (switch (method) {
+        'GET' => _inner.get(uri, headers: headers),
+        'POST' => _inner.post(uri, headers: headers, body: encoded),
+        'PATCH' => _inner.patch(uri, headers: headers, body: encoded),
+        'DELETE' => _inner.delete(uri, headers: headers),
         _ => throw StateError('Unsupported method $method'),
-      };
+      })
+          .timeout(requestTimeout);
       SatLog.http('$method $path → ${r.statusCode} ${sw.elapsedMilliseconds}ms');
       return _decode(r);
     } on ApiException catch (e) {

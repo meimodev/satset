@@ -11,6 +11,7 @@ import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/db/seed.dart';
 import 'package:satset/server/ws_hub.dart';
 
 String _hashPin(String pin) =>
@@ -128,6 +129,26 @@ Future<Response?> _guardLastAdmin(
       headers: {'content-type': 'application/json'});
 }
 
+/// Whether [roleId] currently carries `manageStaff` — i.e. an admin-level
+/// role. Used to enforce "admin is Firebase-only": such a role may never be
+/// assigned to a PIN user, nor newly created/granted, from the venue's own
+/// staff screen (only a super admin makes admins). See ADR-0017.
+Future<bool> _roleHasManageStaff(AppDatabase db, String roleId) async {
+  final r = await (db.select(db.roles)..where((x) => x.id.equals(roleId)))
+      .getSingleOrNull();
+  if (r == null) return false;
+  return (jsonDecode(r.capabilitiesJson) as List)
+      .cast<String>()
+      .contains(Capability.manageStaff.name);
+}
+
+Response _adminRoleForbidden() => Response(403,
+    body: jsonEncode({
+      'code': 'admin_role_forbidden',
+      'message': 'Admin-level roles can only be granted by a super admin',
+    }),
+    headers: {'content-type': 'application/json'});
+
 Map<String, dynamic> _zoneJson(Zone z) => {
       'id': z.id,
       'name': z.name,
@@ -237,6 +258,13 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final id = (body['id'] as String?) ?? _uuid.v4();
+    // No new admin-level roles: a local admin can't mint a custom role that
+    // carries manageStaff and assign it as a backdoor. See ADR-0017.
+    final newCaps = ((body['capabilities'] as List?) ?? const [])
+        .cast<String>();
+    if (newCaps.contains(Capability.manageStaff.name)) {
+      return _adminRoleForbidden();
+    }
     await db.into(db.roles).insertOnConflictUpdate(RolesCompanion.insert(
           id: id,
           name: body['name'] as String,
@@ -269,6 +297,16 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
       nextCapsKeys = <String>{
         for (final c in (body['capabilities'] as List)) c as String,
       };
+      // Can't newly grant manageStaff to a role that lacked it (would create a
+      // local admin). Roles that already have it (the seeded admin role) keep
+      // it. See ADR-0017.
+      final prevCaps = (jsonDecode(prev.capabilitiesJson) as List)
+          .cast<String>()
+          .toSet();
+      if (nextCapsKeys.contains(Capability.manageStaff.name) &&
+          !prevCaps.contains(Capability.manageStaff.name)) {
+        return _adminRoleForbidden();
+      }
       final guard = await _guardLastAdmin(db,
           virtualRoleId: id, nextRoleCaps: nextCapsKeys);
       if (guard != null) return guard;
@@ -380,6 +418,11 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     if (await _pinCollision(db, pin, exceptId: null)) {
       return _pinCollisionResponse();
     }
+    // Admin is Firebase-only: never mint a PIN user holding an admin-level
+    // (manageStaff) role from the staff screen. See ADR-0017.
+    if (await _roleHasManageStaff(db, body['roleId'] as String)) {
+      return _adminRoleForbidden();
+    }
     await db.into(db.users).insertOnConflictUpdate(
           UsersCompanion.insert(
             id: id,
@@ -430,6 +473,14 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     final nextDisabled = body.containsKey('disabled')
         ? body['disabled'] as bool
         : prev.disabled;
+    // Block re-assigning a PIN user *into* an admin-level (manageStaff) role
+    // (admin is Firebase-only). A no-op keep of an already-admin row is
+    // allowed so other fields stay editable. See ADR-0017.
+    if (body.containsKey('roleId') &&
+        nextRoleId != prev.roleId &&
+        await _roleHasManageStaff(db, nextRoleId)) {
+      return _adminRoleForbidden();
+    }
     if (body.containsKey('roleId') || body.containsKey('disabled')) {
       final guard = await _guardLastAdmin(db,
           virtualUserId: id,
@@ -593,6 +644,61 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
         title: 'Deleted ${prev.name}',
         actorUserId: actor?.id);
     return _ok({'id': id});
+  });
+
+  // ---------- first-run generic seed (ADR-0017) ----------
+
+  /// Whether this host still needs the generic restaurant seed — drives the
+  /// first-run prompt on the Venue Hub.
+  r.get('/seed/state', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.manageStaff);
+    if (denied != null) return denied;
+    return _ok({'needsGenericSeed': await needsGenericSeed(db)});
+  });
+
+  /// Load the generic restaurant dataset (2 zones x 2 tables, generic menu,
+  /// 1 waiter + 1 kitchen). Idempotent. Broadcasts coarse refetch events so
+  /// every paired device mirrors the new reference data.
+  r.post('/seed/generic', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.manageStaff);
+    if (denied != null) return denied;
+    await seedGenericRestaurant(db);
+
+    // Nudge every repo to re-pull. Roles + menu have full-refetch WS handlers;
+    // zones/tables/staff get per-entity created events.
+    hub?.broadcast(WsEventTypes.rolesUpdated, {'seeded': true});
+    hub?.broadcast(WsEventTypes.menuUpdated, {'seeded': true});
+    final zones = await (db.select(db.zones)
+          ..orderBy([(z) => OrderingTerm.asc(z.sortOrder)]))
+        .get();
+    for (final z in zones) {
+      hub?.broadcast(WsEventTypes.zoneCreated, _zoneJson(z));
+    }
+    final tables = await db.select(db.venueTables).get();
+    for (final t in tables) {
+      hub?.broadcast(WsEventTypes.tableCreated, {
+        'id': t.id,
+        'zoneId': t.zoneId,
+        'label': t.label,
+        'pax': t.pax,
+        'active': t.active,
+        'status': t.status,
+        'openAmount': t.openAmount,
+        'readyCount': t.readyCount,
+        'lastActorId': t.lastActorId,
+      });
+    }
+    final staff = await db.select(db.users).get();
+    for (final u in staff) {
+      hub?.broadcast(WsEventTypes.staffCreated, _staffJson(u));
+    }
+
+    final actor = await _actor(req, db, auth);
+    await _emitAudit(db, hub,
+        type: AuditType.staffCreated.name,
+        title: 'Memuat contoh data restoran',
+        actorUserId: actor?.id);
+    return _ok({'needsGenericSeed': await needsGenericSeed(db)});
   });
 
   return r;

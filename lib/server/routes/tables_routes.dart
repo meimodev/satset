@@ -5,11 +5,17 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/core/printing/struk_data.dart';
+import 'package:satset/core/printing/struk_renderer.dart';
+import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/use_cases/bill_math.dart';
 
 const _uuid = Uuid();
 
@@ -398,6 +404,22 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           subtotal += line;
         }
       }
+      // Apply tax + service (service-then-tax) at close — settlement is where
+      // the venue toggles finally bind, and netTotal is redefined to the
+      // actually-settled total. See ADR-0023. `subtotal` here already excludes
+      // voided lines, so netTotal = subtotal + service + tax.
+      final s = await (db.select(db.venueSettings)
+            ..where((t) => t.id.equals('default')))
+          .getSingleOrNull();
+      final cfg = TaxServiceConfig(
+        taxEnabled: s?.taxEnabled ?? false,
+        taxRateBps: s?.taxRateBps ?? 1100,
+        serviceEnabled: s?.serviceEnabled ?? false,
+        serviceMode: s?.serviceMode ?? 'percent',
+        serviceRateBps: s?.serviceRateBps ?? 500,
+        serviceFixedAmount: s?.serviceFixedAmount ?? 0,
+      );
+      final breakdown = computeBreakdown(subtotal, cfg);
       final sessionId = _uuid.v4();
       sessionIdForBroadcast = sessionId;
       await db.into(db.tableSessions).insert(TableSessionsCompanion.insert(
@@ -412,7 +434,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             actorUserId: Value(actorId),
             subtotal: Value(subtotal),
             voidAmount: Value(voidAmount),
-            netTotal: Value(subtotal),
+            serviceAmount: Value(breakdown.serviceAmount),
+            taxAmount: Value(breakdown.taxAmount),
+            netTotal: Value(breakdown.total),
             ticketCount: Value(tickets.length),
           ));
       for (final t in tickets) {
@@ -470,6 +494,49 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               ),
             );
       }
+      // Snapshot receipts + payments into session children, then delete the
+      // live settlement rows alongside the tickets. See ADR-0023.
+      final recs = await (db.select(db.receipts)
+            ..where((rc) => rc.tableId.equals(id)))
+          .get();
+      for (final rec in recs) {
+        await db.into(db.tableSessionReceipts).insert(
+              TableSessionReceiptsCompanion.insert(
+                id: _uuid.v4(),
+                sessionId: sessionId,
+                receiptId: rec.id,
+                mode: Value(rec.mode),
+                label: Value(rec.label),
+                subtotal: Value(rec.subtotal),
+                serviceAmount: Value(rec.serviceAmount),
+                taxAmount: Value(rec.taxAmount),
+                total: Value(rec.total),
+                status: Value(rec.status),
+              ),
+            );
+        final pays = await (db.select(db.payments)
+              ..where((p) => p.receiptId.equals(rec.id)))
+            .get();
+        for (final p in pays) {
+          await db.into(db.tableSessionPayments).insert(
+                TableSessionPaymentsCompanion.insert(
+                  id: _uuid.v4(),
+                  sessionId: sessionId,
+                  receiptId: rec.id,
+                  method: p.method,
+                  amount: p.amount,
+                  isRefund: Value(p.isRefund),
+                  cashierUserId: Value(p.cashierUserId),
+                  at: p.at,
+                ),
+              );
+        }
+        await (db.delete(db.receiptLines)..where((x) => x.receiptId.equals(rec.id)))
+            .go();
+        await (db.delete(db.payments)..where((x) => x.receiptId.equals(rec.id)))
+            .go();
+      }
+      await (db.delete(db.receipts)..where((rc) => rc.tableId.equals(id))).go();
       await (db.delete(db.tickets)..where((t) => t.tableId.equals(id))).go();
       await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
         VenueTablesCompanion(
@@ -540,6 +607,162 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return _broadcast(db, hub, id);
   });
 
+  // Pindah meja (move table): transfer a whole live session from a source
+  // table onto an empty target. Atomic: re-points every ticket, copies the
+  // session fields, wipes the source, sets the target lock to the mover, and
+  // writes a `tableMoved` audit row. See ADR-0019.
+  r.post('/tables/<id>/move', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final targetId = body['targetId'] as String?;
+    if (targetId == null || targetId.isEmpty) {
+      return Response(400,
+          body: jsonEncode(
+              {'code': 'bad_request', 'message': 'targetId required'}),
+          headers: {'content-type': 'application/json'});
+    }
+    if (targetId == id) {
+      return Response(400,
+          body: jsonEncode(
+              {'code': 'same_table', 'message': 'source and target are equal'}),
+          headers: {'content-type': 'application/json'});
+    }
+    // Resolve the mover from the bearer when auth is on; fall back to the
+    // body actorId (dev / no-auth) so the lock check + audit stay accurate.
+    String? moverId = body['actorId'] as String?;
+    final moverName = body['actorName'] as String?;
+    if (auth != null) {
+      final token = req.headers['authorization']
+          ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+      final u = await auth.resolveBearer(token);
+      moverId = u?.id ?? moverId;
+    }
+    final source = await (db.select(db.venueTables)
+          ..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (source == null) return Response.notFound('source table not found');
+    if (source.status == 'available') {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'source_not_occupied',
+            'message': 'source table is empty',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    final now = DateTime.now();
+    final srcLockedByOther = source.lockedBy != null &&
+        source.lockedBy!.isNotEmpty &&
+        source.lockedBy != moverId &&
+        source.lockExpiresAt != null &&
+        source.lockExpiresAt!.isAfter(now);
+    if (srcLockedByOther) {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'table_locked',
+            'message': 'source table is locked by another user',
+            'table': _toJson(source),
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    final target = await (db.select(db.venueTables)
+          ..where((t) => t.id.equals(targetId)))
+        .getSingleOrNull();
+    if (target == null) return Response.notFound('target table not found');
+    if (target.status != 'available' || !target.active) {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'target_unavailable',
+            'message': 'target table is not an empty, active table',
+            'table': _toJson(target),
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+    String? auditId;
+    await db.transaction(() async {
+      // Re-point every ticket from source → target. KDS / orders / reports
+      // resolve a ticket's table live by tableId, so nothing else changes.
+      await (db.update(db.tickets)..where((t) => t.tableId.equals(id)))
+          .write(TicketsCompanion(tableId: Value(targetId)));
+      // Copy the session onto the target + hand the lock to the mover.
+      await (db.update(db.venueTables)..where((t) => t.id.equals(targetId)))
+          .write(VenueTablesCompanion(
+        status: Value(source.status),
+        pax: Value(source.pax),
+        openAmount: Value(source.openAmount),
+        readyCount: Value(source.readyCount),
+        openedAt: Value(source.openedAt),
+        lastActorId: Value(source.lastActorId),
+        guestName: Value(source.guestName),
+        guestNotes: Value(source.guestNotes),
+        reservationId: Value(source.reservationId),
+        lockedBy: moverId == null ? const Value(null) : Value(moverId),
+        lockedByName: Value(moverName),
+        lockedAt: moverId == null ? const Value(null) : Value(now),
+        lockExpiresAt: moverId == null
+            ? const Value(null)
+            : Value(now.add(const Duration(seconds: 7))),
+      ));
+      // Wipe the source back to kosong.
+      await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
+        const VenueTablesCompanion(
+          status: Value('available'),
+          openAmount: Value(0),
+          readyCount: Value(0),
+          pax: Value(0),
+          lastActorId: Value(null),
+          lockedBy: Value(null),
+          lockedByName: Value(null),
+          lockedAt: Value(null),
+          lockExpiresAt: Value(null),
+          openedAt: Value(null),
+          guestName: Value(null),
+          guestNotes: Value(null),
+          reservationId: Value(null),
+        ),
+      );
+      auditId = _uuid.v4();
+      final srcLabel = source.label ?? source.id;
+      final tgtLabel = target.label ?? target.id;
+      await db.into(db.auditEntries).insert(AuditEntriesCompanion.insert(
+            id: auditId!,
+            type: AuditType.tableMoved.name,
+            title: 'Pindah meja $srcLabel → $tgtLabel',
+            tableId: Value(targetId),
+            at: now,
+            actorUserId: Value(moverId),
+          ));
+    });
+    // Broadcast both table rows + the audit row.
+    final srcRow = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    final tgtRow = await (db.select(db.venueTables)
+          ..where((t) => t.id.equals(targetId)))
+        .getSingleOrNull();
+    if (srcRow != null) hub.broadcast(WsEventTypes.tableUpdated, _toJson(srcRow));
+    if (tgtRow != null) hub.broadcast(WsEventTypes.tableUpdated, _toJson(tgtRow));
+    if (auditId != null) {
+      final a = await (db.select(db.auditEntries)
+            ..where((e) => e.id.equals(auditId!)))
+          .getSingleOrNull();
+      if (a != null) {
+        hub.broadcast(WsEventTypes.auditCreated, {
+          'id': a.id,
+          'type': a.type,
+          'title': a.title,
+          'tableId': a.tableId,
+          'at': a.at.toIso8601String(),
+          'approvedBy': a.approvedBy,
+          'reason': a.reason,
+          'actorUserId': a.actorUserId,
+        });
+      }
+    }
+    if (tgtRow == null) return Response.notFound('target table not found');
+    return Response.ok(jsonEncode(_toJson(tgtRow)),
+        headers: {'content-type': 'application/json'});
+  });
+
   r.post('/tables/<id>/ready/decrement', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
@@ -561,6 +784,112 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       ),
     );
     return _broadcast(db, hub, id);
+  });
+
+  // Print a guest order-confirmation struk for this table to a VENUE printer.
+  // Server renders + sends (ADR-0020); any authenticated staff may trigger it.
+  r.post('/tables/<id>/print', (Request req, String id) async {
+    if (auth != null) {
+      final token = req.headers['authorization']
+          ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+      final user = await auth.resolveBearer(token);
+      if (user == null) return Response(401);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final printerId = body['printerId'] as String?;
+    if (printerId == null || printerId.isEmpty) {
+      return Response(400,
+          body: jsonEncode(
+              {'code': 'bad_request', 'message': 'printerId required'}),
+          headers: {'content-type': 'application/json'});
+    }
+    final printer =
+        await (db.select(db.printers)..where((p) => p.id.equals(printerId)))
+            .getSingleOrNull();
+    if (printer == null) return Response.notFound('printer not found');
+    final table =
+        await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
+            .getSingleOrNull();
+    if (table == null) return Response.notFound('table not found');
+    final tickets =
+        await (db.select(db.tickets)..where((t) => t.tableId.equals(id))).get();
+    final venueRows = await db.select(db.venueSettings).get();
+    final v = venueRows.isEmpty ? null : venueRows.first;
+
+    final lines = <StrukLine>[];
+    for (final t in tickets) {
+      if (t.status == 'voided') continue;
+      final mods = <String>[];
+      try {
+        for (final m in (jsonDecode(t.modifiersJson) as List)) {
+          final lbl = (m as Map)['label'];
+          if (lbl is String && lbl.trim().isNotEmpty) mods.add(lbl.trim());
+        }
+      } catch (_) {}
+      lines.add(StrukLine(
+        qty: t.qty,
+        name: t.name,
+        variant: t.variantName,
+        modifiers: mods,
+        note: (t.note ?? '').trim(),
+      ));
+    }
+    if (lines.isEmpty) {
+      return Response(409,
+          body: jsonEncode({
+            'code': 'no_lines',
+            'message': 'tidak ada pesanan untuk dicetak',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+
+    final data = StrukData(
+      venueName: v?.displayName ?? 'SatSet',
+      header: v?.receiptHeader ?? '',
+      footer: v?.receiptFooter ?? '',
+      address: v?.address ?? '',
+      phone: v?.phone ?? '',
+      tableLabel: table.label ?? id,
+      pax: table.pax,
+      guestName: table.guestName ?? '',
+      guestNote: table.guestNotes ?? '',
+      at: DateTime.now(),
+      lines: lines,
+    );
+
+    try {
+      final bytes = await StrukRenderer.render(data);
+      await StrukSocket.send(printer.host, printer.port, bytes);
+    } catch (e) {
+      SatLog.srv('print fail printer=$printerId ${printer.host}:${printer.port} $e');
+      return Response(502,
+          body: jsonEncode({
+            'code': 'print_failed',
+            'message': 'printer tak terhubung',
+          }),
+          headers: {'content-type': 'application/json'});
+    }
+
+    final now = DateTime.now();
+    await (db.update(db.printers)..where((p) => p.id.equals(printerId)))
+        .write(PrintersCompanion(lastSeenAt: Value(now)));
+    final updated =
+        await (db.select(db.printers)..where((p) => p.id.equals(printerId)))
+            .getSingleOrNull();
+    if (updated != null) {
+      hub.broadcast(WsEventTypes.printerUpdated, {
+        'id': updated.id,
+        'label': updated.label,
+        'host': updated.host,
+        'port': updated.port,
+        'kind': updated.kind,
+        'enabled': updated.enabled,
+        'lastSeenAt': updated.lastSeenAt?.toIso8601String(),
+        'createdAt': updated.createdAt.toIso8601String(),
+      });
+    }
+    return Response.ok(jsonEncode({'status': 'printed'}),
+        headers: {'content-type': 'application/json'});
   });
 
   return r;

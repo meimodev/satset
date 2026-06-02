@@ -69,6 +69,11 @@ exports.createAdmin = onCall(async (request) => {
     throw new HttpsError("already-exists", e.message || "Could not create user.");
   }
 
+  // Custom claims {role, venueId} ride the admin's Firebase ID token so a
+  // Main-Device host can verify them offline when admitting an admin-client
+  // (ADR-0017). The Firestore admins/{uid} doc stays the human-readable record.
+  await auth.setCustomUserClaims(user.uid, { role: "admin", venueId });
+
   const avatarColorHex =
     typeof request.data.avatarColorHex === "number"
       ? request.data.avatarColorHex
@@ -84,6 +89,28 @@ exports.createAdmin = onCall(async (request) => {
     createdAt: FieldValue.serverTimestamp(),
   });
   return { uid: user.uid };
+});
+
+/**
+ * One-time backfill: stamp {role, venueId} custom claims onto every existing
+ * admin from their Firestore doc, so admins created before claims shipped can
+ * still join as admin-clients (ADR-0017). Idempotent; super-only.
+ */
+exports.backfillAdminClaims = onCall(async (request) => {
+  await assertSuper(request);
+  const snap = await db.collection("admins").get();
+  let updated = 0;
+  for (const doc of snap.docs) {
+    const role = doc.get("role") || "admin";
+    const venueId = doc.get("venueId") || "";
+    try {
+      await auth.setCustomUserClaims(doc.id, { role, venueId });
+      updated++;
+    } catch (_) {
+      // Auth user may be gone; skip and continue.
+    }
+  }
+  return { ok: true, updated };
 });
 
 exports.setAdminStatus = onCall(async (request) => {

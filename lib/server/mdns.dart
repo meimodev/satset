@@ -9,6 +9,9 @@ import 'package:bonsoir/bonsoir.dart';
 ///   - `fp`    SHA-256 fingerprint of the TLS cert (pinned by clients)
 ///   - `label` human-readable device name
 ///   - `ver`   app version string (informational)
+///   - `vid`   cloud venue id this host serves (ADR-0017); a second device
+///             entering Server mode for the same `vid` joins as a client
+///             instead of starting a rival server. Empty for legacy boots.
 class SatSetAdvertiser {
   BonsoirBroadcast? _broadcast;
 
@@ -17,6 +20,7 @@ class SatSetAdvertiser {
     required String fingerprint,
     String? label,
     String version = 'unknown',
+    String venueId = '',
   }) async {
     final name = (label == null || label.isEmpty)
         ? _defaultName()
@@ -29,6 +33,7 @@ class SatSetAdvertiser {
         'fp': fingerprint,
         'label': name,
         'ver': version,
+        'vid': venueId,
       },
     );
     _broadcast = BonsoirBroadcast(service: service);

@@ -162,7 +162,40 @@ class PinViewModel extends StateNotifier<PinState> {
 
   void _rebuildServers() {
     final byKey = <String, PairedServerInfo>{};
-    final paired = _pairedFromPrefs;
+    var pairedLocal = _pairedFromPrefs;
+
+    // DHCP can move the paired server to a new IP. Identity is the TLS
+    // fingerprint, not host:port — so if mDNS surfaces our paired fingerprint
+    // at a different address, re-home the pairing to that address (persist the
+    // new host/port) instead of leaving the selection pinned to a dead IP that
+    // every request would time out against.
+    final cur = pairedLocal;
+    if (cur != null) {
+      for (final d in _discovered) {
+        final sameFp =
+            d.fingerprint.toLowerCase() == cur.fingerprint.toLowerCase();
+        final moved = d.host != cur.host || d.port != cur.port;
+        if (sameFp && moved) {
+          SatLog.vm('PinVM: paired server re-homed ${cur.host}:${cur.port}'
+              ' → ${d.host}:${d.port} (fingerprint match)');
+          unawaited(_prefs.setPairedHost(d.host));
+          unawaited(_prefs.setPairedPort(d.port));
+          pairedLocal = PairedServerInfo(
+            host: d.host,
+            port: d.port,
+            fingerprint: cur.fingerprint,
+            label: cur.label,
+            paired: true,
+          );
+          _pairedFromPrefs = pairedLocal;
+          // The stale selectedServerKey (old address) is no longer in byKey, so
+          // the selection-fallback tail re-defaults to this re-homed entry.
+          break;
+        }
+      }
+    }
+
+    final paired = pairedLocal;
     if (paired != null) {
       byKey[paired.key] = paired;
     }
@@ -170,7 +203,7 @@ class PinViewModel extends StateNotifier<PinState> {
       final key = '${d.host}:${d.port}';
       final isPaired =
           paired != null && paired.host == d.host && paired.port == d.port;
-      
+
       String fp = d.fingerprint;
       if (isPaired && paired.fingerprint != d.fingerprint) {
         SatLog.vm('PinVM: Stale fingerprint detected for paired server at ${d.host}:${d.port}. '
@@ -256,9 +289,9 @@ class PinViewModel extends StateNotifier<PinState> {
   /// Boots the in-process server and publishes a loopback [ApiConfig].
   /// Throws if [ModeSelectViewModel] reported an error or if the runtime /
   /// ApiConfig never materialised, so callers can refuse to authenticate.
-  Future<void> _bootServerMode() async {
+  Future<void> _bootServerMode(String venueId) async {
     final vm = _ref.read(modeSelectViewModelProvider.notifier);
-    await vm.choose(AppMode.server);
+    await vm.choose(AppMode.server, venueId: venueId);
     final ms = _ref.read(modeSelectViewModelProvider);
     if (ms.error != null) {
       throw StateError(ms.error!);
@@ -279,10 +312,16 @@ class PinViewModel extends StateNotifier<PinState> {
   }
 
   void _publishApiConfig(PairedServerInfo s) {
-    _ref.read(apiConfigProvider.notifier).state = ApiConfig(
+    final next = ApiConfig(
       baseUri: Uri.parse('https://${s.host}:${s.port}'),
       trustedFingerprint: s.fingerprint,
     );
+    // No-op if unchanged: StateProvider notifies on identity, so a fresh-but-
+    // equal instance would still rebuild every repo keyed on apiConfigProvider
+    // and re-run their one-shot bootstrap (401s while unauthenticated → empty
+    // tables until restart). See ApiConfig.== .
+    if (_ref.read(apiConfigProvider) == next) return;
+    _ref.read(apiConfigProvider.notifier).state = next;
   }
 
   void clearAdminError() {
@@ -343,9 +382,9 @@ class PinViewModel extends StateNotifier<PinState> {
     final ok = await _auth.signInAsAdmin(
       email: email,
       password: password,
-      bootServer: () async {
+      bootServer: (venueId) async {
         try {
-          await _bootServerMode();
+          await _bootServerMode(venueId);
         } catch (e) {
           bootError = StateError('$e');
           rethrow;

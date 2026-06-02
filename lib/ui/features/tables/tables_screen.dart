@@ -90,61 +90,50 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final subLine = subParts.join(' · ');
 
     if (l.useTabletShell && !forcePhone) {
-      return Stack(
+      return Column(
         children: [
-          Column(
-            children: [
-              TabletSectionHead(
-                title: zone.name,
-                sub: subLine,
-              ),
-              const ReservationsStrip(tablet: true),
-              _ZoneRow(
-                tables: activeTables,
-                zones: zones,
-                active: activeZoneId,
-                onChange: (id) => setState(() => _activeZone = id),
-                tablet: true,
-              ),
-              Expanded(
-                child: zoneTables.isEmpty
-                    ? _EmptyZone(zoneName: zone.name, tablet: true)
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(32, 16, 32, 96),
-                        child: GridView.count(
-                          crossAxisCount: 4,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 1.45,
-                          children: [
-                            for (final entry in zoneTables.asMap().entries)
-                              _CardFadeIn(
-                                key: ValueKey('tab-$activeZoneId-${entry.value.id}'),
-                                index: entry.key,
-                                child: _TableCard(
-                                  table: entry.value,
-                                  tablet: true,
-                                  onTap: () => context.push('/table/${entry.value.id}'),
-                                  onLongPress: () => showGuestStepperSheet(
-                                    context: context,
-                                    tableId: entry.value.id,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-              ),
-            ],
+          TabletSectionHead(
+            title: zone.name,
+            sub: subLine,
           ),
-          Positioned(
-            right: 24,
-            bottom: 24,
-            child: _PhoneViewToggle(
-              onTap: () => ref.read(forcePhoneViewProvider.notifier).state = true,
-            ),
+          const ReservationsStrip(tablet: true),
+          _ZoneRow(
+            tables: activeTables,
+            zones: zones,
+            active: activeZoneId,
+            onChange: (id) => setState(() => _activeZone = id),
+            tablet: true,
+          ),
+          Expanded(
+            child: zoneTables.isEmpty
+                ? _EmptyZone(zoneName: zone.name, tablet: true)
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(32, 16, 32, 96),
+                    child: GridView.count(
+                      crossAxisCount: 4,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.45,
+                      children: [
+                        for (final entry in zoneTables.asMap().entries)
+                          _CardFadeIn(
+                            key: ValueKey('tab-$activeZoneId-${entry.value.id}'),
+                            index: entry.key,
+                            child: _TableCard(
+                              table: entry.value,
+                              tablet: true,
+                              onTap: () => context.push('/table/${entry.value.id}'),
+                              onLongPress: () => showGuestStepperSheet(
+                                context: context,
+                                tableId: entry.value.id,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       );
@@ -229,13 +218,6 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                   ),
                 ),
         ),
-        if (l.useTabletShell && forcePhone)
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, l.bottomInset + 8),
-            child: _BackToTabletPill(
-              onTap: () => ref.read(forcePhoneViewProvider.notifier).state = false,
-            ),
-          ),
       ],
     );
   }
@@ -794,87 +776,3 @@ class _EmptyZoneState extends State<_EmptyZone>
   }
 }
 
-class _PhoneViewToggle extends StatelessWidget {
-  final VoidCallback onTap;
-  const _PhoneViewToggle({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Material(
-      color: sc.bg2,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 10, 16, 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: sc.border1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.smartphone_outlined, size: 14, color: sc.textMd),
-              const SizedBox(width: 8),
-              Text(
-                'PHONE VIEW',
-                style: SatType.mono(
-                  size: 11,
-                  weight: FontWeight.w600,
-                  letterSpacing: 0.88,
-                  color: sc.textMd,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BackToTabletPill extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BackToTabletPill({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Material(
-        color: sc.bg2,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(14, 10, 16, 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: sc.border1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.tablet_mac_outlined, size: 14, color: sc.textMd),
-                const SizedBox(width: 8),
-                Text(
-                  'TABLET VIEW',
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    letterSpacing: 0.88,
-                    color: sc.textMd,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

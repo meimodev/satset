@@ -17,6 +17,7 @@ import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
@@ -32,6 +33,7 @@ import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
+import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -413,7 +415,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
 
     Future<void> onClose() async {
       if (!canClose) return;
-      final confirm = await showDialog<bool>(
+      final choice = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(isEmptyClose ? 'Lepaskan Meja?' : 'Selesaikan Layanan?'),
@@ -422,15 +424,27 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
               : 'Semua tiket telah selesai. Selesaikan layanan meja ${table.displayName} dan kosongkan meja?'),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
+                onPressed: () => Navigator.of(ctx).pop('cancel'),
                 child: const Text('Batal')),
+            if (!isEmptyClose)
+              TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('print'),
+                  child: const Text('Cetak struk')),
             FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
+                onPressed: () => Navigator.of(ctx).pop('close'),
                 child: Text(closeLabel)),
           ],
         ),
       );
-      if (confirm != true || !context.mounted) return;
+      if (!context.mounted) return;
+      // "Cetak struk" is a step before settling, not a substitute — print, then
+      // leave the table live so the waiter can re-confirm before closing.
+      if (choice == 'print') {
+        await printTableStruk(
+            context: context, ref: ref, table: table, tickets: tickets);
+        return;
+      }
+      if (choice != 'close') return;
       try {
         final notifier = ref.read(tablesProvider.notifier);
         if (isEmptyClose) {
@@ -1998,7 +2012,7 @@ class _TabletSplit extends StatelessWidget {
   }
 }
 
-class _ContextPane extends StatelessWidget {
+class _ContextPane extends ConsumerWidget {
   final VenueTable table;
   final List<Ticket> tickets;
   final List<MenuItem> menu;
@@ -2011,8 +2025,27 @@ class _ContextPane extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final auth = ref.watch(authStateProvider);
+    final actorId = auth.user?.id;
+    // Move is offered only on a live table the caller may operate and that
+    // isn't actively held by someone else. Server re-checks the lock anyway.
+    final canMove = table.status != TableStatus.available &&
+        auth.has(Capability.takeOrder) &&
+        !table.isLockedByOther(actorId);
+    final router = GoRouter.of(context);
+    final navigator = Navigator.of(context);
+    Future<void> onMove() async {
+      final targetId =
+          await showMoveTableSheet(context: context, sourceId: table.id);
+      if (targetId == null) return;
+      // Phone shows this pane inside the modal context sheet — close it first;
+      // the tablet pane is inline so there's nothing to pop. Then land the
+      // waiter on the moved session (it already holds the lock, see ADR-0019).
+      if (compact && navigator.canPop()) navigator.pop();
+      router.pushReplacement('/table/$targetId');
+    }
     final sent = tickets.where((t) => t.status != TicketStatus.voided && t.status != TicketStatus.served).length;
     final served = tickets.where((t) => t.status == TicketStatus.served).length;
     final allergens = <String>{};
@@ -2097,16 +2130,23 @@ class _ContextPane extends StatelessWidget {
                   Icons.receipt_long_rounded,
                   'Cetak struk meja',
                   accent: true,
-                  onTap: () => _notImplemented(context, 'Cetak struk'),
+                  onTap: () => printTableStruk(
+                    context: context,
+                    ref: ref,
+                    table: table,
+                    tickets: tickets,
+                  ),
                 ),
-                const SizedBox(height: 6),
-                _quickAction(
-                  context,
-                  sc,
-                  Icons.edit_outlined,
-                  'Pindahkan meja',
-                  onTap: () => _notImplemented(context, 'Pindah meja'),
-                ),
+                if (canMove) ...[
+                  const SizedBox(height: 6),
+                  _quickAction(
+                    context,
+                    sc,
+                    Icons.swap_horiz_rounded,
+                    'Pindahkan meja',
+                    onTap: onMove,
+                  ),
+                ],
               ],
             )),
       ],
@@ -2283,8 +2323,3 @@ class _EntranceFadeState extends State<_EntranceFade> {
   }
 }
 
-void _notImplemented(BuildContext context, String label) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('$label belum tersedia')),
-  );
-}

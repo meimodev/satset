@@ -17,6 +17,15 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
 
+    <!-- Bluetooth thermal printers (ADR-0022). Classic SPP to OS-paired devices
+         only; no air-scan, so no BLUETOOTH_SCAN / location. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30"/>
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
+
     <application
         android:label="satset"
         android:name="${applicationName}"

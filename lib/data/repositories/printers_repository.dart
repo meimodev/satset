@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -104,15 +105,52 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
     }
   }
 
-  Future<void> testPrint(String id) async {
+  /// Fires a real test slip on a VENUE printer. Returns null on success or a
+  /// human message on failure.
+  Future<String?> testPrint(String id) async {
     try {
       await ref.read(apiClientProvider).postJson(
         '/printers/$id/test',
         const <String, dynamic>{},
       );
+      return null;
+    } on ApiException catch (e) {
+      SatLog.repo('printers.test fail $e');
+      return _friendly(e);
     } catch (e) {
       SatLog.repo('printers.test fail $e');
+      return 'Gagal mencetak';
     }
+  }
+
+  /// Prints a table's struk to a VENUE printer (server renders + sends).
+  /// Returns null on success or a human message on failure.
+  Future<String?> printTable(String tableId, String printerId) async {
+    try {
+      await ref.read(apiClientProvider).postJson(
+        '/tables/$tableId/print',
+        {'printerId': printerId},
+      );
+      return null;
+    } on ApiException catch (e) {
+      SatLog.repo('printers.printTable fail $e');
+      return _friendly(e);
+    } catch (e) {
+      SatLog.repo('printers.printTable fail $e');
+      return 'Gagal mencetak';
+    }
+  }
+
+  String _friendly(ApiException e) {
+    try {
+      final j = jsonDecode(e.body);
+      if (j is Map && j['message'] is String) return j['message'] as String;
+    } catch (_) {}
+    return switch (e.code) {
+      'no_lines' => 'Tidak ada pesanan untuk dicetak',
+      'print_failed' => 'Printer tak terhubung',
+      _ => 'Gagal mencetak',
+    };
   }
 
   @override

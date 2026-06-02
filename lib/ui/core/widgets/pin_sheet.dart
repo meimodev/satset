@@ -34,6 +34,7 @@ Future<bool?> showPinSheet(
   required String subtitle,
   required PinSubmit onSubmit,
   PinDebugCreds? debugCreds,
+  Widget? statusSlot,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -44,6 +45,7 @@ Future<bool?> showPinSheet(
       subtitle: subtitle,
       onSubmit: onSubmit,
       debugCreds: debugCreds,
+      statusSlot: statusSlot,
     ),
   );
 }
@@ -53,11 +55,17 @@ class _PinSheet extends StatefulWidget {
   final String subtitle;
   final PinSubmit onSubmit;
   final PinDebugCreds? debugCreds;
+
+  /// Optional live widget rendered under the subtitle — used by staff sign-in to
+  /// show the paired server's reachability heartbeat. Kept as an injected slot so
+  /// this core widget stays Riverpod-agnostic.
+  final Widget? statusSlot;
   const _PinSheet({
     required this.title,
     required this.subtitle,
     required this.onSubmit,
     this.debugCreds,
+    this.statusSlot,
   });
 
   @override
@@ -177,6 +185,10 @@ class _PinSheetState extends State<_PinSheet>
                       textAlign: TextAlign.center,
                       style: SatType.sans(size: 12, color: sc.textMd),
                     ),
+                    if (widget.statusSlot != null) ...[
+                      const SizedBox(height: 10),
+                      Center(child: widget.statusSlot!),
+                    ],
                     const SizedBox(height: 22),
                     _PinDots(pin: _pin, shake: _shake),
                     const SizedBox(height: 12),

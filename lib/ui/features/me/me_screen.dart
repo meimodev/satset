@@ -24,6 +24,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/ready_alert_view_model.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
+import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/ready_toast.dart';
 
@@ -190,6 +191,17 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       ref.read(themeModeProvider.notifier).state = next;
     }
 
+    // Phone/tablet layout toggle — only on the Server-mode host AND only on a
+    // tablet device (forcing phone-layout on a real phone is a no-op, so staff
+    // client phones never see it). `forcePhone` makes this tablet render the
+    // phone layout; the icon flips to offer the way back.
+    final l = context.layout;
+    final forcePhone = ref.watch(forcePhoneViewProvider);
+    final isServerHost = ref.watch(serverRuntimeProvider) != null;
+    final showLayoutToggle = isServerHost && l.isTablet;
+    void toggleLayout() =>
+        ref.read(forcePhoneViewProvider.notifier).state = !forcePhone;
+
     Future<void> endShift() async {
       // Admin (Server mode): logout kills the embedded server — every staff
       // device disconnects and cannot reconnect until an admin re-signs-in.
@@ -226,7 +238,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       if (context.mounted) context.go('/pin');
     }
 
-    if (context.layout.useTabletShell) {
+    if (l.useTabletShell && !forcePhone) {
       return _MeTablet(
         m: m,
         audit: audit,
@@ -234,6 +246,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         themeMode: themeMode,
         onToggleTheme: toggleTheme,
         onEndShift: endShift,
+        showLayoutToggle: showLayoutToggle,
+        forcePhone: forcePhone,
+        onToggleLayout: toggleLayout,
       );
     }
     return _MePhone(
@@ -243,6 +258,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       themeMode: themeMode,
       onToggleTheme: toggleTheme,
       onEndShift: endShift,
+      showLayoutToggle: showLayoutToggle,
+      forcePhone: forcePhone,
+      onToggleLayout: toggleLayout,
     );
   }
 }
@@ -256,6 +274,9 @@ class _MePhone extends StatelessWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
   final VoidCallback onEndShift;
+  final bool showLayoutToggle;
+  final bool forcePhone;
+  final VoidCallback onToggleLayout;
 
   const _MePhone({
     required this.m,
@@ -264,6 +285,9 @@ class _MePhone extends StatelessWidget {
     required this.themeMode,
     required this.onToggleTheme,
     required this.onEndShift,
+    required this.showLayoutToggle,
+    required this.forcePhone,
+    required this.onToggleLayout,
   });
 
   @override
@@ -276,7 +300,13 @@ class _MePhone extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.fromLTRB(0, l.topInset, 0, l.bottomInset + 40),
           children: [
-            _TopBar(themeMode: themeMode, onToggleTheme: onToggleTheme),
+            _TopBar(
+              themeMode: themeMode,
+              onToggleTheme: onToggleTheme,
+              showLayoutToggle: showLayoutToggle,
+              forcePhone: forcePhone,
+              onToggleLayout: onToggleLayout,
+            ),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
@@ -324,6 +354,9 @@ class _MeTablet extends StatelessWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
   final VoidCallback onEndShift;
+  final bool showLayoutToggle;
+  final bool forcePhone;
+  final VoidCallback onToggleLayout;
 
   const _MeTablet({
     required this.m,
@@ -332,6 +365,9 @@ class _MeTablet extends StatelessWidget {
     required this.themeMode,
     required this.onToggleTheme,
     required this.onEndShift,
+    required this.showLayoutToggle,
+    required this.forcePhone,
+    required this.onToggleLayout,
   });
 
   @override
@@ -355,6 +391,11 @@ class _MeTablet extends StatelessWidget {
                       letterSpacing: 0.66,
                     )),
               ),
+              if (showLayoutToggle) ...[
+                _LayoutToggleButton(
+                    forcePhone: forcePhone, onTap: onToggleLayout),
+                const SizedBox(width: 8),
+              ],
               _ThemeIconButton(themeMode: themeMode, onTap: onToggleTheme),
             ],
           ),
@@ -407,7 +448,16 @@ class _MeTablet extends StatelessWidget {
 class _TopBar extends StatelessWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
-  const _TopBar({required this.themeMode, required this.onToggleTheme});
+  final bool showLayoutToggle;
+  final bool forcePhone;
+  final VoidCallback onToggleLayout;
+  const _TopBar({
+    required this.themeMode,
+    required this.onToggleTheme,
+    required this.showLayoutToggle,
+    required this.forcePhone,
+    required this.onToggleLayout,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -416,8 +466,49 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           const Spacer(),
+          if (showLayoutToggle) ...[
+            _LayoutToggleButton(forcePhone: forcePhone, onTap: onToggleLayout),
+            const SizedBox(width: 8),
+          ],
           _ThemeIconButton(themeMode: themeMode, onTap: onToggleTheme),
         ],
+      ),
+    );
+  }
+}
+
+/// Phone/tablet layout toggle, styled to match [_ThemeIconButton]. Shown only
+/// on the Server-mode host tablet (see `MeScreen.build`). When [forcePhone] is
+/// active the tablet is rendering the phone layout, so the icon offers the way
+/// back to the tablet layout.
+class _LayoutToggleButton extends StatelessWidget {
+  final bool forcePhone;
+  final VoidCallback onTap;
+  const _LayoutToggleButton({required this.forcePhone, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: sc.border1),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            forcePhone ? Icons.tablet_mac_outlined : Icons.smartphone_outlined,
+            size: 16,
+            color: sc.textMd,
+          ),
+        ),
       ),
     );
   }
@@ -834,6 +925,10 @@ class _AuditRow extends StatelessWidget {
       AuditType.comp => (Icons.card_giftcard_rounded, sc.warnSoft, sc.warn),
       AuditType.modify => (Icons.edit_outlined, sc.infoSoft, sc.info),
       AuditType.fire => (Icons.local_fire_department, sc.accentSoft, sc.accent),
+      AuditType.tableMoved => (Icons.swap_horiz_rounded, sc.infoSoft, sc.info),
+      AuditType.paymentRecorded => (Icons.payments_outlined, sc.successSoft, sc.success),
+      AuditType.refund => (Icons.undo_rounded, sc.warnSoft, sc.warn),
+      AuditType.billReopened => (Icons.lock_open_outlined, sc.infoSoft, sc.info),
       AuditType.staffCreated => (Icons.person_add_alt_1, sc.successSoft, sc.success),
       AuditType.staffDeleted => (Icons.person_remove, sc.urgentSoft, sc.urgent),
       AuditType.staffDisabled => (Icons.block, sc.urgentSoft, sc.urgent),

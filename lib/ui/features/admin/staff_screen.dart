@@ -428,6 +428,13 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
   }
 
   void _toggleCap(Role r, Capability c, bool on) {
+    // Admin is Firebase-only: a local admin can't newly grant manageStaff to a
+    // role (it would mint an admin-level role as a backdoor). Roles that
+    // already hold it keep it. Server enforces the same. See ADR-0017.
+    if (on && c == Capability.manageStaff && !r.has(Capability.manageStaff)) {
+      _toast('Peran admin hanya bisa dibuat oleh super admin');
+      return;
+    }
     // Guard: removing last manageStaff holder
     if (!on && c == Capability.manageStaff) {
       final holders = ref

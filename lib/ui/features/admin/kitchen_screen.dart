@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -242,7 +243,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
 
     return AdminPage(
       title: 'Antrian Persiapan',
-      sub: '${orders.length} order aktif · $itemCount item · tap untuk tandai selesai',
+      sub: '${orders.length} order aktif · $itemCount item · tahan untuk tandai selesai',
       topTrailing: filter,
       children: [
         if (orders.isEmpty)
@@ -563,6 +564,25 @@ class _ItemRowState extends State<_ItemRow>
     super.dispose();
   }
 
+  // Tap is a no-commit gesture now: it only nudges the cook toward the
+  // long-press that actually marks the item done, so an accidental brush
+  // can't advance a ticket. See ADR / kitchen long-press decision.
+  void _hint() {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Tahan untuk tandai selesai'),
+          duration: Duration(milliseconds: 1500),
+        ),
+      );
+  }
+
+  void _commit() {
+    HapticFeedback.mediumImpact();
+    widget.onTap();
+  }
+
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
@@ -580,7 +600,8 @@ class _ItemRowState extends State<_ItemRow>
         );
       },
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: cooked ? null : _hint,
+        onLongPress: cooked ? null : _commit,
         child: Container(
           constraints: const BoxConstraints(minHeight: 60),
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),

@@ -276,6 +276,13 @@ class TableSessions extends Table {
   TextColumn get actorUserId => text().nullable()();
   IntColumn get subtotal => integer().withDefault(const Constant(0))();
   IntColumn get voidAmount => integer().withDefault(const Constant(0))();
+  /// Service charge + tax applied at settlement (ADR-0023). Pre-v28 sessions
+  /// carry 0 (tax/service were never applied before settlement existed).
+  IntColumn get serviceAmount => integer().withDefault(const Constant(0))();
+  IntColumn get taxAmount => integer().withDefault(const Constant(0))();
+  /// REDEFINED in ADR-0023: now the actually-settled total
+  /// (`subtotal − void + service + tax`), not the old `netTotal == subtotal`.
+  /// Historical pre-v28 rows still equal their subtotal.
   IntColumn get netTotal => integer().withDefault(const Constant(0))();
   IntColumn get ticketCount => integer().withDefault(const Constant(0))();
   @override
@@ -309,6 +316,89 @@ class TableSessionTickets extends Table {
   TextColumn get createdByUserId => text().nullable()();
   /// Mirrors Tickets.voidedByUserId at session close.
   TextColumn get voidedByUserId => text().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A settleable receipt under a table's [[Bill]]. The Bill itself is implicit
+/// (the table IS the bill); receipts carry `tableId`. `mode` ∈ {itemized, even}.
+/// In itemized mode the receipt owns line units via ReceiptLines; in even mode
+/// it carries only `total` (its equal share). `serviceAmount`/`taxAmount` are
+/// computed per-receipt (service-then-tax) at settle. `status` ∈ {unpaid, paid}.
+/// Live rows; deleted + snapshotted into TableSessionReceipts at close.
+/// See docs/adr/0023-two-phase-settlement-and-split-bills.md.
+class Receipts extends Table {
+  TextColumn get id => text()();
+  TextColumn get tableId => text()();
+  TextColumn get mode => text().withDefault(const Constant('itemized'))();
+  TextColumn get label => text().withDefault(const Constant(''))();
+  IntColumn get subtotal => integer().withDefault(const Constant(0))();
+  IntColumn get serviceAmount => integer().withDefault(const Constant(0))();
+  IntColumn get taxAmount => integer().withDefault(const Constant(0))();
+  IntColumn get total => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().withDefault(const Constant('unpaid'))();
+  DateTimeColumn get createdAt => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Qty-level assignment of a live ticket line to a [[Receipt]] (itemized mode).
+/// A `qty:3` line may split across receipts as 2+1, so `qtyUnits` ≤ the ticket's
+/// qty and the sum of a ticket's assigned units across receipts ≤ its qty.
+class ReceiptLines extends Table {
+  TextColumn get id => text()();
+  TextColumn get receiptId => text()();
+  TextColumn get ticketId => text()();
+  IntColumn get qtyUnits => integer().withDefault(const Constant(1))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A cashier-recorded manual payment attestation against a [[Receipt]] (no
+/// gateway). `method` ∈ {tunai, kartu, qris, transfer, lainnya}. A refund is a
+/// negative `amount` (`isRefund` true). `tenderedAmount` (cash) is informational
+/// — the recorded revenue is `amount`. `cashierUserId` is server-stamped.
+class Payments extends Table {
+  TextColumn get id => text()();
+  TextColumn get receiptId => text()();
+  TextColumn get method => text()();
+  IntColumn get amount => integer()();
+  BoolColumn get isRefund => boolean().withDefault(const Constant(false))();
+  IntColumn get tenderedAmount => integer().nullable()();
+  TextColumn get cashierUserId => text().nullable()();
+  TextColumn get note => text().nullable()();
+  DateTimeColumn get at => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Per-receipt snapshot tied to a TableSession (mirrors Receipts at close).
+class TableSessionReceipts extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get receiptId => text()();
+  TextColumn get mode => text().withDefault(const Constant('itemized'))();
+  TextColumn get label => text().withDefault(const Constant(''))();
+  IntColumn get subtotal => integer().withDefault(const Constant(0))();
+  IntColumn get serviceAmount => integer().withDefault(const Constant(0))();
+  IntColumn get taxAmount => integer().withDefault(const Constant(0))();
+  IntColumn get total => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().withDefault(const Constant('unpaid'))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Per-payment snapshot tied to a TableSession (mirrors Payments at close).
+/// Source for the report payment-method breakdown after live rows are deleted.
+class TableSessionPayments extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get receiptId => text()();
+  TextColumn get method => text()();
+  IntColumn get amount => integer()();
+  BoolColumn get isRefund => boolean().withDefault(const Constant(false))();
+  TextColumn get cashierUserId => text().nullable()();
+  DateTimeColumn get at => dateTime()();
   @override
   Set<Column> get primaryKey => {id};
 }

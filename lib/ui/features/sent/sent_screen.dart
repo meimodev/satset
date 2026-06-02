@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/features/printing/printer_picker.dart';
 
 class SentScreen extends ConsumerStatefulWidget {
   final String tableId;
@@ -19,6 +21,9 @@ class _SentScreenState extends ConsumerState<SentScreen>
     with TickerProviderStateMixin {
   int _progress = 0;
   late final int _latency;
+  // Set once the waiter taps "Cetak struk" so the auto-return doesn't yank the
+  // screen out from under the printer picker.
+  bool _engaged = false;
 
   @override
   void initState() {
@@ -31,7 +36,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
       if (mounted) setState(() => _progress = 2);
     });
     Future.delayed(const Duration(milliseconds: 1900), () {
-      if (!mounted) return;
+      if (!mounted || _engaged) return;
       // Pop back to the original table detail (sent → review → menu → detail)
       // instead of go(), so the still-mounted detail keeps its lock rather
       // than disposing and re-acquiring. Router ref is captured because this
@@ -47,8 +52,8 @@ class _SentScreenState extends ConsumerState<SentScreen>
   Widget build(BuildContext context) {
     final sc = context.sat;
     final tables = ref.watch(tablesProvider);
-    final t = tables.where((x) => x.id == widget.tableId).cast<dynamic>().firstOrNull;
-    final name = t?.displayName ?? widget.tableId;
+    final table = tables.where((x) => x.id == widget.tableId).firstOrNull;
+    final name = table?.displayName ?? widget.tableId;
     return Scaffold(
       backgroundColor: sc.bg0,
       body: Center(
@@ -98,6 +103,23 @@ class _SentScreenState extends ConsumerState<SentScreen>
                     color: sc.textLo,
                     letterSpacing: 1.0,
                   )),
+              if (table != null) ...[
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                  label: const Text('Cetak struk'),
+                  onPressed: () {
+                    setState(() => _engaged = true);
+                    printTableStruk(
+                      context: context,
+                      ref: ref,
+                      table: table,
+                      tickets: ref.read(ticketsProvider)[widget.tableId] ??
+                          const [],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),

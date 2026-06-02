@@ -459,6 +459,90 @@ class DummyData {
 
   static MenuItem itemById(String id) => items.firstWhere((i) => i.id == id);
 
+  // ---------------------------------------------------------------------------
+  // Generic restaurant seed (prompted on first run — see ADR-0017).
+  // A minimal, clean starter set: 2 zones x 2 tables, 2 staff (1 waiter +
+  // 1 kitchen), and the generic menu above. NO PIN admin (admin is
+  // Firebase-only) and NO fake report history.
+  // ---------------------------------------------------------------------------
+
+  /// Roles offered by the generic seed. The shared **admin** role is infra
+  /// (always seeded, not here) and the **manager** role is intentionally
+  /// omitted — it carries `manageStaff`, which the staff screen forbids
+  /// assigning now that admin is Firebase-only.
+  static List<Role> genericRoles() => <Role>[
+        Role(
+          id: roleWaiterId,
+          name: 'Waiter',
+          colorHex: 0xFFFF9233,
+          capabilities: const {
+            Capability.takeOrder,
+            Capability.modifyOrder,
+            Capability.voidItem,
+            Capability.settleBill,
+          },
+        ),
+        Role(
+          id: roleKitchenId,
+          name: 'Kitchen',
+          colorHex: 0xFFFF5C5C,
+          capabilities: const {
+            Capability.viewKds,
+            Capability.markSoldOut,
+          },
+        ),
+      ];
+
+  static const genericWaiter = AppUser(
+    id: 'seed-waiter',
+    name: 'Pelayan',
+    initials: 'PL',
+    role: UserRole.waiter,
+    shiftStartedAt: '',
+    zoneAssigned: 'Dalam',
+    roleId: roleWaiterId,
+    pin: '100001',
+    avatarColorHex: 0xFFC08AFF,
+  );
+
+  static const genericKitchen = AppUser(
+    id: 'seed-kitchen',
+    name: 'Dapur',
+    initials: 'DP',
+    role: UserRole.kitchen,
+    shiftStartedAt: '',
+    zoneAssigned: '—',
+    roleId: roleKitchenId,
+    pin: '100002',
+    avatarColorHex: 0xFFFF9233,
+  );
+
+  static const genericUsers = <AppUser>[genericWaiter, genericKitchen];
+
+  static const genericZones = <Zone>[
+    Zone(
+      id: 'indoor',
+      name: 'Dalam',
+      short: 'Dlm',
+      colorHex: 0xFF6DB5FF,
+      iconKey: 'weekend',
+    ),
+    Zone(
+      id: 'outdoor',
+      name: 'Luar',
+      short: 'Luar',
+      colorHex: 0xFF4DD487,
+      iconKey: 'deck',
+    ),
+  ];
+
+  static const genericTables = <VenueTable>[
+    VenueTable(id: 'D1', zoneId: 'indoor', pax: 2, status: TableStatus.available),
+    VenueTable(id: 'D2', zoneId: 'indoor', pax: 4, status: TableStatus.available),
+    VenueTable(id: 'L1', zoneId: 'outdoor', pax: 2, status: TableStatus.available),
+    VenueTable(id: 'L2', zoneId: 'outdoor', pax: 4, status: TableStatus.available),
+  ];
+
   static List<AuditEntry> initialAudit() => const [
         AuditEntry(id: 'A0', type: AuditType.fire, title: 'Course Utama dibakar untuk Meja T1', tableId: 'T1', when: '17:46'),
       ];

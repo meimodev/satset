@@ -10,6 +10,7 @@ class TabletShell extends StatelessWidget {
   final String activeTab;
   final int readyCount;
   final int kitchenCount;
+  final bool showKasir;
   final Widget child;
   final List<String> crumbs;
 
@@ -18,6 +19,7 @@ class TabletShell extends StatelessWidget {
     required this.activeTab,
     required this.readyCount,
     required this.kitchenCount,
+    this.showKasir = false,
     required this.child,
     required this.crumbs,
   });
@@ -32,7 +34,8 @@ class TabletShell extends StatelessWidget {
           TabletSideRail(
               active: activeTab,
               readyCount: readyCount,
-              kitchenCount: kitchenCount),
+              kitchenCount: kitchenCount,
+              showKasir: showKasir),
           Expanded(
             child: Column(
               children: [
@@ -51,11 +54,13 @@ class TabletSideRail extends StatelessWidget {
   final String active;
   final int readyCount;
   final int kitchenCount;
+  final bool showKasir;
   const TabletSideRail({
     super.key,
     required this.active,
     required this.readyCount,
     required this.kitchenCount,
+    this.showKasir = false,
   });
 
   @override
@@ -80,6 +85,8 @@ class TabletSideRail extends StatelessWidget {
                   _RailBtn(id: 'tables', label: 'Meja', icon: Icons.grid_view_rounded, route: '/tables', active: active),
                   _RailBtn(id: 'orders', label: 'Pesanan', icon: Icons.description_outlined, route: '/orders', active: active, badge: readyCount, alert: readyCount > 0),
                   _RailBtn(id: 'kitchen', label: 'Antrian', icon: Icons.receipt_long_outlined, route: '/kitchen', active: active, badge: kitchenCount),
+                  if (showKasir)
+                    _RailBtn(id: 'kasir', label: 'Kasir', icon: Icons.point_of_sale_rounded, route: '/kasir', active: active),
                   _RailDiv(),
                   _RailBtn(id: 'venue', label: 'Venue', icon: Icons.storefront_outlined, route: '/venue', active: active),
                 ],

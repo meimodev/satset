@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/data/repositories/generic_seed.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -66,31 +68,173 @@ final _sections = <_Section>[
   ),
 ];
 
-class VenueHubScreen extends StatelessWidget {
+class VenueHubScreen extends ConsumerWidget {
   const VenueHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.layout;
+    final showSeed = ref.watch(genericSeedProvider).showPrompt;
     if (l.useTabletShell) {
       return AdminPage(
         title: 'Venue',
         sub: 'Konfigurasi · lantai · menu · sistem · staf',
         children: [
+          if (showSeed) ...[
+            const Reveal(index: 0, child: SeedDataBanner()),
+            const SizedBox(height: 12),
+          ],
           for (var i = 0; i < _sections.length; i++) ...[
-            Reveal(index: i, child: _HubRow(section: _sections[i], big: true)),
+            Reveal(
+                index: i + (showSeed ? 1 : 0),
+                child: _HubRow(section: _sections[i], big: true)),
             if (i != _sections.length - 1) const SizedBox(height: 12),
           ],
         ],
       );
     }
-    return _PhoneHub(sections: _sections);
+    return _PhoneHub(sections: _sections, showSeed: showSeed);
+  }
+}
+
+/// First-run prompt offering to load the generic restaurant dataset. Shown on
+/// the Venue Hub only while the host DB is empty and the admin hasn't
+/// dismissed it this session. See ADR-0017.
+class SeedDataBanner extends ConsumerWidget {
+  const SeedDataBanner({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final st = ref.watch(genericSeedProvider);
+    final ctrl = ref.read(genericSeedProvider.notifier);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: sc.accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: sc.accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_fix_high_rounded, size: 18, color: sc.accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Mulai cepat',
+                    style: SatType.sans(
+                        size: 15,
+                        weight: FontWeight.w700,
+                        color: sc.textHi)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Muat contoh data restoran umum: 2 zona (Dalam & Luar) dengan '
+            'meja, menu lengkap, dan 2 staf (pelayan & dapur). Bisa diubah '
+            'kapan saja.',
+            style: SatType.sans(size: 12.5, color: sc.textLo, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _BannerBtn(
+                  label: st.loading ? 'Memuat…' : 'Muat contoh data',
+                  filled: true,
+                  busy: st.loading,
+                  onTap: st.loading
+                      ? null
+                      : () async {
+                          try {
+                            await ctrl.seed();
+                          } catch (_) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Gagal memuat contoh data')),
+                              );
+                            }
+                          }
+                        },
+                ),
+              ),
+              const SizedBox(width: 10),
+              _BannerBtn(
+                label: 'Nanti',
+                filled: false,
+                onTap: st.loading ? null : ctrl.dismiss,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BannerBtn extends StatelessWidget {
+  final String label;
+  final bool filled;
+  final bool busy;
+  final VoidCallback? onTap;
+  const _BannerBtn({
+    required this.label,
+    required this.filled,
+    this.busy = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Material(
+      color: filled ? sc.accent : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: filled ? null : Border.all(color: sc.border1),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (busy) ...[
+                SizedBox(
+                  width: 13,
+                  height: 13,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: sc.bg0),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Text(label,
+                  style: SatType.sans(
+                    size: 13,
+                    weight: FontWeight.w600,
+                    color: filled ? sc.bg0 : sc.textHi,
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
 class _PhoneHub extends StatelessWidget {
   final List<_Section> sections;
-  const _PhoneHub({required this.sections});
+  final bool showSeed;
+  const _PhoneHub({required this.sections, this.showSeed = false});
 
   @override
   Widget build(BuildContext context) {
@@ -133,8 +277,14 @@ class _PhoneHub extends StatelessWidget {
             ),
           ),
         ),
+        if (showSeed) ...[
+          const Reveal(index: 2, child: SeedDataBanner()),
+          const SizedBox(height: 12),
+        ],
         for (var i = 0; i < sections.length; i++) ...[
-          Reveal(index: i + 2, child: _HubRow(section: sections[i], big: false)),
+          Reveal(
+              index: i + (showSeed ? 3 : 2),
+              child: _HubRow(section: sections[i], big: false)),
           if (i != sections.length - 1) const SizedBox(height: 8),
         ],
       ],

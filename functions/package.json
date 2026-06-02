@@ -2,7 +2,7 @@
   "name": "satset-fleet-functions",
   "description": "Privileged fleet control-plane callables for SatSet super admin.",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {

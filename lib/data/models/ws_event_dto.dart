@@ -19,6 +19,15 @@ class WsEventDto with _$WsEventDto {
 
 class WsEventTypes {
   WsEventTypes._();
+
+  /// Client-internal: emitted by [WsClient] onto its own event stream every
+  /// time the socket reaches `open` (first connect AND every reconnect). The
+  /// server never sends this. Repositories listen for it to **full-resync**
+  /// their list against the server, recovering from a lossy gap — an empty or
+  /// 401 bootstrap, or events missed while the socket was down. See
+  /// docs/adr/0021-repository-resync-on-ws-reconnect.md.
+  static const connected = 'local.connected';
+
   static const ticketCreated = 'ticket.created';
   static const ticketUpdated = 'ticket.updated';
   static const tableCreated = 'table.created';
@@ -44,6 +53,11 @@ class WsEventTypes {
   static const printerDeleted = 'printer.deleted';
   static const serverRestarting = 'server.restarting';
   static const tableSessionClosed = 'tableSession.closed';
+
+  /// A table's [[Bill]] changed — receipt created/removed, line (re)assigned,
+  /// payment/refund recorded, or a receipt reopened. Carries the tableId so the
+  /// cashier list + any open bill detail re-fetch. See ADR-0023.
+  static const billUpdated = 'bill.updated';
   static const reservationCreated = 'reservation.created';
   static const reservationUpdated = 'reservation.updated';
   static const reservationDeleted = 'reservation.deleted';

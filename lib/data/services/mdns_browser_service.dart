@@ -15,6 +15,10 @@ class DiscoveredServer {
   final String label;
   final String? version;
 
+  /// Cloud venue id this server hosts (TXT `vid`, ADR-0017). Empty for a
+  /// legacy server that predates venue-scoping.
+  final String venueId;
+
   const DiscoveredServer({
     required this.name,
     required this.host,
@@ -22,6 +26,7 @@ class DiscoveredServer {
     required this.fingerprint,
     required this.label,
     this.version,
+    this.venueId = '',
   });
 
   String get key => '$host:$port';
@@ -71,6 +76,29 @@ class MdnsBrowserService {
     });
     await d.start();
     SatLog.vm('MdnsBrowser start $serviceType');
+  }
+
+  /// One-shot scan for an already-running server hosting [venueId] (the
+  /// Main-Device guard, ADR-0017). Spins discovery up for at most [window],
+  /// returning the first matching host or null. Self-contained start/stop.
+  Future<DiscoveredServer?> findVenueHost(
+    String venueId, {
+    Duration window = const Duration(seconds: 3),
+  }) async {
+    if (venueId.isEmpty) return null;
+    await start();
+    try {
+      final deadline = DateTime.now().add(window);
+      while (DateTime.now().isBefore(deadline)) {
+        for (final s in current) {
+          if (s.venueId == venueId) return s;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+      }
+      return null;
+    } finally {
+      await stop();
+    }
   }
 
   Future<void> stop() async {
@@ -135,6 +163,7 @@ class MdnsBrowserService {
       fingerprint: fp,
       label: label,
       version: (version == null || version.isEmpty) ? null : version,
+      venueId: (attrs['vid'] ?? '').trim(),
     );
     // Dedup by host:port. mDNS can surface several stale service names
     // pointing at the same endpoint after server restarts. Prefer the entry

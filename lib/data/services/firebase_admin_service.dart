@@ -112,6 +112,12 @@ class FirebaseAdminService {
 
   fb.User? get currentUser => _auth.currentUser;
 
+  /// Current user's Firebase ID token (carries the `{role, venueId}` custom
+  /// claims). Presented to a [[Main Device]] host to join as an admin-client
+  /// (ADR-0017). [forceRefresh] re-mints it if claims were just updated.
+  Future<String?> currentIdToken({bool forceRefresh = false}) async =>
+      _auth.currentUser?.getIdToken(forceRefresh);
+
   Future<fb.UserCredential> signIn({
     required String email,
     required String password,

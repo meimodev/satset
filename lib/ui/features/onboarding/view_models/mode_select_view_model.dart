@@ -38,14 +38,18 @@ class ModeSelectViewModel extends StateNotifier<ModeSelectState> {
   final Ref _ref;
   final PrefsService _prefs;
 
-  Future<void> choose(AppMode mode) async {
+  Future<void> choose(AppMode mode, {String venueId = ''}) async {
     SatLog.vm('ModeVM choose ${mode.name}');
     state = state.copyWith(busy: true, error: null);
     try {
       await _prefs.setAppMode(mode);
       if (mode == AppMode.server && Platform.isAndroid) {
+        // The Main-Device decision (host vs. join-as-admin-client) is made in
+        // AuthRepository.signInAsAdmin before this runs, so reaching here means
+        // we are becoming the venue host. The `venueId` is advertised in the
+        // mDNS TXT so other admins discover us. See ADR-0017.
         var rt = _ref.read(serverRuntimeProvider);
-        rt ??= await ServerRuntime.boot();
+        rt ??= await ServerRuntime.boot(venueId: venueId);
         _ref.read(serverRuntimeProvider.notifier).state = rt;
         _ref.read(apiConfigProvider.notifier).state = ApiConfig(
           baseUri: Uri.parse('https://127.0.0.1:${rt.port}'),

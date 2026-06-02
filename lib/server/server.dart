@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -10,8 +11,10 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 
 import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'auth.dart';
+import 'firebase_token_verifier.dart';
 import 'db/database.dart';
 import 'db/seed.dart';
 import 'mdns.dart';
@@ -26,6 +29,7 @@ import 'routes/reference_routes.dart';
 import 'routes/reports_routes.dart';
 import 'routes/reservations_routes.dart';
 import 'routes/server_routes.dart';
+import 'routes/settlement_routes.dart';
 import 'routes/tables_routes.dart';
 import 'routes/tickets_routes.dart';
 import 'routes/venue_settings_routes.dart';
@@ -49,10 +53,17 @@ class ServerRuntime {
     required this.port,
     required this.label,
     required this.version,
+    required this.venueId,
   });
 
   final String? label;
   final String version;
+
+  /// The cloud venue this host serves (ADR-0017). Advertised in the mDNS TXT
+  /// record so a second device about to enter Server mode for the same venue
+  /// can detect the collision and join as a client instead of splitting the
+  /// data. Empty for a legacy/un-gated server-mode boot.
+  final String venueId;
 
   final AppDatabase db;
   final ServerAuth auth;
@@ -63,6 +74,7 @@ class ServerRuntime {
   final int port;
   HttpServer? _http;
   Timer? _statusTicker;
+  Timer? _printerHeartbeat;
   bool _restarting = false;
 
   /// Reset on every successful bind. Restart() updates this.
@@ -103,13 +115,23 @@ class ServerRuntime {
   static const defaultPort = 7443;
   static const defaultVersion = '1.0.0';
 
+  /// Firebase project id (matches `android/app/google-services.json`). Used to
+  /// verify admin-client ID tokens (ADR-0017).
+  static const firebaseProjectId = 'satset-3a795';
+
+  /// Offline verifier for admin-client Firebase ID tokens. Lazily built; only
+  /// exercised when this host is venue-scoped (`venueId` non-empty).
+  late final FirebaseTokenVerifier _tokenVerifier =
+      FirebaseTokenVerifier(projectId: firebaseProjectId);
+
   static Future<ServerRuntime> boot({
     int port = defaultPort,
     String? label,
     String version = defaultVersion,
+    String venueId = '',
   }) async {
     final db = await AppDatabase.open();
-    await seedIfEmpty(db);
+    await seedInfra(db);
     final tls = await ServerTls.loadOrCreate();
     final hub = WsHub();
     final auth = ServerAuth(db, secret: await ServerAuth.loadOrCreateSecret());
@@ -126,6 +148,7 @@ class ServerRuntime {
       port: port,
       label: label,
       version: version,
+      venueId: venueId,
     );
 
     final handler = const Pipeline()
@@ -149,9 +172,41 @@ class ServerRuntime {
       fingerprint: tls.fingerprint,
       label: label,
       version: version,
+      venueId: venueId,
     );
     rt._startStatusTicker();
+    rt._startPrinterHeartbeat();
     return rt;
+  }
+
+  /// Probes every enabled venue printer (connect-only, in parallel) on a 15s
+  /// tick, stamps `lastSeenAt` on the ones that answer, and broadcasts so
+  /// clients refresh their online dots without a refetch. A printer that
+  /// doesn't answer simply isn't stamped and ages past the client's 30s online
+  /// window. See ADR-0022.
+  void _startPrinterHeartbeat() {
+    _printerHeartbeat?.cancel();
+    _printerHeartbeat = Timer.periodic(const Duration(seconds: 15), (_) async {
+      try {
+        final rows = await (db.select(db.printers)
+              ..where((p) => p.enabled.equals(true)))
+            .get();
+        if (rows.isEmpty) return;
+        await Future.wait(rows.map((p) async {
+          if (!await StrukSocket.probe(p.host, p.port)) return;
+          await (db.update(db.printers)..where((x) => x.id.equals(p.id)))
+              .write(PrintersCompanion(lastSeenAt: Value(DateTime.now())));
+          final updated = await (db.select(db.printers)
+                ..where((x) => x.id.equals(p.id)))
+              .getSingleOrNull();
+          if (updated != null) {
+            hub.broadcast(WsEventTypes.printerUpdated, printerJson(updated));
+          }
+        }));
+      } catch (e) {
+        SatLog.srv('printer heartbeat $e');
+      }
+    });
   }
 
   void _startStatusTicker() {
@@ -201,6 +256,7 @@ class ServerRuntime {
     SatLog.srv('restart begin');
     try {
       _statusTicker?.cancel();
+      _printerHeartbeat?.cancel();
       // Drain WS clients.
       await hub.dispose();
       // Close HTTP listener with a short grace period.
@@ -231,10 +287,12 @@ class ServerRuntime {
         fingerprint: tls.fingerprint,
         label: label,
         version: version,
+        venueId: venueId,
       );
       startedAt = DateTime.now();
       _resetLatency();
       _startStatusTicker();
+      _startPrinterHeartbeat();
       SatLog.srv('restart ok port=$port');
       // Push a fresh status so any client that reconnected sees the new
       // uptime/startedAt without waiting for the next ticker.
@@ -248,7 +306,12 @@ class ServerRuntime {
   Router _buildRouter() {
     final r = Router();
     r.mount('/', healthRoutes().call);
-    r.mount('/', authRoutes(auth).call);
+    r.mount(
+        '/',
+        authRoutes(auth,
+                venueId: venueId,
+                verifier: venueId.isEmpty ? null : _tokenVerifier)
+            .call);
     r.mount('/', menuRoutes(db, hub, auth).call);
     r.mount('/', tablesRoutes(db, hub, auth).call);
     r.mount('/', ticketsRoutes(db, hub, auth).call);
@@ -260,6 +323,7 @@ class ServerRuntime {
     r.mount('/', kdsRoutes(db, auth).call);
     r.mount('/', reportsRoutes(db, auth).call);
     r.mount('/', reservationsRoutes(db, hub, auth).call);
+    r.mount('/', settlementRoutes(db, hub, auth).call);
 
     r.post('/pair/claim', (Request req) async {
       final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
@@ -330,6 +394,7 @@ class ServerRuntime {
 
   Future<void> shutdown() async {
     _statusTicker?.cancel();
+    _printerHeartbeat?.cancel();
     await _http?.close(force: true);
     await advertiser.stop();
     await hub.dispose();
@@ -402,6 +467,9 @@ Middleware _authMiddleware(ServerAuth auth) {
   const skip = {
     '/healthz',
     '/auth/login',
+    // Admin-client bootstrap: authenticated by a Firebase ID token in the body,
+    // not a local bearer (it has none yet). See ADR-0017.
+    '/auth/admin',
     '/pair/claim',
     '/pair/auto-claim',
   };

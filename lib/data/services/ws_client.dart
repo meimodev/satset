@@ -77,6 +77,13 @@ class WsClient {
       SatLog.ws('open');
       connState.value = WsConnState.open;
       _attempt = 0;
+      // Tell repositories the socket is live. They full-resync on this so a
+      // lossy gap (empty/401 bootstrap, or events missed while down) heals on
+      // every (re)connect. See ADR-0021.
+      _controller.add(WsEventDto(
+        type: WsEventTypes.connected,
+        ts: DateTime.now(),
+      ));
     } catch (e, st) {
       SatLog.err('ws start', e, st);
       _handleDrop();

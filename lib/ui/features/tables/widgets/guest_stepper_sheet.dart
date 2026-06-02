@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'guest_stepper.dart';
+import 'move_table_sheet.dart';
 
 Future<void> showGuestStepperSheet({
   required BuildContext context,
@@ -35,8 +38,11 @@ class _GuestStepperSheet extends ConsumerWidget {
       (t) => t.id == tableId,
       orElse: () => VenueTable(id: tableId, zoneId: ''),
     );
-    final user = ref.watch(authStateProvider).user;
+    final auth = ref.watch(authStateProvider);
+    final user = auth.user;
     final canEdit = user?.role == UserRole.waiter;
+    final canMove = table.status != TableStatus.available &&
+        auth.has(Capability.takeOrder);
     final actorId = user?.id;
 
     return SafeArea(
@@ -105,6 +111,39 @@ class _GuestStepperSheet extends ConsumerWidget {
                 ),
               ),
             const SizedBox(height: 18),
+            if (canMove) ...[
+              SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final targetId = await showMoveTableSheet(
+                      context: context,
+                      sourceId: table.id,
+                    );
+                    if (targetId == null || !context.mounted) return;
+                    Navigator.of(context).pop(); // close this stepper sheet
+                    context.push('/table/$targetId');
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: sc.bg3,
+                    foregroundColor: sc.textHi,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                  label: Text(
+                    'Pindahkan meja',
+                    style: SatType.sans(
+                      size: 14,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             SizedBox(
               height: 48,
               child: OutlinedButton(

@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
@@ -8,6 +9,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/pin_sheet.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 
@@ -19,14 +21,6 @@ const _kPanelCurve = Curves.easeOutQuint;
 
 Duration _d(BuildContext c, Duration d) =>
     MediaQuery.disableAnimationsOf(c) ? Duration.zero : d;
-
-const _kStaffDebugCreds = PinDebugCreds([
-  (pin: '100000', name: 'Pak Nyoman', role: 'Owner'),
-  (pin: '100001', name: 'Maya', role: 'Waiter'),
-  (pin: '100002', name: 'Budi', role: 'Waiter'),
-  (pin: '100003', name: 'Rina', role: 'Waiter'),
-  (pin: '100004', name: 'Komang', role: 'Kitchen'),
-]);
 
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
@@ -130,13 +124,20 @@ class _PinScreenState extends ConsumerState<PinScreen>
   Future<void> _openPinSheet(PairedServerInfo server) async {
     if (_sheetOpen) return;
     _sheetOpen = true;
+    // Recheck reachability immediately on open so the status pill reflects the
+    // live connection instead of a heartbeat sample up to 5s stale. Deferred a
+    // frame so the sheet's pill is watching pingProvider (keeps it alive)
+    // before the probe fires.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(ref.read(pingProvider.notifier).recheck());
+    });
     final ok = await showPinSheet(
       context,
       title: 'Masukkan PIN',
       subtitle: 'Tersambung ke ${server.label}',
+      statusSlot: const _ServerReachabilityPill(),
       onSubmit: (pin) =>
           ref.read(pinViewModelProvider.notifier).verifyPin(pin),
-      debugCreds: kDebugMode ? _kStaffDebugCreds : null,
     );
     _sheetOpen = false;
     if (!mounted) return;
@@ -253,14 +254,6 @@ class _PinScreenState extends ConsumerState<PinScreen>
                     children: [
                       _Reveal(
                         delay: const Duration(milliseconds: 120),
-                        child: _ModeHeading(
-                          mode: state.mode,
-                          server: state.selectedServer,
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      _Reveal(
-                        delay: const Duration(milliseconds: 180),
                         child: _AdminAuthForm(
                           email: _adminEmail,
                           password: _adminPassword,
@@ -331,10 +324,6 @@ class _PinScreenState extends ConsumerState<PinScreen>
     }
 
     final brand = _Brand();
-    final modeHeading = _ModeHeading(
-      mode: state.mode,
-      server: state.selectedServer,
-    );
     final adminForm = _AdminAuthForm(
       email: _adminEmail,
       password: _adminPassword,
@@ -405,17 +394,11 @@ class _PinScreenState extends ConsumerState<PinScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              if (state.mode == SignInMode.admin) ...[
+                              if (state.mode == SignInMode.admin)
                                 _Reveal(
                                   delay: const Duration(milliseconds: 120),
-                                  child: modeHeading,
-                                ),
-                                const SizedBox(height: 22),
-                                _Reveal(
-                                  delay: const Duration(milliseconds: 180),
                                   child: wrappedAuthBody,
                                 ),
-                              ],
                             ],
                           ),
                         ),
@@ -432,73 +415,17 @@ class _PinScreenState extends ConsumerState<PinScreen>
                           child: modeBlock,
                         ),
                         const SizedBox(height: 26),
-                        if (state.mode == SignInMode.admin) ...[
+                        if (state.mode == SignInMode.admin)
                           _Reveal(
                             delay: const Duration(milliseconds: 140),
-                            child: modeHeading,
-                          ),
-                          const SizedBox(height: 18),
-                          _Reveal(
-                            delay: const Duration(milliseconds: 200),
                             child: wrappedAuthBody,
                           ),
-                        ],
                       ],
                     ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ModeHeading extends StatelessWidget {
-  final SignInMode mode;
-  final PairedServerInfo? server;
-  const _ModeHeading({required this.mode, required this.server});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final isAdmin = mode == SignInMode.admin;
-    final label = isAdmin ? 'MODE ADMIN' : 'MODE STAFF';
-    final title = isAdmin ? 'Masuk admin' : 'Masukkan PIN';
-    final sub = isAdmin
-        ? 'Login pakai email & password'
-        : server != null
-            ? 'Tersambung ke ${server!.label}'
-            : 'Pilih server lebih dulu';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isAdmin ? sc.warnSoft : sc.accentSoft,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(label,
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w600,
-                letterSpacing: 1.2,
-                color: isAdmin ? sc.warn : sc.accent,
-              )),
-        ),
-        const SizedBox(height: 8),
-        Text(title,
-            style: SatType.sans(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.22,
-              color: sc.textHi,
-            )),
-        const SizedBox(height: 2),
-        Text(sub,
-            textAlign: TextAlign.center,
-            style: SatType.sans(size: 12, color: sc.textMd)),
-      ],
     );
   }
 }
@@ -536,7 +463,7 @@ class _AdminAuthForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Field(
-          label: 'Email admin',
+          label: 'Email',
           controller: email,
           hint: 'admin@warung.id',
           keyboardType: TextInputType.emailAddress,
@@ -669,17 +596,6 @@ class _AdminAuthForm extends StatelessWidget {
             ],
           ),
         ],
-        const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shield_outlined, size: 12, color: sc.textLo),
-            const SizedBox(width: 6),
-            Text('Akses penuh manajer · audit dicatat',
-                style: SatType.mono(
-                    size: 10, color: sc.textLo, letterSpacing: 0.4)),
-          ],
-        ),
       ],
     );
   }
@@ -728,7 +644,6 @@ class _ModeSwitcher extends StatelessWidget {
                       sc,
                       icon: Icons.shield_moon_outlined,
                       label: 'Admin',
-                      sub: 'Server lokal',
                       active: isAdmin,
                       onTap: () => onChange(SignInMode.admin),
                     ),
@@ -740,7 +655,6 @@ class _ModeSwitcher extends StatelessWidget {
                       sc,
                       icon: Icons.badge_outlined,
                       label: 'Staff',
-                      sub: 'Pilih server',
                       active: !isAdmin,
                       onTap: () => onChange(SignInMode.staff),
                     ),
@@ -759,7 +673,6 @@ class _ModeSwitcher extends StatelessWidget {
     SatColors sc, {
     required IconData icon,
     required String label,
-    required String sub,
     required bool active,
     required VoidCallback onTap,
   }) {
@@ -782,34 +695,17 @@ class _ModeSwitcher extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(end: active ? 1.0 : 0.0),
-                    duration: _d(context, _kMicroDur),
-                    curve: Curves.easeOutQuart,
-                    builder: (context, t, _) => Text(label,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.14,
-                          color: Color.lerp(sc.textMd, sc.textHi, t),
-                        )),
-                  ),
-                  const SizedBox(height: 1),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(end: active ? 1.0 : 0.0),
-                    duration: _d(context, _kMicroDur),
-                    curve: Curves.easeOutQuart,
-                    builder: (context, t, _) => Text(sub,
-                        style: SatType.mono(
-                          size: 10,
-                          color: Color.lerp(sc.textLo, sc.accent, t),
-                          letterSpacing: 0.4,
-                        )),
-                  ),
-                ],
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: active ? 1.0 : 0.0),
+                duration: _d(context, _kMicroDur),
+                curve: Curves.easeOutQuart,
+                builder: (context, t, _) => Text(label,
+                    style: SatType.sans(
+                      size: 14,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.14,
+                      color: Color.lerp(sc.textMd, sc.textHi, t),
+                    )),
               ),
             ),
           ],
@@ -838,35 +734,9 @@ class _ServerList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final pairedCount = servers.where((s) => s.paired).length;
-    final discoveredCount = servers.length - pairedCount;
-    final counterText = discoveredCount > 0
-        ? '$pairedCount TERPASANG · $discoveredCount LAN'
-        : '$pairedCount TERPASANG';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-          child: Row(
-            children: [
-              Text('SERVER TERSEDIA',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w500,
-                    letterSpacing: 1.2,
-                    color: sc.textLo,
-                  )),
-              const Spacer(),
-              Text(counterText,
-                  style: SatType.mono(
-                    size: 10,
-                    color: sc.textDim,
-                    letterSpacing: 1.2,
-                  )),
-            ],
-          ),
-        ),
         Container(
           decoration: BoxDecoration(
             color: sc.bg2,
@@ -954,40 +824,14 @@ class _ServerRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(server.label,
-                              overflow: TextOverflow.ellipsis,
-                              style: SatType.sans(
-                                size: 14,
-                                weight: FontWeight.w500,
-                                letterSpacing: -0.14,
-                                color: sc.textHi,
-                              )),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: server.paired
-                                ? sc.successSoft
-                                : sc.accentSoft,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            server.paired ? 'TERPASANG' : 'LAN',
-                            style: SatType.mono(
-                              size: 9,
-                              weight: FontWeight.w600,
-                              letterSpacing: 1.0,
-                              color: server.paired ? sc.success : sc.accent,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    Text(server.label,
+                        overflow: TextOverflow.ellipsis,
+                        style: SatType.sans(
+                          size: 14,
+                          weight: FontWeight.w500,
+                          letterSpacing: -0.14,
+                          color: sc.textHi,
+                        )),
                     const SizedBox(height: 2),
                     Text(
                       server.version == null
@@ -1244,7 +1088,72 @@ String? _bootBlockText(String? code) => switch (code) {
       _ => null,
     };
 
-class _ConnectedServerCard extends StatelessWidget {
+/// Three-state reachability derived from the live `/healthz` heartbeat
+/// ([pingProvider]) of the currently-published paired server. Debounced: a
+/// single failed probe stays in the neutral "checking" state so a momentary
+/// Wi-Fi blip doesn't flash "down" while the server is actually up.
+({Color dot, Color glow, String label, bool offline}) _reachabilityVisual(
+    PingState ping, SatColors sc) {
+  if (ping.reachable) {
+    final ms = (ping.latest ?? ping.p50)?.inMilliseconds;
+    return (
+      dot: sc.success,
+      glow: sc.successSoft,
+      label: ms == null ? 'Tersambung' : 'Tersambung · ${ms}ms',
+      offline: false,
+    );
+  }
+  if (ping.consecutiveFailures >= 2) {
+    return (
+      dot: sc.urgent,
+      glow: sc.urgentSoft,
+      label: 'Server tidak terjangkau',
+      offline: true,
+    );
+  }
+  return (
+    dot: sc.warn,
+    glow: sc.warnSoft,
+    label: 'Memeriksa sambungan…',
+    offline: false,
+  );
+}
+
+/// Live reachability pill (dot + label) for the PIN sheet's status slot.
+class _ServerReachabilityPill extends ConsumerWidget {
+  const _ServerReachabilityPill();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final v = _reachabilityVisual(ref.watch(pingProvider), sc);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: v.dot,
+            boxShadow: [BoxShadow(color: v.glow, spreadRadius: 3)],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          v.label,
+          style: SatType.mono(
+            size: 11,
+            color: v.offline ? sc.urgent : sc.textMd,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectedServerCard extends ConsumerWidget {
   final PairedServerInfo server;
   final VoidCallback onEdit;
   final VoidCallback onReenterPin;
@@ -1255,8 +1164,9 @@ class _ConnectedServerCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final v = _reachabilityVisual(ref.watch(pingProvider), sc);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1289,9 +1199,9 @@ class _ConnectedServerCard extends StatelessWidget {
                     height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: sc.success,
+                      color: v.dot,
                       boxShadow: [
-                        BoxShadow(color: sc.successSoft, spreadRadius: 3),
+                        BoxShadow(color: v.glow, spreadRadius: 3),
                       ],
                     ),
                   ),
@@ -1300,39 +1210,15 @@ class _ConnectedServerCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                server.label,
-                                overflow: TextOverflow.ellipsis,
-                                style: SatType.sans(
-                                  size: 14,
-                                  weight: FontWeight.w500,
-                                  letterSpacing: -0.14,
-                                  color: sc.textHi,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: sc.accentSoft,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                'STAFF',
-                                style: SatType.mono(
-                                  size: 9,
-                                  weight: FontWeight.w600,
-                                  letterSpacing: 1.0,
-                                  color: sc.accent,
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          server.label,
+                          overflow: TextOverflow.ellipsis,
+                          style: SatType.sans(
+                            size: 14,
+                            weight: FontWeight.w500,
+                            letterSpacing: -0.14,
+                            color: sc.textHi,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -1342,6 +1228,15 @@ class _ConnectedServerCard extends StatelessWidget {
                           style: SatType.mono(
                             size: 10,
                             color: sc.textLo,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          v.label,
+                          style: SatType.mono(
+                            size: 10,
+                            color: v.offline ? sc.urgent : sc.textMd,
                             letterSpacing: 0.4,
                           ),
                         ),
@@ -1356,17 +1251,6 @@ class _ConnectedServerCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Center(
-          child: Text(
-            'Ketuk kartu untuk masukkan PIN',
-            style: SatType.mono(
-              size: 10,
-              color: sc.textLo,
-              letterSpacing: 0.6,
             ),
           ),
         ),

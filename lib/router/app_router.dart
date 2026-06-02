@@ -30,9 +30,11 @@ import 'package:satset/ui/features/admin/venue_hub_screen.dart';
 import 'package:satset/ui/features/admin/venue_identity_screen.dart';
 import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
+import 'package:satset/ui/features/cashier/cashier_screen.dart';
 
 Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/kitchen')) return Capability.viewKds;
+  if (loc.startsWith('/kasir')) return Capability.settleBill;
   if (loc.startsWith('/table/') || loc.startsWith('/orders')) {
     return Capability.takeOrder;
   }
@@ -126,6 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/tables', builder: (_, _) => const TablesScreen()),
           GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
           GoRoute(path: '/kitchen', builder: (_, _) => const KitchenScreen()),
+          GoRoute(path: '/kasir', builder: (_, _) => const CashierScreen()),
           GoRoute(path: '/venue', builder: (_, _) => const VenueHubScreen()),
           GoRoute(
               path: '/venue-identity',

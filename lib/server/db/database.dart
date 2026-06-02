@@ -32,12 +32,17 @@ part 'database.g.dart';
   TableSessionTickets,
   TableSessionCourses,
   Reservations,
+  Receipts,
+  ReceiptLines,
+  Payments,
+  TableSessionReceipts,
+  TableSessionPayments,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -268,6 +273,47 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
                 'CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid_unique '
                 'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL');
+          }
+          if (from < 27) {
+            // Demo seed is gone (ADR-0017): the server no longer auto-loads
+            // sample data, admin is Firebase-only (no PIN admin), and the
+            // generic restaurant set is now prompted. Wipe the old auto-seeded
+            // demo content + fake report history from existing (pre-production)
+            // installs so they start from the same clean state as fresh ones.
+            // Preserves the shared admin role, Firebase-provisioned admin
+            // users, venue settings, and menu-tag definitions.
+            await customStatement('DELETE FROM table_session_courses');
+            await customStatement('DELETE FROM table_session_tickets');
+            await customStatement('DELETE FROM table_sessions');
+            await customStatement('DELETE FROM tickets');
+            await customStatement('DELETE FROM reservations');
+            await customStatement('DELETE FROM venue_tables');
+            await customStatement('DELETE FROM menu_items');
+            await customStatement('DELETE FROM menu_categories');
+            await customStatement('DELETE FROM zones');
+            // Drop every PIN user (incl. the old PIN admin "Pak Nyoman");
+            // Firebase-provisioned admins carry a firebase_uid and survive.
+            await customStatement(
+                'DELETE FROM users WHERE firebase_uid IS NULL');
+            // Keep only the shared admin role; waiter/kitchen/manager demo
+            // roles are removed (the generic seed re-creates waiter/kitchen).
+            await customStatement(
+                "DELETE FROM roles WHERE id != 'role-admin'");
+          }
+          if (from < 28) {
+            // Two-phase settlement + split bills (ADR-0023). New live tables
+            // for receipts/payments and their session snapshots; tax/service
+            // amounts added to TableSessions (netTotal redefined — pre-v28
+            // rows keep netTotal == subtotal, new columns default 0).
+            await m.createTable(receipts);
+            await m.createTable(receiptLines);
+            await m.createTable(payments);
+            await m.createTable(tableSessionReceipts);
+            await m.createTable(tableSessionPayments);
+            await _safeAddColumnOn('table_sessions', 'service_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('table_sessions', 'tax_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
           }
         },
         onCreate: (m) async {

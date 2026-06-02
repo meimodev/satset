@@ -6,11 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/auth_dto.dart';
 import 'package:satset/data/repositories/auth_error.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
+import 'package:satset/data/services/mdns_browser_service.dart';
+import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
+import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
+import 'package:uuid/uuid.dart';
 import 'package:satset/server/server.dart' show serverRuntimeProvider;
 
 /// Derive the legacy [UserRole] bucket from the server-authoritative
@@ -158,7 +163,7 @@ class AuthRepository extends StateNotifier<AuthState> {
   Future<bool> signInAsAdmin({
     required String email,
     required String password,
-    required Future<void> Function() bootServer,
+    required Future<void> Function(String venueId) bootServer,
   }) async {
     SatLog.repo('auth.signInAsAdmin email=$email');
     state = state.copyWith(busy: true, error: null);
@@ -214,8 +219,32 @@ class AuthRepository extends StateNotifier<AuthState> {
       }
 
       await storage.writeAdminConfirmedAt(DateTime.now());
-      // Eligible — boot the embedded server, then mint the session locally.
-      await bootServer();
+
+      // Main-Device model (ADR-0017): if another device already hosts this
+      // venue on the LAN, join it as an admin-client instead of booting a
+      // rival server (which would split the data). Otherwise become the host.
+      final host = await ref
+          .read(mdnsBrowserServiceProvider)
+          .findVenueHost(profile.venueId);
+      if (host != null) {
+        final joined = await _establishAdminClientSession(
+            host: host, uid: uid, profile: profile);
+        if (!joined) {
+          await fb.signOut();
+          state = state.copyWith(
+              busy: false,
+              error: 'Gagal bergabung ke server venue. Coba lagi.');
+          return false;
+        }
+        SatLog.repo('auth.signInAsAdmin joined-as-client host=${host.label} '
+            'venue=${profile.venueId}');
+        return true;
+      }
+
+      // Eligible + no existing host — boot the embedded server (scoped to this
+      // admin's venue so it advertises `vid` for the guard), then mint the
+      // session locally.
+      await bootServer(profile.venueId);
       final ok = await _establishAdminSession(uid: uid, profile: profile);
       if (!ok) {
         state = state.copyWith(
@@ -223,7 +252,7 @@ class AuthRepository extends StateNotifier<AuthState> {
         return false;
       }
       _startEligibilityWatch(uid, profile.venueId);
-      SatLog.repo('auth.signInAsAdmin ok uid=$uid venue=${profile.venueId}');
+      SatLog.repo('auth.signInAsAdmin ok host uid=$uid venue=${profile.venueId}');
       return true;
     } on fb_auth.FirebaseAuthException catch (e) {
       SatLog.repo('auth.signInAsAdmin fb-fail ${e.code}');
@@ -279,6 +308,76 @@ class AuthRepository extends StateNotifier<AuthState> {
       busy: false,
     );
     return true;
+  }
+
+  /// Join an existing venue [[Main Device]] host as an **admin-client** over
+  /// the LAN (ADR-0017): point at the host (we already hold its TLS
+  /// fingerprint from mDNS, so no QR pairing is needed), present this admin's
+  /// Firebase ID token to `/auth/admin`, and adopt the local admin JWT the host
+  /// issues. This device runs as a **client** — it hosts no server/DB.
+  Future<bool> _establishAdminClientSession({
+    required DiscoveredServer host,
+    required String uid,
+    required AdminProfile profile,
+  }) async {
+    ref.read(apiConfigProvider.notifier).state = ApiConfig(
+      baseUri: Uri.parse('https://${host.host}:${host.port}'),
+      trustedFingerprint: host.fingerprint,
+    );
+    try {
+      final prefs = await ref.read(prefsServiceProvider.future);
+      await prefs.setAppMode(AppMode.client);
+    } catch (_) {
+      // Mode persistence is best-effort; the live apiConfig already routes us.
+    }
+    // forceRefresh so freshly-set {role, venueId} claims are present.
+    final idToken = await ref
+        .read(firebaseAdminServiceProvider)
+        .currentIdToken(forceRefresh: true);
+    if (idToken == null || idToken.isEmpty) return false;
+    var deviceId = await storage.readDeviceId();
+    if (deviceId == null || deviceId.isEmpty) {
+      deviceId = const Uuid().v4();
+      await storage.writeDeviceId(deviceId);
+    }
+    try {
+      final api = ref.read(apiClientProvider);
+      final res = (await api.postJson('/auth/admin', {
+        'idToken': idToken,
+        'deviceId': deviceId,
+      }) as Map)
+          .cast<String, dynamic>();
+      final token = res['token'] as String?;
+      if (token == null || token.isEmpty) return false;
+      await storage.writeToken(token);
+      final me = MeDto.fromJson(
+          (await api.getJson('/auth/me') as Map).cast<String, dynamic>());
+      final caps = <Capability>{
+        for (final k in me.capabilities)
+          if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
+      };
+      final loginAt = DateTime.now();
+      await storage.writeLoginAt(loginAt);
+      state = AuthState(
+        isAuthenticated: true,
+        user: AppUser(
+          id: me.userId,
+          name: me.name,
+          initials: me.initials,
+          role: _roleFromCapabilities(caps),
+          shiftStartedAt: loginAt.toIso8601String(),
+          zoneAssigned: me.zoneAssigned ?? '',
+          roleId: me.roleId,
+          avatarColorHex: me.avatarColorHex,
+        ),
+        capabilities: caps,
+        busy: false,
+      );
+      return true;
+    } catch (e) {
+      SatLog.repo('auth.adminClient join fail $e');
+      return false;
+    }
   }
 
   /// Establish a fleet-operator session: no local server, no Drift, no venue.
@@ -341,12 +440,59 @@ class AuthRepository extends StateNotifier<AuthState> {
       if (venue == null || !venue.isActive) {
         SatLog.repo('auth.eligibility revoked (venue) → kill server');
         await _killAdminSession();
+        return;
       }
+      // Cloud owns venue identity (ADR-0018): mirror name/address into the
+      // local VenueSettings. The 60s heartbeat rewrites `lastSeenAt`, which
+      // re-fires this snapshot, so a diff-guard keeps it a no-op when nothing
+      // changed.
+      await _mirrorVenueIdentity(venue);
     });
 
-    void beat() => unawaited(fb.touchVenue(venueId).catchError((_) {}));
-    beat(); // immediate, so the venue shows online without waiting a minute
-    _heartbeat = Timer.periodic(const Duration(seconds: 60), (_) => beat());
+    // Each beat does two online-only writes that must freeze together when the
+    // venue goes dark: (1) stamp `venues/{vid}.lastSeenAt` so the fleet console
+    // can derive offline + lockout-risk; (2) refresh the local
+    // `adminConfirmedAt` floor via a server-confirmed read, resetting the
+    // offline-grace clock that the shell banner counts down. Keeping both on the
+    // same beat lets the cloud `lastSeenAt` proxy the device-local grace. See
+    // ADR-0015 staleness guard.
+    Future<void> beat() async {
+      unawaited(fb.touchVenue(venueId).catchError((_) {}));
+      try {
+        final p = await fb.fetch(uid, serverOnly: true);
+        if (p != null && p.isActive) {
+          await storage.writeAdminConfirmedAt(DateTime.now());
+        }
+      } catch (_) {
+        // Offline — let the grace clock tick; the boot gate enforces the limit.
+      }
+    }
+
+    unawaited(beat()); // immediate, so the venue shows online without waiting
+    _heartbeat =
+        Timer.periodic(const Duration(seconds: 60), (_) => unawaited(beat()));
+  }
+
+  /// Push the cloud venue's name/address into the local VenueSettings so the
+  /// in-app name + receipts track the fleet-console value (ADR-0018). Only
+  /// non-empty cloud values overwrite local, and only when they actually
+  /// differ — so the heartbeat-driven snapshot churn doesn't spam patches.
+  Future<void> _mirrorVenueIdentity(Venue v) async {
+    final settings = ref.read(venueSettingsProvider);
+    final nextName = v.name.trim();
+    final nextAddr = v.address.trim();
+    final needName = nextName.isNotEmpty && nextName != settings.displayName;
+    final needAddr = nextAddr.isNotEmpty && nextAddr != settings.address;
+    if (!needName && !needAddr) return;
+    try {
+      await ref.read(venueSettingsProvider.notifier).patch(
+            displayName: needName ? nextName : null,
+            address: needAddr ? nextAddr : null,
+          );
+      SatLog.repo('venueIdentity.mirrored name=$needName addr=$needAddr');
+    } catch (_) {
+      // Server not up yet / offline — retried on the next venue snapshot.
+    }
   }
 
   /// Tear down the admin session AND the embedded server. Connected staff are

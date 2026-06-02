@@ -40,6 +40,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
 
   final Ref ref;
   StreamSubscription? _wsSub;
+  bool _resyncing = false;
 
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
@@ -54,23 +55,22 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     ref.read(tablesStatusProvider.notifier).state =
         const AsyncValue.loading();
     try {
-      final api = ref.read(apiClientProvider);
-      final raw = await api.getJson('/tables') as List;
-      final dtos = raw
-          .map((e) => TableDto.fromJson((e as Map).cast<String, dynamic>()))
-          .toList();
-      state = [for (final d in dtos) _toDomain(d)];
-      SatLog.repo('tables.loaded n=${state.length}');
+      await _refetch();
       ref.read(tablesStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
       // Surface — do NOT fall back to dummy data when the LAN is supposed
-      // to be authoritative.
+      // to be authoritative. The WS-reconnect resync (below) recovers when
+      // the socket next reaches `open` (e.g. once the admin token lands).
       ref.read(tablesStatusProvider.notifier).state =
           AsyncValue.error(e, st);
     }
+    // Wire WS even if the bootstrap GET failed: the `connected` resync is the
+    // recovery path for an empty/401 bootstrap. See ADR-0021.
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
-      if (ev.type == WsEventTypes.tableUpdated) {
+      if (ev.type == WsEventTypes.connected) {
+        unawaited(_resync());
+      } else if (ev.type == WsEventTypes.tableUpdated) {
         final d = TableDto.fromJson(ev.payload);
         SatLog.repo('tables.ws update id=${d.id.substring(0, d.id.length.clamp(0, 6))} status=${d.status}');
         final exists = state.any((t) => t.id == d.id);
@@ -95,6 +95,36 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   void dispose() {
     _wsSub?.cancel();
     super.dispose();
+  }
+
+  /// Pull the authoritative table list and replace state. Shared by the
+  /// initial [_bootstrap] and the WS-reconnect [_resync].
+  Future<void> _refetch() async {
+    final api = ref.read(apiClientProvider);
+    final raw = await api.getJson('/tables') as List;
+    final dtos = raw
+        .map((e) => TableDto.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
+    state = [for (final d in dtos) _toDomain(d)];
+    SatLog.repo('tables.loaded n=${state.length}');
+  }
+
+  /// Full-resync triggered by [WsEventTypes.connected] on every socket
+  /// (re)connect. Incremental table events are lossy — a table that mutated
+  /// while we were down (or before our bootstrap GET succeeded) would never
+  /// otherwise appear. Guarded so overlapping connects don't stampede; never
+  /// throws (a transient failure simply waits for the next connect). ADR-0021.
+  Future<void> _resync() async {
+    if (_resyncing) return;
+    _resyncing = true;
+    try {
+      await _refetch();
+      SatLog.repo('tables.resync ok');
+    } catch (e) {
+      SatLog.repo('tables.resync fail $e');
+    } finally {
+      _resyncing = false;
+    }
   }
 
   VenueTable _toDomain(TableDto d) {
@@ -572,6 +602,63 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     final raw = await ref.read(apiClientProvider).postJson(
       '/tables/$id/release',
       {'actorId': ?actorId},
+    );
+    _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+  }
+
+  /// Pindah meja: transfer the whole live session from [id] onto the empty
+  /// [targetId]. The server re-points tickets, copies the session, wipes the
+  /// source, and hands the lock to the mover (ADR-0019). Returns the merged
+  /// target row; the source update arrives over WS. Throws [ApiException] on
+  /// rejection (e.g. 409 target_unavailable / table_locked) so the caller can
+  /// surface a toast.
+  Future<void> moveTable(
+    String id, {
+    required String targetId,
+    String? actorId,
+    String? actorName,
+  }) async {
+    SatLog.repo(
+        'tables.move src=${id.substring(0, id.length.clamp(0, 6))} dst=${targetId.substring(0, targetId.length.clamp(0, 6))}');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) {
+      // Dev / no-LAN fallback: emulate the transfer locally so the UI flows.
+      final src = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      final tgt =
+          state.where((t) => t.id == targetId).cast<VenueTable?>().firstOrNull;
+      if (src == null || tgt == null) return;
+      _replace(
+        targetId,
+        tgt.copyWith(
+          status: src.status,
+          pax: src.pax,
+          openAmount: src.openAmount,
+          readyCount: src.readyCount,
+          openedAt: src.openedAt,
+          lastActorId: src.lastActorId,
+          guestName: src.guestName,
+          guestNotes: src.guestNotes,
+          reservationId: src.reservationId,
+        ),
+      );
+      _replace(
+        id,
+        src.copyWith(
+          status: TableStatus.available,
+          pax: 0,
+          openAmount: 0,
+          readyCount: 0,
+        ),
+      );
+      return;
+    }
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/tables/$id/move',
+      {
+        'targetId': targetId,
+        'actorId': ?actorId,
+        'actorName': ?actorName,
+      },
     );
     _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
   }

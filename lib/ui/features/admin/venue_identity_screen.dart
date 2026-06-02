@@ -294,18 +294,18 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
     );
   }
 
-  Widget _identityCard(BuildContext context) => _sectionCard(
+  Widget _identityCard(BuildContext context) {
+    // Name + address are cloud-owned (ADR-0018): mirrored read-only from the
+    // fleet console; only a super admin edits them.
+    final s = ref.watch(venueSettingsProvider);
+    return _sectionCard(
         context,
         title: 'Profil & alamat',
         tag: 'WAJIB',
         rows: [
           AdminRow(
               label: 'Nama tampilan',
-              value: _editor(context,
-                  controller: _displayName,
-                  focus: _displayNameFocus,
-                  hint: 'Warung …',
-                  onSubmit: (v) => _patch(displayName: v))),
+              value: _cloudManaged(context, s.displayName)),
           AdminRow(
               label: 'Nama legal',
               value: _editor(context,
@@ -315,12 +315,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                   onSubmit: (v) => _patch(legalName: v))),
           AdminRow(
               label: 'Alamat',
-              value: _editor(context,
-                  controller: _address,
-                  focus: _addressFocus,
-                  hint: 'Jalan, kota, kode pos',
-                  multiline: true,
-                  onSubmit: (v) => _patch(address: v))),
+              value: _cloudManaged(context, s.address)),
           AdminRow(
               label: 'Telepon',
               value: _editor(context,
@@ -333,6 +328,32 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
               last: true),
         ],
       );
+  }
+
+  /// Read-only value for a cloud-owned field (name/address), with a subtle
+  /// "managed by the super admin" caption. See ADR-0018.
+  Widget _cloudManaged(BuildContext context, String value) {
+    final sc = context.sat;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value.isEmpty ? '—' : value,
+            textAlign: TextAlign.right,
+            style: SatType.sans(size: 13, color: sc.textHi, height: 1.4)),
+        const SizedBox(height: 3),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock_outline_rounded, size: 10, color: sc.textLo),
+            const SizedBox(width: 3),
+            Text('Dikelola pengelola',
+                style: SatType.sans(size: 10, color: sc.textLo)),
+          ],
+        ),
+      ],
+    );
+  }
 
   Widget _receiptCard(BuildContext context) => _sectionCard(
         context,

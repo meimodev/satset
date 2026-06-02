@@ -11,6 +11,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/devices_repository.dart';
 import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/repositories/printers_repository.dart';
+import 'package:satset/data/services/printer_discovery_service.dart';
 import 'package:satset/data/repositories/system_status_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -243,10 +244,17 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       title: 'Printer & KDS',
       tag: '${printers.length + stations.length} STASIUN',
       rows: rows,
-      trailing: GestureDetector(
-        onTap: () => _showAddPrinterSheet(context),
-        child: adminPill(context, '+ Printer'),
-      ),
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        GestureDetector(
+          onTap: () => _discoverPrinters(context),
+          child: adminPill(context, 'Cari'),
+        ),
+        const SizedBox(width: 6),
+        GestureDetector(
+          onTap: () => _showAddPrinterSheet(context),
+          child: adminPill(context, '+ Printer'),
+        ),
+      ]),
     );
   }
 
@@ -262,9 +270,15 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                 style: SatType.mono(size: 12, color: sc.textHi)),
           ),
           GestureDetector(
-            onTap: () => ref
-                .read(printersRepositoryProvider.notifier)
-                .testPrint(p.id),
+            onTap: () async {
+              final err = await ref
+                  .read(printersRepositoryProvider.notifier)
+                  .testPrint(p.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(err ?? 'Tes tercetak')),
+              );
+            },
             child: adminPill(context, 'Test'),
           ),
           const SizedBox(width: 6),
@@ -620,6 +634,65 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     );
     if (ok == true) {
       await ref.read(devicesRepositoryProvider.notifier).revoke(d.id);
+    }
+  }
+
+  Future<void> _discoverPrinters(BuildContext context) async {
+    // Non-blocking spinner dialog while discovery runs; popped when done.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(children: [
+          SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2)),
+          SizedBox(width: 16),
+          Text('Mencari printer…'),
+        ]),
+      ),
+    );
+    final printers =
+        await ref.read(printerDiscoveryServiceProvider).discover();
+    if (context.mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (!context.mounted) return;
+    if (printers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak ada printer ditemukan')),
+      );
+      return;
+    }
+    final chosen = await showDialog<DiscoveredPrinter>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Printer ditemukan'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final f in printers)
+              ListTile(
+                leading: const Icon(Icons.print_rounded),
+                title: Text(f.name),
+                subtitle: Text('${f.host}:${f.port}'),
+                onTap: () => Navigator.of(ctx).pop(f),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || !context.mounted) return;
+    await ref.read(printersRepositoryProvider.notifier).create(
+          label: chosen.name,
+          host: chosen.host,
+          port: chosen.port,
+        );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Printer "${chosen.name}" ditambahkan')),
+      );
     }
   }
 

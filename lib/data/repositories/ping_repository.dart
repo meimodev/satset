@@ -57,6 +57,11 @@ class PingRepository extends StateNotifier<PingState> {
     _timer = Timer.periodic(_interval, (_) => unawaited(_probe()));
   }
 
+  /// Forces an out-of-band probe right now instead of waiting for the next 5s
+  /// tick. Used when the staff PIN sheet opens so the reachability pill reflects
+  /// the current connection, not a heartbeat sample up to [_interval] stale.
+  Future<void> recheck() => _probe();
+
   Future<void> _probe() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
@@ -69,6 +74,7 @@ class PingRepository extends StateNotifier<PingState> {
           .read(apiClientProvider)
           .getJson('/healthz')
           .timeout(_timeout);
+      if (!mounted) return;
       final ms = sw.elapsedMilliseconds;
       _samples.addLast(ms);
       while (_samples.length > _windowSize) {
@@ -85,6 +91,7 @@ class PingRepository extends StateNotifier<PingState> {
         consecutiveFailures: 0,
       );
     } catch (_) {
+      if (!mounted) return;
       state = state.copyWith(
         reachable: false,
         consecutiveFailures: state.consecutiveFailures + 1,

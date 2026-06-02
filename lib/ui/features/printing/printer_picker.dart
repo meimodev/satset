@@ -1,0 +1,690 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+
+import 'package:satset/core/printing/bill_struk_builder.dart';
+import 'package:satset/core/printing/bill_struk_renderer.dart';
+import 'package:satset/core/printing/struk_builder.dart';
+import 'package:satset/core/printing/struk_renderer.dart';
+import 'package:satset/core/printing/struk_socket.dart';
+import 'package:satset/data/models/bill_dto.dart';
+import 'package:satset/data/models/device_printer.dart';
+import 'package:satset/data/models/printer_dto.dart';
+import 'package:satset/data/repositories/printers_repository.dart';
+import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/data/services/bt_printer_service.dart';
+import 'package:satset/data/services/printer_discovery_service.dart';
+import 'package:satset/data/services/prefs_service.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/typography.dart';
+
+const _uuid = Uuid();
+
+/// Window a venue printer counts "online" after its last server heartbeat.
+/// Coupled to the 15s server tick (≤2 missed ticks). See ADR-0022.
+const _venueOnlineWindow = Duration(seconds: 30);
+
+/// A transport-agnostic print job handed to [_PrinterPickerSheet]. Decouples
+/// the picker (discover + pick a printer) from WHAT is printed: [renderBytes]
+/// builds the ESC/POS bytes client-side for a device printer, while
+/// [printVenue] asks the server to render+send to a venue printer (so output is
+/// identical either way). See ADR-0020 / ADR-0023.
+class PrintJob {
+  final String subtitle; // shown under "Pilih printer"
+  final Future<List<int>> Function() renderBytes;
+  final Future<String?> Function(String venuePrinterId) printVenue;
+
+  const PrintJob({
+    required this.subtitle,
+    required this.renderBytes,
+    required this.printVenue,
+  });
+}
+
+Future<void> _openPicker(BuildContext context, PrintJob job) =>
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _PrinterPickerSheet(job: job),
+    );
+
+/// One reusable entry point for "Cetak struk meja" (the no-money order slip).
+/// Validates the table has printable lines, then opens the picker, which
+/// auto-discovers reachable printers (venue + device, wifi + Bluetooth) and
+/// lists only the online ones. See ADR-0020 / ADR-0022.
+Future<void> printTableStruk({
+  required BuildContext context,
+  required WidgetRef ref,
+  required VenueTable table,
+  required List<Ticket> tickets,
+}) async {
+  final printable =
+      tickets.where((t) => t.status != TicketStatus.voided).toList();
+  if (printable.isEmpty) {
+    _toast(context, 'Tidak ada pesanan untuk dicetak');
+    return;
+  }
+  await _openPicker(
+    context,
+    PrintJob(
+      subtitle: 'Cetak struk Meja ${table.displayName}',
+      renderBytes: () => StrukRenderer.render(StrukBuilder.fromTable(
+        venue: ref.read(venueSettingsProvider),
+        tableLabel: table.displayName,
+        pax: table.pax,
+        guestName: table.guestName ?? '',
+        guestNote: table.guestNotes ?? '',
+        tickets: printable,
+      )),
+      printVenue: (pid) =>
+          ref.read(printersRepositoryProvider.notifier).printTable(table.id, pid),
+    ),
+  );
+}
+
+/// Entry point for the cashier's MONEY document. `receipt` null prints the
+/// whole-bill doc; otherwise one split receipt. Tagihan vs Struk pembayaran is
+/// decided by whether payments exist (auto). See ADR-0023.
+Future<void> printBillStruk({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Bill bill,
+  BillReceipt? receipt,
+}) async {
+  final hasLines = bill.lines.any((l) => l.status != 'voided');
+  if (!hasLines) {
+    _toast(context, 'Tidak ada pesanan untuk dicetak');
+    return;
+  }
+  final paid =
+      receipt == null ? bill.paidAmount > 0 : receipt.payments.isNotEmpty;
+  final what = paid ? 'struk' : 'tagihan';
+  final who = receipt == null
+      ? 'Meja ${bill.tableLabel ?? ''}'.trim()
+      : (receipt.label.isEmpty ? 'struk' : receipt.label);
+  await _openPicker(
+    context,
+    PrintJob(
+      subtitle: 'Cetak $what · $who',
+      renderBytes: () => BillStrukRenderer.render(BillStrukBuilder.fromBill(
+        bill: bill,
+        receipt: receipt,
+        venue: ref.read(venueSettingsProvider),
+      )),
+      printVenue: (pid) => receipt == null
+          ? ref.read(settlementProvider.notifier).printBill(bill.tableId, pid)
+          : ref.read(settlementProvider.notifier).printReceipt(receipt.id, pid),
+    ),
+  );
+}
+
+void _toast(BuildContext context, String msg) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+}
+
+/// What kind of thing a picker row points at — decides icon, tag, send path.
+enum _Kind { venue, device, discoveredWifi, pairedBt }
+
+/// A single flattened, deduped row in the live merged list.
+class _Entry {
+  final String address; // host:port or MAC — the dedup key
+  final String label;
+  final PrinterTransport transport;
+  final _Kind kind;
+  final bool online;
+  final PrinterDto? venue; // kind == venue
+  final DevicePrinter? device; // kind == device
+  final DiscoveredPrinter? wifi; // kind == discoveredWifi
+  final PairedBtPrinter? bt; // kind == pairedBt
+
+  const _Entry({
+    required this.address,
+    required this.label,
+    required this.transport,
+    required this.kind,
+    required this.online,
+    this.venue,
+    this.device,
+    this.wifi,
+    this.bt,
+  });
+
+  String get scopeTag => kind == _Kind.venue ? 'Venue' : 'Alat ini';
+}
+
+class _PrinterPickerSheet extends ConsumerStatefulWidget {
+  final PrintJob job;
+  const _PrinterPickerSheet({required this.job});
+
+  @override
+  ConsumerState<_PrinterPickerSheet> createState() =>
+      _PrinterPickerSheetState();
+}
+
+class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
+  bool _busy = false;
+  bool _scanning = true;
+
+  StreamSubscription<DiscoveredPrinter>? _discSub;
+  Timer? _probeTimer;
+
+  // Live-discovered, deduped by host:port.
+  final Map<String, DiscoveredPrinter> _discovered = {};
+  // OS-paired Bluetooth printers + why none show.
+  List<PairedBtPrinter> _paired = const [];
+  BtUnavailableReason _btReason = BtUnavailableReason.none;
+
+  // Heartbeat result for everything this phone probes itself (device + wifi
+  // discovered + Bluetooth), keyed by address. Venue online comes off WS.
+  final Map<String, bool> _online = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _startDiscovery();
+    _loadPaired();
+    // Immediate probe, then every 10s while the sheet is open (ADR-0022).
+    _probe();
+    _probeTimer =
+        Timer.periodic(const Duration(seconds: 10), (_) => _probe());
+  }
+
+  @override
+  void dispose() {
+    _discSub?.cancel();
+    _probeTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startDiscovery() {
+    _discSub = ref.read(printerDiscoveryServiceProvider).stream().listen(
+      (p) {
+        if (!mounted) return;
+        setState(() => _discovered[p.key] = p);
+        unawaited(_probeWifi(p.host, p.port));
+      },
+      onDone: () {
+        if (mounted) setState(() => _scanning = false);
+      },
+    );
+  }
+
+  Future<void> _loadPaired() async {
+    final res = await ref.read(btPrinterServiceProvider).pairedPrinters();
+    if (!mounted) return;
+    setState(() {
+      _paired = res.printers;
+      _btReason = res.reason;
+    });
+    for (final b in res.printers) {
+      unawaited(_probeBt(b.mac));
+    }
+  }
+
+  // --- heartbeat ---
+
+  Future<void> _probe() async {
+    final devices = ref.read(devicePrintersProvider);
+    for (final d in devices) {
+      if (d.isBluetooth) {
+        if (d.mac != null) unawaited(_probeBt(d.mac!));
+      } else if (d.host != null) {
+        unawaited(_probeWifi(d.host!, d.port));
+      }
+    }
+    for (final w in _discovered.values) {
+      unawaited(_probeWifi(w.host, w.port));
+    }
+    for (final b in _paired) {
+      unawaited(_probeBt(b.mac));
+    }
+  }
+
+  Future<void> _probeWifi(String host, int port) async {
+    final ok = await StrukSocket.probe(host, port);
+    if (!mounted) return;
+    setState(() => _online['$host:$port'] = ok);
+  }
+
+  Future<void> _probeBt(String mac) async {
+    final ok = await ref.read(btPrinterServiceProvider).probe(mac);
+    if (!mounted) return;
+    setState(() => _online[mac] = ok);
+  }
+
+  bool _venueOnline(PrinterDto p) {
+    final last = p.lastSeenAt;
+    if (last == null) return false;
+    return DateTime.now().difference(last) < _venueOnlineWindow;
+  }
+
+  // --- merge + dedup ---
+
+  List<_Entry> _entries() {
+    final venue = ref.watch(printersRepositoryProvider);
+    final device = ref.watch(devicePrintersProvider);
+    final seen = <String>{};
+    final out = <_Entry>[];
+
+    // 1. Venue printers (wifi only) — skip disabled entirely (ADR-0022).
+    for (final p in venue) {
+      if (!p.enabled) continue;
+      final addr = '${p.host}:${p.port}';
+      seen.add(addr);
+      out.add(_Entry(
+        address: addr,
+        label: p.label,
+        transport: PrinterTransport.wifi,
+        kind: _Kind.venue,
+        online: _venueOnline(p),
+        venue: p,
+      ));
+    }
+
+    // 2. Registered device printers (wifi or BT).
+    for (final d in device) {
+      if (seen.contains(d.address)) continue;
+      seen.add(d.address);
+      out.add(_Entry(
+        address: d.address,
+        label: d.label,
+        transport: d.transport,
+        kind: _Kind.device,
+        online: _online[d.address] ?? false,
+        device: d,
+      ));
+    }
+
+    // 3. Freshly discovered wifi printers not already registered.
+    for (final w in _discovered.values) {
+      if (seen.contains(w.key)) continue;
+      seen.add(w.key);
+      out.add(_Entry(
+        address: w.key,
+        label: w.name,
+        transport: PrinterTransport.wifi,
+        kind: _Kind.discoveredWifi,
+        online: _online[w.key] ?? false,
+        wifi: w,
+      ));
+    }
+
+    // 4. Paired Bluetooth printers not already registered.
+    for (final b in _paired) {
+      if (seen.contains(b.mac)) continue;
+      seen.add(b.mac);
+      out.add(_Entry(
+        address: b.mac,
+        label: b.name,
+        transport: PrinterTransport.bluetooth,
+        kind: _Kind.pairedBt,
+        online: _online[b.mac] ?? false,
+        bt: b,
+      ));
+    }
+    return out;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final entries = _entries();
+    final onlineEntries = entries.where((e) => e.online).toList();
+    final offlineEntries = entries.where((e) => !e.online).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: sc.bg1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          16, 12, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: sc.border2,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pilih printer',
+                        style: SatType.sans(
+                            size: 18,
+                            weight: FontWeight.w700,
+                            color: sc.textHi)),
+                    const SizedBox(height: 4),
+                    Text(widget.job.subtitle,
+                        style: SatType.sans(size: 13, color: sc.textLo)),
+                  ],
+                ),
+              ),
+              if (_scanning)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: sc.accent),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          if (onlineEntries.isEmpty && offlineEntries.isEmpty && !_scanning)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Text(
+                  'Tidak ada printer online. Tambah manual, atau pair printer Bluetooth di Pengaturan dulu.',
+                  textAlign: TextAlign.center,
+                  style: SatType.sans(size: 13, color: sc.textLo)),
+            ),
+
+          for (final e in onlineEntries) _row(sc, e),
+
+          if (offlineEntries.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            _divider(sc, 'Offline'),
+            const SizedBox(height: 8),
+            for (final e in offlineEntries) _row(sc, e),
+          ],
+
+          if (_btReason != BtUnavailableReason.none) ...[
+            const SizedBox(height: 6),
+            _btAffordance(sc),
+          ],
+
+          const SizedBox(height: 12),
+          _ghostBtn(sc, Icons.add_rounded, 'Tambah manual',
+              _busy ? null : () => _addManual()),
+
+          if (_busy) ...[
+            const SizedBox(height: 14),
+            Center(
+                child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: sc.accent))),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _divider(SatColors sc, String label) {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: sc.border0)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(label,
+              style: SatType.sans(
+                  size: 11, weight: FontWeight.w600, color: sc.textLo)),
+        ),
+        Expanded(child: Divider(color: sc.border0)),
+      ],
+    );
+  }
+
+  Widget _row(SatColors sc, _Entry e) {
+    final icon = e.transport == PrinterTransport.bluetooth
+        ? Icons.bluetooth_rounded
+        : Icons.wifi_rounded;
+    final tappable = e.online && !_busy;
+    return Opacity(
+      opacity: e.online ? 1 : 0.5,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Material(
+          color: sc.bg2,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: tappable ? () => _print(e) : null,
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                children: [
+                  Icon(icon, size: 20, color: sc.textMd),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(e.label,
+                            style: SatType.sans(
+                                size: 14,
+                                weight: FontWeight.w600,
+                                color: sc.textHi)),
+                        Text(e.address,
+                            style: SatType.mono(size: 11, color: sc.textLo)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: e.online ? sc.success : sc.border2,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: sc.bg1,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: sc.border0),
+                    ),
+                    child: Text(e.scopeTag,
+                        style: SatType.sans(
+                            size: 10,
+                            weight: FontWeight.w600,
+                            color: sc.textMd)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _btAffordance(SatColors sc) {
+    final (label, icon, onTap) = switch (_btReason) {
+      BtUnavailableReason.permission => (
+          'Izinkan Bluetooth',
+          Icons.bluetooth_disabled_rounded,
+          () => _loadPaired(),
+        ),
+      BtUnavailableReason.adapterOff => (
+          'Nyalakan Bluetooth',
+          Icons.bluetooth_disabled_rounded,
+          () {
+            _toast(context, 'Nyalakan Bluetooth di Pengaturan lalu coba lagi');
+            _loadPaired();
+          },
+        ),
+      BtUnavailableReason.none => ('', Icons.bluetooth_rounded, () {}),
+    };
+    return _ghostBtn(sc, icon, label, _busy ? null : onTap);
+  }
+
+  Widget _ghostBtn(
+      SatColors sc, IconData icon, String label, VoidCallback? onTap) {
+    return Material(
+      color: sc.bg2,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 46,
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: sc.textMd),
+              const SizedBox(width: 8),
+              Text(label,
+                  style: SatType.sans(
+                      size: 13, weight: FontWeight.w600, color: sc.textHi)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- print dispatch ---
+
+  Future<void> _print(_Entry e) async {
+    switch (e.kind) {
+      case _Kind.venue:
+        await _printVenue(e.venue!);
+      case _Kind.device:
+        await _printDevice(e.device!);
+      case _Kind.discoveredWifi:
+        // Print immediately, then lazily persist as a device printer.
+        final d = DevicePrinter(
+            id: _uuid.v4(),
+            label: e.wifi!.name,
+            transport: PrinterTransport.wifi,
+            host: e.wifi!.host,
+            port: e.wifi!.port);
+        await _printDevice(d, persist: true);
+      case _Kind.pairedBt:
+        final d = DevicePrinter(
+            id: _uuid.v4(),
+            label: e.bt!.name,
+            transport: PrinterTransport.bluetooth,
+            mac: e.bt!.mac);
+        await _printDevice(d, persist: true);
+    }
+  }
+
+  Future<void> _printVenue(PrinterDto p) async {
+    setState(() => _busy = true);
+    final err = await widget.job.printVenue(p.id);
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    _toast(context, err ?? 'Struk tercetak');
+  }
+
+  Future<void> _printDevice(DevicePrinter d, {bool persist = false}) async {
+    setState(() => _busy = true);
+    String? err;
+    try {
+      final bytes = await widget.job.renderBytes();
+      if (d.isBluetooth) {
+        await ref.read(btPrinterServiceProvider).send(d.mac!, bytes);
+      } else {
+        await StrukSocket.send(d.host!, d.port, bytes);
+      }
+      if (persist) {
+        await ref.read(devicePrintersProvider.notifier).add(d);
+      }
+    } catch (_) {
+      err = 'Printer tak terhubung';
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    _toast(context, err ?? 'Struk tercetak');
+  }
+
+  // --- manual add (wifi only; Bluetooth is added by pairing in Settings) ---
+
+  Future<void> _addManual() async {
+    final labelCtl = TextEditingController();
+    final hostCtl = TextEditingController();
+    final portCtl = TextEditingController(text: '9100');
+    var scope = 'venue'; // venue | device
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final sc = ctx.sat;
+          return AlertDialog(
+            backgroundColor: sc.bg1,
+            title: Text('Tambah printer Wi-Fi',
+                style: SatType.sans(size: 16, weight: FontWeight.w700)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                    controller: labelCtl,
+                    decoration: const InputDecoration(labelText: 'Label')),
+                TextField(
+                    controller: hostCtl,
+                    decoration: const InputDecoration(labelText: 'Host (IP)')),
+                TextField(
+                    controller: portCtl,
+                    decoration: const InputDecoration(labelText: 'Port'),
+                    keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'venue', label: Text('Venue')),
+                    ButtonSegment(value: 'device', label: Text('Alat ini')),
+                  ],
+                  selected: {scope},
+                  onSelectionChanged: (s) => setLocal(() => scope = s.first),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Batal')),
+              FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Tambah')),
+            ],
+          );
+        },
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final label = labelCtl.text.trim();
+    final host = hostCtl.text.trim();
+    final port = int.tryParse(portCtl.text.trim()) ?? 9100;
+    if (label.isEmpty || host.isEmpty) return;
+    if (scope == 'device') {
+      await ref.read(devicePrintersProvider.notifier).add(DevicePrinter(
+          id: _uuid.v4(),
+          label: label,
+          transport: PrinterTransport.wifi,
+          host: host,
+          port: port));
+    } else {
+      await ref
+          .read(printersRepositoryProvider.notifier)
+          .create(label: label, host: host, port: port);
+    }
+    if (mounted) _toast(context, 'Printer "$label" ditambahkan');
+  }
+}

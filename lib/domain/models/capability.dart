@@ -8,6 +8,7 @@ enum Capability {
   viewKds(CapabilityGroup.kitchen, 'View KDS'),
   openDrawer(CapabilityGroup.money, 'Open drawer'),
   applyDiscount(CapabilityGroup.money, 'Apply discount'),
+  settleBill(CapabilityGroup.money, 'Settle bill'),
   refund(CapabilityGroup.money, 'Refund'),
   closeShift(CapabilityGroup.money, 'Close shift'),
   editMenu(CapabilityGroup.inventory, 'Edit menu'),
