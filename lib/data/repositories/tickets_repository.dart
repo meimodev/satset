@@ -25,6 +25,12 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   final Ref ref;
   StreamSubscription? _wsSub;
 
+  /// Group key for the per-"location" ticket map: a real tableId for dine-in,
+  /// the visitId for table-less (takeaway) lines so each Bawa pulang visit is
+  /// its own group. See ADR-0026.
+  static String _groupKey(TicketDto d) =>
+      d.tableId.isNotEmpty ? d.tableId : (d.visitId ?? d.tableId);
+
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
@@ -41,7 +47,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       final grouped = <String, List<Ticket>>{};
       for (final e in raw) {
         final dto = TicketDto.fromJson((e as Map).cast<String, dynamic>());
-        grouped.putIfAbsent(dto.tableId, () => []).add(_toDomain(dto));
+        grouped.putIfAbsent(_groupKey(dto), () => []).add(_toDomain(dto));
       }
       state = grouped;
       SatLog.repo('tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}');
@@ -57,22 +63,40 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           ev.type == WsEventTypes.ticketUpdated) {
         final dto = TicketDto.fromJson(ev.payload);
         SatLog.repo('tickets.ws ${ev.type} id=${dto.id.substring(0, dto.id.length.clamp(0, 6))} status=${dto.status}');
+        final key = _groupKey(dto);
         final next = Map<String, List<Ticket>>.from(state);
-        final list = List<Ticket>.from(next[dto.tableId] ?? const []);
+        final list = List<Ticket>.from(next[key] ?? const []);
         final idx = list.indexWhere((t) => t.id == dto.id);
         if (idx == -1) {
           list.add(_toDomain(dto));
         } else {
           list[idx] = _toDomain(dto);
         }
-        next[dto.tableId] = list;
+        next[key] = list;
         state = next;
       } else if (ev.type == WsEventTypes.tableSessionClosed) {
-        final tableId = ev.payload['tableId'] as String?;
-        if (tableId == null) return;
-        SatLog.repo('tickets.ws tableSession.closed table=${tableId.substring(0, tableId.length.clamp(0, 6))} — purging local tickets');
-        final next = Map<String, List<Ticket>>.from(state);
-        next.remove(tableId);
+        // Takeaway groups are keyed by visitId — drop the just-snapshotted
+        // visit's lines. A dine-in group is keyed by tableId (not visitId), so
+        // this no-ops for dine-in, which purges via the kosong tableUpdated
+        // below instead. See ADR-0026 / ADR-0024.
+        final vid = ev.payload['visitId'] as String?;
+        if (vid == null || !state.containsKey(vid)) return;
+        SatLog.repo('tickets.ws takeaway visit $vid closed — purging local tickets');
+        final next = Map<String, List<Ticket>>.from(state)..remove(vid);
+        state = next;
+      } else if (ev.type == WsEventTypes.tableUpdated) {
+        // A table back to `available` (kosong) holds no live tickets — drop its
+        // cached tickets. This is the detach signal: it evicts the just-freed
+        // visit's lines without touching a reseated table's NEW visit (which
+        // arrives via ticket.created). Purging by tableId on tableSession.closed
+        // would wrongly nuke a reseated visit, so we key off kosong instead.
+        // See ADR-0024.
+        final tableId = ev.payload['id'] as String?;
+        final status = ev.payload['status'] as String?;
+        if (tableId == null || status != 'available') return;
+        if (!state.containsKey(tableId)) return;
+        SatLog.repo('tickets.ws table $tableId kosong — purging local tickets');
+        final next = Map<String, List<Ticket>>.from(state)..remove(tableId);
         state = next;
       }
     });
@@ -87,6 +111,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   Ticket _toDomain(TicketDto d) {
     return Ticket(
       id: d.id,
+      visitId: d.visitId,
       itemId: d.itemId,
       name: d.name,
       variantName: d.variantName,
@@ -187,6 +212,62 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     final res = SubmitOrderResponseDto.fromJson(
         (raw as Map).cast<String, dynamic>());
     return res.ticketIds;
+  }
+
+  /// Submit a table-less takeaway (Bawa pulang) order. With no [existingVisitId]
+  /// the server mints a fresh `kind==takeaway` visit and returns its id; pass
+  /// [existingVisitId] to append items to an open takeaway. Offline mints a
+  /// local visit id. See ADR-0026.
+  Future<({List<String> ticketIds, String visitId})> submitTakeawayOrder({
+    required String idempotencyKey,
+    required List<CartLineDto> lines,
+    String guestName = '',
+    String? existingVisitId,
+    String? actorId,
+  }) async {
+    SatLog.repo('tickets.submitTakeaway lines=${lines.length} append=${existingVisitId != null}');
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) {
+      final vid = existingVisitId ?? 'T${DateTime.now().millisecondsSinceEpoch}';
+      final cart = [
+        for (final l in lines)
+          CartItem(
+            id: l.itemId,
+            itemId: l.itemId,
+            name: l.name,
+            variantId: l.variantId,
+            variantName: l.variantName,
+            course: _courseFromKey(l.course),
+            qty: l.qty,
+            unitPrice: l.unitPrice,
+            selectedModifiers: [
+              for (final m in l.modifiers)
+                TicketModifier(
+                  groupId: m.groupId,
+                  optionId: m.optionId,
+                  label: m.label,
+                  priceDelta: m.priceDelta,
+                ),
+            ],
+          ),
+      ];
+      final created = sendOrder(vid, cart, actorId: actorId);
+      return (ticketIds: [for (final t in created) t.id], visitId: vid);
+    }
+    final api = ref.read(apiClientProvider);
+    final raw = await api.postJson('/orders', {
+      'takeaway': true,
+      'guestName': guestName,
+      'visitId': ?existingVisitId,
+      'idempotencyKey': idempotencyKey,
+      'lines': [for (final l in lines) l.toJson()],
+      'actorId': ?actorId,
+    });
+    final map = (raw as Map).cast<String, dynamic>();
+    return (
+      ticketIds: (map['ticketIds'] as List).cast<String>(),
+      visitId: (map['visitId'] as String?) ?? existingVisitId ?? '',
+    );
   }
 
   /// Posts a status change to the server when paired and applies the same

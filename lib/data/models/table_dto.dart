@@ -24,6 +24,8 @@ class TableDto with _$TableDto {
     String? guestName,
     String? guestNotes,
     String? reservationId,
+    DateTime? billClosedAt,
+    String? moneyState,
   }) = _TableDto;
 
   factory TableDto.fromJson(Map<String, dynamic> json) =>

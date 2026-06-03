@@ -4,73 +4,169 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
-import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 
-/// Venue-wide cashier surface (`/kasir`): every payable table with its live
-/// bill total and outstanding balance. Tap a table to settle its bill. Gated
-/// by `Capability.settleBill`. See ADR-0023.
-class CashierScreen extends ConsumerWidget {
+enum _CashierTab { aktif, riwayat }
+
+/// Venue-wide cashier surface (`/kasir`). Two tabs off one segmented toggle:
+/// **Aktif** — every payable visit with its live total/outstanding (tap to
+/// settle); **Riwayat** — venue-wide [[Past bills]], last 7 days, filterable by
+/// table. Gated by `Capability.settleBill`. See ADR-0023 / ADR-0024.
+class CashierScreen extends ConsumerStatefulWidget {
   const CashierScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final bills = ref.watch(settlementProvider);
-    final status = ref.watch(settlementStatusProvider);
+  ConsumerState<CashierScreen> createState() => _CashierScreenState();
+}
 
+class _CashierScreenState extends ConsumerState<CashierScreen> {
+  _CashierTab _tab = _CashierTab.aktif;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
     return Scaffold(
       backgroundColor: sc.bg0,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => ref.read(settlementProvider.notifier).refresh(),
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
-                sliver: SliverToBoxAdapter(
-                  child: Text('Kasir',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+              child: Row(
+                children: [
+                  Text('Kasir',
                       style: SatType.sans(
                           size: 26,
                           weight: FontWeight.w700,
                           color: sc.textHi)),
+                  const Spacer(),
+                  _TabToggle(
+                      tab: _tab,
+                      onChanged: (t) => setState(() => _tab = t)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: Duration(
+                    milliseconds: motionEnabled(context) ? 220 : 0),
+                switchInCurve: satEaseOut,
+                switchOutCurve: satEaseOut,
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: child),
+                child: KeyedSubtree(
+                  key: ValueKey(_tab),
+                  child: _tab == _CashierTab.aktif
+                      ? const _PayableList()
+                      : const VenueHistoryView(),
                 ),
               ),
-              if (status.isLoading && bills.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (status.hasError && bills.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _Empty(
-                      icon: Icons.cloud_off_rounded,
-                      text: 'Gagal memuat tagihan.\nTarik untuk coba lagi.'),
-                )
-              else if (bills.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _Empty(
-                      icon: Icons.receipt_long_outlined,
-                      text: 'Belum ada meja yang siap dibayar.'),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                  sliver: SliverList.separated(
-                    itemCount: bills.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) => _PayableTile(bills[i]),
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// iOS-style two-segment pill switching the cashier between live bills and
+/// history. Chrome, not a CTA — the selected segment reads as a raised tile
+/// rather than an accent button.
+class _TabToggle extends StatelessWidget {
+  final _CashierTab tab;
+  final ValueChanged<_CashierTab> onChanged;
+  const _TabToggle({required this.tab, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    Widget seg(_CashierTab t, String label) {
+      final active = tab == t;
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onChanged(t),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? sc.bg0 : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Text(label,
+              style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w600,
+                  color: active ? sc.textHi : sc.textLo)),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          seg(_CashierTab.aktif, 'Aktif'),
+          seg(_CashierTab.riwayat, 'Riwayat'),
+        ],
+      ),
+    );
+  }
+}
+
+/// The Aktif tab: live payable visits, pull-to-refresh.
+class _PayableList extends ConsumerWidget {
+  const _PayableList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bills = ref.watch(settlementProvider);
+    final status = ref.watch(settlementStatusProvider);
+    return RefreshIndicator(
+      onRefresh: () => ref.read(settlementProvider.notifier).refresh(),
+      child: CustomScrollView(
+        slivers: [
+          if (status.isLoading && bills.isEmpty)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (status.hasError && bills.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _Empty(
+                  icon: Icons.cloud_off_rounded,
+                  text: 'Gagal memuat tagihan.\nTarik untuk coba lagi.'),
+            )
+          else if (bills.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _Empty(
+                  icon: Icons.receipt_long_outlined,
+                  text: 'Belum ada meja yang siap dibayar.'),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+              sliver: SliverList.separated(
+                itemCount: bills.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (_, i) =>
+                    Reveal(index: i, child: _PayableTile(bills[i])),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -90,13 +186,15 @@ class _PayableTile extends StatelessWidget {
         : partial
             ? (sc.warn, 'Sebagian')
             : (sc.textLo, 'Belum bayar');
-    return Material(
+    return PressableScale(
+      child: Material(
       color: sc.bg1,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => CashierBillScreen(tableId: b.tableId),
+          builder: (_) =>
+              CashierBillScreen(visitId: b.visitId, tableId: b.tableId),
         )),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -106,31 +204,56 @@ class _PayableTile extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: sc.bg3,
+                  color: b.isTakeaway
+                      ? sc.accentSoft
+                      : (b.detached ? sc.warnSoft : sc.bg3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child: Text(b.tableLabel ?? '—',
-                    style: SatType.mono(
-                        size: 15, weight: FontWeight.w700, color: sc.textHi)),
+                child: b.isTakeaway
+                    ? Icon(Icons.shopping_bag_rounded,
+                        size: 20, color: sc.accent)
+                    : Text(b.tableLabel ?? '—',
+                        style: SatType.mono(
+                            size: 15,
+                            weight: FontWeight.w700,
+                            color: b.detached ? sc.warn : sc.textHi)),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(b.guestName?.trim().isNotEmpty == true
-                        ? b.guestName!
-                        : 'Meja ${b.tableLabel ?? ''}'.trim(),
+                    Text(
+                        b.isTakeaway
+                            ? (b.guestName?.trim().isNotEmpty == true
+                                ? '${b.tableLabel ?? 'Bawa pulang'} · ${b.guestName}'
+                                : (b.tableLabel ?? 'Bawa pulang'))
+                            : (b.guestName?.trim().isNotEmpty == true
+                                ? b.guestName!
+                                : 'Meja ${b.tableLabel ?? ''}'.trim()),
                         style: SatType.sans(
                             size: 14,
                             weight: FontWeight.w600,
                             color: sc.textHi)),
                     const SizedBox(height: 3),
                     Text(
-                        '${b.pax} tamu · ${b.receiptCount} struk'
-                        '${b.mode == 'even' ? ' · rata' : ''}',
-                        style: SatType.sans(size: 11.5, color: sc.textLo)),
+                        b.isTakeaway
+                            ? (b.detached
+                                ? 'Bawa pulang · sudah diserahkan'
+                                : 'Bawa pulang · belum diserahkan')
+                            : (b.detached
+                                ? 'Meja sudah ditutup · belum lunas'
+                                : '${b.pax} tamu · ${b.receiptCount} struk'
+                                    '${b.mode == 'even' ? ' · rata' : ''}'),
+                        style: SatType.sans(
+                            size: 11.5,
+                            weight: (b.detached || b.isTakeaway)
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: b.isTakeaway
+                                ? sc.accent
+                                : (b.detached ? sc.warn : sc.textLo))),
                   ],
                 ),
               ),
@@ -143,18 +266,24 @@ class _PayableTile extends StatelessWidget {
                           weight: FontWeight.w700,
                           color: settled ? sc.textLo : sc.textHi)),
                   const SizedBox(height: 5),
-                  Container(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 240),
+                    curve: satEaseOut,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: badgeColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(badgeText,
-                        style: SatType.sans(
-                            size: 10,
-                            weight: FontWeight.w600,
-                            color: badgeColor)),
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 240),
+                      curve: satEaseOut,
+                      style: SatType.sans(
+                          size: 10,
+                          weight: FontWeight.w600,
+                          color: badgeColor),
+                      child: Text(badgeText),
+                    ),
                   ),
                 ],
               ),
@@ -162,6 +291,7 @@ class _PayableTile extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -190,10 +320,3 @@ class _Empty extends StatelessWidget {
 /// Whether the signed-in account can open the cashier surface.
 bool canSettle(WidgetRef ref) =>
     ref.watch(authStateProvider).has(Capability.settleBill);
-
-/// Shared helper for closing a fully-settled table from the cashier screen
-/// (the convenience affordance — still calls the gated close). See ADR-0023.
-Future<void> closeFromCashier(WidgetRef ref, String tableId) async {
-  final actor = ref.read(authStateProvider).user?.id;
-  await ref.read(tablesProvider.notifier).closeTable(tableId, actorId: actor);
-}

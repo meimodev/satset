@@ -8,6 +8,8 @@ import 'package:uuid/uuid.dart';
 
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/routes/tables_routes.dart'
+    show ensureVisit, syncVisitMoney, createTakeawayVisit;
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/ticket.dart' show TicketStatus, ticketStatusFromKey;
@@ -184,7 +186,15 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final tableId = body['tableId'] as String;
+    // Takeaway (Bawa pulang): no table, a fresh `kind==takeaway` visit per
+    // order, guestName required. The table mutation is skipped entirely.
+    // See ADR-0026.
+    final takeaway = body['takeaway'] == true;
+    final tableId = takeaway ? '' : body['tableId'] as String;
+    final guestName = (body['guestName'] as String?)?.trim();
+    // Optional: append to an existing takeaway visit (add-items flow) instead
+    // of minting a new one. See ADR-0026.
+    final appendVisitId = (body['visitId'] as String?)?.trim();
     final idem = body['idempotencyKey'] as String;
     final lines = (body['lines'] as List).cast<Map<String, dynamic>>();
     final actorId = body['actorId'] as String?;
@@ -193,6 +203,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final createdRows = <Ticket>[];
     VenueTable? tableRow;
     String? storedResponse;
+    String? orderVisitId;
     await db.transaction(() async {
       // Claim the idempotency key atomically; primary-key conflict means
       // a concurrent request already took it.
@@ -203,6 +214,26 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         storedResponse = existing.responseJson;
         return;
       }
+      // Resolve the visit (the bill key). Dine-in lazily ensures the table's
+      // visit; takeaway mints a brand-new table-less one. See ADR-0024/0026.
+      final String visitId;
+      if (takeaway) {
+        if (appendVisitId != null && appendVisitId.isNotEmpty) {
+          visitId = appendVisitId;
+        } else {
+          final v = await createTakeawayVisit(
+            db,
+            guestName: (guestName != null && guestName.isNotEmpty)
+                ? guestName
+                : 'Bawa pulang',
+            actorId: actorId,
+          );
+          visitId = v.id;
+        }
+      } else {
+        visitId = await ensureVisit(db, tableId, actorId: actorId);
+      }
+      orderVisitId = visitId;
       for (final l in lines) {
         final id = uuid.v4();
         final course = l['course'] as String;
@@ -212,6 +243,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         final row = TicketsCompanion.insert(
           id: id,
           tableId: tableId,
+          visitId: Value(visitId),
           itemId: l['itemId'] as String,
           name: (l['name'] as String?) ?? l['itemId'] as String,
           variantName: Value((l['variantName'] as String?) ?? ''),
@@ -236,28 +268,31 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       await db.into(db.idempotency).insert(
             IdempotencyCompanion.insert(
               key: idem,
-              responseJson: jsonEncode({'ticketIds': createdIds}),
+              responseJson:
+                  jsonEncode({'ticketIds': createdIds, 'visitId': visitId}),
               createdAt: DateTime.now(),
             ),
           );
-      // Mark the table `pending` in the same transaction so that all
-      // clients observe ticket-creation and table-state changes together
-      // and never see one without the other. Set openedAt only on the
-      // first order (when the table transitions from available to pending).
-      final tblCurrent =
-          await (db.select(db.venueTables)..where((t) => t.id.equals(tableId)))
-              .getSingleOrNull();
-      await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
-          .write(VenueTablesCompanion(
-        status: const Value('pending'),
-        lastActorId: Value(actorId),
-        openedAt: tblCurrent?.openedAt == null
-            ? Value(DateTime.now())
-            : const Value.absent(),
-      ));
-      tableRow =
-          await (db.select(db.venueTables)..where((t) => t.id.equals(tableId)))
-              .getSingleOrNull();
+      if (!takeaway) {
+        // Mark the table `pending` in the same transaction so that all
+        // clients observe ticket-creation and table-state changes together
+        // and never see one without the other. Set openedAt only on the
+        // first order (when the table transitions from available to pending).
+        final tblCurrent = await (db.select(db.venueTables)
+              ..where((t) => t.id.equals(tableId)))
+            .getSingleOrNull();
+        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
+            .write(VenueTablesCompanion(
+          status: const Value('pending'),
+          lastActorId: Value(actorId),
+          openedAt: tblCurrent?.openedAt == null
+              ? Value(DateTime.now())
+              : const Value.absent(),
+        ));
+        tableRow = await (db.select(db.venueTables)
+              ..where((t) => t.id.equals(tableId)))
+            .getSingleOrNull();
+      }
     });
 
     if (storedResponse != null) {
@@ -270,7 +305,17 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (tableRow != null) {
       hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow!));
     }
-    return Response.ok(jsonEncode({'ticketIds': createdIds}),
+    if (orderVisitId != null) {
+      // Dine-in: refresh the floor money badge. Takeaway: no attached table so
+      // syncVisitMoney no-ops; nudge the cashier list/detail to re-fetch.
+      if (takeaway) {
+        hub.broadcast(WsEventTypes.billUpdated, {'visitId': orderVisitId});
+      } else {
+        await syncVisitMoney(db, hub, orderVisitId!);
+      }
+    }
+    return Response.ok(
+        jsonEncode({'ticketIds': createdIds, 'visitId': orderVisitId}),
         headers: {'content-type': 'application/json'});
   });
 
@@ -386,6 +431,9 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (tableRow != null) {
       hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow!));
     }
+    // Void/serve change the bill subtotal — refresh the floor money badge.
+    final rvid = row!.visitId;
+    if (rvid != null) await syncVisitMoney(db, hub, rvid);
     return Response.ok(jsonEncode(_toJson(row!)),
         headers: {'content-type': 'application/json'});
   });
@@ -417,6 +465,9 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     for (final t in updated) {
       hub.broadcast(WsEventTypes.ticketUpdated, _toJson(t));
     }
+    // Firing held→sent grows the bill — refresh the floor money badge.
+    final fireVid = updated.isNotEmpty ? updated.first.visitId : null;
+    if (fireVid != null) await syncVisitMoney(db, hub, fireVid);
     return Response.ok(
         jsonEncode({
           'fired': updated.length,
@@ -431,6 +482,9 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 Map<String, dynamic> _toJson(Ticket t) => {
       'id': t.id,
       'tableId': t.tableId,
+      // The stable bill key, independent of tableId. Lets the client/KDS label
+      // table-less (takeaway) lines via the visit. See ADR-0024 / ADR-0026.
+      'visitId': t.visitId,
       'itemId': t.itemId,
       'name': t.name,
       'variantName': t.variantName,

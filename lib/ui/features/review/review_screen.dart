@@ -12,16 +12,34 @@ import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/review/view_models/review_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/services/api_client.dart';
+import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
+import 'package:satset/ui/features/tables/widgets/assign_table_sheet.dart';
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
-  const ReviewScreen({super.key, required this.tableId});
+  /// Table-less menu-first draft: [tableId] is a draft id and the destination
+  /// is chosen here (dine-in table or Bawa pulang) before submit.
+  final bool tableless;
+  /// Set when reviewing items to APPEND to an existing takeaway visit:
+  /// [tableId] is the takeaway visit id. See ADR-0026.
+  final String? takeawayVisitId;
+  const ReviewScreen({
+    super.key,
+    required this.tableId,
+    this.tableless = false,
+    this.takeawayVisitId,
+  });
+
+  bool get _isTakeaway => takeawayVisitId != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,7 +47,17 @@ class ReviewScreen extends ConsumerWidget {
     final l = context.layout;
     final cart = ref.watch(cartProvider(tableId));
     final tables = ref.watch(tablesProvider);
-    final table = tables.firstWhere((t) => t.id == tableId, orElse: () => tables.first);
+    final table = tableless
+        ? null
+        : tables.firstWhere((t) => t.id == tableId,
+            orElse: () => tables.isEmpty
+                ? VenueTable(id: tableId, zoneId: '')
+                : tables.first);
+    final backFallback = _isTakeaway
+        ? '/takeaway/$takeawayVisitId'
+        : tableless
+            ? '/tables'
+            : '/table/$tableId';
     final reviewState = ref.watch(reviewViewModelProvider);
     ref.listen<ReviewState>(reviewViewModelProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
@@ -45,15 +73,10 @@ class ReviewScreen extends ConsumerWidget {
     }
     final subtotal = cart.fold<int>(0, (s, c) => s + c.unitPrice * c.qty);
     final venue = ref.watch(venueSettingsProvider);
-    final serviceAmount = !venue.serviceEnabled
-        ? 0
-        : venue.serviceMode == 'fixed'
-            ? venue.serviceFixedAmount
-            : (subtotal * venue.serviceRateBps / 10000).round();
-    final taxAmount = !venue.taxEnabled
-        ? 0
-        : ((subtotal + serviceAmount) * venue.taxRateBps / 10000).round();
-    final grandTotal = subtotal + serviceAmount + taxAmount;
+    final breakdown = computeBreakdown(subtotal, venue.toTaxServiceConfig());
+    final serviceAmount = breakdown.serviceAmount;
+    final taxAmount = breakdown.taxAmount;
+    final grandTotal = breakdown.total;
     final serviceLabel = venue.serviceMode == 'fixed'
         ? 'Layanan'
         : 'Layanan · ${_fmtPct(venue.serviceRateBps)}';
@@ -82,9 +105,15 @@ class ReviewScreen extends ConsumerWidget {
           Column(
             children: [
               SatAppBar(
-                onBack: () => safePop(context, fallback: '/table/$tableId'),
-                title: 'Tinjau · Meja ${table.displayName}',
-                crumbs: ['Meja', table.displayName, 'Tinjau'],
+                onBack: () => safePop(context, fallback: backFallback),
+                title: tableless
+                    ? (_isTakeaway ? 'Tinjau · Bawa pulang' : 'Tinjau · Pesanan baru')
+                    : 'Tinjau · Meja ${table!.displayName}',
+                crumbs: tableless
+                    ? (_isTakeaway
+                        ? const ['Bawa pulang', 'Tinjau']
+                        : const ['Pesanan baru', 'Tinjau'])
+                    : ['Meja', table!.displayName, 'Tinjau'],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
@@ -101,7 +130,11 @@ class ReviewScreen extends ConsumerWidget {
                         )),
                     const SizedBox(height: 4),
                     Text(
-                      'MEJA ${table.displayName} · ${table.pax} TAMU · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM',
+                      tableless
+                          ? (_isTakeaway
+                              ? 'BAWA PULANG · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM'
+                              : 'TANPA MEJA · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM · PILIH MEJA SAAT KIRIM')
+                          : 'MEJA ${table!.displayName} · ${table.pax} TAMU · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM',
                       style: SatType.mono(
                           size: 11, color: sc.textLo, letterSpacing: 0.44),
                     ),
@@ -224,7 +257,91 @@ class ReviewScreen extends ConsumerWidget {
                     ? null
                     : () async {
                         final vm = ref.read(reviewViewModelProvider.notifier);
-                        final actorId = ref.read(authStateProvider).user?.id;
+                        final user = ref.read(authStateProvider).user;
+                        final actorId = user?.id;
+                        final stations = <String>{
+                          if (kitchenCt > 0) 'Dapur',
+                          if (barCt > 0) 'Bar',
+                        }.join(',');
+
+                        // Takeaway add-items: append to the existing visit.
+                        if (_isTakeaway) {
+                          final vid = await vm.submitTakeaway(
+                            cart,
+                            existingVisitId: takeawayVisitId,
+                            actorId: actorId,
+                          );
+                          if (vid == null) return;
+                          ref.read(cartProvider(tableId).notifier).clear();
+                          if (context.mounted) {
+                            context.go('/takeaway/$takeawayVisitId');
+                          }
+                          return;
+                        }
+
+                        // Table-less menu-first: choose dine-in (assign a table)
+                        // or Bawa pulang (takeaway). See ADR-0026.
+                        if (tableless) {
+                          final choice = await _chooseCommit(context);
+                          if (choice == null || !context.mounted) return;
+                          if (choice == _Commit.takeaway) {
+                            final guest = await _askGuestName(context);
+                            if (guest == null || !context.mounted) return;
+                            final vid = await vm.submitTakeaway(
+                              cart,
+                              guestName: guest,
+                              actorId: actorId,
+                            );
+                            if (vid == null || vid.isEmpty) return;
+                            ref.read(cartProvider(tableId).notifier).clear();
+                            if (context.mounted) context.go('/takeaway/$vid');
+                            return;
+                          }
+                          // Dine-in: pick the destination table, seat it, then
+                          // submit the draft cart against it.
+                          final pick =
+                              await showAssignTableSheet(context: context);
+                          if (pick == null || !context.mounted) return;
+                          try {
+                            await ref.read(tablesProvider.notifier).seat(
+                                  pick.tableId,
+                                  pax: pick.pax,
+                                  guestName: pick.guestName,
+                                  userId: actorId,
+                                  userName: user?.name,
+                                  acquireLock: true,
+                                );
+                          } on ApiException catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                SnackBar(
+                                  content: Text(e.code == 'already_seated'
+                                      ? 'Meja keburu terisi. Pilih meja lain.'
+                                      : 'Gagal menempati meja: ${e.code ?? e.statusCode}'),
+                                ),
+                              );
+                            }
+                            return;
+                          }
+                          await vm.submit(pick.tableId, cart, actorId: actorId);
+                          final s = ref.read(reviewViewModelProvider);
+                          if (s.error != null || s.submittedTicketIds == null) {
+                            return;
+                          }
+                          ref
+                              .read(tablesProvider.notifier)
+                              .markPending(pick.tableId, userId: actorId);
+                          ref.read(cartProvider(tableId).notifier).clear();
+                          if (context.mounted) {
+                            // go (not push): drops the draft menu/review stack
+                            // and lands on the freshly-seated table detail with
+                            // the sent confirmation on top.
+                            context.go(
+                                '/table/${pick.tableId}/sent?stations=$stations');
+                          }
+                          return;
+                        }
+
                         await vm.submit(tableId, cart, actorId: actorId);
                         final s = ref.read(reviewViewModelProvider);
                         if (s.error != null || s.submittedTicketIds == null) {
@@ -233,10 +350,6 @@ class ReviewScreen extends ConsumerWidget {
                         ref
                             .read(tablesProvider.notifier)
                             .markPending(tableId, userId: actorId);
-                        final stations = <String>{
-                          if (kitchenCt > 0) 'Dapur',
-                          if (barCt > 0) 'Bar',
-                        }.join(',');
                         ref.read(cartProvider(tableId).notifier).clear();
                         if (context.mounted) {
                           context.push('/table/$tableId/sent?stations=$stations');
@@ -264,7 +377,14 @@ class ReviewScreen extends ConsumerWidget {
                     else
                       Icon(Icons.auto_awesome, size: 16, color: sc.accentInk),
                     const SizedBox(width: 10),
-                    Text(reviewState.busy ? 'Mengirim…' : 'Kirim ke $sendTarget',
+                    Text(
+                        reviewState.busy
+                            ? 'Mengirim…'
+                            : _isTakeaway
+                                ? 'Tambah ke pesanan'
+                                : tableless
+                                    ? 'Kirim pesanan'
+                                    : 'Kirim ke $sendTarget',
                         style: SatType.sans(
                           size: 15,
                           weight: FontWeight.w600,
@@ -287,6 +407,151 @@ class ReviewScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+enum _Commit { dineIn, takeaway }
+
+/// Menu-first commit chooser: dine-in (assign a table) vs Bawa pulang
+/// (takeaway). See ADR-0026.
+Future<_Commit?> _chooseCommit(BuildContext context) {
+  final sc = context.sat;
+  return showModalBottomSheet<_Commit>(
+    context: context,
+    useRootNavigator: true,
+    backgroundColor: sc.bg1,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: sc.border1,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text('Kirim pesanan ke',
+                style: SatType.sans(
+                    size: 18, weight: FontWeight.w600, color: sc.textHi)),
+            const SizedBox(height: 16),
+            _CommitTile(
+              icon: Icons.table_restaurant_rounded,
+              title: 'Meja (dine-in)',
+              sub: 'Tetapkan ke meja kosong',
+              onTap: () => Navigator.of(ctx).pop(_Commit.dineIn),
+            ),
+            const SizedBox(height: 10),
+            _CommitTile(
+              icon: Icons.shopping_bag_rounded,
+              title: 'Bawa pulang',
+              sub: 'Takeaway tanpa meja',
+              onTap: () => Navigator.of(ctx).pop(_Commit.takeaway),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _CommitTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String sub;
+  final VoidCallback onTap;
+  const _CommitTile(
+      {required this.icon,
+      required this.title,
+      required this.sub,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Material(
+      color: sc.bg2,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: sc.border0),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: sc.accent),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: SatType.sans(
+                            size: 15,
+                            weight: FontWeight.w600,
+                            color: sc.textHi)),
+                    const SizedBox(height: 2),
+                    Text(sub,
+                        style: SatType.sans(size: 12, color: sc.textMd)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, size: 18, color: sc.textLo),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Prompt for the guest name (the takeaway visit's only handle). Required.
+Future<String?> _askGuestName(BuildContext context) {
+  final sc = context.sat;
+  final ctrl = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: sc.bg1,
+      title: Text('Nama tamu', style: SatType.sans(color: sc.textHi)),
+      content: TextField(
+        controller: ctrl,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        style: SatType.sans(size: 14, color: sc.textHi),
+        decoration: const InputDecoration(hintText: 'mis. Budi'),
+        onSubmitted: (v) {
+          if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim());
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Batal'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final v = ctrl.text.trim();
+            if (v.isNotEmpty) Navigator.of(ctx).pop(v);
+          },
+          child: const Text('Lanjut'),
+        ),
+      ],
+    ),
+  );
 }
 
 enum _Tone { normal, urgent }

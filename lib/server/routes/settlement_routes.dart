@@ -15,14 +15,17 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/routes/tables_routes.dart'
+    show snapshotVisitAndDelete, tableJson, syncVisitMoney;
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
 const _methods = {'tunai', 'kartu', 'qris', 'transfer', 'lainnya'};
 
-/// Two-phase settlement + split bills. See
-/// docs/adr/0023-two-phase-settlement-and-split-bills.md and CONTEXT.md
-/// (Bill / Settlement / Split bill / Payment / Tax & service charge).
+/// Two-phase settlement + split bills, keyed off the [[Visit]] (not the table)
+/// so a detached unpaid bill survives the table being freed. See
+/// docs/adr/0023-two-phase-settlement-and-split-bills.md, ADR-0024, and
+/// CONTEXT.md (Bill / Settlement / Bill close / Split bill / Payment).
 Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   final r = Router();
 
@@ -33,78 +36,106 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return auth.resolveBearer(token);
   }
 
+  Future<List<String>> capsOf(Request req) async {
+    if (auth == null) return const [];
+    final user = await resolve(req);
+    if (user == null) return const [];
+    final role = await (db.select(db.roles)
+          ..where((x) => x.id.equals(user.roleId)))
+        .getSingleOrNull();
+    return role == null
+        ? const <String>[]
+        : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
+  }
+
   Future<Response?> requireCap(Request req, Capability needed) async {
     if (auth == null) return null;
     final user = await resolve(req);
     if (user == null) return Response(401);
-    final role = await (db.select(db.roles)
-          ..where((x) => x.id.equals(user.roleId)))
-        .getSingleOrNull();
-    final caps = role == null
-        ? const <String>[]
-        : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
-    if (!caps.contains(needed.name)) {
+    if (!(await capsOf(req)).contains(needed.name)) {
       return _err(403, 'forbidden', 'missing capability ${needed.name}');
     }
     return null;
   }
 
-  Future<void> broadcastBill(String tableId) async {
-    final bill = await _buildBill(db, tableId);
+  Future<void> broadcastBill(String visitId) async {
+    final bill = await _buildBill(db, visitId);
     if (bill != null) hub.broadcast(WsEventTypes.billUpdated, bill);
+    // Keep the floor money badge (outstanding / Sebagian / Lunas) in sync.
+    await syncVisitMoney(db, hub, visitId);
   }
 
-  // List every payable table (occupied + ≥1 sent line) with a bill summary.
+  /// Reject mutations on a bill the cashier already locked (bill-closed but the
+  /// table not yet freed — the "lingering" state). Reopen first to correct.
+  Future<Response?> lockGuard(String visitId) async {
+    final v = await _visit(db, visitId);
+    if (v != null && v.billClosedAt != null) {
+      return _err(409, 'bill_locked', 'tagihan sudah ditutup — buka ulang dulu');
+    }
+    return null;
+  }
+
+  // List every open, payable visit (≥1 sent line, bill not yet closed). Spans
+  // attached (table occupied) AND detached (table freed, bill still open)
+  // visits — the detached ones carry `tableFreedAt`/`detached` for the flag.
   r.get('/settlement/payable', (Request req) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
-    final tables = await db.select(db.venueTables).get();
+    final visits = await db.select(db.visits).get();
     final out = <Map<String, dynamic>>[];
-    for (final t in tables) {
-      if (t.status == 'available') continue;
-      final bill = await _buildBill(db, t.id);
+    for (final v in visits) {
+      if (v.billClosedAt != null) continue; // locked → off the active list
+      final bill = await _buildBill(db, v.id);
       if (bill == null) continue; // no sent lines
       out.add(_summarize(bill));
     }
-    out.sort((a, b) => (b['outstanding'] as int).compareTo(a['outstanding'] as int));
+    // Detached-unpaid first (need attention), then by outstanding desc.
+    out.sort((a, b) {
+      final da = (a['detached'] == true) ? 1 : 0;
+      final dbb = (b['detached'] == true) ? 1 : 0;
+      if (da != dbb) return dbb.compareTo(da);
+      return (b['outstanding'] as int).compareTo(a['outstanding'] as int);
+    });
     return _ok(out);
   });
 
-  // Full bill detail for one table.
-  r.get('/settlement/tables/<tableId>/bill', (Request req, String tableId) async {
+  // Full bill detail for one visit.
+  r.get('/settlement/visits/<visitId>/bill', (Request req, String visitId) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
-    final bill = await _buildBill(db, tableId);
-    if (bill == null) return _err(404, 'no_bill', 'table has no sent lines');
+    final bill = await _buildBill(db, visitId);
+    if (bill == null) return _err(404, 'no_bill', 'visit has no sent lines');
     return _ok(bill);
   });
 
   // Create a receipt. {mode: itemized|even, label?, assignAll?: bool}.
-  // assignAll grabs every currently-unassigned sent line unit (the "pay full"
-  // shortcut). Switching the bill to/from even mode is done via /split-even.
-  r.post('/settlement/tables/<tableId>/receipts',
-      (Request req, String tableId) async {
+  r.post('/settlement/visits/<visitId>/receipts',
+      (Request req, String visitId) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final mode = (body['mode'] as String?) == 'even' ? 'even' : 'itemized';
     final id = _uuid.v4();
     await db.transaction(() async {
       await db.into(db.receipts).insert(ReceiptsCompanion.insert(
             id: id,
-            tableId: tableId,
+            tableId: visit.tableId,
+            visitId: Value(visitId),
             mode: Value(mode),
             label: Value((body['label'] as String?)?.trim() ?? ''),
             createdAt: DateTime.now().toUtc(),
           ));
       if (body['assignAll'] == true) {
-        await _assignAllUnassigned(db, tableId, id);
+        await _assignAllUnassigned(db, visitId, id);
       }
-      await _recompute(db, tableId);
+      await _recompute(db, visitId);
     });
-    await broadcastBill(tableId);
-    final bill = await _buildBill(db, tableId);
-    return _ok({'receiptId': id, 'bill': bill});
+    await broadcastBill(visitId);
+    return _ok({'receiptId': id, 'bill': await _buildBill(db, visitId)});
   });
 
   // Delete an unpaid receipt; its line assignments are released.
@@ -114,6 +145,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    final visitId = rec.visitId ?? rec.tableId;
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
     if (rec.status == 'paid') {
       return _err(409, 'receipt_paid', 'reopen before deleting a paid receipt');
     }
@@ -124,10 +158,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       await (db.delete(db.payments)..where((x) => x.receiptId.equals(receiptId)))
           .go();
       await (db.delete(db.receipts)..where((x) => x.id.equals(receiptId))).go();
-      await _recompute(db, rec.tableId);
+      await _recompute(db, visitId);
     });
-    await broadcastBill(rec.tableId);
-    return _ok({'bill': await _buildBill(db, rec.tableId)});
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
   });
 
   // Assign qty units of a sent ticket to a receipt (qty-level). {ticketId, qtyUnits}.
@@ -137,6 +171,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    final visitId = rec.visitId ?? rec.tableId;
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
     if (rec.status == 'paid') {
       return _err(409, 'receipt_paid', 'reopen the receipt before editing lines');
     }
@@ -146,10 +183,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final ticket = await (db.select(db.tickets)
           ..where((x) => x.id.equals(ticketId)))
         .getSingleOrNull();
-    if (ticket == null || ticket.tableId != rec.tableId) {
-      return _err(404, 'no_ticket', 'ticket not on this table');
+    if (ticket == null || (ticket.visitId ?? ticket.tableId) != visitId) {
+      return _err(404, 'no_ticket', 'ticket not on this bill');
     }
-    // Units already assigned to OTHER receipts for this ticket.
     final assignedElsewhere = await _assignedUnits(db, ticketId, exclude: receiptId);
     final available = ticket.qty - assignedElsewhere;
     if (want > available) {
@@ -169,24 +205,27 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               qtyUnits: Value(want),
             ));
       }
-      await _recompute(db, rec.tableId);
+      await _recompute(db, visitId);
     });
-    await broadcastBill(rec.tableId);
-    return _ok({'bill': await _buildBill(db, rec.tableId)});
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
   });
 
   // Replace all receipts with an even N-way split of the bill total.
-  r.post('/settlement/tables/<tableId>/split-even',
-      (Request req, String tableId) async {
+  r.post('/settlement/visits/<visitId>/split-even',
+      (Request req, String visitId) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final n = ((body['n'] as num?)?.toInt() ?? 2).clamp(1, 50);
-    final bill = await _buildBill(db, tableId);
-    if (bill == null) return _err(404, 'no_bill', 'table has no sent lines');
-    // Cannot blow away a receipt that already took money.
+    final bill = await _buildBill(db, visitId);
+    if (bill == null) return _err(404, 'no_bill', 'visit has no sent lines');
     final paid = await (db.select(db.receipts)
-          ..where((x) => x.tableId.equals(tableId) & x.status.equals('paid')))
+          ..where((x) => x.visitId.equals(visitId) & x.status.equals('paid')))
         .get();
     if (paid.isNotEmpty) {
       return _err(409, 'receipt_paid', 'reopen paid receipts before re-splitting');
@@ -194,11 +233,12 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final total = bill['total'] as int;
     final shares = distributeEven(total, n);
     await db.transaction(() async {
-      await _clearReceipts(db, tableId);
+      await _clearReceipts(db, visitId);
       for (var i = 0; i < n; i++) {
         await db.into(db.receipts).insert(ReceiptsCompanion.insert(
               id: _uuid.v4(),
-              tableId: tableId,
+              tableId: visit.tableId,
+              visitId: Value(visitId),
               mode: const Value('even'),
               label: Value('Bagian ${i + 1}/$n'),
               total: Value(shares[i]),
@@ -206,8 +246,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             ));
       }
     });
-    await broadcastBill(tableId);
-    return _ok({'bill': await _buildBill(db, tableId)});
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
   });
 
   // Record a payment against a receipt. {method, amount, tendered?, note?}.
@@ -218,6 +258,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final user = await resolve(req);
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    final visitId = rec.visitId ?? rec.tableId;
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final method = (body['method'] as String?) ?? 'tunai';
     if (!_methods.contains(method)) {
@@ -225,6 +268,13 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     }
     final amount = (body['amount'] as num?)?.toInt() ?? 0;
     if (amount <= 0) return _err(400, 'bad_amount', 'amount must be positive');
+    // Mandatory proof photo for any non-cash method (ADR-0025). The bytes ride
+    // in this same request (base64), so payment + photo land atomically.
+    final photo = _decodePhoto(body['photoBase64']);
+    if (method != 'tunai' && (photo == null || photo.isEmpty)) {
+      return _err(400, 'photo_required',
+          'foto bukti wajib untuk pembayaran non-tunai');
+    }
     await db.transaction(() async {
       await db.into(db.payments).insert(PaymentsCompanion.insert(
             id: _uuid.v4(),
@@ -235,14 +285,40 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             cashierUserId: Value(user?.id),
             note: Value((body['note'] as String?)?.trim()),
             at: DateTime.now().toUtc(),
+            photo: Value(method == 'tunai' ? null : photo),
           ));
-      await _recompute(db, rec.tableId);
+      await _recompute(db, visitId);
       await _audit(db, AuditType.paymentRecorded,
           'Pembayaran ${_rupiah(amount)} ($method) ${rec.label}',
           tableId: rec.tableId, actor: user?.id);
     });
-    await broadcastBill(rec.tableId);
-    return _ok({'bill': await _buildBill(db, rec.tableId)});
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // Proof-photo bytes for a LIVE payment (open bill). Kept OUT of the bill JSON
+  // (blob never rides the list path); fetched on demand, pinned. See ADR-0025.
+  r.get('/settlement/payments/<id>/photo', (Request req, String id) async {
+    final row = await (db.select(db.payments)..where((p) => p.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null || row.photo == null) return Response.notFound('no photo');
+    return Response.ok(row.photo, headers: {
+      'content-type': 'image/jpeg',
+      'cache-control': 'no-cache',
+    });
+  });
+
+  // Proof-photo bytes for a CLOSED (snapshotted) payment — past bills / report.
+  r.get('/settlement/history/payments/<id>/photo',
+      (Request req, String id) async {
+    final row = await (db.select(db.tableSessionPayments)
+          ..where((p) => p.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null || row.photo == null) return Response.notFound('no photo');
+    return Response.ok(row.photo, headers: {
+      'content-type': 'image/jpeg',
+      'cache-control': 'no-cache',
+    });
   });
 
   // Record a refund (negative payment) against a receipt. Needs `refund` cap.
@@ -253,6 +329,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final user = await resolve(req);
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    final visitId = rec.visitId ?? rec.tableId;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final method = (body['method'] as String?) ?? 'tunai';
     if (!_methods.contains(method)) {
@@ -271,22 +348,19 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             note: Value((body['note'] as String?)?.trim()),
             at: DateTime.now().toUtc(),
           ));
-      await _recompute(db, rec.tableId);
+      await _recompute(db, visitId);
       await _audit(db, AuditType.refund,
           'Refund ${_rupiah(amount)} ($method) ${rec.label}',
           tableId: rec.tableId, actor: user?.id,
           reason: (body['note'] as String?)?.trim());
     });
-    await broadcastBill(rec.tableId);
-    return _ok({'bill': await _buildBill(db, rec.tableId)});
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
   });
 
-  // Render + send the MONEY document to a VENUE printer (server-rendered,
-  // mirroring /tables/:id/print). Whole bill or one receipt; the renderer picks
-  // Tagihan vs Struk pembayaran from whether payments exist. See ADR-0023/0020.
+  // Render + send the MONEY document to a VENUE printer (server-rendered).
   Future<Response> printDoc(
-      String tableId, Map<String, dynamic> bill, String? receiptId,
-      String? printerId) async {
+      Map<String, dynamic> bill, String? receiptId, String? printerId) async {
     if (printerId == null || printerId.isEmpty) {
       return _err(400, 'bad_request', 'printerId required');
     }
@@ -336,14 +410,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   }
 
   // Print the whole-bill Tagihan / Struk pembayaran. {printerId}.
-  r.post('/settlement/tables/<tableId>/bill/print',
-      (Request req, String tableId) async {
+  r.post('/settlement/visits/<visitId>/bill/print',
+      (Request req, String visitId) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
-    final bill = await _buildBill(db, tableId);
+    final bill = await _buildBill(db, visitId);
     if (bill == null) return _err(409, 'no_lines', 'tidak ada pesanan');
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    return printDoc(tableId, bill, null, body['printerId'] as String?);
+    return printDoc(bill, null, body['printerId'] as String?);
   });
 
   // Print one receipt's Tagihan / Struk pembayaran. {printerId}.
@@ -353,10 +427,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
-    final bill = await _buildBill(db, rec.tableId);
+    final bill = await _buildBill(db, rec.visitId ?? rec.tableId);
     if (bill == null) return _err(409, 'no_lines', 'tidak ada pesanan');
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    return printDoc(rec.tableId, bill, receiptId, body['printerId'] as String?);
+    return printDoc(bill, receiptId, body['printerId'] as String?);
   });
 
   // Reopen (un-pay) a receipt: clears its payments. Audited.
@@ -367,15 +441,181 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final user = await resolve(req);
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    final visitId = rec.visitId ?? rec.tableId;
     await db.transaction(() async {
       await (db.delete(db.payments)..where((x) => x.receiptId.equals(receiptId)))
           .go();
-      await _recompute(db, rec.tableId);
+      await _recompute(db, visitId);
       await _audit(db, AuditType.billReopened, 'Buka ulang ${rec.label}',
           tableId: rec.tableId, actor: user?.id);
     });
-    await broadcastBill(rec.tableId);
-    return _ok({'bill': await _buildBill(db, rec.tableId)});
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // BILL CLOSE (cashier): lock the bill + (when the table is already freed)
+  // snapshot the visit into history. {writeOff?: bool, reason?}. Lunas requires
+  // outstanding == 0; tak-tertagih (write-off) needs the `refund` cap + reason
+  // and records lossAmount = outstanding. See ADR-0024.
+  r.post('/settlement/visits/<visitId>/bill-close',
+      (Request req, String visitId) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final user = await resolve(req);
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    if (visit.billClosedAt != null) {
+      return _err(409, 'already_closed', 'tagihan sudah ditutup');
+    }
+    final bill = await _buildBill(db, visitId);
+    if (bill == null) return _err(409, 'no_lines', 'tidak ada pesanan');
+    final raw = await req.readAsString();
+    final body = raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final writeOff = body['writeOff'] == true;
+    final outstanding = bill['outstanding'] as int;
+    final fullyAssigned = bill['fullyAssigned'] == true;
+    if (!writeOff) {
+      if (outstanding > 0 || !fullyAssigned) {
+        return _err(409, 'not_settled',
+            'tagihan belum lunas — gunakan tak tertagih untuk menutup');
+      }
+    } else {
+      // Write-off is a recorded loss → manager-approved (refund authority).
+      if (!(await capsOf(req)).contains(Capability.refund.name)) {
+        return _err(403, 'forbidden', 'tak tertagih perlu persetujuan manajer');
+      }
+      final reason = (body['reason'] as String?)?.trim() ?? '';
+      if (reason.isEmpty) {
+        return _err(400, 'reason_required', 'alasan tak tertagih wajib diisi');
+      }
+    }
+    final loss = writeOff ? outstanding : 0;
+    final now = DateTime.now().toUtc();
+    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+      VisitsCompanion(
+        billClosedAt: Value(now),
+        billClosedBy: Value(user?.id),
+        lossAmount: Value(loss),
+      ),
+    );
+    await _audit(
+        db,
+        AuditType.billClosed,
+        writeOff
+            ? 'Tagihan tak tertagih ${_rupiah(loss)} ${visit.tableLabel ?? ''}'
+            : 'Tutup tagihan ${visit.tableLabel ?? ''}',
+        tableId: visit.tableId,
+        actor: user?.id,
+        reason: writeOff ? (body['reason'] as String?)?.trim() : null);
+    // Second axis? If the table was already freed, this completes the visit.
+    final fresh = await _visit(db, visitId);
+    if (fresh != null && fresh.tableFreedAt != null) {
+      await snapshotVisitAndDelete(db, hub, fresh,
+          billClosedBy: user?.id, lossAmount: loss);
+    } else {
+      // Locked while the table is still occupied — mirror onto the table row
+      // so the floor shows a Lunas pill. Snapshot defers to table-close.
+      final tbl = await (db.select(db.venueTables)
+            ..where((t) => t.currentVisitId.equals(visitId)))
+          .getSingleOrNull();
+      if (tbl != null) {
+        await (db.update(db.venueTables)..where((t) => t.id.equals(tbl.id)))
+            .write(VenueTablesCompanion(billClosedAt: Value(now)));
+        final fresh2 = await (db.select(db.venueTables)
+              ..where((t) => t.id.equals(tbl.id)))
+            .getSingleOrNull();
+        if (fresh2 != null) {
+          hub.broadcast(WsEventTypes.tableUpdated, tableJson(fresh2));
+        }
+      }
+      hub.broadcast(
+          WsEventTypes.billUpdated, {'visitId': visitId, 'billClosed': true});
+    }
+    return _ok({'closed': true, 'snapshotted': fresh?.tableFreedAt != null});
+  });
+
+  // Reopen (unlock) a bill-closed-but-not-yet-snapshotted bill, to correct it.
+  r.post('/settlement/visits/<visitId>/reopen',
+      (Request req, String visitId) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final user = await resolve(req);
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+      const VisitsCompanion(
+        billClosedAt: Value(null),
+        billClosedBy: Value(null),
+        lossAmount: Value(0),
+      ),
+    );
+    // Clear the floor Lunas mirror if the table is still attached.
+    final tbl = await (db.select(db.venueTables)
+          ..where((t) => t.currentVisitId.equals(visitId)))
+        .getSingleOrNull();
+    if (tbl != null) {
+      await (db.update(db.venueTables)..where((t) => t.id.equals(tbl.id)))
+          .write(const VenueTablesCompanion(billClosedAt: Value(null)));
+      final fresh = await (db.select(db.venueTables)
+            ..where((t) => t.id.equals(tbl.id)))
+          .getSingleOrNull();
+      if (fresh != null) hub.broadcast(WsEventTypes.tableUpdated, tableJson(fresh));
+    }
+    await _audit(db, AuditType.billReopened,
+        'Buka ulang tagihan ${visit.tableLabel ?? ''}',
+        tableId: visit.tableId, actor: user?.id);
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // PAST BILLS (cashier history): closed bills across the venue, capped to the
+  // last `days` (default 7), newest-first. An optional ?tableId scopes to one
+  // physical table (the bill-screen Riwayat shortcut); absent ⇒ venue-wide (the
+  // cashier's Riwayat tab). Sourced from snapshotted TableSessions. The 7-day
+  // cap is only this view's window — sessions persist longer for reports.
+  r.get('/settlement/history', (Request req) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final days = int.tryParse(req.url.queryParameters['days'] ?? '7') ?? 7;
+    final tableId = req.url.queryParameters['tableId'];
+    final cutoff = DateTime.now().toUtc().subtract(Duration(days: days));
+    final q = db.select(db.tableSessions)
+      ..where((s) => s.closedAt.isBiggerThanValue(cutoff))
+      ..orderBy([(s) => OrderingTerm.desc(s.closedAt)]);
+    if (tableId != null && tableId.isNotEmpty) {
+      q.where((s) => s.tableId.equals(tableId));
+    }
+    final sessions = await q.get();
+    return _ok([
+      for (final s in sessions)
+        {
+          'sessionId': s.id,
+          'tableId': s.tableId,
+          'tableLabel': s.tableLabel,
+          'pax': s.pax,
+          'closedAt': s.closedAt.toIso8601String(),
+          'subtotal': s.subtotal,
+          'serviceAmount': s.serviceAmount,
+          'taxAmount': s.taxAmount,
+          'netTotal': s.netTotal,
+          'lossAmount': s.lossAmount,
+          'billClosedBy': s.billClosedBy,
+          'ticketCount': s.ticketCount,
+        }
+    ]);
+  });
+
+  // One past bill's detail (Struk pembayaran view) reconstructed from the
+  // session snapshot tables.
+  r.get('/settlement/sessions/<sessionId>/bill',
+      (Request req, String sessionId) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final bill = await _buildSessionBill(db, sessionId);
+    if (bill == null) return _err(404, 'no_session', 'session not found');
+    return _ok(bill);
   });
 
   return r;
@@ -385,6 +625,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 
 Future<Receipt?> _receipt(AppDatabase db, String id) =>
     (db.select(db.receipts)..where((x) => x.id.equals(id))).getSingleOrNull();
+
+Future<Visit?> _visit(AppDatabase db, String id) =>
+    (db.select(db.visits)..where((x) => x.id.equals(id))).getSingleOrNull();
 
 Future<int> _assignedUnits(AppDatabase db, String ticketId,
     {String? exclude}) async {
@@ -400,8 +643,8 @@ Future<int> _assignedUnits(AppDatabase db, String ticketId,
 }
 
 Future<void> _assignAllUnassigned(
-    AppDatabase db, String tableId, String receiptId) async {
-  final tickets = await _sentTickets(db, tableId);
+    AppDatabase db, String visitId, String receiptId) async {
+  final tickets = await _sentTickets(db, visitId);
   for (final t in tickets) {
     final assigned = await _assignedUnits(db, t.id);
     final free = t.qty - assigned;
@@ -416,9 +659,9 @@ Future<void> _assignAllUnassigned(
   }
 }
 
-Future<void> _clearReceipts(AppDatabase db, String tableId) async {
+Future<void> _clearReceipts(AppDatabase db, String visitId) async {
   final recs = await (db.select(db.receipts)
-        ..where((x) => x.tableId.equals(tableId)))
+        ..where((x) => x.visitId.equals(visitId)))
       .get();
   for (final rec in recs) {
     await (db.delete(db.receiptLines)..where((x) => x.receiptId.equals(rec.id)))
@@ -426,12 +669,12 @@ Future<void> _clearReceipts(AppDatabase db, String tableId) async {
     await (db.delete(db.payments)..where((x) => x.receiptId.equals(rec.id)))
         .go();
   }
-  await (db.delete(db.receipts)..where((x) => x.tableId.equals(tableId))).go();
+  await (db.delete(db.receipts)..where((x) => x.visitId.equals(visitId))).go();
 }
 
-Future<List<Ticket>> _sentTickets(AppDatabase db, String tableId) async {
+Future<List<Ticket>> _sentTickets(AppDatabase db, String visitId) async {
   final rows = await (db.select(db.tickets)
-        ..where((x) => x.tableId.equals(tableId)))
+        ..where((x) => x.visitId.equals(visitId)))
       .get();
   return rows
       .where((t) => t.status != 'voided' && t.status != 'draft')
@@ -452,14 +695,13 @@ Future<TaxServiceConfig> _config(AppDatabase db) async {
   );
 }
 
-/// Recompute every itemized receipt's money + paid status for a table.
-/// Even receipts keep their fixed share `total`; only their paid status moves.
-Future<void> _recompute(AppDatabase db, String tableId) async {
+/// Recompute every itemized receipt's money + paid status for a visit.
+Future<void> _recompute(AppDatabase db, String visitId) async {
   final cfg = await _config(db);
   final recs = await (db.select(db.receipts)
-        ..where((x) => x.tableId.equals(tableId)))
+        ..where((x) => x.visitId.equals(visitId)))
       .get();
-  final tickets = {for (final t in await _sentTickets(db, tableId)) t.id: t};
+  final tickets = {for (final t in await _sentTickets(db, visitId)) t.id: t};
 
   final itemized = recs.where((r) => r.mode != 'even').toList();
   final subtotals = <int>[];
@@ -474,10 +716,9 @@ Future<void> _recompute(AppDatabase db, String tableId) async {
     }
     subtotals.add(sub);
   }
-  // Reconcile to the bill total only when every sent unit is assigned.
   final billSub = tickets.values.fold<int>(0, (a, t) => a + t.price * t.qty);
   final assignedSub = subtotals.fold<int>(0, (a, b) => a + b);
-  final fullyAssigned = await _fullyAssigned(db, tableId, tickets.values);
+  final fullyAssigned = await _fullyAssigned(db, tickets.values);
   final billTotal =
       fullyAssigned ? computeBreakdown(billSub, cfg).total : null;
   final breakdowns = splitItemized(subtotals, cfg,
@@ -507,15 +748,26 @@ Future<void> _recompute(AppDatabase db, String tableId) async {
   }
 }
 
-Future<int> _paidNet(AppDatabase db, String receiptId) async {
-  final rows = await (db.select(db.payments)
-        ..where((x) => x.receiptId.equals(receiptId)))
-      .get();
-  return rows.fold<int>(0, (a, p) => a + p.amount);
+/// Decode a base64 JPEG payload sent inline with a payment, or null if absent.
+Uint8List? _decodePhoto(Object? raw) {
+  if (raw is! String || raw.isEmpty) return null;
+  try {
+    return base64Decode(raw);
+  } catch (_) {
+    return null;
+  }
 }
 
-Future<bool> _fullyAssigned(
-    AppDatabase db, String tableId, Iterable<Ticket> tickets) async {
+Future<int> _paidNet(AppDatabase db, String receiptId) async {
+  // Sum amount only — never load the proof-photo blob into the fold (ADR-0025).
+  final rows = await (db.selectOnly(db.payments)
+        ..addColumns([db.payments.amount])
+        ..where(db.payments.receiptId.equals(receiptId)))
+      .get();
+  return rows.fold<int>(0, (a, r) => a + (r.read(db.payments.amount) ?? 0));
+}
+
+Future<bool> _fullyAssigned(AppDatabase db, Iterable<Ticket> tickets) async {
   for (final t in tickets) {
     if (await _assignedUnits(db, t.id) < t.qty) return false;
   }
@@ -535,20 +787,18 @@ Future<void> _audit(AppDatabase db, AuditType type, String title,
       ));
 }
 
-/// Build the full bill JSON for one table, or null if it has no sent lines.
-Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String tableId) async {
-  final table = await (db.select(db.venueTables)
-        ..where((x) => x.id.equals(tableId)))
-      .getSingleOrNull();
-  if (table == null) return null;
-  final tickets = await _sentTickets(db, tableId);
+/// Build the full bill JSON for one visit, or null if it has no sent lines.
+Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
+  final visit = await _visit(db, visitId);
+  if (visit == null) return null;
+  final tickets = await _sentTickets(db, visitId);
   if (tickets.isEmpty) return null;
   final cfg = await _config(db);
   final billSub = tickets.fold<int>(0, (a, t) => a + t.price * t.qty);
   final billBreak = computeBreakdown(billSub, cfg);
 
   final recs = await (db.select(db.receipts)
-        ..where((x) => x.tableId.equals(tableId)))
+        ..where((x) => x.visitId.equals(visitId)))
       .get();
   final mode = recs.any((r) => r.mode == 'even') ? 'even' : 'itemized';
 
@@ -558,10 +808,25 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String tableId) async {
     final lines = await (db.select(db.receiptLines)
           ..where((x) => x.receiptId.equals(rec.id)))
         .get();
-    final pays = await (db.select(db.payments)
-          ..where((x) => x.receiptId.equals(rec.id)))
+    // Project every payment column EXCEPT the blob; expose only `hasPhoto`.
+    // Bytes are fetched on demand via the photo route (ADR-0025/0014).
+    final payPhoto = db.payments.photo.isNotNull();
+    final pays = await (db.selectOnly(db.payments)
+          ..addColumns([
+            db.payments.id,
+            db.payments.method,
+            db.payments.amount,
+            db.payments.isRefund,
+            db.payments.tenderedAmount,
+            db.payments.cashierUserId,
+            db.payments.note,
+            db.payments.at,
+            payPhoto,
+          ])
+          ..where(db.payments.receiptId.equals(rec.id)))
         .get();
-    final recPaid = pays.fold<int>(0, (a, p) => a + p.amount);
+    final recPaid =
+        pays.fold<int>(0, (a, p) => a + p.read(db.payments.amount)!);
     paidNet += recPaid;
     receiptsJson.add({
       'id': rec.id,
@@ -579,14 +844,15 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String tableId) async {
       'payments': [
         for (final p in pays)
           {
-            'id': p.id,
-            'method': p.method,
-            'amount': p.amount,
-            'isRefund': p.isRefund,
-            'tendered': p.tenderedAmount,
-            'cashierUserId': p.cashierUserId,
-            'note': p.note,
-            'at': p.at.toIso8601String(),
+            'id': p.read(db.payments.id)!,
+            'method': p.read(db.payments.method)!,
+            'amount': p.read(db.payments.amount)!,
+            'isRefund': p.read(db.payments.isRefund)!,
+            'tendered': p.read(db.payments.tenderedAmount),
+            'cashierUserId': p.read(db.payments.cashierUserId),
+            'note': p.read(db.payments.note),
+            'at': p.read(db.payments.at)!.toIso8601String(),
+            'hasPhoto': p.read(payPhoto) ?? false,
           }
       ],
     });
@@ -606,6 +872,7 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String tableId) async {
       'note': t.note,
       'status': t.status,
       'modifiersJson': t.modifiersJson,
+      'sentAt': t.sentAt.toIso8601String(),
     });
   }
   final fullyAssigned =
@@ -613,13 +880,21 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String tableId) async {
   final allReceiptsPaid =
       recs.isNotEmpty && recs.every((r) => r.status == 'paid');
   final outstanding = (billBreak.total - paidNet).clamp(0, 1 << 31);
+  final detached = visit.tableFreedAt != null;
 
   return {
-    'tableId': table.id,
-    'tableLabel': table.label,
-    'status': table.status,
-    'pax': table.pax,
-    'guestName': table.guestName,
+    'visitId': visit.id,
+    'tableId': visit.tableId,
+    'tableLabel': visit.tableLabel,
+    // dineIn | takeaway — lets the cashier branch its copy ("Bawa pulang"
+    // vs a detached walkout). See ADR-0026.
+    'kind': visit.kind,
+    'status': detached ? 'detached' : 'occupied',
+    'detached': detached,
+    'tableFreedAt': visit.tableFreedAt?.toIso8601String(),
+    'billClosedAt': visit.billClosedAt?.toIso8601String(),
+    'pax': visit.pax,
+    'guestName': visit.guestName,
     'mode': mode,
     'subtotal': billBreak.subtotal,
     'serviceAmount': billBreak.serviceAmount,
@@ -634,10 +909,116 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String tableId) async {
   };
 }
 
+/// Reconstruct a bill-shaped map for a CLOSED session (past bill), from the
+/// snapshot tables — for the Struk pembayaran detail view.
+Future<Map<String, dynamic>?> _buildSessionBill(
+    AppDatabase db, String sessionId) async {
+  final s = await (db.select(db.tableSessions)
+        ..where((x) => x.id.equals(sessionId)))
+      .getSingleOrNull();
+  if (s == null) return null;
+  final stk = await (db.select(db.tableSessionTickets)
+        ..where((x) => x.sessionId.equals(sessionId)))
+      .get();
+  final srec = await (db.select(db.tableSessionReceipts)
+        ..where((x) => x.sessionId.equals(sessionId)))
+      .get();
+  // Snapshot payments without the blob; `paymentId` keys the history photo
+  // route, `hasPhoto` flags whether to show a thumbnail (ADR-0025).
+  final spayPhoto = db.tableSessionPayments.photo.isNotNull();
+  final spay = await (db.selectOnly(db.tableSessionPayments)
+        ..addColumns([
+          db.tableSessionPayments.id,
+          db.tableSessionPayments.receiptId,
+          db.tableSessionPayments.method,
+          db.tableSessionPayments.amount,
+          db.tableSessionPayments.isRefund,
+          db.tableSessionPayments.cashierUserId,
+          db.tableSessionPayments.at,
+          spayPhoto,
+        ])
+        ..where(db.tableSessionPayments.sessionId.equals(sessionId)))
+      .get();
+  var paidNet = 0;
+  final receiptsJson = <Map<String, dynamic>>[];
+  for (final rec in srec) {
+    final pays = spay
+        .where((p) =>
+            p.read(db.tableSessionPayments.receiptId) == rec.receiptId)
+        .toList();
+    final recPaid =
+        pays.fold<int>(0, (a, p) => a + p.read(db.tableSessionPayments.amount)!);
+    paidNet += recPaid;
+    receiptsJson.add({
+      'id': rec.receiptId,
+      'mode': rec.mode,
+      'label': rec.label,
+      'subtotal': rec.subtotal,
+      'serviceAmount': rec.serviceAmount,
+      'taxAmount': rec.taxAmount,
+      'total': rec.total,
+      'status': rec.status,
+      'paidNet': recPaid,
+      'lines': const [],
+      'payments': [
+        for (final p in pays)
+          {
+            'paymentId': p.read(db.tableSessionPayments.id)!,
+            'method': p.read(db.tableSessionPayments.method)!,
+            'amount': p.read(db.tableSessionPayments.amount)!,
+            'isRefund': p.read(db.tableSessionPayments.isRefund)!,
+            'cashierUserId': p.read(db.tableSessionPayments.cashierUserId),
+            'at': p.read(db.tableSessionPayments.at)!.toIso8601String(),
+            'hasPhoto': p.read(spayPhoto) ?? false,
+          }
+      ],
+    });
+  }
+  final linesJson = [
+    for (final t in stk.where((t) => t.status != 'voided'))
+      {
+        'ticketId': t.ticketId,
+        'itemId': t.itemId,
+        'name': t.name,
+        'variantName': t.variantName,
+        'qty': t.qty,
+        'unitPrice': t.price,
+        'lineTotal': t.price * t.qty,
+        'assignedUnits': t.qty,
+        'note': t.note,
+        'status': t.status,
+        'modifiersJson': t.modifiersJson,
+        'sentAt': t.sentAt.toIso8601String(),
+      }
+  ];
+  return {
+    'sessionId': s.id,
+    'tableId': s.tableId,
+    'tableLabel': s.tableLabel,
+    'status': 'closed',
+    'closedAt': s.closedAt.toIso8601String(),
+    'pax': s.pax,
+    'mode': srec.any((r) => r.mode == 'even') ? 'even' : 'itemized',
+    'subtotal': s.subtotal,
+    'serviceAmount': s.serviceAmount,
+    'taxAmount': s.taxAmount,
+    'total': s.netTotal,
+    'paidAmount': paidNet,
+    'outstanding': (s.netTotal - paidNet).clamp(0, 1 << 31),
+    'lossAmount': s.lossAmount,
+    'lines': linesJson,
+    'receipts': receiptsJson,
+  };
+}
+
 Map<String, dynamic> _summarize(Map<String, dynamic> bill) => {
+      'visitId': bill['visitId'],
       'tableId': bill['tableId'],
       'tableLabel': bill['tableLabel'],
+      'kind': bill['kind'],
       'status': bill['status'],
+      'detached': bill['detached'],
+      'tableFreedAt': bill['tableFreedAt'],
       'pax': bill['pax'],
       'guestName': bill['guestName'],
       'total': bill['total'],

@@ -17,6 +17,7 @@ part 'database.g.dart';
   Roles,
   Zones,
   VenueTables,
+  Visits,
   MenuCategories,
   MenuItems,
   MenuTags,
@@ -37,12 +38,13 @@ part 'database.g.dart';
   Payments,
   TableSessionReceipts,
   TableSessionPayments,
+  DailyCounters,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 31;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -315,6 +317,46 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('table_sessions', 'tax_amount',
                 type: 'INTEGER NOT NULL DEFAULT 0');
           }
+          if (from < 29) {
+            // Visit decoupled from table; bill-close (cashier) snapshots, not
+            // table-close (waiter). New live Visits table; visitId on tickets/
+            // receipts; current_visit_id on tables; loss/cashier on sessions.
+            // Backfill one Visit per currently-occupied table and stamp its
+            // live tickets/receipts. See ADR-0024.
+            await m.createTable(visits);
+            await _safeAddColumnOn('tickets', 'visit_id', type: 'TEXT');
+            await _safeAddColumnOn('receipts', 'visit_id', type: 'TEXT');
+            await _safeAddColumnOn('venue_tables', 'current_visit_id',
+                type: 'TEXT');
+            await _safeAddColumnOn('venue_tables', 'bill_closed_at',
+                type: 'INTEGER');
+            await _safeAddColumnOn('venue_tables', 'money_state',
+                type: 'TEXT');
+            await _safeAddColumnOn('table_sessions', 'loss_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('table_sessions', 'bill_closed_by',
+                type: 'TEXT');
+            await _backfillVisits();
+          }
+          if (from < 30) {
+            // Mandatory proof photo on non-cash payments (ADR-0025). Nullable
+            // JPEG blob on live payments and their session snapshot; no backfill
+            // (pre-feature payments stay photo-less).
+            await _safeAddColumnOn('payments', 'photo', type: 'BLOB');
+            await _safeAddColumnOn('table_session_payments', 'photo',
+                type: 'BLOB');
+          }
+          if (from < 31) {
+            // Table-less orders: takeaway visits (ADR-0026). A `kind` column on
+            // live + snapshot visits (default dineIn leaves all existing rows
+            // untouched) and a daily counter table for the takeaway pickup
+            // number. No backfill.
+            await _safeAddColumnOn('visits', 'kind',
+                type: "TEXT NOT NULL DEFAULT 'dineIn'");
+            await _safeAddColumnOn('table_sessions', 'kind',
+                type: "TEXT NOT NULL DEFAULT 'dineIn'");
+            await m.createTable(dailyCounters);
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -405,6 +447,53 @@ class AppDatabase extends _$AppDatabase {
       await customStatement(
         'UPDATE users SET avatar_color_hex = ? WHERE id = ?',
         [c, id],
+      );
+    }
+  }
+
+  /// Backfill one [[Visit]] per currently-occupied table (ADR-0024). Mirrors
+  /// the table's live session fields onto a new visit row, points the table at
+  /// it via current_visit_id, and stamps that visit_id onto the table's live
+  /// tickets + receipts so the bill keys off the visit going forward.
+  Future<void> _backfillVisits() async {
+    final rows = await customSelect(
+      "SELECT id, label, zone_id, pax, opened_at, guest_name, guest_notes, "
+      "reservation_id, last_actor_id FROM venue_tables "
+      "WHERE status != 'available'",
+    ).get();
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+    for (final r in rows) {
+      final tableId = r.read<String>('id');
+      final visitId = '$tableId-v0';
+      await customStatement(
+        'INSERT OR IGNORE INTO visits(id, table_id, table_label, zone_id, pax, '
+        'opened_at, guest_name, guest_notes, reservation_id, last_actor_id, '
+        'created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+        [
+          visitId,
+          tableId,
+          r.read<String?>('label'),
+          r.read<String?>('zone_id') ?? '',
+          r.read<int?>('pax') ?? 0,
+          r.read<int?>('opened_at'),
+          r.read<String?>('guest_name'),
+          r.read<String?>('guest_notes'),
+          r.read<String?>('reservation_id'),
+          r.read<String?>('last_actor_id'),
+          now,
+        ],
+      );
+      await customStatement(
+        'UPDATE venue_tables SET current_visit_id = ? WHERE id = ?',
+        [visitId, tableId],
+      );
+      await customStatement(
+        'UPDATE tickets SET visit_id = ? WHERE table_id = ? AND visit_id IS NULL',
+        [visitId, tableId],
+      );
+      await customStatement(
+        'UPDATE receipts SET visit_id = ? WHERE table_id = ? AND visit_id IS NULL',
+        [visitId, tableId],
       );
     }
   }

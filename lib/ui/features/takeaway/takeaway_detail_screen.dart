@@ -1,0 +1,339 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/data/repositories/takeaway_repository.dart';
+import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/services/api_client.dart';
+import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/widgets/satset_top_bar.dart';
+import 'package:satset/ui/features/printing/printer_picker.dart';
+
+/// Takeaway (Bawa pulang) detail — the visit-keyed home for one takeaway order.
+/// Mirrors the table detail minus lock/seat: shows lines, lets the waiter add
+/// items, hand the order over ("Serahkan"), and print the money doc. The bill
+/// itself is settled on the cashier. See ADR-0026.
+class TakeawayDetailScreen extends ConsumerStatefulWidget {
+  final String visitId;
+  const TakeawayDetailScreen({super.key, required this.visitId});
+
+  @override
+  ConsumerState<TakeawayDetailScreen> createState() =>
+      _TakeawayDetailScreenState();
+}
+
+class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final visits = ref.watch(takeawayVisitsProvider);
+    final visit = visits
+        .where((v) => v.id == widget.visitId)
+        .cast<TakeawayVisit?>()
+        .firstOrNull;
+    final tickets = ref.watch(ticketsProvider)[widget.visitId] ?? const [];
+    final live = tickets
+        .where((t) =>
+            t.status != TicketStatus.served && t.status != TicketStatus.voided)
+        .toList();
+    final active =
+        tickets.where((t) => t.status != TicketStatus.voided).toList();
+    final total =
+        active.fold<int>(0, (s, t) => s + t.price * t.qty);
+    final label = visit?.label ?? 'Bawa pulang';
+    final guest = visit?.guestName;
+    final handedOver = visit?.handedOver ?? false;
+    // Can hand over once there are lines and none are still in flight.
+    final canHandover =
+        !handedOver && tickets.isNotEmpty && live.isEmpty && !_busy;
+
+    return Scaffold(
+      backgroundColor: sc.bg0,
+      body: Column(
+        children: [
+          SatAppBar(
+            onBack: () => safePop(context, fallback: '/tables'),
+            title: label,
+            crumbs: ['Bawa pulang', ?guest],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: SatType.sans(
+                      size: 30,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.6,
+                      height: 1.05,
+                      color: sc.textHi,
+                    )),
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    if (guest != null && guest.isNotEmpty) guest.toUpperCase(),
+                    '${active.length} ITEM',
+                    if (handedOver) 'SUDAH DISERAHKAN',
+                  ].join(' · '),
+                  style: SatType.mono(
+                      size: 11, color: sc.textLo, letterSpacing: 0.44),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: tickets.isEmpty
+                ? Center(
+                    child: Text('Belum ada item.',
+                        style: SatType.sans(size: 13, color: sc.textLo)),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    children: [
+                      for (final t in tickets) _TicketRow(ticket: t),
+                    ],
+                  ),
+          ),
+          _Footer(
+            sc: sc,
+            total: total,
+            handedOver: handedOver,
+            canHandover: canHandover,
+            busy: _busy,
+            onAddItems: () =>
+                context.push('/takeaway/${widget.visitId}/menu'),
+            onPrint: _busy ? null : _printBill,
+            onHandover: canHandover ? _handover : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _printBill() async {
+    try {
+      final bill = await ref
+          .read(settlementProvider.notifier)
+          .fetchBill(widget.visitId);
+      if (!mounted) return;
+      await printBillStruk(context: context, ref: ref, bill: bill);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Gagal memuat tagihan: $e')));
+      }
+    }
+  }
+
+  Future<void> _handover() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(settlementProvider.notifier).handover(widget.visitId);
+      if (mounted) context.go('/tables');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      final msg = switch (e.code) {
+        'tickets_not_terminal' =>
+          'Masih ada item yang dimasak — tunggu siap dulu.',
+        'no_tickets' => 'Belum ada item untuk diserahkan.',
+        _ => 'Gagal menyerahkan: ${e.code ?? e.statusCode}',
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal menyerahkan: $e')));
+    }
+  }
+}
+
+class _TicketRow extends StatelessWidget {
+  final Ticket ticket;
+  const _TicketRow({required this.ticket});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final voided = ticket.status == TicketStatus.voided;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: sc.border0),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 22,
+            child: Text('×${ticket.qty}',
+                style: SatType.mono(
+                    size: 13, weight: FontWeight.w600, color: sc.textMd)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ticket.name +
+                      (ticket.variantName.isEmpty
+                          ? ''
+                          : ' · ${ticket.variantName}'),
+                  style: SatType.sans(
+                    size: 14,
+                    weight: FontWeight.w500,
+                    color: voided ? sc.textLo : sc.textHi,
+                  ).copyWith(
+                    decoration:
+                        voided ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(ticketStatusLabel(ticket.status).toUpperCase(),
+                    style: SatType.mono(
+                        size: 10, color: sc.textLo, letterSpacing: 0.6)),
+              ],
+            ),
+          ),
+          Text(formatIDR(ticket.price * ticket.qty),
+              style: SatType.mono(
+                  size: 12, weight: FontWeight.w500, color: sc.textMd)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Footer extends StatelessWidget {
+  final SatColors sc;
+  final int total;
+  final bool handedOver;
+  final bool canHandover;
+  final bool busy;
+  final VoidCallback onAddItems;
+  final VoidCallback? onPrint;
+  final VoidCallback? onHandover;
+  const _Footer({
+    required this.sc,
+    required this.total,
+    required this.handedOver,
+    required this.canHandover,
+    required this.busy,
+    required this.onAddItems,
+    required this.onPrint,
+    required this.onHandover,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+          16, 12, 16, 16 + MediaQuery.of(context).padding.bottom),
+      decoration: BoxDecoration(
+        color: sc.bg1,
+        border: Border(top: BorderSide(color: sc.border0)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text('Total', style: SatType.sans(size: 13, color: sc.textMd)),
+              const Spacer(),
+              Text(formatIDR(total),
+                  style: SatType.mono(
+                      size: 15, weight: FontWeight.w600, color: sc.textHi)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (!handedOver)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: busy ? null : onAddItems,
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Tambah item'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: sc.textHi,
+                      side: BorderSide(color: sc.border2),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              if (!handedOver) const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPrint,
+                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                  label: const Text('Tagihan'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: sc.textHi,
+                    side: BorderSide(color: sc.border2),
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (!handedOver) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: FilledButton.icon(
+                onPressed: onHandover,
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.shopping_bag_rounded, size: 18),
+                label: const Text('Serahkan'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: sc.accent,
+                  foregroundColor: sc.accentInk,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+            if (onHandover == null && !busy)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Bisa diserahkan setelah semua item siap/disajikan.',
+                  textAlign: TextAlign.center,
+                  style: SatType.mono(
+                      size: 11, color: sc.textLo, letterSpacing: 0.3),
+                ),
+              ),
+          ] else
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('Sudah diserahkan ke tamu.',
+                  style: SatType.sans(size: 12, color: sc.textMd)),
+            ),
+        ],
+      ),
+    );
+  }
+}

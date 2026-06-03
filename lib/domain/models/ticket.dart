@@ -68,6 +68,9 @@ TicketStatus ticketStatusFromKey(String? raw) => switch (raw) {
 class Ticket with _$Ticket {
   const factory Ticket({
     required String id,
+    /// The [[Visit]] this line belongs to — used to resolve a table-less
+    /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
+    String? visitId,
     required String itemId,
     required String name,
     @Default('') String variantName,

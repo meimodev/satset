@@ -15,6 +15,7 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
     required StaffSectionDto staff,
     required MenuSectionDto menu,
     required OpsSectionDto ops,
+    @Default(PaymentsSectionDto()) PaymentsSectionDto payments,
   }) = _ReportsSnapshotDto;
 
   factory ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =>
@@ -62,10 +63,25 @@ class SalesSectionDto with _$SalesSectionDto {
     @Default(<KpiTileDto>[]) List<KpiTileDto> kpis,
     @Default(<CoverDayDto>[]) List<CoverDayDto> coverTrend,
     @Default(<double>[]) List<double> hourly,
+    TakeawaySplitDto? takeaway,
   }) = _SalesSectionDto;
 
   factory SalesSectionDto.fromJson(Map<String, dynamic> json) =>
       _$SalesSectionDtoFromJson(json);
+}
+
+/// Dine-in vs takeaway (Bawa pulang) split for the sales section. See ADR-0026.
+@freezed
+class TakeawaySplitDto with _$TakeawaySplitDto {
+  const factory TakeawaySplitDto({
+    @Default(0) int count,
+    @Default(0) int net,
+    @Default(0) int dineInCount,
+    @Default(0) int dineInNet,
+  }) = _TakeawaySplitDto;
+
+  factory TakeawaySplitDto.fromJson(Map<String, dynamic> json) =>
+      _$TakeawaySplitDtoFromJson(json);
 }
 
 @freezed
@@ -285,6 +301,49 @@ class VoidReasonDto with _$VoidReasonDto {
 
   factory VoidReasonDto.fromJson(Map<String, dynamic> json) =>
       _$VoidReasonDtoFromJson(json);
+}
+
+/// Non-cash payments section (ADR-0025): every non-cash, non-refund payment in
+/// the range with a fetchable proof photo, plus per-method totals.
+@freezed
+class PaymentsSectionDto with _$PaymentsSectionDto {
+  const factory PaymentsSectionDto({
+    @Default(0) int nonCashTotal,
+    @Default(<PaymentMethodTotalDto>[])
+    List<PaymentMethodTotalDto> methodTotals,
+    @Default(<NonCashPaymentDto>[]) List<NonCashPaymentDto> rows,
+  }) = _PaymentsSectionDto;
+
+  factory PaymentsSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$PaymentsSectionDtoFromJson(json);
+}
+
+@freezed
+class PaymentMethodTotalDto with _$PaymentMethodTotalDto {
+  const factory PaymentMethodTotalDto({
+    required String method,
+    @Default(0) int amount,
+    @Default(0) int count,
+  }) = _PaymentMethodTotalDto;
+
+  factory PaymentMethodTotalDto.fromJson(Map<String, dynamic> json) =>
+      _$PaymentMethodTotalDtoFromJson(json);
+}
+
+@freezed
+class NonCashPaymentDto with _$NonCashPaymentDto {
+  const factory NonCashPaymentDto({
+    required String paymentId,
+    required String method,
+    @Default(0) int amount,
+    @Default('') String at,
+    String? tableLabel,
+    String? cashierName,
+    @Default(false) bool hasPhoto,
+  }) = _NonCashPaymentDto;
+
+  factory NonCashPaymentDto.fromJson(Map<String, dynamic> json) =>
+      _$NonCashPaymentDtoFromJson(json);
 }
 
 @freezed

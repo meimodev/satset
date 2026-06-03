@@ -163,11 +163,17 @@ final wsClientProvider = Provider<WsClient>((ref) {
 /// login — without a valid bearer token the server 403s every WS upgrade,
 /// which under exponential backoff would flicker the indicator between
 /// `open` and `closed`.
-final wsConnStateProvider = ChangeNotifierProvider<ValueNotifier<WsConnState>>(
-    (ref) {
+final wsConnStateProvider = Provider<WsConnState>((ref) {
   final cfg = ref.watch(apiConfigProvider);
   final authed =
       ref.watch(authStateProvider.select((s) => s.isAuthenticated));
-  if (cfg == null || !authed) return ValueNotifier(WsConnState.closed);
-  return ref.watch(wsClientProvider).connState;
+  if (cfg == null || !authed) return WsConnState.closed;
+  // Mirror WsClient's connState WITHOUT owning it — a ChangeNotifierProvider
+  // would dispose this borrowed notifier on recompute (logout/re-login),
+  // leaving WsClient holding a disposed ValueNotifier.
+  final notifier = ref.watch(wsClientProvider).connState;
+  void onChange() => ref.invalidateSelf();
+  notifier.addListener(onChange);
+  ref.onDispose(() => notifier.removeListener(onChange));
+  return notifier.value;
 });

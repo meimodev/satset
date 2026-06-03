@@ -40,7 +40,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     final sc = context.sat;
     final venueName = ref.watch(
         venueSettingsProvider.select((s) => s.displayName));
-    final wsState = ref.watch(wsConnStateProvider).value;
+    final wsState = ref.watch(wsConnStateProvider);
     final ping = ref.watch(pingProvider);
     final degraded = !ping.reachable || wsState != WsConnState.open;
     return AdminPage(
@@ -58,7 +58,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
 
   List<Widget> _systemBody(BuildContext context, SatColors sc) {
     final ping = ref.watch(pingProvider);
-    final wsState = ref.watch(wsConnStateProvider).value;
+    final wsState = ref.watch(wsConnStateProvider);
     final status = ref.watch(systemStatusProvider);
     final devices = ref.watch(devicesRepositoryProvider);
     final stationsAsync = ref.watch(kdsStationsProvider);
@@ -445,7 +445,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
   Widget _phone(BuildContext context) {
     final sc = context.sat;
     final ping = ref.watch(pingProvider);
-    final wsState = ref.watch(wsConnStateProvider).value;
+    final wsState = ref.watch(wsConnStateProvider);
     final devices = ref.watch(devicesRepositoryProvider);
     final printers = ref.watch(printersRepositoryProvider);
     final stationsAsync = ref.watch(kdsStationsProvider);

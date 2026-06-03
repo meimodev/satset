@@ -4,13 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/data/repositories/reports_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/features/cashier/cashier_bill_screen.dart'
+    show PaymentProofThumb;
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/skeleton_card.dart';
 import '_common.dart';
 
-enum _Section { sales, staff, menu, ops }
+enum _Section { sales, staff, menu, ops, payments }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
@@ -35,6 +38,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     _Section.staff,
     _Section.menu,
     _Section.ops,
+    _Section.payments,
   };
   _StaffSort _staffSort = _StaffSort.net;
 
@@ -51,6 +55,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     _Section.staff: 'Staf',
     _Section.menu: 'Menu',
     _Section.ops: 'Operasi',
+    _Section.payments: 'Pembayaran',
   };
 
   void _setRange(ReportRange r) {
@@ -232,6 +237,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             key: const ValueKey('ops'),
             index: 3,
             child: _opsSection(context, isTab, snapshot.ops)),
+      if (_on.contains(_Section.payments))
+        Reveal(
+            key: const ValueKey('payments'),
+            index: 4,
+            child: _paymentsSection(context, snapshot.payments)),
     ];
     final col = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -573,12 +583,120 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  // ──────────── PAYMENTS (non-cash proof, ADR-0025) ────────────
+  static const _payMethodLabel = {
+    'kartu': 'Kartu',
+    'qris': 'QRIS',
+    'transfer': 'Transfer',
+    'lainnya': 'Lainnya',
+  };
+
+  String _payTime(String iso) {
+    final d = DateTime.tryParse(iso)?.toLocal();
+    if (d == null) return '';
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.hour)}:${two(d.minute)}';
+  }
+
+  Widget _paymentsSection(BuildContext context, PaymentsSectionDto p) {
+    final sc = context.sat;
+    if (p.rows.isEmpty) {
+      return _card(context, 'Pembayaran non-tunai',
+          sub: 'bukti foto wajib',
+          child: Text('Tidak ada pembayaran non-tunai pada rentang ini.',
+              style: SatType.sans(size: 13, color: sc.textLo)));
+    }
+    return _card(
+      context,
+      'Pembayaran non-tunai',
+      sub: 'total ${formatIDR(p.nonCashTotal)}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final m in p.methodTotals)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: sc.bg1,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: sc.border0),
+                  ),
+                  child: Text(
+                      '${_payMethodLabel[m.method] ?? m.method} · '
+                      '${m.count}× · ${formatIDR(m.amount)}',
+                      style: SatType.sans(size: 11.5, color: sc.textHi)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (final r in p.rows)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  if (r.hasPhoto)
+                    PaymentProofThumb(
+                        paymentId: r.paymentId, history: true, size: 44)
+                  else
+                    Container(
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: sc.bg1,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(Icons.image_not_supported_rounded,
+                          size: 18, color: sc.textLo),
+                    ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                            '${_payMethodLabel[r.method] ?? r.method} · '
+                            'Meja ${r.tableLabel ?? '-'}',
+                            style: SatType.sans(
+                                size: 13,
+                                weight: FontWeight.w600,
+                                color: sc.textHi)),
+                        const SizedBox(height: 2),
+                        Text('${_payTime(r.at)} · ${r.cashierName ?? '-'}',
+                            style: SatType.sans(size: 11, color: sc.textLo)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(formatIDR(r.amount),
+                      style: SatType.mono(
+                          size: 13,
+                          weight: FontWeight.w700,
+                          color: sc.textHi)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   // ──────────── SALES ────────────
   Widget _salesSection(BuildContext context, bool isTab, SalesSectionDto sales) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _salesKpis(context, sales.kpis),
+        if (sales.takeaway != null &&
+            (sales.takeaway!.count > 0 || sales.takeaway!.dineInCount > 0)) ...[
+          const SizedBox(height: 14),
+          _takeawaySplit(context, sales.takeaway!),
+        ],
         const SizedBox(height: 14),
         if (isTab)
           Row(
@@ -595,6 +713,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           _hourlyRevenue(context, sales.hourly),
         ],
       ],
+    );
+  }
+
+  Widget _takeawaySplit(BuildContext context, TakeawaySplitDto t) {
+    return _card(
+      context,
+      'Dine-in vs Bawa pulang',
+      child: Row(
+        children: [
+          Expanded(
+            child: SetTile(
+              label: 'Dine-in',
+              value: formatIDR(t.dineInNet),
+              sub: '${t.dineInCount} transaksi',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SetTile(
+              label: 'Bawa pulang',
+              value: formatIDR(t.net),
+              sub: '${t.count} transaksi',
+            ),
+          ),
+        ],
+      ),
     );
   }
 

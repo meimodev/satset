@@ -32,6 +32,10 @@ _$TableDtoImpl _$$TableDtoImplFromJson(Map<String, dynamic> json) =>
       guestName: json['guestName'] as String?,
       guestNotes: json['guestNotes'] as String?,
       reservationId: json['reservationId'] as String?,
+      billClosedAt: json['billClosedAt'] == null
+          ? null
+          : DateTime.parse(json['billClosedAt'] as String),
+      moneyState: json['moneyState'] as String?,
     );
 
 Map<String, dynamic> _$$TableDtoImplToJson(_$TableDtoImpl instance) =>
@@ -54,6 +58,8 @@ Map<String, dynamic> _$$TableDtoImplToJson(_$TableDtoImpl instance) =>
       'guestName': instance.guestName,
       'guestNotes': instance.guestNotes,
       'reservationId': instance.reservationId,
+      'billClosedAt': instance.billClosedAt?.toIso8601String(),
+      'moneyState': instance.moneyState,
     };
 
 _$UpdateTablePaxDtoImpl _$$UpdateTablePaxDtoImplFromJson(

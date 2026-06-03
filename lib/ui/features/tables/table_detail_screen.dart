@@ -421,7 +421,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           title: Text(isEmptyClose ? 'Lepaskan Meja?' : 'Selesaikan Layanan?'),
           content: Text(isEmptyClose
               ? 'Belum ada pesanan. Kosongkan meja ${table.displayName}?'
-              : 'Semua tiket telah selesai. Selesaikan layanan meja ${table.displayName} dan kosongkan meja?'),
+              : 'Semua tiket telah selesai. Kosongkan meja ${table.displayName} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.'),
           actions: [
             TextButton(
                 onPressed: () => Navigator.of(ctx).pop('cancel'),

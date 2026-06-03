@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -89,10 +90,10 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   // ── mutations (each returns the fresh Bill; the family provider is the
   //    canonical detail source and is invalidated by the screen / WS) ──
 
-  Future<Bill> fetchBill(String tableId) async {
+  Future<Bill> fetchBill(String visitId) async {
     final raw = await ref
         .read(apiClientProvider)
-        .getJson('/settlement/tables/$tableId/bill');
+        .getJson('/settlement/visits/$visitId/bill');
     return Bill.fromJson((raw as Map).cast<String, dynamic>());
   }
 
@@ -101,10 +102,10 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return Bill.fromJson((map['bill'] as Map).cast<String, dynamic>());
   }
 
-  Future<Bill> createReceipt(String tableId,
+  Future<Bill> createReceipt(String visitId,
       {String mode = 'itemized', String? label, bool assignAll = false}) async {
     final raw = await ref.read(apiClientProvider).postJson(
-        '/settlement/tables/$tableId/receipts',
+        '/settlement/visits/$visitId/receipts',
         {'mode': mode, 'label': ?label, 'assignAll': assignAll});
     return _billFrom(raw);
   }
@@ -116,6 +117,17 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _billFrom(raw);
   }
 
+  /// Undo the chosen billing method while no money has been taken: drop every
+  /// receipt so the bill returns to the mode chooser. Caller must gate on
+  /// `paidAmount == 0` — the server rejects deleting a paid receipt.
+  Future<Bill> resetBilling(Bill bill) async {
+    Bill? last;
+    for (final r in bill.receipts) {
+      last = await deleteReceipt(r.id);
+    }
+    return last ?? bill;
+  }
+
   Future<Bill> assignLine(String receiptId, String ticketId, int qtyUnits) async {
     final raw = await ref.read(apiClientProvider).postJson(
         '/settlement/receipts/$receiptId/lines',
@@ -123,22 +135,85 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _billFrom(raw);
   }
 
-  Future<Bill> splitEven(String tableId, int n) async {
+  Future<Bill> splitEven(String visitId, int n) async {
     final raw = await ref
         .read(apiClientProvider)
-        .postJson('/settlement/tables/$tableId/split-even', {'n': n});
+        .postJson('/settlement/visits/$visitId/split-even', {'n': n});
     return _billFrom(raw);
+  }
+
+  /// Bill close (Tutup tagihan). `writeOff` records a tak-tertagih loss
+  /// (needs the refund cap + reason, server-enforced). See ADR-0024.
+  Future<void> closeBill(String visitId,
+      {bool writeOff = false, String? reason}) async {
+    await ref.read(apiClientProvider).postJson(
+        '/settlement/visits/$visitId/bill-close',
+        {'writeOff': writeOff, 'reason': ?reason});
+  }
+
+  /// Takeaway handover ("Serahkan") — the first/second axis for a Bawa pulang
+  /// visit, replacing table-close. Server stamps `tableFreedAt`; if the bill is
+  /// already closed it snapshots + deletes. See ADR-0026.
+  Future<void> handover(String visitId) async {
+    await ref
+        .read(apiClientProvider)
+        .postJson('/visits/$visitId/handover', const {});
+  }
+
+  /// Reopen (unlock) a locked-but-not-yet-snapshotted bill.
+  Future<Bill> reopenBill(String visitId) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/settlement/visits/$visitId/reopen', const {});
+    return _billFrom(raw);
+  }
+
+  /// Past bills (last `days`, default 7), newest-first. `tableId` null ⇒
+  /// venue-wide (the cashier's Riwayat tab); set ⇒ scoped to one table (the
+  /// bill-screen Riwayat shortcut). One endpoint, both callers. See ADR-0024.
+  Future<List<PastBillSummary>> fetchHistory({String? tableId, int days = 7}) async {
+    final path = tableId != null && tableId.isNotEmpty
+        ? '/settlement/history?days=$days&tableId=$tableId'
+        : '/settlement/history?days=$days';
+    final raw = await ref.read(apiClientProvider).getJson(path) as List;
+    return [
+      for (final e in raw)
+        PastBillSummary.fromJson((e as Map).cast<String, dynamic>())
+    ];
+  }
+
+  /// One past bill's full detail (Struk pembayaran view) from a session.
+  Future<Bill> fetchSessionBill(String sessionId) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .getJson('/settlement/sessions/$sessionId/bill');
+    return Bill.fromJson((raw as Map).cast<String, dynamic>());
   }
 
   Future<Bill> recordPayment(String receiptId,
       {required String method,
       required int amount,
       int? tendered,
-      String? note}) async {
+      String? note,
+      String? photoBase64}) async {
     final raw = await ref.read(apiClientProvider).postJson(
-        '/settlement/receipts/$receiptId/payments',
-        {'method': method, 'amount': amount, 'tendered': ?tendered, 'note': ?note});
+        '/settlement/receipts/$receiptId/payments', {
+      'method': method,
+      'amount': amount,
+      'tendered': ?tendered,
+      'note': ?note,
+      'photoBase64': ?photoBase64,
+    });
     return _billFrom(raw);
+  }
+
+  /// Proof-photo bytes for a non-cash payment (ADR-0025). [history] reads the
+  /// snapshotted (past-bill / report) blob; otherwise the live payment blob.
+  Future<Uint8List> paymentPhoto(String paymentId, {bool history = false}) {
+    final base = history
+        ? '/settlement/history/payments'
+        : '/settlement/payments';
+    return ref.read(apiClientProvider).getBytes('$base/$paymentId/photo');
   }
 
   Future<Bill> refund(String receiptId,
@@ -160,8 +235,8 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   //    printers render client-side via the picker). Returns null on success or
   //    a human message on failure. See ADR-0023 / ADR-0020. ──
 
-  Future<String?> printBill(String tableId, String printerId) =>
-      _print('/settlement/tables/$tableId/bill/print', printerId);
+  Future<String?> printBill(String visitId, String printerId) =>
+      _print('/settlement/visits/$visitId/bill/print', printerId);
 
   Future<String?> printReceipt(String receiptId, String printerId) =>
       _print('/settlement/receipts/$receiptId/print', printerId);
@@ -186,18 +261,49 @@ final settlementProvider =
   return SettlementRepository(ref: ref);
 });
 
-/// Canonical bill-detail source for one table. Re-fetched whenever the screen
-/// invalidates it after a mutation, or on a WS `bill.updated`.
+/// Canonical bill-detail source for one VISIT. Re-fetched whenever the screen
+/// invalidates it after a mutation, or on a WS `bill.updated`/`tableSession.closed`.
 final billDetailProvider =
-    FutureProvider.family.autoDispose<Bill, String>((ref, tableId) async {
+    FutureProvider.family.autoDispose<Bill, String>((ref, visitId) async {
   ref.watch(apiConfigProvider);
-  // Refetch on any bill change broadcast for this table.
   final sub = ref.read(wsClientProvider).events.listen((ev) {
-    if (ev.type == WsEventTypes.billUpdated &&
+    if ((ev.type == WsEventTypes.billUpdated &&
+            ev.payload['visitId'] == visitId) ||
+        (ev.type == WsEventTypes.tableSessionClosed &&
+            ev.payload['visitId'] == visitId)) {
+      ref.invalidateSelf();
+    }
+  });
+  ref.onDispose(sub.cancel);
+  return ref.read(settlementProvider.notifier).fetchBill(visitId);
+});
+
+/// Per-table past bills (last 7 days). Keyed by tableId — backs the bill
+/// screen's Riwayat shortcut. Refetched on `tableSession.closed` for *this*
+/// table (a new past bill landed there).
+final pastBillsProvider =
+    FutureProvider.family.autoDispose<List<PastBillSummary>, String>(
+        (ref, tableId) async {
+  ref.watch(apiConfigProvider);
+  final sub = ref.read(wsClientProvider).events.listen((ev) {
+    if (ev.type == WsEventTypes.tableSessionClosed &&
         ev.payload['tableId'] == tableId) {
       ref.invalidateSelf();
     }
   });
   ref.onDispose(sub.cancel);
-  return ref.read(settlementProvider.notifier).fetchBill(tableId);
+  return ref.read(settlementProvider.notifier).fetchHistory(tableId: tableId);
+});
+
+/// Venue-wide past bills (last 7 days) — backs the cashier's Riwayat tab.
+/// Refetched on *any* `tableSession.closed`: a bill closed at any table lands a
+/// new history row, so membership of the venue-wide list changes. See ADR-0024.
+final venueHistoryProvider =
+    FutureProvider.autoDispose<List<PastBillSummary>>((ref) async {
+  ref.watch(apiConfigProvider);
+  final sub = ref.read(wsClientProvider).events.listen((ev) {
+    if (ev.type == WsEventTypes.tableSessionClosed) ref.invalidateSelf();
+  });
+  ref.onDispose(sub.cancel);
+  return ref.read(settlementProvider.notifier).fetchHistory();
 });

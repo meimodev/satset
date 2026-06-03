@@ -23,6 +23,14 @@ class VenueTable {
   final String? guestNotes;
   final String? reservationId;
 
+  /// The current visit's bill has been closed (Lunas) by the cashier while the
+  /// table is still occupied — drives the floor's Lunas pill. See ADR-0024.
+  final bool billClosed;
+
+  /// Live settlement state of the current visit: `partial` | `paid` | null.
+  /// With [openAmount] (outstanding) drives the floor money badge. ADR-0024.
+  final String? moneyState;
+
   const VenueTable({
     required this.id,
     required this.zoneId,
@@ -44,6 +52,8 @@ class VenueTable {
     this.guestName,
     this.guestNotes,
     this.reservationId,
+    this.billClosed = false,
+    this.moneyState,
   });
 
   /// True when [lockedBy] is set, not equal to [userId], and the lease has

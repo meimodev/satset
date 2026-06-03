@@ -14,8 +14,10 @@ import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
+import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/reservations_strip.dart';
+import 'package:satset/ui/features/tables/widgets/takeaway_strip.dart';
 
 /// Ticks once per second to drive live elapsed-time updates on table cards.
 /// autoDispose so the stream stops when no card is watching it.
@@ -92,11 +94,22 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     if (l.useTabletShell && !forcePhone) {
       return Column(
         children: [
-          TabletSectionHead(
-            title: zone.name,
-            sub: subLine,
+          Row(
+            children: [
+              Expanded(
+                child: TabletSectionHead(
+                  title: zone.name,
+                  sub: subLine,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(0, 0, 32, 0),
+                child: _NewOrderButton(tablet: true),
+              ),
+            ],
           ),
           const ReservationsStrip(tablet: true),
+          const TakeawayStrip(tablet: true),
           _ZoneRow(
             tables: activeTables,
             zones: zones,
@@ -171,10 +184,12 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                   ],
                 ),
               ),
+              const _NewOrderButton(tablet: false),
             ],
           ),
         ),
         const ReservationsStrip(tablet: false),
+        const TakeawayStrip(tablet: false),
         _ZoneRow(
           tables: activeTables,
           zones: zones,
@@ -219,6 +234,37 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// Floor entry into the table-less menu-first draft flow (ADR-0026). Mints a
+/// fresh draft cart then pushes the order menu; the table is chosen at commit.
+class _NewOrderButton extends ConsumerWidget {
+  final bool tablet;
+  const _NewOrderButton({required this.tablet});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    return FilledButton.icon(
+      onPressed: () {
+        startNewDraft(ref);
+        context.push('/order/new');
+      },
+      style: FilledButton.styleFrom(
+        backgroundColor: sc.accent,
+        foregroundColor: sc.accentInk,
+        elevation: 0,
+        padding: EdgeInsets.symmetric(
+            horizontal: tablet ? 18 : 14, vertical: tablet ? 14 : 11),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      icon: const Icon(Icons.add_rounded, size: 18),
+      label: Text('Pesanan baru',
+          style: SatType.sans(
+              size: 13, weight: FontWeight.w600, color: sc.accentInk)),
     );
   }
 }
@@ -479,7 +525,31 @@ class _TableCardState extends ConsumerState<_TableCard>
                           )),
                     ],
                   ),
-                  if (table.openAmount > 0)
+                  if (table.billClosed || table.moneyState == 'paid')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: _MoneyPill(
+                          label: 'Lunas', color: sc.success, icon: true),
+                    )
+                  else if (table.moneyState == 'partial')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _MoneyPill(label: 'Sebagian', color: sc.warn),
+                          const SizedBox(width: 6),
+                          Text(formatIDR(table.openAmount),
+                              style: SatType.mono(
+                                size: 12,
+                                weight: FontWeight.w600,
+                                color: sc.warn,
+                                letterSpacing: 0.24,
+                              )),
+                        ],
+                      ),
+                    )
+                  else if (table.openAmount > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(formatIDR(table.openAmount),
@@ -771,6 +841,37 @@ class _EmptyZoneState extends State<_EmptyZone>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Floor money badge pill — Lunas (paid) / Sebagian (partial). See ADR-0024.
+class _MoneyPill extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool icon;
+  const _MoneyPill({required this.label, required this.color, this.icon = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon) ...[
+            Icon(Icons.check_circle, size: 12, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(label,
+              style: SatType.sans(
+                  size: 10.5, weight: FontWeight.w700, color: color)),
+        ],
       ),
     );
   }

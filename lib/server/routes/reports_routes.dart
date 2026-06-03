@@ -113,6 +113,13 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     }
     final sessions = await sessionsQuery.get();
     final sessionIds = sessions.map((s) => s.id).toList();
+    // Takeaway (Bawa pulang) sessions count toward sales/menu/payments but are
+    // excluded from per-cover / turn-time / occupancy metrics — no table was
+    // ever held. See ADR-0026.
+    final dineInSessions =
+        sessions.where((s) => s.kind != 'takeaway').toList();
+    final takeawaySessions =
+        sessions.where((s) => s.kind == 'takeaway').toList();
 
     List<TableSessionTicket> tickets = [];
     if (sessionIds.isNotEmpty) {
@@ -394,9 +401,10 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     }).toList();
 
     // ─── OPS ────────────────────────────────────────────────────
-    final avgTurnSec = sessions.isEmpty
+    final avgTurnSec = dineInSessions.isEmpty
         ? 0
-        : sessions.fold<int>(0, (a, s) => a + s.durationSec) ~/ sessions.length;
+        : dineInSessions.fold<int>(0, (a, s) => a + s.durationSec) ~/
+            dineInSessions.length;
     final avgTurnMin = avgTurnSec ~/ 60;
 
     // ─── SPEED OF SERVICE (ADR-0013) ─────────────────────────────
@@ -479,7 +487,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
 
     // Heatmap: 7 weekdays × 12 hours (11..22).
     final heatRaw = List.generate(7, (_) => List.filled(12, 0));
-    for (final s in sessions) {
+    for (final s in dineInSessions) {
       final dow = s.closedAt.weekday - 1; // 0..6
       final hour = s.closedAt.hour;
       if (hour < 11 || hour > 22) continue;
@@ -574,6 +582,58 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     }).toList()
       ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
+    // ─── PAYMENTS (non-cash proof, ADR-0025) ─────────────────────
+    // Every non-cash, non-refund payment in the window, each with a fetchable
+    // proof photo. Blob stays out of the list (only `hasPhoto` rides).
+    final sessionById = {for (final s in sessions) s.id: s};
+    final spPhoto = db.tableSessionPayments.photo.isNotNull();
+    final spRows = await (db.selectOnly(db.tableSessionPayments)
+          ..addColumns([
+            db.tableSessionPayments.id,
+            db.tableSessionPayments.sessionId,
+            db.tableSessionPayments.method,
+            db.tableSessionPayments.amount,
+            db.tableSessionPayments.cashierUserId,
+            db.tableSessionPayments.at,
+            spPhoto,
+          ])
+          ..where(db.tableSessionPayments.sessionId.isIn(sessionIds))
+          ..where(db.tableSessionPayments.method.equals('tunai').not())
+          ..where(db.tableSessionPayments.isRefund.equals(false))
+          ..orderBy([OrderingTerm.desc(db.tableSessionPayments.at)]))
+        .get();
+    final nonCashRows = <Map<String, dynamic>>[];
+    final methodTotal = <String, int>{};
+    final methodCount = <String, int>{};
+    var nonCashTotal = 0;
+    for (final r in spRows) {
+      final sid = r.read(db.tableSessionPayments.sessionId)!;
+      final method = r.read(db.tableSessionPayments.method)!;
+      final amount = r.read(db.tableSessionPayments.amount)!;
+      final cashier = r.read(db.tableSessionPayments.cashierUserId);
+      methodTotal[method] = (methodTotal[method] ?? 0) + amount;
+      methodCount[method] = (methodCount[method] ?? 0) + 1;
+      nonCashTotal += amount;
+      nonCashRows.add({
+        'paymentId': r.read(db.tableSessionPayments.id)!,
+        'method': method,
+        'amount': amount,
+        'at': r.read(db.tableSessionPayments.at)!.toIso8601String(),
+        'tableLabel': sessionById[sid]?.tableLabel,
+        'cashierName':
+            cashier == null ? null : (userById[cashier]?.name ?? cashier),
+        'hasPhoto': r.read(spPhoto) ?? false,
+      });
+    }
+    final methodTotals = methodTotal.entries
+        .map((e) => {
+              'method': e.key,
+              'amount': e.value,
+              'count': methodCount[e.key] ?? 0,
+            })
+        .toList()
+      ..sort((a, b) => (b['amount'] as int).compareTo(a['amount'] as int));
+
     // Filter options (always full list — UI prepends "Semua X").
     final filterOptions = {
       'servers': [
@@ -587,6 +647,14 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       ],
     };
 
+    // Takeaway vs dine-in split for the sales section (ADR-0026). Both kinds
+    // count toward net; the split surfaces takeaway share without polluting
+    // per-cover / turn-time metrics.
+    final takeawayCount = takeawaySessions.length;
+    final takeawayNet = takeawaySessions.fold<int>(0, (a, s) => a + s.netTotal);
+    final dineInCount = dineInSessions.length;
+    final dineInNet = dineInSessions.fold<int>(0, (a, s) => a + s.netTotal);
+
     final body = {
       'generatedAt': now.toIso8601String(),
       'rangeFrom': from.toIso8601String(),
@@ -597,6 +665,12 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'kpis': salesKpis,
         'coverTrend': coverTrend,
         'hourly': hourlyNorm,
+        'takeaway': {
+          'count': takeawayCount,
+          'net': takeawayNet,
+          'dineInCount': dineInCount,
+          'dineInNet': dineInNet,
+        },
       },
       'staff': {'rows': staffRows, 'upsell': upsell},
       'menu': {
@@ -615,6 +689,11 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'reservations': reservations,
         'voidReasons': voidReasons,
         'voidByStaff': voidStaff,
+      },
+      'payments': {
+        'nonCashTotal': nonCashTotal,
+        'methodTotals': methodTotals,
+        'rows': nonCashRows,
       },
     };
 

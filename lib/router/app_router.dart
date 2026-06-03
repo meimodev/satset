@@ -19,8 +19,10 @@ import 'package:satset/ui/features/tables/table_detail_screen.dart';
 import 'package:satset/ui/features/orders/orders_screen.dart';
 import 'package:satset/ui/features/me/me_screen.dart';
 import 'package:satset/ui/features/menu/menu_screen.dart';
+import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/review/review_screen.dart';
 import 'package:satset/ui/features/sent/sent_screen.dart';
+import 'package:satset/ui/features/takeaway/takeaway_detail_screen.dart';
 import 'package:satset/ui/features/admin/kitchen_screen.dart';
 import 'package:satset/ui/features/admin/floor_screen.dart';
 import 'package:satset/ui/features/admin/menu_admin_screen.dart';
@@ -35,7 +37,10 @@ import 'package:satset/ui/features/cashier/cashier_screen.dart';
 Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/kitchen')) return Capability.viewKds;
   if (loc.startsWith('/kasir')) return Capability.settleBill;
-  if (loc.startsWith('/table/') || loc.startsWith('/orders')) {
+  if (loc.startsWith('/table/') ||
+      loc.startsWith('/orders') ||
+      loc.startsWith('/order/') ||
+      loc.startsWith('/takeaway')) {
     return Capability.takeOrder;
   }
   if (loc.startsWith('/venue-identity')) return Capability.editSettings;
@@ -173,6 +178,56 @@ final routerProvider = Provider<GoRouter>((ref) {
                 stations: stations.isEmpty ? const ['Dapur'] : stations,
               );
             },
+          ),
+        ],
+      ),
+      // Table-less menu-first draft flow (ADR-0026). Lives outside the shell
+      // like the table flow so pushes get full-page transitions. The cart key
+      // is the transient draftOrderIdProvider uuid; the table is chosen at the
+      // review/commit step.
+      GoRoute(
+        path: '/order/new',
+        builder: (_, _) => Consumer(
+          builder: (_, ref, _) => MenuScreen(
+            tableId: ref.watch(draftOrderIdProvider),
+            tableless: true,
+          ),
+        ),
+        routes: [
+          GoRoute(
+            path: 'review',
+            builder: (_, _) => Consumer(
+              builder: (_, ref, _) => ReviewScreen(
+                tableId: ref.watch(draftOrderIdProvider),
+                tableless: true,
+              ),
+            ),
+          ),
+        ],
+      ),
+      // Takeaway (Bawa pulang) detail + add-items flow (ADR-0026). Outside the
+      // shell for full-page transitions, like the table flow. The cart key is
+      // the takeaway visit id.
+      GoRoute(
+        path: '/takeaway/:visitId',
+        builder: (_, s) =>
+            TakeawayDetailScreen(visitId: s.pathParameters['visitId']!),
+        routes: [
+          GoRoute(
+            path: 'menu',
+            builder: (_, s) => MenuScreen(
+              tableId: s.pathParameters['visitId']!,
+              tableless: true,
+              takeawayVisitId: s.pathParameters['visitId']!,
+            ),
+          ),
+          GoRoute(
+            path: 'review',
+            builder: (_, s) => ReviewScreen(
+              tableId: s.pathParameters['visitId']!,
+              tableless: true,
+              takeawayVisitId: s.pathParameters['visitId']!,
+            ),
           ),
         ],
       ),

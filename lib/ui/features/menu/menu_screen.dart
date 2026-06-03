@@ -6,7 +6,11 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
@@ -17,7 +21,19 @@ import 'modifier_sheet.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   final String tableId;
-  const MenuScreen({super.key, required this.tableId});
+  /// When true this is a table-less draft ([tableId] is a draft id / visit id,
+  /// not a real table). The table is chosen at review/commit time (menu-first)
+  /// or there is none (takeaway).
+  final bool tableless;
+  /// Set when adding items to an existing takeaway (Bawa pulang) visit:
+  /// [tableId] is the takeaway visit id and submit appends to it. See ADR-0026.
+  final String? takeawayVisitId;
+  const MenuScreen({
+    super.key,
+    required this.tableId,
+    this.tableless = false,
+    this.takeawayVisitId,
+  });
 
   @override
   ConsumerState<MenuScreen> createState() => _MenuScreenState();
@@ -26,6 +42,18 @@ class MenuScreen extends ConsumerStatefulWidget {
 class _MenuScreenState extends ConsumerState<MenuScreen> {
   String _cat = 'mains';
 
+  bool get _isTakeaway => widget.takeawayVisitId != null;
+  String get _backFallback => _isTakeaway
+      ? '/takeaway/${widget.takeawayVisitId}'
+      : widget.tableless
+          ? '/tables'
+          : '/table/${widget.tableId}';
+  String get _reviewLoc => _isTakeaway
+      ? '/takeaway/${widget.takeawayVisitId}/review'
+      : widget.tableless
+          ? '/order/new/review'
+          : '/table/${widget.tableId}/review';
+
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
@@ -33,10 +61,14 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final cols = l.gridCount(minTileWidth: 170);
     final cart = ref.watch(cartProvider(widget.tableId));
     final tables = ref.watch(tablesProvider);
-    final table = tables.firstWhere(
-      (t) => t.id == widget.tableId,
-      orElse: () => tables.first,
-    );
+    final table = widget.tableless
+        ? null
+        : tables.firstWhere(
+            (t) => t.id == widget.tableId,
+            orElse: () => tables.isEmpty
+                ? VenueTable(id: widget.tableId, zoneId: '')
+                : tables.first,
+          );
 
     final menuStatus = ref.watch(menuStatusProvider);
     final allItems = ref.watch(menuItemsProvider);
@@ -115,7 +147,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: () => safePop(context, fallback: '/table/${widget.tableId}'),
+                          onTap: () => safePop(context, fallback: _backFallback),
                           child: Container(
                             width: 36, height: 36,
                             decoration: BoxDecoration(
@@ -132,7 +164,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Tambah ke Meja ${table.displayName}',
+                              Text(
+                                  widget.tableless
+                                      ? (_isTakeaway
+                                          ? 'Tambah ke Bawa pulang'
+                                          : 'Pesanan baru')
+                                      : 'Tambah ke Meja ${table!.displayName}',
                                   style: SatType.sans(
                                     size: 18,
                                     weight: FontWeight.w600,
@@ -141,7 +178,11 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                                   )),
                               const SizedBox(height: 2),
                               Text(
-                                '${table.zoneId.toUpperCase()} · ${table.pax} TAMU',
+                                widget.tableless
+                                    ? (_isTakeaway
+                                        ? 'BAWA PULANG · TANPA MEJA'
+                                        : 'TANPA MEJA · PILIH MEJA SAAT KIRIM')
+                                    : '${table!.zoneId.toUpperCase()} · ${table.pax} TAMU',
                                 style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0.44),
                               ),
                             ],
@@ -183,7 +224,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           crossAxisCount: dynamicCols,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
-                          childAspectRatio: 0.80,
+                          childAspectRatio: 0.70,
                           padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
                           children: [
                             for (final it in items)
@@ -202,7 +243,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             ),
             _TabletCartPane(
               tableId: widget.tableId,
-              onReview: () => context.push('/table/${widget.tableId}/review'),
+              tableless: widget.tableless,
+              takeaway: _isTakeaway,
+              onReview: () => context.push(_reviewLoc),
             ),
           ],
         ),
@@ -216,9 +259,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           Column(
             children: [
               SatAppBar(
-                onBack: () => safePop(context, fallback: '/table/${widget.tableId}'),
-                title: 'Meja ${table.displayName} · ${table.pax}p',
-                crumbs: ['Meja', table.displayName, 'Tambah item'],
+                onBack: () => safePop(context, fallback: _backFallback),
+                title: widget.tableless
+                    ? (_isTakeaway ? 'Bawa pulang' : 'Pesanan baru')
+                    : 'Meja ${table!.displayName} · ${table.pax}p',
+                crumbs: widget.tableless
+                    ? (_isTakeaway
+                        ? const ['Bawa pulang', 'Tambah item']
+                        : const ['Pesanan baru', 'Tambah item'])
+                    : ['Meja', table!.displayName, 'Tambah item'],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
@@ -295,7 +344,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
               child: _CartFooter(
                 count: cartCount,
                 total: cartTotal,
-                onReview: () => context.push('/table/${widget.tableId}/review'),
+                onReview: () => context.push(_reviewLoc),
               ),
             ),
         ],
@@ -564,8 +613,15 @@ class _CartFooter extends StatelessWidget {
 
 class _TabletCartPane extends ConsumerWidget {
   final String tableId;
+  final bool tableless;
+  final bool takeaway;
   final VoidCallback onReview;
-  const _TabletCartPane({required this.tableId, required this.onReview});
+  const _TabletCartPane({
+    required this.tableId,
+    required this.onReview,
+    this.tableless = false,
+    this.takeaway = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -575,8 +631,13 @@ class _TabletCartPane extends ConsumerWidget {
     final subtotal = cart.fold<int>(0, (s, c) => s + c.unitPrice * c.qty);
     final kit = count;
     final bar = 0;
-    final taxService = (subtotal * 0.18).round();
-    final est = subtotal + taxService;
+    final venue = ref.watch(venueSettingsProvider);
+    final breakdown = computeBreakdown(subtotal, venue.toTaxServiceConfig());
+    final serviceLabel = venue.serviceMode == 'fixed'
+        ? 'Layanan'
+        : 'Layanan · ${_fmtPct(venue.serviceRateBps)}';
+    final taxLabel = 'Pajak · ${_fmtPct(venue.taxRateBps)}';
+    final est = breakdown.total;
 
     final byCourse = <String, List<int>>{};
     for (var i = 0; i < cart.length; i++) {
@@ -600,7 +661,12 @@ class _TabletCartPane extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('PESANAN BARU · MEJA $tableId',
+                Text(
+                    takeaway
+                        ? 'BAWA PULANG · TANPA MEJA'
+                        : tableless
+                            ? 'PESANAN BARU · TANPA MEJA'
+                            : 'PESANAN BARU · MEJA $tableId',
                     style: SatType.mono(size: 10, weight: FontWeight.w600, letterSpacing: 1.0, color: sc.textLo)),
                 const SizedBox(height: 6),
                 Text(count == 0 ? 'Keranjang kosong' : '$count item siap kirim',
@@ -704,7 +770,12 @@ class _TabletCartPane extends ConsumerWidget {
                     child: Column(
                       children: [
                         _totalRow(context, sc, 'Subtotal', formatIDR(subtotal)),
-                        _totalRow(context, sc, 'Layanan 7% · Pajak 11%', formatIDR(taxService)),
+                        if (venue.serviceEnabled)
+                          _totalRow(context, sc, serviceLabel,
+                              formatIDR(breakdown.serviceAmount)),
+                        if (venue.taxEnabled)
+                          _totalRow(context, sc, taxLabel,
+                              formatIDR(breakdown.taxAmount)),
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Container(
@@ -765,4 +836,9 @@ class _TabletCartPane extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _fmtPct(int bps) {
+  final v = bps / 100.0;
+  return '${v.toStringAsFixed(v == v.roundToDouble() ? 0 : 2)}%';
 }

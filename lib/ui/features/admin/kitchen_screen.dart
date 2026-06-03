@@ -11,7 +11,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
-import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
 
@@ -333,12 +333,16 @@ class _OrderCard extends ConsumerWidget {
     final progress = order.total == 0 ? 0.0 : order.done / order.total;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final tables = ref.watch(tablesProvider);
-    final tableLabel = tables
-        .firstWhere(
-          (t) => t.id == order.tableId,
-          orElse: () => VenueTable(id: order.tableId, zoneId: ''),
-        )
-        .displayName;
+    final table = tables.where((t) => t.id == order.tableId).firstOrNull;
+    // Resolve a table-less (takeaway) order's label via the visit instead of
+    // showing the raw visit id. See ADR-0026.
+    final tableLabel = table?.displayName ??
+        ref
+            .watch(takeawayVisitsProvider)
+            .where((v) => v.id == order.tableId)
+            .map((v) => v.label)
+            .firstOrNull ??
+        order.tableId;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),

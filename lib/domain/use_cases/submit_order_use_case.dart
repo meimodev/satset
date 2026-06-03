@@ -26,36 +26,57 @@ class SubmitOrderUseCase {
     if (cart.isEmpty) {
       throw ArgumentError('cart is empty');
     }
-    final lines = [
-      for (final c in cart)
-        CartLineDto(
-          itemId: c.itemId,
-          name: c.name,
-          variantId: c.variantId,
-          variantName: c.variantName,
-          modifiers: [
-            for (final m in c.selectedModifiers)
-              CartModifierDto(
-                groupId: m.groupId,
-                optionId: m.optionId,
-                label: m.label,
-                priceDelta: m.priceDelta,
-              ),
-          ],
-          note: c.note.isEmpty ? null : c.note,
-          course: _courseKey(c.course),
-          qty: c.qty,
-          unitPrice: c.unitPrice,
-        ),
-    ];
     final ids = await _tickets.submitOrder(
       tableId: tableId,
       idempotencyKey: const Uuid().v4(),
-      lines: lines,
+      lines: _lines(cart),
       actorId: actorId,
     );
     return SubmittedOrder(ids);
   }
+
+  /// Submit (or append to) a table-less takeaway (Bawa pulang) order. Returns
+  /// the created ticket ids + the takeaway visit id. See ADR-0026.
+  Future<({List<String> ticketIds, String visitId})> takeaway({
+    required List<CartItem> cart,
+    String guestName = '',
+    String? existingVisitId,
+    String? actorId,
+  }) async {
+    if (cart.isEmpty) {
+      throw ArgumentError('cart is empty');
+    }
+    return _tickets.submitTakeawayOrder(
+      idempotencyKey: const Uuid().v4(),
+      lines: _lines(cart),
+      guestName: guestName,
+      existingVisitId: existingVisitId,
+      actorId: actorId,
+    );
+  }
+
+  List<CartLineDto> _lines(List<CartItem> cart) => [
+        for (final c in cart)
+          CartLineDto(
+            itemId: c.itemId,
+            name: c.name,
+            variantId: c.variantId,
+            variantName: c.variantName,
+            modifiers: [
+              for (final m in c.selectedModifiers)
+                CartModifierDto(
+                  groupId: m.groupId,
+                  optionId: m.optionId,
+                  label: m.label,
+                  priceDelta: m.priceDelta,
+                ),
+            ],
+            note: c.note.isEmpty ? null : c.note,
+            course: _courseKey(c.course),
+            qty: c.qty,
+            unitPrice: c.unitPrice,
+          ),
+      ];
 }
 
 final submitOrderUseCaseProvider = Provider<SubmitOrderUseCase>((ref) {

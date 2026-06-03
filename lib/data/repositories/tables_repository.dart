@@ -151,6 +151,8 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       guestName: d.guestName,
       guestNotes: d.guestNotes,
       reservationId: d.reservationId,
+      billClosed: d.billClosedAt != null,
+      moneyState: d.moneyState,
     );
   }
 

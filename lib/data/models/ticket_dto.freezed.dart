@@ -246,6 +246,10 @@ TicketDto _$TicketDtoFromJson(Map<String, dynamic> json) {
 mixin _$TicketDto {
   String get id => throw _privateConstructorUsedError;
   String get tableId => throw _privateConstructorUsedError;
+
+  /// Stable bill key (ADR-0024). Lets the KDS/board label table-less
+  /// (takeaway) lines via the visit. Nullable for pre-v29 rows.
+  String? get visitId => throw _privateConstructorUsedError;
   String get itemId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get variantName => throw _privateConstructorUsedError;
@@ -282,6 +286,7 @@ abstract class $TicketDtoCopyWith<$Res> {
   $Res call({
     String id,
     String tableId,
+    String? visitId,
     String itemId,
     String name,
     String variantName,
@@ -319,6 +324,7 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
   $Res call({
     Object? id = null,
     Object? tableId = null,
+    Object? visitId = freezed,
     Object? itemId = null,
     Object? name = null,
     Object? variantName = null,
@@ -347,6 +353,10 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
                 ? _value.tableId
                 : tableId // ignore: cast_nullable_to_non_nullable
                       as String,
+            visitId: freezed == visitId
+                ? _value.visitId
+                : visitId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             itemId: null == itemId
                 ? _value.itemId
                 : itemId // ignore: cast_nullable_to_non_nullable
@@ -433,6 +443,7 @@ abstract class _$$TicketDtoImplCopyWith<$Res>
   $Res call({
     String id,
     String tableId,
+    String? visitId,
     String itemId,
     String name,
     String variantName,
@@ -469,6 +480,7 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? tableId = null,
+    Object? visitId = freezed,
     Object? itemId = null,
     Object? name = null,
     Object? variantName = null,
@@ -497,6 +509,10 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
             ? _value.tableId
             : tableId // ignore: cast_nullable_to_non_nullable
                   as String,
+        visitId: freezed == visitId
+            ? _value.visitId
+            : visitId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         itemId: null == itemId
             ? _value.itemId
             : itemId // ignore: cast_nullable_to_non_nullable
@@ -576,6 +592,7 @@ class _$TicketDtoImpl implements _TicketDto {
   const _$TicketDtoImpl({
     required this.id,
     required this.tableId,
+    this.visitId,
     required this.itemId,
     required this.name,
     this.variantName = '',
@@ -602,6 +619,11 @@ class _$TicketDtoImpl implements _TicketDto {
   final String id;
   @override
   final String tableId;
+
+  /// Stable bill key (ADR-0024). Lets the KDS/board label table-less
+  /// (takeaway) lines via the visit. Nullable for pre-v29 rows.
+  @override
+  final String? visitId;
   @override
   final String itemId;
   @override
@@ -648,7 +670,7 @@ class _$TicketDtoImpl implements _TicketDto {
 
   @override
   String toString() {
-    return 'TicketDto(id: $id, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
+    return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
   }
 
   @override
@@ -658,6 +680,7 @@ class _$TicketDtoImpl implements _TicketDto {
             other is _$TicketDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.visitId, visitId) || other.visitId == visitId) &&
             (identical(other.itemId, itemId) || other.itemId == itemId) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.variantName, variantName) ||
@@ -693,6 +716,7 @@ class _$TicketDtoImpl implements _TicketDto {
     runtimeType,
     id,
     tableId,
+    visitId,
     itemId,
     name,
     variantName,
@@ -730,6 +754,7 @@ abstract class _TicketDto implements TicketDto {
   const factory _TicketDto({
     required final String id,
     required final String tableId,
+    final String? visitId,
     required final String itemId,
     required final String name,
     final String variantName,
@@ -756,6 +781,11 @@ abstract class _TicketDto implements TicketDto {
   String get id;
   @override
   String get tableId;
+
+  /// Stable bill key (ADR-0024). Lets the KDS/board label table-less
+  /// (takeaway) lines via the visit. Nullable for pre-v29 rows.
+  @override
+  String? get visitId;
   @override
   String get itemId;
   @override

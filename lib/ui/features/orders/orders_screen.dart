@@ -8,6 +8,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/domain/models/user.dart';
@@ -30,6 +31,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final l = context.layout;
     final tickets = ref.watch(ticketsProvider);
     final tables = ref.watch(tablesProvider);
+    final takeaways = {
+      for (final v in ref.watch(takeawayVisitsProvider)) v.id: v
+    };
     final staff = ref.watch(staffRepositoryProvider);
     final venueName = ref.watch(
         venueSettingsProvider.select((s) => s.displayName));
@@ -38,20 +42,27 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     // shows the line's own orderer (ticket.createdBy) — frozen to whoever sent
     // it, not the table's current waiter. Null on legacy / offline lines.
     final all = <_Row>[];
-    tickets.forEach((tableId, list) {
-      final table = tables.where((t) => t.id == tableId).firstOrNull;
-      if (table == null) return;
+    tickets.forEach((key, list) {
+      final table = tables.where((t) => t.id == key).firstOrNull;
+      // Resolve table-less (takeaway) lines via the visit so they aren't
+      // silently dropped from the board. See ADR-0026.
+      final takeaway = table == null ? takeaways[key] : null;
+      if (table == null && takeaway == null) return;
+      final name = table?.displayName ?? takeaway!.label;
+      final zoneId = table?.zoneId ?? '';
+      final pax = table?.pax ?? 0;
       for (final t in list) {
         final orderer = t.createdBy == null
             ? null
             : staff.where((u) => u.id == t.createdBy).firstOrNull;
         all.add(_Row(
           ticket: t,
-          tableId: tableId,
-          tableName: table.displayName,
-          zoneId: table.zoneId,
-          pax: table.pax,
+          tableId: key,
+          tableName: name,
+          zoneId: zoneId,
+          pax: pax,
           orderer: orderer,
+          isTakeaway: takeaway != null,
         ));
       }
     });
@@ -239,7 +250,8 @@ class _Row {
   final String zoneId;
   final int pax;
   final AppUser? orderer;
-  _Row({required this.ticket, required this.tableId, required this.tableName, required this.zoneId, required this.pax, this.orderer});
+  final bool isTakeaway;
+  _Row({required this.ticket, required this.tableId, required this.tableName, required this.zoneId, required this.pax, this.orderer, this.isTakeaway = false});
 }
 
 class _Segments extends StatelessWidget {

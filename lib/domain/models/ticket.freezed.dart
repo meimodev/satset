@@ -18,6 +18,10 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$Ticket {
   String get id => throw _privateConstructorUsedError;
+
+  /// The [[Visit]] this line belongs to — used to resolve a table-less
+  /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
+  String? get visitId => throw _privateConstructorUsedError;
   String get itemId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get variantName => throw _privateConstructorUsedError;
@@ -48,6 +52,7 @@ abstract class $TicketCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
+    String? visitId,
     String itemId,
     String name,
     String variantName,
@@ -83,6 +88,7 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
   @override
   $Res call({
     Object? id = null,
+    Object? visitId = freezed,
     Object? itemId = null,
     Object? name = null,
     Object? variantName = null,
@@ -106,6 +112,10 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
+            visitId: freezed == visitId
+                ? _value.visitId
+                : visitId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             itemId: null == itemId
                 ? _value.itemId
                 : itemId // ignore: cast_nullable_to_non_nullable
@@ -186,6 +196,7 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
+    String? visitId,
     String itemId,
     String name,
     String variantName,
@@ -220,6 +231,7 @@ class __$$TicketImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? visitId = freezed,
     Object? itemId = null,
     Object? name = null,
     Object? variantName = null,
@@ -243,6 +255,10 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
+        visitId: freezed == visitId
+            ? _value.visitId
+            : visitId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         itemId: null == itemId
             ? _value.itemId
             : itemId // ignore: cast_nullable_to_non_nullable
@@ -317,6 +333,7 @@ class __$$TicketImplCopyWithImpl<$Res>
 class _$TicketImpl implements _Ticket {
   const _$TicketImpl({
     required this.id,
+    this.visitId,
     required this.itemId,
     required this.name,
     this.variantName = '',
@@ -337,6 +354,11 @@ class _$TicketImpl implements _Ticket {
 
   @override
   final String id;
+
+  /// The [[Visit]] this line belongs to — used to resolve a table-less
+  /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
+  @override
+  final String? visitId;
   @override
   final String itemId;
   @override
@@ -381,7 +403,7 @@ class _$TicketImpl implements _Ticket {
 
   @override
   String toString() {
-    return 'Ticket(id: $id, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
+    return 'Ticket(id: $id, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
   }
 
   @override
@@ -390,6 +412,7 @@ class _$TicketImpl implements _Ticket {
         (other.runtimeType == runtimeType &&
             other is _$TicketImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.visitId, visitId) || other.visitId == visitId) &&
             (identical(other.itemId, itemId) || other.itemId == itemId) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.variantName, variantName) ||
@@ -422,6 +445,7 @@ class _$TicketImpl implements _Ticket {
   int get hashCode => Object.hash(
     runtimeType,
     id,
+    visitId,
     itemId,
     name,
     variantName,
@@ -452,6 +476,7 @@ class _$TicketImpl implements _Ticket {
 abstract class _Ticket implements Ticket {
   const factory _Ticket({
     required final String id,
+    final String? visitId,
     required final String itemId,
     required final String name,
     final String variantName,
@@ -472,6 +497,11 @@ abstract class _Ticket implements Ticket {
 
   @override
   String get id;
+
+  /// The [[Visit]] this line belongs to — used to resolve a table-less
+  /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
+  @override
+  String? get visitId;
   @override
   String get itemId;
   @override

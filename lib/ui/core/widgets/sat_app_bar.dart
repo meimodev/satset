@@ -137,7 +137,7 @@ class _NetworkPill extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final state = ref.watch(wsConnStateProvider).value;
+    final state = ref.watch(wsConnStateProvider);
     final isAdmin = ref.watch(authStateProvider).user?.role == UserRole.admin;
     final (dotColor, softColor, label) = switch (state) {
       WsConnState.open => (

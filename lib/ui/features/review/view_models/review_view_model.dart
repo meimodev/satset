@@ -33,6 +33,33 @@ class ReviewViewModel extends StateNotifier<ReviewState> {
       state = ReviewState(busy: false, error: e.toString());
     }
   }
+
+  /// Submit (or append to) a takeaway (Bawa pulang) order. Returns the takeaway
+  /// visit id on success, or null on failure (error surfaced via state). See
+  /// ADR-0026.
+  Future<String?> submitTakeaway(
+    List<CartItem> cart, {
+    String guestName = '',
+    String? existingVisitId,
+    String? actorId,
+  }) async {
+    SatLog.vm('ReviewVM submitTakeaway items=${cart.length} append=${existingVisitId != null}');
+    state = const ReviewState(busy: true);
+    try {
+      final res = await ref.read(submitOrderUseCaseProvider).takeaway(
+            cart: cart,
+            guestName: guestName,
+            existingVisitId: existingVisitId,
+            actorId: actorId,
+          );
+      state = ReviewState(busy: false, submittedTicketIds: res.ticketIds);
+      return res.visitId;
+    } catch (e) {
+      SatLog.vm('ReviewVM submitTakeaway fail $e');
+      state = ReviewState(busy: false, error: e.toString());
+      return null;
+    }
+  }
 }
 
 final reviewViewModelProvider =

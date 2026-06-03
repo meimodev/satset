@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:satset/domain/use_cases/bill_math.dart';
 
 part 'venue_settings_dto.freezed.dart';
 part 'venue_settings_dto.g.dart';
@@ -25,4 +26,19 @@ class VenueSettingsDto with _$VenueSettingsDto {
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>
       _$VenueSettingsDtoFromJson(json);
+}
+
+/// Maps the venue settings wire DTO onto the pure-domain [TaxServiceConfig]
+/// so client-side estimates (cart pane, review screen) run the *same*
+/// service-then-tax math as server settlement — see bill_math.dart and
+/// CONTEXT.md "Tax & service charge".
+extension VenueSettingsTaxCfg on VenueSettingsDto {
+  TaxServiceConfig toTaxServiceConfig() => TaxServiceConfig(
+        taxEnabled: taxEnabled,
+        taxRateBps: taxRateBps,
+        serviceEnabled: serviceEnabled,
+        serviceMode: serviceMode,
+        serviceRateBps: serviceRateBps,
+        serviceFixedAmount: serviceFixedAmount,
+      );
 }

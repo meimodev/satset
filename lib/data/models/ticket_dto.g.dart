@@ -28,6 +28,7 @@ _$TicketDtoImpl _$$TicketDtoImplFromJson(Map<String, dynamic> json) =>
     _$TicketDtoImpl(
       id: json['id'] as String,
       tableId: json['tableId'] as String,
+      visitId: json['visitId'] as String?,
       itemId: json['itemId'] as String,
       name: json['name'] as String,
       variantName: json['variantName'] as String? ?? '',
@@ -61,6 +62,7 @@ Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'tableId': instance.tableId,
+      'visitId': instance.visitId,
       'itemId': instance.itemId,
       'name': instance.name,
       'variantName': instance.variantName,

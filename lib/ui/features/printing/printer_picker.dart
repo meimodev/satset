@@ -49,6 +49,7 @@ class PrintJob {
 Future<void> _openPicker(BuildContext context, PrintJob job) =>
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _PrinterPickerSheet(job: job),
@@ -118,7 +119,7 @@ Future<void> printBillStruk({
         venue: ref.read(venueSettingsProvider),
       )),
       printVenue: (pid) => receipt == null
-          ? ref.read(settlementProvider.notifier).printBill(bill.tableId, pid)
+          ? ref.read(settlementProvider.notifier).printBill(bill.visitId, pid)
           : ref.read(settlementProvider.notifier).printReceipt(receipt.id, pid),
     ),
   );

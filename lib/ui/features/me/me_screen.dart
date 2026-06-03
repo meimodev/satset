@@ -929,6 +929,7 @@ class _AuditRow extends StatelessWidget {
       AuditType.paymentRecorded => (Icons.payments_outlined, sc.successSoft, sc.success),
       AuditType.refund => (Icons.undo_rounded, sc.warnSoft, sc.warn),
       AuditType.billReopened => (Icons.lock_open_outlined, sc.infoSoft, sc.info),
+      AuditType.billClosed => (Icons.receipt_long_outlined, sc.successSoft, sc.success),
       AuditType.staffCreated => (Icons.person_add_alt_1, sc.successSoft, sc.success),
       AuditType.staffDeleted => (Icons.person_remove, sc.urgentSoft, sc.urgent),
       AuditType.staffDisabled => (Icons.block, sc.urgentSoft, sc.urgent),

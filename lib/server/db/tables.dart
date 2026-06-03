@@ -66,8 +66,79 @@ class VenueTables extends Table {
   TextColumn get guestName => text().nullable()();
   TextColumn get guestNotes => text().nullable()();
   TextColumn get reservationId => text().nullable()();
+
+  /// The live [[Visit]] currently attached to this table (null ⇒ kosong).
+  /// A visit is detached at table-close (table freed for reuse) but lives on
+  /// until bill-close — so the table's *current* visit is this id, never an
+  /// older detached one still open on the cashier. See ADR-0024.
+  TextColumn get currentVisitId => text().nullable()();
+
+  /// Mirror of the current visit's bill-close, for the floor's **Lunas** pill:
+  /// set when the cashier locks the bill while the table is still occupied
+  /// (guests lingering), cleared when the table is freed/reused. Denormalised
+  /// so the floor needn't subscribe to bills. See ADR-0024.
+  DateTimeColumn get billClosedAt => dateTime().nullable()();
+
+  /// Live settlement state of the current visit, denormalised for the floor's
+  /// money badge: `partial` (some paid, still owing) | `paid` (fully paid, not
+  /// yet locked) | null (nothing paid). `openAmount` carries the **outstanding**
+  /// rupiah. Kept in sync on order/serve/void + every payment. See ADR-0024.
+  TextColumn get moneyState => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// A live seating occurrence — one party from seat to bill-close. Owns the
+/// visit's tickets/receipts/payments (they key off `visitId`), independent of
+/// the physical table: a visit is **detached** (`tableFreedAt` set, the table
+/// freed for reuse) yet stays open on the cashier until **bill-close**, which
+/// snapshots it into TableSessions and deletes this row. `tableId`/`tableLabel`
+/// are frozen for display after detach. See ADR-0024.
+class Visits extends Table {
+  TextColumn get id => text()();
+  TextColumn get tableId => text()();
+  TextColumn get tableLabel => text().nullable()();
+  TextColumn get zoneId => text().withDefault(const Constant(''))();
+  IntColumn get pax => integer().withDefault(const Constant(0))();
+  DateTimeColumn get openedAt => dateTime().nullable()();
+  TextColumn get guestName => text().nullable()();
+  TextColumn get guestNotes => text().nullable()();
+  TextColumn get reservationId => text().nullable()();
+  TextColumn get lastActorId => text().nullable()();
+  /// Set when the waiter frees the table (table-close / detach). Non-null ⇒
+  /// the visit is detached: floor shows the table kosong, the cashier still
+  /// lists this bill, flagged.
+  DateTimeColumn get tableFreedAt => dateTime().nullable()();
+
+  /// Set when the cashier closes the bill (lock). Non-null ⇒ the bill is
+  /// locked and off the active cashier list. The visit is **snapshotted +
+  /// deleted only when BOTH `tableFreedAt` and `billClosedAt` are set** (the
+  /// second act completes the pair); whichever act lands first just stamps its
+  /// timestamp and keeps the visit live. See ADR-0024.
+  DateTimeColumn get billClosedAt => dateTime().nullable()();
+  TextColumn get billClosedBy => text().nullable()();
+  /// Outstanding written off at a "tak tertagih" bill-close (walkout). 0 for a
+  /// normal Lunas close.
+  IntColumn get lossAmount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+
+  /// Visit kind: `dineIn` (table-bound, default) | `takeaway` (Bawa pulang —
+  /// no table, ADR-0026). For takeaway the lifecycle reuses the two-axis model
+  /// with handover ("Serahkan") in place of table-close. Drives label
+  /// resolution (KDS/cashier) and the reports dine-in/takeaway split.
+  TextColumn get kind => text().withDefault(const Constant('dineIn'))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Per-business-day running counters. Today only the takeaway pickup number
+/// minted at takeaway-visit creation (`Bawa pulang #N`). Keyed by a
+/// business-day date string (yyyy-MM-dd). See ADR-0026.
+class DailyCounters extends Table {
+  TextColumn get dateStr => text()();
+  IntColumn get takeawayNext => integer().withDefault(const Constant(1))();
+  @override
+  Set<Column> get primaryKey => {dateStr};
 }
 
 class MenuCategories extends Table {
@@ -127,6 +198,11 @@ class MenuTags extends Table {
 class Tickets extends Table {
   TextColumn get id => text()();
   TextColumn get tableId => text()();
+  /// The [[Visit]] this line belongs to — the stable key the bill hangs off,
+  /// independent of `tableId` (which is the visit's *current* table and is
+  /// reused across visits). Stamped at create from the table's
+  /// `currentVisitId`. See ADR-0024. Nullable only for pre-v29 rows.
+  TextColumn get visitId => text().nullable()();
   TextColumn get itemId => text()();
   TextColumn get name => text()();
   TextColumn get variantName => text().withDefault(const Constant(''))();
@@ -285,6 +361,16 @@ class TableSessions extends Table {
   /// Historical pre-v28 rows still equal their subtotal.
   IntColumn get netTotal => integer().withDefault(const Constant(0))();
   IntColumn get ticketCount => integer().withDefault(const Constant(0))();
+  /// Outstanding written off at bill-close as a recorded loss — a walkout /
+  /// "tak tertagih" close. 0 for a normal (Lunas) close. Distinct from a comp
+  /// (which zeroes a line); this is the unpaid remainder. See ADR-0024.
+  IntColumn get lossAmount => integer().withDefault(const Constant(0))();
+  /// Cashier (userId) who performed the bill-close. ADR-0024.
+  TextColumn get billClosedBy => text().nullable()();
+
+  /// Visit kind frozen at snapshot: `dineIn` (default) | `takeaway`. Lets
+  /// reports split takeaway out of per-cover / turn-time / occupancy. ADR-0026.
+  TextColumn get kind => text().withDefault(const Constant('dineIn'))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -330,6 +416,9 @@ class TableSessionTickets extends Table {
 class Receipts extends Table {
   TextColumn get id => text()();
   TextColumn get tableId => text()();
+  /// The [[Visit]] this receipt settles — see Tickets.visitId. Nullable only
+  /// for pre-v29 rows. ADR-0024.
+  TextColumn get visitId => text().nullable()();
   TextColumn get mode => text().withDefault(const Constant('itemized'))();
   TextColumn get label => text().withDefault(const Constant(''))();
   IntColumn get subtotal => integer().withDefault(const Constant(0))();
@@ -368,6 +457,11 @@ class Payments extends Table {
   TextColumn get cashierUserId => text().nullable()();
   TextColumn get note => text().nullable()();
   DateTimeColumn get at => dateTime()();
+  /// Mandatory proof photo (JPEG blob) for a non-cash payment — null for cash
+  /// and pre-feature rows. Camera-shot at the till. Read ONLY by the photo
+  /// route — never select in the bill/list path; use `selectOnly` excluding it.
+  /// See docs/adr/0025-mandatory-non-cash-payment-proof-photo.md.
+  BlobColumn get photo => blob().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -399,6 +493,10 @@ class TableSessionPayments extends Table {
   BoolColumn get isRefund => boolean().withDefault(const Constant(false))();
   TextColumn get cashierUserId => text().nullable()();
   DateTimeColumn get at => dateTime()();
+  /// Frozen copy of the live payment's proof photo (JPEG blob), carried across
+  /// at bill close so immutable history is self-contained. Read ONLY by the
+  /// photo route. See docs/adr/0025-mandatory-non-cash-payment-proof-photo.md.
+  BlobColumn get photo => blob().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
