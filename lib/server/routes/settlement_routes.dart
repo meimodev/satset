@@ -594,6 +594,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           'sessionId': s.id,
           'tableId': s.tableId,
           'tableLabel': s.tableLabel,
+          'kind': s.kind,
           'pax': s.pax,
           'closedAt': s.closedAt.toIso8601String(),
           'subtotal': s.subtotal,

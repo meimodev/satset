@@ -1552,6 +1552,26 @@ class _TableChip extends StatelessWidget {
   }
 }
 
+/// Square Bawa pulang glyph leading a takeaway history row — mirrors the
+/// Aktif tab's takeaway treatment (the long takeaway label rides the title,
+/// not this chip). See ADR-0026.
+class _TakeawayChip extends StatelessWidget {
+  const _TakeawayChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+          color: sc.accentSoft, borderRadius: BorderRadius.circular(12)),
+      alignment: Alignment.center,
+      child: Icon(Icons.shopping_bag_rounded, size: 20, color: sc.accent),
+    );
+  }
+}
+
 /// Past bills for one physical table — last 7 days of closed bills (snapshotted
 /// sessions). Tap one to view its Struk pembayaran detail. See ADR-0024.
 class PastBillsScreen extends ConsumerWidget {
@@ -1616,7 +1636,10 @@ class _PastBillTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              if (showTableChip) ...[
+              if (b.isTakeaway) ...[
+                const _TakeawayChip(),
+                const SizedBox(width: 12),
+              ] else if (showTableChip) ...[
                 _TableChip(b.tableLabel),
                 const SizedBox(width: 12),
               ],
@@ -1624,13 +1647,23 @@ class _PastBillTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_shortWhen(b.closedAt),
+                    Text(
+                        b.isTakeaway
+                            ? (b.tableLabel?.trim().isNotEmpty == true
+                                ? b.tableLabel!
+                                : 'Bawa pulang')
+                            : _shortWhen(b.closedAt),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: SatType.sans(
                             size: 13.5,
                             weight: FontWeight.w600,
                             color: sc.textHi)),
                     const SizedBox(height: 3),
-                    Text('${b.pax} tamu · ${b.ticketCount} item',
+                    Text(
+                        b.isTakeaway
+                            ? '${_shortWhen(b.closedAt)} · ${b.ticketCount} item'
+                            : '${b.pax} tamu · ${b.ticketCount} item',
                         style: SatType.sans(size: 11.5, color: sc.textLo)),
                   ],
                 ),

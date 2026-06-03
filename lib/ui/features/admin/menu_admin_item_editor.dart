@@ -590,27 +590,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     ),
                   ),
           ),
-          const SizedBox(height: 18),
-          _subhead(
-            'Happy hour',
-            trailing: readOnly ? null : _ghostButton(
-              _draft.happyHour == null ? '+ Aktifkan' : 'Matikan',
-              onTap: () => _patch(_draft.copyWith(
-                happyHour: _draft.happyHour == null
-                    ? const HappyHourRule(startMinute: 17 * 60, endMinute: 19 * 60, price: 0)
-                    : null,
-              )),
-            ),
-          ),
-          ExpandFade(
-            child: _draft.happyHour != null
-                ? Padding(
-                    key: const ValueKey('hh-on'),
-                    padding: const EdgeInsets.only(top: 8),
-                    child: _happyHourEditor(sc, readOnly),
-                  )
-                : const SizedBox(width: double.infinity, key: ValueKey('hh-off')),
-          ),
         ],
       ),
     );
@@ -669,65 +648,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final next = List<Variant>.of(_draft.variants)
       ..add(Variant(id: id, name: 'Baru', price: _draft.basePrice));
     _patch(_draft.copyWith(variants: next));
-  }
-
-  Widget _happyHourEditor(SatColors sc, bool readOnly) {
-    final hh = _draft.happyHour!;
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _ctrl('hh:start', _hhmm(hh.startMinute)),
-                readOnly: readOnly,
-                decoration: _fieldDeco('Mulai (HH:MM)'),
-                onChanged: (t) {
-                  final m = _parseHHMM(t);
-                  if (m == null) return;
-                  _draft = _draft.copyWith(
-                      happyHour: _draft.happyHour!.copyWith(startMinute: m));
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: _ctrl('hh:end', _hhmm(hh.endMinute)),
-                readOnly: readOnly,
-                decoration: _fieldDeco('Selesai (HH:MM)'),
-                onChanged: (t) {
-                  final m = _parseHHMM(t);
-                  if (m == null) return;
-                  _draft = _draft.copyWith(
-                      happyHour: _draft.happyHour!.copyWith(endMinute: m));
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: _ctrl('hh:price', groupRupiah(hh.price)),
-                readOnly: readOnly,
-                keyboardType: TextInputType.number,
-                inputFormatters: const [RupiahInputFormatter()],
-                decoration: _fieldDeco('Harga (Rp)'),
-                onChanged: (t) => _draft = _draft.copyWith(
-                  happyHour: _draft.happyHour!.copyWith(
-                      price: int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text('Berlaku ${hh.formatWindow()} · ${formatIDR(hh.price)}',
-              style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0.4)),
-        ),
-      ],
-    );
   }
 
   Widget _modifiersSection(SatColors sc, bool readOnly) {
@@ -1435,18 +1355,3 @@ class _FooterState extends State<_Footer> {
   }
 }
 
-String _hhmm(int m) {
-  final h = (m ~/ 60).toString().padLeft(2, '0');
-  final mm = (m % 60).toString().padLeft(2, '0');
-  return '$h:$mm';
-}
-
-int? _parseHHMM(String t) {
-  final parts = t.split(':');
-  if (parts.length != 2) return null;
-  final h = int.tryParse(parts[0]);
-  final m = int.tryParse(parts[1]);
-  if (h == null || m == null) return null;
-  if (h < 0 || h > 23 || m < 0 || m > 59) return null;
-  return h * 60 + m;
-}

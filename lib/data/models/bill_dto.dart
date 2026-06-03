@@ -95,6 +95,9 @@ class PastBillSummary {
   final String sessionId;
   final String tableId;
   final String? tableLabel;
+  /// dineIn | takeaway — frozen at snapshot. Drives the Riwayat row's chip +
+  /// layout (Bawa pulang glyph vs table-label chip). ADR-0026.
+  final String kind;
   final int pax;
   final DateTime closedAt;
   final int netTotal;
@@ -105,6 +108,7 @@ class PastBillSummary {
     required this.sessionId,
     required this.tableId,
     required this.tableLabel,
+    required this.kind,
     required this.pax,
     required this.closedAt,
     required this.netTotal,
@@ -113,11 +117,13 @@ class PastBillSummary {
   });
 
   bool get isWriteOff => lossAmount > 0;
+  bool get isTakeaway => kind == 'takeaway';
 
   factory PastBillSummary.fromJson(Map<String, dynamic> j) => PastBillSummary(
         sessionId: j['sessionId'] as String,
         tableId: j['tableId'] as String? ?? '',
         tableLabel: j['tableLabel'] as String?,
+        kind: j['kind'] as String? ?? 'dineIn',
         pax: _int(j['pax']),
         closedAt: DateTime.tryParse(j['closedAt'] as String? ?? '') ??
             DateTime.now(),

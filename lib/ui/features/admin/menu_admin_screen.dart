@@ -50,20 +50,20 @@ class _TabletLayout extends ConsumerWidget {
       children: [
         AdminEmbeddedStrip(
           title: 'Menu',
-          sub: '${counts.total} item · ${counts.categories} kategori · ${counts.soldOut} habis',
+          sub:
+              '${counts.total} item · ${counts.categories} kategori · ${counts.soldOut} habis',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (admin) ...[
-                const _TabSwitcher(),
-                const SizedBox(width: 10),
-              ],
+              if (admin) ...[const _TabSwitcher(), const SizedBox(width: 10)],
               _RoleBadge(perm: perm),
               if (admin && !onCats && !onTags) ...[
                 const SizedBox(width: 10),
                 _PrimaryButton(
                   label: '+ Tambah item',
-                  onTap: () => ref.read(menuAdminSelectedItemIdProvider.notifier).state = null,
+                  onTap: () =>
+                      ref.read(menuAdminSelectedItemIdProvider.notifier).state =
+                          null,
                 ),
               ],
             ],
@@ -75,63 +75,74 @@ class _TabletLayout extends ConsumerWidget {
             child: onCats
                 ? const _CategoriesPanel()
                 : onTags
-                    ? const _TagsPanel()
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: Border(
-                                    right: BorderSide(color: sc.border0)),
-                              ),
-                              child: const _ListPane(),
+                ? const _TagsPanel()
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 5,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              right: BorderSide(color: sc.border0),
                             ),
                           ),
-                          Expanded(
-                            flex: 6,
-                            // Crossfade + soft slide when the selected item
-                            // changes, so the detail pane swaps instead of
-                            // hard-cutting between items.
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 240),
-                              switchInCurve: kSatEase,
-                              switchOutCurve: kSatEase,
-                              transitionBuilder: (child, anim) => FadeTransition(
-                                opacity: anim,
-                                child: SlideTransition(
-                                  position: Tween(
-                                          begin: const Offset(0.012, 0),
-                                          end: Offset.zero)
-                                      .animate(anim),
-                                  child: child,
-                                ),
-                              ),
-                              layoutBuilder: (current, previous) => Stack(
-                                alignment: Alignment.topCenter,
-                                children: [...previous, ?current],
-                              ),
-                              child: selectedId == null &&
-                                      perm == MenuPermission.staff
-                                  ? const _EmptyDetail(
-                                      key: ValueKey('__empty__'), staff: true)
-                                  : MenuAdminItemEditor(
-                                      key: ValueKey(selectedId ?? '__new__'),
-                                      itemId: selectedId,
-                                      onClose: () => ref
-                                          .read(menuAdminSelectedItemIdProvider
-                                              .notifier)
-                                          .state = null,
-                                      onDeleted: () => ref
-                                          .read(menuAdminSelectedItemIdProvider
-                                              .notifier)
-                                          .state = null,
-                                    ),
-                            ),
-                          ),
-                        ],
+                          child: const _ListPane(),
+                        ),
                       ),
+                      Expanded(
+                        flex: 6,
+                        // Crossfade + soft slide when the selected item
+                        // changes, so the detail pane swaps instead of
+                        // hard-cutting between items.
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 240),
+                          switchInCurve: kSatEase,
+                          switchOutCurve: kSatEase,
+                          transitionBuilder: (child, anim) => FadeTransition(
+                            opacity: anim,
+                            child: SlideTransition(
+                              position: Tween(
+                                begin: const Offset(0.012, 0),
+                                end: Offset.zero,
+                              ).animate(anim),
+                              child: child,
+                            ),
+                          ),
+                          layoutBuilder: (current, previous) => Stack(
+                            alignment: Alignment.topCenter,
+                            children: [...previous, ?current],
+                          ),
+                          child:
+                              selectedId == null && perm == MenuPermission.staff
+                              ? const _EmptyDetail(
+                                  key: ValueKey('__empty__'),
+                                  staff: true,
+                                )
+                              : MenuAdminItemEditor(
+                                  key: ValueKey(selectedId ?? '__new__'),
+                                  itemId: selectedId,
+                                  onClose: () =>
+                                      ref
+                                              .read(
+                                                menuAdminSelectedItemIdProvider
+                                                    .notifier,
+                                              )
+                                              .state =
+                                          null,
+                                  onDeleted: () =>
+                                      ref
+                                              .read(
+                                                menuAdminSelectedItemIdProvider
+                                                    .notifier,
+                                              )
+                                              .state =
+                                          null,
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],
@@ -155,17 +166,16 @@ class _TabFade extends StatelessWidget {
       transitionBuilder: (child, anim) => FadeTransition(
         opacity: anim,
         child: SlideTransition(
-          position: Tween(begin: const Offset(0, 0.015), end: Offset.zero)
-              .animate(anim),
+          position: Tween(
+            begin: const Offset(0, 0.015),
+            end: Offset.zero,
+          ).animate(anim),
           child: child,
         ),
       ),
       layoutBuilder: (current, previous) => Stack(
         alignment: Alignment.topCenter,
-        children: [
-          ...previous,
-          ?current,
-        ],
+        children: [...previous, ?current],
       ),
       child: KeyedSubtree(key: ValueKey(tabKey), child: child),
     );
@@ -205,7 +215,9 @@ class _EmptyDetail extends StatelessWidget {
           Icon(Icons.restaurant_menu, size: 48, color: sc.textLo),
           const SizedBox(height: 12),
           Text(
-            staff ? 'Pilih item untuk lihat detail' : 'Pilih item atau tambah baru',
+            staff
+                ? 'Pilih item untuk lihat detail'
+                : 'Pilih item atau tambah baru',
             style: SatType.sans(size: 14, color: sc.textMd),
             textAlign: TextAlign.center,
           ),
@@ -251,16 +263,22 @@ class _PhoneLayout extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Menu',
-                          style: SatType.sans(
-                            size: 26, weight: FontWeight.w600,
-                            letterSpacing: -0.5, color: sc.textHi,
-                          )),
+                      Text(
+                        'Menu',
+                        style: SatType.sans(
+                          size: 26,
+                          weight: FontWeight.w600,
+                          letterSpacing: -0.5,
+                          color: sc.textHi,
+                        ),
+                      ),
                       const SizedBox(height: 2),
                       Text(
                         '${counts.total} item · ${counts.soldOut} habis',
                         style: SatType.mono(
-                          size: 11, color: sc.textLo, letterSpacing: 0.5,
+                          size: 11,
+                          color: sc.textLo,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -284,14 +302,14 @@ class _PhoneLayout extends ConsumerWidget {
               child: onCats
                   ? const _CategoriesPanel()
                   : onTags
-                      ? const _TagsPanel()
-                      : const Column(
-                          children: [
-                            _Toolbar(),
-                            _CategoryRail(),
-                            Expanded(child: _ItemList(compact: true)),
-                          ],
-                        ),
+                  ? const _TagsPanel()
+                  : const Column(
+                      children: [
+                        _Toolbar(),
+                        _CategoryRail(),
+                        Expanded(child: _ItemList(compact: true)),
+                      ],
+                    ),
             ),
           ),
         ],
@@ -343,7 +361,10 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
                 hintStyle: SatType.sans(size: 13, color: sc.textLo),
                 prefixIcon: Icon(Icons.search, size: 18, color: sc.textLo),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 10,
+                ),
                 filled: true,
                 fillColor: sc.bg2,
                 border: OutlineInputBorder(
@@ -384,8 +405,9 @@ class _CategoryRail extends ConsumerWidget {
     final selected = ref.watch(menuAdminCategoryFilterProvider);
     final items = ref.watch(menuItemsProvider);
 
-    int count(String catId) =>
-        catId == 'all' ? items.length : items.where((i) => i.categoryId == catId).length;
+    int count(String catId) => catId == 'all'
+        ? items.length
+        : items.where((i) => i.categoryId == catId).length;
 
     return Container(
       height: 52,
@@ -396,7 +418,14 @@ class _CategoryRail extends ConsumerWidget {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _catChip(context, ref, 'all', 'Semua', count('all'), selected == 'all'),
+          _catChip(
+            context,
+            ref,
+            'all',
+            'Semua',
+            count('all'),
+            selected == 'all',
+          ),
           for (final c in cats) ...[
             _catChip(context, ref, c.id, c.name, count(c.id), selected == c.id),
           ],
@@ -405,7 +434,14 @@ class _CategoryRail extends ConsumerWidget {
     );
   }
 
-  Widget _catChip(BuildContext context, WidgetRef ref, String id, String name, int n, bool on) {
+  Widget _catChip(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+    String name,
+    int n,
+    bool on,
+  ) {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
@@ -438,12 +474,14 @@ class _CategoryRail extends ConsumerWidget {
                 const SizedBox(width: 6),
                 AnimatedCount(
                   value: n,
-                  builder: (_, v) => Text('$v',
-                      style: SatType.mono(
-                        size: 10,
-                        weight: FontWeight.w600,
-                        color: on ? sc.accent : sc.textLo,
-                      )),
+                  builder: (_, v) => Text(
+                    '$v',
+                    style: SatType.mono(
+                      size: 10,
+                      weight: FontWeight.w600,
+                      color: on ? sc.accent : sc.textLo,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -492,10 +530,7 @@ class _ItemList extends ConsumerWidget {
       duration: const Duration(milliseconds: 220),
       switchInCurve: kSatEase,
       switchOutCurve: kSatEase,
-      child: KeyedSubtree(
-        key: ValueKey('$cat|$search'),
-        child: body,
-      ),
+      child: KeyedSubtree(key: ValueKey('$cat|$search'), child: body),
     );
   }
 }
@@ -520,104 +555,128 @@ class _ItemRow extends ConsumerWidget {
       child: PressScale(
         pressedScale: 0.985,
         child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            if (compact) {
-              context.push('/menuadm/${item.id}');
-            } else {
-              ref.read(menuAdminSelectedItemIdProvider.notifier).state = item.id;
-            }
-          },
-          onLongPress: perm == MenuPermission.admin
-              ? () => ref
-                  .read(menuRepositoryProvider.notifier)
-                  .toggleAvailability(item.id)
-              : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: kSatEase,
-            decoration: BoxDecoration(
-              color: isSelected ? sc.accentSoft : sc.bg2,
-              border: Border.all(
-                color: isSelected ? sc.accentBorder : sc.border0,
-                width: isSelected ? 1.5 : 1,
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              if (compact) {
+                context.push('/menuadm/${item.id}');
+              } else {
+                ref.read(menuAdminSelectedItemIdProvider.notifier).state =
+                    item.id;
+              }
+            },
+            onLongPress: perm == MenuPermission.admin
+                ? () => ref
+                      .read(menuRepositoryProvider.notifier)
+                      .toggleAvailability(item.id)
+                : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: kSatEase,
+              decoration: BoxDecoration(
+                color: isSelected ? sc.accentSoft : sc.bg2,
+                border: Border.all(
+                  color: isSelected ? sc.accentBorder : sc.border0,
+                  width: isSelected ? 1.5 : 1,
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
-            child: Row(
-              children: [
-                _thumb(sc),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.name,
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          color: disabled ? sc.textLo : sc.textHi,
-                          letterSpacing: -0.14,
-                        ).copyWith(
-                          decoration:
-                              disabled ? TextDecoration.lineThrough : null,
-                          decorationColor: sc.textLo,
+              padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+              child: Row(
+                children: [
+                  _thumb(sc),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              SatType.sans(
+                                size: 14,
+                                weight: FontWeight.w600,
+                                color: disabled ? sc.textLo : sc.textHi,
+                                letterSpacing: -0.14,
+                              ).copyWith(
+                                decoration: disabled
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                decorationColor: sc.textLo,
+                              ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Text(
-                            formatIDR(item.basePrice),
-                            style: SatType.mono(
-                              size: 11,
-                              weight: FontWeight.w600,
-                              color: sc.textMd,
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Text(
+                              formatIDR(item.basePrice),
+                              style: SatType.mono(
+                                size: 11,
+                                weight: FontWeight.w600,
+                                color: sc.textMd,
+                              ),
                             ),
-                          ),
-                          if (item.stockCount != null) ...[
-                            Text(' · ',
-                                style: SatType.mono(size: 10, color: sc.textDim)),
-                            Text('Stok ${item.stockCount}',
+                            if (item.stockCount != null) ...[
+                              Text(
+                                ' · ',
+                                style: SatType.mono(
+                                  size: 10,
+                                  color: sc.textDim,
+                                ),
+                              ),
+                              Text(
+                                'Stok ${item.stockCount}',
                                 style: SatType.mono(
                                   size: 10,
                                   color: item.stockCount! == 0
                                       ? sc.urgent
                                       : sc.textLo,
                                   letterSpacing: 0.4,
-                                )),
-                          ],
-                        ],
-                      ),
-                      if (!compact && (item.allergens.isNotEmpty || item.dietary.isNotEmpty)) ...[
-                        const SizedBox(height: 5),
-                        Wrap(
-                          spacing: 3, runSpacing: 3,
-                          children: [
-                            for (final a in item.allergens)
-                              _miniBadge(sc, tagsById[a]?.code ?? '', sc.warnSoft, sc.warn),
-                            for (final d in item.dietary)
-                              _miniBadge(sc, tagsById[d]?.code ?? '', sc.infoSoft, sc.info),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
+                        if (!compact &&
+                            (item.allergens.isNotEmpty ||
+                                item.dietary.isNotEmpty)) ...[
+                          const SizedBox(height: 5),
+                          Wrap(
+                            spacing: 3,
+                            runSpacing: 3,
+                            children: [
+                              for (final a in item.allergens)
+                                _miniBadge(
+                                  sc,
+                                  tagsById[a]?.code ?? '',
+                                  sc.warnSoft,
+                                  sc.warn,
+                                ),
+                              for (final d in item.dietary)
+                                _miniBadge(
+                                  sc,
+                                  tagsById[d]?.code ?? '',
+                                  sc.infoSoft,
+                                  sc.info,
+                                ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                _StatusToggle(item: item, perm: perm),
-                if (compact)
-                  Icon(Icons.chevron_right, color: sc.textLo, size: 18),
-              ],
+                  const SizedBox(width: 8),
+                  _StatusToggle(item: item, perm: perm),
+                  if (compact)
+                    Icon(Icons.chevron_right, color: sc.textLo, size: 18),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -625,7 +684,8 @@ class _ItemRow extends ConsumerWidget {
   Widget _thumb(SatColors sc) {
     final radius = BorderRadius.circular(8);
     return Container(
-      width: 42, height: 42,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         color: sc.bg3,
         border: Border.all(color: sc.border1),
@@ -648,11 +708,15 @@ class _ItemRow extends ConsumerWidget {
         color: bg,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(t,
-          style: SatType.mono(
-            size: 9, weight: FontWeight.w600,
-            letterSpacing: 0.4, color: fg,
-          )),
+      child: Text(
+        t,
+        style: SatType.mono(
+          size: 9,
+          weight: FontWeight.w600,
+          letterSpacing: 0.4,
+          color: fg,
+        ),
+      ),
     );
   }
 }
@@ -675,8 +739,8 @@ class _StatusToggle extends ConsumerWidget {
       child: GestureDetector(
         onTap: canToggle
             ? () => ref
-                .read(menuRepositoryProvider.notifier)
-                .toggleAvailability(item.id)
+                  .read(menuRepositoryProvider.notifier)
+                  .toggleAvailability(item.id)
             : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
@@ -691,15 +755,15 @@ class _StatusToggle extends ConsumerWidget {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 curve: kSatEase,
-                width: 6, height: 6,
-                decoration: BoxDecoration(
-                  color: fg,
-                  shape: BoxShape.circle,
-                ),
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
               AnimatedSwitcher(
@@ -721,7 +785,10 @@ class _StatusToggle extends ConsumerWidget {
                     size: 10,
                     weight: FontWeight.w600,
                     letterSpacing: 0.8,
+                    height: 1.0,
                     color: fg,
+                  ).copyWith(
+                    leadingDistribution: TextLeadingDistribution.even,
                   ),
                 ),
               ),
@@ -751,11 +818,14 @@ class _PrimaryButton extends StatelessWidget {
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            child: Text(label,
-                style: SatType.sans(
-                  size: 12, weight: FontWeight.w600,
-                  color: sc.accentInk,
-                )),
+            child: Text(
+              label,
+              style: SatType.sans(
+                size: 12,
+                weight: FontWeight.w600,
+                color: sc.accentInk,
+              ),
+            ),
           ),
         ),
       ),
@@ -850,41 +920,61 @@ class _CategoriesPanel extends ConsumerWidget {
                   index: i.clamp(0, 11),
                   animKey: 'cat:${c.id}',
                   child: Container(
-                  decoration: BoxDecoration(
-                    color: sc.bg2,
-                    border: Border.all(color: sc.border0),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
-                  child: Row(
-                    children: [
-                      ReorderableDragStartListener(
-                        index: i,
-                        child: Icon(Icons.drag_handle, size: 20, color: sc.textLo),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(c.name,
+                    decoration: BoxDecoration(
+                      color: sc.bg2,
+                      border: Border.all(color: sc.border0),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
+                    child: Row(
+                      children: [
+                        ReorderableDragStartListener(
+                          index: i,
+                          child: Icon(
+                            Icons.drag_handle,
+                            size: 20,
+                            color: sc.textLo,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            c.name,
                             style: SatType.sans(
-                              size: 14, weight: FontWeight.w600, color: sc.textHi,
-                            )),
-                      ),
-                      Text('$n item',
+                              size: 14,
+                              weight: FontWeight.w600,
+                              color: sc.textHi,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '$n item',
                           style: SatType.mono(
-                            size: 11, color: sc.textLo, letterSpacing: 0.4,
-                          )),
-                      IconButton(
-                        icon: Icon(Icons.edit_outlined, size: 18, color: sc.textMd),
-                        onPressed: () => _rename(context, ref, c.id, c.name),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete_outline, size: 18,
-                            color: n > 0 ? sc.textDim : sc.urgent),
-                        onPressed: () => _delete(context, ref, c.id, c.name, n),
-                      ),
-                    ],
+                            size: 11,
+                            color: sc.textLo,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: sc.textMd,
+                          ),
+                          onPressed: () => _rename(context, ref, c.id, c.name),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: n > 0 ? sc.textDim : sc.urgent,
+                          ),
+                          onPressed: () =>
+                              _delete(context, ref, c.id, c.name, n),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 ),
               );
             },
@@ -905,27 +995,45 @@ class _CategoriesPanel extends ConsumerWidget {
   }
 
   Future<void> _add(BuildContext context, WidgetRef ref) async {
-    final name = await _nameDialog(context, title: 'Kategori baru', initial: '');
+    final name = await _nameDialog(
+      context,
+      title: 'Kategori baru',
+      initial: '',
+    );
     if (name == null || name.trim().isEmpty) return;
     await ref.read(menuRepositoryProvider.notifier).createCategory(name.trim());
   }
 
   Future<void> _rename(
-      BuildContext context, WidgetRef ref, String id, String current) async {
-    final name =
-        await _nameDialog(context, title: 'Ubah nama kategori', initial: current);
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+    String current,
+  ) async {
+    final name = await _nameDialog(
+      context,
+      title: 'Ubah nama kategori',
+      initial: current,
+    );
     if (name == null || name.trim().isEmpty || name.trim() == current) return;
     await ref
         .read(menuRepositoryProvider.notifier)
         .renameCategory(id, name.trim());
   }
 
-  Future<void> _delete(BuildContext context, WidgetRef ref, String id,
-      String name, int count) async {
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+    String name,
+    int count,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     if (count > 0) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Pindahkan $count item dulu sebelum hapus "$name"')),
+        SnackBar(
+          content: Text('Pindahkan $count item dulu sebelum hapus "$name"'),
+        ),
       );
       return;
     }
@@ -933,13 +1041,18 @@ class _CategoriesPanel extends ConsumerWidget {
       await ref.read(menuRepositoryProvider.notifier).deleteCategory(id);
     } catch (_) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Gagal hapus kategori — masih dipakai item')),
+        const SnackBar(
+          content: Text('Gagal hapus kategori — masih dipakai item'),
+        ),
       );
     }
   }
 
-  Future<String?> _nameDialog(BuildContext context,
-      {required String title, required String initial}) {
+  Future<String?> _nameDialog(
+    BuildContext context, {
+    required String title,
+    required String initial,
+  }) {
     final ctrl = TextEditingController(text: initial);
     final sc = context.sat;
     return showDialog<String>(
@@ -957,10 +1070,13 @@ class _CategoriesPanel extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text),
-              child: const Text('Simpan')),
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: const Text('Simpan'),
+          ),
         ],
       ),
     );
@@ -985,8 +1101,13 @@ class _TagsPanel extends ConsumerWidget {
     );
   }
 
-  Widget _group(BuildContext context, WidgetRef ref, String title,
-      MenuTagKind kind, List<MenuTag> tags) {
+  Widget _group(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    MenuTagKind kind,
+    List<MenuTag> tags,
+  ) {
     final sc = context.sat;
     final tint = kind == MenuTagKind.allergen ? sc.warn : sc.info;
     return Column(
@@ -994,10 +1115,14 @@ class _TagsPanel extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(title,
-              style: SatType.sans(
-                size: 13, weight: FontWeight.w600, color: sc.textMd,
-              )),
+          child: Text(
+            title,
+            style: SatType.sans(
+              size: 13,
+              weight: FontWeight.w600,
+              color: sc.textMd,
+            ),
+          ),
         ),
         for (final (i, t) in tags.indexed)
           Padding(
@@ -1007,45 +1132,63 @@ class _TagsPanel extends ConsumerWidget {
               index: i.clamp(0, 11),
               animKey: 'tag:${t.id}',
               child: Container(
-              decoration: BoxDecoration(
-                color: sc.bg2,
-                border: Border.all(color: sc.border0),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
-              child: Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: tint.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(t.code,
+                decoration: BoxDecoration(
+                  color: sc.bg2,
+                  border: Border.all(color: sc.border0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tint.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        t.code,
                         style: SatType.mono(
-                          size: 10, weight: FontWeight.w600,
-                          letterSpacing: 0.4, color: tint,
-                        )),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(t.name,
+                          size: 10,
+                          weight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                          color: tint,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        t.name,
                         style: SatType.sans(
-                          size: 14, weight: FontWeight.w600, color: sc.textHi,
-                        )),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.edit_outlined, size: 18, color: sc.textMd),
-                    onPressed: () => _edit(context, ref, t),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.delete_outline, size: 18, color: sc.urgent),
-                    onPressed: () => _delete(context, ref, t),
-                  ),
-                ],
+                          size: 14,
+                          weight: FontWeight.w600,
+                          color: sc.textHi,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                        color: sc.textMd,
+                      ),
+                      onPressed: () => _edit(context, ref, t),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: sc.urgent,
+                      ),
+                      onPressed: () => _delete(context, ref, t),
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
           ),
         Align(
@@ -1059,8 +1202,12 @@ class _TagsPanel extends ConsumerWidget {
     );
   }
 
-  Future<void> _edit(BuildContext context, WidgetRef ref, MenuTag? tag,
-      {MenuTagKind? kind}) async {
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref,
+    MenuTag? tag, {
+    MenuTagKind? kind,
+  }) async {
     final result = await _tagDialog(context, tag);
     if (result == null) return;
     final notifier = ref.read(menuRepositoryProvider.notifier);
@@ -1078,19 +1225,23 @@ class _TagsPanel extends ConsumerWidget {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.sat.bg1,
-        title: Text('Hapus "${tag.name}"?',
-            style: SatType.sans(size: 16, color: context.sat.textHi)),
+        title: Text(
+          'Hapus "${tag.name}"?',
+          style: SatType.sans(size: 16, color: context.sat.textHi),
+        ),
         content: Text(
           'Tag ini akan dilepas dari semua item yang memakainya.',
           style: SatType.sans(size: 13, color: context.sat.textMd),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Hapus')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hapus'),
+          ),
         ],
       ),
     );
@@ -1109,8 +1260,10 @@ class _TagsPanel extends ConsumerWidget {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(tag == null ? 'Tag baru' : 'Ubah tag',
-            style: SatType.sans(size: 16, color: sc.textHi)),
+        title: Text(
+          tag == null ? 'Tag baru' : 'Ubah tag',
+          style: SatType.sans(size: 16, color: sc.textHi),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1128,20 +1281,23 @@ class _TagsPanel extends ConsumerWidget {
                 textCapitalization: TextCapitalization.characters,
                 style: SatType.sans(size: 14, color: sc.textHi),
                 decoration: const InputDecoration(
-                    labelText: 'Kode badge', hintText: 'GL'),
+                  labelText: 'Kode badge',
+                  hintText: 'GL',
+                ),
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           FilledButton(
             onPressed: () {
               final n = nameCtrl.text.trim();
               if (n.isEmpty) return;
-              Navigator.pop(
-                  ctx, (n, codeCtrl.text.trim().toUpperCase()));
+              Navigator.pop(ctx, (n, codeCtrl.text.trim().toUpperCase()));
             },
             child: const Text('Simpan'),
           ),
@@ -1169,8 +1325,10 @@ class _RoleBadge extends StatelessWidget {
       child: Text(
         isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
         style: SatType.mono(
-          size: 10, weight: FontWeight.w600,
-          letterSpacing: 0.8, color: isAdmin ? sc.accent : sc.textMd,
+          size: 10,
+          weight: FontWeight.w600,
+          letterSpacing: 0.8,
+          color: isAdmin ? sc.accent : sc.textMd,
         ),
       ),
     );

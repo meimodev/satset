@@ -506,20 +506,20 @@ class _OrderRow extends StatelessWidget {
                             ),
                           ),
                         const SizedBox(height: 7),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             _StatusChip(status: t.status),
-                            const SizedBox(width: 8),
                             ElapsedPill(
                               sentAtTime: t.sentAtTime,
                               sentAtClock: t.sentAt,
                               terminal: isVoided ||
                                   t.status == TicketStatus.served,
                             ),
-                            if (row.orderer != null) ...[
-                              const SizedBox(width: 8),
+                            if (row.orderer != null)
                               StaffAvatar(actor: row.orderer!, size: 20),
-                            ],
                           ],
                         ),
                       ],

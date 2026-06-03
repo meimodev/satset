@@ -80,7 +80,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
 /// Grows + fades a child in (or collapses it out) as it appears/disappears.
 /// Wrap a conditional widget and pass [SizedBox.shrink()] for the absent state,
 /// or a [ValueKey] that flips, and the swap animates height + opacity instead of
-/// popping. Used for editor blocks that toggle on (happy hour, tracked stock)
+/// popping. Used for editor blocks that toggle on (tracked stock)
 /// and for dynamic row lists growing/shrinking. Snaps under reduced motion.
 class ExpandFade extends StatelessWidget {
   final Widget child;

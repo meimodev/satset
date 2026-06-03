@@ -10,33 +10,6 @@ class Variant {
       Variant(id: id ?? this.id, name: name ?? this.name, price: price ?? this.price);
 }
 
-/// Daypart price override expressed in minutes from midnight (0..1439).
-class HappyHourRule {
-  final int startMinute;
-  final int endMinute;
-  final int price;
-  const HappyHourRule({
-    required this.startMinute,
-    required this.endMinute,
-    required this.price,
-  });
-
-  HappyHourRule copyWith({int? startMinute, int? endMinute, int? price}) => HappyHourRule(
-        startMinute: startMinute ?? this.startMinute,
-        endMinute: endMinute ?? this.endMinute,
-        price: price ?? this.price,
-      );
-
-  String formatWindow() {
-    String hhmm(int m) {
-      final h = (m ~/ 60).toString().padLeft(2, '0');
-      final mm = (m % 60).toString().padLeft(2, '0');
-      return '$h:$mm';
-    }
-    return '${hhmm(startMinute)}–${hhmm(endMinute)}';
-  }
-}
-
 class MenuItem {
   final String id;
   final String name;
@@ -61,7 +34,6 @@ class MenuItem {
   final int photoRev;
   final int? stockCount;
   final bool autoSoldOutAtZero;
-  final HappyHourRule? happyHour;
 
   bool get hasPhoto => photoRev > 0;
 
@@ -81,7 +53,6 @@ class MenuItem {
     this.photoRev = 0,
     this.stockCount,
     this.autoSoldOutAtZero = false,
-    this.happyHour,
   });
 
   /// True when stock is being tracked and depleted.
@@ -107,7 +78,6 @@ class MenuItem {
     int? photoRev,
     Object? stockCount = _unset,
     bool? autoSoldOutAtZero,
-    Object? happyHour = _unset,
   }) {
     return MenuItem(
       id: id ?? this.id,
@@ -125,7 +95,6 @@ class MenuItem {
       photoRev: photoRev ?? this.photoRev,
       stockCount: identical(stockCount, _unset) ? this.stockCount : stockCount as int?,
       autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
-      happyHour: identical(happyHour, _unset) ? this.happyHour : happyHour as HappyHourRule?,
     );
   }
 }
