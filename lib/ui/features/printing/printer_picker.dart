@@ -347,7 +347,8 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
       ),
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -427,6 +428,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                         strokeWidth: 2, color: sc.accent))),
           ],
         ],
+        ),
       ),
     );
   }

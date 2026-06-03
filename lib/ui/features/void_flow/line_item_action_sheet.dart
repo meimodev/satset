@@ -21,6 +21,10 @@ void showLineItemActionSheet({
   required BuildContext context,
   required String tableId,
   required Ticket ticket,
+  // Optional pre-resolved header label. Takeaway lines have no table row, so the
+  // caller passes the visit label; dine-in leaves it null and the sheet resolves
+  // the table's displayName from [tableId]. See ADR-0026.
+  String? displayName,
 }) {
   showModalBottomSheet(
     context: context,
@@ -36,6 +40,7 @@ void showLineItemActionSheet({
       builder: (ctx, scroll) => _SheetBody(
         tableId: tableId,
         ticket: ticket,
+        displayName: displayName,
         scrollController: scroll,
       ),
     ),
@@ -47,10 +52,12 @@ enum _Step { actions, voidReason, confirmed }
 class _SheetBody extends ConsumerStatefulWidget {
   final String tableId;
   final Ticket ticket;
+  final String? displayName;
   final ScrollController scrollController;
   const _SheetBody({
     required this.tableId,
     required this.ticket,
+    required this.displayName,
     required this.scrollController,
   });
 
@@ -143,11 +150,12 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
           ),
           _Head(
             ticket: ticket,
-            tableName: ref
-                .watch(tablesProvider)
-                .where((t) => t.id == widget.tableId)
-                .map((t) => t.displayName)
-                .firstOrNull ??
+            tableName: widget.displayName ??
+                ref
+                    .watch(tablesProvider)
+                    .where((t) => t.id == widget.tableId)
+                    .map((t) => t.displayName)
+                    .firstOrNull ??
                 widget.tableId,
             onClose: () => Navigator.of(context).pop(),
           ),

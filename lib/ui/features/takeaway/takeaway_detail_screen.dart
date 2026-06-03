@@ -7,12 +7,15 @@ import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/order_line_card.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
+import 'package:satset/ui/features/void_flow/line_item_action_sheet.dart';
 
 /// Takeaway (Bawa pulang) detail — the visit-keyed home for one takeaway order.
 /// Mirrors the table detail minus lock/seat: shows lines, lets the waiter add
@@ -98,7 +101,16 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                     children: [
-                      for (final t in tickets) _TicketRow(ticket: t),
+                      // Same line card as the table detail (modifiers, note,
+                      // allergen badges, orderer, serve, tap→void/comp). No lock
+                      // gating — takeaway holds no table lock. See ADR-0026.
+                      for (final t in tickets)
+                        OrderLineCard(
+                          ticket: t,
+                          onTap: () => _openAction(t, label),
+                          onMarkServed: _markServed,
+                          readOnly: handedOver,
+                        ),
                     ],
                   ),
           ),
@@ -115,6 +127,27 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _markServed(String ticketId) async {
+    try {
+      await ref
+          .read(advanceTicketStatusUseCaseProvider)
+          .call(widget.visitId, ticketId, TicketStatus.served);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal sajikan: $e')));
+    }
+  }
+
+  void _openAction(Ticket t, String label) {
+    showLineItemActionSheet(
+      context: context,
+      tableId: widget.visitId,
+      ticket: t,
+      displayName: label,
     );
   }
 
@@ -155,66 +188,6 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Gagal menyerahkan: $e')));
     }
-  }
-}
-
-class _TicketRow extends StatelessWidget {
-  final Ticket ticket;
-  const _TicketRow({required this.ticket});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final voided = ticket.status == TicketStatus.voided;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: sc.bg2,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: sc.border0),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 22,
-            child: Text('×${ticket.qty}',
-                style: SatType.mono(
-                    size: 13, weight: FontWeight.w600, color: sc.textMd)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ticket.name +
-                      (ticket.variantName.isEmpty
-                          ? ''
-                          : ' · ${ticket.variantName}'),
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w500,
-                    color: voided ? sc.textLo : sc.textHi,
-                  ).copyWith(
-                    decoration:
-                        voided ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(ticketStatusLabel(ticket.status).toUpperCase(),
-                    style: SatType.mono(
-                        size: 10, color: sc.textLo, letterSpacing: 0.6)),
-              ],
-            ),
-          ),
-          Text(formatIDR(ticket.price * ticket.qty),
-              style: SatType.mono(
-                  size: 12, weight: FontWeight.w500, color: sc.textMd)),
-        ],
-      ),
-    );
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
@@ -52,6 +54,8 @@ class BillStrukBuilder {
                 name: l.name,
                 variant: l.variantName,
                 lineTotal: l.lineTotal,
+                modifiers: [for (final m in l.modifiers) m.display],
+                note: l.note ?? '',
               ),
         ],
         subtotal: bill.subtotal,
@@ -71,7 +75,12 @@ class BillStrukBuilder {
         ? [
             for (final l in bill.lines)
               if (l.status != 'voided')
-                BillStrukLine(qty: l.qty, name: l.name, showPrice: false),
+                BillStrukLine(
+                  qty: l.qty,
+                  name: l.name,
+                  showPrice: false,
+                  modifiers: [for (final m in l.modifiers) m.display],
+                ),
           ]
         : _receiptLines(bill, receipt);
     return BillStrukData(
@@ -110,6 +119,8 @@ class BillStrukBuilder {
         name: l.name,
         variant: l.variantName,
         lineTotal: l.unitPrice * rl.qtyUnits,
+        modifiers: [for (final m in l.modifiers) m.display],
+        note: l.note ?? '',
       ));
     }
     return out;
@@ -131,6 +142,24 @@ class BillStrukBuilder {
       if (!p.isRefund && p.tendered != null) sum += p.tendered!;
     }
     return sum > 0 ? sum : null;
+  }
+
+  /// Parse a line's frozen modifier snapshot (raw `modifiersJson`, a JSON string
+  /// or already-decoded list) into signed display labels, matching
+  /// [TicketModifier.display] so server- and client-built docs print the same.
+  static List<String> _modLabels(Object? raw) {
+    final decoded = raw is String
+        ? (raw.trim().isEmpty ? const [] : jsonDecode(raw))
+        : raw;
+    if (decoded is! List) return const [];
+    final out = <String>[];
+    for (final m in decoded) {
+      if (m is! Map) continue;
+      final label = (m['label'] as String?) ?? '';
+      final delta = (m['priceDelta'] as num?)?.toInt() ?? 0;
+      out.add(delta > 0 ? '+ $label' : (delta < 0 ? '− $label' : label));
+    }
+    return out;
   }
 
   // ── server: from the raw settlement bill map (see _buildBill) ──
@@ -192,6 +221,8 @@ class BillStrukBuilder {
                 name: (l['name'] as String?) ?? '',
                 variant: (l['variantName'] as String?) ?? '',
                 lineTotal: n(l['lineTotal']),
+                modifiers: _modLabels(l['modifiersJson']),
+                note: (l['note'] as String?) ?? '',
               ),
         ],
         subtotal: n(bill['subtotal']),
@@ -217,7 +248,8 @@ class BillStrukBuilder {
                 BillStrukLine(
                     qty: n(l['qty']),
                     name: (l['name'] as String?) ?? '',
-                    showPrice: false),
+                    showPrice: false,
+                    modifiers: _modLabels(l['modifiersJson'])),
           ]
         : [
             for (final rl in (rec['lines'] as List? ?? const []).cast<Map>())
@@ -229,6 +261,9 @@ class BillStrukBuilder {
                       (byTicket[rl['ticketId']]!['variantName'] as String?) ?? '',
                   lineTotal: n(byTicket[rl['ticketId']]!['unitPrice']) *
                       n(rl['qtyUnits']),
+                  modifiers:
+                      _modLabels(byTicket[rl['ticketId']]!['modifiersJson']),
+                  note: (byTicket[rl['ticketId']]!['note'] as String?) ?? '',
                 ),
           ];
     final recTotal = n(rec['total']);

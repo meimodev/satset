@@ -72,9 +72,12 @@ class _AlertHostState extends ConsumerState<AlertHost>
       // GoRouterState.of(context) has no ancestor here. Reach the router via the
       // provider instead.
       final router = ref.read(routerProvider);
+      // Takeaway ready alerts carry a visitId → route to the Bawa pulang detail;
+      // dine-in carries a tableId → the table detail. See ADR-0026.
+      final base = (_shown?.isTakeaway ?? false) ? '/takeaway' : '/table';
       final loc = router.routerDelegate.currentConfiguration.uri.path;
-      final inIt = loc == '/table/$id' || loc.startsWith('/table/$id/');
-      if (!inIt) router.push('/table/$id');
+      final inIt = loc == '$base/$id' || loc.startsWith('$base/$id/');
+      if (!inIt) router.push('$base/$id');
     }
     _hide();
   }

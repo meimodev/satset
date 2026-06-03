@@ -49,6 +49,19 @@ class BillStrukRenderer {
     ]);
   }
 
+  /// Indented sub-lines under a printed item: its chosen modifiers and the
+  /// guest's item note, so the bill doubles as an order check. See ADR-0026.
+  static List<int> _lineExtras(Generator g, BillStrukLine l) {
+    final out = <int>[];
+    for (final m in l.modifiers) {
+      out.addAll(g.text('   $m'));
+    }
+    if (l.note.trim().isNotEmpty) {
+      out.addAll(g.text('   * ${l.note.trim()}'));
+    }
+    return out;
+  }
+
   static Future<List<int>> render(BillStrukData d) async {
     final profile = await CapabilityProfile.load();
     final g = Generator(_paper, profile);
@@ -108,6 +121,7 @@ class BillStrukRenderer {
         out.addAll(g.text(
           '  ${l.qty}x ${l.name}${l.variant.isEmpty ? '' : ' (${l.variant})'}',
         ));
+        out.addAll(_lineExtras(g, l));
       }
     } else {
       for (final l in d.lines) {
@@ -123,6 +137,7 @@ class BillStrukRenderer {
             styles: const PosStyles(align: PosAlign.right),
           ),
         ]));
+        out.addAll(_lineExtras(g, l));
       }
     }
     out.addAll(g.hr());

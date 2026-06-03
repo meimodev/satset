@@ -9,6 +9,7 @@ import 'package:satset/data/models/ticket_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
@@ -135,6 +136,25 @@ class AlertSoundService {
         .read(tablesProvider)
         .where((t) => t.id == dto.tableId)
         .firstOrNull;
+    // Table-less line ⇒ resolve the takeaway visit (ticket key == visitId) so
+    // the toast shows the Bawa pulang label/guest, not a raw id, and "Ambil"
+    // routes to the takeaway detail. See ADR-0026.
+    if (table == null) {
+      final visit = ref
+          .read(takeawayVisitsProvider)
+          .where((v) => v.id == dto.tableId)
+          .firstOrNull;
+      if (visit != null) {
+        ref.read(readyAlertProvider.notifier).state = ReadyAlert(
+          tableId: dto.tableId,
+          tableLabel: visit.label,
+          zone: visit.guestName ?? '',
+          what: '${dto.qty} ${dto.name}',
+          isTakeaway: true,
+        );
+        return;
+      }
+    }
     final zone = table == null
         ? ''
         : (ref

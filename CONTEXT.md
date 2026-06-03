@@ -177,7 +177,7 @@ An audible (and on waiter devices, haptic) cue that draws a staff member's atten
 **Who hears what** is by device role, not by which screen is open:
 
 - The **kitchen** (the Main Device) hears all kitchen cues: new order, recall, and overdue.
-- **Waiters** hear **ready** for any table (shared "someone grab it" awareness), but a **void/comp** cue reaches only the **responsible waiter** (the table's current waiter — see [[Waiter]]).
+- **Waiters** hear **ready** for any order — a dine-in [[Table]] *or* a [[Bawa pulang (Takeaway)|takeaway]] visit (shared "someone grab it" awareness); the ready toast's "Ambil" opens the matching detail (table detail vs the Bawa pulang detail). A **void/comp** cue reaches only the **responsible waiter** (the table's current waiter — see [[Waiter]]).
 
 **Overdue** reuses the configurable [[Service target]] (default 10 min): a ticket sounds the alert once when it first crosses the target unhandled, never again for that ticket. Bursts (a fired course landing as many tickets at once) collapse to a single cue. Cues are one-shot — they never loop or demand acknowledgement. Each device may silence its own cues (the venue's "Alert audio" toggle).
 
@@ -248,6 +248,8 @@ The guest's **money** document, deliberately **named apart from the [[Struk (cet
 
 - **Tagihan** (pre-payment bill) — venue header, table + receipt/guest label, **itemized lines with prices**, subtotal, **service** and **tax** (see [[Tax & service charge]]), and **total**. No payment block. Lets the guest verify the total before paying.
 - **Struk pembayaran** (post-payment receipt) — the Tagihan **plus** the payment method(s), amount tendered, and change (and any remaining **sisa** if part-paid). Printed after settling.
+
+Every printed line — on whole-bill, itemized, and the even-split reference list — also carries the line's chosen [[Modifier group (add-on)|modifiers]] and its [[Guest note / Item note|item note]] ("Instruksi khusus"), so the money doc lets the guest verify *exactly what was ordered* (not just totals), matching the [[Struk (cetak struk meja)|Struk]]. Especially load-bearing for [[Bawa pulang (Takeaway)|takeaway]], whose only printout is this money doc.
 
 Prints at **two granularities**: the **whole-bill** document (the table's entire undivided tab) and a **per-receipt** document (one [[Split bill]] receipt). An **itemized** receipt lists only *its own* assigned lines with prices; an **even** receipt shows its flat **share** amount plus a compact, price-less **reference list** of the whole table's items (it owns no specific items). Reuses the existing two-scope [[Printer (scope × transport)|printer]] picker, shared print path, and transport rules (ADR-0020/0022) — only the renderer template is new. _Avoid_: overloading the word "Struk" for the money document; handing one combined whole-bill slip to guests who asked for **separate** receipts instead of printing one per receipt.
 

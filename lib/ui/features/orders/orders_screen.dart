@@ -97,6 +97,84 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
     final list = _seg == 'ready' ? ready : (_seg == 'active' ? active : done);
 
+    // Split each segment into a Bawa pulang section then a Makan di tempat
+    // (dine-in) section. Rows keep their sentAt order within each. Headers hide
+    // when their group is empty. See ADR-0026.
+    final taRows = list.where((r) => r.isTakeaway).toList();
+    final dineRows = list.where((r) => !r.isTakeaway).toList();
+
+    final emptyMsg = _seg == 'ready'
+        ? 'Belum ada yang siap di pass.'
+        : _seg == 'active'
+            ? 'Tidak ada item yang sedang disiapkan.'
+            : 'Belum ada item yang selesai pada sesi ini.';
+
+    Widget orderRow(_Row r) => _OrderRow(
+          row: r,
+          onTap: () => context.push(
+              r.isTakeaway ? '/takeaway/${r.tableId}' : '/table/${r.tableId}'),
+          onServe: () => markServed(r.tableId, r.ticket.id),
+        );
+
+    Widget buildBoard({required bool grid}) {
+      if (list.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: EdgeInsets.all(grid ? 60 : 24),
+            child: Text(emptyMsg,
+                textAlign: TextAlign.center,
+                style: SatType.sans(size: 13, color: sc.textLo)),
+          ),
+        );
+      }
+      final hpad = grid ? 32.0 : 16.0;
+      final slivers = <Widget>[];
+      void section(String title, List<_Row> rows) {
+        if (rows.isEmpty) return;
+        slivers.add(SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+              hpad, slivers.isEmpty ? (grid ? 8 : 6) : 18, hpad, 8),
+          sliver: SliverToBoxAdapter(
+              child: _SectionHeader(title: title, count: rows.length)),
+        ));
+        final pad = EdgeInsets.fromLTRB(hpad, 0, hpad, 0);
+        if (grid) {
+          slivers.add(SliverPadding(
+            padding: pad,
+            sliver: SliverGrid(
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                mainAxisExtent: 120,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) => orderRow(rows[i]),
+                childCount: rows.length,
+              ),
+            ),
+          ));
+        } else {
+          slivers.add(SliverPadding(
+            padding: pad,
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) => orderRow(rows[i]),
+                childCount: rows.length,
+              ),
+            ),
+          ));
+        }
+      }
+
+      section('Bawa pulang', taRows);
+      section('Makan di tempat', dineRows);
+      slivers.add(SliverToBoxAdapter(
+          child: SizedBox(height: grid ? 32 : l.bottomInset)));
+      return CustomScrollView(slivers: slivers);
+    }
+
     if (l.useTabletShell) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,40 +214,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               ],
             ),
           ),
-          Expanded(
-            child: list.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(60),
-                      child: Text(
-                        _seg == 'ready'
-                            ? 'Belum ada yang siap di pass.'
-                            : _seg == 'active'
-                                ? 'Tidak ada item yang sedang disiapkan.'
-                                : 'Belum ada item yang selesai pada sesi ini.',
-                        style: SatType.sans(size: 13, color: sc.textLo),
-                      ),
-                    ),
-                  )
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      mainAxisExtent: 120,
-                    ),
-                    itemCount: list.length,
-                    itemBuilder: (ctx, i) {
-                      final r = list[i];
-                      return _OrderRow(
-                        row: r,
-                        onTap: () => context.push('/table/${r.tableId}'),
-                        onServe: () => markServed(r.tableId, r.ticket.id),
-                      );
-                    },
-                  ),
-          ),
+          Expanded(child: buildBoard(grid: true)),
         ],
       );
     }
@@ -205,38 +250,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           onChange: (v) => setState(() => _seg = v),
         ),
         Expanded(
-          child: list.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      _seg == 'ready'
-                          ? 'Belum ada yang siap di pass.'
-                          : _seg == 'active'
-                              ? 'Tidak ada item sedang disiapkan.'
-                              : 'Belum ada item selesai sesi ini.',
-                      style: SatType.sans(size: 13, color: sc.textLo),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
-                    child: ListView.builder(
-                      padding: EdgeInsets.fromLTRB(16, 4, 16, l.bottomInset),
-                      itemCount: list.length,
-                      itemBuilder: (_, i) {
-                        final r = list[i];
-                        return _OrderRow(
-                          row: r,
-                          onTap: () => context.push('/table/${r.tableId}'),
-                          onServe: () => markServed(r.tableId, r.ticket.id),
-                        );
-                      },
-                    ),
-                  ),
-                ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
+              child: buildBoard(grid: false),
+            ),
+          ),
         ),
       ],
     );
@@ -252,6 +271,43 @@ class _Row {
   final AppUser? orderer;
   final bool isTakeaway;
   _Row({required this.ticket, required this.tableId, required this.tableName, required this.zoneId, required this.pax, this.orderer, this.isTakeaway = false});
+
+  /// Compact label for the card's leading tile. Takeaway shows just its running
+  /// number ("#7") — the section header already says "Bawa pulang", so the full
+  /// label would only overflow the tile on a phone. Dine-in shows the table name.
+  String get token {
+    if (!isTakeaway) return tableName;
+    final i = tableName.indexOf('#');
+    return i >= 0 ? tableName.substring(i) : tableName;
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final int count;
+  const _SectionHeader({required this.title, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 2),
+      child: Row(
+        children: [
+          Text(title.toUpperCase(),
+              style: SatType.mono(
+                size: 11,
+                weight: FontWeight.w600,
+                letterSpacing: 1.0,
+                color: sc.textMd,
+              )),
+          const SizedBox(width: 8),
+          Text('$count',
+              style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0)),
+        ],
+      ),
+    );
+  }
 }
 
 class _Segments extends StatelessWidget {
@@ -373,7 +429,7 @@ class _OrderRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    constraints: const BoxConstraints(minWidth: 42),
+                    constraints: const BoxConstraints(minWidth: 42, maxWidth: 88),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: isReady
@@ -382,13 +438,29 @@ class _OrderRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,
-                    child: Text(row.tableName,
-                        style: SatType.mono(
-                          size: 16,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.16,
-                          color: isReady ? sc.success : sc.textHi,
-                        )),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (row.isTakeaway) ...[
+                          Icon(Icons.shopping_bag_rounded,
+                              size: 13,
+                              color: isReady ? sc.success : sc.textMd),
+                          const SizedBox(width: 4),
+                        ],
+                        Flexible(
+                          child: Text(row.token,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: SatType.mono(
+                                size: 16,
+                                weight: FontWeight.w600,
+                                letterSpacing: -0.16,
+                                color: isReady ? sc.success : sc.textHi,
+                              )),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

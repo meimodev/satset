@@ -24,15 +24,19 @@ enum BillDocKind {
   evenReceipt,
 }
 
-/// One priced line on a money document. Modifiers are deliberately omitted — a
-/// bill shows what was ordered and its price, not kitchen prep notes (that is
-/// the job of the no-money [StrukData]).
+/// One priced line on a money document. Carries the chosen [modifiers] (signed
+/// display labels, frozen at order time) and the guest's [note] (Instruksi
+/// khusus) so the bill doubles as an order check — the guest can verify exactly
+/// what was ordered, not just the totals. Especially load-bearing for takeaway,
+/// whose only printout is this money doc. See ADR-0026.
 class BillStrukLine {
   final int qty;
   final String name;
   final String variant; // '' when none
   final int lineTotal;
   final bool showPrice; // false for even-split reference lines
+  final List<String> modifiers; // signed display labels, e.g. '+ Pedas'
+  final String note; // item note (Instruksi khusus); '' when none
 
   const BillStrukLine({
     required this.qty,
@@ -40,6 +44,8 @@ class BillStrukLine {
     this.variant = '',
     this.lineTotal = 0,
     this.showPrice = true,
+    this.modifiers = const [],
+    this.note = '',
   });
 }
 

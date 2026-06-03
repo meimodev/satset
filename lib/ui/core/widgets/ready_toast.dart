@@ -64,7 +64,13 @@ class ReadyToast extends StatelessWidget {
                       )),
                   const SizedBox(height: 2),
                   Text(
-                    'MEJA ${alert.tableLabel} · ${alert.zone.toUpperCase()} · SEKARANG',
+                    alert.isTakeaway
+                        ? [
+                            alert.tableLabel.toUpperCase(),
+                            if (alert.zone.isNotEmpty) alert.zone.toUpperCase(),
+                            'SEKARANG',
+                          ].join(' · ')
+                        : 'MEJA ${alert.tableLabel} · ${alert.zone.toUpperCase()} · SEKARANG',
                     style: SatType.mono(
                       size: 11,
                       color: Colors.white.withValues(alpha: 0.78),
