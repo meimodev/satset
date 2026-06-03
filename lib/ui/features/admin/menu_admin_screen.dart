@@ -769,15 +769,8 @@ class _StatusToggle extends ConsumerWidget {
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 switchInCurve: kSatEase,
-                transitionBuilder: (child, anim) => FadeTransition(
-                  opacity: anim,
-                  child: SizeTransition(
-                    sizeFactor: anim,
-                    axis: Axis.horizontal,
-                    axisAlignment: -1,
-                    child: child,
-                  ),
-                ),
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: child),
                 child: Text(
                   label,
                   key: ValueKey(label),
@@ -787,9 +780,7 @@ class _StatusToggle extends ConsumerWidget {
                     letterSpacing: 0.8,
                     height: 1.0,
                     color: fg,
-                  ).copyWith(
-                    leadingDistribution: TextLeadingDistribution.even,
-                  ),
+                  ).copyWith(leadingDistribution: TextLeadingDistribution.even),
                 ),
               ),
             ],
