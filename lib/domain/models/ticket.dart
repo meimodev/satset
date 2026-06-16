@@ -13,9 +13,14 @@ part 'ticket.freezed.dart';
 /// kitchen lifecycle today is `sent → prep → cooked → ready → served`,
 /// with `held` for course-pacing and `voided` as the terminal failure
 /// state.
+///
+/// `pendingReview` is the guest self-order intake state (ADR-0028): a
+/// guest-submitted line rests here, **invisible to the KDS**, until a
+/// waiter approves it (→ `sent`) or rejects it (→ `voided`).
 enum TicketStatus {
   draft,
   acknowledged,
+  pendingReview,
   sent,
   prep,
   cooked,
@@ -28,6 +33,7 @@ enum TicketStatus {
 String ticketStatusLabel(TicketStatus s) => switch (s) {
       TicketStatus.draft => 'Draf',
       TicketStatus.acknowledged => 'Diterima',
+      TicketStatus.pendingReview => 'Menunggu konfirmasi',
       TicketStatus.sent => 'Terkirim',
       TicketStatus.prep => 'Disiapkan',
       TicketStatus.cooked => 'Selesai dimasak',
@@ -40,6 +46,7 @@ String ticketStatusLabel(TicketStatus s) => switch (s) {
 String ticketStatusKey(TicketStatus s) => switch (s) {
       TicketStatus.draft => 'draft',
       TicketStatus.acknowledged => 'acknowledged',
+      TicketStatus.pendingReview => 'pendingReview',
       TicketStatus.sent => 'sent',
       TicketStatus.prep => 'prep',
       TicketStatus.cooked => 'cooked',
@@ -52,6 +59,7 @@ String ticketStatusKey(TicketStatus s) => switch (s) {
 TicketStatus ticketStatusFromKey(String? raw) => switch (raw) {
       'draft' => TicketStatus.draft,
       'acknowledged' => TicketStatus.acknowledged,
+      'pendingReview' => TicketStatus.pendingReview,
       'sent' => TicketStatus.sent,
       'prep' => TicketStatus.prep,
       'cooked' => TicketStatus.cooked,

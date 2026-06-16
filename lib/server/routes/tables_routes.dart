@@ -317,8 +317,13 @@ Future<void> syncVisitMoney(AppDatabase db, WsHub hub, String visitId) async {
   final tickets = await (db.select(db.tickets)
         ..where((t) => t.visitId.equals(visitId)))
       .get();
-  final sent =
-      tickets.where((t) => t.status != 'voided' && t.status != 'draft');
+  // `pendingReview` is an un-approved guest self-order (ADR-0028): it is not
+  // yet kitchen-bound and must not count toward the bill until a waiter
+  // approves it (→ `sent`), at which point money re-syncs.
+  final sent = tickets.where((t) =>
+      t.status != 'voided' &&
+      t.status != 'draft' &&
+      t.status != 'pendingReview');
   final subtotal = sent.fold<int>(0, (a, t) => a + t.price * t.qty);
   int outstanding = 0;
   String? state;
@@ -451,6 +456,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             : const Value.absent(),
         active: body.containsKey('active')
             ? Value(body['active'] as bool)
+            : const Value.absent(),
+        guestOrderingEnabled: body.containsKey('guestOrderingEnabled')
+            ? Value(body['guestOrderingEnabled'] == true)
             : const Value.absent(),
       ),
     );
@@ -1221,4 +1229,5 @@ Map<String, dynamic> _toJson(VenueTable t) => {
       'reservationId': t.reservationId,
       'billClosedAt': t.billClosedAt?.toIso8601String(),
       'moneyState': t.moneyState,
+      'guestOrderingEnabled': t.guestOrderingEnabled,
     };

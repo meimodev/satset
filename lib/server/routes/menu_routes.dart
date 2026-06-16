@@ -397,6 +397,51 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
   };
 }
 
+/// The menu as a guest sees it on the cleartext guest plane (ADR-0027):
+/// the same snapshot shape as [_snapshot], but **filtered to guest-visible
+/// items** — sold-out (`unavailable`) and auto-sold-out-at-zero-stock rows are
+/// dropped, and categories left with no visible item disappear. Re-fetched on
+/// load by the guest SPA, so a mid-service 86 vanishes for guests (CONTEXT.md:
+/// Self-order menu). Photos are NOT inlined — the SPA lazy-loads them from the
+/// guest photo route.
+Future<Map<String, dynamic>> guestMenuSnapshot(AppDatabase db) async {
+  final cats = await (db.select(db.menuCategories)
+        ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
+      .get();
+  final rows = await _selectItemsNoBlob(db);
+  final visible = <Map<String, dynamic>>[];
+  for (final r in rows) {
+    final unavailable = r.read(db.menuItems.unavailable)!;
+    if (unavailable) continue;
+    final autoSoldOut = r.read(db.menuItems.autoSoldOutAtZero)!;
+    final stock = r.read(db.menuItems.stockCount);
+    if (autoSoldOut && (stock ?? 0) <= 0) continue;
+    visible.add(_itemResultToJson(db, r));
+  }
+  final usedCats = {for (final i in visible) i['categoryId'] as String};
+  final tags = await (db.select(db.menuTags)
+        ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+      .get();
+  return {
+    'version': 1,
+    'categories': [
+      for (final c in cats)
+        if (usedCats.contains(c.id)) {'id': c.id, 'name': c.name},
+    ],
+    'items': visible,
+    'tags': [for (final t in tags) _tagRowToJson(t)],
+  };
+}
+
+/// The raw JPEG bytes for one menu item, or null when the item has no photo.
+/// Used by the guest photo route (the staff photo route reads the blob inline).
+Future<Uint8List?> menuItemPhotoBytes(AppDatabase db, String id) async {
+  final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
+      .getSingleOrNull();
+  final photo = row?.photo;
+  return photo == null ? null : Uint8List.fromList(photo);
+}
+
 /// Every item column EXCEPT the `photo` blob. The blob is read only by the
 /// photo route — keeping it out of the hot snapshot/read path is mandatory
 /// (see docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md).

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/export/export_share.dart' show customRangeLabel;
 import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/data/repositories/reports_repository.dart';
+import 'package:satset/ui/core/widgets/custom_range_sheet.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -10,6 +12,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart'
     show PaymentProofThumb;
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/export_sheet.dart';
 import 'package:satset/ui/core/widgets/skeleton_card.dart';
 import '_common.dart';
 
@@ -48,7 +51,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     ReportRange.d7: '7 hari',
     ReportRange.d30: '30 hari',
     ReportRange.month: 'Bulan ini',
+    ReportRange.custom: 'Custom',
   };
+
+  /// Chip text: fixed presets read the static map; a committed custom window
+  /// shows its span ("12 Jun – 15 Jun"), an uncommitted one stays "Custom".
+  String _chipLabel(ReportRange r, ReportsQuery q) {
+    if (r == ReportRange.custom &&
+        q.customFrom != null &&
+        q.customTo != null) {
+      return customRangeLabel(q.customFrom!, q.customTo!);
+    }
+    return _rangeLabel[r]!;
+  }
 
   static const _sectionLabel = {
     _Section.sales: 'Penjualan',
@@ -61,6 +76,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   void _setRange(ReportRange r) {
     final q = ref.read(reportsQueryProvider);
     ref.read(reportsQueryProvider.notifier).state = q.copyWith(range: r);
+  }
+
+  /// Tap on the Custom chip: open the date sheet, commit only on "Terapkan".
+  /// Dismissing leaves the active range untouched.
+  Future<void> _openCustomSheet() async {
+    final q = ref.read(reportsQueryProvider);
+    final picked = await showCustomRangeSheet(
+      context,
+      initialFrom: q.customFrom,
+      initialTo: q.customTo,
+    );
+    if (picked == null) return;
+    ref.read(reportsQueryProvider.notifier).state = q.copyWith(
+      range: ReportRange.custom,
+      customFrom: picked.$1,
+      customTo: picked.$2,
+    );
   }
 
   void _setServer(String? id) {
@@ -93,13 +125,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: Text('Laporan',
-                  style: SatType.sans(
-                    size: 30,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                    color: sc.textHi,
-                  )),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Laporan',
+                        style: SatType.sans(
+                          size: 30,
+                          weight: FontWeight.w600,
+                          letterSpacing: -0.6,
+                          color: sc.textHi,
+                        )),
+                  ),
+                  GestureDetector(
+                    onTap: () => showExportSheet(context, ref,
+                        snapshot: snapshot, query: query),
+                    child: adminPill(context, 'Ekspor', on: false),
+                  ),
+                ],
+              ),
             ),
             ...body,
           ],
@@ -109,21 +152,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return AdminPage(
       title: 'Laporan',
       sub: _rangeSub(snapshot, query),
+      subLeading: snapshot == null ? null : _freshnessDot(context, query),
       topTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          adminPill(
-            context,
-            query.range == ReportRange.today ? 'Live' : 'Snapshot',
-            on: query.range == ReportRange.today,
+          GestureDetector(
+            onTap: () => showExportSheet(context, ref,
+                snapshot: snapshot, query: query),
+            child: adminPill(context, 'Ekspor', on: false),
           ),
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: status.isLoading
-                ? null
-                : () =>
-                    ref.read(reportsRepositoryProvider.notifier).refresh(),
-            child: _refreshPill(context, status.isLoading),
+          _refreshButton(
+            context,
+            status.isLoading,
+            () => ref.read(reportsRepositoryProvider.notifier).refresh(),
           ),
         ],
       ),
@@ -131,50 +173,51 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _refreshPill(BuildContext context, bool loading) {
+  /// Freshness indicator for the subtitle: green when the report is [Live]
+  /// (range includes today), muted when it is a frozen Snapshot.
+  Widget _freshnessDot(BuildContext context, ReportsQuery query) {
     final sc = context.sat;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: kSatEase,
-      height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      alignment: Alignment.center,
+    final live = query.range == ReportRange.today;
+    return Container(
+      width: 7,
+      height: 7,
       decoration: BoxDecoration(
-        color: loading ? sc.accentSoft : sc.bg3,
-        border: Border.all(color: loading ? sc.accentBorder : sc.border1),
-        borderRadius: BorderRadius.circular(999),
+        color: live ? sc.success : sc.textLo,
+        shape: BoxShape.circle,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (loading) ...[
-            SizedBox(
-              width: 12,
-              height: 12,
+    );
+  }
+
+  /// Icon-only manual resync. Swaps to a spinner while loading and is inert
+  /// during the fetch.
+  Widget _refreshButton(BuildContext context, bool loading, VoidCallback onTap) {
+    final sc = context.sat;
+    return IconButton(
+      onPressed: loading ? null : onTap,
+      visualDensity: VisualDensity.compact,
+      iconSize: 20,
+      tooltip: 'Muat ulang',
+      icon: loading
+          ? SizedBox(
+              width: 16,
+              height: 16,
               child: CircularProgressIndicator(
-                strokeWidth: 1.6,
-                valueColor: AlwaysStoppedAnimation(sc.accent),
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(sc.accent),
               ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Text(loading ? 'Memuat' : 'Refresh',
-              style: SatType.sans(
-                size: 11,
-                weight: FontWeight.w500,
-                color: loading ? sc.accent : sc.textMd,
-              )),
-        ],
-      ),
+            )
+          : Icon(Icons.refresh, color: sc.textMd),
     );
   }
 
   String _rangeSub(ReportsSnapshotDto? snapshot, ReportsQuery query) {
     if (snapshot == null) return 'Memuat laporan…';
-    return '${_humanRange(query.range)} · ${_fmtRange(snapshot.rangeFrom, snapshot.rangeTo)}';
+    final fresh = query.range == ReportRange.today ? 'Live' : 'Snapshot';
+    return '$fresh · ${_humanRange(query)} · ${_fmtRange(snapshot.rangeFrom, snapshot.rangeTo)}';
   }
 
-  String _humanRange(ReportRange r) => _rangeLabel[r]!;
+  String _humanRange(ReportsQuery q) =>
+      q.range == ReportRange.custom ? 'Custom' : _rangeLabel[q.range]!;
 
   String _fmtRange(String fromIso, String toIso) {
     final from = DateTime.parse(fromIso).toLocal();
@@ -344,8 +387,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         children: [
           for (final r in ReportRange.values) ...[
             GestureDetector(
-              onTap: () => _setRange(r),
-              child: adminPill(context, _rangeLabel[r]!, on: query.range == r),
+              onTap: r == ReportRange.custom
+                  ? _openCustomSheet
+                  : () => _setRange(r),
+              child: adminPill(context, _chipLabel(r, query),
+                  on: query.range == r),
             ),
             const SizedBox(width: 8),
           ],

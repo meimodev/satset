@@ -84,6 +84,12 @@ class VenueTables extends Table {
   /// yet locked) | null (nothing paid). `openAmount` carries the **outstanding**
   /// rupiah. Kept in sync on order/serve/void + every payment. See ADR-0024.
   TextColumn get moneyState => text().nullable()();
+
+  /// Per-table opt-in for guest QR self-ordering (ADR-0027/0028). A table only
+  /// exposes a working QR when this AND the venue master toggle
+  /// (`VenueSettings.guestOrderingEnabled`) are both true. Default off.
+  BoolColumn get guestOrderingEnabled =>
+      boolean().withDefault(const Constant(false))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -301,6 +307,13 @@ class VenueSettings extends Table {
   /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
   IntColumn get prepTargetMins =>
       integer().withDefault(const Constant(15))();
+
+  /// Venue master switch for guest QR self-ordering (ADR-0027/0028). Default
+  /// OFF so shipping the feature exposes no venue automatically. When true,
+  /// per-table `VenueTables.guestOrderingEnabled` controls which tables show a
+  /// working QR.
+  BoolColumn get guestOrderingEnabled =>
+      boolean().withDefault(const Constant(false))();
   @override
   Set<Column> get primaryKey => {id};
 }

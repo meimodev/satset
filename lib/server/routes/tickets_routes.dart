@@ -476,6 +476,129 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'});
   });
 
+  // ── Guest self-order review queue (ADR-0028) ─────────────────────────────
+  // Staff-only surface over the cleartext guests' `pendingReview` tickets.
+
+  // List visits that have pending guest orders, with their lines.
+  r.get('/guest-orders', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
+    if (denied != null) return denied;
+    final pend = await (db.select(db.tickets)
+          ..where((t) => t.status.equals('pendingReview'))
+          ..orderBy([(t) => OrderingTerm(expression: t.sentAt)]))
+        .get();
+    final tableIds = {for (final t in pend) t.tableId};
+    final tables = <String, VenueTable>{};
+    for (final id in tableIds) {
+      final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
+          .getSingleOrNull();
+      if (row != null) tables[id] = row;
+    }
+    final byVisit = <String, List<Ticket>>{};
+    for (final t in pend) {
+      (byVisit[t.visitId ?? ''] ??= []).add(t);
+    }
+    return Response.ok(
+        jsonEncode({
+          'batches': [
+            for (final e in byVisit.entries)
+              {
+                'visitId': e.key,
+                'tableId': e.value.first.tableId,
+                'tableLabel': tables[e.value.first.tableId]?.label ?? '',
+                'submittedAt': e.value.first.sentAt.toIso8601String(),
+                'lines': [for (final t in e.value) _toJson(t)],
+              },
+          ],
+        }),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Approve every pending guest line for a visit → fire to the kitchen.
+  r.post('/guest-orders/<visitId>/approve', (Request req, String visitId) async {
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
+    if (denied != null) return denied;
+    final actor = await _actor(req, db, auth);
+    final fired = <Ticket>[];
+    VenueTable? tableRow;
+    await db.transaction(() async {
+      final pend = await (db.select(db.tickets)
+            ..where((t) =>
+                t.visitId.equals(visitId) & t.status.equals('pendingReview')))
+          .get();
+      if (pend.isEmpty) return;
+      final now = DateTime.now();
+      for (final t in pend) {
+        await (db.update(db.tickets)..where((r) => r.id.equals(t.id)))
+            .write(TicketsCompanion(
+          status: const Value('sent'),
+          sentAt: Value(now),
+        ));
+        fired.add(await (db.select(db.tickets)..where((r) => r.id.equals(t.id)))
+            .getSingle());
+      }
+      final tableId = pend.first.tableId;
+      final cur = await (db.select(db.venueTables)
+            ..where((t) => t.id.equals(tableId)))
+          .getSingleOrNull();
+      if (cur != null) {
+        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
+            .write(VenueTablesCompanion(
+          status: const Value('pending'),
+          lastActorId: Value(actor?.id),
+          openedAt:
+              cur.openedAt == null ? Value(now) : const Value.absent(),
+        ));
+        tableRow = await (db.select(db.venueTables)
+              ..where((t) => t.id.equals(tableId)))
+            .getSingleOrNull();
+      }
+    });
+    if (fired.isEmpty) return Response.notFound('no pending order');
+    for (final t in fired) {
+      hub.broadcast(WsEventTypes.ticketCreated, _toJson(t));
+    }
+    if (tableRow != null) {
+      hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow!));
+    }
+    await syncVisitMoney(db, hub, visitId);
+    return Response.ok(jsonEncode({'fired': fired.length}),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Reject every pending guest line for a visit → void.
+  r.post('/guest-orders/<visitId>/reject', (Request req, String visitId) async {
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
+    if (denied != null) return denied;
+    final actor = await _actor(req, db, auth);
+    var count = 0;
+    await db.transaction(() async {
+      final pend = await (db.select(db.tickets)
+            ..where((t) =>
+                t.visitId.equals(visitId) & t.status.equals('pendingReview')))
+          .get();
+      for (final t in pend) {
+        await (db.update(db.tickets)..where((r) => r.id.equals(t.id)))
+            .write(TicketsCompanion(
+          status: const Value('voided'),
+          voidReason: const Value('Ditolak (pesan mandiri)'),
+          voidReasonCode: const Value('other'),
+          voidedByUserId: Value(actor?.id),
+        ));
+        count++;
+      }
+    });
+    if (count == 0) return Response.notFound('no pending order');
+    final voided = await (db.select(db.tickets)
+          ..where((t) => t.visitId.equals(visitId) & t.status.equals('voided')))
+        .get();
+    for (final t in voided) {
+      hub.broadcast(WsEventTypes.ticketUpdated, _toJson(t));
+    }
+    return Response.ok(jsonEncode({'rejected': count}),
+        headers: {'content-type': 'application/json'});
+  });
+
   return r;
 }
 

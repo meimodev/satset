@@ -24,6 +24,7 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   serviceFixedAmount: (json['serviceFixedAmount'] as num?)?.toInt() ?? 0,
   businessDayStartHour: (json['businessDayStartHour'] as num?)?.toInt() ?? 4,
   prepTargetMins: (json['prepTargetMins'] as num?)?.toInt() ?? 15,
+  guestOrderingEnabled: json['guestOrderingEnabled'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -44,4 +45,5 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'serviceFixedAmount': instance.serviceFixedAmount,
   'businessDayStartHour': instance.businessDayStartHour,
   'prepTargetMins': instance.prepTargetMins,
+  'guestOrderingEnabled': instance.guestOrderingEnabled,
 };

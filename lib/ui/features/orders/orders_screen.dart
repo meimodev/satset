@@ -184,14 +184,22 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
-                    style: SatType.sans(
-                      size: 32,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.8,
-                      height: 1.05,
-                      color: sc.textHi,
-                    )),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                          venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
+                          style: SatType.sans(
+                            size: 32,
+                            weight: FontWeight.w600,
+                            letterSpacing: -0.8,
+                            height: 1.05,
+                            color: sc.textHi,
+                          )),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 Text('${active.length} BERJALAN · ${ready.length} SIAP DIAMBIL',
                     style: SatType.mono(
@@ -226,13 +234,20 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
-                  style: SatType.sans(
-                    size: 30,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                    color: sc.textHi,
-                  )),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                        venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
+                        style: SatType.sans(
+                          size: 30,
+                          weight: FontWeight.w600,
+                          letterSpacing: -0.6,
+                          color: sc.textHi,
+                        )),
+                  ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(
                 '${active.length} aktif · ${ready.length} siap diambil',
@@ -605,6 +620,7 @@ class _StatusChip extends StatelessWidget {
         bg = sc.bg3;
         fg = sc.textLo;
         break;
+      case TicketStatus.pendingReview:
       case TicketStatus.held:
         bg = sc.violetSoft;
         fg = sc.violet;

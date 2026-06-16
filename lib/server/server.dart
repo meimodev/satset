@@ -17,9 +17,11 @@ import 'auth.dart';
 import 'firebase_token_verifier.dart';
 import 'db/database.dart';
 import 'db/seed.dart';
+import 'guest_app_html.dart';
 import 'mdns.dart';
 import 'pairing.dart';
 import 'routes/auth_routes.dart';
+import 'routes/guest_routes.dart';
 import 'routes/devices_routes.dart';
 import 'routes/health_routes.dart';
 import 'routes/kds_routes.dart';
@@ -73,6 +75,10 @@ class ServerRuntime {
   final SatSetAdvertiser advertiser;
   final int port;
   HttpServer? _http;
+
+  /// The cleartext guest plane listener (ADR-0027), bound to [guestPort]. Null
+  /// until started; lives/dies alongside [_http].
+  HttpServer? _guestHttp;
   Timer? _statusTicker;
   Timer? _printerHeartbeat;
   bool _restarting = false;
@@ -113,6 +119,10 @@ class ServerRuntime {
   }
 
   static const defaultPort = 7443;
+
+  /// Cleartext guest plane port (ADR-0027). Separate from the TLS [defaultPort]
+  /// so a guest browser loads with no cert warning.
+  static const guestPort = 8080;
   static const defaultVersion = '1.0.0';
 
   /// Firebase project id (matches `android/app/google-services.json`). Used to
@@ -166,6 +176,8 @@ class ServerRuntime {
     SatLog.srv(
       'boot port=$port fp=${tls.fingerprint.substring(0, tls.fingerprint.length.clamp(0, 12))}',
     );
+
+    await rt._startGuestPlane();
 
     await advertiser.start(
       port: port,
@@ -282,6 +294,7 @@ class ServerRuntime {
         port,
         securityContext: tls.context,
       );
+      await _startGuestPlane();
       await advertiser.start(
         port: port,
         fingerprint: tls.fingerprint,
@@ -392,10 +405,41 @@ class ServerRuntime {
     return r;
   }
 
+  /// Starts (or restarts) the cleartext guest plane (ADR-0027): a second
+  /// listener on [guestPort] serving the guest SPA + `/guest/*` API. No TLS,
+  /// no staff auth middleware — guest routes self-authorize with table-scoped
+  /// tokens, and the listener mounts nothing else.
+  Future<void> _startGuestPlane() async {
+    await _guestHttp?.close(force: true);
+    final handler = const Pipeline()
+        .addMiddleware(_corsMiddleware())
+        .addHandler(_buildGuestHandler());
+    _guestHttp =
+        await shelf_io.serve(handler, InternetAddress.anyIPv4, guestPort);
+    SatLog.srv('guest plane port=$guestPort');
+  }
+
+  Handler _buildGuestHandler() {
+    final api = guestRoutes(db, hub, auth);
+    return Cascade().add(api.call).add(_guestSpaHandler).handler;
+  }
+
+  /// Serves the self-contained guest SPA for any unmatched GET (`/`,
+  /// `/t/<tableId>`, …). The SPA reads the table id from the URL client-side.
+  /// `/guest/*` paths are never served the SPA — a 404 there stays a 404.
+  Response _guestSpaHandler(Request req) {
+    if (req.method != 'GET' || req.url.path.startsWith('guest/')) {
+      return Response.notFound('not found');
+    }
+    return Response.ok(guestAppHtml,
+        headers: {'content-type': 'text/html; charset=utf-8'});
+  }
+
   Future<void> shutdown() async {
     _statusTicker?.cancel();
     _printerHeartbeat?.cancel();
     await _http?.close(force: true);
+    await _guestHttp?.close(force: true);
     await advertiser.stop();
     await hub.dispose();
     await db.close();

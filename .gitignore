@@ -67,3 +67,9 @@ functions/.env.*
 
 # Other OS files
 Thumbs.db
+
+# Agent/local temporary dirs
+.scratch/
+.serena/
+supabase/
+

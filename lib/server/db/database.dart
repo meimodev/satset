@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -356,6 +356,14 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('table_sessions', 'kind',
                 type: "TEXT NOT NULL DEFAULT 'dineIn'");
             await m.createTable(dailyCounters);
+          }
+          if (from < 32) {
+            // Guest QR self-ordering (ADR-0027/0028). Venue master toggle +
+            // per-table opt-in, both default off (no venue auto-exposed).
+            await _safeAddColumnOn('venue_settings', 'guest_ordering_enabled',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('venue_tables', 'guest_ordering_enabled',
+                type: 'INTEGER NOT NULL DEFAULT 0');
           }
         },
         onCreate: (m) async {

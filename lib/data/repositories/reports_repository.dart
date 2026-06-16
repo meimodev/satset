@@ -5,8 +5,9 @@ import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 
 /// Range pills used by the reports screen. Matches server's `range` query
-/// param: today | yesterday | d7 | d30 | month.
-enum ReportRange { today, yesterday, d7, d30, month }
+/// param: today | yesterday | d7 | d30 | month | custom. For `custom` the
+/// window is carried separately as `from`/`to` (inclusive calendar dates).
+enum ReportRange { today, yesterday, d7, d30, month, custom }
 
 String reportRangeKey(ReportRange r) => switch (r) {
       ReportRange.today => 'today',
@@ -14,7 +15,19 @@ String reportRangeKey(ReportRange r) => switch (r) {
       ReportRange.d7 => 'd7',
       ReportRange.d30 => 'd30',
       ReportRange.month => 'month',
+      ReportRange.custom => 'custom',
     };
+
+/// Max span for a custom window (inclusive days). Guards a runaway LAN fetch /
+/// giant PDF; the server enforces the same cap defensively.
+const int kCustomRangeMaxDays = 92;
+
+/// `yyyy-MM-dd` for a custom window bound on the wire — date-only, the server
+/// snaps it to the business-day boundary.
+String _ymd(DateTime d) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${d.year}-${two(d.month)}-${two(d.day)}';
+}
 
 class ReportsQuery {
   final ReportRange range;
@@ -22,18 +35,31 @@ class ReportsQuery {
   final String? zoneId;
   final String? categoryId;
 
+  /// Custom-window bounds (inclusive calendar dates), only meaningful when
+  /// [range] is [ReportRange.custom].
+  final DateTime? customFrom;
+  final DateTime? customTo;
+
   const ReportsQuery({
     this.range = ReportRange.today,
     this.serverId,
     this.zoneId,
     this.categoryId,
+    this.customFrom,
+    this.customTo,
   });
+
+  /// True when a custom range is selected but its bounds aren't set yet.
+  bool get customIncomplete =>
+      range == ReportRange.custom && (customFrom == null || customTo == null);
 
   ReportsQuery copyWith({
     ReportRange? range,
     Object? serverId = _sentinel,
     Object? zoneId = _sentinel,
     Object? categoryId = _sentinel,
+    Object? customFrom = _sentinel,
+    Object? customTo = _sentinel,
   }) {
     return ReportsQuery(
       range: range ?? this.range,
@@ -41,11 +67,18 @@ class ReportsQuery {
       zoneId: zoneId == _sentinel ? this.zoneId : zoneId as String?,
       categoryId:
           categoryId == _sentinel ? this.categoryId : categoryId as String?,
+      customFrom:
+          customFrom == _sentinel ? this.customFrom : customFrom as DateTime?,
+      customTo: customTo == _sentinel ? this.customTo : customTo as DateTime?,
     );
   }
 
   Map<String, String> toQueryParams() => {
         'range': reportRangeKey(range),
+        if (range == ReportRange.custom && customFrom != null)
+          'from': _ymd(customFrom!),
+        if (range == ReportRange.custom && customTo != null)
+          'to': _ymd(customTo!),
         if (serverId != null && serverId!.isNotEmpty) 'server': serverId!,
         if (zoneId != null && zoneId!.isNotEmpty) 'zone': zoneId!,
         if (categoryId != null && categoryId!.isNotEmpty)
@@ -83,6 +116,13 @@ class ReportsRepository extends StateNotifier<ReportsSnapshotDto?> {
       return;
     }
     final query = ref.read(reportsQueryProvider);
+    // Custom range picked but no dates committed yet — hold the current
+    // snapshot, don't fire a half-formed window at the server.
+    if (query.customIncomplete) {
+      ref.read(reportsStatusProvider.notifier).state =
+          const AsyncValue.data(null);
+      return;
+    }
     ref.read(reportsStatusProvider.notifier).state =
         const AsyncValue.loading();
     try {

@@ -281,6 +281,7 @@ class _StatusChip extends StatelessWidget {
         bg = sc.bg3;
         fg = sc.textLo;
         break;
+      case TicketStatus.pendingReview:
       case TicketStatus.held:
         bg = sc.violetSoft;
         fg = sc.violet;

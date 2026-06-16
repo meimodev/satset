@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -100,12 +101,33 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         prepTargetMins: body.containsKey('prepTargetMins')
             ? Value(((body['prepTargetMins'] as num).toInt()).clamp(1, 120))
             : const Value.absent(),
+        guestOrderingEnabled: body.containsKey('guestOrderingEnabled')
+            ? Value(body['guestOrderingEnabled'] == true)
+            : const Value.absent(),
       ),
     );
     final row = await _readOrSeed(db);
     final payload = _toJson(row);
     hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
     return Response.ok(jsonEncode(payload),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Guest plane network info — the LAN IPv4 the server is reachable at, the
+  // cleartext guest port (ADR-0027), and the base URL guests load by scanning a
+  // table QR. Used by the admin Floor screen to render per-table QR codes and
+  // by the master toggle card to surface the address. Staff-gated.
+  r.get('/venue/guest-net', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.editSettings);
+    if (denied != null) return denied;
+    final ip = await _lanIpv4();
+    const port = 8080; // SatServer.guestPort — kept literal to avoid an import cycle.
+    return Response.ok(
+        jsonEncode({
+          'lanIp': ip,
+          'guestPort': port,
+          'guestBaseUrl': ip == null ? null : 'http://$ip:$port',
+        }),
         headers: {'content-type': 'application/json'});
   });
 
@@ -144,4 +166,42 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
       'serviceFixedAmount': s.serviceFixedAmount,
       'businessDayStartHour': s.businessDayStartHour,
       'prepTargetMins': s.prepTargetMins,
+      'guestOrderingEnabled': s.guestOrderingEnabled,
     };
+
+/// Best-effort private LAN IPv4 the server is reachable at, for building guest
+/// QR URLs. Prefers a 192.168/10/172.16-31 address on a non-loopback interface;
+/// returns null if none (e.g. Wi-Fi down) so the UI can warn instead of baking a
+/// dead URL into a QR.
+Future<String?> _lanIpv4() async {
+  try {
+    final ifaces = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+      includeLoopback: false,
+      includeLinkLocal: false,
+    );
+    String? fallback;
+    for (final iface in ifaces) {
+      for (final addr in iface.addresses) {
+        final ip = addr.address;
+        fallback ??= ip;
+        if (ip.startsWith('192.168.') ||
+            ip.startsWith('10.') ||
+            _is172Private(ip)) {
+          return ip;
+        }
+      }
+    }
+    return fallback;
+  } catch (_) {
+    return null;
+  }
+}
+
+bool _is172Private(String ip) {
+  if (!ip.startsWith('172.')) return false;
+  final parts = ip.split('.');
+  if (parts.length < 2) return false;
+  final second = int.tryParse(parts[1]) ?? 0;
+  return second >= 16 && second <= 31;
+}

@@ -61,4 +61,8 @@ class WsEventTypes {
   static const reservationCreated = 'reservation.created';
   static const reservationUpdated = 'reservation.updated';
   static const reservationDeleted = 'reservation.deleted';
+
+  /// A guest submitted a self-order batch that is now waiting in the staff
+  /// review queue (ADR-0028). Payload carries the table + pending ticket ids.
+  static const guestOrderSubmitted = 'guestOrder.submitted';
 }

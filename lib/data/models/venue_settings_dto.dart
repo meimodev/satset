@@ -22,6 +22,7 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(0) int serviceFixedAmount,
     @Default(4) int businessDayStartHour,
     @Default(15) int prepTargetMins,
+    @Default(false) bool guestOrderingEnabled,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

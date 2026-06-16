@@ -42,7 +42,18 @@ Future<Response?> _requireCap(
   return null;
 }
 
-(DateTime, DateTime) _windowFor(String range, DateTime now, int hour) {
+/// Max span of a custom window, in inclusive days. Mirrors the client cap
+/// ([kCustomRangeMaxDays]); enforced here too so a hand-crafted request can't
+/// pull an unbounded window.
+const int _customRangeMaxDays = 92;
+
+(DateTime, DateTime) _windowFor(
+  String range,
+  DateTime now,
+  int hour, {
+  String? fromStr,
+  String? toStr,
+}) {
   DateTime bod(DateTime d) => DateTime(d.year, d.month, d.day, hour);
   final today = bod(now);
   final tomorrow = today.add(const Duration(days: 1));
@@ -58,6 +69,23 @@ Future<Response?> _requireCap(
         DateTime(now.year, now.month, 1, hour),
         tomorrow,
       );
+    case 'custom':
+      final f = DateTime.tryParse(fromStr ?? '');
+      final t = DateTime.tryParse(toStr ?? '');
+      if (f == null || t == null) return (today, tomorrow); // malformed → today
+      var start = bod(f);
+      // `to` is an inclusive calendar date — the window ends at the next
+      // business-day boundary after it (exclusive), like every other range.
+      var end = bod(t).add(const Duration(days: 1));
+      if (end.isBefore(start)) {
+        final tmp = start;
+        start = end;
+        end = tmp;
+      }
+      // `end` is exclusive, so the ceiling for N inclusive days is start + N.
+      final cap = start.add(const Duration(days: _customRangeMaxDays));
+      if (end.isAfter(cap)) end = cap;
+      return (start, end);
     case 'today':
     default:
       return (today, tomorrow);
@@ -82,7 +110,8 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
           ..where((s) => s.id.equals('default')))
         .getSingleOrNull();
     final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
-    final (from, to) = _windowFor(range, now, hour);
+    final (from, to) =
+        _windowFor(range, now, hour, fromStr: qp['from'], toStr: qp['to']);
 
     // Reference data — small, fetched in full.
     final menu = await db.select(db.menuItems).get();
@@ -694,6 +723,208 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'nonCashTotal': nonCashTotal,
         'methodTotals': methodTotals,
         'rows': nonCashRows,
+      },
+    };
+
+    return Response.ok(jsonEncode(body),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Order history export feed (ADR-0030). Read-only window of CLOSED visits and
+  // their line items, grouped by session, for the order-list export. The live
+  // order board never calls this — it only powers the export sheet's chosen
+  // range. viewReports-gated: exposes historical financial data.
+  r.get('/orders/history', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.viewReports);
+    if (denied != null) return denied;
+
+    final qp = req.url.queryParameters;
+    final range = qp['range'] ?? 'today';
+
+    final now = DateTime.now();
+    final settings = await (db.select(db.venueSettings)
+          ..where((s) => s.id.equals('default')))
+        .getSingleOrNull();
+    final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
+    final (from, to) =
+        _windowFor(range, now, hour, fromStr: qp['from'], toStr: qp['to']);
+
+    final users = await db.select(db.users).get();
+    final userById = {for (final u in users) u.id: u};
+
+    final sessions = await (db.select(db.tableSessions)
+          ..where((s) => s.closedAt.isBetweenValues(from, to))
+          ..orderBy([(s) => OrderingTerm.asc(s.closedAt)]))
+        .get();
+    final sessionIds = sessions.map((s) => s.id).toList();
+
+    final lines = sessionIds.isEmpty
+        ? <TableSessionTicket>[]
+        : await (db.select(db.tableSessionTickets)
+              ..where((t) => t.sessionId.isIn(sessionIds))
+              ..orderBy([(t) => OrderingTerm.asc(t.sentAt)]))
+            .get();
+    final linesBySession = <String, List<TableSessionTicket>>{};
+    for (final t in lines) {
+      linesBySession.putIfAbsent(t.sessionId, () => []).add(t);
+    }
+
+    // Bill settlement snapshots (ADR-0031): per-receipt totals + the payments
+    // tendered against them. Grouped by session, then by receipt. Proof photo
+    // bytes never ride this path — only a hasPhoto flag (ADR-0025); the client
+    // fetches each photo on demand for the PDF.
+    final receipts = sessionIds.isEmpty
+        ? <TableSessionReceipt>[]
+        : await (db.select(db.tableSessionReceipts)
+              ..where((rcp) => rcp.sessionId.isIn(sessionIds)))
+            .get();
+    final receiptsBySession = <String, List<TableSessionReceipt>>{};
+    for (final rcp in receipts) {
+      receiptsBySession.putIfAbsent(rcp.sessionId, () => []).add(rcp);
+    }
+
+    final pays = sessionIds.isEmpty
+        ? <TableSessionPayment>[]
+        : await (db.select(db.tableSessionPayments)
+              ..where((p) => p.sessionId.isIn(sessionIds))
+              ..orderBy([(p) => OrderingTerm.asc(p.at)]))
+            .get();
+    final paysByReceipt = <String, List<TableSessionPayment>>{};
+    final paysBySession = <String, List<TableSessionPayment>>{};
+    for (final p in pays) {
+      paysByReceipt.putIfAbsent(p.receiptId, () => []).add(p);
+      paysBySession.putIfAbsent(p.sessionId, () => []).add(p);
+    }
+
+    Map<String, dynamic> payJson(TableSessionPayment p) => {
+          'paymentId': p.id,
+          'method': p.method,
+          'amount': p.amount,
+          'isRefund': p.isRefund,
+          'cashierName':
+              p.cashierUserId == null ? null : userById[p.cashierUserId!]?.name,
+          'at': p.at.toIso8601String(),
+          'hasPhoto': p.photo != null,
+        };
+
+    // Receipt + payment tree for one visit. Payments whose receipt snapshot is
+    // missing (orphans) are gathered under a synthetic '—' receipt so no tender
+    // is dropped from the export.
+    List<Map<String, dynamic>> receiptTree(String sessionId) {
+      final rcps = receiptsBySession[sessionId] ?? const <TableSessionReceipt>[];
+      final known = {for (final r in rcps) r.receiptId};
+      final out = [
+        for (final r in rcps)
+          {
+            'receiptId': r.receiptId,
+            'label': r.label,
+            'mode': r.mode,
+            'subtotal': r.subtotal,
+            'serviceAmount': r.serviceAmount,
+            'taxAmount': r.taxAmount,
+            'total': r.total,
+            'status': r.status,
+            'payments': [
+              for (final p in paysByReceipt[r.receiptId] ?? const [])
+                payJson(p),
+            ],
+          },
+      ];
+      final orphans = [
+        for (final p in paysBySession[sessionId] ?? const [])
+          if (!known.contains(p.receiptId)) payJson(p),
+      ];
+      if (orphans.isNotEmpty) {
+        out.add({
+          'receiptId': '',
+          'label': '—',
+          'mode': 'itemized',
+          'subtotal': 0,
+          'serviceAmount': 0,
+          'taxAmount': 0,
+          'total': 0,
+          'status': '',
+          'payments': orphans,
+        });
+      }
+      return out;
+    }
+
+    const reasonLabels = {
+      'outOfStock': 'Stok habis',
+      'wrongOrder': 'Salah input pelayan',
+      'customerChange': 'Tamu ganti pesanan',
+      'kitchenError': 'Kualitas dapur',
+      'comp': 'Kompensasi manajer',
+      'other': 'Lainnya',
+    };
+
+    List<String> modLabels(String json) {
+      try {
+        final mods = jsonDecode(json) as List;
+        return [
+          for (final m in mods)
+            if (m is Map && (m['label'] as String? ?? '').isNotEmpty)
+              m['label'] as String,
+        ];
+      } catch (_) {
+        return const [];
+      }
+    }
+
+    var lineCount = 0;
+    var netTotal = 0;
+    final visits = <Map<String, dynamic>>[];
+    for (final s in sessions) {
+      final ls = linesBySession[s.id] ?? const <TableSessionTicket>[];
+      lineCount += ls.length;
+      netTotal += s.netTotal;
+      visits.add({
+        'sessionId': s.id,
+        'tableLabel': s.tableLabel ?? '—',
+        'kind': s.kind,
+        'pax': s.pax,
+        'closedAt': s.closedAt.toIso8601String(),
+        'waiterName':
+            s.actorUserId == null ? null : userById[s.actorUserId!]?.name,
+        'subtotal': s.subtotal,
+        'voidAmount': s.voidAmount,
+        'net': s.netTotal,
+        'lines': [
+          for (final t in ls)
+            {
+              'sentAt': t.sentAt.toIso8601String(),
+              'name': t.name,
+              'variantName': t.variantName,
+              'course': t.course,
+              'qty': t.qty,
+              'price': t.price,
+              'lineTotal': t.price * t.qty,
+              'status': t.status,
+              'modifiers': modLabels(t.modifiersJson),
+              'readyAt': t.readyAt?.toIso8601String(),
+              'servedAt': t.servedAt?.toIso8601String(),
+              'voidReasonLabel': t.status == 'voided'
+                  ? (reasonLabels[t.voidReasonCode ?? 'other'] ??
+                      t.voidReasonCode ??
+                      'Lainnya')
+                  : null,
+            },
+        ],
+        'receipts': receiptTree(s.id),
+      });
+    }
+
+    final body = {
+      'generatedAt': now.toIso8601String(),
+      'rangeFrom': from.toIso8601String(),
+      'rangeTo': to.toIso8601String(),
+      'range': range,
+      'visits': visits,
+      'totals': {
+        'visitCount': visits.length,
+        'lineCount': lineCount,
+        'net': netTotal,
       },
     };
 

@@ -1685,6 +1685,20 @@ class $VenueTablesTable extends VenueTables
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _guestOrderingEnabledMeta =
+      const VerificationMeta('guestOrderingEnabled');
+  @override
+  late final GeneratedColumn<bool> guestOrderingEnabled = GeneratedColumn<bool>(
+    'guest_ordering_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("guest_ordering_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1708,6 +1722,7 @@ class $VenueTablesTable extends VenueTables
     currentVisitId,
     billClosedAt,
     moneyState,
+    guestOrderingEnabled,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1866,6 +1881,15 @@ class $VenueTablesTable extends VenueTables
         moneyState.isAcceptableOrUnknown(data['money_state']!, _moneyStateMeta),
       );
     }
+    if (data.containsKey('guest_ordering_enabled')) {
+      context.handle(
+        _guestOrderingEnabledMeta,
+        guestOrderingEnabled.isAcceptableOrUnknown(
+          data['guest_ordering_enabled']!,
+          _guestOrderingEnabledMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1959,6 +1983,10 @@ class $VenueTablesTable extends VenueTables
         DriftSqlType.string,
         data['${effectivePrefix}money_state'],
       ),
+      guestOrderingEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}guest_ordering_enabled'],
+      )!,
     );
   }
 
@@ -2005,6 +2033,11 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
   /// yet locked) | null (nothing paid). `openAmount` carries the **outstanding**
   /// rupiah. Kept in sync on order/serve/void + every payment. See ADR-0024.
   final String? moneyState;
+
+  /// Per-table opt-in for guest QR self-ordering (ADR-0027/0028). A table only
+  /// exposes a working QR when this AND the venue master toggle
+  /// (`VenueSettings.guestOrderingEnabled`) are both true. Default off.
+  final bool guestOrderingEnabled;
   const VenueTable({
     required this.id,
     required this.zoneId,
@@ -2027,6 +2060,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     this.currentVisitId,
     this.billClosedAt,
     this.moneyState,
+    required this.guestOrderingEnabled,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2078,6 +2112,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     if (!nullToAbsent || moneyState != null) {
       map['money_state'] = Variable<String>(moneyState);
     }
+    map['guest_ordering_enabled'] = Variable<bool>(guestOrderingEnabled);
     return map;
   }
 
@@ -2130,6 +2165,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       moneyState: moneyState == null && nullToAbsent
           ? const Value.absent()
           : Value(moneyState),
+      guestOrderingEnabled: Value(guestOrderingEnabled),
     );
   }
 
@@ -2160,6 +2196,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       currentVisitId: serializer.fromJson<String?>(json['currentVisitId']),
       billClosedAt: serializer.fromJson<DateTime?>(json['billClosedAt']),
       moneyState: serializer.fromJson<String?>(json['moneyState']),
+      guestOrderingEnabled: serializer.fromJson<bool>(
+        json['guestOrderingEnabled'],
+      ),
     );
   }
   @override
@@ -2187,6 +2226,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       'currentVisitId': serializer.toJson<String?>(currentVisitId),
       'billClosedAt': serializer.toJson<DateTime?>(billClosedAt),
       'moneyState': serializer.toJson<String?>(moneyState),
+      'guestOrderingEnabled': serializer.toJson<bool>(guestOrderingEnabled),
     };
   }
 
@@ -2212,6 +2252,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     Value<String?> currentVisitId = const Value.absent(),
     Value<DateTime?> billClosedAt = const Value.absent(),
     Value<String?> moneyState = const Value.absent(),
+    bool? guestOrderingEnabled,
   }) => VenueTable(
     id: id ?? this.id,
     zoneId: zoneId ?? this.zoneId,
@@ -2240,6 +2281,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
         : this.currentVisitId,
     billClosedAt: billClosedAt.present ? billClosedAt.value : this.billClosedAt,
     moneyState: moneyState.present ? moneyState.value : this.moneyState,
+    guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
   );
   VenueTable copyWithCompanion(VenueTablesCompanion data) {
     return VenueTable(
@@ -2284,6 +2326,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       moneyState: data.moneyState.present
           ? data.moneyState.value
           : this.moneyState,
+      guestOrderingEnabled: data.guestOrderingEnabled.present
+          ? data.guestOrderingEnabled.value
+          : this.guestOrderingEnabled,
     );
   }
 
@@ -2310,7 +2355,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ..write('reservationId: $reservationId, ')
           ..write('currentVisitId: $currentVisitId, ')
           ..write('billClosedAt: $billClosedAt, ')
-          ..write('moneyState: $moneyState')
+          ..write('moneyState: $moneyState, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled')
           ..write(')'))
         .toString();
   }
@@ -2338,6 +2384,7 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     currentVisitId,
     billClosedAt,
     moneyState,
+    guestOrderingEnabled,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -2363,7 +2410,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           other.reservationId == this.reservationId &&
           other.currentVisitId == this.currentVisitId &&
           other.billClosedAt == this.billClosedAt &&
-          other.moneyState == this.moneyState);
+          other.moneyState == this.moneyState &&
+          other.guestOrderingEnabled == this.guestOrderingEnabled);
 }
 
 class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
@@ -2388,6 +2436,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
   final Value<String?> currentVisitId;
   final Value<DateTime?> billClosedAt;
   final Value<String?> moneyState;
+  final Value<bool> guestOrderingEnabled;
   final Value<int> rowid;
   const VenueTablesCompanion({
     this.id = const Value.absent(),
@@ -2411,6 +2460,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.currentVisitId = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.moneyState = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueTablesCompanion.insert({
@@ -2435,6 +2485,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.currentVisitId = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.moneyState = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        zoneId = Value(zoneId);
@@ -2460,6 +2511,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Expression<String>? currentVisitId,
     Expression<DateTime>? billClosedAt,
     Expression<String>? moneyState,
+    Expression<bool>? guestOrderingEnabled,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2484,6 +2536,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       if (currentVisitId != null) 'current_visit_id': currentVisitId,
       if (billClosedAt != null) 'bill_closed_at': billClosedAt,
       if (moneyState != null) 'money_state': moneyState,
+      if (guestOrderingEnabled != null)
+        'guest_ordering_enabled': guestOrderingEnabled,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2510,6 +2564,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Value<String?>? currentVisitId,
     Value<DateTime?>? billClosedAt,
     Value<String?>? moneyState,
+    Value<bool>? guestOrderingEnabled,
     Value<int>? rowid,
   }) {
     return VenueTablesCompanion(
@@ -2534,6 +2589,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       currentVisitId: currentVisitId ?? this.currentVisitId,
       billClosedAt: billClosedAt ?? this.billClosedAt,
       moneyState: moneyState ?? this.moneyState,
+      guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2604,6 +2660,11 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     if (moneyState.present) {
       map['money_state'] = Variable<String>(moneyState.value);
     }
+    if (guestOrderingEnabled.present) {
+      map['guest_ordering_enabled'] = Variable<bool>(
+        guestOrderingEnabled.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2634,6 +2695,7 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
           ..write('currentVisitId: $currentVisitId, ')
           ..write('billClosedAt: $billClosedAt, ')
           ..write('moneyState: $moneyState, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8320,6 +8382,20 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(15),
   );
+  static const VerificationMeta _guestOrderingEnabledMeta =
+      const VerificationMeta('guestOrderingEnabled');
+  @override
+  late final GeneratedColumn<bool> guestOrderingEnabled = GeneratedColumn<bool>(
+    'guest_ordering_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("guest_ordering_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8337,6 +8413,7 @@ class $VenueSettingsTable extends VenueSettings
     serviceFixedAmount,
     businessDayStartHour,
     prepTargetMins,
+    guestOrderingEnabled,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8469,6 +8546,15 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('guest_ordering_enabled')) {
+      context.handle(
+        _guestOrderingEnabledMeta,
+        guestOrderingEnabled.isAcceptableOrUnknown(
+          data['guest_ordering_enabled']!,
+          _guestOrderingEnabledMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -8538,6 +8624,10 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.int,
         data['${effectivePrefix}prep_target_mins'],
       )!,
+      guestOrderingEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}guest_ordering_enabled'],
+      )!,
     );
   }
 
@@ -8570,6 +8660,12 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// Drives BOTH the floor/audio overdue alert and the report SLA hit-rate.
   /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
   final int prepTargetMins;
+
+  /// Venue master switch for guest QR self-ordering (ADR-0027/0028). Default
+  /// OFF so shipping the feature exposes no venue automatically. When true,
+  /// per-table `VenueTables.guestOrderingEnabled` controls which tables show a
+  /// working QR.
+  final bool guestOrderingEnabled;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -8586,6 +8682,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.serviceFixedAmount,
     required this.businessDayStartHour,
     required this.prepTargetMins,
+    required this.guestOrderingEnabled,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8605,6 +8702,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['service_fixed_amount'] = Variable<int>(serviceFixedAmount);
     map['business_day_start_hour'] = Variable<int>(businessDayStartHour);
     map['prep_target_mins'] = Variable<int>(prepTargetMins);
+    map['guest_ordering_enabled'] = Variable<bool>(guestOrderingEnabled);
     return map;
   }
 
@@ -8625,6 +8723,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       serviceFixedAmount: Value(serviceFixedAmount),
       businessDayStartHour: Value(businessDayStartHour),
       prepTargetMins: Value(prepTargetMins),
+      guestOrderingEnabled: Value(guestOrderingEnabled),
     );
   }
 
@@ -8651,6 +8750,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
         json['businessDayStartHour'],
       ),
       prepTargetMins: serializer.fromJson<int>(json['prepTargetMins']),
+      guestOrderingEnabled: serializer.fromJson<bool>(
+        json['guestOrderingEnabled'],
+      ),
     );
   }
   @override
@@ -8672,6 +8774,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'serviceFixedAmount': serializer.toJson<int>(serviceFixedAmount),
       'businessDayStartHour': serializer.toJson<int>(businessDayStartHour),
       'prepTargetMins': serializer.toJson<int>(prepTargetMins),
+      'guestOrderingEnabled': serializer.toJson<bool>(guestOrderingEnabled),
     };
   }
 
@@ -8691,6 +8794,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     int? serviceFixedAmount,
     int? businessDayStartHour,
     int? prepTargetMins,
+    bool? guestOrderingEnabled,
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -8707,6 +8811,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     serviceFixedAmount: serviceFixedAmount ?? this.serviceFixedAmount,
     businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
     prepTargetMins: prepTargetMins ?? this.prepTargetMins,
+    guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -8747,6 +8852,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       prepTargetMins: data.prepTargetMins.present
           ? data.prepTargetMins.value
           : this.prepTargetMins,
+      guestOrderingEnabled: data.guestOrderingEnabled.present
+          ? data.guestOrderingEnabled.value
+          : this.guestOrderingEnabled,
     );
   }
 
@@ -8767,7 +8875,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('serviceRateBps: $serviceRateBps, ')
           ..write('serviceFixedAmount: $serviceFixedAmount, ')
           ..write('businessDayStartHour: $businessDayStartHour, ')
-          ..write('prepTargetMins: $prepTargetMins')
+          ..write('prepTargetMins: $prepTargetMins, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled')
           ..write(')'))
         .toString();
   }
@@ -8789,6 +8898,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     serviceFixedAmount,
     businessDayStartHour,
     prepTargetMins,
+    guestOrderingEnabled,
   );
   @override
   bool operator ==(Object other) =>
@@ -8808,7 +8918,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.serviceRateBps == this.serviceRateBps &&
           other.serviceFixedAmount == this.serviceFixedAmount &&
           other.businessDayStartHour == this.businessDayStartHour &&
-          other.prepTargetMins == this.prepTargetMins);
+          other.prepTargetMins == this.prepTargetMins &&
+          other.guestOrderingEnabled == this.guestOrderingEnabled);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -8827,6 +8938,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<int> serviceFixedAmount;
   final Value<int> businessDayStartHour;
   final Value<int> prepTargetMins;
+  final Value<bool> guestOrderingEnabled;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -8844,6 +8956,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.serviceFixedAmount = const Value.absent(),
     this.businessDayStartHour = const Value.absent(),
     this.prepTargetMins = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -8862,6 +8975,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.serviceFixedAmount = const Value.absent(),
     this.businessDayStartHour = const Value.absent(),
     this.prepTargetMins = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -8880,6 +8994,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<int>? serviceFixedAmount,
     Expression<int>? businessDayStartHour,
     Expression<int>? prepTargetMins,
+    Expression<bool>? guestOrderingEnabled,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8900,6 +9015,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (businessDayStartHour != null)
         'business_day_start_hour': businessDayStartHour,
       if (prepTargetMins != null) 'prep_target_mins': prepTargetMins,
+      if (guestOrderingEnabled != null)
+        'guest_ordering_enabled': guestOrderingEnabled,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8920,6 +9037,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<int>? serviceFixedAmount,
     Value<int>? businessDayStartHour,
     Value<int>? prepTargetMins,
+    Value<bool>? guestOrderingEnabled,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -8938,6 +9056,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       serviceFixedAmount: serviceFixedAmount ?? this.serviceFixedAmount,
       businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
       prepTargetMins: prepTargetMins ?? this.prepTargetMins,
+      guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8992,6 +9111,11 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (prepTargetMins.present) {
       map['prep_target_mins'] = Variable<int>(prepTargetMins.value);
     }
+    if (guestOrderingEnabled.present) {
+      map['guest_ordering_enabled'] = Variable<bool>(
+        guestOrderingEnabled.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9016,6 +9140,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('serviceFixedAmount: $serviceFixedAmount, ')
           ..write('businessDayStartHour: $businessDayStartHour, ')
           ..write('prepTargetMins: $prepTargetMins, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16482,6 +16607,7 @@ typedef $$VenueTablesTableCreateCompanionBuilder =
       Value<String?> currentVisitId,
       Value<DateTime?> billClosedAt,
       Value<String?> moneyState,
+      Value<bool> guestOrderingEnabled,
       Value<int> rowid,
     });
 typedef $$VenueTablesTableUpdateCompanionBuilder =
@@ -16507,6 +16633,7 @@ typedef $$VenueTablesTableUpdateCompanionBuilder =
       Value<String?> currentVisitId,
       Value<DateTime?> billClosedAt,
       Value<String?> moneyState,
+      Value<bool> guestOrderingEnabled,
       Value<int> rowid,
     });
 
@@ -16621,6 +16748,11 @@ class $$VenueTablesTableFilterComposer
 
   ColumnFilters<String> get moneyState => $composableBuilder(
     column: $table.moneyState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16738,6 +16870,11 @@ class $$VenueTablesTableOrderingComposer
     column: $table.moneyState,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueTablesTableAnnotationComposer
@@ -16831,6 +16968,11 @@ class $$VenueTablesTableAnnotationComposer
     column: $table.moneyState,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueTablesTableTableManager
@@ -16885,6 +17027,7 @@ class $$VenueTablesTableTableManager
                 Value<String?> currentVisitId = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> moneyState = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion(
                 id: id,
@@ -16908,6 +17051,7 @@ class $$VenueTablesTableTableManager
                 currentVisitId: currentVisitId,
                 billClosedAt: billClosedAt,
                 moneyState: moneyState,
+                guestOrderingEnabled: guestOrderingEnabled,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -16933,6 +17077,7 @@ class $$VenueTablesTableTableManager
                 Value<String?> currentVisitId = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> moneyState = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion.insert(
                 id: id,
@@ -16956,6 +17101,7 @@ class $$VenueTablesTableTableManager
                 currentVisitId: currentVisitId,
                 billClosedAt: billClosedAt,
                 moneyState: moneyState,
+                guestOrderingEnabled: guestOrderingEnabled,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -19705,6 +19851,7 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<int> serviceFixedAmount,
       Value<int> businessDayStartHour,
       Value<int> prepTargetMins,
+      Value<bool> guestOrderingEnabled,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -19724,6 +19871,7 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<int> serviceFixedAmount,
       Value<int> businessDayStartHour,
       Value<int> prepTargetMins,
+      Value<bool> guestOrderingEnabled,
       Value<int> rowid,
     });
 
@@ -19808,6 +19956,11 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<int> get prepTargetMins => $composableBuilder(
     column: $table.prepTargetMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -19895,6 +20048,11 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.prepTargetMins,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -19972,6 +20130,11 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.prepTargetMins,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -20020,6 +20183,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> serviceFixedAmount = const Value.absent(),
                 Value<int> businessDayStartHour = const Value.absent(),
                 Value<int> prepTargetMins = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -20037,6 +20201,7 @@ class $$VenueSettingsTableTableManager
                 serviceFixedAmount: serviceFixedAmount,
                 businessDayStartHour: businessDayStartHour,
                 prepTargetMins: prepTargetMins,
+                guestOrderingEnabled: guestOrderingEnabled,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -20056,6 +20221,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> serviceFixedAmount = const Value.absent(),
                 Value<int> businessDayStartHour = const Value.absent(),
                 Value<int> prepTargetMins = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -20073,6 +20239,7 @@ class $$VenueSettingsTableTableManager
                 serviceFixedAmount: serviceFixedAmount,
                 businessDayStartHour: businessDayStartHour,
                 prepTargetMins: prepTargetMins,
+                guestOrderingEnabled: guestOrderingEnabled,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

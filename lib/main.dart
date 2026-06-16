@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,6 +22,8 @@ import 'package:satset/server/server.dart';
 Future<void> main() async {
   runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    // id_ID date symbols for exports (DateFormat with explicit locale).
+    await initializeDateFormatting('id_ID');
     SatLog.init();
     FlutterError.onError = (details) {
       SatLog.err('flutter', details.exception, details.stack);

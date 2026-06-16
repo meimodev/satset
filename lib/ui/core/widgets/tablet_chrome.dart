@@ -11,6 +11,8 @@ class TabletShell extends StatelessWidget {
   final int readyCount;
   final int kitchenCount;
   final bool showKasir;
+  final bool showGuest;
+  final int guestCount;
   final Widget child;
   final List<String> crumbs;
 
@@ -20,6 +22,8 @@ class TabletShell extends StatelessWidget {
     required this.readyCount,
     required this.kitchenCount,
     this.showKasir = false,
+    this.showGuest = false,
+    this.guestCount = 0,
     required this.child,
     required this.crumbs,
   });
@@ -35,7 +39,9 @@ class TabletShell extends StatelessWidget {
               active: activeTab,
               readyCount: readyCount,
               kitchenCount: kitchenCount,
-              showKasir: showKasir),
+              showKasir: showKasir,
+              showGuest: showGuest,
+              guestCount: guestCount),
           Expanded(
             child: Column(
               children: [
@@ -55,12 +61,16 @@ class TabletSideRail extends StatelessWidget {
   final int readyCount;
   final int kitchenCount;
   final bool showKasir;
+  final bool showGuest;
+  final int guestCount;
   const TabletSideRail({
     super.key,
     required this.active,
     required this.readyCount,
     required this.kitchenCount,
     this.showKasir = false,
+    this.showGuest = false,
+    this.guestCount = 0,
   });
 
   @override
@@ -84,6 +94,8 @@ class TabletSideRail extends StatelessWidget {
                 children: [
                   _RailBtn(id: 'tables', label: 'Meja', icon: Icons.grid_view_rounded, route: '/tables', active: active),
                   _RailBtn(id: 'orders', label: 'Pesanan', icon: Icons.description_outlined, route: '/orders', active: active, badge: readyCount, alert: readyCount > 0),
+                  if (showGuest)
+                    _RailBtn(id: 'guest', label: 'Mandiri', icon: Icons.qr_code_2, route: '/guestorders', active: active, badge: guestCount, alert: guestCount > 0),
                   _RailBtn(id: 'kitchen', label: 'Antrian', icon: Icons.receipt_long_outlined, route: '/kitchen', active: active, badge: kitchenCount),
                   if (showKasir)
                     _RailBtn(id: 'kasir', label: 'Kasir', icon: Icons.point_of_sale_rounded, route: '/kasir', active: active),

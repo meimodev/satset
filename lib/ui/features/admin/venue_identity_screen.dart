@@ -170,6 +170,8 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
         const SizedBox(height: 14),
         _PajakLayananCard(),
         const SizedBox(height: 14),
+        _GuestOrderingCard(),
+        const SizedBox(height: 14),
         _ReportsHourCard(),
       ],
     );
@@ -216,6 +218,11 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                     value: _pajakLayananSummary(s),
                     onTap: () => _openDetail(context, 'Pajak & layanan',
                         (c, _) => _PajakLayananCard())),
+                _phoneRow(context, sc,
+                    label: 'Pesanan mandiri',
+                    value: s.guestOrderingEnabled ? 'Aktif' : 'Nonaktif',
+                    onTap: () => _openDetail(context, 'Pesanan mandiri',
+                        (c, _) => _GuestOrderingCard())),
                 _phoneRow(context, sc,
                     label: 'Laporan & shift',
                     value:
@@ -845,6 +852,153 @@ class _PajakLayananCard extends ConsumerWidget {
   }
 }
 
+
+class _GuestOrderingCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final s = ref.watch(venueSettingsProvider);
+    final n = ref.read(venueSettingsProvider.notifier);
+    final net = ref.watch(guestNetInfoProvider);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Pesanan mandiri',
+                    style: SatType.sans(
+                      size: 15,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    )),
+              ),
+              Text('QR TAMU',
+                  style: SatType.mono(
+                    size: 9,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.4,
+                    color: sc.textLo,
+                  )),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Tamu pindai QR di meja, pesan sendiri lewat web. Pesanan masuk '
+            'antrian “Mandiri” untuk Anda setujui sebelum ke dapur.',
+            style: SatType.sans(size: 12, color: sc.textLo, height: 1.4),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Aktifkan pesanan mandiri',
+                    style: SatType.sans(size: 13, color: sc.textHi)),
+              ),
+              GestureDetector(
+                onTap: () => n.patch(
+                    guestOrderingEnabled: !s.guestOrderingEnabled),
+                child: adminToggle(context, on: s.guestOrderingEnabled),
+              ),
+            ],
+          ),
+          if (s.guestOrderingEnabled) ...[
+            const SizedBox(height: 14),
+            net.when(
+              loading: () => _netRow(sc, 'Mendeteksi alamat…', sc.textLo),
+              error: (_, _) =>
+                  _driftBanner(sc, 'Gagal mendeteksi alamat jaringan.'),
+              data: (info) => info.guestBaseUrl == null
+                  ? _driftBanner(
+                      sc,
+                      'Server tidak terhubung Wi-Fi. QR tamu tidak akan '
+                      'berfungsi sampai jaringan aktif.')
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _netRow(sc, info.guestBaseUrl!, sc.textHi),
+                        const SizedBox(height: 8),
+                        _driftBanner(
+                          sc,
+                          'PENTING: alamat ini berubah jika IP server berganti. '
+                          'Jika Anda mencetak QR, cetak ulang setiap kali '
+                          'alamat di atas berubah — QR lama akan mati.',
+                          warn: true,
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => ref.invalidate(guestNetInfoProvider),
+                icon: Icon(Icons.refresh, size: 16, color: sc.accent),
+                label: Text('Cek ulang alamat',
+                    style: SatType.sans(size: 12, color: sc.accent)),
+              ),
+            ),
+            Text(
+              'Aktifkan per meja dari layar Atur lantai untuk menampilkan QR.',
+              style: SatType.sans(size: 11, color: sc.textDim, height: 1.4),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _netRow(SatColors sc, String text, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: sc.bg1,
+          border: Border.all(color: sc.border0),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.link, size: 15, color: sc.textLo),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(text,
+                  style: SatType.mono(size: 12.5, color: color)),
+            ),
+          ],
+        ),
+      );
+
+  Widget _driftBanner(SatColors sc, String text, {bool warn = false}) {
+    final c = warn ? sc.warn : sc.urgent;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.12),
+        border: Border.all(color: c.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(warn ? Icons.warning_amber_rounded : Icons.wifi_off,
+              size: 17, color: c),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: SatType.sans(
+                    size: 12, color: sc.textHi, height: 1.4)),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _ReportsHourCard extends ConsumerWidget {
   @override

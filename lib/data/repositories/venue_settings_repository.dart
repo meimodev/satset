@@ -73,6 +73,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     int? serviceFixedAmount,
     int? businessDayStartHour,
     int? prepTargetMins,
+    bool? guestOrderingEnabled,
   }) async {
     final prev = state;
     state = state.copyWith(
@@ -91,6 +92,8 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       businessDayStartHour:
           businessDayStartHour ?? state.businessDayStartHour,
       prepTargetMins: prepTargetMins ?? state.prepTargetMins,
+      guestOrderingEnabled:
+          guestOrderingEnabled ?? state.guestOrderingEnabled,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -110,6 +113,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'serviceFixedAmount': ?serviceFixedAmount,
         'businessDayStartHour': ?businessDayStartHour,
         'prepTargetMins': ?prepTargetMins,
+        'guestOrderingEnabled': ?guestOrderingEnabled,
       };
       final raw = await ref
           .read(apiClientProvider)
@@ -127,3 +131,31 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
 final venueSettingsProvider =
     StateNotifierProvider<VenueSettingsRepository, VenueSettingsDto>(
         (ref) => VenueSettingsRepository(ref: ref));
+
+/// The server's current LAN address for the guest plane: the base URL guests
+/// reach by scanning a table QR (`http://<lan-ip>:8080`), plus the raw IP for
+/// drift detection. Null fields mean the server couldn't resolve a LAN IPv4
+/// (Wi-Fi down) — the UI must warn rather than render a dead QR. Refetchable so
+/// the admin can re-check after a network change.
+class GuestNetInfo {
+  const GuestNetInfo({this.lanIp, this.guestPort, this.guestBaseUrl});
+  final String? lanIp;
+  final int? guestPort;
+  final String? guestBaseUrl;
+}
+
+final guestNetInfoProvider = FutureProvider<GuestNetInfo>((ref) async {
+  if (ref.read(apiConfigProvider) == null) return const GuestNetInfo();
+  try {
+    final raw = await ref.read(apiClientProvider).getJson('/venue/guest-net');
+    final m = (raw as Map).cast<String, dynamic>();
+    return GuestNetInfo(
+      lanIp: m['lanIp'] as String?,
+      guestPort: (m['guestPort'] as num?)?.toInt(),
+      guestBaseUrl: m['guestBaseUrl'] as String?,
+    );
+  } catch (e) {
+    SatLog.repo('guestNet.fetch fail $e');
+    return const GuestNetInfo();
+  }
+});

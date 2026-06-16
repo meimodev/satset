@@ -235,6 +235,12 @@ class _BillBody extends StatelessWidget {
               const SizedBox(height: 14),
               if (bill.receipts.isEmpty)
                 rv(_ModeChooser(bill: bill, run: run, repo: repo)),
+              if (bill.mode == 'itemized' &&
+                  bill.receipts.isNotEmpty &&
+                  !bill.fullyAssigned) ...[
+                rv(_UnassignedBanner(bill: bill)),
+                const SizedBox(height: 10),
+              ],
               rv(_LinesSection(bill: bill, run: run, repo: repo)),
               const SizedBox(height: 14),
               ...bill.receipts.map((r) => Padding(
@@ -259,6 +265,39 @@ class _BillBody extends StatelessWidget {
         // lock as Lunas. The tak-tertagih write-off moved up to _TopActions.
         if (bill.fullySettled) _CloseBar(bill: bill, onClose: onCloseBill),
       ],
+    );
+  }
+}
+
+/// Prominent amber count of units not yet assigned to any receipt, shown only
+/// in an itemized split that isn't fully assigned. Blocks nothing — it just
+/// answers "what's left to place" at a glance (the lines list tints the same
+/// units amber). Disappears once `bill.fullyAssigned`.
+class _UnassignedBanner extends StatelessWidget {
+  final Bill bill;
+  const _UnassignedBanner({required this.bill});
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final n = bill.lines.fold<int>(0, (s, l) => s + l.unassignedUnits);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: sc.warn.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: sc.warn.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: sc.warn),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('$n item belum diatur ke struk',
+                style: SatType.sans(
+                    size: 12.5, weight: FontWeight.w600, color: sc.warn)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -327,7 +366,6 @@ class _ModeChooser extends StatelessWidget {
             child: _BigBtn(
               icon: Icons.payments_outlined,
               label: 'Bayar penuh',
-              filled: true,
               onTap: () async {
                 await run(() => repo.createReceipt(bill.visitId,
                     mode: 'itemized', assignAll: true, label: 'Tagihan'));
@@ -438,8 +476,13 @@ class _LinesSection extends StatelessWidget {
     final sc = context.sat;
     final assigned = l.assignedUnits;
     final hasNote = l.note?.trim().isNotEmpty == true;
+    final pending = assignable && l.unassignedUnits > 0;
     return ListTile(
       dense: true,
+      tileColor: pending ? sc.warn.withValues(alpha: 0.08) : null,
+      shape: pending
+          ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+          : null,
       title: Text(
           '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
           style: SatType.sans(size: 13, color: sc.textHi)),
@@ -449,7 +492,10 @@ class _LinesSection extends StatelessWidget {
           Text(
               '${l.qty} × ${formatIDR(l.unitPrice)}'
               '${assignable ? '  ·  $assigned/${l.qty} diatur' : ''}',
-              style: SatType.sans(size: 11, color: sc.textLo)),
+              style: SatType.sans(
+                  size: 11,
+                  color: pending ? sc.warn : sc.textLo,
+                  weight: pending ? FontWeight.w600 : FontWeight.w400)),
           for (final m in l.modifiers)
             Text(
                 '${m.display}'
@@ -592,6 +638,16 @@ class _ReceiptCard extends StatelessWidget {
     final sc = context.sat;
     final r = receipt;
     final paid = r.isPaid;
+    // Show each receipt's owned items so the cashier sees *who has what* at a
+    // glance. Names joined from bill.lines by ticketId (BillReceiptLine carries
+    // only ticketId + qtyUnits). Suppressed only for the degenerate whole-bill
+    // case — a lone receipt that owns every line ("Bayar penuh") — since the
+    // lines section above already itemizes it; any genuine split (incl. one
+    // guest filled so far) shows its items. No per-item rupiah: modifiers would
+    // make a naive qty×unitPrice lie; the server-computed Total is the truth.
+    final lineByTicket = {for (final b in bill.lines) b.ticketId: b};
+    final isWholeBill = bill.receipts.length == 1 && bill.fullyAssigned;
+    final showItems = r.lines.isNotEmpty && !isWholeBill;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
       curve: satEaseOut,
@@ -631,6 +687,23 @@ class _ReceiptCard extends StatelessWidget {
               ),
             ],
           ),
+          if (showItems) ...[
+            const SizedBox(height: 8),
+            for (final rl in r.lines)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '${rl.qtyUnits}× '
+                  '${lineByTicket[rl.ticketId]?.name ?? 'Item'}'
+                  '${(lineByTicket[rl.ticketId]?.variantName.isNotEmpty ?? false) ? ' · ${lineByTicket[rl.ticketId]!.variantName}' : ''}',
+                  style: SatType.sans(size: 12, color: sc.textHi),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Divider(height: 1, color: sc.border0),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1092,20 +1165,16 @@ class _DetachedBanner extends StatelessWidget {
 class _BigBtn extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool filled;
   final VoidCallback onTap;
   const _BigBtn(
-      {required this.icon,
-      required this.label,
-      required this.onTap,
-      this.filled = false});
+      {required this.icon, required this.label, required this.onTap});
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     return PressableScale(
       pressedScale: 0.96,
       child: Material(
-      color: filled ? sc.accent : sc.bg3,
+      color: sc.bg3,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -1114,14 +1183,14 @@ class _BigBtn extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
           child: Column(
             children: [
-              Icon(icon, size: 22, color: filled ? sc.accentInk : sc.textHi),
+              Icon(icon, size: 22, color: sc.textHi),
               const SizedBox(height: 6),
               Text(label,
                   textAlign: TextAlign.center,
                   style: SatType.sans(
                       size: 11,
                       weight: FontWeight.w600,
-                      color: filled ? sc.accentInk : sc.textHi)),
+                      color: sc.textHi)),
             ],
           ),
         ),

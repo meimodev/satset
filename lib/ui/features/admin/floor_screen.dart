@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -10,6 +11,7 @@ import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/zone_visuals.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 
 class FloorScreen extends ConsumerStatefulWidget {
@@ -490,6 +492,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
   late int _capacity;
   late String _zoneId;
   late bool _active;
+  late bool _guestOrdering;
 
   bool get _isNew => widget.table == null;
 
@@ -501,6 +504,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     _capacity = t?.capacity ?? 2;
     _zoneId = t?.zoneId ?? widget.zoneId;
     _active = t?.active ?? true;
+    _guestOrdering = t?.guestOrderingEnabled ?? false;
   }
 
   @override
@@ -533,6 +537,9 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
         zoneId: _zoneId,
         active: _active,
       );
+      if (_guestOrdering != (widget.table!.guestOrderingEnabled)) {
+        n.setGuestOrdering(widget.table!.id, _guestOrdering);
+      }
     }
     Navigator.of(context).pop();
   }
@@ -546,6 +553,13 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     if (ok != true) return;
     ref.read(tablesProvider.notifier).removeTable(widget.table!.id);
     if (mounted) Navigator.of(context).pop();
+  }
+
+  void _showQr(BuildContext context, VenueTable table) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => _QrDialog(table: table),
+    );
   }
 
   @override
@@ -593,6 +607,18 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
             _ActiveRow(
               active: _active,
               onChanged: (v) => setState(() => _active = v),
+            ),
+          ],
+          if (!_isNew &&
+              ref.watch(venueSettingsProvider
+                  .select((s) => s.guestOrderingEnabled))) ...[
+            const SizedBox(height: 12),
+            _GuestOrderRow(
+              enabled: _guestOrdering,
+              onChanged: (v) => setState(() => _guestOrdering = v),
+              onShowQr: _guestOrdering
+                  ? () => _showQr(context, widget.table!)
+                  : null,
             ),
           ],
         ],
@@ -664,6 +690,194 @@ class _ActiveRow extends StatelessWidget {
             _Switch(on: active),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Per-table opt-in for guest self-ordering, plus a QR shortcut once enabled
+/// (ADR-0027/0028). Only rendered when the venue master toggle is on.
+class _GuestOrderRow extends StatelessWidget {
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback? onShowQr;
+  const _GuestOrderRow({
+    required this.enabled,
+    required this.onChanged,
+    this.onShowQr,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () => onChanged(!enabled),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Icon(Icons.qr_code_2, size: 18, color: sc.accent),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Pesanan mandiri',
+                            style: SatType.sans(
+                              size: 14,
+                              weight: FontWeight.w600,
+                              color: sc.textHi,
+                            )),
+                        const SizedBox(height: 2),
+                        Text('Tamu pindai QR meja untuk pesan sendiri.',
+                            style: SatType.sans(size: 12, color: sc.textMd)),
+                      ],
+                    ),
+                  ),
+                  _Switch(on: enabled),
+                ],
+              ),
+            ),
+          ),
+          if (onShowQr != null) ...[
+            Divider(height: 1, color: sc.border1),
+            InkWell(
+              onTap: onShowQr,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.qr_code, size: 16, color: sc.accent),
+                    const SizedBox(width: 8),
+                    Text('Tampilkan QR meja',
+                        style: SatType.sans(
+                            size: 13,
+                            weight: FontWeight.w600,
+                            color: sc.accent)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Renders the table's guest QR (`http://<lan-ip>:8080/t/<id>`) for a guest to
+/// scan. Reads the live LAN address; warns prominently if it can't be resolved
+/// or reminds that printed copies die when the server IP drifts (ADR-0027).
+class _QrDialog extends ConsumerWidget {
+  final VenueTable table;
+  const _QrDialog({required this.table});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final net = ref.watch(guestNetInfoProvider);
+    return Dialog(
+      backgroundColor: sc.bg1,
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('QR Meja ${table.displayName}',
+                style: SatType.sans(
+                    size: 16, weight: FontWeight.w700, color: sc.textHi)),
+            const SizedBox(height: 16),
+            net.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(40),
+                child: CircularProgressIndicator(),
+              ),
+              error: (_, _) => _warn(sc, 'Gagal mendeteksi alamat server.'),
+              data: (info) {
+                final base = info.guestBaseUrl;
+                if (base == null) {
+                  return _warn(
+                      sc,
+                      'Server tidak terhubung Wi-Fi. Sambungkan ke jaringan '
+                      'lalu coba lagi.');
+                }
+                final url = '$base/t/${table.id}';
+                return Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: QrImageView(
+                        data: url,
+                        size: 220,
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SelectableText(url,
+                        textAlign: TextAlign.center,
+                        style: SatType.mono(size: 12, color: sc.textMd)),
+                    const SizedBox(height: 12),
+                    _warn(
+                      sc,
+                      'PENTING: cetak ulang QR jika alamat di atas berubah — '
+                      'salinan lama akan mati saat IP server berganti.',
+                      warn: true,
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Tutup',
+                    style: SatType.sans(size: 14, color: sc.accent)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _warn(SatColors sc, String text, {bool warn = false}) {
+    final c = warn ? sc.warn : sc.urgent;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.12),
+        border: Border.all(color: c.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(warn ? Icons.warning_amber_rounded : Icons.wifi_off,
+              size: 17, color: c),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: SatType.sans(size: 12, color: sc.textHi, height: 1.4)),
+          ),
+        ],
       ),
     );
   }

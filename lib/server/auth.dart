@@ -10,6 +10,14 @@ import 'package:uuid/uuid.dart';
 
 import 'db/database.dart';
 
+/// The claims carried by a guest self-order token (ADR-0027): the table whose
+/// QR was scanned and the live visit the order hangs off. No user identity.
+class GuestClaims {
+  const GuestClaims({required this.tableId, required this.visitId});
+  final String tableId;
+  final String visitId;
+}
+
 /// Server-side auth helpers. Verifies PINs, issues HS256 JWTs, validates
 /// bearer tokens, persists sessions for revocation.
 class ServerAuth {
@@ -18,6 +26,10 @@ class ServerAuth {
   final String secret;
 
   static const tokenTtl = Duration(hours: 12);
+
+  /// Guest self-order tokens live 2h — long enough for a meal, short enough
+  /// that a photographed QR can't order indefinitely. See ADR-0027.
+  static const guestTokenTtl = Duration(hours: 2);
 
   String hashPin(String pin) =>
       sha256.convert(utf8.encode('satset.v1::$pin')).toString();
@@ -142,6 +154,44 @@ class ServerAuth {
       issuedAt: now,
       expiresAt: expiry,
     );
+  }
+
+  /// Mint a table-scoped guest self-order token (ADR-0027). HS256, `scope:
+  /// guest`, 2h TTL, bound to one table's live visit. Stateless — **no session
+  /// row** is written, so it can never satisfy [resolveBearer] (the staff path
+  /// requires a session): a guest token is structurally barred from staff
+  /// endpoints. Validated by signature + scope + expiry; the visit's open
+  /// state is re-checked at order time.
+  String mintGuestToken({required String tableId, required String visitId}) {
+    final now = DateTime.now();
+    final expiry = now.add(guestTokenTtl);
+    final jwt = JWT({
+      'scope': 'guest',
+      'tableId': tableId,
+      'visitId': visitId,
+      'iat': now.millisecondsSinceEpoch ~/ 1000,
+      'exp': expiry.millisecondsSinceEpoch ~/ 1000,
+    });
+    return jwt.sign(SecretKey(secret));
+  }
+
+  /// Resolve a guest token to its claims, or null when missing, expired,
+  /// malformed, or not a `guest`-scope token. Never yields a staff identity.
+  GuestClaims? resolveGuest(String? token) {
+    if (token == null || token.isEmpty) return null;
+    final JWT decoded;
+    try {
+      decoded = JWT.verify(token, SecretKey(secret));
+    } catch (_) {
+      return null;
+    }
+    final payload = decoded.payload;
+    if (payload is! Map) return null;
+    if (payload['scope'] != 'guest') return null;
+    final tableId = payload['tableId'];
+    final visitId = payload['visitId'];
+    if (tableId is! String || visitId is! String) return null;
+    return GuestClaims(tableId: tableId, visitId: visitId);
   }
 
   static const adminRoleId = 'role-admin';

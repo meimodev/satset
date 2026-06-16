@@ -8,7 +8,15 @@ class AdminEmbeddedStrip extends StatelessWidget {
   final String title;
   final String sub;
   final Widget? trailing;
-  const AdminEmbeddedStrip({super.key, required this.title, required this.sub, this.trailing});
+
+  /// Optional indicator rendered before the [sub] line (e.g. a freshness dot).
+  final Widget? subLeading;
+  const AdminEmbeddedStrip(
+      {super.key,
+      required this.title,
+      required this.sub,
+      this.trailing,
+      this.subLeading});
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +40,22 @@ class AdminEmbeddedStrip extends StatelessWidget {
                       color: sc.textHi,
                     )),
                 const SizedBox(height: 4),
-                Text(sub.toUpperCase(),
-                    style: SatType.mono(
-                      size: 11,
-                      color: sc.textLo,
-                      letterSpacing: 0.66,
-                    )),
+                Row(
+                  children: [
+                    if (subLeading != null) ...[
+                      subLeading!,
+                      const SizedBox(width: 6),
+                    ],
+                    Flexible(
+                      child: Text(sub.toUpperCase(),
+                          style: SatType.mono(
+                            size: 11,
+                            color: sc.textLo,
+                            letterSpacing: 0.66,
+                          )),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -52,6 +70,9 @@ class AdminPage extends StatelessWidget {
   final String title;
   final String sub;
   final Widget? topTrailing;
+
+  /// Optional indicator rendered before the [sub] line.
+  final Widget? subLeading;
   final List<Widget> children;
   final EdgeInsets padding;
   const AdminPage({
@@ -59,6 +80,7 @@ class AdminPage extends StatelessWidget {
     required this.title,
     required this.sub,
     this.topTrailing,
+    this.subLeading,
     required this.children,
     this.padding = const EdgeInsets.fromLTRB(28, 24, 28, 28),
   });
@@ -68,7 +90,8 @@ class AdminPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AdminEmbeddedStrip(title: title, sub: sub, trailing: topTrailing),
+        AdminEmbeddedStrip(
+            title: title, sub: sub, trailing: topTrailing, subLeading: subLeading),
         Expanded(
           child: SingleChildScrollView(
             padding: padding,
