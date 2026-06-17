@@ -8282,6 +8282,87 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _receiptTaglineMeta = const VerificationMeta(
+    'receiptTagline',
+  );
+  @override
+  late final GeneratedColumn<String> receiptTagline = GeneratedColumn<String>(
+    'receipt_tagline',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _receiptSocialMeta = const VerificationMeta(
+    'receiptSocial',
+  );
+  @override
+  late final GeneratedColumn<String> receiptSocial = GeneratedColumn<String>(
+    'receipt_social',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _receiptThankYouMeta = const VerificationMeta(
+    'receiptThankYou',
+  );
+  @override
+  late final GeneratedColumn<String> receiptThankYou = GeneratedColumn<String>(
+    'receipt_thank_you',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _receiptQrUrlMeta = const VerificationMeta(
+    'receiptQrUrl',
+  );
+  @override
+  late final GeneratedColumn<String> receiptQrUrl = GeneratedColumn<String>(
+    'receipt_qr_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _receiptQrCaptionMeta = const VerificationMeta(
+    'receiptQrCaption',
+  );
+  @override
+  late final GeneratedColumn<String> receiptQrCaption = GeneratedColumn<String>(
+    'receipt_qr_caption',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _logoMeta = const VerificationMeta('logo');
+  @override
+  late final GeneratedColumn<Uint8List> logo = GeneratedColumn<Uint8List>(
+    'logo',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _logoRevMeta = const VerificationMeta(
+    'logoRev',
+  );
+  @override
+  late final GeneratedColumn<int> logoRev = GeneratedColumn<int>(
+    'logo_rev',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _taxEnabledMeta = const VerificationMeta(
     'taxEnabled',
   );
@@ -8405,6 +8486,13 @@ class $VenueSettingsTable extends VenueSettings
     phone,
     receiptHeader,
     receiptFooter,
+    receiptTagline,
+    receiptSocial,
+    receiptThankYou,
+    receiptQrUrl,
+    receiptQrCaption,
+    logo,
+    logoRev,
     taxEnabled,
     taxRateBps,
     serviceEnabled,
@@ -8475,6 +8563,63 @@ class $VenueSettingsTable extends VenueSettings
           data['receipt_footer']!,
           _receiptFooterMeta,
         ),
+      );
+    }
+    if (data.containsKey('receipt_tagline')) {
+      context.handle(
+        _receiptTaglineMeta,
+        receiptTagline.isAcceptableOrUnknown(
+          data['receipt_tagline']!,
+          _receiptTaglineMeta,
+        ),
+      );
+    }
+    if (data.containsKey('receipt_social')) {
+      context.handle(
+        _receiptSocialMeta,
+        receiptSocial.isAcceptableOrUnknown(
+          data['receipt_social']!,
+          _receiptSocialMeta,
+        ),
+      );
+    }
+    if (data.containsKey('receipt_thank_you')) {
+      context.handle(
+        _receiptThankYouMeta,
+        receiptThankYou.isAcceptableOrUnknown(
+          data['receipt_thank_you']!,
+          _receiptThankYouMeta,
+        ),
+      );
+    }
+    if (data.containsKey('receipt_qr_url')) {
+      context.handle(
+        _receiptQrUrlMeta,
+        receiptQrUrl.isAcceptableOrUnknown(
+          data['receipt_qr_url']!,
+          _receiptQrUrlMeta,
+        ),
+      );
+    }
+    if (data.containsKey('receipt_qr_caption')) {
+      context.handle(
+        _receiptQrCaptionMeta,
+        receiptQrCaption.isAcceptableOrUnknown(
+          data['receipt_qr_caption']!,
+          _receiptQrCaptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('logo')) {
+      context.handle(
+        _logoMeta,
+        logo.isAcceptableOrUnknown(data['logo']!, _logoMeta),
+      );
+    }
+    if (data.containsKey('logo_rev')) {
+      context.handle(
+        _logoRevMeta,
+        logoRev.isAcceptableOrUnknown(data['logo_rev']!, _logoRevMeta),
       );
     }
     if (data.containsKey('tax_enabled')) {
@@ -8592,6 +8737,34 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.string,
         data['${effectivePrefix}receipt_footer'],
       )!,
+      receiptTagline: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_tagline'],
+      )!,
+      receiptSocial: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_social'],
+      )!,
+      receiptThankYou: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_thank_you'],
+      )!,
+      receiptQrUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_qr_url'],
+      )!,
+      receiptQrCaption: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_qr_caption'],
+      )!,
+      logo: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}logo'],
+      ),
+      logoRev: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}logo_rev'],
+      )!,
       taxEnabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}tax_enabled'],
@@ -8645,6 +8818,29 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   final String phone;
   final String receiptHeader;
   final String receiptFooter;
+
+  /// Receipt branding block (ADR-0033) — one shared block stamped on every
+  /// document. Short slogan under the venue name, plus a website/social handle
+  /// line in the header.
+  final String receiptTagline;
+  final String receiptSocial;
+
+  /// Closing sign-off (was a hardcoded "Terima kasih"). Empty ⇒ renderers fall
+  /// back to "Terima kasih".
+  final String receiptThankYou;
+
+  /// Footer QR (money docs only): a free-form URL + a short caption.
+  final String receiptQrUrl;
+  final String receiptQrCaption;
+
+  /// Optional logo as a JPEG blob. Null = no logo (header is text-only). Read
+  /// ONLY by the logo route — never selected into the settings JSON snapshot.
+  /// Mirrors the menu-photo pattern (ADR-0014 / ADR-0033).
+  final Uint8List? logo;
+
+  /// Monotonic revision bumped on every logo write/clear. Rides the settings
+  /// JSON (the bytes do not) so clients cache-bust by `logoRev`.
+  final int logoRev;
   final bool taxEnabled;
   final int taxRateBps;
   final bool serviceEnabled;
@@ -8674,6 +8870,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.phone,
     required this.receiptHeader,
     required this.receiptFooter,
+    required this.receiptTagline,
+    required this.receiptSocial,
+    required this.receiptThankYou,
+    required this.receiptQrUrl,
+    required this.receiptQrCaption,
+    this.logo,
+    required this.logoRev,
     required this.taxEnabled,
     required this.taxRateBps,
     required this.serviceEnabled,
@@ -8694,6 +8897,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['phone'] = Variable<String>(phone);
     map['receipt_header'] = Variable<String>(receiptHeader);
     map['receipt_footer'] = Variable<String>(receiptFooter);
+    map['receipt_tagline'] = Variable<String>(receiptTagline);
+    map['receipt_social'] = Variable<String>(receiptSocial);
+    map['receipt_thank_you'] = Variable<String>(receiptThankYou);
+    map['receipt_qr_url'] = Variable<String>(receiptQrUrl);
+    map['receipt_qr_caption'] = Variable<String>(receiptQrCaption);
+    if (!nullToAbsent || logo != null) {
+      map['logo'] = Variable<Uint8List>(logo);
+    }
+    map['logo_rev'] = Variable<int>(logoRev);
     map['tax_enabled'] = Variable<bool>(taxEnabled);
     map['tax_rate_bps'] = Variable<int>(taxRateBps);
     map['service_enabled'] = Variable<bool>(serviceEnabled);
@@ -8715,6 +8927,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       phone: Value(phone),
       receiptHeader: Value(receiptHeader),
       receiptFooter: Value(receiptFooter),
+      receiptTagline: Value(receiptTagline),
+      receiptSocial: Value(receiptSocial),
+      receiptThankYou: Value(receiptThankYou),
+      receiptQrUrl: Value(receiptQrUrl),
+      receiptQrCaption: Value(receiptQrCaption),
+      logo: logo == null && nullToAbsent ? const Value.absent() : Value(logo),
+      logoRev: Value(logoRev),
       taxEnabled: Value(taxEnabled),
       taxRateBps: Value(taxRateBps),
       serviceEnabled: Value(serviceEnabled),
@@ -8740,6 +8959,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       phone: serializer.fromJson<String>(json['phone']),
       receiptHeader: serializer.fromJson<String>(json['receiptHeader']),
       receiptFooter: serializer.fromJson<String>(json['receiptFooter']),
+      receiptTagline: serializer.fromJson<String>(json['receiptTagline']),
+      receiptSocial: serializer.fromJson<String>(json['receiptSocial']),
+      receiptThankYou: serializer.fromJson<String>(json['receiptThankYou']),
+      receiptQrUrl: serializer.fromJson<String>(json['receiptQrUrl']),
+      receiptQrCaption: serializer.fromJson<String>(json['receiptQrCaption']),
+      logo: serializer.fromJson<Uint8List?>(json['logo']),
+      logoRev: serializer.fromJson<int>(json['logoRev']),
       taxEnabled: serializer.fromJson<bool>(json['taxEnabled']),
       taxRateBps: serializer.fromJson<int>(json['taxRateBps']),
       serviceEnabled: serializer.fromJson<bool>(json['serviceEnabled']),
@@ -8766,6 +8992,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'phone': serializer.toJson<String>(phone),
       'receiptHeader': serializer.toJson<String>(receiptHeader),
       'receiptFooter': serializer.toJson<String>(receiptFooter),
+      'receiptTagline': serializer.toJson<String>(receiptTagline),
+      'receiptSocial': serializer.toJson<String>(receiptSocial),
+      'receiptThankYou': serializer.toJson<String>(receiptThankYou),
+      'receiptQrUrl': serializer.toJson<String>(receiptQrUrl),
+      'receiptQrCaption': serializer.toJson<String>(receiptQrCaption),
+      'logo': serializer.toJson<Uint8List?>(logo),
+      'logoRev': serializer.toJson<int>(logoRev),
       'taxEnabled': serializer.toJson<bool>(taxEnabled),
       'taxRateBps': serializer.toJson<int>(taxRateBps),
       'serviceEnabled': serializer.toJson<bool>(serviceEnabled),
@@ -8786,6 +9019,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     String? phone,
     String? receiptHeader,
     String? receiptFooter,
+    String? receiptTagline,
+    String? receiptSocial,
+    String? receiptThankYou,
+    String? receiptQrUrl,
+    String? receiptQrCaption,
+    Value<Uint8List?> logo = const Value.absent(),
+    int? logoRev,
     bool? taxEnabled,
     int? taxRateBps,
     bool? serviceEnabled,
@@ -8803,6 +9043,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     phone: phone ?? this.phone,
     receiptHeader: receiptHeader ?? this.receiptHeader,
     receiptFooter: receiptFooter ?? this.receiptFooter,
+    receiptTagline: receiptTagline ?? this.receiptTagline,
+    receiptSocial: receiptSocial ?? this.receiptSocial,
+    receiptThankYou: receiptThankYou ?? this.receiptThankYou,
+    receiptQrUrl: receiptQrUrl ?? this.receiptQrUrl,
+    receiptQrCaption: receiptQrCaption ?? this.receiptQrCaption,
+    logo: logo.present ? logo.value : this.logo,
+    logoRev: logoRev ?? this.logoRev,
     taxEnabled: taxEnabled ?? this.taxEnabled,
     taxRateBps: taxRateBps ?? this.taxRateBps,
     serviceEnabled: serviceEnabled ?? this.serviceEnabled,
@@ -8828,6 +9075,23 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       receiptFooter: data.receiptFooter.present
           ? data.receiptFooter.value
           : this.receiptFooter,
+      receiptTagline: data.receiptTagline.present
+          ? data.receiptTagline.value
+          : this.receiptTagline,
+      receiptSocial: data.receiptSocial.present
+          ? data.receiptSocial.value
+          : this.receiptSocial,
+      receiptThankYou: data.receiptThankYou.present
+          ? data.receiptThankYou.value
+          : this.receiptThankYou,
+      receiptQrUrl: data.receiptQrUrl.present
+          ? data.receiptQrUrl.value
+          : this.receiptQrUrl,
+      receiptQrCaption: data.receiptQrCaption.present
+          ? data.receiptQrCaption.value
+          : this.receiptQrCaption,
+      logo: data.logo.present ? data.logo.value : this.logo,
+      logoRev: data.logoRev.present ? data.logoRev.value : this.logoRev,
       taxEnabled: data.taxEnabled.present
           ? data.taxEnabled.value
           : this.taxEnabled,
@@ -8868,6 +9132,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('phone: $phone, ')
           ..write('receiptHeader: $receiptHeader, ')
           ..write('receiptFooter: $receiptFooter, ')
+          ..write('receiptTagline: $receiptTagline, ')
+          ..write('receiptSocial: $receiptSocial, ')
+          ..write('receiptThankYou: $receiptThankYou, ')
+          ..write('receiptQrUrl: $receiptQrUrl, ')
+          ..write('receiptQrCaption: $receiptQrCaption, ')
+          ..write('logo: $logo, ')
+          ..write('logoRev: $logoRev, ')
           ..write('taxEnabled: $taxEnabled, ')
           ..write('taxRateBps: $taxRateBps, ')
           ..write('serviceEnabled: $serviceEnabled, ')
@@ -8882,7 +9153,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     displayName,
     legalName,
@@ -8890,6 +9161,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     phone,
     receiptHeader,
     receiptFooter,
+    receiptTagline,
+    receiptSocial,
+    receiptThankYou,
+    receiptQrUrl,
+    receiptQrCaption,
+    $driftBlobEquality.hash(logo),
+    logoRev,
     taxEnabled,
     taxRateBps,
     serviceEnabled,
@@ -8899,7 +9177,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     businessDayStartHour,
     prepTargetMins,
     guestOrderingEnabled,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -8911,6 +9189,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.phone == this.phone &&
           other.receiptHeader == this.receiptHeader &&
           other.receiptFooter == this.receiptFooter &&
+          other.receiptTagline == this.receiptTagline &&
+          other.receiptSocial == this.receiptSocial &&
+          other.receiptThankYou == this.receiptThankYou &&
+          other.receiptQrUrl == this.receiptQrUrl &&
+          other.receiptQrCaption == this.receiptQrCaption &&
+          $driftBlobEquality.equals(other.logo, this.logo) &&
+          other.logoRev == this.logoRev &&
           other.taxEnabled == this.taxEnabled &&
           other.taxRateBps == this.taxRateBps &&
           other.serviceEnabled == this.serviceEnabled &&
@@ -8930,6 +9215,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<String> phone;
   final Value<String> receiptHeader;
   final Value<String> receiptFooter;
+  final Value<String> receiptTagline;
+  final Value<String> receiptSocial;
+  final Value<String> receiptThankYou;
+  final Value<String> receiptQrUrl;
+  final Value<String> receiptQrCaption;
+  final Value<Uint8List?> logo;
+  final Value<int> logoRev;
   final Value<bool> taxEnabled;
   final Value<int> taxRateBps;
   final Value<bool> serviceEnabled;
@@ -8948,6 +9240,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.phone = const Value.absent(),
     this.receiptHeader = const Value.absent(),
     this.receiptFooter = const Value.absent(),
+    this.receiptTagline = const Value.absent(),
+    this.receiptSocial = const Value.absent(),
+    this.receiptThankYou = const Value.absent(),
+    this.receiptQrUrl = const Value.absent(),
+    this.receiptQrCaption = const Value.absent(),
+    this.logo = const Value.absent(),
+    this.logoRev = const Value.absent(),
     this.taxEnabled = const Value.absent(),
     this.taxRateBps = const Value.absent(),
     this.serviceEnabled = const Value.absent(),
@@ -8967,6 +9266,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.phone = const Value.absent(),
     this.receiptHeader = const Value.absent(),
     this.receiptFooter = const Value.absent(),
+    this.receiptTagline = const Value.absent(),
+    this.receiptSocial = const Value.absent(),
+    this.receiptThankYou = const Value.absent(),
+    this.receiptQrUrl = const Value.absent(),
+    this.receiptQrCaption = const Value.absent(),
+    this.logo = const Value.absent(),
+    this.logoRev = const Value.absent(),
     this.taxEnabled = const Value.absent(),
     this.taxRateBps = const Value.absent(),
     this.serviceEnabled = const Value.absent(),
@@ -8986,6 +9292,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<String>? phone,
     Expression<String>? receiptHeader,
     Expression<String>? receiptFooter,
+    Expression<String>? receiptTagline,
+    Expression<String>? receiptSocial,
+    Expression<String>? receiptThankYou,
+    Expression<String>? receiptQrUrl,
+    Expression<String>? receiptQrCaption,
+    Expression<Uint8List>? logo,
+    Expression<int>? logoRev,
     Expression<bool>? taxEnabled,
     Expression<int>? taxRateBps,
     Expression<bool>? serviceEnabled,
@@ -9005,6 +9318,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (phone != null) 'phone': phone,
       if (receiptHeader != null) 'receipt_header': receiptHeader,
       if (receiptFooter != null) 'receipt_footer': receiptFooter,
+      if (receiptTagline != null) 'receipt_tagline': receiptTagline,
+      if (receiptSocial != null) 'receipt_social': receiptSocial,
+      if (receiptThankYou != null) 'receipt_thank_you': receiptThankYou,
+      if (receiptQrUrl != null) 'receipt_qr_url': receiptQrUrl,
+      if (receiptQrCaption != null) 'receipt_qr_caption': receiptQrCaption,
+      if (logo != null) 'logo': logo,
+      if (logoRev != null) 'logo_rev': logoRev,
       if (taxEnabled != null) 'tax_enabled': taxEnabled,
       if (taxRateBps != null) 'tax_rate_bps': taxRateBps,
       if (serviceEnabled != null) 'service_enabled': serviceEnabled,
@@ -9029,6 +9349,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<String>? phone,
     Value<String>? receiptHeader,
     Value<String>? receiptFooter,
+    Value<String>? receiptTagline,
+    Value<String>? receiptSocial,
+    Value<String>? receiptThankYou,
+    Value<String>? receiptQrUrl,
+    Value<String>? receiptQrCaption,
+    Value<Uint8List?>? logo,
+    Value<int>? logoRev,
     Value<bool>? taxEnabled,
     Value<int>? taxRateBps,
     Value<bool>? serviceEnabled,
@@ -9048,6 +9375,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       phone: phone ?? this.phone,
       receiptHeader: receiptHeader ?? this.receiptHeader,
       receiptFooter: receiptFooter ?? this.receiptFooter,
+      receiptTagline: receiptTagline ?? this.receiptTagline,
+      receiptSocial: receiptSocial ?? this.receiptSocial,
+      receiptThankYou: receiptThankYou ?? this.receiptThankYou,
+      receiptQrUrl: receiptQrUrl ?? this.receiptQrUrl,
+      receiptQrCaption: receiptQrCaption ?? this.receiptQrCaption,
+      logo: logo ?? this.logo,
+      logoRev: logoRev ?? this.logoRev,
       taxEnabled: taxEnabled ?? this.taxEnabled,
       taxRateBps: taxRateBps ?? this.taxRateBps,
       serviceEnabled: serviceEnabled ?? this.serviceEnabled,
@@ -9084,6 +9418,27 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     }
     if (receiptFooter.present) {
       map['receipt_footer'] = Variable<String>(receiptFooter.value);
+    }
+    if (receiptTagline.present) {
+      map['receipt_tagline'] = Variable<String>(receiptTagline.value);
+    }
+    if (receiptSocial.present) {
+      map['receipt_social'] = Variable<String>(receiptSocial.value);
+    }
+    if (receiptThankYou.present) {
+      map['receipt_thank_you'] = Variable<String>(receiptThankYou.value);
+    }
+    if (receiptQrUrl.present) {
+      map['receipt_qr_url'] = Variable<String>(receiptQrUrl.value);
+    }
+    if (receiptQrCaption.present) {
+      map['receipt_qr_caption'] = Variable<String>(receiptQrCaption.value);
+    }
+    if (logo.present) {
+      map['logo'] = Variable<Uint8List>(logo.value);
+    }
+    if (logoRev.present) {
+      map['logo_rev'] = Variable<int>(logoRev.value);
     }
     if (taxEnabled.present) {
       map['tax_enabled'] = Variable<bool>(taxEnabled.value);
@@ -9132,6 +9487,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('phone: $phone, ')
           ..write('receiptHeader: $receiptHeader, ')
           ..write('receiptFooter: $receiptFooter, ')
+          ..write('receiptTagline: $receiptTagline, ')
+          ..write('receiptSocial: $receiptSocial, ')
+          ..write('receiptThankYou: $receiptThankYou, ')
+          ..write('receiptQrUrl: $receiptQrUrl, ')
+          ..write('receiptQrCaption: $receiptQrCaption, ')
+          ..write('logo: $logo, ')
+          ..write('logoRev: $logoRev, ')
           ..write('taxEnabled: $taxEnabled, ')
           ..write('taxRateBps: $taxRateBps, ')
           ..write('serviceEnabled: $serviceEnabled, ')
@@ -19843,6 +20205,13 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<String> phone,
       Value<String> receiptHeader,
       Value<String> receiptFooter,
+      Value<String> receiptTagline,
+      Value<String> receiptSocial,
+      Value<String> receiptThankYou,
+      Value<String> receiptQrUrl,
+      Value<String> receiptQrCaption,
+      Value<Uint8List?> logo,
+      Value<int> logoRev,
       Value<bool> taxEnabled,
       Value<int> taxRateBps,
       Value<bool> serviceEnabled,
@@ -19863,6 +20232,13 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<String> phone,
       Value<String> receiptHeader,
       Value<String> receiptFooter,
+      Value<String> receiptTagline,
+      Value<String> receiptSocial,
+      Value<String> receiptThankYou,
+      Value<String> receiptQrUrl,
+      Value<String> receiptQrCaption,
+      Value<Uint8List?> logo,
+      Value<int> logoRev,
       Value<bool> taxEnabled,
       Value<int> taxRateBps,
       Value<bool> serviceEnabled,
@@ -19916,6 +20292,41 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<String> get receiptFooter => $composableBuilder(
     column: $table.receiptFooter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptTagline => $composableBuilder(
+    column: $table.receiptTagline,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptSocial => $composableBuilder(
+    column: $table.receiptSocial,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptThankYou => $composableBuilder(
+    column: $table.receiptThankYou,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptQrUrl => $composableBuilder(
+    column: $table.receiptQrUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptQrCaption => $composableBuilder(
+    column: $table.receiptQrCaption,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get logo => $composableBuilder(
+    column: $table.logo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get logoRev => $composableBuilder(
+    column: $table.logoRev,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -20009,6 +20420,41 @@ class $$VenueSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get receiptTagline => $composableBuilder(
+    column: $table.receiptTagline,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptSocial => $composableBuilder(
+    column: $table.receiptSocial,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptThankYou => $composableBuilder(
+    column: $table.receiptThankYou,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptQrUrl => $composableBuilder(
+    column: $table.receiptQrUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptQrCaption => $composableBuilder(
+    column: $table.receiptQrCaption,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get logo => $composableBuilder(
+    column: $table.logo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get logoRev => $composableBuilder(
+    column: $table.logoRev,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get taxEnabled => $composableBuilder(
     column: $table.taxEnabled,
     builder: (column) => ColumnOrderings(column),
@@ -20090,6 +20536,37 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.receiptFooter,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get receiptTagline => $composableBuilder(
+    column: $table.receiptTagline,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get receiptSocial => $composableBuilder(
+    column: $table.receiptSocial,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get receiptThankYou => $composableBuilder(
+    column: $table.receiptThankYou,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get receiptQrUrl => $composableBuilder(
+    column: $table.receiptQrUrl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get receiptQrCaption => $composableBuilder(
+    column: $table.receiptQrCaption,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get logo =>
+      $composableBuilder(column: $table.logo, builder: (column) => column);
+
+  GeneratedColumn<int> get logoRev =>
+      $composableBuilder(column: $table.logoRev, builder: (column) => column);
 
   GeneratedColumn<bool> get taxEnabled => $composableBuilder(
     column: $table.taxEnabled,
@@ -20175,6 +20652,13 @@ class $$VenueSettingsTableTableManager
                 Value<String> phone = const Value.absent(),
                 Value<String> receiptHeader = const Value.absent(),
                 Value<String> receiptFooter = const Value.absent(),
+                Value<String> receiptTagline = const Value.absent(),
+                Value<String> receiptSocial = const Value.absent(),
+                Value<String> receiptThankYou = const Value.absent(),
+                Value<String> receiptQrUrl = const Value.absent(),
+                Value<String> receiptQrCaption = const Value.absent(),
+                Value<Uint8List?> logo = const Value.absent(),
+                Value<int> logoRev = const Value.absent(),
                 Value<bool> taxEnabled = const Value.absent(),
                 Value<int> taxRateBps = const Value.absent(),
                 Value<bool> serviceEnabled = const Value.absent(),
@@ -20193,6 +20677,13 @@ class $$VenueSettingsTableTableManager
                 phone: phone,
                 receiptHeader: receiptHeader,
                 receiptFooter: receiptFooter,
+                receiptTagline: receiptTagline,
+                receiptSocial: receiptSocial,
+                receiptThankYou: receiptThankYou,
+                receiptQrUrl: receiptQrUrl,
+                receiptQrCaption: receiptQrCaption,
+                logo: logo,
+                logoRev: logoRev,
                 taxEnabled: taxEnabled,
                 taxRateBps: taxRateBps,
                 serviceEnabled: serviceEnabled,
@@ -20213,6 +20704,13 @@ class $$VenueSettingsTableTableManager
                 Value<String> phone = const Value.absent(),
                 Value<String> receiptHeader = const Value.absent(),
                 Value<String> receiptFooter = const Value.absent(),
+                Value<String> receiptTagline = const Value.absent(),
+                Value<String> receiptSocial = const Value.absent(),
+                Value<String> receiptThankYou = const Value.absent(),
+                Value<String> receiptQrUrl = const Value.absent(),
+                Value<String> receiptQrCaption = const Value.absent(),
+                Value<Uint8List?> logo = const Value.absent(),
+                Value<int> logoRev = const Value.absent(),
                 Value<bool> taxEnabled = const Value.absent(),
                 Value<int> taxRateBps = const Value.absent(),
                 Value<bool> serviceEnabled = const Value.absent(),
@@ -20231,6 +20729,13 @@ class $$VenueSettingsTableTableManager
                 phone: phone,
                 receiptHeader: receiptHeader,
                 receiptFooter: receiptFooter,
+                receiptTagline: receiptTagline,
+                receiptSocial: receiptSocial,
+                receiptThankYou: receiptThankYou,
+                receiptQrUrl: receiptQrUrl,
+                receiptQrCaption: receiptQrCaption,
+                logo: logo,
+                logoRev: logoRev,
                 taxEnabled: taxEnabled,
                 taxRateBps: taxRateBps,
                 serviceEnabled: serviceEnabled,

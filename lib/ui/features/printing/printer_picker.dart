@@ -75,14 +75,20 @@ Future<void> printTableStruk({
     context,
     PrintJob(
       subtitle: 'Cetak struk Meja ${table.displayName}',
-      renderBytes: () => StrukRenderer.render(StrukBuilder.fromTable(
-        venue: ref.read(venueSettingsProvider),
-        tableLabel: table.displayName,
-        pax: table.pax,
-        guestName: table.guestName ?? '',
-        guestNote: table.guestNotes ?? '',
-        tickets: printable,
-      )),
+      renderBytes: () async {
+        final venue = ref.read(venueSettingsProvider);
+        final logo =
+            await ref.read(venueLogoBytesProvider(venue.logoRev).future);
+        return StrukRenderer.render(StrukBuilder.fromTable(
+          venue: venue,
+          tableLabel: table.displayName,
+          pax: table.pax,
+          guestName: table.guestName ?? '',
+          guestNote: table.guestNotes ?? '',
+          tickets: printable,
+          logoBytes: logo,
+        ));
+      },
       printVenue: (pid) =>
           ref.read(printersRepositoryProvider.notifier).printTable(table.id, pid),
     ),
@@ -113,11 +119,17 @@ Future<void> printBillStruk({
     context,
     PrintJob(
       subtitle: 'Cetak $what · $who',
-      renderBytes: () => BillStrukRenderer.render(BillStrukBuilder.fromBill(
-        bill: bill,
-        receipt: receipt,
-        venue: ref.read(venueSettingsProvider),
-      )),
+      renderBytes: () async {
+        final venue = ref.read(venueSettingsProvider);
+        final logo =
+            await ref.read(venueLogoBytesProvider(venue.logoRev).future);
+        return BillStrukRenderer.render(BillStrukBuilder.fromBill(
+          bill: bill,
+          receipt: receipt,
+          venue: venue,
+          logoBytes: logo,
+        ));
+      },
       printVenue: (pid) => receipt == null
           ? ref.read(settlementProvider.notifier).printBill(bill.visitId, pid)
           : ref.read(settlementProvider.notifier).printReceipt(receipt.id, pid),

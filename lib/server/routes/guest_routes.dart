@@ -38,7 +38,9 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (tableId == null || tableId.isEmpty) {
       return _err(400, 'missing table');
     }
-    final settings = await db.select(db.venueSettings).getSingleOrNull();
+    final settings = await (db.select(db.venueSettings)
+          ..where((s) => s.id.equals('default')))
+        .getSingleOrNull();
     if (settings == null || !settings.guestOrderingEnabled) {
       return _err(403, 'guest_ordering_disabled');
     }

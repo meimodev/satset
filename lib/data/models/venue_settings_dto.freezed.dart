@@ -27,7 +27,15 @@ mixin _$VenueSettingsDto {
   String get address => throw _privateConstructorUsedError;
   String get phone => throw _privateConstructorUsedError;
   String get receiptHeader => throw _privateConstructorUsedError;
-  String get receiptFooter => throw _privateConstructorUsedError;
+  String get receiptFooter =>
+      throw _privateConstructorUsedError; // Receipt branding block (ADR-0033). Logo bytes are NOT carried here — they
+  // ride the side-endpoint /venue/logo, cache-busted by logoRev.
+  String get receiptTagline => throw _privateConstructorUsedError;
+  String get receiptSocial => throw _privateConstructorUsedError;
+  String get receiptThankYou => throw _privateConstructorUsedError;
+  String get receiptQrUrl => throw _privateConstructorUsedError;
+  String get receiptQrCaption => throw _privateConstructorUsedError;
+  int get logoRev => throw _privateConstructorUsedError;
   bool get taxEnabled => throw _privateConstructorUsedError;
   int get taxRateBps => throw _privateConstructorUsedError;
   bool get serviceEnabled => throw _privateConstructorUsedError;
@@ -63,6 +71,12 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     String phone,
     String receiptHeader,
     String receiptFooter,
+    String receiptTagline,
+    String receiptSocial,
+    String receiptThankYou,
+    String receiptQrUrl,
+    String receiptQrCaption,
+    int logoRev,
     bool taxEnabled,
     int taxRateBps,
     bool serviceEnabled,
@@ -97,6 +111,12 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? phone = null,
     Object? receiptHeader = null,
     Object? receiptFooter = null,
+    Object? receiptTagline = null,
+    Object? receiptSocial = null,
+    Object? receiptThankYou = null,
+    Object? receiptQrUrl = null,
+    Object? receiptQrCaption = null,
+    Object? logoRev = null,
     Object? taxEnabled = null,
     Object? taxRateBps = null,
     Object? serviceEnabled = null,
@@ -137,6 +157,30 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.receiptFooter
                 : receiptFooter // ignore: cast_nullable_to_non_nullable
                       as String,
+            receiptTagline: null == receiptTagline
+                ? _value.receiptTagline
+                : receiptTagline // ignore: cast_nullable_to_non_nullable
+                      as String,
+            receiptSocial: null == receiptSocial
+                ? _value.receiptSocial
+                : receiptSocial // ignore: cast_nullable_to_non_nullable
+                      as String,
+            receiptThankYou: null == receiptThankYou
+                ? _value.receiptThankYou
+                : receiptThankYou // ignore: cast_nullable_to_non_nullable
+                      as String,
+            receiptQrUrl: null == receiptQrUrl
+                ? _value.receiptQrUrl
+                : receiptQrUrl // ignore: cast_nullable_to_non_nullable
+                      as String,
+            receiptQrCaption: null == receiptQrCaption
+                ? _value.receiptQrCaption
+                : receiptQrCaption // ignore: cast_nullable_to_non_nullable
+                      as String,
+            logoRev: null == logoRev
+                ? _value.logoRev
+                : logoRev // ignore: cast_nullable_to_non_nullable
+                      as int,
             taxEnabled: null == taxEnabled
                 ? _value.taxEnabled
                 : taxEnabled // ignore: cast_nullable_to_non_nullable
@@ -196,6 +240,12 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     String phone,
     String receiptHeader,
     String receiptFooter,
+    String receiptTagline,
+    String receiptSocial,
+    String receiptThankYou,
+    String receiptQrUrl,
+    String receiptQrCaption,
+    int logoRev,
     bool taxEnabled,
     int taxRateBps,
     bool serviceEnabled,
@@ -229,6 +279,12 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? phone = null,
     Object? receiptHeader = null,
     Object? receiptFooter = null,
+    Object? receiptTagline = null,
+    Object? receiptSocial = null,
+    Object? receiptThankYou = null,
+    Object? receiptQrUrl = null,
+    Object? receiptQrCaption = null,
+    Object? logoRev = null,
     Object? taxEnabled = null,
     Object? taxRateBps = null,
     Object? serviceEnabled = null,
@@ -269,6 +325,30 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.receiptFooter
             : receiptFooter // ignore: cast_nullable_to_non_nullable
                   as String,
+        receiptTagline: null == receiptTagline
+            ? _value.receiptTagline
+            : receiptTagline // ignore: cast_nullable_to_non_nullable
+                  as String,
+        receiptSocial: null == receiptSocial
+            ? _value.receiptSocial
+            : receiptSocial // ignore: cast_nullable_to_non_nullable
+                  as String,
+        receiptThankYou: null == receiptThankYou
+            ? _value.receiptThankYou
+            : receiptThankYou // ignore: cast_nullable_to_non_nullable
+                  as String,
+        receiptQrUrl: null == receiptQrUrl
+            ? _value.receiptQrUrl
+            : receiptQrUrl // ignore: cast_nullable_to_non_nullable
+                  as String,
+        receiptQrCaption: null == receiptQrCaption
+            ? _value.receiptQrCaption
+            : receiptQrCaption // ignore: cast_nullable_to_non_nullable
+                  as String,
+        logoRev: null == logoRev
+            ? _value.logoRev
+            : logoRev // ignore: cast_nullable_to_non_nullable
+                  as int,
         taxEnabled: null == taxEnabled
             ? _value.taxEnabled
             : taxEnabled // ignore: cast_nullable_to_non_nullable
@@ -321,6 +401,12 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.phone = '',
     this.receiptHeader = '',
     this.receiptFooter = '',
+    this.receiptTagline = '',
+    this.receiptSocial = '',
+    this.receiptThankYou = '',
+    this.receiptQrUrl = '',
+    this.receiptQrCaption = '',
+    this.logoRev = 0,
     this.taxEnabled = false,
     this.taxRateBps = 1100,
     this.serviceEnabled = false,
@@ -356,6 +442,26 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final String receiptFooter;
+  // Receipt branding block (ADR-0033). Logo bytes are NOT carried here — they
+  // ride the side-endpoint /venue/logo, cache-busted by logoRev.
+  @override
+  @JsonKey()
+  final String receiptTagline;
+  @override
+  @JsonKey()
+  final String receiptSocial;
+  @override
+  @JsonKey()
+  final String receiptThankYou;
+  @override
+  @JsonKey()
+  final String receiptQrUrl;
+  @override
+  @JsonKey()
+  final String receiptQrCaption;
+  @override
+  @JsonKey()
+  final int logoRev;
   @override
   @JsonKey()
   final bool taxEnabled;
@@ -386,7 +492,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, guestOrderingEnabled: $guestOrderingEnabled)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, guestOrderingEnabled: $guestOrderingEnabled)';
   }
 
   @override
@@ -405,6 +511,17 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
                 other.receiptHeader == receiptHeader) &&
             (identical(other.receiptFooter, receiptFooter) ||
                 other.receiptFooter == receiptFooter) &&
+            (identical(other.receiptTagline, receiptTagline) ||
+                other.receiptTagline == receiptTagline) &&
+            (identical(other.receiptSocial, receiptSocial) ||
+                other.receiptSocial == receiptSocial) &&
+            (identical(other.receiptThankYou, receiptThankYou) ||
+                other.receiptThankYou == receiptThankYou) &&
+            (identical(other.receiptQrUrl, receiptQrUrl) ||
+                other.receiptQrUrl == receiptQrUrl) &&
+            (identical(other.receiptQrCaption, receiptQrCaption) ||
+                other.receiptQrCaption == receiptQrCaption) &&
+            (identical(other.logoRev, logoRev) || other.logoRev == logoRev) &&
             (identical(other.taxEnabled, taxEnabled) ||
                 other.taxEnabled == taxEnabled) &&
             (identical(other.taxRateBps, taxRateBps) ||
@@ -427,7 +544,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     displayName,
@@ -436,6 +553,12 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     phone,
     receiptHeader,
     receiptFooter,
+    receiptTagline,
+    receiptSocial,
+    receiptThankYou,
+    receiptQrUrl,
+    receiptQrCaption,
+    logoRev,
     taxEnabled,
     taxRateBps,
     serviceEnabled,
@@ -445,7 +568,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     businessDayStartHour,
     prepTargetMins,
     guestOrderingEnabled,
-  );
+  ]);
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.
@@ -473,6 +596,12 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final String phone,
     final String receiptHeader,
     final String receiptFooter,
+    final String receiptTagline,
+    final String receiptSocial,
+    final String receiptThankYou,
+    final String receiptQrUrl,
+    final String receiptQrCaption,
+    final int logoRev,
     final bool taxEnabled,
     final int taxRateBps,
     final bool serviceEnabled,
@@ -500,7 +629,20 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   @override
   String get receiptHeader;
   @override
-  String get receiptFooter;
+  String get receiptFooter; // Receipt branding block (ADR-0033). Logo bytes are NOT carried here — they
+  // ride the side-endpoint /venue/logo, cache-busted by logoRev.
+  @override
+  String get receiptTagline;
+  @override
+  String get receiptSocial;
+  @override
+  String get receiptThankYou;
+  @override
+  String get receiptQrUrl;
+  @override
+  String get receiptQrCaption;
+  @override
+  int get logoRev;
   @override
   bool get taxEnabled;
   @override

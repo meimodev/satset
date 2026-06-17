@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -29,19 +31,19 @@ Future<PdfThemeBundle> pdfTheme() async {
     base: pw.Font.helvetica(),
     bold: pw.Font.helveticaBold(),
     italic: pw.Font.helveticaOblique(),
-  ).copyWith(
-    defaultTextStyle: pw.TextStyle(fontSize: 9, color: kPdfInk),
-  );
+  ).copyWith(defaultTextStyle: pw.TextStyle(fontSize: 9, color: kPdfInk));
   return PdfThemeBundle(base, serif, serifBold);
 }
 
-pw.PageTheme pdfPageTheme(PdfThemeBundle t) => pw.PageTheme(
-      pageFormat: PdfPageFormat.a4.copyWith(
-        marginLeft: 32,
-        marginRight: 32,
-        marginTop: 36,
-        marginBottom: 36,
-      ),
+pw.PageTheme pdfPageTheme(PdfThemeBundle t, {bool landscape = false}) =>
+    pw.PageTheme(
+      pageFormat: (landscape ? PdfPageFormat.a4.landscape : PdfPageFormat.a4)
+          .copyWith(
+            marginLeft: 32,
+            marginRight: 32,
+            marginTop: 36,
+            marginBottom: 36,
+          ),
       theme: t.base,
       buildBackground: (ctx) => pw.FullPage(
         ignoreMargins: true,
@@ -50,76 +52,142 @@ pw.PageTheme pdfPageTheme(PdfThemeBundle t) => pw.PageTheme(
     );
 
 pw.Widget pdfRunningHeader(String text) => pw.Container(
-      alignment: pw.Alignment.centerLeft,
-      margin: const pw.EdgeInsets.only(bottom: 8),
-      padding: const pw.EdgeInsets.only(bottom: 4),
-      decoration: const pw.BoxDecoration(
-        border: pw.Border(bottom: pw.BorderSide(color: kPdfBorder, width: 0.5)),
-      ),
-      child: pw.Text(text,
-          style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo)),
-    );
+  alignment: pw.Alignment.centerLeft,
+  margin: const pw.EdgeInsets.only(bottom: 8),
+  padding: const pw.EdgeInsets.only(bottom: 4),
+  decoration: const pw.BoxDecoration(
+    border: pw.Border(bottom: pw.BorderSide(color: kPdfBorder, width: 0.5)),
+  ),
+  child: pw.Text(text, style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo)),
+);
 
 pw.Widget pdfFooter(pw.Context ctx) => pw.Container(
-      alignment: pw.Alignment.centerRight,
-      margin: const pw.EdgeInsets.only(top: 8),
-      child: pw.Text(
-        'SatSet · Halaman ${ctx.pageNumber}/${ctx.pagesCount}',
-        style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo),
-      ),
-    );
+  alignment: pw.Alignment.centerRight,
+  margin: const pw.EdgeInsets.only(top: 8),
+  child: pw.Text(
+    'SatSet · Halaman ${ctx.pageNumber}/${ctx.pagesCount}',
+    style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo),
+  ),
+);
+
+/// Venue branding letterhead bundle (ADR-0033) threaded into the PDF exporters.
+/// Only the identity subset — never the customer footer/tagline/thank-you/QR.
+class PdfBranding {
+  final Uint8List? logoBytes;
+  final String venueName;
+  final String address;
+  final String phone;
+  const PdfBranding({
+    this.logoBytes,
+    this.venueName = '',
+    this.address = '',
+    this.phone = '',
+  });
+}
 
 pw.Widget pdfTitleBlock({
   required String title,
   required String subtitle,
   List<String> meta = const [],
+  // Venue branding letterhead (ADR-0033) — logo + identity above the title.
+  // Only the identity subset; never the customer footer/tagline/QR.
+  Uint8List? logoBytes,
+  String? venueName,
+  String? address,
+  String? phone,
 }) {
   // Resolve the display font from the document theme at build time.
-  return pw.Builder(builder: (ctx) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.only(bottom: 12),
-      decoration: const pw.BoxDecoration(
-        border:
-            pw.Border(bottom: pw.BorderSide(color: kPdfInk, width: 1.2)),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(title,
+  return pw.Builder(
+    builder: (ctx) {
+      final identity = [
+        if (venueName != null && venueName.trim().isNotEmpty) venueName.trim(),
+        if (address != null && address.trim().isNotEmpty) address.trim(),
+        if (phone != null && phone.trim().isNotEmpty) phone.trim(),
+      ];
+      final hasLetterhead = logoBytes != null || identity.isNotEmpty;
+      return pw.Container(
+        padding: const pw.EdgeInsets.only(bottom: 12),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(bottom: pw.BorderSide(color: kPdfInk, width: 1.2)),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (hasLetterhead) ...[
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  if (logoBytes != null) ...[
+                    pw.Image(pw.MemoryImage(logoBytes), height: 40),
+                    pw.SizedBox(width: 10),
+                  ],
+                  if (identity.isNotEmpty)
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          if (venueName != null &&
+                              venueName.trim().isNotEmpty)
+                            pw.Text(venueName.trim(),
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  color: kPdfInk,
+                                  fontWeight: pw.FontWeight.bold,
+                                )),
+                          for (final line in identity.skip(
+                              venueName != null && venueName.trim().isNotEmpty
+                                  ? 1
+                                  : 0))
+                            pw.Text(line,
+                                style: pw.TextStyle(
+                                    fontSize: 8, color: kPdfInkMd)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              pw.SizedBox(height: 10),
+            ],
+            pw.Text(
+              title,
               style: pw.TextStyle(
                 font: pw.Font.timesBold(),
                 fontSize: 22,
                 color: kPdfInk,
-              )),
-          pw.SizedBox(height: 2),
-          pw.Text(subtitle,
+              ),
+            ),
+            pw.SizedBox(height: 2),
+            pw.Text(
+              subtitle,
               style: pw.TextStyle(
-                  fontSize: 11,
-                  color: kPdfAccent,
-                  fontWeight: pw.FontWeight.bold)),
-          if (meta.isNotEmpty) ...[
-            pw.SizedBox(height: 6),
-            for (final m in meta)
-              pw.Text(m,
-                  style: pw.TextStyle(fontSize: 8, color: kPdfInkMd)),
+                fontSize: 11,
+                color: kPdfAccent,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            if (meta.isNotEmpty) ...[
+              pw.SizedBox(height: 6),
+              for (final m in meta)
+                pw.Text(m, style: pw.TextStyle(fontSize: 8, color: kPdfInkMd)),
+            ],
           ],
-        ],
-      ),
-    );
-  });
+        ),
+      );
+    },
+  );
 }
 
 pw.Widget pdfSectionTitle(String text) => pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          font: pw.Font.timesBold(),
-          fontSize: 13,
-          color: kPdfInk,
-        ),
-      ),
-    );
+  margin: const pw.EdgeInsets.only(bottom: 6),
+  child: pw.Text(
+    text,
+    style: pw.TextStyle(
+      font: pw.Font.timesBold(),
+      fontSize: 13,
+      color: kPdfInk,
+    ),
+  ),
+);
 
 /// Compact zebra table. Columns from [numericFrom] onward are right-aligned.
 pw.Widget pdfTable({
@@ -128,31 +196,37 @@ pw.Widget pdfTable({
   int numericFrom = 9999,
 }) {
   if (rows.isEmpty) {
-    return pw.Text('Tidak ada data.',
-        style: pw.TextStyle(
-            fontSize: 8.5,
-            color: kPdfInkLo,
-            fontStyle: pw.FontStyle.italic));
+    return pw.Text(
+      'Tidak ada data.',
+      style: pw.TextStyle(
+        fontSize: 8.5,
+        color: kPdfInkLo,
+        fontStyle: pw.FontStyle.italic,
+      ),
+    );
   }
 
   pw.Alignment alignOf(int col) =>
       col >= numericFrom ? pw.Alignment.centerRight : pw.Alignment.centerLeft;
 
-  pw.Widget cell(String text, int col,
-          {bool header = false, bool alt = false}) =>
-      pw.Container(
-        alignment: alignOf(col),
-        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        color: header ? kPdfHeadFill : (alt ? kPdfCream : kPdfCard),
-        child: pw.Text(
-          text,
-          style: pw.TextStyle(
-            fontSize: 8.5,
-            color: header ? kPdfInk : kPdfInkMd,
-            fontWeight: header ? pw.FontWeight.bold : pw.FontWeight.normal,
-          ),
-        ),
-      );
+  pw.Widget cell(
+    String text,
+    int col, {
+    bool header = false,
+    bool alt = false,
+  }) => pw.Container(
+    alignment: alignOf(col),
+    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+    color: header ? kPdfHeadFill : (alt ? kPdfCream : kPdfCard),
+    child: pw.Text(
+      text,
+      style: pw.TextStyle(
+        fontSize: 8.5,
+        color: header ? kPdfInk : kPdfInkMd,
+        fontWeight: header ? pw.FontWeight.bold : pw.FontWeight.normal,
+      ),
+    ),
+  );
 
   return pw.Table(
     border: pw.TableBorder.all(color: kPdfBorder, width: 0.5),

@@ -429,7 +429,13 @@ class ServerRuntime {
   /// `/guest/*` paths are never served the SPA — a 404 there stays a 404.
   Response _guestSpaHandler(Request req) {
     if (req.method != 'GET' || req.url.path.startsWith('guest/')) {
-      return Response.notFound('not found');
+      // Unmatched /guest/* (or non-GET): return JSON, never plaintext, so the
+      // SPA surfaces a code instead of choking on a non-JSON body.
+      SatLog.srv('guest unmatched ${req.method} /${req.url.path}');
+      return Response.notFound(
+        jsonEncode({'code': 'not_found'}),
+        headers: {'content-type': 'application/json'},
+      );
     }
     return Response.ok(guestAppHtml,
         headers: {'content-type': 'text/html; charset=utf-8'});

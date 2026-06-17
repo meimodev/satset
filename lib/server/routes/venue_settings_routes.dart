@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -77,6 +78,21 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         receiptFooter: body.containsKey('receiptFooter')
             ? Value((body['receiptFooter'] as String).trim())
             : const Value.absent(),
+        receiptTagline: body.containsKey('receiptTagline')
+            ? Value((body['receiptTagline'] as String).trim())
+            : const Value.absent(),
+        receiptSocial: body.containsKey('receiptSocial')
+            ? Value((body['receiptSocial'] as String).trim())
+            : const Value.absent(),
+        receiptThankYou: body.containsKey('receiptThankYou')
+            ? Value((body['receiptThankYou'] as String).trim())
+            : const Value.absent(),
+        receiptQrUrl: body.containsKey('receiptQrUrl')
+            ? Value((body['receiptQrUrl'] as String).trim())
+            : const Value.absent(),
+        receiptQrCaption: body.containsKey('receiptQrCaption')
+            ? Value((body['receiptQrCaption'] as String).trim())
+            : const Value.absent(),
         taxEnabled: body.containsKey('taxEnabled')
             ? Value(body['taxEnabled'] as bool)
             : const Value.absent(),
@@ -108,6 +124,58 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     );
     final row = await _readOrSeed(db);
     final payload = _toJson(row);
+    hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
+    return Response.ok(jsonEncode(payload),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // ---------- logo (binary side-endpoints, ADR-0033 / mirrors ADR-0014) ----------
+  // Bytes stay OUT of the settings JSON; the snapshot carries only logoRev.
+
+  // Stream the JPEG bytes. Ungated, matching the open GET /venue/settings.
+  r.get('/venue/logo', (Request req) async {
+    final row = await _readOrSeed(db);
+    if (row.logo == null) return Response.notFound('no logo');
+    return Response.ok(row.logo, headers: {
+      'content-type': 'image/jpeg',
+      'cache-control': 'no-cache',
+    });
+  });
+
+  // Replace the logo. Body = raw JPEG bytes. Bumps logoRev, broadcasts.
+  r.put('/venue/logo', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.editSettings);
+    if (denied != null) return denied;
+    final row = await _readOrSeed(db);
+    final builder = await req
+        .read()
+        .fold<BytesBuilder>(BytesBuilder(), (b, chunk) => b..add(chunk));
+    final bytes = builder.takeBytes();
+    if (bytes.isEmpty) return Response(400, body: 'empty body');
+    await (db.update(db.venueSettings)..where((t) => t.id.equals(_singletonId)))
+        .write(VenueSettingsCompanion(
+      logo: Value(bytes),
+      logoRev: Value(row.logoRev + 1),
+    ));
+    final updated = await _readOrSeed(db);
+    final payload = _toJson(updated);
+    hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
+    return Response.ok(jsonEncode(payload),
+        headers: {'content-type': 'application/json'});
+  });
+
+  // Clear the logo (back to a text-only header). Bumps logoRev, broadcasts.
+  r.delete('/venue/logo', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.editSettings);
+    if (denied != null) return denied;
+    final row = await _readOrSeed(db);
+    await (db.update(db.venueSettings)..where((t) => t.id.equals(_singletonId)))
+        .write(VenueSettingsCompanion(
+      logo: const Value(null),
+      logoRev: Value(row.logoRev + 1),
+    ));
+    final updated = await _readOrSeed(db);
+    final payload = _toJson(updated);
     hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
     return Response.ok(jsonEncode(payload),
         headers: {'content-type': 'application/json'});
@@ -158,6 +226,12 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
       'phone': s.phone,
       'receiptHeader': s.receiptHeader,
       'receiptFooter': s.receiptFooter,
+      'receiptTagline': s.receiptTagline,
+      'receiptSocial': s.receiptSocial,
+      'receiptThankYou': s.receiptThankYou,
+      'receiptQrUrl': s.receiptQrUrl,
+      'receiptQrCaption': s.receiptQrCaption,
+      'logoRev': s.logoRev,
       'taxEnabled': s.taxEnabled,
       'taxRateBps': s.taxRateBps,
       'serviceEnabled': s.serviceEnabled,

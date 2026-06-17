@@ -1,5 +1,6 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
+import 'package:satset/core/printing/printer_branding.dart';
 import 'package:satset/core/printing/struk_data.dart';
 
 /// The single, shared ESC/POS renderer. Turns a [StrukData] into printer bytes
@@ -26,7 +27,8 @@ class StrukRenderer {
     final g = Generator(_paper, profile);
     final out = <int>[];
 
-    // Header: venue name large + optional receipt header + address/phone.
+    // Header: optional logo, venue name large, tagline, header, address/phone.
+    out.addAll(logoRasterBytes(g, d.logoBytes));
     out.addAll(g.text(
       d.venueName.isEmpty ? 'SatSet' : d.venueName,
       styles: const PosStyles(
@@ -36,6 +38,10 @@ class StrukRenderer {
         width: PosTextSize.size2,
       ),
     ));
+    if (d.tagline.trim().isNotEmpty) {
+      out.addAll(g.text(d.tagline.trim(),
+          styles: const PosStyles(align: PosAlign.center)));
+    }
     if (d.header.trim().isNotEmpty) {
       for (final line in d.header.trim().split('\n')) {
         out.addAll(g.text(line, styles: const PosStyles(align: PosAlign.center)));
@@ -47,6 +53,10 @@ class StrukRenderer {
     }
     if (d.phone.trim().isNotEmpty) {
       out.addAll(g.text(d.phone.trim(),
+          styles: const PosStyles(align: PosAlign.center)));
+    }
+    if (d.social.trim().isNotEmpty) {
+      out.addAll(g.text(d.social.trim(),
           styles: const PosStyles(align: PosAlign.center)));
     }
     out.addAll(g.hr());
@@ -80,7 +90,7 @@ class StrukRenderer {
     }
     out.addAll(g.hr());
 
-    // Footer: "verifikasi pesanan" + optional receipt footer.
+    // Footer: "verifikasi pesanan" + optional receipt footer + sign-off.
     out.addAll(g.text('Verifikasi pesanan Anda',
         styles: const PosStyles(align: PosAlign.center)));
     if (d.footer.trim().isNotEmpty) {
@@ -88,6 +98,8 @@ class StrukRenderer {
         out.addAll(g.text(line, styles: const PosStyles(align: PosAlign.center)));
       }
     }
+    final thanks = d.thankYou.trim().isEmpty ? 'Terima kasih' : d.thankYou.trim();
+    out.addAll(g.text(thanks, styles: const PosStyles(align: PosAlign.center)));
     out.addAll(g.feed(2));
     out.addAll(g.cut());
     return out;

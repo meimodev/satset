@@ -150,6 +150,7 @@ Future<Uint8List> buildOrderHistoryPdf(
   Map<String, Uint8List> photos = const {},
   DateTime? from,
   DateTime? to,
+  PdfBranding? branding,
 }) async {
   final theme = await pdfTheme();
   final doc = pw.Document(theme: theme.base);
@@ -165,6 +166,10 @@ Future<Uint8List> buildOrderHistoryPdf(
         pdfTitleBlock(
           title: 'Riwayat Pesanan',
           subtitle: rangeLabelId(range, from: from, to: to),
+          logoBytes: branding?.logoBytes,
+          venueName: branding?.venueName,
+          address: branding?.address,
+          phone: branding?.phone,
           meta: [
             'Rentang: ${_windowLine(h)}',
             'Dibuat: ${_dateFull.format(h.generatedAt.toLocal())}',

@@ -1,6 +1,7 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 import 'package:satset/core/printing/bill_struk_data.dart';
+import 'package:satset/core/printing/printer_branding.dart';
 
 /// The single, shared ESC/POS renderer for the MONEY document
 /// ([[Tagihan / Struk pembayaran]]). Turns a [BillStrukData] into printer bytes
@@ -67,7 +68,8 @@ class BillStrukRenderer {
     final g = Generator(_paper, profile);
     final out = <int>[];
 
-    // ── header: venue identity ──
+    // ── header: optional logo + venue identity + branding lines ──
+    out.addAll(logoRasterBytes(g, d.logoBytes));
     out.addAll(g.text(
       d.venueName.isEmpty ? 'SatSet' : d.venueName,
       styles: const PosStyles(
@@ -77,6 +79,10 @@ class BillStrukRenderer {
         width: PosTextSize.size2,
       ),
     ));
+    if (d.tagline.trim().isNotEmpty) {
+      out.addAll(g.text(d.tagline.trim(),
+          styles: const PosStyles(align: PosAlign.center)));
+    }
     if (d.header.trim().isNotEmpty) {
       for (final line in d.header.trim().split('\n')) {
         out.addAll(g.text(line, styles: const PosStyles(align: PosAlign.center)));
@@ -88,6 +94,10 @@ class BillStrukRenderer {
     }
     if (d.phone.trim().isNotEmpty) {
       out.addAll(g.text(d.phone.trim(),
+          styles: const PosStyles(align: PosAlign.center)));
+    }
+    if (d.social.trim().isNotEmpty) {
+      out.addAll(g.text(d.social.trim(),
           styles: const PosStyles(align: PosAlign.center)));
     }
 
@@ -179,11 +189,20 @@ class BillStrukRenderer {
 
     // ── footer ──
     out.addAll(g.hr());
-    out.addAll(g.text('Terima kasih',
-        styles: const PosStyles(align: PosAlign.center)));
+    final thanks = d.thankYou.trim().isEmpty ? 'Terima kasih' : d.thankYou.trim();
+    out.addAll(g.text(thanks, styles: const PosStyles(align: PosAlign.center)));
     if (d.footer.trim().isNotEmpty) {
       for (final line in d.footer.trim().split('\n')) {
         out.addAll(g.text(line, styles: const PosStyles(align: PosAlign.center)));
+      }
+    }
+    // ── footer QR (money docs only) ──
+    if (d.qrUrl.trim().isNotEmpty) {
+      out.addAll(g.feed(1));
+      out.addAll(g.qrcode(d.qrUrl.trim(), align: PosAlign.center));
+      if (d.qrCaption.trim().isNotEmpty) {
+        out.addAll(g.text(d.qrCaption.trim(),
+            styles: const PosStyles(align: PosAlign.center)));
       }
     }
     out.addAll(g.feed(2));

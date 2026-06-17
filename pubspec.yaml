@@ -52,6 +52,8 @@ dependencies:
   # Audio alerts
   audioplayers: ^6.1.0
   image_picker: ^1.2.2
+  # Decode/downscale the venue logo JPEG for ESC/POS raster (ADR-0033).
+  image: ^4.3.0
 
   # Export (report / order history) — CSV/PDF via the Android share sheet.
   # See docs/adr/0030-client-side-range-scoped-export.md.

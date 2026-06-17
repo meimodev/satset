@@ -42,7 +42,7 @@ const String guestAppHtml = r'''<!DOCTYPE html>
   .bar button { border:0; background:#fff; color:var(--brown); font-weight:700; padding:12px 20px; border-radius:10px; }
   .sheet-bg { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; z-index:10; }
   .sheet-bg.show { display:block; }
-  .sheet { position:fixed; left:0; right:0; bottom:0; background:var(--cream); border-radius:16px 16px 0 0;
+  .sheet { position:fixed; left:0; right:0; bottom:0; z-index:11; background:var(--cream); border-radius:16px 16px 0 0;
     max-height:88vh; overflow:auto; padding:18px 16px 110px; transform:translateY(100%); transition:transform .2s; }
   .sheet.show { transform:translateY(0); }
   .sheet h2 { margin:0 0 4px; font-size:18px; }
@@ -87,29 +87,48 @@ function api(method, path, body){
   if (TOKEN) h["authorization"] = "Bearer " + TOKEN;
   if (body) h["content-type"] = "application/json";
   return fetch(path, { method:method, headers:h, body: body?JSON.stringify(body):undefined })
-    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, status:r.status, body:j}; }); });
+    .then(function(r){
+      return r.text().then(function(txt){
+        var j = {};
+        try { j = txt ? JSON.parse(txt) : {}; }
+        catch(e){ j = { code:"bad_response", raw:(txt||"").slice(0,200) }; }
+        return { ok:r.ok, status:r.status, body:j };
+      });
+    })
+    .catch(function(e){
+      // fetch itself rejected (server unreachable / connection reset).
+      return { ok:false, status:0, body:{ code:"network", raw:String(e) } };
+    });
 }
 
 function start(){
   TABLE = tableIdFromUrl();
   if(!TABLE){ document.getElementById("app").innerHTML='<div class="err">QR tidak valid.</div>'; return; }
   api("POST", "/guest/session?table="+encodeURIComponent(TABLE)).then(function(r){
-    if(!r.ok){ return sessionError(r.body && r.body.code); }
+    if(!r.ok){ return sessionError(r); }
     TOKEN = r.body.token;
     TABLE = { id:r.body.tableId, label:r.body.tableLabel };
     loadMenu();
   });
 }
-function sessionError(code){
+function sessionError(r){
+  var code = r && r.body && r.body.code;
   var msg = "Pemesanan mandiri tidak tersedia di meja ini.";
   if(code==="guest_ordering_disabled") msg="Pemesanan mandiri belum diaktifkan. Silakan panggil pramusaji.";
-  if(code==="table_disabled") msg="Meja ini belum mengaktifkan pesan mandiri. Silakan panggil pramusaji.";
-  document.getElementById("app").innerHTML='<div class="center"><div class="big">🔔</div>'+msg+'</div>';
+  else if(code==="table_disabled") msg="Meja ini belum mengaktifkan pesan mandiri. Silakan panggil pramusaji.";
+  else if(code==="network") msg="Tidak dapat terhubung ke server. Pastikan terhubung ke Wi-Fi restoran.";
+  else if(code==="table_not_found") msg="Meja tidak dikenal. QR mungkin kedaluwarsa.";
+  // Unexpected (server error / non-JSON): show the diagnostic so it never
+  // hangs silently on "Memuat…".
+  var diag = (code && code!=="guest_ordering_disabled" && code!=="table_disabled" && code!=="network" && code!=="table_not_found")
+    ? '<div class="sub" style="margin-top:8px;opacity:.6;font-size:11px">('+esc(String(code))+(r&&r.status?(" · HTTP "+r.status):"")+')</div>'
+    : '';
+  document.getElementById("app").innerHTML='<div class="center"><div class="big">🔔</div>'+msg+diag+'</div>';
 }
 
 function loadMenu(){
   api("GET", "/guest/menu").then(function(r){
-    if(!r.ok){ return sessionError(); }
+    if(!r.ok){ return sessionError(r); }
     MENU = r.body; renderMenu(MENU.categories[0] && MENU.categories[0].id);
   });
 }
@@ -236,7 +255,7 @@ function submitOrder(){
   var lines = CART.map(function(l){ return { itemId:l.itemId, variantId:l.variantId, optionIds:l.optionIds, qty:l.qty, note:l.note }; });
   el("submitbtn").disabled = true;
   api("POST","/guest/orders",{ idempotencyKey:IDEM, lines:lines }).then(function(r){
-    if(r.ok){ CART=[]; IDEM=null; renderBar(); showStatus(); }
+    if(r.ok){ CART=[]; IDEM=null; closeCart(); renderBar(); showStatus(); }
     else {
       el("submitbtn").disabled=false;
       var c=r.body&&r.body.code;
@@ -304,6 +323,7 @@ function reviewCart(){
   });
   h+='<div class="opt"><b>Total</b><b>'+rp(cartTotal())+'</b></div>';
   el("cartbody").innerHTML=h;
+  el("submitbtn").disabled=false; // re-arm: stays disabled after a prior submit
   el("cbg").classList.add("show"); el("csheet").classList.add("show");
 }
 function rmLine(idx){ CART.splice(idx,1); renderBar(); if(CART.length) reviewCart(); else closeCart(); }

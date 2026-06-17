@@ -21,23 +21,27 @@ Future<Response?> _requireCap(
   Capability needed,
 ) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (!caps.contains(needed.name)) {
-    return Response(403,
-        body: jsonEncode({
-          'code': 'forbidden',
-          'message': 'missing capability ${needed.name}',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      403,
+      body: jsonEncode({
+        'code': 'forbidden',
+        'message': 'missing capability ${needed.name}',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   }
   return null;
 }
@@ -65,10 +69,7 @@ const int _customRangeMaxDays = 92;
     case 'd30':
       return (tomorrow.subtract(const Duration(days: 30)), tomorrow);
     case 'month':
-      return (
-        DateTime(now.year, now.month, 1, hour),
-        tomorrow,
-      );
+      return (DateTime(now.year, now.month, 1, hour), tomorrow);
     case 'custom':
       final f = DateTime.tryParse(fromStr ?? '');
       final t = DateTime.tryParse(toStr ?? '');
@@ -106,25 +107,32 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final categoryFilter = qp['category'];
 
     final now = DateTime.now();
-    final settings = await (db.select(db.venueSettings)
-          ..where((s) => s.id.equals('default')))
-        .getSingleOrNull();
+    final settings = await (db.select(
+      db.venueSettings,
+    )..where((s) => s.id.equals('default'))).getSingleOrNull();
     final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
-    final (from, to) =
-        _windowFor(range, now, hour, fromStr: qp['from'], toStr: qp['to']);
+    final (from, to) = _windowFor(
+      range,
+      now,
+      hour,
+      fromStr: qp['from'],
+      toStr: qp['to'],
+    );
 
     // Reference data — small, fetched in full.
     final menu = await db.select(db.menuItems).get();
-    final categories = await (db.select(db.menuCategories)
-          ..orderBy([(c) => OrderingTerm.asc(c.sortOrder)]))
-        .get();
+    final categories = await (db.select(
+      db.menuCategories,
+    )..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).get();
     final zones = await db.select(db.zones).get();
     final users = await db.select(db.users).get();
     final waiters = users
-        .where((u) =>
-            u.roleId == 'role-waiter' ||
-            u.roleId == 'role-manager' ||
-            u.roleId == 'role-admin')
+        .where(
+          (u) =>
+              u.roleId == 'role-waiter' ||
+              u.roleId == 'role-manager' ||
+              u.roleId == 'role-admin',
+        )
         .toList();
     final itemById = {for (final m in menu) m.id: m};
     final catById = {for (final c in categories) c.id: c};
@@ -145,16 +153,16 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // Takeaway (Bawa pulang) sessions count toward sales/menu/payments but are
     // excluded from per-cover / turn-time / occupancy metrics — no table was
     // ever held. See ADR-0026.
-    final dineInSessions =
-        sessions.where((s) => s.kind != 'takeaway').toList();
-    final takeawaySessions =
-        sessions.where((s) => s.kind == 'takeaway').toList();
+    final dineInSessions = sessions.where((s) => s.kind != 'takeaway').toList();
+    final takeawaySessions = sessions
+        .where((s) => s.kind == 'takeaway')
+        .toList();
 
     List<TableSessionTicket> tickets = [];
     if (sessionIds.isNotEmpty) {
-      tickets = await (db.select(db.tableSessionTickets)
-            ..where((t) => t.sessionId.isIn(sessionIds)))
-          .get();
+      tickets = await (db.select(
+        db.tableSessionTickets,
+      )..where((t) => t.sessionId.isIn(sessionIds))).get();
       if (categoryFilter != null && categoryFilter.isNotEmpty) {
         tickets = tickets
             .where((t) => itemById[t.itemId]?.categoryId == categoryFilter)
@@ -165,15 +173,15 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // Compute previous-week tickets/sessions for WoW comparison.
     final prevFrom = from.subtract(const Duration(days: 7));
     final prevTo = to.subtract(const Duration(days: 7));
-    final prevSessions = await (db.select(db.tableSessions)
-          ..where((s) => s.closedAt.isBetweenValues(prevFrom, prevTo)))
-        .get();
+    final prevSessions = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.closedAt.isBetweenValues(prevFrom, prevTo))).get();
     final prevSessionIds = prevSessions.map((s) => s.id).toList();
     final prevTickets = prevSessionIds.isEmpty
         ? <TableSessionTicket>[]
-        : await (db.select(db.tableSessionTickets)
-              ..where((t) => t.sessionId.isIn(prevSessionIds)))
-            .get();
+        : await (db.select(
+            db.tableSessionTickets,
+          )..where((t) => t.sessionId.isIn(prevSessionIds))).get();
 
     // ─── SALES ──────────────────────────────────────────────────
     final gross = sessions.fold<int>(0, (a, s) => a + s.subtotal);
@@ -183,10 +191,26 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final sessionCount = sessions.length;
     final taxService = (net * 0.18).round();
     final salesKpis = [
-      {'label': 'Net', 'value': _formatRupiah(net), 'sub': '$sessionCount sesi · $covers tamu'},
-      {'label': 'Gross', 'value': _formatRupiah(gross), 'sub': '$sessionCount transaksi'},
-      {'label': 'Pajak + Service', 'value': _formatRupiah(taxService), 'sub': 'PB1 11% · Svc 7% (est)'},
-      {'label': 'Void', 'value': _formatRupiah(voidTotal), 'sub': '${_voidLineCount(tickets)} item void'},
+      {
+        'label': 'Net',
+        'value': _formatRupiah(net),
+        'sub': '$sessionCount sesi · $covers tamu',
+      },
+      {
+        'label': 'Gross',
+        'value': _formatRupiah(gross),
+        'sub': '$sessionCount transaksi',
+      },
+      {
+        'label': 'Pajak + Service',
+        'value': _formatRupiah(taxService),
+        'sub': 'PB1 11% · Svc 7% (est)',
+      },
+      {
+        'label': 'Void',
+        'value': _formatRupiah(voidTotal),
+        'sub': '${_voidLineCount(tickets)} item void',
+      },
     ];
 
     // Cover trend: group sessions by weekday for this/last week (7 days only).
@@ -199,7 +223,11 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       final lastWk = prevSessions
           .where((s) => s.closedAt.weekday == dow)
           .fold<int>(0, (a, s) => a + s.pax);
-      coverTrend.add({'day': dayLabels[dow - 1], 'thisWeek': thisWk, 'lastWeek': lastWk});
+      coverTrend.add({
+        'day': dayLabels[dow - 1],
+        'thisWeek': thisWk,
+        'lastWeek': lastWk,
+      });
     }
 
     // Hourly revenue: 12 bars 11..22. Sum qty*price from tickets.
@@ -211,8 +239,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       hourly.add(sum.toDouble());
     }
     final hourlyMax = hourly.fold<double>(0, (a, b) => b > a ? b : a);
-    final hourlyNorm =
-        hourly.map((v) => hourlyMax == 0 ? 0.0 : (v / hourlyMax)).toList();
+    final hourlyNorm = hourly
+        .map((v) => hourlyMax == 0 ? 0.0 : (v / hourlyMax))
+        .toList();
 
     // ─── STAFF ──────────────────────────────────────────────────
     final staffRows = <Map<String, dynamic>>[];
@@ -284,22 +313,25 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       ..sort((a, b) => b.value.revenue.compareTo(a.value.revenue));
     final menuMax = itemList.isEmpty ? 1 : itemList.first.value.revenue;
 
-    List<Map<String, dynamic>> menuRows(Iterable<MapEntry<String, _ItemAgg>> iter) =>
-        iter.map((e) {
-          final item = itemById[e.key];
-          final cost = item?.cost ?? 0;
-          final marginPct = item == null || item.basePrice == 0
-              ? 0
-              : ((item.basePrice - cost) / item.basePrice * 100).round();
-          return {
-            'itemId': e.key,
-            'name': item?.name ?? e.key,
-            'qty': e.value.qty,
-            'revenue': e.value.revenue,
-            'marginPct': marginPct,
-            'fill': menuMax == 0 ? 0.0 : (e.value.revenue / menuMax).clamp(0.0, 1.0),
-          };
-        }).toList();
+    List<Map<String, dynamic>> menuRows(
+      Iterable<MapEntry<String, _ItemAgg>> iter,
+    ) => iter.map((e) {
+      final item = itemById[e.key];
+      final cost = item?.cost ?? 0;
+      final marginPct = item == null || item.basePrice == 0
+          ? 0
+          : ((item.basePrice - cost) / item.basePrice * 100).round();
+      return {
+        'itemId': e.key,
+        'name': item?.name ?? e.key,
+        'qty': e.value.qty,
+        'revenue': e.value.revenue,
+        'marginPct': marginPct,
+        'fill': menuMax == 0
+            ? 0.0
+            : (e.value.revenue / menuMax).clamp(0.0, 1.0),
+      };
+    }).toList();
 
     final menuTop = menuRows(itemList.take(5));
     final menuSlow = menuRows(itemList.reversed.take(5));
@@ -326,13 +358,18 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         }
       } catch (_) {}
     }
-    final modifierAttach = modCounts.entries
-        .map((e) => {
-              'group': modLabels[e.key] ?? e.key,
-              'rate': tickets.isEmpty ? 0.0 : e.value / tickets.length,
-            })
-        .toList()
-      ..sort((a, b) => (b['rate'] as double).compareTo(a['rate'] as double));
+    final modifierAttach =
+        modCounts.entries
+            .map(
+              (e) => {
+                'group': modLabels[e.key] ?? e.key,
+                'rate': tickets.isEmpty ? 0.0 : e.value / tickets.length,
+              },
+            )
+            .toList()
+          ..sort(
+            (a, b) => (b['rate'] as double).compareTo(a['rate'] as double),
+          );
 
     // Category mix WoW.
     final catThis = <String, int>{};
@@ -351,18 +388,23 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     }
     final catThisTotal = catThis.values.fold<int>(0, (a, b) => a + b);
     final catLastTotal = catLast.values.fold<int>(0, (a, b) => a + b);
-    final categoryMix = catThis.entries.map((e) {
-      final share = catThisTotal == 0 ? 0.0 : e.value / catThisTotal;
-      final prevShare = catLastTotal == 0 ? 0.0 : (catLast[e.key] ?? 0) / catLastTotal;
-      return {
-        'id': e.key,
-        'name': catById[e.key]?.name ?? e.key,
-        'shareThisWeek': share,
-        'shareLastWeek': prevShare,
-      };
-    }).toList()
-      ..sort((a, b) => (b['shareThisWeek'] as double)
-          .compareTo(a['shareThisWeek'] as double));
+    final categoryMix =
+        catThis.entries.map((e) {
+          final share = catThisTotal == 0 ? 0.0 : e.value / catThisTotal;
+          final prevShare = catLastTotal == 0
+              ? 0.0
+              : (catLast[e.key] ?? 0) / catLastTotal;
+          return {
+            'id': e.key,
+            'name': catById[e.key]?.name ?? e.key,
+            'shareThisWeek': share,
+            'shareLastWeek': prevShare,
+          };
+        }).toList()..sort(
+          (a, b) => (b['shareThisWeek'] as double).compareTo(
+            a['shareThisWeek'] as double,
+          ),
+        );
 
     // Menu engineering matrix.
     final qtyMax = itemList.isEmpty
@@ -433,7 +475,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final avgTurnSec = dineInSessions.isEmpty
         ? 0
         : dineInSessions.fold<int>(0, (a, s) => a + s.durationSec) ~/
-            dineInSessions.length;
+              dineInSessions.length;
     final avgTurnMin = avgTurnSec ~/ 60;
 
     // ─── SPEED OF SERVICE (ADR-0013) ─────────────────────────────
@@ -457,24 +499,29 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       }
     }
     final prepMedianMin = prepSecs.isEmpty ? 0 : (_median(prepSecs) ~/ 60);
-    final pickupMedianMin =
-        pickupSecs.isEmpty ? 0 : (_median(pickupSecs) ~/ 60);
+    final pickupMedianMin = pickupSecs.isEmpty
+        ? 0
+        : (_median(pickupSecs) ~/ 60);
     final slaTargetSec = prepTargetMins * 60;
-    final slaHits =
-        prepSecs.where((s) => s <= slaTargetSec).length;
-    final slaPct =
-        prepSecs.isEmpty ? 0.0 : (slaHits / prepSecs.length * 100);
+    final slaHits = prepSecs.where((s) => s <= slaTargetSec).length;
+    final slaPct = prepSecs.isEmpty ? 0.0 : (slaHits / prepSecs.length * 100);
     // Slowest dishes by average prep time (min 1 sample shown, top 5).
-    final slowItems = prepByItem.entries
-        .map((e) => {
-              'itemId': e.key,
-              'name': itemById[e.key]?.name ?? e.key,
-              'avgPrepMin': (e.value.totalSec / e.value.count / 60),
-              'count': e.value.count,
-            })
-        .toList()
-      ..sort((a, b) =>
-          (b['avgPrepMin'] as double).compareTo(a['avgPrepMin'] as double));
+    final slowItems =
+        prepByItem.entries
+            .map(
+              (e) => {
+                'itemId': e.key,
+                'name': itemById[e.key]?.name ?? e.key,
+                'avgPrepMin': (e.value.totalSec / e.value.count / 60),
+                'count': e.value.count,
+              },
+            )
+            .toList()
+          ..sort(
+            (a, b) => (b['avgPrepMin'] as double).compareTo(
+              a['avgPrepMin'] as double,
+            ),
+          );
     final speed = {
       'prepMedianMin': prepMedianMin,
       'pickupMedianMin': pickupMedianMin,
@@ -485,16 +532,20 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     };
 
     final opsKpis = [
-      {'label': 'Avg turn time', 'value': '$avgTurnMin min', 'sub': 'Lama tamu duduk'},
+      {
+        'label': 'Avg turn time',
+        'value': '$avgTurnMin min',
+        'sub': 'Lama tamu duduk',
+      },
       {
         'label': 'Prep dapur',
         'value': prepSecs.isEmpty ? '—' : '$prepMedianMin min',
-        'sub': 'Median kirim → siap'
+        'sub': 'Median kirim → siap',
       },
       {
         'label': 'Tunggu antar',
         'value': pickupSecs.isEmpty ? '—' : '$pickupMedianMin min',
-        'sub': 'Median siap → disajikan'
+        'sub': 'Median siap → disajikan',
       },
       {
         'label': 'Reservasi',
@@ -504,14 +555,16 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     ];
 
     // Stations: sum qty for the unified station.
-    final totalQty = tickets.where((t) => t.status != 'voided').fold<int>(0, (a, t) => a + t.qty);
+    final totalQty = tickets
+        .where((t) => t.status != 'voided')
+        .fold<int>(0, (a, t) => a + t.qty);
     final stations = [
       {
         'station': 'kitchen',
         'label': 'Dapur Utama',
         'qty': totalQty,
         'utilization': totalQty == 0 ? 0.0 : 1.0,
-      }
+      },
     ];
 
     // Heatmap: 7 weekdays × 12 hours (11..22).
@@ -526,26 +579,23 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         .expand((row) => row)
         .fold<int>(0, (a, b) => b > a ? b : a);
     final heatmap = heatRaw
-        .map((row) =>
-            row.map((v) => heatMax == 0 ? 0.0 : v / heatMax).toList())
+        .map((row) => row.map((v) => heatMax == 0 ? 0.0 : v / heatMax).toList())
         .toList();
 
     // Patch ops KPI #4 with real reservation totals (defined below).
-    final reservationRows = await (db.select(db.reservations)
-          ..where((r) => r.expectedAt.isBetweenValues(from, to)))
-        .get();
+    final reservationRows = await (db.select(
+      db.reservations,
+    )..where((r) => r.expectedAt.isBetweenValues(from, to))).get();
     final reservations = {
       'booked': reservationRows.length,
       'seated': reservationRows.where((r) => r.status == 'seated').length,
       'noShow': reservationRows.where((r) => r.status == 'noShow').length,
-      'cancelled':
-          reservationRows.where((r) => r.status == 'cancelled').length,
+      'cancelled': reservationRows.where((r) => r.status == 'cancelled').length,
     };
     if (opsKpis.length >= 4) {
       opsKpis[3] = {
         'label': 'Reservasi',
-        'value':
-            '${reservations['seated']} / ${reservations['booked']}',
+        'value': '${reservations['seated']} / ${reservations['booked']}',
         'sub':
             '${reservations['noShow']} no-show · ${reservations['cancelled']} batal',
       };
@@ -568,15 +618,18 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       'comp': 'Kompensasi manajer',
       'other': 'Lainnya',
     };
-    final voidReasons = reasonAgg.entries
-        .map((e) => {
-              'code': e.key,
-              'label': reasonLabels[e.key] ?? e.key,
-              'count': e.value.count,
-              'lostRupiah': e.value.lostRupiah,
-            })
-        .toList()
-      ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+    final voidReasons =
+        reasonAgg.entries
+            .map(
+              (e) => {
+                'code': e.key,
+                'label': reasonLabels[e.key] ?? e.key,
+                'count': e.value.count,
+                'lostRupiah': e.value.lostRupiah,
+              },
+            )
+            .toList()
+          ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
     // Void per waiter — who voided, how often, lost rupiah, top reason.
     // Keyed by voidedByUserId (the acting waiter), distinct from the table's
@@ -591,46 +644,48 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       final code = t.voidReasonCode ?? 'other';
       agg.reasonCounts[code] = (agg.reasonCounts[code] ?? 0) + 1;
     }
-    final voidStaff = voidByStaff.entries.map((e) {
-      final topReason = e.value.reasonCounts.entries.isEmpty
-          ? 'other'
-          : (e.value.reasonCounts.entries.toList()
-                ..sort((a, b) => b.value.compareTo(a.value)))
-              .first
-              .key;
-      return {
-        'id': e.key,
-        'name': e.key == 'unknown'
-            ? 'Tidak diketahui'
-            : (userById[e.key]?.name ?? e.key),
-        'count': e.value.count,
-        'lostRupiah': e.value.lostRupiah,
-        'topReasonCode': topReason,
-        'topReasonLabel': reasonLabels[topReason] ?? topReason,
-      };
-    }).toList()
-      ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+    final voidStaff =
+        voidByStaff.entries.map((e) {
+            final topReason = e.value.reasonCounts.entries.isEmpty
+                ? 'other'
+                : (e.value.reasonCounts.entries.toList()
+                        ..sort((a, b) => b.value.compareTo(a.value)))
+                      .first
+                      .key;
+            return {
+              'id': e.key,
+              'name': e.key == 'unknown'
+                  ? 'Tidak diketahui'
+                  : (userById[e.key]?.name ?? e.key),
+              'count': e.value.count,
+              'lostRupiah': e.value.lostRupiah,
+              'topReasonCode': topReason,
+              'topReasonLabel': reasonLabels[topReason] ?? topReason,
+            };
+          }).toList()
+          ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
     // ─── PAYMENTS (non-cash proof, ADR-0025) ─────────────────────
     // Every non-cash, non-refund payment in the window, each with a fetchable
     // proof photo. Blob stays out of the list (only `hasPhoto` rides).
     final sessionById = {for (final s in sessions) s.id: s};
     final spPhoto = db.tableSessionPayments.photo.isNotNull();
-    final spRows = await (db.selectOnly(db.tableSessionPayments)
-          ..addColumns([
-            db.tableSessionPayments.id,
-            db.tableSessionPayments.sessionId,
-            db.tableSessionPayments.method,
-            db.tableSessionPayments.amount,
-            db.tableSessionPayments.cashierUserId,
-            db.tableSessionPayments.at,
-            spPhoto,
-          ])
-          ..where(db.tableSessionPayments.sessionId.isIn(sessionIds))
-          ..where(db.tableSessionPayments.method.equals('tunai').not())
-          ..where(db.tableSessionPayments.isRefund.equals(false))
-          ..orderBy([OrderingTerm.desc(db.tableSessionPayments.at)]))
-        .get();
+    final spRows =
+        await (db.selectOnly(db.tableSessionPayments)
+              ..addColumns([
+                db.tableSessionPayments.id,
+                db.tableSessionPayments.sessionId,
+                db.tableSessionPayments.method,
+                db.tableSessionPayments.amount,
+                db.tableSessionPayments.cashierUserId,
+                db.tableSessionPayments.at,
+                spPhoto,
+              ])
+              ..where(db.tableSessionPayments.sessionId.isIn(sessionIds))
+              ..where(db.tableSessionPayments.method.equals('tunai').not())
+              ..where(db.tableSessionPayments.isRefund.equals(false))
+              ..orderBy([OrderingTerm.desc(db.tableSessionPayments.at)]))
+            .get();
     final nonCashRows = <Map<String, dynamic>>[];
     final methodTotal = <String, int>{};
     final methodCount = <String, int>{};
@@ -649,19 +704,23 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'amount': amount,
         'at': r.read(db.tableSessionPayments.at)!.toIso8601String(),
         'tableLabel': sessionById[sid]?.tableLabel,
-        'cashierName':
-            cashier == null ? null : (userById[cashier]?.name ?? cashier),
+        'cashierName': cashier == null
+            ? null
+            : (userById[cashier]?.name ?? cashier),
         'hasPhoto': r.read(spPhoto) ?? false,
       });
     }
-    final methodTotals = methodTotal.entries
-        .map((e) => {
-              'method': e.key,
-              'amount': e.value,
-              'count': methodCount[e.key] ?? 0,
-            })
-        .toList()
-      ..sort((a, b) => (b['amount'] as int).compareTo(a['amount'] as int));
+    final methodTotals =
+        methodTotal.entries
+            .map(
+              (e) => {
+                'method': e.key,
+                'amount': e.value,
+                'count': methodCount[e.key] ?? 0,
+              },
+            )
+            .toList()
+          ..sort((a, b) => (b['amount'] as int).compareTo(a['amount'] as int));
 
     // Filter options (always full list — UI prepends "Semua X").
     final filterOptions = {
@@ -726,8 +785,10 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       },
     };
 
-    return Response.ok(jsonEncode(body),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(body),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Order history export feed (ADR-0030). Read-only window of CLOSED visits and
@@ -742,28 +803,34 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final range = qp['range'] ?? 'today';
 
     final now = DateTime.now();
-    final settings = await (db.select(db.venueSettings)
-          ..where((s) => s.id.equals('default')))
-        .getSingleOrNull();
+    final settings = await (db.select(
+      db.venueSettings,
+    )..where((s) => s.id.equals('default'))).getSingleOrNull();
     final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
-    final (from, to) =
-        _windowFor(range, now, hour, fromStr: qp['from'], toStr: qp['to']);
+    final (from, to) = _windowFor(
+      range,
+      now,
+      hour,
+      fromStr: qp['from'],
+      toStr: qp['to'],
+    );
 
     final users = await db.select(db.users).get();
     final userById = {for (final u in users) u.id: u};
 
-    final sessions = await (db.select(db.tableSessions)
-          ..where((s) => s.closedAt.isBetweenValues(from, to))
-          ..orderBy([(s) => OrderingTerm.asc(s.closedAt)]))
-        .get();
+    final sessions =
+        await (db.select(db.tableSessions)
+              ..where((s) => s.closedAt.isBetweenValues(from, to))
+              ..orderBy([(s) => OrderingTerm.asc(s.closedAt)]))
+            .get();
     final sessionIds = sessions.map((s) => s.id).toList();
 
     final lines = sessionIds.isEmpty
         ? <TableSessionTicket>[]
         : await (db.select(db.tableSessionTickets)
-              ..where((t) => t.sessionId.isIn(sessionIds))
-              ..orderBy([(t) => OrderingTerm.asc(t.sentAt)]))
-            .get();
+                ..where((t) => t.sessionId.isIn(sessionIds))
+                ..orderBy([(t) => OrderingTerm.asc(t.sentAt)]))
+              .get();
     final linesBySession = <String, List<TableSessionTicket>>{};
     for (final t in lines) {
       linesBySession.putIfAbsent(t.sessionId, () => []).add(t);
@@ -775,9 +842,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // fetches each photo on demand for the PDF.
     final receipts = sessionIds.isEmpty
         ? <TableSessionReceipt>[]
-        : await (db.select(db.tableSessionReceipts)
-              ..where((rcp) => rcp.sessionId.isIn(sessionIds)))
-            .get();
+        : await (db.select(
+            db.tableSessionReceipts,
+          )..where((rcp) => rcp.sessionId.isIn(sessionIds))).get();
     final receiptsBySession = <String, List<TableSessionReceipt>>{};
     for (final rcp in receipts) {
       receiptsBySession.putIfAbsent(rcp.sessionId, () => []).add(rcp);
@@ -786,9 +853,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final pays = sessionIds.isEmpty
         ? <TableSessionPayment>[]
         : await (db.select(db.tableSessionPayments)
-              ..where((p) => p.sessionId.isIn(sessionIds))
-              ..orderBy([(p) => OrderingTerm.asc(p.at)]))
-            .get();
+                ..where((p) => p.sessionId.isIn(sessionIds))
+                ..orderBy([(p) => OrderingTerm.asc(p.at)]))
+              .get();
     final paysByReceipt = <String, List<TableSessionPayment>>{};
     final paysBySession = <String, List<TableSessionPayment>>{};
     for (final p in pays) {
@@ -797,21 +864,23 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     }
 
     Map<String, dynamic> payJson(TableSessionPayment p) => {
-          'paymentId': p.id,
-          'method': p.method,
-          'amount': p.amount,
-          'isRefund': p.isRefund,
-          'cashierName':
-              p.cashierUserId == null ? null : userById[p.cashierUserId!]?.name,
-          'at': p.at.toIso8601String(),
-          'hasPhoto': p.photo != null,
-        };
+      'paymentId': p.id,
+      'method': p.method,
+      'amount': p.amount,
+      'isRefund': p.isRefund,
+      'cashierName': p.cashierUserId == null
+          ? null
+          : userById[p.cashierUserId!]?.name,
+      'at': p.at.toIso8601String(),
+      'hasPhoto': p.photo != null,
+    };
 
     // Receipt + payment tree for one visit. Payments whose receipt snapshot is
     // missing (orphans) are gathered under a synthetic '—' receipt so no tender
     // is dropped from the export.
     List<Map<String, dynamic>> receiptTree(String sessionId) {
-      final rcps = receiptsBySession[sessionId] ?? const <TableSessionReceipt>[];
+      final rcps =
+          receiptsBySession[sessionId] ?? const <TableSessionReceipt>[];
       final known = {for (final r in rcps) r.receiptId};
       final out = [
         for (final r in rcps)
@@ -885,8 +954,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'kind': s.kind,
         'pax': s.pax,
         'closedAt': s.closedAt.toIso8601String(),
-        'waiterName':
-            s.actorUserId == null ? null : userById[s.actorUserId!]?.name,
+        'waiterName': s.actorUserId == null
+            ? null
+            : userById[s.actorUserId!]?.name,
         'subtotal': s.subtotal,
         'voidAmount': s.voidAmount,
         'net': s.netTotal,
@@ -906,8 +976,8 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
               'servedAt': t.servedAt?.toIso8601String(),
               'voidReasonLabel': t.status == 'voided'
                   ? (reasonLabels[t.voidReasonCode ?? 'other'] ??
-                      t.voidReasonCode ??
-                      'Lainnya')
+                        t.voidReasonCode ??
+                        'Lainnya')
                   : null,
             },
         ],
@@ -928,8 +998,345 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       },
     };
 
-    return Response.ok(jsonEncode(body),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(body),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
+  // Staff-focus export feed (ADR-0032). One combined row per staff member:
+  // productivity + sales + integrity together, for the same window the report
+  // screen shows. Reuses the snapshot's window + aggregation; emitted as a flat
+  // purpose-built payload the export sheet turns into a wide CSV / landscape PDF.
+  // viewReports-gated: exposes per-staff financial + void data.
+  r.get('/reports/staff', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.viewReports);
+    if (denied != null) return denied;
+
+    final qp = req.url.queryParameters;
+    final range = qp['range'] ?? 'today';
+
+    final now = DateTime.now();
+    final settings = await (db.select(
+      db.venueSettings,
+    )..where((s) => s.id.equals('default'))).getSingleOrNull();
+    final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
+    final (from, to) = _windowFor(
+      range,
+      now,
+      hour,
+      fromStr: qp['from'],
+      toStr: qp['to'],
+    );
+
+    final users = await db.select(db.users).get();
+    final menu = await db.select(db.menuItems).get();
+    final userById = {for (final u in users) u.id: u};
+    final itemById = {for (final m in menu) m.id: m};
+
+    final sessions = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.closedAt.isBetweenValues(from, to))).get();
+    final sessionIds = sessions.map((s) => s.id).toList();
+    final tickets = sessionIds.isEmpty
+        ? <TableSessionTicket>[]
+        : await (db.select(
+            db.tableSessionTickets,
+          )..where((t) => t.sessionId.isIn(sessionIds))).get();
+
+    // Sessions grouped by the acting waiter (session actor).
+    final byStaff = <String, List<TableSession>>{};
+    for (final s in sessions) {
+      if (s.actorUserId == null) continue;
+      byStaff.putIfAbsent(s.actorUserId!, () => []).add(s);
+    }
+    final ticketsBySession = <String, List<TableSessionTicket>>{};
+    for (final t in tickets) {
+      ticketsBySession.putIfAbsent(t.sessionId, () => []).add(t);
+    }
+
+    // Void activity grouped by the waiter who voided (ADR-0006) — a distinct
+    // axis from the session actor, joined back per user id below.
+    const reasonLabels = {
+      'outOfStock': 'Stok habis',
+      'wrongOrder': 'Salah input pelayan',
+      'customerChange': 'Tamu ganti pesanan',
+      'kitchenError': 'Kualitas dapur',
+      'comp': 'Kompensasi manajer',
+      'other': 'Lainnya',
+    };
+    final voidByStaff = <String, _StaffVoidAgg>{};
+    for (final t in tickets) {
+      if (t.status != 'voided') continue;
+      final who = t.voidedByUserId ?? 'unknown';
+      final agg = voidByStaff.putIfAbsent(who, () => _StaffVoidAgg());
+      agg.count += 1;
+      agg.lostRupiah += t.price * t.qty;
+      final code = t.voidReasonCode ?? 'other';
+      agg.reasonCounts[code] = (agg.reasonCounts[code] ?? 0) + 1;
+    }
+
+    // Union of everyone who ran a session OR voided a line, so a manager who
+    // only voids still shows up.
+    final staffIds = <String>{...byStaff.keys, ...voidByStaff.keys}
+      ..removeWhere((id) => id == 'unknown');
+
+    final rows = <Map<String, dynamic>>[];
+    for (final id in staffIds) {
+      final list = byStaff[id] ?? const <TableSession>[];
+      final covers = list.fold<int>(0, (a, s) => a + s.pax);
+      final items = list.fold<int>(0, (a, s) => a + s.ticketCount);
+      final netSum = list.fold<int>(0, (a, s) => a + s.netTotal);
+      final grossSum = list.fold<int>(0, (a, s) => a + s.subtotal);
+      final voidSum = list.fold<int>(0, (a, s) => a + s.voidAmount);
+      final avgTicket = list.isEmpty ? 0 : (netSum / list.length).round();
+      final voidPct = grossSum == 0 ? 0.0 : (voidSum / grossSum * 100);
+
+      // Upsell index: % of this waiter's sessions with ≥1 starter AND ≥1 main.
+      var withUpsell = 0;
+      for (final s in list) {
+        final ts = ticketsBySession[s.id] ?? const <TableSessionTicket>[];
+        final cats = ts
+            .map((t) => itemById[t.itemId]?.categoryId)
+            .whereType<String>()
+            .toSet();
+        if (cats.contains('starters') && cats.contains('mains')) withUpsell++;
+      }
+      final upsellRate = list.isEmpty ? 0.0 : withUpsell / list.length;
+
+      final v = voidByStaff[id];
+      final topReason = v == null || v.reasonCounts.isEmpty
+          ? null
+          : (v.reasonCounts.entries.toList()
+                  ..sort((a, b) => b.value.compareTo(a.value)))
+                .first
+                .key;
+
+      rows.add({
+        'id': id,
+        'name': userById[id]?.name ?? id,
+        'sessions': list.length,
+        'covers': covers,
+        'items': items,
+        'net': netSum,
+        'avgTicket': avgTicket,
+        'upsellRate': upsellRate,
+        'voidCount': v?.count ?? 0,
+        'voidPct': voidPct,
+        'lostRupiah': v?.lostRupiah ?? 0,
+        'topReasonCode': topReason,
+        'topReasonLabel': topReason == null
+            ? null
+            : (reasonLabels[topReason] ?? topReason),
+      });
+    }
+    rows.sort((a, b) => (b['net'] as int).compareTo(a['net'] as int));
+
+    final body = {
+      'generatedAt': now.toIso8601String(),
+      'rangeFrom': from.toIso8601String(),
+      'rangeTo': to.toIso8601String(),
+      'range': range,
+      'rows': rows,
+      'totals': {
+        'staffCount': rows.length,
+        'net': rows.fold<int>(0, (a, r) => a + (r['net'] as int)),
+        'voidCount': rows.fold<int>(0, (a, r) => a + (r['voidCount'] as int)),
+        'lostRupiah': rows.fold<int>(0, (a, r) => a + (r['lostRupiah'] as int)),
+      },
+    };
+
+    return Response.ok(
+      jsonEncode(body),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
+  // Accounting export feed (ADR-0032). Bookkeeping view of the same window the
+  // report screen shows: revenue summary on REAL settled figures (session
+  // taxAmount / serviceAmount, never the cosmetic 18% KPI), payment-method
+  // breakdown incl. cash with refunds on their own line, void/refund write-offs,
+  // and a per-calendar-day breakdown for ledger posting. Window uses the same
+  // range rule as the snapshot (not closedAt accrual). viewReports-gated.
+  r.get('/reports/accounting', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.viewReports);
+    if (denied != null) return denied;
+
+    final qp = req.url.queryParameters;
+    final range = qp['range'] ?? 'today';
+
+    final now = DateTime.now();
+    final settings = await (db.select(
+      db.venueSettings,
+    )..where((s) => s.id.equals('default'))).getSingleOrNull();
+    final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
+    final (from, to) = _windowFor(
+      range,
+      now,
+      hour,
+      fromStr: qp['from'],
+      toStr: qp['to'],
+    );
+
+    final sessions = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.closedAt.isBetweenValues(from, to))).get();
+    final sessionIds = sessions.map((s) => s.id).toList();
+
+    // Revenue summary — sums straight off the settled session rows.
+    final gross = sessions.fold<int>(0, (a, s) => a + s.subtotal);
+    final voidAmount = sessions.fold<int>(0, (a, s) => a + s.voidAmount);
+    final service = sessions.fold<int>(0, (a, s) => a + s.serviceAmount);
+    final tax = sessions.fold<int>(0, (a, s) => a + s.taxAmount);
+    final net = sessions.fold<int>(0, (a, s) => a + s.netTotal);
+
+    // Payments — every tender (incl. cash); refunds split onto their own line.
+    final pays = sessionIds.isEmpty
+        ? <TableSessionPayment>[]
+        : await (db.select(
+            db.tableSessionPayments,
+          )..where((p) => p.sessionId.isIn(sessionIds))).get();
+    final methodCharged = <String, int>{};
+    final methodChargedCount = <String, int>{};
+    final methodRefunded = <String, int>{};
+    final methodRefundedCount = <String, int>{};
+    var collected = 0;
+    var refunded = 0;
+    for (final p in pays) {
+      if (p.isRefund) {
+        final amt = p.amount.abs();
+        methodRefunded[p.method] = (methodRefunded[p.method] ?? 0) + amt;
+        methodRefundedCount[p.method] =
+            (methodRefundedCount[p.method] ?? 0) + 1;
+        refunded += amt;
+      } else {
+        methodCharged[p.method] = (methodCharged[p.method] ?? 0) + p.amount;
+        methodChargedCount[p.method] = (methodChargedCount[p.method] ?? 0) + 1;
+        collected += p.amount;
+      }
+    }
+    final methods = <Map<String, dynamic>>[
+      for (final m in {...methodCharged.keys, ...methodRefunded.keys})
+        {
+          'method': m,
+          'charged': methodCharged[m] ?? 0,
+          'chargedCount': methodChargedCount[m] ?? 0,
+          'refunded': methodRefunded[m] ?? 0,
+          'refundedCount': methodRefundedCount[m] ?? 0,
+          'net': (methodCharged[m] ?? 0) - (methodRefunded[m] ?? 0),
+        },
+    ]..sort((a, b) => (b['net'] as int).compareTo(a['net'] as int));
+
+    // Void write-offs by reason (lost rupiah from voided lines).
+    final tickets = sessionIds.isEmpty
+        ? <TableSessionTicket>[]
+        : await (db.select(
+            db.tableSessionTickets,
+          )..where((t) => t.sessionId.isIn(sessionIds))).get();
+    const reasonLabels = {
+      'outOfStock': 'Stok habis',
+      'wrongOrder': 'Salah input pelayan',
+      'customerChange': 'Tamu ganti pesanan',
+      'kitchenError': 'Kualitas dapur',
+      'comp': 'Kompensasi manajer',
+      'other': 'Lainnya',
+    };
+    final voidAgg = <String, _ReasonAgg>{};
+    for (final t in tickets) {
+      if (t.status != 'voided') continue;
+      final code = t.voidReasonCode ?? 'other';
+      final agg = voidAgg.putIfAbsent(code, () => _ReasonAgg());
+      agg.count += 1;
+      agg.lostRupiah += t.price * t.qty;
+    }
+    final voids =
+        voidAgg.entries
+            .map(
+              (e) => {
+                'code': e.key,
+                'label': reasonLabels[e.key] ?? e.key,
+                'count': e.value.count,
+                'lostRupiah': e.value.lostRupiah,
+              },
+            )
+            .toList()
+          ..sort(
+            (a, b) =>
+                (b['lostRupiah'] as int).compareTo(a['lostRupiah'] as int),
+          );
+
+    // Per-calendar-day breakdown for ledger posting. Bucketed by the session's
+    // closedAt date; payments attributed to their session's day.
+    final dayKey = <String, String>{}; // sessionId → yyyy-MM-dd
+    final daily = <String, _AcctDayAgg>{};
+    String ymd(DateTime d) {
+      String two(int n) => n.toString().padLeft(2, '0');
+      return '${d.year}-${two(d.month)}-${two(d.day)}';
+    }
+
+    for (final s in sessions) {
+      final key = ymd(s.closedAt);
+      dayKey[s.id] = key;
+      final agg = daily.putIfAbsent(key, () => _AcctDayAgg());
+      agg.gross += s.subtotal;
+      agg.voidAmount += s.voidAmount;
+      agg.service += s.serviceAmount;
+      agg.tax += s.taxAmount;
+      agg.net += s.netTotal;
+    }
+    for (final p in pays) {
+      final key = dayKey[p.sessionId];
+      if (key == null) continue;
+      final agg = daily.putIfAbsent(key, () => _AcctDayAgg());
+      if (p.isRefund) {
+        agg.refunded += p.amount.abs();
+      } else {
+        agg.collected += p.amount;
+      }
+    }
+    final dailyRows =
+        daily.entries
+            .map(
+              (e) => {
+                'date': e.key,
+                'gross': e.value.gross,
+                'voidAmount': e.value.voidAmount,
+                'service': e.value.service,
+                'tax': e.value.tax,
+                'net': e.value.net,
+                'collected': e.value.collected,
+                'refunded': e.value.refunded,
+              },
+            )
+            .toList()
+          ..sort(
+            (a, b) => (a['date'] as String).compareTo(b['date'] as String),
+          );
+
+    final body = {
+      'generatedAt': now.toIso8601String(),
+      'rangeFrom': from.toIso8601String(),
+      'rangeTo': to.toIso8601String(),
+      'range': range,
+      'revenue': {
+        'gross': gross,
+        'voidAmount': voidAmount,
+        'service': service,
+        'tax': tax,
+        'net': net,
+        'collected': collected,
+        'refunded': refunded,
+        'sessionCount': sessions.length,
+      },
+      'methods': methods,
+      'voids': voids,
+      'daily': dailyRows,
+    };
+
+    return Response.ok(
+      jsonEncode(body),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   return r;
@@ -954,6 +1361,17 @@ class _StaffVoidAgg {
   int count = 0;
   int lostRupiah = 0;
   final Map<String, int> reasonCounts = {};
+}
+
+/// Per-calendar-day accounting rollup (ADR-0032).
+class _AcctDayAgg {
+  int gross = 0;
+  int voidAmount = 0;
+  int service = 0;
+  int tax = 0;
+  int net = 0;
+  int collected = 0;
+  int refunded = 0;
 }
 
 int _voidLineCount(List<TableSessionTicket> tickets) =>

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -65,6 +66,11 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     String? phone,
     String? receiptHeader,
     String? receiptFooter,
+    String? receiptTagline,
+    String? receiptSocial,
+    String? receiptThankYou,
+    String? receiptQrUrl,
+    String? receiptQrCaption,
     bool? taxEnabled,
     int? taxRateBps,
     bool? serviceEnabled,
@@ -83,6 +89,11 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       phone: phone ?? state.phone,
       receiptHeader: receiptHeader ?? state.receiptHeader,
       receiptFooter: receiptFooter ?? state.receiptFooter,
+      receiptTagline: receiptTagline ?? state.receiptTagline,
+      receiptSocial: receiptSocial ?? state.receiptSocial,
+      receiptThankYou: receiptThankYou ?? state.receiptThankYou,
+      receiptQrUrl: receiptQrUrl ?? state.receiptQrUrl,
+      receiptQrCaption: receiptQrCaption ?? state.receiptQrCaption,
       taxEnabled: taxEnabled ?? state.taxEnabled,
       taxRateBps: taxRateBps ?? state.taxRateBps,
       serviceEnabled: serviceEnabled ?? state.serviceEnabled,
@@ -105,6 +116,11 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'phone': ?phone,
         'receiptHeader': ?receiptHeader,
         'receiptFooter': ?receiptFooter,
+        'receiptTagline': ?receiptTagline,
+        'receiptSocial': ?receiptSocial,
+        'receiptThankYou': ?receiptThankYou,
+        'receiptQrUrl': ?receiptQrUrl,
+        'receiptQrCaption': ?receiptQrCaption,
         'taxEnabled': ?taxEnabled,
         'taxRateBps': ?taxRateBps,
         'serviceEnabled': ?serviceEnabled,
@@ -126,11 +142,41 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       rethrow;
     }
   }
+
+  /// Replace the venue logo (ADR-0033). [jpeg] is the raw, already-downscaled
+  /// JPEG bytes. The server bumps logoRev and broadcasts the new settings, so
+  /// state refreshes from the returned payload (and clients refetch by rev).
+  Future<void> uploadLogo(List<int> jpeg) async {
+    final raw = await ref.read(apiClientProvider).putBytes('/venue/logo', jpeg);
+    state = VenueSettingsDto.fromJson((raw as Map).cast<String, dynamic>());
+  }
+
+  /// Clear the venue logo (back to a text-only header).
+  Future<void> clearLogo() async {
+    final raw = await ref.read(apiClientProvider).deleteJson('/venue/logo');
+    state = VenueSettingsDto.fromJson((raw as Map).cast<String, dynamic>());
+  }
 }
 
 final venueSettingsProvider =
     StateNotifierProvider<VenueSettingsRepository, VenueSettingsDto>(
         (ref) => VenueSettingsRepository(ref: ref));
+
+/// The venue logo's JPEG bytes (ADR-0033), or null when there is none. Keyed by
+/// `logoRev` so a new logo (or a clear) cache-busts. Fetched over the pinned
+/// client (see ApiClient.getBytes) — mirrors `menuPhotoBytesProvider`.
+final venueLogoBytesProvider = FutureProvider.autoDispose
+    .family<Uint8List?, int>((ref, rev) async {
+  if (rev <= 0) return null;
+  if (ref.watch(apiConfigProvider) == null) return null;
+  try {
+    final bytes = await ref.read(apiClientProvider).getBytes('/venue/logo');
+    ref.keepAlive();
+    return bytes;
+  } catch (_) {
+    return null;
+  }
+});
 
 /// The server's current LAN address for the guest plane: the base URL guests
 /// reach by scanning a table QR (`http://<lan-ip>:8080`), plus the raw IP for

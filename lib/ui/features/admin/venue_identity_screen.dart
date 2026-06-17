@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/features/admin/widgets/receipt_preview.dart';
 import '_common.dart';
 
 class VenueIdentityScreen extends ConsumerStatefulWidget {
@@ -23,6 +26,11 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
   late final TextEditingController _phone;
   late final TextEditingController _receiptHeader;
   late final TextEditingController _receiptFooter;
+  late final TextEditingController _receiptTagline;
+  late final TextEditingController _receiptSocial;
+  late final TextEditingController _receiptThankYou;
+  late final TextEditingController _receiptQrUrl;
+  late final TextEditingController _receiptQrCaption;
 
   final _displayNameFocus = FocusNode();
   final _legalNameFocus = FocusNode();
@@ -30,6 +38,16 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
   final _phoneFocus = FocusNode();
   final _receiptHeaderFocus = FocusNode();
   final _receiptFooterFocus = FocusNode();
+  final _receiptTaglineFocus = FocusNode();
+  final _receiptSocialFocus = FocusNode();
+  final _receiptThankYouFocus = FocusNode();
+  final _receiptQrUrlFocus = FocusNode();
+  final _receiptQrCaptionFocus = FocusNode();
+
+  // Picked-but-not-yet-confirmed logo bytes for the live preview; the saved
+  // logo rides venueLogoBytesProvider. Null once a save round-trips or cleared.
+  Uint8List? _pickedLogo;
+  bool _logoBusy = false;
 
   @override
   void initState() {
@@ -41,6 +59,11 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
     _phone = TextEditingController(text: s.phone);
     _receiptHeader = TextEditingController(text: s.receiptHeader);
     _receiptFooter = TextEditingController(text: s.receiptFooter);
+    _receiptTagline = TextEditingController(text: s.receiptTagline);
+    _receiptSocial = TextEditingController(text: s.receiptSocial);
+    _receiptThankYou = TextEditingController(text: s.receiptThankYou);
+    _receiptQrUrl = TextEditingController(text: s.receiptQrUrl);
+    _receiptQrCaption = TextEditingController(text: s.receiptQrCaption);
 
     _bindFocusCommit(_displayNameFocus, _displayName,
         (v) => _patch(displayName: v));
@@ -52,6 +75,36 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
         (v) => _patch(receiptHeader: v));
     _bindFocusCommit(_receiptFooterFocus, _receiptFooter,
         (v) => _patch(receiptFooter: v));
+    _bindFocusCommit(_receiptTaglineFocus, _receiptTagline,
+        (v) => _patch(receiptTagline: v));
+    _bindFocusCommit(_receiptSocialFocus, _receiptSocial,
+        (v) => _patch(receiptSocial: v));
+    _bindFocusCommit(_receiptThankYouFocus, _receiptThankYou,
+        (v) => _patch(receiptThankYou: v));
+    _bindFocusCommit(_receiptQrUrlFocus, _receiptQrUrl,
+        (v) => _patch(receiptQrUrl: v));
+    _bindFocusCommit(_receiptQrCaptionFocus, _receiptQrCaption,
+        (v) => _patch(receiptQrCaption: v));
+
+    // Live preview: rebuild as the admin types in any branding field.
+    for (final c in [
+      _displayName,
+      _address,
+      _phone,
+      _receiptHeader,
+      _receiptFooter,
+      _receiptTagline,
+      _receiptSocial,
+      _receiptThankYou,
+      _receiptQrUrl,
+      _receiptQrCaption,
+    ]) {
+      c.addListener(_onDraftChanged);
+    }
+  }
+
+  void _onDraftChanged() {
+    if (mounted) setState(() {});
   }
 
   void _bindFocusCommit(
@@ -71,6 +124,11 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
     String? phone,
     String? receiptHeader,
     String? receiptFooter,
+    String? receiptTagline,
+    String? receiptSocial,
+    String? receiptThankYou,
+    String? receiptQrUrl,
+    String? receiptQrCaption,
   }) async {
     final s = ref.read(venueSettingsProvider);
     String? norm(String? v, String prev) {
@@ -84,12 +142,22 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
     final ph = norm(phone, s.phone);
     final rh = norm(receiptHeader, s.receiptHeader);
     final rf = norm(receiptFooter, s.receiptFooter);
+    final rt = norm(receiptTagline, s.receiptTagline);
+    final rs = norm(receiptSocial, s.receiptSocial);
+    final rty = norm(receiptThankYou, s.receiptThankYou);
+    final rq = norm(receiptQrUrl, s.receiptQrUrl);
+    final rqc = norm(receiptQrCaption, s.receiptQrCaption);
     if (dn == null &&
         ln == null &&
         ad == null &&
         ph == null &&
         rh == null &&
-        rf == null) {
+        rf == null &&
+        rt == null &&
+        rs == null &&
+        rty == null &&
+        rq == null &&
+        rqc == null) {
       return;
     }
     try {
@@ -100,6 +168,11 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
             phone: ph,
             receiptHeader: rh,
             receiptFooter: rf,
+            receiptTagline: rt,
+            receiptSocial: rs,
+            receiptThankYou: rty,
+            receiptQrUrl: rq,
+            receiptQrCaption: rqc,
           );
     } catch (_) {
       // Repo reverts state; controllers will resync via ref.listen below.
@@ -121,6 +194,11 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
     apply(_phone, _phoneFocus, s.phone);
     apply(_receiptHeader, _receiptHeaderFocus, s.receiptHeader);
     apply(_receiptFooter, _receiptFooterFocus, s.receiptFooter);
+    apply(_receiptTagline, _receiptTaglineFocus, s.receiptTagline);
+    apply(_receiptSocial, _receiptSocialFocus, s.receiptSocial);
+    apply(_receiptThankYou, _receiptThankYouFocus, s.receiptThankYou);
+    apply(_receiptQrUrl, _receiptQrUrlFocus, s.receiptQrUrl);
+    apply(_receiptQrCaption, _receiptQrCaptionFocus, s.receiptQrCaption);
   }
 
   @override
@@ -131,12 +209,22 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
     _phone.dispose();
     _receiptHeader.dispose();
     _receiptFooter.dispose();
+    _receiptTagline.dispose();
+    _receiptSocial.dispose();
+    _receiptThankYou.dispose();
+    _receiptQrUrl.dispose();
+    _receiptQrCaption.dispose();
     _displayNameFocus.dispose();
     _legalNameFocus.dispose();
     _addressFocus.dispose();
     _phoneFocus.dispose();
     _receiptHeaderFocus.dispose();
     _receiptFooterFocus.dispose();
+    _receiptTaglineFocus.dispose();
+    _receiptSocialFocus.dispose();
+    _receiptThankYouFocus.dispose();
+    _receiptQrUrlFocus.dispose();
+    _receiptQrCaptionFocus.dispose();
     super.dispose();
   }
 
@@ -162,9 +250,20 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _identityCard(context)),
+            Expanded(
+              child: Column(
+                children: [
+                  _identityCard(context),
+                  const SizedBox(height: 14),
+                  _receiptCard(context),
+                ],
+              ),
+            ),
             const SizedBox(width: 14),
-            Expanded(child: _receiptCard(context)),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: _receiptPreview(context),
+            ),
           ],
         ),
         const SizedBox(height: 14),
@@ -211,8 +310,17 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                 _phoneRow(context, sc,
                     label: 'Branding struk',
                     value: _receiptSummary(s),
-                    onTap: () => _openDetail(context, 'Branding struk',
-                        (c, _) => _receiptCard(c))),
+                    onTap: () => _openDetail(
+                        context,
+                        'Branding struk',
+                        (c, _) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _receiptCard(c),
+                                const SizedBox(height: 20),
+                                Center(child: _receiptPreview(c)),
+                              ],
+                            ))),
                 _phoneRow(context, sc,
                     label: 'Pajak & layanan',
                     value: _pajakLayananSummary(s),
@@ -367,6 +475,14 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
         title: 'Branding struk',
         tag: 'CETAK',
         rows: [
+          AdminRow(label: 'Logo', value: _logoTile(context)),
+          AdminRow(
+              label: 'Tagline',
+              value: _editor(context,
+                  controller: _receiptTagline,
+                  focus: _receiptTaglineFocus,
+                  hint: 'mis. Kopi & Dapur',
+                  onSubmit: (v) => _patch(receiptTagline: v))),
           AdminRow(
               label: 'Header',
               value: _editor(context,
@@ -375,16 +491,188 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                   hint: 'Tampil di atas struk',
                   onSubmit: (v) => _patch(receiptHeader: v))),
           AdminRow(
+              label: 'Sosial',
+              value: _editor(context,
+                  controller: _receiptSocial,
+                  focus: _receiptSocialFocus,
+                  hint: '@instagram · wa.me/…',
+                  onSubmit: (v) => _patch(receiptSocial: v))),
+          AdminRow(
               label: 'Footer',
               value: _editor(context,
                   controller: _receiptFooter,
                   focus: _receiptFooterFocus,
                   hint: 'Tampil di bawah struk',
                   multiline: true,
-                  onSubmit: (v) => _patch(receiptFooter: v)),
+                  onSubmit: (v) => _patch(receiptFooter: v))),
+          AdminRow(
+              label: 'Ucapan terima kasih',
+              value: _editor(context,
+                  controller: _receiptThankYou,
+                  focus: _receiptThankYouFocus,
+                  hint: 'Terima kasih',
+                  onSubmit: (v) => _patch(receiptThankYou: v))),
+          AdminRow(
+              label: 'QR (URL)',
+              value: _editor(context,
+                  controller: _receiptQrUrl,
+                  focus: _receiptQrUrlFocus,
+                  hint: 'https://… (hanya struk uang)',
+                  mono: true,
+                  inputType: TextInputType.url,
+                  onSubmit: (v) => _patch(receiptQrUrl: v))),
+          AdminRow(
+              label: 'QR (keterangan)',
+              value: _editor(context,
+                  controller: _receiptQrCaption,
+                  focus: _receiptQrCaptionFocus,
+                  hint: 'mis. Ulas kami di Google',
+                  onSubmit: (v) => _patch(receiptQrCaption: v)),
               last: true),
         ],
       );
+
+  /// Resolves the logo bytes shown in the preview: a fresh unsaved pick wins,
+  /// otherwise the saved blob via the cache-busted side-endpoint.
+  Uint8List? _previewLogo(VenueSettingsDto s) {
+    if (_pickedLogo != null) return _pickedLogo;
+    return ref.watch(venueLogoBytesProvider(s.logoRev)).valueOrNull;
+  }
+
+  Widget _logoTile(BuildContext context) {
+    final sc = context.sat;
+    final s = ref.watch(venueSettingsProvider);
+    final bytes = _previewLogo(s);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: sc.bg1,
+                border: Border.all(color: sc.border0),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              alignment: Alignment.center,
+              child: bytes != null
+                  ? Image.memory(bytes,
+                      fit: BoxFit.contain, gaplessPlayback: true)
+                  : Icon(Icons.storefront_outlined,
+                      size: 20, color: sc.textLo),
+            ),
+            const SizedBox(width: 10),
+            if (_logoBusy)
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: sc.accent),
+              )
+            else ...[
+              _logoBtn(sc, bytes == null ? 'Tambah' : 'Ganti', _pickLogo),
+              if (bytes != null) ...[
+                const SizedBox(width: 8),
+                _logoBtn(sc, 'Hapus', _clearLogo, danger: true),
+              ],
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _logoBtn(SatColors sc, String label, VoidCallback onTap,
+      {bool danger = false}) {
+    final c = danger ? sc.urgent : sc.accent;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: c.withValues(alpha: 0.10),
+          border: Border.all(color: c.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(label,
+            style: SatType.sans(
+                size: 12, weight: FontWeight.w600, color: c)),
+      ),
+    );
+  }
+
+  Future<void> _pickLogo() async {
+    try {
+      final x = await ImagePicker()
+          .pickImage(source: ImageSource.gallery, maxWidth: 2048);
+      if (x == null) return;
+      setState(() => _logoBusy = true);
+      final raw = await x.readAsBytes();
+      // Downscale + re-encode JPEG (≤1024px wide) before sending. The thermal
+      // raster downscales again to 384px; this keeps the stored blob lean.
+      final decoded = img.decodeImage(raw);
+      if (decoded == null) {
+        setState(() => _logoBusy = false);
+        return;
+      }
+      final scaled = decoded.width > 1024
+          ? img.copyResize(decoded, width: 1024)
+          : decoded;
+      final jpeg = Uint8List.fromList(img.encodeJpg(scaled, quality: 85));
+      await ref.read(venueSettingsProvider.notifier).uploadLogo(jpeg);
+      if (!mounted) return;
+      // Bust the cached fetch so the saved-bytes path picks up the new rev.
+      ref.invalidate(venueLogoBytesProvider);
+      setState(() {
+        _pickedLogo = jpeg;
+        _logoBusy = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _logoBusy = false);
+    }
+  }
+
+  Future<void> _clearLogo() async {
+    setState(() => _logoBusy = true);
+    try {
+      await ref.read(venueSettingsProvider.notifier).clearLogo();
+      if (!mounted) return;
+      ref.invalidate(venueLogoBytesProvider);
+    } catch (_) {
+      // ignore; state unchanged on failure
+    } finally {
+      if (mounted) {
+        setState(() {
+          _pickedLogo = null;
+          _logoBusy = false;
+        });
+      }
+    }
+  }
+
+  Widget _receiptPreview(BuildContext context) {
+    final s = ref.watch(venueSettingsProvider);
+    return ReceiptPreview(
+      data: ReceiptPreviewData(
+        logoBytes: _previewLogo(s),
+        venueName: _displayName.text,
+        address: _address.text,
+        phone: _phone.text,
+        tagline: _receiptTagline.text,
+        social: _receiptSocial.text,
+        header: _receiptHeader.text,
+        footer: _receiptFooter.text,
+        thankYou: _receiptThankYou.text,
+        qrUrl: _receiptQrUrl.text,
+        qrCaption: _receiptQrCaption.text,
+      ),
+    );
+  }
 
   Widget _editor(
     BuildContext context, {

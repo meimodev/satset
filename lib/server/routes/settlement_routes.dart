@@ -377,8 +377,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       venueName: v?.displayName ?? 'SatSet',
       header: v?.receiptHeader ?? '',
       footer: v?.receiptFooter ?? '',
+      tagline: v?.receiptTagline ?? '',
+      social: v?.receiptSocial ?? '',
+      thankYou: v?.receiptThankYou ?? '',
       address: v?.address ?? '',
       phone: v?.phone ?? '',
+      logoBytes: v?.logo,
+      qrUrl: v?.receiptQrUrl ?? '',
+      qrCaption: v?.receiptQrCaption ?? '',
     );
     try {
       final bytes = await BillStrukRenderer.render(data);

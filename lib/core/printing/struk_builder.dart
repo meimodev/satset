@@ -29,13 +29,18 @@ class StrukBuilder {
     String guestName = '',
     String guestNote = '',
     DateTime? at,
+    List<int>? logoBytes,
   }) {
     return StrukData(
       venueName: venue.displayName,
       header: venue.receiptHeader,
       footer: venue.receiptFooter,
+      tagline: venue.receiptTagline,
+      social: venue.receiptSocial,
+      thankYou: venue.receiptThankYou,
       address: venue.address,
       phone: venue.phone,
+      logoBytes: logoBytes,
       tableLabel: tableLabel,
       pax: pax,
       guestName: guestName,

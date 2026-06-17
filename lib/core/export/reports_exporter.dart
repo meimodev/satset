@@ -104,7 +104,7 @@ String buildReportsCsv(ReportsSnapshotDto s, ReportRange range,
 
 Future<Uint8List> buildReportsPdf(
     ReportsSnapshotDto s, ReportRange range,
-    {DateTime? from, DateTime? to}) async {
+    {DateTime? from, DateTime? to, PdfBranding? branding}) async {
   final theme = await pdfTheme();
   final doc = pw.Document(theme: theme.base);
 
@@ -119,6 +119,10 @@ Future<Uint8List> buildReportsPdf(
         pdfTitleBlock(
           title: 'Laporan SatSet',
           subtitle: rangeLabelId(range, from: from, to: to),
+          logoBytes: branding?.logoBytes,
+          venueName: branding?.venueName,
+          address: branding?.address,
+          phone: branding?.phone,
           meta: [
             'Rentang: ${_windowLine(s)}',
             'Dibuat: ${_fmtIso(s.generatedAt)}',

@@ -66,12 +66,19 @@ class BillStrukPayment {
 }
 
 class BillStrukData {
-  // ── venue header ──
+  // ── venue header / branding (ADR-0033) ──
   final String venueName;
   final String header; // receiptHeader, may be ''
   final String footer; // receiptFooter, may be ''
+  final String tagline; // short slogan under the venue name, may be ''
+  final String social; // website / social handle line, may be ''
+  final String thankYou; // closing sign-off; '' ⇒ "Terima kasih"
   final String address;
   final String phone;
+  final List<int>? logoBytes; // optional logo, raw JPEG; centred + monochrome
+  // Footer QR — money docs only. Empty url ⇒ no QR.
+  final String qrUrl;
+  final String qrCaption;
 
   // ── identity ──
   final String tableLabel;
@@ -101,8 +108,14 @@ class BillStrukData {
     required this.venueName,
     this.header = '',
     this.footer = '',
+    this.tagline = '',
+    this.social = '',
+    this.thankYou = '',
     this.address = '',
     this.phone = '',
+    this.logoBytes,
+    this.qrUrl = '',
+    this.qrCaption = '',
     required this.tableLabel,
     required this.pax,
     this.guestName = '',

@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -363,6 +363,24 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('venue_settings', 'guest_ordering_enabled',
                 type: 'INTEGER NOT NULL DEFAULT 0');
             await _safeAddColumnOn('venue_tables', 'guest_ordering_enabled',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+          }
+          if (from < 33) {
+            // Receipt branding block (ADR-0033): a shared logo + extra text
+            // lines + a footer QR on the venue settings row. Logo is a nullable
+            // JPEG blob with a monotonic rev (mirrors the menu-photo pattern).
+            await _safeAddColumnOn('venue_settings', 'receipt_tagline',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'receipt_social',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'receipt_thank_you',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'receipt_qr_url',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'receipt_qr_caption',
+                type: "TEXT NOT NULL DEFAULT ''");
+            await _safeAddColumnOn('venue_settings', 'logo', type: 'BLOB');
+            await _safeAddColumnOn('venue_settings', 'logo_rev',
                 type: 'INTEGER NOT NULL DEFAULT 0');
           }
         },

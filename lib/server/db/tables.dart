@@ -288,6 +288,24 @@ class VenueSettings extends Table {
   TextColumn get phone => text().withDefault(const Constant(''))();
   TextColumn get receiptHeader => text().withDefault(const Constant(''))();
   TextColumn get receiptFooter => text().withDefault(const Constant(''))();
+  /// Receipt branding block (ADR-0033) — one shared block stamped on every
+  /// document. Short slogan under the venue name, plus a website/social handle
+  /// line in the header.
+  TextColumn get receiptTagline => text().withDefault(const Constant(''))();
+  TextColumn get receiptSocial => text().withDefault(const Constant(''))();
+  /// Closing sign-off (was a hardcoded "Terima kasih"). Empty ⇒ renderers fall
+  /// back to "Terima kasih".
+  TextColumn get receiptThankYou => text().withDefault(const Constant(''))();
+  /// Footer QR (money docs only): a free-form URL + a short caption.
+  TextColumn get receiptQrUrl => text().withDefault(const Constant(''))();
+  TextColumn get receiptQrCaption => text().withDefault(const Constant(''))();
+  /// Optional logo as a JPEG blob. Null = no logo (header is text-only). Read
+  /// ONLY by the logo route — never selected into the settings JSON snapshot.
+  /// Mirrors the menu-photo pattern (ADR-0014 / ADR-0033).
+  BlobColumn get logo => blob().nullable()();
+  /// Monotonic revision bumped on every logo write/clear. Rides the settings
+  /// JSON (the bytes do not) so clients cache-bust by `logoRev`.
+  IntColumn get logoRev => integer().withDefault(const Constant(0))();
   BoolColumn get taxEnabled => boolean().withDefault(const Constant(false))();
   IntColumn get taxRateBps => integer().withDefault(const Constant(1100))();
   BoolColumn get serviceEnabled =>

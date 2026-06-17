@@ -26,8 +26,13 @@ class StrukData {
   final String venueName;
   final String header; // receiptHeader, free text, may be ''
   final String footer; // receiptFooter, free text, may be ''
+  final String tagline; // short slogan under the venue name, may be ''
+  final String social; // website / social handle line, may be ''
+  final String thankYou; // closing sign-off; '' ⇒ "Terima kasih"
   final String address;
   final String phone;
+  // Optional logo as raw JPEG bytes (ADR-0033). Rendered centred + monochrome.
+  final List<int>? logoBytes;
   final String tableLabel;
   final int pax;
   final String guestName; // '' when none
@@ -39,8 +44,12 @@ class StrukData {
     required this.venueName,
     this.header = '',
     this.footer = '',
+    this.tagline = '',
+    this.social = '',
+    this.thankYou = '',
     this.address = '',
     this.phone = '',
+    this.logoBytes,
     required this.tableLabel,
     required this.pax,
     this.guestName = '',

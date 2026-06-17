@@ -4,25 +4,36 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/export/accounting_exporter.dart';
 import 'package:satset/core/export/export_share.dart';
 import 'package:satset/core/export/order_history_exporter.dart';
+import 'package:satset/core/export/pdf_theme.dart';
 import 'package:satset/core/export/reports_exporter.dart';
+import 'package:satset/core/export/staff_report_exporter.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/reports_dto.dart';
+import 'package:satset/data/repositories/accounting_report_repository.dart';
 import 'package:satset/data/repositories/order_history_repository.dart';
 import 'package:satset/data/repositories/reports_repository.dart';
+import 'package:satset/data/repositories/staff_report_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
-/// What an export covers. Both kinds share one sheet and one **Ekspor** entry
-/// (ADR-0030 / ADR-0031); the user picks the kind via the **Jenis** selector.
-/// `laporan` needs an in-memory report snapshot; `pesanan` fetches history on
-/// demand and works without one.
+/// What an export covers. All kinds share one sheet and one **Ekspor** entry
+/// (ADR-0030 / ADR-0031 / ADR-0032); the user picks the kind via the **Jenis**
+/// selector. `laporan` needs the in-memory report snapshot; the rest fetch
+/// their own purpose-built window payload on demand and work without one.
 enum _ExportKind {
   laporan('Umum', 'Ekspor laporan', 'laporan'),
-  pesanan('Pesanan', 'Ekspor pesanan', 'riwayat-pesanan');
+  pesanan('Pesanan', 'Ekspor pesanan', 'riwayat-pesanan'),
+  staf('Staf', 'Ekspor staf', 'laporan-staf'),
+  akuntansi('Akuntansi', 'Ekspor akuntansi', 'akuntansi');
 
   const _ExportKind(this.label, this.title, this.fileKind);
+
+  /// Only `laporan` reads the in-memory snapshot; the others fetch on demand.
+  bool get needsSnapshot => this == _ExportKind.laporan;
 
   /// Selector chip label.
   final String label;
@@ -51,18 +62,12 @@ Future<void> showExportSheet(
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: sc.bg1,
-    builder: (_) => _ExportSheet(
-      query: query,
-      reportsSnapshot: snapshot,
-    ),
+    builder: (_) => _ExportSheet(query: query, reportsSnapshot: snapshot),
   );
 }
 
 class _ExportSheet extends ConsumerStatefulWidget {
-  const _ExportSheet({
-    required this.query,
-    this.reportsSnapshot,
-  });
+  const _ExportSheet({required this.query, this.reportsSnapshot});
 
   /// Active report query — supplies the range and (for custom) the from/to.
   final ReportsQuery query;
@@ -86,7 +91,24 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
   DateTime? get _from => widget.query.customFrom;
   DateTime? get _to => widget.query.customTo;
 
-  bool get _isReports => _kind == _ExportKind.laporan;
+  /// Letterhead subset for PDF exports (ADR-0033) — logo + venue identity only,
+  /// never the customer footer/tagline/QR. Logo fetch failures fall back to
+  /// text-only cleanly.
+  Future<PdfBranding> _branding() async {
+    final v = ref.read(venueSettingsProvider);
+    Uint8List? logo;
+    try {
+      logo = await ref.read(venueLogoBytesProvider(v.logoRev).future);
+    } catch (_) {
+      logo = null;
+    }
+    return PdfBranding(
+      logoBytes: logo,
+      venueName: v.displayName,
+      address: v.address,
+      phone: v.phone,
+    );
+  }
 
   Future<void> _run() async {
     setState(() {
@@ -94,25 +116,52 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
       _error = null;
     });
     try {
+      final isPdf = _format == ExportFormat.pdf;
+      final branding = isPdf ? await _branding() : null;
       final Uint8List bytes;
-      if (_isReports) {
-        final snap = widget.reportsSnapshot!;
-        bytes = _format == ExportFormat.pdf
-            ? await buildReportsPdf(snap, _range, from: _from, to: _to)
-            : _csvBytes(buildReportsCsv(snap, _range, from: _from, to: _to));
-      } else {
-        final fetch = ref.read(orderHistoryFetcherProvider);
-        final history = await fetch(widget.query);
-        if (_format == ExportFormat.pdf) {
-          // Pull proof photos on demand (ADR-0031); failures skip gracefully.
-          final photos =
-              await ref.read(orderHistoryPhotosFetcherProvider)(history);
-          bytes = await buildOrderHistoryPdf(history, _range,
-              photos: photos, from: _from, to: _to);
-        } else {
-          bytes = _csvBytes(
-              buildOrderHistoryCsv(history, _range, from: _from, to: _to));
-        }
+      switch (_kind) {
+        case _ExportKind.laporan:
+          final snap = widget.reportsSnapshot!;
+          bytes = isPdf
+              ? await buildReportsPdf(snap, _range,
+                  from: _from, to: _to, branding: branding)
+              : _csvBytes(buildReportsCsv(snap, _range, from: _from, to: _to));
+        case _ExportKind.pesanan:
+          final history = await ref.read(orderHistoryFetcherProvider)(
+            widget.query,
+          );
+          if (isPdf) {
+            // Pull proof photos on demand (ADR-0031); failures skip gracefully.
+            final photos = await ref.read(orderHistoryPhotosFetcherProvider)(
+              history,
+            );
+            bytes = await buildOrderHistoryPdf(
+              history,
+              _range,
+              photos: photos,
+              from: _from,
+              to: _to,
+              branding: branding,
+            );
+          } else {
+            bytes = _csvBytes(
+              buildOrderHistoryCsv(history, _range, from: _from, to: _to),
+            );
+          }
+        case _ExportKind.staf:
+          final staff = await ref.read(staffReportFetcherProvider)(
+            widget.query,
+          );
+          bytes = isPdf
+              ? await buildStaffPdf(staff, branding: branding)
+              : _csvBytes(buildStaffCsv(staff));
+        case _ExportKind.akuntansi:
+          final acct = await ref.read(accountingReportFetcherProvider)(
+            widget.query,
+          );
+          bytes = isPdf
+              ? await buildAccountingPdf(acct, branding: branding)
+              : _csvBytes(buildAccountingCsv(acct));
       }
 
       await shareExportBytes(
@@ -168,18 +217,19 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
             const SizedBox(height: 16),
             _label(context, 'Jenis'),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                for (final k in _ExportKind.values) ...[
-                  _kindPill(context, k),
-                  const SizedBox(width: 8),
-                ],
+                for (final k in _ExportKind.values) _kindPill(context, k),
               ],
             ),
-            if (widget.reportsSnapshot == null) ...[
+            if (_kind.needsSnapshot && widget.reportsSnapshot == null) ...[
               const SizedBox(height: 8),
-              Text('Laporan belum siap — buka laporan dulu agar bisa diekspor.',
-                  style: SatType.sans(size: 11.5, color: sc.textLo)),
+              Text(
+                'Laporan belum siap — buka laporan dulu agar bisa diekspor.',
+                style: SatType.sans(size: 11.5, color: sc.textLo),
+              ),
             ],
             const SizedBox(height: 18),
             _label(context, 'Periode'),
@@ -203,14 +253,10 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 14),
-              Text(_error!,
-                  style: SatType.sans(size: 12, color: sc.urgent)),
+              Text(_error!, style: SatType.sans(size: 12, color: sc.urgent)),
             ],
             const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              child: _exportButton(context),
-            ),
+            SizedBox(width: double.infinity, child: _exportButton(context)),
           ],
         ),
       ),
@@ -241,19 +287,24 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text('Menyiapkan…',
-                      style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          color: sc.accent)),
+                  Text(
+                    'Menyiapkan…',
+                    style: SatType.sans(
+                      size: 14,
+                      weight: FontWeight.w600,
+                      color: sc.accent,
+                    ),
+                  ),
                 ],
               )
-            : Text('Ekspor ${_format.label}',
+            : Text(
+                'Ekspor ${_format.label}',
                 style: SatType.sans(
                   size: 15,
                   weight: FontWeight.w700,
                   color: sc.accentInk,
-                )),
+                ),
+              ),
       ),
     );
   }
@@ -274,21 +325,26 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
       child: Text(
         rangeLabelId(_range, from: _from, to: _to),
         style: SatType.sans(
-            size: 13, weight: FontWeight.w600, color: sc.accent),
+          size: 13,
+          weight: FontWeight.w600,
+          color: sc.accent,
+        ),
       ),
     );
   }
 
   Widget _label(BuildContext context, String text) => Text(
-        text,
-        style: SatType.sans(
-            size: 12, weight: FontWeight.w600, color: context.sat.textMd),
-      );
+    text,
+    style: SatType.sans(
+      size: 12,
+      weight: FontWeight.w600,
+      color: context.sat.textMd,
+    ),
+  );
 
   /// Disabled when [enabled] is false: greyed out and inert.
   Widget _kindPill(BuildContext context, _ExportKind k) {
-    final disabled =
-        k == _ExportKind.laporan && widget.reportsSnapshot == null;
+    final disabled = k == _ExportKind.laporan && widget.reportsSnapshot == null;
     return _pill(
       context,
       k.label,
@@ -298,8 +354,13 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
     );
   }
 
-  Widget _pill(BuildContext context, String text,
-      {required bool on, VoidCallback? onTap, bool enabled = true}) {
+  Widget _pill(
+    BuildContext context,
+    String text, {
+    required bool on,
+    VoidCallback? onTap,
+    bool enabled = true,
+  }) {
     final sc = context.sat;
     return Opacity(
       opacity: enabled ? 1 : 0.4,

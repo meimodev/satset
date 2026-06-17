@@ -14,6 +14,14 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default('') String phone,
     @Default('') String receiptHeader,
     @Default('') String receiptFooter,
+    // Receipt branding block (ADR-0033). Logo bytes are NOT carried here — they
+    // ride the side-endpoint /venue/logo, cache-busted by logoRev.
+    @Default('') String receiptTagline,
+    @Default('') String receiptSocial,
+    @Default('') String receiptThankYou,
+    @Default('') String receiptQrUrl,
+    @Default('') String receiptQrCaption,
+    @Default(0) int logoRev,
     @Default(false) bool taxEnabled,
     @Default(1100) int taxRateBps,
     @Default(false) bool serviceEnabled,
