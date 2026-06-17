@@ -23,6 +23,12 @@ class VenueTable {
   final String? guestNotes;
   final String? reservationId;
 
+  /// Stable id of the visit currently seated at this table, or null when kosong.
+  /// The key the live-ticket cache resolves a dine-in table's lines through —
+  /// a `tableId` is reused across visits, so lines hang off the visit, never the
+  /// table. See ADR-0034 / ADR-0024.
+  final String? currentVisitId;
+
   /// The current visit's bill has been closed (Lunas) by the cashier while the
   /// table is still occupied — drives the floor's Lunas pill. See ADR-0024.
   final bool billClosed;
@@ -56,6 +62,7 @@ class VenueTable {
     this.guestName,
     this.guestNotes,
     this.reservationId,
+    this.currentVisitId,
     this.billClosed = false,
     this.moneyState,
     this.guestOrderingEnabled = false,
@@ -93,6 +100,7 @@ class VenueTable {
     String? guestName,
     String? guestNotes,
     String? reservationId,
+    String? currentVisitId,
     bool? guestOrderingEnabled,
   }) {
     return VenueTable(
@@ -116,6 +124,7 @@ class VenueTable {
       guestName: guestName ?? this.guestName,
       guestNotes: guestNotes ?? this.guestNotes,
       reservationId: reservationId ?? this.reservationId,
+      currentVisitId: currentVisitId ?? this.currentVisitId,
       guestOrderingEnabled:
           guestOrderingEnabled ?? this.guestOrderingEnabled,
     );

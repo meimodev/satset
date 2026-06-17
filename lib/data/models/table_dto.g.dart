@@ -32,6 +32,7 @@ _$TableDtoImpl _$$TableDtoImplFromJson(Map<String, dynamic> json) =>
       guestName: json['guestName'] as String?,
       guestNotes: json['guestNotes'] as String?,
       reservationId: json['reservationId'] as String?,
+      currentVisitId: json['currentVisitId'] as String?,
       billClosedAt: json['billClosedAt'] == null
           ? null
           : DateTime.parse(json['billClosedAt'] as String),
@@ -59,6 +60,7 @@ Map<String, dynamic> _$$TableDtoImplToJson(_$TableDtoImpl instance) =>
       'guestName': instance.guestName,
       'guestNotes': instance.guestNotes,
       'reservationId': instance.reservationId,
+      'currentVisitId': instance.currentVisitId,
       'billClosedAt': instance.billClosedAt?.toIso8601String(),
       'moneyState': instance.moneyState,
       'guestOrderingEnabled': instance.guestOrderingEnabled,

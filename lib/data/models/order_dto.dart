@@ -54,6 +54,10 @@ class SubmitOrderRequestDto with _$SubmitOrderRequestDto {
 class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
   const factory SubmitOrderResponseDto({
     required List<String> ticketIds,
+    /// The visit the lines were filed under. Lets the sending device seed the
+    /// table's currentVisitId immediately, before the tableUpdated echo lands,
+    /// so its lines resolve without a flash of empty. See ADR-0034.
+    String? visitId,
   }) = _SubmitOrderResponseDto;
 
   factory SubmitOrderResponseDto.fromJson(Map<String, dynamic> json) =>

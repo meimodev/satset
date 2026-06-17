@@ -1231,6 +1231,7 @@ Map<String, dynamic> _toJson(VenueTable t) => {
       'guestName': t.guestName,
       'guestNotes': t.guestNotes,
       'reservationId': t.reservationId,
+      'currentVisitId': t.currentVisitId,
       'billClosedAt': t.billClosedAt?.toIso8601String(),
       'moneyState': t.moneyState,
       'guestOrderingEnabled': t.guestOrderingEnabled,

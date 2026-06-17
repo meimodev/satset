@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -831,7 +832,7 @@ class _EmptyZoneState extends State<_EmptyZone>
             ),
             const SizedBox(height: 6),
             Text(
-              'Tambahkan meja lewat Manajer › Lantai',
+              AppStrings.tablesEmptyZoneAddTableHint,
               textAlign: TextAlign.center,
               style: SatType.mono(
                 size: 11,

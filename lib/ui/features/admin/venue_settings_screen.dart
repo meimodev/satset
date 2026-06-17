@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -12,14 +13,14 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/features/admin/widgets/receipt_preview.dart';
 import '_common.dart';
 
-class VenueIdentityScreen extends ConsumerStatefulWidget {
-  const VenueIdentityScreen({super.key});
+class VenueSettingsScreen extends ConsumerStatefulWidget {
+  const VenueSettingsScreen({super.key});
   @override
-  ConsumerState<VenueIdentityScreen> createState() =>
-      _VenueIdentityScreenState();
+  ConsumerState<VenueSettingsScreen> createState() =>
+      _VenueSettingsScreenState();
 }
 
-class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
+class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
   late final TextEditingController _displayName;
   late final TextEditingController _legalName;
   late final TextEditingController _address;
@@ -44,8 +45,6 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
   final _receiptQrUrlFocus = FocusNode();
   final _receiptQrCaptionFocus = FocusNode();
 
-  // Picked-but-not-yet-confirmed logo bytes for the live preview; the saved
-  // logo rides venueLogoBytesProvider. Null once a save round-trips or cleared.
   Uint8List? _pickedLogo;
   bool _logoBusy = false;
 
@@ -86,7 +85,6 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
     _bindFocusCommit(_receiptQrCaptionFocus, _receiptQrCaption,
         (v) => _patch(receiptQrCaption: v));
 
-    // Live preview: rebuild as the admin types in any branding field.
     for (final c in [
       _displayName,
       _address,
@@ -240,7 +238,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
   Widget _tablet(BuildContext context) {
     final s = ref.watch(venueSettingsProvider);
     return AdminPage(
-      title: 'Identitas venue',
+      title: AppStrings.venueSettingsTitle,
       sub: s.legalName.isEmpty
           ? s.displayName
           : '${s.displayName} · ${s.legalName}',
@@ -285,7 +283,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-            child: Text('Identitas venue',
+            child: Text(AppStrings.venueSettingsTitle,
                 style: SatType.sans(
                   size: 30,
                   weight: FontWeight.w600,
@@ -295,7 +293,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Text('Profil, lokal, pajak, struk',
+            child: Text(AppStrings.venueSettingsSubtitle,
                 style: SatType.sans(size: 13, color: sc.textMd)),
           ),
           Expanded(
@@ -303,16 +301,16 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               children: [
                 _phoneRow(context, sc,
-                    label: 'Profil & alamat',
+                    label: AppStrings.venueSettingsSectionIdentity,
                     value: s.displayName,
-                    onTap: () => _openDetail(context, 'Profil & alamat',
+                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionIdentity,
                         (c, _) => _identityCard(c))),
                 _phoneRow(context, sc,
-                    label: 'Branding struk',
+                    label: AppStrings.venueSettingsSectionReceipt,
                     value: _receiptSummary(s),
                     onTap: () => _openDetail(
                         context,
-                        'Branding struk',
+                        AppStrings.venueSettingsSectionReceipt,
                         (c, _) => Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -322,20 +320,20 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                               ],
                             ))),
                 _phoneRow(context, sc,
-                    label: 'Pajak & layanan',
+                    label: AppStrings.venueSettingsSectionTax,
                     value: _pajakLayananSummary(s),
-                    onTap: () => _openDetail(context, 'Pajak & layanan',
+                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionTax,
                         (c, _) => _PajakLayananCard())),
                 _phoneRow(context, sc,
-                    label: 'Pesanan mandiri',
-                    value: s.guestOrderingEnabled ? 'Aktif' : 'Nonaktif',
-                    onTap: () => _openDetail(context, 'Pesanan mandiri',
+                    label: AppStrings.venueSettingsSectionGuestOrdering,
+                    value: s.guestOrderingEnabled ? AppStrings.active : AppStrings.inactive,
+                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionGuestOrdering,
                         (c, _) => _GuestOrderingCard())),
                 _phoneRow(context, sc,
-                    label: 'Laporan & shift',
+                    label: AppStrings.venueSettingsSectionReports,
                     value:
                         'Mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00 · target ${s.prepTargetMins}m',
-                    onTap: () => _openDetail(context, 'Laporan & shift',
+                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionReports,
                         (c, _) => _ReportsHourCard()),
                     last: true),
               ],
@@ -410,29 +408,27 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
   }
 
   Widget _identityCard(BuildContext context) {
-    // Name + address are cloud-owned (ADR-0018): mirrored read-only from the
-    // fleet console; only a super admin edits them.
     final s = ref.watch(venueSettingsProvider);
     return _sectionCard(
         context,
-        title: 'Profil & alamat',
-        tag: 'WAJIB',
+        title: AppStrings.venueSettingsSectionIdentity,
+        tag: AppStrings.venueSettingsSectionIdentityTag,
         rows: [
           AdminRow(
-              label: 'Nama tampilan',
+              label: AppStrings.venueSettingsDisplayName,
               value: _cloudManaged(context, s.displayName)),
           AdminRow(
-              label: 'Nama legal',
+              label: AppStrings.venueSettingsLegalName,
               value: _editor(context,
                   controller: _legalName,
                   focus: _legalNameFocus,
                   hint: 'PT …',
                   onSubmit: (v) => _patch(legalName: v))),
           AdminRow(
-              label: 'Alamat',
+              label: AppStrings.venueSettingsAddress,
               value: _cloudManaged(context, s.address)),
           AdminRow(
-              label: 'Telepon',
+              label: AppStrings.venueSettingsPhone,
               value: _editor(context,
                   controller: _phone,
                   focus: _phoneFocus,
@@ -445,8 +441,6 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
       );
   }
 
-  /// Read-only value for a cloud-owned field (name/address), with a subtle
-  /// "managed by the super admin" caption. See ADR-0018.
   Widget _cloudManaged(BuildContext context, String value) {
     final sc = context.sat;
     return Column(
@@ -462,7 +456,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
           children: [
             Icon(Icons.lock_outline_rounded, size: 10, color: sc.textLo),
             const SizedBox(width: 3),
-            Text('Dikelola pengelola',
+            Text(AppStrings.venueSettingsManagedBySuperAdmin,
                 style: SatType.sans(size: 10, color: sc.textLo)),
           ],
         ),
@@ -472,33 +466,33 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
 
   Widget _receiptCard(BuildContext context) => _sectionCard(
         context,
-        title: 'Branding struk',
-        tag: 'CETAK',
+        title: AppStrings.venueSettingsSectionReceipt,
+        tag: AppStrings.venueSettingsSectionReceiptTag,
         rows: [
-          AdminRow(label: 'Logo', value: _logoTile(context)),
+          AdminRow(label: AppStrings.venueSettingsLogo, value: _logoTile(context)),
           AdminRow(
-              label: 'Tagline',
+              label: AppStrings.venueSettingsTagline,
               value: _editor(context,
                   controller: _receiptTagline,
                   focus: _receiptTaglineFocus,
                   hint: 'mis. Kopi & Dapur',
                   onSubmit: (v) => _patch(receiptTagline: v))),
           AdminRow(
-              label: 'Header',
+              label: AppStrings.venueSettingsHeader,
               value: _editor(context,
                   controller: _receiptHeader,
                   focus: _receiptHeaderFocus,
                   hint: 'Tampil di atas struk',
                   onSubmit: (v) => _patch(receiptHeader: v))),
           AdminRow(
-              label: 'Sosial',
+              label: AppStrings.venueSettingsSocial,
               value: _editor(context,
                   controller: _receiptSocial,
                   focus: _receiptSocialFocus,
                   hint: '@instagram · wa.me/…',
                   onSubmit: (v) => _patch(receiptSocial: v))),
           AdminRow(
-              label: 'Footer',
+              label: AppStrings.venueSettingsFooter,
               value: _editor(context,
                   controller: _receiptFooter,
                   focus: _receiptFooterFocus,
@@ -506,14 +500,14 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                   multiline: true,
                   onSubmit: (v) => _patch(receiptFooter: v))),
           AdminRow(
-              label: 'Ucapan terima kasih',
+              label: AppStrings.venueSettingsThankYou,
               value: _editor(context,
                   controller: _receiptThankYou,
                   focus: _receiptThankYouFocus,
                   hint: 'Terima kasih',
                   onSubmit: (v) => _patch(receiptThankYou: v))),
           AdminRow(
-              label: 'QR (URL)',
+              label: AppStrings.venueSettingsQrUrl,
               value: _editor(context,
                   controller: _receiptQrUrl,
                   focus: _receiptQrUrlFocus,
@@ -522,7 +516,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                   inputType: TextInputType.url,
                   onSubmit: (v) => _patch(receiptQrUrl: v))),
           AdminRow(
-              label: 'QR (keterangan)',
+              label: AppStrings.venueSettingsQrCaption,
               value: _editor(context,
                   controller: _receiptQrCaption,
                   focus: _receiptQrCaptionFocus,
@@ -532,8 +526,6 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
         ],
       );
 
-  /// Resolves the logo bytes shown in the preview: a fresh unsaved pick wins,
-  /// otherwise the saved blob via the cache-busted side-endpoint.
   Uint8List? _previewLogo(VenueSettingsDto s) {
     if (_pickedLogo != null) return _pickedLogo;
     return ref.watch(venueLogoBytesProvider(s.logoRev)).valueOrNull;
@@ -575,10 +567,10 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
                     strokeWidth: 2, color: sc.accent),
               )
             else ...[
-              _logoBtn(sc, bytes == null ? 'Tambah' : 'Ganti', _pickLogo),
+              _logoBtn(sc, bytes == null ? AppStrings.venueSettingsLogoAdd : AppStrings.venueSettingsLogoChange, _pickLogo),
               if (bytes != null) ...[
                 const SizedBox(width: 8),
-                _logoBtn(sc, 'Hapus', _clearLogo, danger: true),
+                _logoBtn(sc, AppStrings.venueSettingsLogoDelete, _clearLogo, danger: true),
               ],
             ],
           ],
@@ -613,8 +605,6 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
       if (x == null) return;
       setState(() => _logoBusy = true);
       final raw = await x.readAsBytes();
-      // Downscale + re-encode JPEG (≤1024px wide) before sending. The thermal
-      // raster downscales again to 384px; this keeps the stored blob lean.
       final decoded = img.decodeImage(raw);
       if (decoded == null) {
         setState(() => _logoBusy = false);
@@ -626,7 +616,6 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
       final jpeg = Uint8List.fromList(img.encodeJpg(scaled, quality: 85));
       await ref.read(venueSettingsProvider.notifier).uploadLogo(jpeg);
       if (!mounted) return;
-      // Bust the cached fetch so the saved-bytes path picks up the new rev.
       ref.invalidate(venueLogoBytesProvider);
       setState(() {
         _pickedLogo = jpeg;
@@ -644,7 +633,7 @@ class _VenueIdentityScreenState extends ConsumerState<VenueIdentityScreen> {
       if (!mounted) return;
       ref.invalidate(venueLogoBytesProvider);
     } catch (_) {
-      // ignore; state unchanged on failure
+      // ignore
     } finally {
       if (mounted) {
         setState(() {
@@ -864,7 +853,7 @@ class _PajakLayananCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Pajak & layanan',
+                child: Text(AppStrings.venueSettingsSectionTax,
                     style: SatType.sans(
                       size: 15,
                       weight: FontWeight.w600,
@@ -1140,7 +1129,6 @@ class _PajakLayananCard extends ConsumerWidget {
   }
 }
 
-
 class _GuestOrderingCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1161,7 +1149,7 @@ class _GuestOrderingCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Pesanan mandiri',
+                child: Text(AppStrings.venueSettingsSectionGuestOrdering,
                     style: SatType.sans(
                       size: 15,
                       weight: FontWeight.w600,
@@ -1234,7 +1222,7 @@ class _GuestOrderingCard extends ConsumerWidget {
               ),
             ),
             Text(
-              'Aktifkan per meja dari layar Atur lantai untuk menampilkan QR.',
+              'Aktifkan per meja dari layar Atur zona untuk menampilkan QR.',
               style: SatType.sans(size: 11, color: sc.textDim, height: 1.4),
             ),
           ],
@@ -1308,7 +1296,7 @@ class _ReportsHourCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Laporan & shift',
+                child: Text(AppStrings.venueSettingsSectionReports,
                     style: SatType.sans(
                       size: 15,
                       weight: FontWeight.w600,
@@ -1382,8 +1370,6 @@ class _ReportsHourCard extends ConsumerWidget {
           const SizedBox(height: 16),
           Divider(height: 1, color: sc.border0),
           const SizedBox(height: 16),
-          // Service target (ADR-0013): one threshold for the overdue alert
-          // AND the speed-of-service SLA hit-rate in reports.
           Row(
             children: [
               SizedBox(
@@ -1394,7 +1380,7 @@ class _ReportsHourCard extends ConsumerWidget {
                     Text('Target kecepatan dapur',
                         style: SatType.sans(size: 13, color: sc.textMd)),
                     const SizedBox(height: 2),
-                    Text('Batas "telat" di lantai + SLA laporan',
+                    Text('Batas "telat" di zona + SLA laporan',
                         style: SatType.sans(size: 11, color: sc.textLo)),
                   ],
                 ),

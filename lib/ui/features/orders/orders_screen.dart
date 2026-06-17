@@ -43,9 +43,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     // it, not the table's current waiter. Null on legacy / offline lines.
     final all = <_Row>[];
     tickets.forEach((key, list) {
-      final table = tables.where((t) => t.id == key).firstOrNull;
-      // Resolve table-less (takeaway) lines via the visit so they aren't
-      // silently dropped from the board. See ADR-0026.
+      if (list.isEmpty) return;
+      // Map is keyed by visitId (ADR-0034). A dine-in line carries its real
+      // tableId; a table-less (takeaway) line resolves via the visit key so it
+      // isn't silently dropped from the board. See ADR-0026.
+      final tableId = list.first.tableId;
+      final table = tableId.isNotEmpty
+          ? tables.where((t) => t.id == tableId).firstOrNull
+          : null;
       final takeaway = table == null ? takeaways[key] : null;
       if (table == null && takeaway == null) return;
       final name = table?.displayName ?? takeaway!.label;
@@ -57,7 +62,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             : staff.where((u) => u.id == t.createdBy).firstOrNull;
         all.add(_Row(
           ticket: t,
-          tableId: key,
+          tableId: table?.id ?? key,
           tableName: name,
           zoneId: zoneId,
           pax: pax,

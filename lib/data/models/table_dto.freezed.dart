@@ -39,6 +39,7 @@ mixin _$TableDto {
   String? get guestName => throw _privateConstructorUsedError;
   String? get guestNotes => throw _privateConstructorUsedError;
   String? get reservationId => throw _privateConstructorUsedError;
+  String? get currentVisitId => throw _privateConstructorUsedError;
   DateTime? get billClosedAt => throw _privateConstructorUsedError;
   String? get moneyState => throw _privateConstructorUsedError;
   bool get guestOrderingEnabled => throw _privateConstructorUsedError;
@@ -77,6 +78,7 @@ abstract class $TableDtoCopyWith<$Res> {
     String? guestName,
     String? guestNotes,
     String? reservationId,
+    String? currentVisitId,
     DateTime? billClosedAt,
     String? moneyState,
     bool guestOrderingEnabled,
@@ -116,6 +118,7 @@ class _$TableDtoCopyWithImpl<$Res, $Val extends TableDto>
     Object? guestName = freezed,
     Object? guestNotes = freezed,
     Object? reservationId = freezed,
+    Object? currentVisitId = freezed,
     Object? billClosedAt = freezed,
     Object? moneyState = freezed,
     Object? guestOrderingEnabled = null,
@@ -194,6 +197,10 @@ class _$TableDtoCopyWithImpl<$Res, $Val extends TableDto>
                 ? _value.reservationId
                 : reservationId // ignore: cast_nullable_to_non_nullable
                       as String?,
+            currentVisitId: freezed == currentVisitId
+                ? _value.currentVisitId
+                : currentVisitId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             billClosedAt: freezed == billClosedAt
                 ? _value.billClosedAt
                 : billClosedAt // ignore: cast_nullable_to_non_nullable
@@ -240,6 +247,7 @@ abstract class _$$TableDtoImplCopyWith<$Res>
     String? guestName,
     String? guestNotes,
     String? reservationId,
+    String? currentVisitId,
     DateTime? billClosedAt,
     String? moneyState,
     bool guestOrderingEnabled,
@@ -278,6 +286,7 @@ class __$$TableDtoImplCopyWithImpl<$Res>
     Object? guestName = freezed,
     Object? guestNotes = freezed,
     Object? reservationId = freezed,
+    Object? currentVisitId = freezed,
     Object? billClosedAt = freezed,
     Object? moneyState = freezed,
     Object? guestOrderingEnabled = null,
@@ -356,6 +365,10 @@ class __$$TableDtoImplCopyWithImpl<$Res>
             ? _value.reservationId
             : reservationId // ignore: cast_nullable_to_non_nullable
                   as String?,
+        currentVisitId: freezed == currentVisitId
+            ? _value.currentVisitId
+            : currentVisitId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         billClosedAt: freezed == billClosedAt
             ? _value.billClosedAt
             : billClosedAt // ignore: cast_nullable_to_non_nullable
@@ -395,6 +408,7 @@ class _$TableDtoImpl implements _TableDto {
     this.guestName,
     this.guestNotes,
     this.reservationId,
+    this.currentVisitId,
     this.billClosedAt,
     this.moneyState,
     this.guestOrderingEnabled = false,
@@ -446,6 +460,8 @@ class _$TableDtoImpl implements _TableDto {
   @override
   final String? reservationId;
   @override
+  final String? currentVisitId;
+  @override
   final DateTime? billClosedAt;
   @override
   final String? moneyState;
@@ -455,7 +471,7 @@ class _$TableDtoImpl implements _TableDto {
 
   @override
   String toString() {
-    return 'TableDto(id: $id, zoneId: $zoneId, label: $label, pax: $pax, capacity: $capacity, active: $active, status: $status, openAmount: $openAmount, readyCount: $readyCount, lastActorId: $lastActorId, lockedBy: $lockedBy, lockedByName: $lockedByName, lockedAt: $lockedAt, lockExpiresAt: $lockExpiresAt, openedAt: $openedAt, guestName: $guestName, guestNotes: $guestNotes, reservationId: $reservationId, billClosedAt: $billClosedAt, moneyState: $moneyState, guestOrderingEnabled: $guestOrderingEnabled)';
+    return 'TableDto(id: $id, zoneId: $zoneId, label: $label, pax: $pax, capacity: $capacity, active: $active, status: $status, openAmount: $openAmount, readyCount: $readyCount, lastActorId: $lastActorId, lockedBy: $lockedBy, lockedByName: $lockedByName, lockedAt: $lockedAt, lockExpiresAt: $lockExpiresAt, openedAt: $openedAt, guestName: $guestName, guestNotes: $guestNotes, reservationId: $reservationId, currentVisitId: $currentVisitId, billClosedAt: $billClosedAt, moneyState: $moneyState, guestOrderingEnabled: $guestOrderingEnabled)';
   }
 
   @override
@@ -493,6 +509,8 @@ class _$TableDtoImpl implements _TableDto {
                 other.guestNotes == guestNotes) &&
             (identical(other.reservationId, reservationId) ||
                 other.reservationId == reservationId) &&
+            (identical(other.currentVisitId, currentVisitId) ||
+                other.currentVisitId == currentVisitId) &&
             (identical(other.billClosedAt, billClosedAt) ||
                 other.billClosedAt == billClosedAt) &&
             (identical(other.moneyState, moneyState) ||
@@ -523,6 +541,7 @@ class _$TableDtoImpl implements _TableDto {
     guestName,
     guestNotes,
     reservationId,
+    currentVisitId,
     billClosedAt,
     moneyState,
     guestOrderingEnabled,
@@ -562,6 +581,7 @@ abstract class _TableDto implements TableDto {
     final String? guestName,
     final String? guestNotes,
     final String? reservationId,
+    final String? currentVisitId,
     final DateTime? billClosedAt,
     final String? moneyState,
     final bool guestOrderingEnabled,
@@ -606,6 +626,8 @@ abstract class _TableDto implements TableDto {
   String? get guestNotes;
   @override
   String? get reservationId;
+  @override
+  String? get currentVisitId;
   @override
   DateTime? get billClosedAt;
   @override

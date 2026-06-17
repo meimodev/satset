@@ -22,6 +22,9 @@ Transition a table from **kosong** to **terisi**. Two entry points, both hit the
 
 Seat is rejected with `409 already_seated` if the target table is not `available`. A table may only be seated by one party at a time.
 
+### Reseat
+Seating a **new party** on a [[Table]] whose previous [[Visit]] has ended (table back to **kosong**). Not a distinct action — it is an ordinary [[Seat (verb)|seat]] on a recycled table. The point of the term: a Table's identity is **reused across Visits**, so the same `tableId` carries successive, unrelated parties over a service. The [[Visit]] — not the table — is the stable key a [[Bill (tab)|bill]] and its lines hang off. _Avoid_: treating a reseat as "reopening the old table"; the prior visit is over and its lines belong to that visit alone, never to the reseat.
+
 ### Waiter
 Per `lastActorId` on the table row — the user who most recently performed an operative action on the table (seat, pax change, ticket advance, explicit handover). Refreshed on every real op, not by viewing or by lock acquire alone. Cleared when the table is **closed** back to kosong — a fresh table carries no waiter. The field is approximate, not a strong "owner" claim — see [docs/adr/0001-table-locking-and-seat-semantics.md](docs/adr/0001-table-locking-and-seat-semantics.md).
 

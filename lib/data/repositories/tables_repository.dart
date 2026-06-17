@@ -151,6 +151,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       guestName: d.guestName,
       guestNotes: d.guestNotes,
       reservationId: d.reservationId,
+      currentVisitId: d.currentVisitId,
       billClosed: d.billClosedAt != null,
       moneyState: d.moneyState,
       guestOrderingEnabled: d.guestOrderingEnabled,
@@ -183,6 +184,17 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       for (final t in state)
         if (t.id == id) next else t,
     ];
+  }
+
+  /// Seed a table's [currentVisitId] from an order response, before the
+  /// `tableUpdated` WS echo lands. Lets the sending device resolve its
+  /// just-sent lines immediately (the live-ticket cache keys by visit). No-op
+  /// if the table is unknown or already on this visit. See ADR-0034.
+  void seedCurrentVisit(String tableId, String? visitId) {
+    if (visitId == null || visitId.isEmpty) return;
+    final cur = state.where((t) => t.id == tableId).firstOrNull;
+    if (cur == null || cur.currentVisitId == visitId) return;
+    _replace(tableId, cur.copyWith(currentVisitId: visitId));
   }
 
   /// Seat a table at [id]: marks occupied, sets pax, attaches guest info.

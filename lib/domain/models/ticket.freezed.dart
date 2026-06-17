@@ -22,6 +22,11 @@ mixin _$Ticket {
   /// The [[Visit]] this line belongs to — used to resolve a table-less
   /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
   String? get visitId => throw _privateConstructorUsedError;
+
+  /// The table this line was fired from (empty for takeaway). The live-ticket
+  /// cache keys groups by [[visitId]], so map-flattening consumers read the
+  /// table id here rather than from the (now visit-keyed) map key. ADR-0034.
+  String get tableId => throw _privateConstructorUsedError;
   String get itemId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get variantName => throw _privateConstructorUsedError;
@@ -53,6 +58,7 @@ abstract class $TicketCopyWith<$Res> {
   $Res call({
     String id,
     String? visitId,
+    String tableId,
     String itemId,
     String name,
     String variantName,
@@ -89,6 +95,7 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
   $Res call({
     Object? id = null,
     Object? visitId = freezed,
+    Object? tableId = null,
     Object? itemId = null,
     Object? name = null,
     Object? variantName = null,
@@ -116,6 +123,10 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.visitId
                 : visitId // ignore: cast_nullable_to_non_nullable
                       as String?,
+            tableId: null == tableId
+                ? _value.tableId
+                : tableId // ignore: cast_nullable_to_non_nullable
+                      as String,
             itemId: null == itemId
                 ? _value.itemId
                 : itemId // ignore: cast_nullable_to_non_nullable
@@ -197,6 +208,7 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
   $Res call({
     String id,
     String? visitId,
+    String tableId,
     String itemId,
     String name,
     String variantName,
@@ -232,6 +244,7 @@ class __$$TicketImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? visitId = freezed,
+    Object? tableId = null,
     Object? itemId = null,
     Object? name = null,
     Object? variantName = null,
@@ -259,6 +272,10 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.visitId
             : visitId // ignore: cast_nullable_to_non_nullable
                   as String?,
+        tableId: null == tableId
+            ? _value.tableId
+            : tableId // ignore: cast_nullable_to_non_nullable
+                  as String,
         itemId: null == itemId
             ? _value.itemId
             : itemId // ignore: cast_nullable_to_non_nullable
@@ -334,6 +351,7 @@ class _$TicketImpl implements _Ticket {
   const _$TicketImpl({
     required this.id,
     this.visitId,
+    this.tableId = '',
     required this.itemId,
     required this.name,
     this.variantName = '',
@@ -359,6 +377,13 @@ class _$TicketImpl implements _Ticket {
   /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
   @override
   final String? visitId;
+
+  /// The table this line was fired from (empty for takeaway). The live-ticket
+  /// cache keys groups by [[visitId]], so map-flattening consumers read the
+  /// table id here rather than from the (now visit-keyed) map key. ADR-0034.
+  @override
+  @JsonKey()
+  final String tableId;
   @override
   final String itemId;
   @override
@@ -403,7 +428,7 @@ class _$TicketImpl implements _Ticket {
 
   @override
   String toString() {
-    return 'Ticket(id: $id, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
+    return 'Ticket(id: $id, visitId: $visitId, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
   }
 
   @override
@@ -413,6 +438,7 @@ class _$TicketImpl implements _Ticket {
             other is _$TicketImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.visitId, visitId) || other.visitId == visitId) &&
+            (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.itemId, itemId) || other.itemId == itemId) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.variantName, variantName) ||
@@ -442,10 +468,11 @@ class _$TicketImpl implements _Ticket {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     visitId,
+    tableId,
     itemId,
     name,
     variantName,
@@ -462,7 +489,7 @@ class _$TicketImpl implements _Ticket {
     voidApprovedBy,
     createdBy,
     voidedBy,
-  );
+  ]);
 
   /// Create a copy of Ticket
   /// with the given fields replaced by the non-null parameter values.
@@ -477,6 +504,7 @@ abstract class _Ticket implements Ticket {
   const factory _Ticket({
     required final String id,
     final String? visitId,
+    final String tableId,
     required final String itemId,
     required final String name,
     final String variantName,
@@ -502,6 +530,12 @@ abstract class _Ticket implements Ticket {
   /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
   @override
   String? get visitId;
+
+  /// The table this line was fired from (empty for takeaway). The live-ticket
+  /// cache keys groups by [[visitId]], so map-flattening consumers read the
+  /// table id here rather than from the (now visit-keyed) map key. ADR-0034.
+  @override
+  String get tableId;
   @override
   String get itemId;
   @override

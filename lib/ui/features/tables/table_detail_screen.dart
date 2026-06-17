@@ -205,7 +205,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final sc = context.sat;
     final l = context.layout;
     final tables = ref.watch(tablesProvider);
-    final tickets = ref.watch(ticketsProvider)[_tableId] ?? const [];
+    final tickets = ref.watch(ticketsForTableProvider(_tableId));
     final table = tables.firstWhere(
       (t) => t.id == _tableId,
       orElse: () => VenueTable(id: _tableId, zoneId: ''),

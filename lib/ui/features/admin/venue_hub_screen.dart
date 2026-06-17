@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/generic_seed.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -25,43 +26,43 @@ class _Section {
 
 final _sections = <_Section>[
   _Section(
-    label: 'Lantai',
-    sub: 'Atur zona, meja, dan kapasitas ruangan',
+    label: AppStrings.venueHubSectionZona,
+    sub: AppStrings.venueHubSectionZonaSub,
     icon: Icons.place_outlined,
-    route: '/floor',
+    route: '/zone-admin',
     tint: (sc) => sc.accent,
   ),
   _Section(
-    label: 'Menu',
-    sub: 'Kategori, item, modifier, dan harga',
+    label: AppStrings.venueHubSectionMenu,
+    sub: AppStrings.venueHubSectionMenuSub,
     icon: Icons.menu_rounded,
     route: '/menuadm',
     tint: (sc) => sc.warn,
   ),
   _Section(
-    label: 'Identitas venue',
-    sub: 'Profil, lokal, pajak, dan branding struk',
+    label: AppStrings.venueHubSectionVenue,
+    sub: AppStrings.venueHubSectionVenueSub,
     icon: Icons.storefront_outlined,
-    route: '/venue-identity',
+    route: '/venue-settings',
     tint: (sc) => sc.violet,
   ),
   _Section(
-    label: 'Sistem',
-    sub: 'Server, jaringan, printer, perangkat',
+    label: AppStrings.venueHubSectionSystem,
+    sub: AppStrings.venueHubSectionSystemSub,
     icon: Icons.wifi_rounded,
     route: '/system',
     tint: (sc) => sc.info,
   ),
   _Section(
-    label: 'Staf',
-    sub: 'Akun, peran, dan PIN tim',
+    label: AppStrings.venueHubSectionStaff,
+    sub: AppStrings.venueHubSectionStaffSub,
     icon: Icons.person_outline_rounded,
     route: '/staff',
     tint: (sc) => sc.success,
   ),
   _Section(
-    label: 'Laporan',
-    sub: 'Ringkasan shift, penjualan, dan ekspor',
+    label: AppStrings.venueHubSectionReports,
+    sub: AppStrings.venueHubSectionReportsSub,
     icon: Icons.auto_awesome_outlined,
     route: '/reports',
     tint: (sc) => sc.urgent,
@@ -77,8 +78,8 @@ class VenueHubScreen extends ConsumerWidget {
     final showSeed = ref.watch(genericSeedProvider).showPrompt;
     if (l.useTabletShell) {
       return AdminPage(
-        title: 'Venue',
-        sub: 'Konfigurasi · lantai · menu · sistem · staf',
+        title: AppStrings.venueHubTitle,
+        sub: AppStrings.venueHubSubtitle,
         children: [
           if (showSeed) ...[
             const Reveal(index: 0, child: SeedDataBanner()),
@@ -97,9 +98,6 @@ class VenueHubScreen extends ConsumerWidget {
   }
 }
 
-/// First-run prompt offering to load the generic restaurant dataset. Shown on
-/// the Venue Hub only while the host DB is empty and the admin hasn't
-/// dismissed it this session. See ADR-0017.
 class SeedDataBanner extends ConsumerWidget {
   const SeedDataBanner({super.key});
 
@@ -123,7 +121,7 @@ class SeedDataBanner extends ConsumerWidget {
               Icon(Icons.auto_fix_high_rounded, size: 18, color: sc.accent),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Mulai cepat',
+                child: Text(AppStrings.venueHubSeedTitle,
                     style: SatType.sans(
                         size: 15,
                         weight: FontWeight.w700,
@@ -133,9 +131,7 @@ class SeedDataBanner extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Muat contoh data restoran umum: 2 zona (Dalam & Luar) dengan '
-            'meja, menu lengkap, dan 2 staf (pelayan & dapur). Bisa diubah '
-            'kapan saja.',
+            AppStrings.venueHubSeedBody,
             style: SatType.sans(size: 12.5, color: sc.textLo, height: 1.35),
           ),
           const SizedBox(height: 14),
@@ -143,7 +139,7 @@ class SeedDataBanner extends ConsumerWidget {
             children: [
               Expanded(
                 child: _BannerBtn(
-                  label: st.loading ? 'Memuat…' : 'Muat contoh data',
+                  label: st.loading ? AppStrings.loading : AppStrings.venueHubSeedBtnLoad,
                   filled: true,
                   busy: st.loading,
                   onTap: st.loading
@@ -156,7 +152,7 @@ class SeedDataBanner extends ConsumerWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                     content:
-                                        Text('Gagal memuat contoh data')),
+                                        Text(AppStrings.venueHubSeedError)),
                               );
                             }
                           }
@@ -165,7 +161,7 @@ class SeedDataBanner extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               _BannerBtn(
-                label: 'Nanti',
+                label: AppStrings.venueHubSeedBtnLater,
                 filled: false,
                 onTap: st.loading ? null : ctrl.dismiss,
               ),
@@ -251,7 +247,7 @@ class _PhoneHub extends StatelessWidget {
               children: [
                 Icon(Icons.storefront_outlined, size: 14, color: sc.textHi),
                 const SizedBox(width: 6),
-                Text('Venue',
+                Text(AppStrings.venueHubTitle,
                     style: SatType.sans(
                         size: 14,
                         weight: FontWeight.w500,
@@ -349,12 +345,12 @@ class _HubRow extends StatelessWidget {
                         )),
                     const SizedBox(height: 3),
                     Text(section.sub,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(
-                            size: subSize,
-                            color: sc.textLo,
-                            height: 1.3)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: SatType.sans(
+                          size: subSize,
+                          color: sc.textLo,
+                          height: 1.3)),
                   ],
                 ),
               ),
@@ -369,4 +365,3 @@ class _HubRow extends StatelessWidget {
     );
   }
 }
-

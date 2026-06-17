@@ -75,11 +75,9 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
   // Falls back to the open-time snapshot if the line is gone (e.g. removed
   // after void), keeping the confirmed view intact.
   Ticket get _live {
-    final list = ref.watch(ticketsProvider)[widget.tableId];
-    if (list != null) {
-      for (final t in list) {
-        if (t.id == widget.ticket.id) return t;
-      }
+    final list = ref.watch(ticketsForTableProvider(widget.tableId));
+    for (final t in list) {
+      if (t.id == widget.ticket.id) return t;
     }
     return widget.ticket;
   }

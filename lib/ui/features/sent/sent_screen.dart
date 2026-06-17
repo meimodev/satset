@@ -114,8 +114,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
                       context: context,
                       ref: ref,
                       table: table,
-                      tickets: ref.read(ticketsProvider)[widget.tableId] ??
-                          const [],
+                      tickets: ref.read(ticketsForTableProvider(widget.tableId)),
                     );
                   },
                 ),

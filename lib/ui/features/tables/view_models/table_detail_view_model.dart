@@ -36,9 +36,15 @@ class TableDetailViewModel extends StateNotifier<TableDetailState> {
   }) {
     final List<VenueTable> ts = tables ?? ref.read(tablesProvider);
     final Map<String, List<Ticket>> by = byTable ?? ref.read(ticketsProvider);
-    final List<Ticket> list = by[tableId] ?? const <Ticket>[];
+    final VenueTable? table = ts.where((t) => t.id == tableId).firstOrNull;
+    // Groups are keyed by visitId (ADR-0034); resolve through the table's
+    // current visit so a reseat never inherits the prior visit's lines.
+    final String? vid = table?.currentVisitId;
+    final List<Ticket> list = (vid != null && vid.isNotEmpty)
+        ? (by[vid] ?? const <Ticket>[])
+        : (by[tableId] ?? const <Ticket>[]);
     state = TableDetailState(
-      table: ts.where((t) => t.id == tableId).firstOrNull,
+      table: table,
       tickets: list,
       readyCount: list.where((t) => t.status == TicketStatus.ready).length,
     );

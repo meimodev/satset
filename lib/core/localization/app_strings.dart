@@ -1,0 +1,109 @@
+class AppStrings {
+  // Global & Common Buttons/Labels
+  static const String appName = 'SatSet';
+  static const String cancel = 'Batal';
+  static const String save = 'Simpan';
+  static const String delete = 'Hapus';
+  static const String add = 'Tambah';
+  static const String back = 'Kembali';
+  static const String close = 'Tutup';
+  static const String loading = 'Memuat…';
+  static const String error = 'Gagal';
+  static const String active = 'Aktif';
+  static const String inactive = 'Nonaktif';
+  static const String warning = 'Peringatan';
+  static const String confirm = 'Konfirmasi';
+  static const String ok = 'OK';
+  static const String yes = 'Ya';
+  static const String no = 'Tidak';
+
+  // Venue Hub Screen
+  static const String venueHubTitle = 'Venue';
+  static const String venueHubSubtitle = 'Konfigurasi · zona · menu · sistem · staf';
+  static const String venueHubSectionZona = 'Zona';
+  static const String venueHubSectionZonaSub = 'Atur zona, meja, dan kapasitas ruangan';
+  static const String venueHubSectionMenu = 'Menu';
+  static const String venueHubSectionMenuSub = 'Kategori, item, modifier, dan harga';
+  static const String venueHubSectionVenue = 'Pengaturan Venue';
+  static const String venueHubSectionVenueSub = 'Profil, lokal, pajak, dan branding struk';
+  static const String venueHubSectionSystem = 'Sistem';
+  static const String venueHubSectionSystemSub = 'Server, jaringan, printer, perangkat';
+  static const String venueHubSectionStaff = 'Staf';
+  static const String venueHubSectionStaffSub = 'Akun, peran, dan PIN tim';
+  static const String venueHubSectionReports = 'Laporan';
+  static const String venueHubSectionReportsSub = 'Ringkasan shift, penjualan, dan ekspor';
+  static const String venueHubSeedTitle = 'Mulai cepat';
+  static const String venueHubSeedBody = 'Muat contoh data restoran umum: 2 zona (Dalam & Luar) dengan meja, menu lengkap, dan 2 staf (pelayan & dapur). Bisa diubah kapan saja.';
+  static const String venueHubSeedBtnLoad = 'Muat contoh data';
+  static const String venueHubSeedBtnLater = 'Nanti';
+  static const String venueHubSeedError = 'Gagal memuat contoh data';
+
+  // Venue Settings Screen (formerly Venue Identity Screen)
+  static const String venueSettingsTitle = 'Pengaturan Venue';
+  static const String venueSettingsSubtitle = 'Profil, lokal, pajak, struk';
+  static const String venueSettingsSectionIdentity = 'Profil & alamat';
+  static const String venueSettingsSectionIdentityTag = 'WAJIB';
+  static const String venueSettingsDisplayName = 'Nama tampilan';
+  static const String venueSettingsLegalName = 'Nama legal';
+  static const String venueSettingsAddress = 'Alamat';
+  static const String venueSettingsPhone = 'Telepon';
+  static const String venueSettingsManagedBySuperAdmin = 'Dikelola pengelola';
+  
+  static const String venueSettingsSectionReceipt = 'Branding struk';
+  static const String venueSettingsSectionReceiptTag = 'CETAK';
+  static const String venueSettingsLogo = 'Logo';
+  static const String venueSettingsLogoAdd = 'Tambah';
+  static const String venueSettingsLogoChange = 'Ganti';
+  static const String venueSettingsLogoDelete = 'Hapus';
+  static const String venueSettingsTagline = 'Tagline';
+  static const String venueSettingsHeader = 'Header';
+  static const String venueSettingsSocial = 'Sosial';
+  static const String venueSettingsFooter = 'Footer';
+  static const String venueSettingsThankYou = 'Ucapan terima kasih';
+  static const String venueSettingsQrUrl = 'QR (URL)';
+  static const String venueSettingsQrCaption = 'QR (keterangan)';
+  
+  static const String venueSettingsSectionTax = 'Pajak & layanan';
+  static const String venueSettingsSectionGuestOrdering = 'Pesanan mandiri';
+  static const String venueSettingsSectionReports = 'Laporan & shift';
+
+  // Zone Admin Screen (formerly Floor Screen)
+  static const String zoneAdminTitle = 'Atur Zona';
+  static const String tablesEmptyZoneAddTableHint = 'Tambahkan meja lewat Manajer › Zona';
+  static const String zoneAdminZonePill = 'Zona';
+  static const String zoneAdminAddTable = 'Tambah meja';
+  static const String zoneAdminAddZone = 'Tambah zona';
+  static const String zoneAdminEmptyZone = 'Belum ada meja di';
+  static const String zoneAdminNoZones = 'Belum ada zona';
+  static const String zoneAdminNoZonesCreate = 'Buat zona dulu untuk menata meja.';
+  static const String zoneAdminNoZonesCreateRequest = 'Minta admin untuk membuat zona.';
+  static const String zoneAdminEditTable = 'Atur';
+  static const String zoneAdminNewTable = 'Meja baru';
+  static const String zoneAdminTableName = 'Nama meja';
+  static const String zoneAdminMaxCapacity = 'Kapasitas tamu maks';
+  static const String zoneAdminTableActive = 'Meja aktif';
+  static const String zoneAdminTableActiveSub = 'Matikan untuk perbaikan tanpa menghapus.';
+  static const String zoneAdminGuestOrdering = 'Pesanan mandiri';
+  static const String zoneAdminGuestOrderingSub = 'Tamu pindai QR meja untuk pesan sendiri.';
+  static const String zoneAdminShowQr = 'Tampilkan QR meja';
+  static const String zoneAdminDeleteTableConfirmTitle = 'Hapus meja?';
+  static const String zoneAdminDeleteTableConfirmSub = 'akan dihapus permanen dari zona.';
+
+  // App Shell Tabs
+  static const String tabMeja = 'Meja';
+  static const String tabPesanan = 'Pesanan';
+  static const String tabMandiri = 'Mandiri';
+  static const String tabKasir = 'Kasir';
+  static const String tabSaya = 'Saya';
+
+  // Breadcrumbs
+  static const String crumbTeras = 'Teras';
+  static const String crumbPesananSaya = 'Pesanan saya';
+  static const String crumbPesananMandiri = 'Pesanan mandiri';
+  static const String crumbRingkasanShift = 'Ringkasan shift';
+  static const String crumbAntrianPersiapan = 'Antrian Persiapan';
+  static const String crumbMenuAdmin = 'Menu admin';
+  static const String crumbStafAkun = 'Staf & akun';
+  static const String crumbLaporanShift = 'Laporan shift';
+  static const String crumbKonfigurasi = 'Konfigurasi';
+}

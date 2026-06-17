@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -14,14 +14,14 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 
-class FloorScreen extends ConsumerStatefulWidget {
-  const FloorScreen({super.key});
+class ZoneAdminScreen extends ConsumerStatefulWidget {
+  const ZoneAdminScreen({super.key});
 
   @override
-  ConsumerState<FloorScreen> createState() => _FloorScreenState();
+  ConsumerState<ZoneAdminScreen> createState() => _ZoneAdminScreenState();
 }
 
-class _FloorScreenState extends ConsumerState<FloorScreen> {
+class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
   String? _selectedZoneId;
 
   @override
@@ -102,11 +102,11 @@ class _FloorScreenState extends ConsumerState<FloorScreen> {
           children: [
             Icon(Icons.table_restaurant_outlined, size: 40, color: sc.textDim),
             const SizedBox(height: 12),
-            Text('Belum ada meja di ${zone.name}',
+            Text('${AppStrings.zoneAdminEmptyZone} ${zone.name}',
                 style: SatType.sans(size: 14, color: sc.textMd)),
             const SizedBox(height: 16),
             _FilledBtn(
-              label: 'Tambah meja',
+              label: AppStrings.zoneAdminAddTable,
               icon: Icons.add,
               onTap: () => _editTable(context, null, zone.id),
             ),
@@ -125,21 +125,21 @@ class _FloorScreenState extends ConsumerState<FloorScreen> {
           children: [
             Icon(Icons.layers_outlined, size: 44, color: sc.textDim),
             const SizedBox(height: 14),
-            Text('Belum ada zona',
+            Text(AppStrings.zoneAdminNoZones,
                 style: SatType.sans(
                     size: 18, weight: FontWeight.w600, color: sc.textHi)),
             const SizedBox(height: 6),
             Text(
               canManage
-                  ? 'Buat zona dulu untuk menata meja.'
-                  : 'Minta admin untuk membuat zona.',
+                  ? AppStrings.zoneAdminNoZonesCreate
+                  : AppStrings.zoneAdminNoZonesCreateRequest,
               textAlign: TextAlign.center,
               style: SatType.sans(size: 13, color: sc.textMd),
             ),
             if (canManage) ...[
               const SizedBox(height: 18),
               _FilledBtn(
-                label: 'Tambah zona',
+                label: AppStrings.zoneAdminAddZone,
                 onTap: () => _showZones(context),
               ),
             ],
@@ -157,10 +157,6 @@ class _FloorScreenState extends ConsumerState<FloorScreen> {
     _present(context, _TableEditor(table: table, zoneId: zoneId));
   }
 }
-
-// ---------------------------------------------------------------------------
-// Header
-// ---------------------------------------------------------------------------
 
 class _Header extends StatelessWidget {
   final String sub;
@@ -186,7 +182,7 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Atur Lantai',
+                Text(AppStrings.zoneAdminTitle,
                     style: SatType.sans(
                       size: 24,
                       weight: FontWeight.w600,
@@ -206,11 +202,11 @@ class _Header extends StatelessWidget {
           if (canManage)
             _GhostBtn(
               icon: Icons.dashboard_customize_outlined,
-              label: 'Zona',
+              label: AppStrings.zoneAdminZonePill,
               onTap: onManageZones,
             )
           else
-            _LockedPill(label: 'Zona'),
+            _LockedPill(label: AppStrings.zoneAdminZonePill),
         ],
       ),
     );
@@ -247,10 +243,6 @@ class _LockedPill extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Zone selector bar
-// ---------------------------------------------------------------------------
 
 class _ZoneBar extends StatelessWidget {
   final List<Zone> zones;
@@ -296,7 +288,7 @@ class _ZoneBar extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 14, 0),
-            child: _FilledBtn(label: 'Meja', icon: Icons.add, onTap: onAdd),
+            child: _FilledBtn(label: AppStrings.zoneAdminAddTable, icon: Icons.add, onTap: onAdd),
           ),
         ],
       ),
@@ -367,10 +359,6 @@ class _ZoneChip extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Table list row
-// ---------------------------------------------------------------------------
 
 class _TableRow extends StatelessWidget {
   final int index;
@@ -444,7 +432,7 @@ class _TableRow extends StatelessWidget {
                     color: sc.urgentSoft,
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: Text('Nonaktif',
+                  child: Text(AppStrings.inactive,
                       style: SatType.sans(
                         size: 10,
                         weight: FontWeight.w600,
@@ -473,10 +461,6 @@ class _DragProxy extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Table editor sheet
-// ---------------------------------------------------------------------------
 
 class _TableEditor extends ConsumerStatefulWidget {
   final VenueTable? table;
@@ -547,8 +531,8 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
   Future<void> _delete() async {
     final ok = await _confirm(
       context,
-      'Hapus meja?',
-      '${widget.table!.displayName} akan dihapus permanen dari lantai.',
+      AppStrings.zoneAdminDeleteTableConfirmTitle,
+      '${widget.table!.displayName} ${AppStrings.zoneAdminDeleteTableConfirmSub}',
     );
     if (ok != true) return;
     ref.read(tablesProvider.notifier).removeTable(widget.table!.id);
@@ -568,16 +552,16 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     final zones = ref.watch(zonesProvider);
 
     return _SheetShell(
-      title: _isNew ? 'Meja baru' : 'Atur ${widget.table!.displayName}',
+      title: _isNew ? AppStrings.zoneAdminNewTable : '${AppStrings.zoneAdminEditTable} ${widget.table!.displayName}',
       body: ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
         children: [
-          _label(sc, 'Nama meja'),
+          _label(sc, AppStrings.zoneAdminTableName),
           const SizedBox(height: 8),
           _SatField(controller: _name, hint: 'mis. T7, Booth A'),
           const SizedBox(height: 20),
-          _label(sc, 'Kapasitas tamu maks'),
+          _label(sc, AppStrings.zoneAdminMaxCapacity),
           const SizedBox(height: 8),
           _Stepper(
             value: _capacity,
@@ -586,7 +570,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
             onChanged: (v) => setState(() => _capacity = v),
           ),
           const SizedBox(height: 20),
-          _label(sc, 'Zona'),
+          _label(sc, AppStrings.zoneAdminZonePill),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -626,12 +610,12 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
       footer: Row(
         children: [
           if (!_isNew) ...[
-            _DangerBtn(label: 'Hapus', onTap: _delete),
+            _DangerBtn(label: AppStrings.delete, onTap: _delete),
             const SizedBox(width: 10),
           ],
           Expanded(
             child: _FilledBtn(
-              label: _isNew ? 'Tambah meja' : 'Simpan',
+              label: _isNew ? AppStrings.zoneAdminAddTable : AppStrings.save,
               expand: true,
               onTap: _save,
             ),
@@ -675,14 +659,14 @@ class _ActiveRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Meja aktif',
+                  Text(AppStrings.zoneAdminTableActive,
                       style: SatType.sans(
                         size: 14,
                         weight: FontWeight.w600,
                         color: sc.textHi,
                       )),
                   const SizedBox(height: 2),
-                  Text('Matikan untuk perbaikan tanpa menghapus.',
+                  Text(AppStrings.zoneAdminTableActiveSub,
                       style: SatType.sans(size: 12, color: sc.textMd)),
                 ],
               ),
@@ -695,8 +679,6 @@ class _ActiveRow extends StatelessWidget {
   }
 }
 
-/// Per-table opt-in for guest self-ordering, plus a QR shortcut once enabled
-/// (ADR-0027/0028). Only rendered when the venue master toggle is on.
 class _GuestOrderRow extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onChanged;
@@ -731,14 +713,14 @@ class _GuestOrderRow extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Pesanan mandiri',
+                        Text(AppStrings.zoneAdminGuestOrdering,
                             style: SatType.sans(
                               size: 14,
                               weight: FontWeight.w600,
                               color: sc.textHi,
                             )),
                         const SizedBox(height: 2),
-                        Text('Tamu pindai QR meja untuk pesan sendiri.',
+                        Text(AppStrings.zoneAdminGuestOrderingSub,
                             style: SatType.sans(size: 12, color: sc.textMd)),
                       ],
                     ),
@@ -759,7 +741,7 @@ class _GuestOrderRow extends StatelessWidget {
                   children: [
                     Icon(Icons.qr_code, size: 16, color: sc.accent),
                     const SizedBox(width: 8),
-                    Text('Tampilkan QR meja',
+                    Text(AppStrings.zoneAdminShowQr,
                         style: SatType.sans(
                             size: 13,
                             weight: FontWeight.w600,
@@ -775,9 +757,6 @@ class _GuestOrderRow extends StatelessWidget {
   }
 }
 
-/// Renders the table's guest QR (`http://<lan-ip>:8080/t/<id>`) for a guest to
-/// scan. Reads the live LAN address; warns prominently if it can't be resolved
-/// or reminds that printed copies die when the server IP drifts (ADR-0027).
 class _QrDialog extends ConsumerWidget {
   final VenueTable table;
   const _QrDialog({required this.table});
@@ -811,7 +790,7 @@ class _QrDialog extends ConsumerWidget {
                   return _warn(
                       sc,
                       'Server tidak terhubung Wi-Fi. Sambungkan ke jaringan '
-                      'lalu coba lagi.');
+                      'layak coba lagi.');
                 }
                 final url = '$base/t/${table.id}';
                 return Column(
@@ -848,7 +827,7 @@ class _QrDialog extends ConsumerWidget {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Tutup',
+                child: Text(AppStrings.close,
                     style: SatType.sans(size: 14, color: sc.accent)),
               ),
             ),
@@ -882,10 +861,6 @@ class _QrDialog extends ConsumerWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Zone editor sheet
-// ---------------------------------------------------------------------------
 
 class _ZonesEditor extends ConsumerWidget {
   const _ZonesEditor();
@@ -944,7 +919,7 @@ class _ZonesEditor extends ConsumerWidget {
               },
             ),
       footer: _FilledBtn(
-        label: 'Tambah zona',
+        label: AppStrings.zoneAdminAddZone,
         icon: Icons.add,
         expand: true,
         onTap: () => _present(context, const _ZoneEditor()),
@@ -1165,12 +1140,12 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
       footer: Row(
         children: [
           if (!_isNew) ...[
-            _DangerBtn(label: 'Hapus', onTap: _delete),
+            _DangerBtn(label: AppStrings.delete, onTap: _delete),
             const SizedBox(width: 10),
           ],
           Expanded(
             child: _FilledBtn(
-              label: _isNew ? 'Tambah zona' : 'Simpan',
+              label: _isNew ? AppStrings.zoneAdminAddZone : AppStrings.save,
               expand: true,
               onTap: _save,
             ),
@@ -1358,10 +1333,6 @@ class _MetaRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shared sheet shell + presentation helpers
-// ---------------------------------------------------------------------------
-
 class _SheetShell extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -1506,7 +1477,7 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
                 children: [
                   Expanded(
                     child: _GhostBtn(
-                      label: 'Batal',
+                      label: AppStrings.cancel,
                       expand: true,
                       onTap: () => Navigator.of(ctx).pop(false),
                     ),
@@ -1514,7 +1485,7 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _DangerBtn(
-                      label: 'Hapus',
+                      label: AppStrings.delete,
                       expand: true,
                       onTap: () => Navigator.of(ctx).pop(true),
                     ),
@@ -1528,10 +1499,6 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
     },
   );
 }
-
-// ---------------------------------------------------------------------------
-// Small shared widgets
-// ---------------------------------------------------------------------------
 
 class _SatField extends StatelessWidget {
   final TextEditingController controller;

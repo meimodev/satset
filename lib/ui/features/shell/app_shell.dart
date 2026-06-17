@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -98,7 +99,7 @@ class AppShell extends ConsumerWidget {
     if (loc.startsWith('/orders')) return 'orders';
     if (loc.startsWith('/kitchen')) return 'kitchen';
     if (loc.startsWith('/venue')) return 'venue';
-    if (loc.startsWith('/floor')) return 'venue';
+    if (loc.startsWith('/zone-admin')) return 'venue';
     if (loc.startsWith('/menuadm')) return 'venue';
     if (loc.startsWith('/system')) return 'venue';
     if (loc.startsWith('/staff')) return 'venue';
@@ -110,23 +111,23 @@ class AppShell extends ConsumerWidget {
 
   List<String> _crumbsFor(
       String loc, String activeTab, String zoneName, String venueName) {
-    final venue = venueName.isEmpty ? 'Venue' : venueName;
+    final venue = venueName.isEmpty ? AppStrings.venueHubTitle : venueName;
     switch (activeTab) {
       case 'orders':
-        return ['Teras', 'Pesanan saya'];
+        return [AppStrings.crumbTeras, AppStrings.crumbPesananSaya];
       case 'guest':
-        return ['Teras', 'Pesanan mandiri'];
+        return [AppStrings.crumbTeras, AppStrings.crumbPesananMandiri];
       case 'me':
-        return ['Maya Anjani', 'Ringkasan shift'];
+        return ['Maya Anjani', AppStrings.crumbRingkasanShift];
       case 'kitchen':
-        return ['Stasiun', 'Antrian Persiapan'];
+        return ['Stasiun', AppStrings.crumbAntrianPersiapan];
       case 'venue':
-        if (loc.startsWith('/floor')) return ['Venue', 'Atur lantai'];
-        if (loc.startsWith('/menuadm')) return ['Venue', 'Menu admin'];
-        if (loc.startsWith('/system')) return ['Venue', 'Sistem'];
-        if (loc.startsWith('/staff')) return ['Venue', 'Staf & akun'];
-        if (loc.startsWith('/reports')) return ['Venue', 'Laporan shift'];
-        return ['Venue', 'Konfigurasi'];
+        if (loc.startsWith('/zone-admin')) return [AppStrings.venueHubTitle, AppStrings.zoneAdminTitle];
+        if (loc.startsWith('/menuadm')) return [AppStrings.venueHubTitle, AppStrings.crumbMenuAdmin];
+        if (loc.startsWith('/system')) return [AppStrings.venueHubTitle, AppStrings.venueHubSectionSystem];
+        if (loc.startsWith('/staff')) return [AppStrings.venueHubTitle, AppStrings.crumbStafAkun];
+        if (loc.startsWith('/reports')) return [AppStrings.venueHubTitle, AppStrings.crumbLaporanShift];
+        return [AppStrings.venueHubTitle, AppStrings.crumbKonfigurasi];
       default:
         return [venue, zoneName];
     }
@@ -176,14 +177,14 @@ class _FloatingTabBar extends StatelessWidget {
             children: [
               _Tab(
                 id: 'tables',
-                label: 'Meja',
+                label: AppStrings.tabMeja,
                 icon: Icons.grid_view_rounded,
                 active: active == 'tables',
                 onTap: () => context.go('/tables'),
               ),
               _Tab(
                 id: 'orders',
-                label: 'Pesanan',
+                label: AppStrings.tabPesanan,
                 icon: Icons.description_outlined,
                 active: active == 'orders',
                 badge: readyCount,
@@ -193,7 +194,7 @@ class _FloatingTabBar extends StatelessWidget {
               if (showGuest)
                 _Tab(
                   id: 'guest',
-                  label: 'Mandiri',
+                  label: AppStrings.tabMandiri,
                   icon: Icons.qr_code_2,
                   active: active == 'guest',
                   badge: guestCount,
@@ -203,14 +204,14 @@ class _FloatingTabBar extends StatelessWidget {
               if (showKasir)
                 _Tab(
                   id: 'kasir',
-                  label: 'Kasir',
+                  label: AppStrings.tabKasir,
                   icon: Icons.point_of_sale_rounded,
                   active: active == 'kasir',
                   onTap: () => context.go('/kasir'),
                 ),
               _Tab(
                 id: 'me',
-                label: 'Saya',
+                label: AppStrings.tabSaya,
                 icon: Icons.person_outline_rounded,
                 active: active == 'me',
                 onTap: () => context.go('/me'),

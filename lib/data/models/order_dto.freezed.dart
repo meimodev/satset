@@ -836,6 +836,11 @@ SubmitOrderResponseDto _$SubmitOrderResponseDtoFromJson(
 mixin _$SubmitOrderResponseDto {
   List<String> get ticketIds => throw _privateConstructorUsedError;
 
+  /// The visit the lines were filed under. Lets the sending device seed the
+  /// table's currentVisitId immediately, before the tableUpdated echo lands,
+  /// so its lines resolve without a flash of empty. See ADR-0034.
+  String? get visitId => throw _privateConstructorUsedError;
+
   /// Serializes this SubmitOrderResponseDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -853,7 +858,7 @@ abstract class $SubmitOrderResponseDtoCopyWith<$Res> {
     $Res Function(SubmitOrderResponseDto) then,
   ) = _$SubmitOrderResponseDtoCopyWithImpl<$Res, SubmitOrderResponseDto>;
   @useResult
-  $Res call({List<String> ticketIds});
+  $Res call({List<String> ticketIds, String? visitId});
 }
 
 /// @nodoc
@@ -873,13 +878,17 @@ class _$SubmitOrderResponseDtoCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? ticketIds = null}) {
+  $Res call({Object? ticketIds = null, Object? visitId = freezed}) {
     return _then(
       _value.copyWith(
             ticketIds: null == ticketIds
                 ? _value.ticketIds
                 : ticketIds // ignore: cast_nullable_to_non_nullable
                       as List<String>,
+            visitId: freezed == visitId
+                ? _value.visitId
+                : visitId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -895,7 +904,7 @@ abstract class _$$SubmitOrderResponseDtoImplCopyWith<$Res>
   ) = __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({List<String> ticketIds});
+  $Res call({List<String> ticketIds, String? visitId});
 }
 
 /// @nodoc
@@ -912,13 +921,17 @@ class __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? ticketIds = null}) {
+  $Res call({Object? ticketIds = null, Object? visitId = freezed}) {
     return _then(
       _$SubmitOrderResponseDtoImpl(
         ticketIds: null == ticketIds
             ? _value._ticketIds
             : ticketIds // ignore: cast_nullable_to_non_nullable
                   as List<String>,
+        visitId: freezed == visitId
+            ? _value.visitId
+            : visitId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -927,8 +940,10 @@ class __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
-  const _$SubmitOrderResponseDtoImpl({required final List<String> ticketIds})
-    : _ticketIds = ticketIds;
+  const _$SubmitOrderResponseDtoImpl({
+    required final List<String> ticketIds,
+    this.visitId,
+  }) : _ticketIds = ticketIds;
 
   factory _$SubmitOrderResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$SubmitOrderResponseDtoImplFromJson(json);
@@ -941,9 +956,15 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
     return EqualUnmodifiableListView(_ticketIds);
   }
 
+  /// The visit the lines were filed under. Lets the sending device seed the
+  /// table's currentVisitId immediately, before the tableUpdated echo lands,
+  /// so its lines resolve without a flash of empty. See ADR-0034.
+  @override
+  final String? visitId;
+
   @override
   String toString() {
-    return 'SubmitOrderResponseDto(ticketIds: $ticketIds)';
+    return 'SubmitOrderResponseDto(ticketIds: $ticketIds, visitId: $visitId)';
   }
 
   @override
@@ -954,13 +975,17 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
             const DeepCollectionEquality().equals(
               other._ticketIds,
               _ticketIds,
-            ));
+            ) &&
+            (identical(other.visitId, visitId) || other.visitId == visitId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, const DeepCollectionEquality().hash(_ticketIds));
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_ticketIds),
+    visitId,
+  );
 
   /// Create a copy of SubmitOrderResponseDto
   /// with the given fields replaced by the non-null parameter values.
@@ -983,6 +1008,7 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
 abstract class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
   const factory _SubmitOrderResponseDto({
     required final List<String> ticketIds,
+    final String? visitId,
   }) = _$SubmitOrderResponseDtoImpl;
 
   factory _SubmitOrderResponseDto.fromJson(Map<String, dynamic> json) =
@@ -990,6 +1016,12 @@ abstract class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
 
   @override
   List<String> get ticketIds;
+
+  /// The visit the lines were filed under. Lets the sending device seed the
+  /// table's currentVisitId immediately, before the tableUpdated echo lands,
+  /// so its lines resolve without a flash of empty. See ADR-0034.
+  @override
+  String? get visitId;
 
   /// Create a copy of SubmitOrderResponseDto
   /// with the given fields replaced by the non-null parameter values.

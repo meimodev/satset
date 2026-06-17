@@ -24,6 +24,7 @@ class TableDto with _$TableDto {
     String? guestName,
     String? guestNotes,
     String? reservationId,
+    String? currentVisitId,
     DateTime? billClosedAt,
     String? moneyState,
     @Default(false) bool guestOrderingEnabled,

@@ -78,8 +78,12 @@ _$SubmitOrderResponseDtoImpl _$$SubmitOrderResponseDtoImplFromJson(
   ticketIds: (json['ticketIds'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
+  visitId: json['visitId'] as String?,
 );
 
 Map<String, dynamic> _$$SubmitOrderResponseDtoImplToJson(
   _$SubmitOrderResponseDtoImpl instance,
-) => <String, dynamic>{'ticketIds': instance.ticketIds};
+) => <String, dynamic>{
+  'ticketIds': instance.ticketIds,
+  'visitId': instance.visitId,
+};

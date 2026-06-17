@@ -5,6 +5,7 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/order_dto.dart';
 import 'package:satset/data/models/ticket_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cart_item.dart';
@@ -25,11 +26,14 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   final Ref ref;
   StreamSubscription? _wsSub;
 
-  /// Group key for the per-"location" ticket map: a real tableId for dine-in,
-  /// the visitId for table-less (takeaway) lines so each Bawa pulang visit is
-  /// its own group. See ADR-0026.
+  /// Group key for the live-ticket map: the visitId for every group. A tableId
+  /// is reused across visits, so keying by it let a reseat re-absorb the prior
+  /// visit's lines; the visit is the stable bill key (ADR-0024). Dine-in screens
+  /// resolve their lines through the table's currentVisitId via
+  /// [ticketsForTableProvider]. Falls back to tableId only for legacy pre-v29
+  /// rows with a null visitId. See ADR-0034.
   static String _groupKey(TicketDto d) =>
-      d.tableId.isNotEmpty ? d.tableId : (d.visitId ?? d.tableId);
+      (d.visitId != null && d.visitId!.isNotEmpty) ? d.visitId! : d.tableId;
 
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
@@ -75,28 +79,15 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         next[key] = list;
         state = next;
       } else if (ev.type == WsEventTypes.tableSessionClosed) {
-        // Takeaway groups are keyed by visitId — drop the just-snapshotted
-        // visit's lines. A dine-in group is keyed by tableId (not visitId), so
-        // this no-ops for dine-in, which purges via the kosong tableUpdated
-        // below instead. See ADR-0026 / ADR-0024.
+        // Every group is keyed by visitId now (dine-in and takeaway alike), so
+        // dropping the just-snapshotted visit frees its lines for both. A
+        // reseat starts a fresh visit under a new key, untouched. No tableId
+        // purge is needed: a stale visit's group is simply never resolved as
+        // the table's currentVisitId. See ADR-0034 / ADR-0024.
         final vid = ev.payload['visitId'] as String?;
         if (vid == null || !state.containsKey(vid)) return;
-        SatLog.repo('tickets.ws takeaway visit $vid closed — purging local tickets');
+        SatLog.repo('tickets.ws visit $vid closed — purging local tickets');
         final next = Map<String, List<Ticket>>.from(state)..remove(vid);
-        state = next;
-      } else if (ev.type == WsEventTypes.tableUpdated) {
-        // A table back to `available` (kosong) holds no live tickets — drop its
-        // cached tickets. This is the detach signal: it evicts the just-freed
-        // visit's lines without touching a reseated table's NEW visit (which
-        // arrives via ticket.created). Purging by tableId on tableSession.closed
-        // would wrongly nuke a reseated visit, so we key off kosong instead.
-        // See ADR-0024.
-        final tableId = ev.payload['id'] as String?;
-        final status = ev.payload['status'] as String?;
-        if (tableId == null || status != 'available') return;
-        if (!state.containsKey(tableId)) return;
-        SatLog.repo('tickets.ws table $tableId kosong — purging local tickets');
-        final next = Map<String, List<Ticket>>.from(state)..remove(tableId);
         state = next;
       }
     });
@@ -112,6 +103,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     return Ticket(
       id: d.id,
       visitId: d.visitId,
+      tableId: d.tableId,
       itemId: d.itemId,
       name: d.name,
       variantName: d.variantName,
@@ -153,11 +145,33 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         _ => CourseId.fireNow,
       };
 
+  /// The map key a dine-in [tableId] resolves to: the table's current visit
+  /// (groups are keyed by visitId, ADR-0034). Falls back to the tableId for the
+  /// pre-pair dummy path and legacy null-visit rows, which key by table.
+  String _keyForTable(String tableId) {
+    final t = ref
+        .read(tablesProvider)
+        .where((t) => t.id == tableId)
+        .firstOrNull;
+    final vid = t?.currentVisitId;
+    return (vid != null && vid.isNotEmpty) ? vid : tableId;
+  }
+
+  /// The group key whose list currently holds [ticketId], or null if unknown.
+  /// Lets ticket-centric mutations find their group without trusting the
+  /// caller's tableId, which no longer matches the (visit-keyed) map. ADR-0034.
+  String? _keyOfTicket(String ticketId) {
+    for (final e in state.entries) {
+      if (e.value.any((t) => t.id == ticketId)) return e.key;
+    }
+    return null;
+  }
+
   Ticket? findTicket(String tableId, String ticketId) {
-    final list = state[tableId];
-    if (list == null) return null;
-    for (final t in list) {
-      if (t.id == ticketId) return t;
+    for (final list in state.values) {
+      for (final t in list) {
+        if (t.id == ticketId) return t;
+      }
     }
     return null;
   }
@@ -211,6 +225,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     );
     final res = SubmitOrderResponseDto.fromJson(
         (raw as Map).cast<String, dynamic>());
+    // Seed the table's currentVisitId so the just-sent lines resolve on this
+    // device before the tableUpdated echo arrives (ADR-0034).
+    ref.read(tablesProvider.notifier).seedCurrentVisit(tableId, res.visitId);
     return res.ticketIds;
   }
 
@@ -295,10 +312,12 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             body,
           );
     }
+    final key = _keyOfTicket(ticketId);
+    if (key == null) return;
     final next = Map<String, List<Ticket>>.from(state);
-    final list = next[tableId];
+    final list = next[key];
     if (list == null) return;
-    next[tableId] = [
+    next[key] = [
       for (final t in list)
         if (t.id == ticketId)
           t.copyWith(
@@ -374,8 +393,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         .map((m) => m.cast<String, dynamic>())
         .toList();
     if (ticketsJson.isEmpty) return;
+    final groupKey = _keyForTable(tableId);
     final next = Map<String, List<Ticket>>.from(state);
-    final list = List<Ticket>.from(next[tableId] ?? const []);
+    final list = List<Ticket>.from(next[groupKey] ?? const []);
     for (final j in ticketsJson) {
       final dto = TicketDto.fromJson(j);
       final idx = list.indexWhere((t) => t.id == dto.id);
@@ -385,7 +405,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         list[idx] = _toDomain(dto);
       }
     }
-    next[tableId] = list;
+    next[groupKey] = list;
     state = next;
   }
 
@@ -423,10 +443,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       if (target.status == TicketStatus.sent) {
         await transition(tableId, ticketId, TicketStatus.prep);
       }
-      if (state[tableId]
-              ?.firstWhere((t) => t.id == ticketId, orElse: () => target)
-              .status !=
-          TicketStatus.cooked) {
+      if (findTicket(tableId, ticketId)?.status != TicketStatus.cooked) {
         await transition(tableId, ticketId, TicketStatus.cooked);
       }
     } else {
@@ -436,7 +453,8 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       return;
     }
 
-    final list = state[tableId] ?? const <Ticket>[];
+    final batchKey = _keyOfTicket(ticketId);
+    final list = (batchKey == null ? null : state[batchKey]) ?? const <Ticket>[];
     bool inBatch(Ticket t) =>
         t.sentAt == target.sentAt;
     bool active(Ticket t) =>
@@ -478,4 +496,20 @@ final ticketsProvider =
     StateNotifierProvider<TicketsRepository, Map<String, List<Ticket>>>((ref) {
   ref.watch(apiConfigProvider);
   return TicketsRepository(ref: ref);
+});
+
+/// Live dine-in lines for a table, resolved through the table's current visit.
+/// Groups are keyed by visitId (ADR-0034), and a tableId is reused across
+/// visits, so a dine-in screen must look up by the table's currentVisitId — not
+/// the tableId — to avoid re-absorbing a prior, settled visit's lines on a
+/// reseat. Returns `const []` when the table holds no live visit.
+final ticketsForTableProvider =
+    Provider.family<List<Ticket>, String>((ref, tableId) {
+  final byVisit = ref.watch(ticketsProvider);
+  final table =
+      ref.watch(tablesProvider).where((t) => t.id == tableId).firstOrNull;
+  final vid = table?.currentVisitId;
+  if (vid != null && vid.isNotEmpty) return byVisit[vid] ?? const [];
+  // Legacy pre-v29 rows (null visitId) key by tableId; honour that fallback.
+  return byVisit[tableId] ?? const [];
 });

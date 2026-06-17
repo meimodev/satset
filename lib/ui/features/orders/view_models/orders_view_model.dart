@@ -31,9 +31,11 @@ class OrdersViewModel extends StateNotifier<OrdersScreenState> {
 
   void _recompute(Map<String, List<Ticket>> by) {
     final all = <OrderRow>[];
-    by.forEach((tableId, list) {
+    by.forEach((key, list) {
       for (final t in list) {
-        all.add(OrderRow(tableId, t));
+        // Map is keyed by visitId (ADR-0034); a dine-in row identifies by its
+        // real tableId, a takeaway line (empty tableId) by the visit key.
+        all.add(OrderRow(t.tableId.isNotEmpty ? t.tableId : key, t));
       }
     });
     state = OrdersScreenState(

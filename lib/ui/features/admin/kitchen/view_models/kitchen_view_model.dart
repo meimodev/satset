@@ -35,10 +35,13 @@ class KitchenViewModel extends StateNotifier<KitchenScreenState> {
 
   void _recompute(Map<String, List<Ticket>> by) {
     final cards = <KitchenCard>[];
-    by.forEach((tableId, list) {
+    by.forEach((key, list) {
       final active = list.where((t) => _active.contains(t.status)).toList();
       if (active.isEmpty) return;
-      cards.add(KitchenCard(tableId, active));
+      // Map keyed by visitId (ADR-0034); a dine-in card shows its real tableId,
+      // a takeaway batch (empty tableId) keeps the visit key.
+      final id = active.first.tableId.isNotEmpty ? active.first.tableId : key;
+      cards.add(KitchenCard(id, active));
     });
     state = KitchenScreenState(cards);
   }

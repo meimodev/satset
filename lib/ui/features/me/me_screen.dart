@@ -81,7 +81,13 @@ _ShiftMetrics _computeMetrics({
   final myTables = tables.where((t) => t.mine).toList();
   int ticketCount = 0;
   for (final t in myTables) {
-    for (final tk in tickets[t.id] ?? const <Ticket>[]) {
+    // Lines are keyed by visitId (ADR-0034); resolve through the table's
+    // current visit rather than its (reused) id.
+    final vid = t.currentVisitId;
+    final lines = (vid != null && vid.isNotEmpty)
+        ? (tickets[vid] ?? const <Ticket>[])
+        : const <Ticket>[];
+    for (final tk in lines) {
       if (tk.status == TicketStatus.voided) continue;
       ticketCount++;
     }
@@ -1202,8 +1208,8 @@ void _showLineItemSheetDebug(BuildContext context, WidgetRef ref) {
   Ticket? ticket;
   for (final entry in tickets.entries) {
     if (entry.value.isNotEmpty) {
-      tableId = entry.key;
       ticket = entry.value.first;
+      tableId = ticket.tableId.isNotEmpty ? ticket.tableId : entry.key;
       break;
     }
   }
