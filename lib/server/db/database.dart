@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 33;
+  int get schemaVersion => 34;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -382,6 +382,18 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('venue_settings', 'logo', type: 'BLOB');
             await _safeAddColumnOn('venue_settings', 'logo_rev',
                 type: 'INTEGER NOT NULL DEFAULT 0');
+          }
+          if (from < 34) {
+            // Selectable per-event alert sounds (ADR-0035). Each column holds a
+            // preset id; defaults reproduce ADR-0007's original fixed cues.
+            await _safeAddColumnOn('venue_settings', 'sound_new_order',
+                type: "TEXT NOT NULL DEFAULT 'alert'");
+            await _safeAddColumnOn('venue_settings', 'sound_ready',
+                type: "TEXT NOT NULL DEFAULT 'chime'");
+            await _safeAddColumnOn('venue_settings', 'sound_void',
+                type: "TEXT NOT NULL DEFAULT 'alert'");
+            await _safeAddColumnOn('venue_settings', 'sound_overdue',
+                type: "TEXT NOT NULL DEFAULT 'alert'");
           }
         },
         onCreate: (m) async {

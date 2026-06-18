@@ -8477,6 +8477,54 @@ class $VenueSettingsTable extends VenueSettings
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _soundNewOrderMeta = const VerificationMeta(
+    'soundNewOrder',
+  );
+  @override
+  late final GeneratedColumn<String> soundNewOrder = GeneratedColumn<String>(
+    'sound_new_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('alert'),
+  );
+  static const VerificationMeta _soundReadyMeta = const VerificationMeta(
+    'soundReady',
+  );
+  @override
+  late final GeneratedColumn<String> soundReady = GeneratedColumn<String>(
+    'sound_ready',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('chime'),
+  );
+  static const VerificationMeta _soundVoidMeta = const VerificationMeta(
+    'soundVoid',
+  );
+  @override
+  late final GeneratedColumn<String> soundVoid = GeneratedColumn<String>(
+    'sound_void',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('alert'),
+  );
+  static const VerificationMeta _soundOverdueMeta = const VerificationMeta(
+    'soundOverdue',
+  );
+  @override
+  late final GeneratedColumn<String> soundOverdue = GeneratedColumn<String>(
+    'sound_overdue',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('alert'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8502,6 +8550,10 @@ class $VenueSettingsTable extends VenueSettings
     businessDayStartHour,
     prepTargetMins,
     guestOrderingEnabled,
+    soundNewOrder,
+    soundReady,
+    soundVoid,
+    soundOverdue,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8700,6 +8752,36 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('sound_new_order')) {
+      context.handle(
+        _soundNewOrderMeta,
+        soundNewOrder.isAcceptableOrUnknown(
+          data['sound_new_order']!,
+          _soundNewOrderMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sound_ready')) {
+      context.handle(
+        _soundReadyMeta,
+        soundReady.isAcceptableOrUnknown(data['sound_ready']!, _soundReadyMeta),
+      );
+    }
+    if (data.containsKey('sound_void')) {
+      context.handle(
+        _soundVoidMeta,
+        soundVoid.isAcceptableOrUnknown(data['sound_void']!, _soundVoidMeta),
+      );
+    }
+    if (data.containsKey('sound_overdue')) {
+      context.handle(
+        _soundOverdueMeta,
+        soundOverdue.isAcceptableOrUnknown(
+          data['sound_overdue']!,
+          _soundOverdueMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -8801,6 +8883,22 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.bool,
         data['${effectivePrefix}guest_ordering_enabled'],
       )!,
+      soundNewOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_new_order'],
+      )!,
+      soundReady: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_ready'],
+      )!,
+      soundVoid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_void'],
+      )!,
+      soundOverdue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_overdue'],
+      )!,
     );
   }
 
@@ -8862,6 +8960,14 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// per-table `VenueTables.guestOrderingEnabled` controls which tables show a
   /// working QR.
   final bool guestOrderingEnabled;
+
+  /// Per-event alert sound choice (ADR-0035). Each holds a preset id from
+  /// `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
+  /// original fixed cues. Venue-wide: one choice every paired device obeys.
+  final String soundNewOrder;
+  final String soundReady;
+  final String soundVoid;
+  final String soundOverdue;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -8886,6 +8992,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.businessDayStartHour,
     required this.prepTargetMins,
     required this.guestOrderingEnabled,
+    required this.soundNewOrder,
+    required this.soundReady,
+    required this.soundVoid,
+    required this.soundOverdue,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8915,6 +9025,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['business_day_start_hour'] = Variable<int>(businessDayStartHour);
     map['prep_target_mins'] = Variable<int>(prepTargetMins);
     map['guest_ordering_enabled'] = Variable<bool>(guestOrderingEnabled);
+    map['sound_new_order'] = Variable<String>(soundNewOrder);
+    map['sound_ready'] = Variable<String>(soundReady);
+    map['sound_void'] = Variable<String>(soundVoid);
+    map['sound_overdue'] = Variable<String>(soundOverdue);
     return map;
   }
 
@@ -8943,6 +9057,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       businessDayStartHour: Value(businessDayStartHour),
       prepTargetMins: Value(prepTargetMins),
       guestOrderingEnabled: Value(guestOrderingEnabled),
+      soundNewOrder: Value(soundNewOrder),
+      soundReady: Value(soundReady),
+      soundVoid: Value(soundVoid),
+      soundOverdue: Value(soundOverdue),
     );
   }
 
@@ -8979,6 +9097,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       guestOrderingEnabled: serializer.fromJson<bool>(
         json['guestOrderingEnabled'],
       ),
+      soundNewOrder: serializer.fromJson<String>(json['soundNewOrder']),
+      soundReady: serializer.fromJson<String>(json['soundReady']),
+      soundVoid: serializer.fromJson<String>(json['soundVoid']),
+      soundOverdue: serializer.fromJson<String>(json['soundOverdue']),
     );
   }
   @override
@@ -9008,6 +9130,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'businessDayStartHour': serializer.toJson<int>(businessDayStartHour),
       'prepTargetMins': serializer.toJson<int>(prepTargetMins),
       'guestOrderingEnabled': serializer.toJson<bool>(guestOrderingEnabled),
+      'soundNewOrder': serializer.toJson<String>(soundNewOrder),
+      'soundReady': serializer.toJson<String>(soundReady),
+      'soundVoid': serializer.toJson<String>(soundVoid),
+      'soundOverdue': serializer.toJson<String>(soundOverdue),
     };
   }
 
@@ -9035,6 +9161,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     int? businessDayStartHour,
     int? prepTargetMins,
     bool? guestOrderingEnabled,
+    String? soundNewOrder,
+    String? soundReady,
+    String? soundVoid,
+    String? soundOverdue,
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -9059,6 +9189,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
     prepTargetMins: prepTargetMins ?? this.prepTargetMins,
     guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
+    soundNewOrder: soundNewOrder ?? this.soundNewOrder,
+    soundReady: soundReady ?? this.soundReady,
+    soundVoid: soundVoid ?? this.soundVoid,
+    soundOverdue: soundOverdue ?? this.soundOverdue,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -9119,6 +9253,16 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       guestOrderingEnabled: data.guestOrderingEnabled.present
           ? data.guestOrderingEnabled.value
           : this.guestOrderingEnabled,
+      soundNewOrder: data.soundNewOrder.present
+          ? data.soundNewOrder.value
+          : this.soundNewOrder,
+      soundReady: data.soundReady.present
+          ? data.soundReady.value
+          : this.soundReady,
+      soundVoid: data.soundVoid.present ? data.soundVoid.value : this.soundVoid,
+      soundOverdue: data.soundOverdue.present
+          ? data.soundOverdue.value
+          : this.soundOverdue,
     );
   }
 
@@ -9147,7 +9291,11 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('serviceFixedAmount: $serviceFixedAmount, ')
           ..write('businessDayStartHour: $businessDayStartHour, ')
           ..write('prepTargetMins: $prepTargetMins, ')
-          ..write('guestOrderingEnabled: $guestOrderingEnabled')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
+          ..write('soundNewOrder: $soundNewOrder, ')
+          ..write('soundReady: $soundReady, ')
+          ..write('soundVoid: $soundVoid, ')
+          ..write('soundOverdue: $soundOverdue')
           ..write(')'))
         .toString();
   }
@@ -9177,6 +9325,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     businessDayStartHour,
     prepTargetMins,
     guestOrderingEnabled,
+    soundNewOrder,
+    soundReady,
+    soundVoid,
+    soundOverdue,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -9204,7 +9356,11 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.serviceFixedAmount == this.serviceFixedAmount &&
           other.businessDayStartHour == this.businessDayStartHour &&
           other.prepTargetMins == this.prepTargetMins &&
-          other.guestOrderingEnabled == this.guestOrderingEnabled);
+          other.guestOrderingEnabled == this.guestOrderingEnabled &&
+          other.soundNewOrder == this.soundNewOrder &&
+          other.soundReady == this.soundReady &&
+          other.soundVoid == this.soundVoid &&
+          other.soundOverdue == this.soundOverdue);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -9231,6 +9387,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<int> businessDayStartHour;
   final Value<int> prepTargetMins;
   final Value<bool> guestOrderingEnabled;
+  final Value<String> soundNewOrder;
+  final Value<String> soundReady;
+  final Value<String> soundVoid;
+  final Value<String> soundOverdue;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -9256,6 +9416,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.businessDayStartHour = const Value.absent(),
     this.prepTargetMins = const Value.absent(),
     this.guestOrderingEnabled = const Value.absent(),
+    this.soundNewOrder = const Value.absent(),
+    this.soundReady = const Value.absent(),
+    this.soundVoid = const Value.absent(),
+    this.soundOverdue = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -9282,6 +9446,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.businessDayStartHour = const Value.absent(),
     this.prepTargetMins = const Value.absent(),
     this.guestOrderingEnabled = const Value.absent(),
+    this.soundNewOrder = const Value.absent(),
+    this.soundReady = const Value.absent(),
+    this.soundVoid = const Value.absent(),
+    this.soundOverdue = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -9308,6 +9476,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<int>? businessDayStartHour,
     Expression<int>? prepTargetMins,
     Expression<bool>? guestOrderingEnabled,
+    Expression<String>? soundNewOrder,
+    Expression<String>? soundReady,
+    Expression<String>? soundVoid,
+    Expression<String>? soundOverdue,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9337,6 +9509,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (prepTargetMins != null) 'prep_target_mins': prepTargetMins,
       if (guestOrderingEnabled != null)
         'guest_ordering_enabled': guestOrderingEnabled,
+      if (soundNewOrder != null) 'sound_new_order': soundNewOrder,
+      if (soundReady != null) 'sound_ready': soundReady,
+      if (soundVoid != null) 'sound_void': soundVoid,
+      if (soundOverdue != null) 'sound_overdue': soundOverdue,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9365,6 +9541,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<int>? businessDayStartHour,
     Value<int>? prepTargetMins,
     Value<bool>? guestOrderingEnabled,
+    Value<String>? soundNewOrder,
+    Value<String>? soundReady,
+    Value<String>? soundVoid,
+    Value<String>? soundOverdue,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -9391,6 +9571,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
       prepTargetMins: prepTargetMins ?? this.prepTargetMins,
       guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
+      soundNewOrder: soundNewOrder ?? this.soundNewOrder,
+      soundReady: soundReady ?? this.soundReady,
+      soundVoid: soundVoid ?? this.soundVoid,
+      soundOverdue: soundOverdue ?? this.soundOverdue,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9471,6 +9655,18 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
         guestOrderingEnabled.value,
       );
     }
+    if (soundNewOrder.present) {
+      map['sound_new_order'] = Variable<String>(soundNewOrder.value);
+    }
+    if (soundReady.present) {
+      map['sound_ready'] = Variable<String>(soundReady.value);
+    }
+    if (soundVoid.present) {
+      map['sound_void'] = Variable<String>(soundVoid.value);
+    }
+    if (soundOverdue.present) {
+      map['sound_overdue'] = Variable<String>(soundOverdue.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9503,6 +9699,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('businessDayStartHour: $businessDayStartHour, ')
           ..write('prepTargetMins: $prepTargetMins, ')
           ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
+          ..write('soundNewOrder: $soundNewOrder, ')
+          ..write('soundReady: $soundReady, ')
+          ..write('soundVoid: $soundVoid, ')
+          ..write('soundOverdue: $soundOverdue, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -20221,6 +20421,10 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<int> businessDayStartHour,
       Value<int> prepTargetMins,
       Value<bool> guestOrderingEnabled,
+      Value<String> soundNewOrder,
+      Value<String> soundReady,
+      Value<String> soundVoid,
+      Value<String> soundOverdue,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -20248,6 +20452,10 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<int> businessDayStartHour,
       Value<int> prepTargetMins,
       Value<bool> guestOrderingEnabled,
+      Value<String> soundNewOrder,
+      Value<String> soundReady,
+      Value<String> soundVoid,
+      Value<String> soundOverdue,
       Value<int> rowid,
     });
 
@@ -20372,6 +20580,26 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<bool> get guestOrderingEnabled => $composableBuilder(
     column: $table.guestOrderingEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundNewOrder => $composableBuilder(
+    column: $table.soundNewOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundReady => $composableBuilder(
+    column: $table.soundReady,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundVoid => $composableBuilder(
+    column: $table.soundVoid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundOverdue => $composableBuilder(
+    column: $table.soundOverdue,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -20499,6 +20727,26 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.guestOrderingEnabled,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get soundNewOrder => $composableBuilder(
+    column: $table.soundNewOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get soundReady => $composableBuilder(
+    column: $table.soundReady,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get soundVoid => $composableBuilder(
+    column: $table.soundVoid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get soundOverdue => $composableBuilder(
+    column: $table.soundOverdue,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -20612,6 +20860,24 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.guestOrderingEnabled,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get soundNewOrder => $composableBuilder(
+    column: $table.soundNewOrder,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get soundReady => $composableBuilder(
+    column: $table.soundReady,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get soundVoid =>
+      $composableBuilder(column: $table.soundVoid, builder: (column) => column);
+
+  GeneratedColumn<String> get soundOverdue => $composableBuilder(
+    column: $table.soundOverdue,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -20668,6 +20934,10 @@ class $$VenueSettingsTableTableManager
                 Value<int> businessDayStartHour = const Value.absent(),
                 Value<int> prepTargetMins = const Value.absent(),
                 Value<bool> guestOrderingEnabled = const Value.absent(),
+                Value<String> soundNewOrder = const Value.absent(),
+                Value<String> soundReady = const Value.absent(),
+                Value<String> soundVoid = const Value.absent(),
+                Value<String> soundOverdue = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -20693,6 +20963,10 @@ class $$VenueSettingsTableTableManager
                 businessDayStartHour: businessDayStartHour,
                 prepTargetMins: prepTargetMins,
                 guestOrderingEnabled: guestOrderingEnabled,
+                soundNewOrder: soundNewOrder,
+                soundReady: soundReady,
+                soundVoid: soundVoid,
+                soundOverdue: soundOverdue,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -20720,6 +20994,10 @@ class $$VenueSettingsTableTableManager
                 Value<int> businessDayStartHour = const Value.absent(),
                 Value<int> prepTargetMins = const Value.absent(),
                 Value<bool> guestOrderingEnabled = const Value.absent(),
+                Value<String> soundNewOrder = const Value.absent(),
+                Value<String> soundReady = const Value.absent(),
+                Value<String> soundVoid = const Value.absent(),
+                Value<String> soundOverdue = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -20745,6 +21023,10 @@ class $$VenueSettingsTableTableManager
                 businessDayStartHour: businessDayStartHour,
                 prepTargetMins: prepTargetMins,
                 guestOrderingEnabled: guestOrderingEnabled,
+                soundNewOrder: soundNewOrder,
+                soundReady: soundReady,
+                soundVoid: soundVoid,
+                soundOverdue: soundOverdue,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

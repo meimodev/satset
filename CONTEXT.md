@@ -171,18 +171,22 @@ The single configurable threshold (`VenueSettings.prepTargetMins`, default **15 
 The set of tickets a table sends together in one go — the unit a cook reads as a single "order" on the [[KDS / Antrian Persiapan]]. Identified by `(table, sentAt)`: same table, same send. One table may have several open batches across a visit (each fire/send is its own batch). A batch is **new** while it holds at least one untouched (`sent`) item, and stops being new once every item has been started (`prep`/`cooked`) or finished. The **Antrian nav badge** counts new batches across all tables — the cook's "unstarted orders" inbox. _Avoid_: equating one batch with one table (a table can hold many) or with one item (a batch is usually several items).
 
 ### Audio alert
-An audible (and on waiter devices, haptic) cue that draws a staff member's attention to an event without them watching the screen. Three semantic cues:
+An audible (and on waiter devices, haptic) cue that draws a staff member's attention to an event without them watching the screen. Each cue marks a distinct **alert event** — the *meaning*, independent of which sound plays it (see [[Alert sound (Suara)]]). Four alert events:
 
-- **Ding** — a new order reached the kitchen (a ticket was sent / a course fired). Heard by the kitchen.
-- **Chime** — food is **ready** for handoff. Heard by waiters.
-- **Alert** — something needs attention: an item **voided**/comped, a kitchen recall, or a ticket gone **overdue**.
+- **Pesanan baru** (new order) — a new order reached the kitchen (a ticket was sent / a course fired). Heard by the kitchen.
+- **Pesanan siap** (order ready) — food is **ready** for handoff. Heard by waiters.
+- **Void** — an item was **voided**/comped (or a kitchen recall). Heard by the responsible waiter.
+- **Lewat waktu** (overdue) — a ticket crossed the [[Service target]] unhandled. Heard by the kitchen.
 
 **Who hears what** is by device role, not by which screen is open:
 
 - The **kitchen** (the Main Device) hears all kitchen cues: new order, recall, and overdue.
 - **Waiters** hear **ready** for any order — a dine-in [[Table]] *or* a [[Bawa pulang (Takeaway)|takeaway]] visit (shared "someone grab it" awareness); the ready toast's "Ambil" opens the matching detail (table detail vs the Bawa pulang detail). A **void/comp** cue reaches only the **responsible waiter** (the table's current waiter — see [[Waiter]]).
 
-**Overdue** reuses the configurable [[Service target]] (default 10 min): a ticket sounds the alert once when it first crosses the target unhandled, never again for that ticket. Bursts (a fired course landing as many tickets at once) collapse to a single cue. Cues are one-shot — they never loop or demand acknowledgement. Each device may silence its own cues (the venue's "Alert audio" toggle).
+**Overdue** reuses the configurable [[Service target]] (default 10 min): a ticket sounds the alert once when it first crosses the target unhandled, never again for that ticket. Bursts (a fired course landing as many tickets at once) collapse to a single cue. Cues are one-shot — they never loop or demand acknowledgement. Each device may silence its own cues (the device-local "Alert audio" toggle) — distinct from the venue-wide [[Alert sound (Suara)|sound choice]].
+
+### Alert sound (Suara)
+The actual **audio file** that plays for an [[Audio alert]] event — chosen by the admin, **per event**, on the venue settings screen ("Suara" section). A small fixed library of named **presets** (each a bundled clip), plus **None** (silent for that event). The choice is a **venue-wide setting**: one admin picks it and every paired device obeys, because the same sound should mean the same thing across the floor. This is **orthogonal to routing** — *who* hears an event stays a per-device-role decision (see [[Audio alert]]), while *which clip* plays is the same everywhere — and **orthogonal to muting** — the per-device "Alert audio" toggle silences a device entirely regardless of the chosen sounds. _Avoid_: conflating the venue sound choice with the device mute toggle; making the sound choice per-device (it is shared); custom-uploaded audio (presets only for now).
 
 ### Cover
 A single seated guest — one diner, not one table. A table's cover count is its **pax**; "covers served" across a [[Shift]] is the sum of pax on that waiter's non-empty tables. The unit behind per-cover averages (e.g. sales ÷ covers). User-facing copy: **"Cover"**. _Avoid_: conflating cover with table (one table seats many covers) or with [[Batch (kitchen order)|order]].

@@ -31,6 +31,10 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   businessDayStartHour: (json['businessDayStartHour'] as num?)?.toInt() ?? 4,
   prepTargetMins: (json['prepTargetMins'] as num?)?.toInt() ?? 15,
   guestOrderingEnabled: json['guestOrderingEnabled'] as bool? ?? false,
+  soundNewOrder: json['soundNewOrder'] as String? ?? 'alert',
+  soundReady: json['soundReady'] as String? ?? 'chime',
+  soundVoid: json['soundVoid'] as String? ?? 'alert',
+  soundOverdue: json['soundOverdue'] as String? ?? 'alert',
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -58,4 +62,8 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'businessDayStartHour': instance.businessDayStartHour,
   'prepTargetMins': instance.prepTargetMins,
   'guestOrderingEnabled': instance.guestOrderingEnabled,
+  'soundNewOrder': instance.soundNewOrder,
+  'soundReady': instance.soundReady,
+  'soundVoid': instance.soundVoid,
+  'soundOverdue': instance.soundOverdue,
 };

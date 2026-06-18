@@ -16,26 +16,21 @@ import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/domain/models/alert_sound.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/state/ready_alert_view_model.dart';
 
-/// The three semantic audio cues. See ADR-0007 and CONTEXT.md "Audio alert".
-enum AlertCue { ding, chime, alert }
-
-const _cueAsset = <AlertCue, String>{
-  AlertCue.ding: 'sounds/ding.wav',
-  AlertCue.chime: 'sounds/chime.wav',
-  AlertCue.alert: 'sounds/alert.wav',
-};
-
-/// Burst-coalescing window: bunched events of one cue collapse to a single
-/// play (a fired course = one ding, not eight).
+/// Burst-coalescing window: bunched events of one kind collapse to a single
+/// play (a fired course = one cue, not eight).
 const _debounce = Duration(milliseconds: 500);
 
 /// Listens to WS ticket events and plays role-appropriate cues. Routing is by
 /// device app mode, not by active screen — a waiter still hears "ready" deep
 /// in the menu flow; the kitchen still hears "new order" while on reports.
+///
+/// *Which clip* plays for each [AlertEvent] is the venue's selectable choice
+/// ([VenueSettingsDto.soundNewOrder] etc.) resolved at play time — see ADR-0035.
 class AlertSoundService {
   AlertSoundService(this.ref) {
     final cfg = ref.read(apiConfigProvider);
@@ -50,36 +45,54 @@ class AlertSoundService {
   }
 
   final Ref ref;
-  // One preloaded player per cue so distinct cues never cut each other off.
-  // Default (media-player) mode — lowLatency/SoundPool hangs on seek(), which
-  // we need to rewind a preloaded source for replay. Falls back to a one-shot
-  // player if preload hasn't finished.
-  final Map<AlertCue, AudioPlayer> _players = {};
+  // One preloaded player per non-silent preset, keyed by preset id, so any
+  // event can map to any clip without a reload and distinct cues never cut each
+  // other off. Default (media-player) mode — lowLatency/SoundPool hangs on
+  // seek(), which we need to rewind a preloaded source for replay. Falls back to
+  // a one-shot player if preload hasn't finished.
+  final Map<String, AudioPlayer> _players = {};
   bool _ready = false;
   StreamSubscription? _wsSub;
   Timer? _overdueTimer;
 
   Future<void> _initPlayers() async {
-    try {
-      for (final e in _cueAsset.entries) {
+    // Per-preset try: a missing/bad clip skips only that preset (it falls back
+    // to its event default at play time) instead of killing every sound.
+    for (final preset in alertSoundPresets) {
+      final asset = preset.asset;
+      if (asset == null) continue; // 'none' has no clip.
+      try {
         final p = AudioPlayer();
         await p.setReleaseMode(ReleaseMode.stop);
-        await p.setSource(AssetSource(e.value));
-        _players[e.key] = p;
+        await p.setSource(AssetSource(asset));
+        _players[preset.id] = p;
+      } catch (e, st) {
+        SatLog.err('alert preload ${preset.id}', e, st);
       }
-      _ready = true;
-      SatLog.vm('alert.players preloaded n=${_players.length}');
-    } catch (e, st) {
-      SatLog.err('alert preload', e, st);
     }
+    _ready = true;
+    SatLog.vm('alert.players preloaded n=${_players.length}');
   }
 
   final Map<String, TicketStatus> _lastStatus = {};
   final Set<String> _overdueAlerted = {};
-  final Set<AlertCue> _cooling = {};
+  final Set<AlertEvent> _cooling = {};
 
   AppMode get _mode =>
       ref.read(prefsServiceProvider).valueOrNull?.appMode() ?? AppMode.unset;
+
+  /// The venue-chosen preset id for [event], degraded to the event default if
+  /// the stored id names a preset that no longer exists.
+  String _soundIdFor(AlertEvent event) {
+    final s = ref.read(venueSettingsProvider);
+    final stored = switch (event) {
+      AlertEvent.newOrder => s.soundNewOrder,
+      AlertEvent.orderReady => s.soundReady,
+      AlertEvent.voided => s.soundVoid,
+      AlertEvent.overdue => s.soundOverdue,
+    };
+    return resolveSoundId(event, stored);
+  }
 
   void _onEvent(WsEventDto ev) {
     if (ev.type != WsEventTypes.ticketCreated &&
@@ -102,18 +115,17 @@ class AlertSoundService {
     switch (to) {
       case TicketStatus.sent:
         // New work reached the kitchen (sent, or a held course fired).
-        // alert.wav (not ding) — kitchen needs a loud, unmissable new-order cue.
-        if (mode == AppMode.server) _play(AlertCue.alert);
+        if (mode == AppMode.server) _play(AlertEvent.newOrder);
       case TicketStatus.ready:
         if (mode == AppMode.client) {
-          _play(AlertCue.chime);
+          _play(AlertEvent.orderReady);
           _raiseReadyAlert(dto);
         }
       case TicketStatus.voided:
         if (mode == AppMode.server) {
-          _play(AlertCue.alert); // Kitchen recall.
+          _play(AlertEvent.voided); // Kitchen recall.
         } else if (mode == AppMode.client && _isMyTable(dto.tableId)) {
-          _play(AlertCue.alert); // Targeted void/comp for the responsible waiter.
+          _play(AlertEvent.voided); // Targeted void/comp for responsible waiter.
         }
       default:
         break;
@@ -185,7 +197,7 @@ class AlertSoundService {
         if (_overdueAlerted.contains(t.id)) continue;
         if (_ageMinutes(t.sentAt, now) >= overdueMinutes) {
           _overdueAlerted.add(t.id);
-          _play(AlertCue.alert);
+          _play(AlertEvent.overdue);
         }
       }
     }
@@ -204,34 +216,40 @@ class AlertSoundService {
     return diff < 0 ? 0 : diff;
   }
 
-  void _play(AlertCue cue) {
+  void _play(AlertEvent event) {
     if (!(ref.read(prefsServiceProvider).valueOrNull?.audioAlertEnabled() ??
         true)) {
-      SatLog.vm('alert.skip ${cue.name} (muted)');
+      SatLog.vm('alert.skip ${event.name} (muted)');
       return;
     }
-    if (_cooling.contains(cue)) return; // Leading-edge throttle: collapse bursts.
-    _cooling.add(cue);
-    Timer(_debounce, () => _cooling.remove(cue));
+    final soundId = _soundIdFor(event);
+    if (soundId == kNoneSoundId) {
+      SatLog.vm('alert.skip ${event.name} (none)');
+      return;
+    }
+    if (_cooling.contains(event)) return; // Leading-edge throttle: collapse bursts.
+    _cooling.add(event);
+    Timer(_debounce, () => _cooling.remove(event));
     if (_mode == AppMode.client) {
       HapticFeedback.mediumImpact();
     }
-    SatLog.vm('alert.play ${cue.name} ready=$_ready');
-    unawaited(_emit(cue));
+    SatLog.vm('alert.play ${event.name}=$soundId ready=$_ready');
+    unawaited(_emit(soundId));
   }
 
-  Future<void> _emit(AlertCue cue) async {
+  Future<void> _emit(String soundId) async {
     try {
-      final p = _players[cue];
+      final p = _players[soundId];
       if (_ready && p != null) {
         await p.seek(Duration.zero);
         await p.resume();
       } else {
         // Preload not finished yet — one-shot fallback.
-        await AudioPlayer().play(AssetSource(_cueAsset[cue]!));
+        final asset = presetForId(soundId)?.asset;
+        if (asset != null) await AudioPlayer().play(AssetSource(asset));
       }
     } catch (e, st) {
-      SatLog.err('alert play ${cue.name}', e, st);
+      SatLog.err('alert play $soundId', e, st);
     }
   }
 

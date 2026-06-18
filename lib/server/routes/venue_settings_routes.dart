@@ -120,6 +120,18 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         guestOrderingEnabled: body.containsKey('guestOrderingEnabled')
             ? Value(body['guestOrderingEnabled'] == true)
             : const Value.absent(),
+        soundNewOrder: body.containsKey('soundNewOrder')
+            ? Value((body['soundNewOrder'] as String).trim())
+            : const Value.absent(),
+        soundReady: body.containsKey('soundReady')
+            ? Value((body['soundReady'] as String).trim())
+            : const Value.absent(),
+        soundVoid: body.containsKey('soundVoid')
+            ? Value((body['soundVoid'] as String).trim())
+            : const Value.absent(),
+        soundOverdue: body.containsKey('soundOverdue')
+            ? Value((body['soundOverdue'] as String).trim())
+            : const Value.absent(),
       ),
     );
     final row = await _readOrSeed(db);
@@ -241,6 +253,10 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
       'businessDayStartHour': s.businessDayStartHour,
       'prepTargetMins': s.prepTargetMins,
       'guestOrderingEnabled': s.guestOrderingEnabled,
+      'soundNewOrder': s.soundNewOrder,
+      'soundReady': s.soundReady,
+      'soundVoid': s.soundVoid,
+      'soundOverdue': s.soundOverdue,
     };
 
 /// Best-effort private LAN IPv4 the server is reachable at, for building guest

@@ -66,6 +66,13 @@ class AppStrings {
   static const String venueSettingsSectionTax = 'Pajak & layanan';
   static const String venueSettingsSectionGuestOrdering = 'Pesanan mandiri';
   static const String venueSettingsSectionReports = 'Laporan & shift';
+  static const String venueSettingsSectionSound = 'Suara';
+  static const String venueSettingsSectionSoundTag = 'Nada notifikasi';
+  static const String venueSettingsSoundNewOrder = 'Pesanan baru';
+  static const String venueSettingsSoundReady = 'Pesanan siap';
+  static const String venueSettingsSoundVoid = 'Void';
+  static const String venueSettingsSoundOverdue = 'Lewat waktu';
+  static const String venueSettingsSoundPreview = 'Dengar';
 
   // Zone Admin Screen (formerly Floor Screen)
   static const String zoneAdminTitle = 'Atur Zona';

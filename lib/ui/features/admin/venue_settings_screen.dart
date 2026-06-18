@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/alert_sound.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -64,26 +66,49 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     _receiptQrUrl = TextEditingController(text: s.receiptQrUrl);
     _receiptQrCaption = TextEditingController(text: s.receiptQrCaption);
 
-    _bindFocusCommit(_displayNameFocus, _displayName,
-        (v) => _patch(displayName: v));
     _bindFocusCommit(
-        _legalNameFocus, _legalName, (v) => _patch(legalName: v));
+      _displayNameFocus,
+      _displayName,
+      (v) => _patch(displayName: v),
+    );
+    _bindFocusCommit(_legalNameFocus, _legalName, (v) => _patch(legalName: v));
     _bindFocusCommit(_addressFocus, _address, (v) => _patch(address: v));
     _bindFocusCommit(_phoneFocus, _phone, (v) => _patch(phone: v));
-    _bindFocusCommit(_receiptHeaderFocus, _receiptHeader,
-        (v) => _patch(receiptHeader: v));
-    _bindFocusCommit(_receiptFooterFocus, _receiptFooter,
-        (v) => _patch(receiptFooter: v));
-    _bindFocusCommit(_receiptTaglineFocus, _receiptTagline,
-        (v) => _patch(receiptTagline: v));
-    _bindFocusCommit(_receiptSocialFocus, _receiptSocial,
-        (v) => _patch(receiptSocial: v));
-    _bindFocusCommit(_receiptThankYouFocus, _receiptThankYou,
-        (v) => _patch(receiptThankYou: v));
-    _bindFocusCommit(_receiptQrUrlFocus, _receiptQrUrl,
-        (v) => _patch(receiptQrUrl: v));
-    _bindFocusCommit(_receiptQrCaptionFocus, _receiptQrCaption,
-        (v) => _patch(receiptQrCaption: v));
+    _bindFocusCommit(
+      _receiptHeaderFocus,
+      _receiptHeader,
+      (v) => _patch(receiptHeader: v),
+    );
+    _bindFocusCommit(
+      _receiptFooterFocus,
+      _receiptFooter,
+      (v) => _patch(receiptFooter: v),
+    );
+    _bindFocusCommit(
+      _receiptTaglineFocus,
+      _receiptTagline,
+      (v) => _patch(receiptTagline: v),
+    );
+    _bindFocusCommit(
+      _receiptSocialFocus,
+      _receiptSocial,
+      (v) => _patch(receiptSocial: v),
+    );
+    _bindFocusCommit(
+      _receiptThankYouFocus,
+      _receiptThankYou,
+      (v) => _patch(receiptThankYou: v),
+    );
+    _bindFocusCommit(
+      _receiptQrUrlFocus,
+      _receiptQrUrl,
+      (v) => _patch(receiptQrUrl: v),
+    );
+    _bindFocusCommit(
+      _receiptQrCaptionFocus,
+      _receiptQrCaption,
+      (v) => _patch(receiptQrCaption: v),
+    );
 
     for (final c in [
       _displayName,
@@ -134,6 +159,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
       final t = v.trim();
       return t == prev ? null : t;
     }
+
     final dn = norm(displayName, s.displayName);
     final ln = norm(legalName, s.legalName);
     final ad = norm(address, s.address);
@@ -159,7 +185,9 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
       return;
     }
     try {
-      await ref.read(venueSettingsProvider.notifier).patch(
+      await ref
+          .read(venueSettingsProvider.notifier)
+          .patch(
             displayName: dn,
             legalName: ln,
             address: ad,
@@ -186,6 +214,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         selection: TextSelection.collapsed(offset: next.length),
       );
     }
+
     apply(_displayName, _displayNameFocus, s.displayName);
     apply(_legalName, _legalNameFocus, s.legalName);
     apply(_address, _addressFocus, s.address);
@@ -270,6 +299,8 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         _GuestOrderingCard(),
         const SizedBox(height: 14),
         _ReportsHourCard(),
+        const SizedBox(height: 14),
+        _SoundCard(),
       ],
     );
   }
@@ -283,59 +314,105 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-            child: Text(AppStrings.venueSettingsTitle,
-                style: SatType.sans(
-                  size: 30,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.6,
-                  color: sc.textHi,
-                )),
+            child: Text(
+              AppStrings.venueSettingsTitle,
+              style: SatType.sans(
+                size: 30,
+                weight: FontWeight.w600,
+                letterSpacing: -0.6,
+                color: sc.textHi,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Text(AppStrings.venueSettingsSubtitle,
-                style: SatType.sans(size: 13, color: sc.textMd)),
+            child: Text(
+              AppStrings.venueSettingsSubtitle,
+              style: SatType.sans(size: 13, color: sc.textMd),
+            ),
           ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               children: [
-                _phoneRow(context, sc,
-                    label: AppStrings.venueSettingsSectionIdentity,
-                    value: s.displayName,
-                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionIdentity,
-                        (c, _) => _identityCard(c))),
-                _phoneRow(context, sc,
-                    label: AppStrings.venueSettingsSectionReceipt,
-                    value: _receiptSummary(s),
-                    onTap: () => _openDetail(
-                        context,
-                        AppStrings.venueSettingsSectionReceipt,
-                        (c, _) => Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _receiptCard(c),
-                                const SizedBox(height: 20),
-                                Center(child: _receiptPreview(c)),
-                              ],
-                            ))),
-                _phoneRow(context, sc,
-                    label: AppStrings.venueSettingsSectionTax,
-                    value: _pajakLayananSummary(s),
-                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionTax,
-                        (c, _) => _PajakLayananCard())),
-                _phoneRow(context, sc,
-                    label: AppStrings.venueSettingsSectionGuestOrdering,
-                    value: s.guestOrderingEnabled ? AppStrings.active : AppStrings.inactive,
-                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionGuestOrdering,
-                        (c, _) => _GuestOrderingCard())),
-                _phoneRow(context, sc,
-                    label: AppStrings.venueSettingsSectionReports,
-                    value:
-                        'Mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00 · target ${s.prepTargetMins}m',
-                    onTap: () => _openDetail(context, AppStrings.venueSettingsSectionReports,
-                        (c, _) => _ReportsHourCard()),
-                    last: true),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: AppStrings.venueSettingsSectionIdentity,
+                  value: s.displayName,
+                  onTap: () => _openDetail(
+                    context,
+                    AppStrings.venueSettingsSectionIdentity,
+                    (c, _) => _identityCard(c),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: AppStrings.venueSettingsSectionReceipt,
+                  value: _receiptSummary(s),
+                  onTap: () => _openDetail(
+                    context,
+                    AppStrings.venueSettingsSectionReceipt,
+                    (c, _) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _receiptCard(c),
+                        const SizedBox(height: 20),
+                        Center(child: _receiptPreview(c)),
+                      ],
+                    ),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: AppStrings.venueSettingsSectionTax,
+                  value: _pajakLayananSummary(s),
+                  onTap: () => _openDetail(
+                    context,
+                    AppStrings.venueSettingsSectionTax,
+                    (c, _) => _PajakLayananCard(),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: AppStrings.venueSettingsSectionGuestOrdering,
+                  value: s.guestOrderingEnabled
+                      ? AppStrings.active
+                      : AppStrings.inactive,
+                  onTap: () => _openDetail(
+                    context,
+                    AppStrings.venueSettingsSectionGuestOrdering,
+                    (c, _) => _GuestOrderingCard(),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: AppStrings.venueSettingsSectionReports,
+                  value:
+                      'Mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00 · target ${s.prepTargetMins}m',
+                  onTap: () => _openDetail(
+                    context,
+                    AppStrings.venueSettingsSectionReports,
+                    (c, _) => _ReportsHourCard(),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: AppStrings.venueSettingsSectionSound,
+                  value:
+                      '${AppStrings.venueSettingsSoundNewOrder}: ${presetForId(resolveSoundId(AlertEvent.newOrder, s.soundNewOrder))?.label ?? '-'} · ${AppStrings.venueSettingsSoundReady}: ${presetForId(resolveSoundId(AlertEvent.orderReady, s.soundReady))?.label ?? '-'}',
+                  onTap: () => _openDetail(
+                    context,
+                    AppStrings.venueSettingsSectionSound,
+                    (c, _) => _SoundCard(),
+                  ),
+                  last: true,
+                ),
               ],
             ),
           ),
@@ -364,41 +441,50 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
-            child: Text(_initials(s.displayName),
-                style: SatType.sans(
-                  size: 22,
-                  weight: FontWeight.w700,
-                  letterSpacing: -0.4,
-                  color: sc.bg1,
-                )),
+            child: Text(
+              _initials(s.displayName),
+              style: SatType.sans(
+                size: 22,
+                weight: FontWeight.w700,
+                letterSpacing: -0.4,
+                color: sc.bg1,
+              ),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('IDENTITAS RESTORAN',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.0,
-                      color: sc.textLo,
-                    )),
+                Text(
+                  'IDENTITAS RESTORAN',
+                  style: SatType.mono(
+                    size: 10,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.0,
+                    color: sc.textLo,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text(s.displayName.isEmpty ? '—' : s.displayName,
-                    style: SatType.sans(
-                      size: 26,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.6,
-                      color: sc.textHi,
-                    )),
+                Text(
+                  s.displayName.isEmpty ? '—' : s.displayName,
+                  style: SatType.sans(
+                    size: 26,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.6,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(s.legalName.isEmpty ? 'Belum ada nama legal' : s.legalName,
-                    style: SatType.sans(size: 12, color: sc.textMd)),
+                Text(
+                  s.legalName.isEmpty ? 'Belum ada nama legal' : s.legalName,
+                  style: SatType.sans(size: 12, color: sc.textMd),
+                ),
                 const SizedBox(height: 10),
-                Text(s.address.isEmpty ? 'Belum ada alamat' : s.address,
-                    style: SatType.sans(
-                        size: 13, color: sc.textMd, height: 1.4)),
+                Text(
+                  s.address.isEmpty ? 'Belum ada alamat' : s.address,
+                  style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+                ),
               ],
             ),
           ),
@@ -410,35 +496,43 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
   Widget _identityCard(BuildContext context) {
     final s = ref.watch(venueSettingsProvider);
     return _sectionCard(
-        context,
-        title: AppStrings.venueSettingsSectionIdentity,
-        tag: AppStrings.venueSettingsSectionIdentityTag,
-        rows: [
-          AdminRow(
-              label: AppStrings.venueSettingsDisplayName,
-              value: _cloudManaged(context, s.displayName)),
-          AdminRow(
-              label: AppStrings.venueSettingsLegalName,
-              value: _editor(context,
-                  controller: _legalName,
-                  focus: _legalNameFocus,
-                  hint: 'PT …',
-                  onSubmit: (v) => _patch(legalName: v))),
-          AdminRow(
-              label: AppStrings.venueSettingsAddress,
-              value: _cloudManaged(context, s.address)),
-          AdminRow(
-              label: AppStrings.venueSettingsPhone,
-              value: _editor(context,
-                  controller: _phone,
-                  focus: _phoneFocus,
-                  hint: '+62 …',
-                  mono: true,
-                  inputType: TextInputType.phone,
-                  onSubmit: (v) => _patch(phone: v)),
-              last: true),
-        ],
-      );
+      context,
+      title: AppStrings.venueSettingsSectionIdentity,
+      tag: AppStrings.venueSettingsSectionIdentityTag,
+      rows: [
+        AdminRow(
+          label: AppStrings.venueSettingsDisplayName,
+          value: _cloudManaged(context, s.displayName),
+        ),
+        AdminRow(
+          label: AppStrings.venueSettingsLegalName,
+          value: _editor(
+            context,
+            controller: _legalName,
+            focus: _legalNameFocus,
+            hint: 'PT …',
+            onSubmit: (v) => _patch(legalName: v),
+          ),
+        ),
+        AdminRow(
+          label: AppStrings.venueSettingsAddress,
+          value: _cloudManaged(context, s.address),
+        ),
+        AdminRow(
+          label: AppStrings.venueSettingsPhone,
+          value: _editor(
+            context,
+            controller: _phone,
+            focus: _phoneFocus,
+            hint: '+62 …',
+            mono: true,
+            inputType: TextInputType.phone,
+            onSubmit: (v) => _patch(phone: v),
+          ),
+          last: true,
+        ),
+      ],
+    );
   }
 
   Widget _cloudManaged(BuildContext context, String value) {
@@ -447,17 +541,21 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(value.isEmpty ? '—' : value,
-            textAlign: TextAlign.right,
-            style: SatType.sans(size: 13, color: sc.textHi, height: 1.4)),
+        Text(
+          value.isEmpty ? '—' : value,
+          textAlign: TextAlign.right,
+          style: SatType.sans(size: 13, color: sc.textHi, height: 1.4),
+        ),
         const SizedBox(height: 3),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.lock_outline_rounded, size: 10, color: sc.textLo),
             const SizedBox(width: 3),
-            Text(AppStrings.venueSettingsManagedBySuperAdmin,
-                style: SatType.sans(size: 10, color: sc.textLo)),
+            Text(
+              AppStrings.venueSettingsManagedBySuperAdmin,
+              style: SatType.sans(size: 10, color: sc.textLo),
+            ),
           ],
         ),
       ],
@@ -465,66 +563,87 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
   }
 
   Widget _receiptCard(BuildContext context) => _sectionCard(
-        context,
-        title: AppStrings.venueSettingsSectionReceipt,
-        tag: AppStrings.venueSettingsSectionReceiptTag,
-        rows: [
-          AdminRow(label: AppStrings.venueSettingsLogo, value: _logoTile(context)),
-          AdminRow(
-              label: AppStrings.venueSettingsTagline,
-              value: _editor(context,
-                  controller: _receiptTagline,
-                  focus: _receiptTaglineFocus,
-                  hint: 'mis. Kopi & Dapur',
-                  onSubmit: (v) => _patch(receiptTagline: v))),
-          AdminRow(
-              label: AppStrings.venueSettingsHeader,
-              value: _editor(context,
-                  controller: _receiptHeader,
-                  focus: _receiptHeaderFocus,
-                  hint: 'Tampil di atas struk',
-                  onSubmit: (v) => _patch(receiptHeader: v))),
-          AdminRow(
-              label: AppStrings.venueSettingsSocial,
-              value: _editor(context,
-                  controller: _receiptSocial,
-                  focus: _receiptSocialFocus,
-                  hint: '@instagram · wa.me/…',
-                  onSubmit: (v) => _patch(receiptSocial: v))),
-          AdminRow(
-              label: AppStrings.venueSettingsFooter,
-              value: _editor(context,
-                  controller: _receiptFooter,
-                  focus: _receiptFooterFocus,
-                  hint: 'Tampil di bawah struk',
-                  multiline: true,
-                  onSubmit: (v) => _patch(receiptFooter: v))),
-          AdminRow(
-              label: AppStrings.venueSettingsThankYou,
-              value: _editor(context,
-                  controller: _receiptThankYou,
-                  focus: _receiptThankYouFocus,
-                  hint: 'Terima kasih',
-                  onSubmit: (v) => _patch(receiptThankYou: v))),
-          AdminRow(
-              label: AppStrings.venueSettingsQrUrl,
-              value: _editor(context,
-                  controller: _receiptQrUrl,
-                  focus: _receiptQrUrlFocus,
-                  hint: 'https://… (hanya struk uang)',
-                  mono: true,
-                  inputType: TextInputType.url,
-                  onSubmit: (v) => _patch(receiptQrUrl: v))),
-          AdminRow(
-              label: AppStrings.venueSettingsQrCaption,
-              value: _editor(context,
-                  controller: _receiptQrCaption,
-                  focus: _receiptQrCaptionFocus,
-                  hint: 'mis. Ulas kami di Google',
-                  onSubmit: (v) => _patch(receiptQrCaption: v)),
-              last: true),
-        ],
-      );
+    context,
+    title: AppStrings.venueSettingsSectionReceipt,
+    tag: AppStrings.venueSettingsSectionReceiptTag,
+    rows: [
+      AdminRow(label: AppStrings.venueSettingsLogo, value: _logoTile(context)),
+      AdminRow(
+        label: AppStrings.venueSettingsTagline,
+        value: _editor(
+          context,
+          controller: _receiptTagline,
+          focus: _receiptTaglineFocus,
+          hint: 'mis. Kopi & Dapur',
+          onSubmit: (v) => _patch(receiptTagline: v),
+        ),
+      ),
+      AdminRow(
+        label: AppStrings.venueSettingsHeader,
+        value: _editor(
+          context,
+          controller: _receiptHeader,
+          focus: _receiptHeaderFocus,
+          hint: 'Tampil di atas struk',
+          onSubmit: (v) => _patch(receiptHeader: v),
+        ),
+      ),
+      AdminRow(
+        label: AppStrings.venueSettingsSocial,
+        value: _editor(
+          context,
+          controller: _receiptSocial,
+          focus: _receiptSocialFocus,
+          hint: '@instagram · wa.me/…',
+          onSubmit: (v) => _patch(receiptSocial: v),
+        ),
+      ),
+      AdminRow(
+        label: AppStrings.venueSettingsFooter,
+        value: _editor(
+          context,
+          controller: _receiptFooter,
+          focus: _receiptFooterFocus,
+          hint: 'Tampil di bawah struk',
+          multiline: true,
+          onSubmit: (v) => _patch(receiptFooter: v),
+        ),
+      ),
+      AdminRow(
+        label: AppStrings.venueSettingsThankYou,
+        value: _editor(
+          context,
+          controller: _receiptThankYou,
+          focus: _receiptThankYouFocus,
+          hint: 'Terima kasih',
+          onSubmit: (v) => _patch(receiptThankYou: v),
+        ),
+      ),
+      AdminRow(
+        label: AppStrings.venueSettingsQrUrl,
+        value: _editor(
+          context,
+          controller: _receiptQrUrl,
+          focus: _receiptQrUrlFocus,
+          hint: 'https://… (hanya struk uang)',
+          mono: true,
+          inputType: TextInputType.url,
+          onSubmit: (v) => _patch(receiptQrUrl: v),
+        ),
+      ),
+      AdminRow(
+        label: AppStrings.venueSettingsQrCaption,
+        value: _editor(
+          context,
+          controller: _receiptQrCaption,
+          focus: _receiptQrCaptionFocus,
+          hint: 'mis. Ulas kami di Google',
+          onSubmit: (v) => _patch(receiptQrCaption: v),
+        ),
+        last: true,
+      ),
+    ],
+  );
 
   Uint8List? _previewLogo(VenueSettingsDto s) {
     if (_pickedLogo != null) return _pickedLogo;
@@ -553,10 +672,12 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               clipBehavior: Clip.antiAlias,
               alignment: Alignment.center,
               child: bytes != null
-                  ? Image.memory(bytes,
-                      fit: BoxFit.contain, gaplessPlayback: true)
-                  : Icon(Icons.storefront_outlined,
-                      size: 20, color: sc.textLo),
+                  ? Image.memory(
+                      bytes,
+                      fit: BoxFit.contain,
+                      gaplessPlayback: true,
+                    )
+                  : Icon(Icons.storefront_outlined, size: 20, color: sc.textLo),
             ),
             const SizedBox(width: 10),
             if (_logoBusy)
@@ -564,13 +685,26 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: sc.accent),
+                  strokeWidth: 2,
+                  color: sc.accent,
+                ),
               )
             else ...[
-              _logoBtn(sc, bytes == null ? AppStrings.venueSettingsLogoAdd : AppStrings.venueSettingsLogoChange, _pickLogo),
+              _logoBtn(
+                sc,
+                bytes == null
+                    ? AppStrings.venueSettingsLogoAdd
+                    : AppStrings.venueSettingsLogoChange,
+                _pickLogo,
+              ),
               if (bytes != null) ...[
                 const SizedBox(width: 8),
-                _logoBtn(sc, AppStrings.venueSettingsLogoDelete, _clearLogo, danger: true),
+                _logoBtn(
+                  sc,
+                  AppStrings.venueSettingsLogoDelete,
+                  _clearLogo,
+                  danger: true,
+                ),
               ],
             ],
           ],
@@ -579,8 +713,12 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     );
   }
 
-  Widget _logoBtn(SatColors sc, String label, VoidCallback onTap,
-      {bool danger = false}) {
+  Widget _logoBtn(
+    SatColors sc,
+    String label,
+    VoidCallback onTap, {
+    bool danger = false,
+  }) {
     final c = danger ? sc.urgent : sc.accent;
     return GestureDetector(
       onTap: onTap,
@@ -591,17 +729,20 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           border: Border.all(color: c.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(label,
-            style: SatType.sans(
-                size: 12, weight: FontWeight.w600, color: c)),
+        child: Text(
+          label,
+          style: SatType.sans(size: 12, weight: FontWeight.w600, color: c),
+        ),
       ),
     );
   }
 
   Future<void> _pickLogo() async {
     try {
-      final x = await ImagePicker()
-          .pickImage(source: ImageSource.gallery, maxWidth: 2048);
+      final x = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+      );
       if (x == null) return;
       setState(() => _logoBusy = true);
       final raw = await x.readAsBytes();
@@ -679,14 +820,18 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
       focusNode: focus,
       maxLines: multiline ? null : 1,
       minLines: multiline ? 1 : 1,
-      keyboardType: inputType ??
+      keyboardType:
+          inputType ??
           (multiline ? TextInputType.multiline : TextInputType.text),
-      textInputAction:
-          multiline ? TextInputAction.newline : TextInputAction.done,
+      textInputAction: multiline
+          ? TextInputAction.newline
+          : TextInputAction.done,
       textAlign: TextAlign.right,
       onSubmitted: onSubmit,
       onTapOutside: (_) => focus.unfocus(),
-      inputFormatters: multiline ? null : [LengthLimitingTextInputFormatter(120)],
+      inputFormatters: multiline
+          ? null
+          : [LengthLimitingTextInputFormatter(120)],
       style: mono
           ? SatType.mono(size: 12, color: sc.textHi)
           : SatType.sans(size: 13, color: sc.textHi, height: 1.4),
@@ -720,20 +865,24 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(title,
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    )),
-              ),
-              Text(tag,
-                  style: SatType.mono(
-                    size: 9,
+                child: Text(
+                  title,
+                  style: SatType.sans(
+                    size: 15,
                     weight: FontWeight.w600,
-                    letterSpacing: 1.4,
-                    color: sc.textLo,
-                  )),
+                    color: sc.textHi,
+                  ),
+                ),
+              ),
+              Text(
+                tag,
+                style: SatType.mono(
+                  size: 9,
+                  weight: FontWeight.w600,
+                  letterSpacing: 1.4,
+                  color: sc.textLo,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -768,15 +917,16 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      )),
+                  Text(
+                    label,
+                    style: SatType.sans(
+                      size: 14,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(value,
-                      style: SatType.sans(size: 12, color: sc.textMd)),
+                  Text(value, style: SatType.sans(size: 12, color: sc.textMd)),
                 ],
               ),
             ),
@@ -792,9 +942,11 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     String title,
     Widget Function(BuildContext, SatColors) builder,
   ) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => _PhoneDetailScreen(title: title, builder: builder),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _PhoneDetailScreen(title: title, builder: builder),
+      ),
+    );
   }
 
   String _receiptSummary(VenueSettingsDto s) {
@@ -811,8 +963,8 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     final svc = !s.serviceEnabled
         ? 'Layanan off'
         : s.serviceMode == 'fixed'
-            ? 'Layanan ${formatIDR(s.serviceFixedAmount)}'
-            : 'Layanan ${_fmtPct(s.serviceRateBps)}';
+        ? 'Layanan ${formatIDR(s.serviceFixedAmount)}'
+        : 'Layanan ${_fmtPct(s.serviceRateBps)}';
     return '$tax · $svc';
   }
 
@@ -853,20 +1005,24 @@ class _PajakLayananCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(AppStrings.venueSettingsSectionTax,
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    )),
-              ),
-              Text('BIAYA',
-                  style: SatType.mono(
-                    size: 9,
+                child: Text(
+                  AppStrings.venueSettingsSectionTax,
+                  style: SatType.sans(
+                    size: 15,
                     weight: FontWeight.w600,
-                    letterSpacing: 1.4,
-                    color: sc.textLo,
-                  )),
+                    color: sc.textHi,
+                  ),
+                ),
+              ),
+              Text(
+                'BIAYA',
+                style: SatType.mono(
+                  size: 9,
+                  weight: FontWeight.w600,
+                  letterSpacing: 1.4,
+                  color: sc.textLo,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -945,8 +1101,7 @@ class _PajakLayananCard extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label,
-              style: SatType.sans(size: 13, color: sc.textHi)),
+          child: Text(label, style: SatType.sans(size: 13, color: sc.textHi)),
         ),
         GestureDetector(
           onTap: onToggle,
@@ -966,8 +1121,10 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text('Tipe biaya',
-              style: SatType.sans(size: 13, color: sc.textMd)),
+          child: Text(
+            'Tipe biaya',
+            style: SatType.sans(size: 13, color: sc.textMd),
+          ),
         ),
         Expanded(
           child: Row(
@@ -1000,12 +1157,14 @@ class _PajakLayananCard extends ConsumerWidget {
           border: Border.all(color: on ? sc.accentBorder : sc.border1),
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Text(label,
-            style: SatType.sans(
-              size: 12,
-              weight: FontWeight.w600,
-              color: on ? sc.accent : sc.textMd,
-            )),
+        child: Text(
+          label,
+          style: SatType.sans(
+            size: 12,
+            weight: FontWeight.w600,
+            color: on ? sc.accent : sc.textMd,
+          ),
+        ),
       ),
     );
   }
@@ -1026,33 +1185,46 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(label,
-              style: SatType.sans(size: 13, color: sc.textMd)),
+          child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
         ),
         Expanded(
           child: Row(
             children: [
-              _stepBtn(sc, Icons.remove,
-                  canDown ? () => onChange((valueBps - stepBps).clamp(minBps, maxBps)) : null),
+              _stepBtn(
+                sc,
+                Icons.remove,
+                canDown
+                    ? () => onChange((valueBps - stepBps).clamp(minBps, maxBps))
+                    : null,
+              ),
               const SizedBox(width: 10),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: sc.bg3,
                   border: Border.all(color: sc.border1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(_fmtPct(valueBps),
-                    style: SatType.mono(
-                      size: 13,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    )),
+                child: Text(
+                  _fmtPct(valueBps),
+                  style: SatType.mono(
+                    size: 13,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
-              _stepBtn(sc, Icons.add,
-                  canUp ? () => onChange((valueBps + stepBps).clamp(minBps, maxBps)) : null),
+              _stepBtn(
+                sc,
+                Icons.add,
+                canUp
+                    ? () => onChange((valueBps + stepBps).clamp(minBps, maxBps))
+                    : null,
+              ),
             ],
           ),
         ),
@@ -1076,33 +1248,44 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(label,
-              style: SatType.sans(size: 13, color: sc.textMd)),
+          child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
         ),
         Expanded(
           child: Row(
             children: [
-              _stepBtn(sc, Icons.remove,
-                  canDown ? () => onChange((amount - step).clamp(min, max)) : null),
+              _stepBtn(
+                sc,
+                Icons.remove,
+                canDown
+                    ? () => onChange((amount - step).clamp(min, max))
+                    : null,
+              ),
               const SizedBox(width: 10),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: sc.bg3,
                   border: Border.all(color: sc.border1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(formatIDR(amount),
-                    style: SatType.mono(
-                      size: 13,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    )),
+                child: Text(
+                  formatIDR(amount),
+                  style: SatType.mono(
+                    size: 13,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
-              _stepBtn(sc, Icons.add,
-                  canUp ? () => onChange((amount + step).clamp(min, max)) : null),
+              _stepBtn(
+                sc,
+                Icons.add,
+                canUp ? () => onChange((amount + step).clamp(min, max)) : null,
+              ),
             ],
           ),
         ),
@@ -1121,9 +1304,11 @@ class _PajakLayananCard extends ConsumerWidget {
           border: Border.all(color: sc.border1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon,
-            size: 16,
-            color: onTap == null ? sc.textDim : sc.textHi),
+        child: Icon(
+          icon,
+          size: 16,
+          color: onTap == null ? sc.textDim : sc.textHi,
+        ),
       ),
     );
   }
@@ -1149,20 +1334,24 @@ class _GuestOrderingCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(AppStrings.venueSettingsSectionGuestOrdering,
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    )),
-              ),
-              Text('QR TAMU',
-                  style: SatType.mono(
-                    size: 9,
+                child: Text(
+                  AppStrings.venueSettingsSectionGuestOrdering,
+                  style: SatType.sans(
+                    size: 15,
                     weight: FontWeight.w600,
-                    letterSpacing: 1.4,
-                    color: sc.textLo,
-                  )),
+                    color: sc.textHi,
+                  ),
+                ),
+              ),
+              Text(
+                'QR TAMU',
+                style: SatType.mono(
+                  size: 9,
+                  weight: FontWeight.w600,
+                  letterSpacing: 1.4,
+                  color: sc.textLo,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -1175,12 +1364,14 @@ class _GuestOrderingCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Aktifkan pesanan mandiri',
-                    style: SatType.sans(size: 13, color: sc.textHi)),
+                child: Text(
+                  'Aktifkan pesanan mandiri',
+                  style: SatType.sans(size: 13, color: sc.textHi),
+                ),
               ),
               GestureDetector(
-                onTap: () => n.patch(
-                    guestOrderingEnabled: !s.guestOrderingEnabled),
+                onTap: () =>
+                    n.patch(guestOrderingEnabled: !s.guestOrderingEnabled),
                 child: adminToggle(context, on: s.guestOrderingEnabled),
               ),
             ],
@@ -1195,7 +1386,8 @@ class _GuestOrderingCard extends ConsumerWidget {
                   ? _driftBanner(
                       sc,
                       'Server tidak terhubung Wi-Fi. QR tamu tidak akan '
-                      'berfungsi sampai jaringan aktif.')
+                      'berfungsi sampai jaringan aktif.',
+                    )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1217,8 +1409,10 @@ class _GuestOrderingCard extends ConsumerWidget {
               child: TextButton.icon(
                 onPressed: () => ref.invalidate(guestNetInfoProvider),
                 icon: Icon(Icons.refresh, size: 16, color: sc.accent),
-                label: Text('Cek ulang alamat',
-                    style: SatType.sans(size: 12, color: sc.accent)),
+                label: Text(
+                  'Cek ulang alamat',
+                  style: SatType.sans(size: 12, color: sc.accent),
+                ),
               ),
             ),
             Text(
@@ -1232,23 +1426,22 @@ class _GuestOrderingCard extends ConsumerWidget {
   }
 
   Widget _netRow(SatColors sc, String text, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: sc.bg1,
-          border: Border.all(color: sc.border0),
-          borderRadius: BorderRadius.circular(10),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: sc.bg1,
+      border: Border.all(color: sc.border0),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.link, size: 15, color: sc.textLo),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(text, style: SatType.mono(size: 12.5, color: color)),
         ),
-        child: Row(
-          children: [
-            Icon(Icons.link, size: 15, color: sc.textLo),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(text,
-                  style: SatType.mono(size: 12.5, color: color)),
-            ),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 
   Widget _driftBanner(SatColors sc, String text, {bool warn = false}) {
     final c = warn ? sc.warn : sc.urgent;
@@ -1262,15 +1455,238 @@ class _GuestOrderingCard extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(warn ? Icons.warning_amber_rounded : Icons.wifi_off,
-              size: 17, color: c),
+          Icon(
+            warn ? Icons.warning_amber_rounded : Icons.wifi_off,
+            size: 17,
+            color: c,
+          ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text,
-                style: SatType.sans(
-                    size: 12, color: sc.textHi, height: 1.4)),
+            child: Text(
+              text,
+              style: SatType.sans(size: 12, color: sc.textHi, height: 1.4),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Venue-wide alert sound chooser (ADR-0035). Picks a preset per [AlertEvent];
+/// the choice rides [VenueSettingsDto] to every paired device. Stateful only to
+/// own a one-shot preview player.
+class _SoundCard extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_SoundCard> createState() => _SoundCardState();
+}
+
+class _SoundCardState extends ConsumerState<_SoundCard> {
+  final _preview = AudioPlayer();
+
+  @override
+  void dispose() {
+    _preview.dispose();
+    super.dispose();
+  }
+
+  Future<void> _playPreset(String? asset) async {
+    if (asset == null) return; // 'none' — nothing to hear.
+    try {
+      await _preview.stop();
+      await _preview.play(AssetSource(asset));
+    } catch (_) {
+      // Missing/bad clip — swallow; the picker still works.
+    }
+  }
+
+  static const _events = <(AlertEvent, String)>[
+    (AlertEvent.newOrder, AppStrings.venueSettingsSoundNewOrder),
+    (AlertEvent.orderReady, AppStrings.venueSettingsSoundReady),
+    (AlertEvent.voided, AppStrings.venueSettingsSoundVoid),
+    (AlertEvent.overdue, AppStrings.venueSettingsSoundOverdue),
+  ];
+
+  String _currentId(VenueSettingsDto s, AlertEvent e) => switch (e) {
+    AlertEvent.newOrder => s.soundNewOrder,
+    AlertEvent.orderReady => s.soundReady,
+    AlertEvent.voided => s.soundVoid,
+    AlertEvent.overdue => s.soundOverdue,
+  };
+
+  void _patch(AlertEvent e, String id) {
+    final n = ref.read(venueSettingsProvider.notifier);
+    switch (e) {
+      case AlertEvent.newOrder:
+        n.patch(soundNewOrder: id);
+      case AlertEvent.orderReady:
+        n.patch(soundReady: id);
+      case AlertEvent.voided:
+        n.patch(soundVoid: id);
+      case AlertEvent.overdue:
+        n.patch(soundOverdue: id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final s = ref.watch(venueSettingsProvider);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  AppStrings.venueSettingsSectionSound,
+                  style: SatType.sans(
+                    size: 15,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                ),
+              ),
+              Text(
+                AppStrings.venueSettingsSectionSoundTag.toUpperCase(),
+                style: SatType.mono(
+                  size: 9,
+                  weight: FontWeight.w600,
+                  letterSpacing: 1.4,
+                  color: sc.textLo,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Pilih nada untuk tiap kejadian. Pilihan ini berlaku untuk semua '
+            'perangkat di venue. Bisukan per perangkat ada di Sistem.',
+            style: SatType.sans(size: 12, color: sc.textLo, height: 1.4),
+          ),
+          const SizedBox(height: 6),
+          for (final (event, label) in _events) _row(sc, s, event, label),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(
+    SatColors sc,
+    VenueSettingsDto s,
+    AlertEvent event,
+    String label,
+  ) {
+    final id = resolveSoundId(event, _currentId(s, event));
+    final preset = presetForId(id);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: SatType.sans(size: 13, color: sc.textHi)),
+          ),
+          GestureDetector(
+            onTap: () => _openPicker(sc, event),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: sc.bg1,
+                border: Border.all(color: sc.border0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    preset?.label ?? id,
+                    style: SatType.sans(size: 12.5, color: sc.textHi),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(Icons.expand_more, size: 16, color: sc.textLo),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            onPressed: preset == null || preset.isSilent
+                ? null
+                : () => _playPreset(preset.asset),
+            icon: Icon(
+              preset != null && preset.isSilent
+                  ? Icons.volume_off
+                  : Icons.play_circle_outline,
+              size: 22,
+              color: preset == null || preset.isSilent ? sc.textDim : sc.accent,
+            ),
+            tooltip: AppStrings.venueSettingsSoundPreview,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openPicker(SatColors sc, AlertEvent event) {
+    final selected = resolveSoundId(
+      event,
+      _currentId(ref.read(venueSettingsProvider), event),
+    );
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: sc.bg2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              for (final preset in alertSoundPresets)
+                ListTile(
+                  onTap: () {
+                    _patch(event, preset.id);
+                    Navigator.of(ctx).pop();
+                  },
+                  leading: Icon(
+                    preset.id == selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: preset.id == selected ? sc.accent : sc.textLo,
+                  ),
+                  title: Text(
+                    preset.label,
+                    style: SatType.sans(size: 14, color: sc.textHi),
+                  ),
+                  trailing: IconButton(
+                    onPressed: preset.isSilent
+                        ? null
+                        : () => _playPreset(preset.asset),
+                    icon: Icon(
+                      preset.isSilent
+                          ? Icons.volume_off
+                          : Icons.play_circle_outline,
+                      color: preset.isSilent ? sc.textDim : sc.accent,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1296,20 +1712,24 @@ class _ReportsHourCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(AppStrings.venueSettingsSectionReports,
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    )),
-              ),
-              Text('LAPORAN',
-                  style: SatType.mono(
-                    size: 9,
+                child: Text(
+                  AppStrings.venueSettingsSectionReports,
+                  style: SatType.sans(
+                    size: 15,
                     weight: FontWeight.w600,
-                    letterSpacing: 1.4,
-                    color: sc.textLo,
-                  )),
+                    color: sc.textHi,
+                  ),
+                ),
+              ),
+              Text(
+                'LAPORAN',
+                style: SatType.mono(
+                  size: 9,
+                  weight: FontWeight.w600,
+                  letterSpacing: 1.4,
+                  color: sc.textLo,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -1320,11 +1740,15 @@ class _ReportsHourCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Jam mulai hari kerja',
-                        style: SatType.sans(size: 13, color: sc.textMd)),
+                    Text(
+                      'Jam mulai hari kerja',
+                      style: SatType.sans(size: 13, color: sc.textMd),
+                    ),
                     const SizedBox(height: 2),
-                    Text('Pengelompokan laporan "Hari ini"',
-                        style: SatType.sans(size: 11, color: sc.textLo)),
+                    Text(
+                      'Pengelompokan laporan "Hari ini"',
+                      style: SatType.sans(size: 11, color: sc.textLo),
+                    ),
                   ],
                 ),
               ),
@@ -1341,18 +1765,22 @@ class _ReportsHourCard extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: sc.bg3,
                         border: Border.all(color: sc.border1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text('${hour.toString().padLeft(2, '0')}:00',
-                          style: SatType.mono(
-                            size: 13,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          )),
+                      child: Text(
+                        '${hour.toString().padLeft(2, '0')}:00',
+                        style: SatType.mono(
+                          size: 13,
+                          weight: FontWeight.w600,
+                          color: sc.textHi,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     _stepBtn(
@@ -1377,11 +1805,15 @@ class _ReportsHourCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Target kecepatan dapur',
-                        style: SatType.sans(size: 13, color: sc.textMd)),
+                    Text(
+                      'Target kecepatan dapur',
+                      style: SatType.sans(size: 13, color: sc.textMd),
+                    ),
                     const SizedBox(height: 2),
-                    Text('Batas "telat" di zona + SLA laporan',
-                        style: SatType.sans(size: 11, color: sc.textLo)),
+                    Text(
+                      'Batas "telat" di zona + SLA laporan',
+                      style: SatType.sans(size: 11, color: sc.textLo),
+                    ),
                   ],
                 ),
               ),
@@ -1392,33 +1824,35 @@ class _ReportsHourCard extends ConsumerWidget {
                       sc,
                       Icons.remove,
                       s.prepTargetMins > 5
-                          ? () => n.patch(
-                              prepTargetMins: s.prepTargetMins - 5)
+                          ? () => n.patch(prepTargetMins: s.prepTargetMins - 5)
                           : null,
                     ),
                     const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: sc.bg3,
                         border: Border.all(color: sc.border1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text('${s.prepTargetMins} min',
-                          style: SatType.mono(
-                            size: 13,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          )),
+                      child: Text(
+                        '${s.prepTargetMins} min',
+                        style: SatType.mono(
+                          size: 13,
+                          weight: FontWeight.w600,
+                          color: sc.textHi,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     _stepBtn(
                       sc,
                       Icons.add,
                       s.prepTargetMins < 60
-                          ? () => n.patch(
-                              prepTargetMins: s.prepTargetMins + 5)
+                          ? () => n.patch(prepTargetMins: s.prepTargetMins + 5)
                           : null,
                     ),
                   ],
@@ -1442,8 +1876,11 @@ class _ReportsHourCard extends ConsumerWidget {
           border: Border.all(color: sc.border1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon,
-            size: 16, color: onTap == null ? sc.textDim : sc.textHi),
+        child: Icon(
+          icon,
+          size: 16,
+          color: onTap == null ? sc.textDim : sc.textHi,
+        ),
       ),
     );
   }
@@ -1472,13 +1909,15 @@ class _PhoneDetailScreen extends StatelessWidget {
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),
                   Expanded(
-                    child: Text(title,
-                        style: SatType.sans(
-                          size: 22,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.4,
-                          color: sc.textHi,
-                        )),
+                    child: Text(
+                      title,
+                      style: SatType.sans(
+                        size: 22,
+                        weight: FontWeight.w600,
+                        letterSpacing: -0.4,
+                        color: sc.textHi,
+                      ),
+                    ),
                   ),
                 ],
               ),

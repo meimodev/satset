@@ -71,7 +71,12 @@ List<_KOrder> _buildOrders(
       final earliest = tickets
           .map((t) => t.sentAtTime)
           .reduce((a, b) => a.isBefore(b) ? a : b);
-      final order = _KOrder(tableId, sentAt, earliest, tickets);
+      // `byTable` is keyed by visitId (ADR-0034); use the ticket's real
+      // tableId so the card resolves a table name, not the raw visit id.
+      // Falls back to the key for takeaway (no table).
+      final resolvedId =
+          tickets.first.tableId.isNotEmpty ? tickets.first.tableId : tableId;
+      final order = _KOrder(resolvedId, sentAt, earliest, tickets);
       if (!showCompleted && order.done == order.total) return;
       out.add(order);
     });

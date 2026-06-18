@@ -44,7 +44,14 @@ mixin _$VenueSettingsDto {
   int get serviceFixedAmount => throw _privateConstructorUsedError;
   int get businessDayStartHour => throw _privateConstructorUsedError;
   int get prepTargetMins => throw _privateConstructorUsedError;
-  bool get guestOrderingEnabled => throw _privateConstructorUsedError;
+  bool get guestOrderingEnabled =>
+      throw _privateConstructorUsedError; // Per-event alert sound choice (ADR-0035). Each holds a preset id from
+  // `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
+  // original fixed cues exactly.
+  String get soundNewOrder => throw _privateConstructorUsedError;
+  String get soundReady => throw _privateConstructorUsedError;
+  String get soundVoid => throw _privateConstructorUsedError;
+  String get soundOverdue => throw _privateConstructorUsedError;
 
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -86,6 +93,10 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     int businessDayStartHour,
     int prepTargetMins,
     bool guestOrderingEnabled,
+    String soundNewOrder,
+    String soundReady,
+    String soundVoid,
+    String soundOverdue,
   });
 }
 
@@ -126,6 +137,10 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? businessDayStartHour = null,
     Object? prepTargetMins = null,
     Object? guestOrderingEnabled = null,
+    Object? soundNewOrder = null,
+    Object? soundReady = null,
+    Object? soundVoid = null,
+    Object? soundOverdue = null,
   }) {
     return _then(
       _value.copyWith(
@@ -217,6 +232,22 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.guestOrderingEnabled
                 : guestOrderingEnabled // ignore: cast_nullable_to_non_nullable
                       as bool,
+            soundNewOrder: null == soundNewOrder
+                ? _value.soundNewOrder
+                : soundNewOrder // ignore: cast_nullable_to_non_nullable
+                      as String,
+            soundReady: null == soundReady
+                ? _value.soundReady
+                : soundReady // ignore: cast_nullable_to_non_nullable
+                      as String,
+            soundVoid: null == soundVoid
+                ? _value.soundVoid
+                : soundVoid // ignore: cast_nullable_to_non_nullable
+                      as String,
+            soundOverdue: null == soundOverdue
+                ? _value.soundOverdue
+                : soundOverdue // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -255,6 +286,10 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     int businessDayStartHour,
     int prepTargetMins,
     bool guestOrderingEnabled,
+    String soundNewOrder,
+    String soundReady,
+    String soundVoid,
+    String soundOverdue,
   });
 }
 
@@ -294,6 +329,10 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? businessDayStartHour = null,
     Object? prepTargetMins = null,
     Object? guestOrderingEnabled = null,
+    Object? soundNewOrder = null,
+    Object? soundReady = null,
+    Object? soundVoid = null,
+    Object? soundOverdue = null,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -385,6 +424,22 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.guestOrderingEnabled
             : guestOrderingEnabled // ignore: cast_nullable_to_non_nullable
                   as bool,
+        soundNewOrder: null == soundNewOrder
+            ? _value.soundNewOrder
+            : soundNewOrder // ignore: cast_nullable_to_non_nullable
+                  as String,
+        soundReady: null == soundReady
+            ? _value.soundReady
+            : soundReady // ignore: cast_nullable_to_non_nullable
+                  as String,
+        soundVoid: null == soundVoid
+            ? _value.soundVoid
+            : soundVoid // ignore: cast_nullable_to_non_nullable
+                  as String,
+        soundOverdue: null == soundOverdue
+            ? _value.soundOverdue
+            : soundOverdue // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -416,6 +471,10 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.businessDayStartHour = 4,
     this.prepTargetMins = 15,
     this.guestOrderingEnabled = false,
+    this.soundNewOrder = 'alert',
+    this.soundReady = 'chime',
+    this.soundVoid = 'alert',
+    this.soundOverdue = 'alert',
   });
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -489,10 +548,25 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final bool guestOrderingEnabled;
+  // Per-event alert sound choice (ADR-0035). Each holds a preset id from
+  // `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
+  // original fixed cues exactly.
+  @override
+  @JsonKey()
+  final String soundNewOrder;
+  @override
+  @JsonKey()
+  final String soundReady;
+  @override
+  @JsonKey()
+  final String soundVoid;
+  @override
+  @JsonKey()
+  final String soundOverdue;
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, guestOrderingEnabled: $guestOrderingEnabled)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, guestOrderingEnabled: $guestOrderingEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue)';
   }
 
   @override
@@ -539,7 +613,15 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
             (identical(other.prepTargetMins, prepTargetMins) ||
                 other.prepTargetMins == prepTargetMins) &&
             (identical(other.guestOrderingEnabled, guestOrderingEnabled) ||
-                other.guestOrderingEnabled == guestOrderingEnabled));
+                other.guestOrderingEnabled == guestOrderingEnabled) &&
+            (identical(other.soundNewOrder, soundNewOrder) ||
+                other.soundNewOrder == soundNewOrder) &&
+            (identical(other.soundReady, soundReady) ||
+                other.soundReady == soundReady) &&
+            (identical(other.soundVoid, soundVoid) ||
+                other.soundVoid == soundVoid) &&
+            (identical(other.soundOverdue, soundOverdue) ||
+                other.soundOverdue == soundOverdue));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -568,6 +650,10 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     businessDayStartHour,
     prepTargetMins,
     guestOrderingEnabled,
+    soundNewOrder,
+    soundReady,
+    soundVoid,
+    soundOverdue,
   ]);
 
   /// Create a copy of VenueSettingsDto
@@ -611,6 +697,10 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final int businessDayStartHour,
     final int prepTargetMins,
     final bool guestOrderingEnabled,
+    final String soundNewOrder,
+    final String soundReady,
+    final String soundVoid,
+    final String soundOverdue,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -660,7 +750,17 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   @override
   int get prepTargetMins;
   @override
-  bool get guestOrderingEnabled;
+  bool get guestOrderingEnabled; // Per-event alert sound choice (ADR-0035). Each holds a preset id from
+  // `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
+  // original fixed cues exactly.
+  @override
+  String get soundNewOrder;
+  @override
+  String get soundReady;
+  @override
+  String get soundVoid;
+  @override
+  String get soundOverdue;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

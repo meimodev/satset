@@ -31,6 +31,13 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(4) int businessDayStartHour,
     @Default(15) int prepTargetMins,
     @Default(false) bool guestOrderingEnabled,
+    // Per-event alert sound choice (ADR-0035). Each holds a preset id from
+    // `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
+    // original fixed cues exactly.
+    @Default('alert') String soundNewOrder,
+    @Default('chime') String soundReady,
+    @Default('alert') String soundVoid,
+    @Default('alert') String soundOverdue,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

@@ -80,6 +80,10 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     int? businessDayStartHour,
     int? prepTargetMins,
     bool? guestOrderingEnabled,
+    String? soundNewOrder,
+    String? soundReady,
+    String? soundVoid,
+    String? soundOverdue,
   }) async {
     final prev = state;
     state = state.copyWith(
@@ -105,6 +109,10 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       prepTargetMins: prepTargetMins ?? state.prepTargetMins,
       guestOrderingEnabled:
           guestOrderingEnabled ?? state.guestOrderingEnabled,
+      soundNewOrder: soundNewOrder ?? state.soundNewOrder,
+      soundReady: soundReady ?? state.soundReady,
+      soundVoid: soundVoid ?? state.soundVoid,
+      soundOverdue: soundOverdue ?? state.soundOverdue,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -130,6 +138,10 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'businessDayStartHour': ?businessDayStartHour,
         'prepTargetMins': ?prepTargetMins,
         'guestOrderingEnabled': ?guestOrderingEnabled,
+        'soundNewOrder': ?soundNewOrder,
+        'soundReady': ?soundReady,
+        'soundVoid': ?soundVoid,
+        'soundOverdue': ?soundOverdue,
       };
       final raw = await ref
           .read(apiClientProvider)

@@ -332,6 +332,14 @@ class VenueSettings extends Table {
   /// working QR.
   BoolColumn get guestOrderingEnabled =>
       boolean().withDefault(const Constant(false))();
+
+  /// Per-event alert sound choice (ADR-0035). Each holds a preset id from
+  /// `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
+  /// original fixed cues. Venue-wide: one choice every paired device obeys.
+  TextColumn get soundNewOrder => text().withDefault(const Constant('alert'))();
+  TextColumn get soundReady => text().withDefault(const Constant('chime'))();
+  TextColumn get soundVoid => text().withDefault(const Constant('alert'))();
+  TextColumn get soundOverdue => text().withDefault(const Constant('alert'))();
   @override
   Set<Column> get primaryKey => {id};
 }

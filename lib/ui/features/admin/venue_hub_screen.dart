@@ -83,14 +83,9 @@ class VenueHubScreen extends ConsumerWidget {
         children: [
           if (showSeed) ...[
             const Reveal(index: 0, child: SeedDataBanner()),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
           ],
-          for (var i = 0; i < _sections.length; i++) ...[
-            Reveal(
-                index: i + (showSeed ? 1 : 0),
-                child: _HubRow(section: _sections[i], big: true)),
-            if (i != _sections.length - 1) const SizedBox(height: 12),
-          ],
+          _HubGrid(sections: _sections, seedOffset: showSeed ? 1 : 0, big: true),
         ],
       );
     }
@@ -227,6 +222,46 @@ class _BannerBtn extends StatelessWidget {
   }
 }
 
+/// 2-column grid of hub cards. Wraps in rows of 2.
+class _HubGrid extends StatelessWidget {
+  final List<_Section> sections;
+  final int seedOffset;
+  final bool big;
+  const _HubGrid({
+    required this.sections,
+    this.seedOffset = 0,
+    this.big = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = big ? 12.0 : 10.0;
+    final rows = <Widget>[];
+    for (var i = 0; i < sections.length; i += 2) {
+      final revealIdx = (i ~/ 2) + seedOffset;
+      final left = _HubCard(section: sections[i], big: big);
+      final right = (i + 1 < sections.length)
+          ? _HubCard(section: sections[i + 1], big: big)
+          : const SizedBox.shrink();
+      rows.add(
+        Reveal(
+          index: revealIdx,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: left),
+              SizedBox(width: gap),
+              Expanded(child: right),
+            ],
+          ),
+        ),
+      );
+      if (i + 2 < sections.length) rows.add(SizedBox(height: gap));
+    }
+    return Column(children: rows);
+  }
+}
+
 class _PhoneHub extends StatelessWidget {
   final List<_Section> sections;
   final bool showSeed;
@@ -262,7 +297,7 @@ class _PhoneHub extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
             child: Text(
-              'Konfigurasi',
+              AppStrings.crumbKonfigurasi,
               style: SatType.sans(
                 size: 22,
                 weight: FontWeight.w600,
@@ -277,90 +312,75 @@ class _PhoneHub extends StatelessWidget {
           const Reveal(index: 2, child: SeedDataBanner()),
           const SizedBox(height: 12),
         ],
-        for (var i = 0; i < sections.length; i++) ...[
-          Reveal(
-              index: i + (showSeed ? 3 : 2),
-              child: _HubRow(section: sections[i], big: false)),
-          if (i != sections.length - 1) const SizedBox(height: 8),
-        ],
+        _HubGrid(
+          sections: sections,
+          seedOffset: showSeed ? 3 : 2,
+        ),
       ],
     );
   }
 }
 
-class _HubRow extends StatelessWidget {
+class _HubCard extends StatelessWidget {
   final _Section section;
   final bool big;
-  const _HubRow({required this.section, required this.big});
+  const _HubCard({required this.section, required this.big});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     final tint = section.tint(sc);
-    final radius = big ? 18.0 : 14.0;
-    final iconBox = big ? 52.0 : 40.0;
-    final iconSize = big ? 24.0 : 18.0;
-    final labelSize = big ? 17.0 : 15.0;
-    final subSize = big ? 12.0 : 11.5;
-    final padV = big ? 18.0 : 14.0;
-    final padH = big ? 20.0 : 14.0;
+    final radius = big ? 18.0 : 16.0;
+    final iconBox = big ? 48.0 : 42.0;
+    final iconSize = big ? 24.0 : 20.0;
+    final labelSize = big ? 15.0 : 14.0;
+    final subSize = big ? 11.5 : 11.0;
     return PressScale(
       child: Material(
-      color: sc.bg2,
-      borderRadius: BorderRadius.circular(radius),
-      child: InkWell(
-        onTap: () => context.push(section.route),
+        color: sc.bg2,
         borderRadius: BorderRadius.circular(radius),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: sc.border0),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: iconBox,
-                height: iconBox,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(big ? 14 : 12),
+        child: InkWell(
+          onTap: () => context.push(section.route),
+          borderRadius: BorderRadius.circular(radius),
+          child: Container(
+            padding: EdgeInsets.all(big ? 16 : 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(color: sc.border0),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: iconBox,
+                  height: iconBox,
+                  decoration: BoxDecoration(
+                    color: tint.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(big ? 14 : 12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(section.icon, size: iconSize, color: tint),
                 ),
-                alignment: Alignment.center,
-                child: Icon(section.icon, size: iconSize, color: tint),
-              ),
-              SizedBox(width: big ? 16 : 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(section.label,
-                        style: SatType.sans(
-                          size: labelSize,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          color: sc.textHi,
-                        )),
-                    const SizedBox(height: 3),
-                    Text(section.sub,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: SatType.sans(
-                          size: subSize,
-                          color: sc.textLo,
-                          height: 1.3)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Icon(Icons.chevron_right_rounded,
-                  size: big ? 22 : 18, color: sc.textLo),
-            ],
+                const SizedBox(height: 14),
+                Text(section.label,
+                    style: SatType.sans(
+                      size: labelSize,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                      color: sc.textHi,
+                    )),
+                const SizedBox(height: 4),
+                Text(section.sub,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: SatType.sans(
+                        size: subSize,
+                        color: sc.textLo,
+                        height: 1.3)),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
