@@ -140,8 +140,17 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     // Live per-venue admin list — drives both the ADMIN section and the
     // delete-venue guard (delete needs zero admins).
     final admins = ref.watch(fleetAdminsProvider);
-    final venueAdmins = (admins.valueOrNull ?? const <AdminProfile>[])
-        .where((a) => a.venueId == v.id && a.role == AdminRole.admin)
+    final forVenue = (admins.valueOrNull ?? const <AdminProfile>[])
+        .where((a) => a.venueId == v.id)
+        .toList();
+    final venueAdmins = forVenue
+        .where((a) => a.role == AdminRole.admin)
+        .toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+    // Owners (read-only report viewers, ADR-0036) are listed separately and
+    // also block venue delete — a venue with anyone attached can't be deleted.
+    final venueOwners = forVenue
+        .where((a) => a.role == AdminRole.owner)
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 
@@ -211,9 +220,19 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           const SizedBox(height: 14),
           _paidUntilRow(sc),
           const SizedBox(height: 28),
-          _adminSection(sc, admins, venueAdmins),
+          _principalSection(sc, admins, venueAdmins,
+              role: 'admin',
+              label: 'ADMIN',
+              addLabel: 'Tambah admin',
+              emptyMsg: 'Belum ada admin untuk venue ini.'),
+          const SizedBox(height: 28),
+          _principalSection(sc, admins, venueOwners,
+              role: 'owner',
+              label: 'PEMILIK (LAPORAN)',
+              addLabel: 'Tambah pemilik',
+              emptyMsg: 'Belum ada pemilik untuk venue ini.'),
           const SizedBox(height: 32),
-          _dangerZone(sc, venueAdmins),
+          _dangerZone(sc, [...venueAdmins, ...venueOwners]),
         ],
       ),
     );
@@ -221,22 +240,29 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   // ── Admins ───────────────────────────────────────────────────────────────
 
-  Widget _adminSection(SatColors sc, AsyncValue<List<AdminProfile>> all,
-      List<AdminProfile> admins) {
+  Widget _principalSection(
+    SatColors sc,
+    AsyncValue<List<AdminProfile>> all,
+    List<AdminProfile> rows, {
+    required String role,
+    required String label,
+    required String addLabel,
+    required String emptyMsg,
+  }) {
     final loading = all.isLoading && !all.hasValue;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _sectionLabel(sc, 'ADMIN'),
+        _sectionLabel(sc, label),
         const SizedBox(height: 10),
         FleetPrimaryButton(
-          label: 'Tambah admin',
+          label: addLabel,
           icon: Icons.person_add_alt_1,
-          onTap: _busy ? null : _createAdminDialog,
+          onTap: _busy ? null : () => _createPrincipalDialog(role),
         ),
         const SizedBox(height: 12),
         if (all.hasError)
-          Text('Gagal memuat admin: ${fleetErrText(all.error!)}',
+          Text('Gagal memuat: ${fleetErrText(all.error!)}',
               style: SatType.sans(size: 12, color: sc.urgent))
         else if (loading)
           Padding(
@@ -244,16 +270,16 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             child: Center(
                 child: CircularProgressIndicator(color: sc.accent)),
           )
-        else if (admins.isEmpty)
+        else if (rows.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Text('Belum ada admin untuk venue ini.',
+            child: Text(emptyMsg,
                 style: SatType.sans(size: 13, color: sc.textLo)),
           )
         else
-          for (var i = 0; i < admins.length; i++) ...[
-            _adminRow(sc, admins[i]),
-            if (i != admins.length - 1) const SizedBox(height: 8),
+          for (var i = 0; i < rows.length; i++) ...[
+            _adminRow(sc, rows[i]),
+            if (i != rows.length - 1) const SizedBox(height: 8),
           ],
       ],
     );
@@ -308,16 +334,17 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     }
   }
 
-  Future<void> _createAdminDialog() async {
+  Future<void> _createPrincipalDialog(String role) async {
     final name = TextEditingController();
     final email = TextEditingController();
     final pw = TextEditingController();
     final sc = context.sat;
+    final roleLabel = role == 'owner' ? 'pemilik' : 'admin';
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text('Tambah admin · ${widget.venue.name}',
+        title: Text('Tambah $roleLabel · ${widget.venue.name}',
             style: SatType.sans(size: 17, color: sc.textHi)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -357,8 +384,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             email: email.text,
             password: pw.text,
             name: name.text,
-            venueId: widget.venue.id),
-        'Admin dibuat');
+            venueId: widget.venue.id,
+            role: role),
+        '${role == 'owner' ? 'Pemilik' : 'Admin'} dibuat');
   }
 
   // ── Danger zone ────────────────────────────────────────────────────────────

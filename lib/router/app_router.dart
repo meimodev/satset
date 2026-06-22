@@ -10,6 +10,7 @@ import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/features/auth/views/pin_screen.dart';
 import 'package:satset/ui/features/fleet/fleet_console_screen.dart';
+import 'package:satset/ui/features/owner/owner_report_screen.dart';
 import 'package:satset/ui/features/onboarding/views/forbidden_screen.dart';
 import 'package:satset/ui/features/onboarding/views/mode_select_screen.dart';
 import 'package:satset/ui/features/onboarding/views/pair_screen.dart';
@@ -95,8 +96,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
         return decision;
       }
-      // A non-super may never sit on the fleet route.
-      if (loc == '/fleet') {
+      // Report owner: a cloud-only read-only session, no server, no pairing. It
+      // owns `/owner` and bypasses the hard pair gate like the super admin.
+      // See ADR-0036.
+      if (auth.isOwner) {
+        if (loc != '/owner') decision = '/owner';
+        if (decision != null && decision != loc) {
+          SatLog.nav('redirect $loc → $decision');
+        }
+        return decision;
+      }
+      // A non-super may never sit on the fleet route; a non-owner never on /owner.
+      if (loc == '/fleet' || loc == '/owner') {
         decision = '/pin';
       } else
       // Hard pair-required gate: until ApiConfig is populated nothing else
@@ -129,6 +140,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/forbidden', builder: (_, _) => const ForbiddenScreen()),
       GoRoute(path: '/pin', builder: (_, _) => const PinScreen()),
       GoRoute(path: '/fleet', builder: (_, _) => const FleetConsoleScreen()),
+      GoRoute(path: '/owner', builder: (_, _) => const OwnerReportScreen()),
       ShellRoute(
         builder: (_, _, child) => AppShell(child: child),
         routes: [

@@ -1,4 +1,4 @@
-package id.satset.satset;
+package id.activid.satset;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;

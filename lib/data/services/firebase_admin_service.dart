@@ -20,11 +20,15 @@ AdminStatus _parseStatus(String? raw) => switch (raw) {
 
 /// Fleet role on `admins/{uid}.role`. A `super` admin manages the whole fleet
 /// (many venues + their admins) and never runs a local server; a plain `admin`
-/// runs one venue. See ADR-0016.
-enum AdminRole { admin, superAdmin }
+/// runs one venue; an `owner` is a read-only cloud report viewer for one venue
+/// that never pairs or runs a server. See ADR-0016, ADR-0036.
+enum AdminRole { admin, superAdmin, owner }
 
-AdminRole _parseRole(String? raw) =>
-    raw == 'super' ? AdminRole.superAdmin : AdminRole.admin;
+AdminRole _parseRole(String? raw) => switch (raw) {
+      'super' => AdminRole.superAdmin,
+      'owner' => AdminRole.owner,
+      _ => AdminRole.admin,
+    };
 
 /// Snapshot of an admin's `admins/{uid}` doc. `fromCache` distinguishes a
 /// server-confirmed read from a locally-cached one (drives the staleness guard).
@@ -56,6 +60,10 @@ class AdminProfile {
 
   bool get isActive => status == AdminStatus.active;
   bool get isSuper => role == AdminRole.superAdmin;
+
+  /// Read-only cloud report viewer (ADR-0036): diverts to `/owner`, never pairs
+  /// or boots a server.
+  bool get isOwner => role == AdminRole.owner;
 }
 
 /// Snapshot of a `venues/{vid}` doc — the fleet-level record many admins share.
@@ -86,8 +94,9 @@ class Venue {
 }
 
 /// Why a cold-boot admin session could not start. `superAdmin` means the cached
-/// session belongs to a fleet operator, which never auto-boots a local server.
-enum AdminBootGate { noUser, ok, ineligible, staleOffline, superAdmin }
+/// session belongs to a fleet operator, which never auto-boots a local server;
+/// `owner` means a read-only report viewer, which diverts to `/owner` (ADR-0036).
+enum AdminBootGate { noUser, ok, ineligible, staleOffline, superAdmin, owner }
 
 class AdminBootDecision {
   final AdminBootGate gate;
@@ -218,6 +227,10 @@ class FirebaseAdminService {
       if (server.isSuper) {
         return AdminBootDecision(AdminBootGate.superAdmin, server);
       }
+      // A report owner diverts to /owner, never boots a server (ADR-0036).
+      if (server.isOwner) {
+        return AdminBootDecision(AdminBootGate.owner, server);
+      }
       if (!server.isActive) {
         return AdminBootDecision(AdminBootGate.ineligible, server);
       }
@@ -245,6 +258,9 @@ class FirebaseAdminService {
     final cached = await fetch(u.uid).catchError((_) => null);
     if (cached != null && cached.isSuper) {
       return AdminBootDecision(AdminBootGate.superAdmin, cached);
+    }
+    if (cached != null && cached.isOwner) {
+      return AdminBootDecision(AdminBootGate.owner, cached);
     }
     if (cached != null && !cached.isActive) {
       return AdminBootDecision(AdminBootGate.ineligible, cached);

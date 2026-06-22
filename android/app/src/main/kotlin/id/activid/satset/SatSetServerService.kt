@@ -1,4 +1,4 @@
-package id.satset.satset
+package id.activid.satset
 
 import android.app.Notification
 import android.app.NotificationChannel

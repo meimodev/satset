@@ -48,9 +48,11 @@ class FleetService {
     return AdminProfile(
       uid: d.id,
       status: _status(m['status'] as String?),
-      role: (m['role'] as String?) == 'super'
-          ? AdminRole.superAdmin
-          : AdminRole.admin,
+      role: switch (m['role'] as String?) {
+        'super' => AdminRole.superAdmin,
+        'owner' => AdminRole.owner,
+        _ => AdminRole.admin,
+      },
       name: (m['name'] as String?)?.trim() ?? '',
       venueId: (m['venueId'] as String?)?.trim() ?? '',
       avatarColorHex: (m['avatarColorHex'] as num?)?.toInt(),
@@ -99,17 +101,21 @@ class FleetService {
 
   Future<void> deleteVenue(String vid) => _call('deleteVenue', {'vid': vid});
 
+  /// Creates a venue principal. [role] is `admin` (default) or `owner` — the
+  /// read-only cloud report viewer (ADR-0036). `super` is seeded by hand.
   Future<String> createAdmin({
     required String email,
     required String password,
     required String name,
     required String venueId,
+    String role = 'admin',
   }) async {
     final r = await _call('createAdmin', {
       'email': email,
       'password': password,
       'name': name,
       'venueId': venueId,
+      'role': role,
     });
     return (r['uid'] as String?) ?? '';
   }

@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:satset/data/services/owner_report_service.dart';
 
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/auth_dto.dart';
@@ -50,6 +53,16 @@ class AuthState {
   /// 'super'`). Such a session runs no local server and routes to the Fleet
   /// console; the router bypasses its pair gate for it. See ADR-0016.
   final bool isSuperAdmin;
+
+  /// True when the signed-in account is a read-only report owner
+  /// (`admins/{uid}.role == 'owner'`). Like a super admin it runs no local
+  /// server and bypasses the pair gate, but it routes to `/owner` and reads
+  /// only its venue's published report. See ADR-0036.
+  final bool isOwner;
+
+  /// The owner's venue id (`admins/{uid}.venueId`), used to read `reports/{vid}`.
+  /// Empty unless [isOwner].
+  final String ownerVenueId;
   const AuthState({
     this.isAuthenticated = false,
     this.user,
@@ -58,6 +71,8 @@ class AuthState {
     this.restoring = false,
     this.capabilities = const {},
     this.isSuperAdmin = false,
+    this.isOwner = false,
+    this.ownerVenueId = '',
   });
 
   AuthState copyWith({
@@ -68,6 +83,8 @@ class AuthState {
     bool? restoring,
     Set<Capability>? capabilities,
     bool? isSuperAdmin,
+    bool? isOwner,
+    String? ownerVenueId,
   }) =>
       AuthState(
         isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -77,6 +94,8 @@ class AuthState {
         restoring: restoring ?? this.restoring,
         capabilities: capabilities ?? this.capabilities,
         isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
+        isOwner: isOwner ?? this.isOwner,
+        ownerVenueId: ownerVenueId ?? this.ownerVenueId,
       );
 
   bool has(Capability c) => capabilities.contains(c);
@@ -104,6 +123,10 @@ class AuthRepository extends StateNotifier<AuthState> {
 
   /// ~60s heartbeat stamping `venues/{vid}.lastSeenAt` while the server is live.
   Timer? _heartbeat;
+
+  /// Host-only: publishes the venue report snapshot to `reports/{vid}` and
+  /// fulfils owner refresh requests while this device is the server. ADR-0036.
+  OwnerReportPublisher? _reportPublisher;
 
   Future<bool> signInWithPin(String pin) async {
     SatLog.repo('auth.signInWithPin');
@@ -189,6 +212,29 @@ class AuthRepository extends StateNotifier<AuthState> {
       if (profile.isSuper) {
         _establishSuperSession(profile, email);
         SatLog.repo('auth.signInAsAdmin super uid=$uid');
+        return true;
+      }
+
+      // Report owner: read-only, no local server — divert to /owner. Requires
+      // its own account to be active; NOT gated on the venue kill switch (the
+      // owner only views stale reports, never operates). See ADR-0036.
+      if (profile.isOwner) {
+        if (!profile.isActive) {
+          SatLog.repo(
+              'auth.signInAsAdmin blocked owner uid=$uid status=${profile.status.name}');
+          await fb.signOut();
+          state =
+              state.copyWith(busy: false, error: _eligibilityMessage(profile));
+          return false;
+        }
+        if (profile.venueId.isEmpty) {
+          SatLog.repo('auth.signInAsAdmin blocked owner uid=$uid no-venue');
+          await fb.signOut();
+          state = state.copyWith(busy: false, error: _noVenueMessage);
+          return false;
+        }
+        _establishOwnerSession(profile, email);
+        SatLog.repo('auth.signInAsAdmin owner uid=$uid venue=${profile.venueId}');
         return true;
       }
 
@@ -401,6 +447,28 @@ class AuthRepository extends StateNotifier<AuthState> {
     );
   }
 
+  /// Establish a read-only owner session: no local server, no Drift, no pairing.
+  /// The router sees `isOwner` and routes to `/owner`, bypassing the pair gate.
+  /// The owner screen reads `reports/{ownerVenueId}`. See ADR-0036.
+  void _establishOwnerSession(AdminProfile profile, String email) {
+    state = AuthState(
+      isAuthenticated: true,
+      isOwner: true,
+      ownerVenueId: profile.venueId,
+      user: AppUser(
+        id: profile.uid,
+        name: profile.name.isEmpty ? email : profile.name,
+        initials: _initials(profile.name.isEmpty ? email : profile.name),
+        role: UserRole.admin,
+        shiftStartedAt: DateTime.now().toIso8601String(),
+        zoneAssigned: '',
+        roleId: 'owner',
+        avatarColorHex: profile.avatarColorHex,
+      ),
+      busy: false,
+    );
+  }
+
   static String _initials(String s) {
     final parts =
         s.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
@@ -471,6 +539,34 @@ class AuthRepository extends StateNotifier<AuthState> {
     unawaited(beat()); // immediate, so the venue shows online without waiting
     _heartbeat =
         Timer.periodic(const Duration(seconds: 60), (_) => unawaited(beat()));
+
+    _startReportPublisher(venueId);
+  }
+
+  /// Host-only: begin publishing the venue report snapshot to `reports/{vid}`
+  /// (ADR-0036). Only the device running the embedded server holds the Drift DB
+  /// to compute it, so this is a no-op on an admin-client. The snapshot is
+  /// fetched over loopback from the same `/reports/snapshot` the admin screen
+  /// uses, so the owner sees identical numbers.
+  void _startReportPublisher(String venueId) {
+    _reportPublisher?.stop();
+    _reportPublisher = null;
+    if (ref.read(serverRuntimeProvider) == null) return; // admin-client: skip
+    final api = ref.read(apiClientProvider);
+    _reportPublisher = OwnerReportPublisher(
+      firestore: FirebaseFirestore.instance,
+      vid: venueId,
+      fetchSnapshot: (range) async {
+        try {
+          final raw = await api
+              .getJson('/reports/snapshot', query: {'range': range});
+          return (raw as Map).cast<String, dynamic>();
+        } catch (e) {
+          SatLog.repo('ownerReport.fetch range=$range fail $e');
+          return null;
+        }
+      },
+    )..start();
   }
 
   /// Push the cloud venue's name/address into the local VenueSettings so the
@@ -505,6 +601,8 @@ class AuthRepository extends StateNotifier<AuthState> {
     _venueSub = null;
     _heartbeat?.cancel();
     _heartbeat = null;
+    _reportPublisher?.stop();
+    _reportPublisher = null;
     try {
       await ref.read(firebaseAdminServiceProvider).signOut();
     } catch (_) {}
@@ -614,8 +712,9 @@ class AuthRepository extends StateNotifier<AuthState> {
 
   Future<void> signOut() async {
     SatLog.repo('auth.signOut');
-    // Fleet operator: no local server, just drop the Firebase session.
-    if (state.isSuperAdmin) {
+    // Fleet operator / report owner: no local server, just drop the Firebase
+    // session. See ADR-0016, ADR-0036.
+    if (state.isSuperAdmin || state.isOwner) {
       try {
         await ref.read(firebaseAdminServiceProvider).signOut();
       } catch (_) {}
@@ -645,6 +744,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     unawaited(_eligibilitySub?.cancel());
     unawaited(_venueSub?.cancel());
     _heartbeat?.cancel();
+    _reportPublisher?.stop();
     super.dispose();
   }
 }

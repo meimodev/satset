@@ -1,0 +1,5 @@
+# Copy to key.properties (gitignored) and fill in. CI injects these from Codemagic secrets.
+storePassword=
+keyPassword=
+keyAlias=upload
+storeFile=upload-keystore.jks

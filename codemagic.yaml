@@ -1,0 +1,58 @@
+# Codemagic CI — build a signed release APK on every `v*` tag and ship it to
+# Firebase App Distribution (group: testers).
+#
+# One-time setup in the Codemagic UI before the first build:
+#   1. Connect this GitHub repo, add the app.
+#   2. Team settings → Code signing identities → Android keystores:
+#        upload `android/app/upload-keystore.jks`, reference name
+#        `satset_upload_keystore`, alias `upload`, with the keystore + key
+#        passwords. Codemagic then injects CM_KEYSTORE_PATH / CM_KEYSTORE_PASSWORD
+#        / CM_KEY_ALIAS / CM_KEY_PASSWORD at build time.
+#   3. Environment variables group `firebase_credentials` (mark Secure):
+#        FIREBASE_SERVICE_ACCOUNT = full JSON of a service account that has the
+#        "Firebase App Distribution Admin" role on project satset-3a795.
+#
+# Trigger a build by pushing a tag, e.g. the /push-deploy skill's `v1.0.1`.
+
+workflows:
+  android-release-distribute:
+    name: Android release → Firebase App Distribution
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      android_signing:
+        - satset_upload_keystore
+      groups:
+        - firebase_credentials   # provides FIREBASE_SERVICE_ACCOUNT
+      vars:
+        # New Firebase Android app (id.activid.satset).
+        FIREBASE_APP_ID: "1:164691917298:android:3a4bcdd9dba54d1f4b536b"
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: "v*"
+          include: true
+    scripts:
+      - name: Write key.properties from Codemagic keystore secrets
+        script: |
+          cat > "$CM_BUILD_DIR/android/key.properties" <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Build signed release APK
+        script: flutter build apk --release
+    artifacts:
+      - build/**/outputs/**/*.apk
+    publishing:
+      firebase:
+        firebase_service_account: $FIREBASE_SERVICE_ACCOUNT
+        android:
+          app_id: $FIREBASE_APP_ID
+          groups:
+            - testers

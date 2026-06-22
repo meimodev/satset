@@ -3,11 +3,14 @@ rules_version = '2';
 // SatSet fleet model. See:
 //   docs/adr/0015-firebase-admin-auth-and-server-kill-switch.md (auth + kill switch)
 //   docs/adr/0016-fleet-superadmin-cloud-control-plane.md (super admin + venues)
+//   docs/adr/0036-owner-cloud-report-snapshot.md (owner + report snapshot)
 //
 // Privileged mutations (create/disable/delete admins, create/edit venues, flip
 // the kill switch, set billing) go through Cloud Functions (Admin SDK), which
 // BYPASS these rules. The client only ever: reads its own docs, the super admin
-// reads everything, and a normal admin writes ONLY its own venue's heartbeat.
+// reads everything, a normal admin writes ONLY its own venue's heartbeat +
+// report snapshot, and an owner reads ONLY its venue's report + requests a
+// refresh.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -21,6 +24,22 @@ service cloud.firestore {
 
     function signedIn() {
       return request.auth != null;
+    }
+
+    // The requester's own admin doc (identity + role + venueId).
+    function me() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
+    }
+
+    // True when the requester is the host admin of venue `vid` (writes the
+    // heartbeat + report snapshot, both pinned to its own venue).
+    function isVenueAdmin(vid) {
+      return signedIn() && me().venueId == vid && me().role == 'admin';
+    }
+
+    // True when the requester is the read-only report owner of venue `vid`.
+    function isOwner(vid) {
+      return signedIn() && me().venueId == vid && me().role == 'owner';
     }
 
     // Only the named fields changed between before/after.
@@ -52,6 +71,29 @@ service cloud.firestore {
 
       // create/delete/status/billing → Cloud Functions only.
       allow create, delete: if false;
+    }
+
+    // Published report snapshot (ADR-0036): the host writes its own venue's
+    // snapshot; the owner (and the host) reads it. Kept off venues/{vid} so
+    // fleet-console venue reads don't drag the payload.
+    match /reports/{vid} {
+      allow read: if isVenueAdmin(vid) || isOwner(vid);
+      // Only the host admin of this venue may publish, and only to its own
+      // venue's doc — same containment as the heartbeat.
+      allow write: if isVenueAdmin(vid);
+    }
+
+    // Owner's manual-refresh command (ADR-0036): the owner stamps requestedAt;
+    // the host listens and republishes. Owner writes ONLY requestedAt; the host
+    // reads the request to fulfil it.
+    match /report_requests/{vid} {
+      allow read: if isVenueAdmin(vid) || isOwner(vid);
+      // First refresh creates the doc (resource.data is null → onlyFields would
+      // error), later refreshes update it. Both: owner-only, requestedAt-only.
+      allow create: if isOwner(vid)
+        && request.resource.data.keys().hasOnly(['requestedAt']);
+      allow update: if isOwner(vid) && onlyFields(['requestedAt']);
+      allow delete: if false;
     }
 
     // Everything else denied.

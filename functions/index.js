@@ -50,12 +50,22 @@ function reqStatus(data) {
 
 // ── Admin account lifecycle ──────────────────────────────────────────────────
 
+// Roles a super admin may mint via createAdmin. `super` is seeded by hand, not
+// through this callable. `owner` is a read-only cloud report viewer (ADR-0036):
+// it never pairs, never runs a server, and is excluded from the admin-client
+// token gate — it only reads its venue's published report snapshot.
+const CREATABLE_ROLES = ["admin", "owner"];
+
 exports.createAdmin = onCall(async (request) => {
   await assertSuper(request);
   const email = reqStr(request.data, "email");
   const password = reqStr(request.data, "password");
   const name = reqStr(request.data, "name");
   const venueId = reqStr(request.data, "venueId");
+  const role = request.data.role === undefined ? "admin" : reqStr(request.data, "role");
+  if (!CREATABLE_ROLES.includes(role)) {
+    throw new HttpsError("invalid-argument", `role must be one of ${CREATABLE_ROLES}.`);
+  }
 
   const venue = await db.collection("venues").doc(venueId).get();
   if (!venue.exists) {
@@ -72,7 +82,7 @@ exports.createAdmin = onCall(async (request) => {
   // Custom claims {role, venueId} ride the admin's Firebase ID token so a
   // Main-Device host can verify them offline when admitting an admin-client
   // (ADR-0017). The Firestore admins/{uid} doc stays the human-readable record.
-  await auth.setCustomUserClaims(user.uid, { role: "admin", venueId });
+  await auth.setCustomUserClaims(user.uid, { role, venueId });
 
   const avatarColorHex =
     typeof request.data.avatarColorHex === "number"
@@ -80,7 +90,7 @@ exports.createAdmin = onCall(async (request) => {
       : null;
 
   await db.collection("admins").doc(user.uid).set({
-    role: "admin",
+    role,
     status: "active",
     name,
     email,

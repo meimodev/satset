@@ -74,6 +74,11 @@ Future<void> main() async {
           // so the PIN screen shows the admin form and the super re-signs in to
           // reach the Fleet console. See ADR-0016.
           await fbAdmin.signOut();
+        case AdminBootGate.owner:
+          // A report owner has no local server; sign out so the PIN screen
+          // shows the admin form and the owner re-signs in to reach /owner.
+          // See ADR-0036.
+          await fbAdmin.signOut();
         case AdminBootGate.noUser:
           break;
       }

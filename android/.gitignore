@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Firebase service-account credentials (CI secret only, never commit).
+**/*service-account*.json
+**/firebase-service-account*.json
