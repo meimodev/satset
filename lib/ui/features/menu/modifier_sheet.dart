@@ -80,8 +80,11 @@ class _ModifierSheetBody extends ConsumerStatefulWidget {
   final MenuItem item;
   final ValueChanged<CartItem> onAdd;
   final ScrollController scrollController;
-  const _ModifierSheetBody(
-      {required this.item, required this.onAdd, required this.scrollController});
+  const _ModifierSheetBody({
+    required this.item,
+    required this.onAdd,
+    required this.scrollController,
+  });
 
   @override
   ConsumerState<_ModifierSheetBody> createState() => _ModifierSheetBodyState();
@@ -174,29 +177,33 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
           orElse: () => const ModifierOption(id: '', name: ''),
         );
         if (o.id.isEmpty) continue;
-        selected.add(TicketModifier(
-          groupId: g.id,
-          optionId: o.id,
-          label: o.name,
-          priceDelta: o.priceDelta,
-        ));
+        selected.add(
+          TicketModifier(
+            groupId: g.id,
+            optionId: o.id,
+            label: o.name,
+            priceDelta: o.priceDelta,
+          ),
+        );
       }
     }
     final variant = widget.item.variants.firstWhere((v) => v.id == _variantId);
-    widget.onAdd(CartItem(
-      id: 'C${_uuid.v4()}',
-      itemId: widget.item.id,
-      name: widget.item.name,
-      variantId: _variantId,
-      variantName: variant.name,
-      modifiers: [for (final m in selected) m.display],
-      selectedModifiers: selected,
-      note: _special,
-      course: _course,
-      qty: _qty,
-      unitPrice: _unit,
-      allergens: widget.item.allergens,
-    ));
+    widget.onAdd(
+      CartItem(
+        id: 'C${_uuid.v4()}',
+        itemId: widget.item.id,
+        name: widget.item.name,
+        variantId: _variantId,
+        variantName: variant.name,
+        modifiers: [for (final m in selected) m.display],
+        selectedModifiers: selected,
+        note: _special,
+        course: _course,
+        qty: _qty,
+        unitPrice: _unit,
+        allergens: widget.item.allergens,
+      ),
+    );
   }
 
   @override
@@ -220,8 +227,10 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
               child: Container(
                 width: 38,
                 height: 4,
-                decoration:
-                    BoxDecoration(color: sc.textDim, borderRadius: BorderRadius.circular(4)),
+                decoration: BoxDecoration(
+                  color: sc.textDim,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
           _Head(item: widget.item, onClose: () => Navigator.of(context).pop()),
@@ -237,7 +246,9 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                     Container(
                       margin: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: sc.bg2,
                         borderRadius: BorderRadius.circular(12),
@@ -279,6 +290,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                               multi: false,
                               name: v.name.isEmpty ? 'Reguler' : v.name,
                               delta: formatIDR(v.price),
+                              soldOut: widget.item.isVariantSoldOut(v.id),
                               onTap: () => setState(() => _variantId = v.id),
                             ),
                         ],
@@ -287,21 +299,25 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                   for (final g in widget.item.modifierGroups)
                     _ModGroup(
                       title: g.name,
-                      tag: g.required ? 'WAJIB' : (g.multi ? 'BEBAS PILIH' : 'OPSIONAL'),
+                      tag: g.required
+                          ? 'WAJIB'
+                          : (g.multi ? 'BEBAS PILIH' : 'OPSIONAL'),
                       tagColor: g.required ? sc.urgent : sc.textLo,
                       child: Column(
                         children: [
                           for (final o in g.options)
                             _ModOpt(
                               selected: g.multi
-                                  ? (_selections[g.id] as List<String>? ?? const [])
-                                      .contains(o.id)
+                                  ? (_selections[g.id] as List<String>? ??
+                                            const [])
+                                        .contains(o.id)
                                   : _selections[g.id] == o.id,
                               multi: g.multi,
                               name: o.name,
                               delta: o.priceDelta == 0
                                   ? null
                                   : '${o.priceDelta > 0 ? '+ ' : '− '}${formatIDR(o.priceDelta.abs())}',
+                              soldOut: widget.item.isOptionSoldOut(o.id),
                               onTap: () => _toggle(g, o.id),
                             ),
                         ],
@@ -348,31 +364,40 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                             fillColor: sc.bg2,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide:
-                                  BorderSide(color: _special.isEmpty ? sc.border0 : sc.accentBorder),
+                              borderSide: BorderSide(
+                                color: _special.isEmpty
+                                    ? sc.border0
+                                    : sc.accentBorder,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide:
-                                  BorderSide(color: _special.isEmpty ? sc.border0 : sc.accentBorder),
+                              borderSide: BorderSide(
+                                color: _special.isEmpty
+                                    ? sc.border0
+                                    : sc.accentBorder,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide: BorderSide(color: sc.accentBorder),
                             ),
-                            hintText: 'mis. alergi belum tertera, catatan plating…',
+                            hintText:
+                                'mis. alergi belum tertera, catatan plating…',
                             hintStyle: SatType.sans(size: 13, color: sc.textLo),
                             counterText: '',
                           ),
                           style: SatType.sans(size: 13, color: sc.textHi),
                         ),
                         const SizedBox(height: 4),
-                        Text('${_special.length} / 80 · tampil ke dapur',
-                            style: SatType.mono(
-                              size: 10,
-                              color: sc.textLo,
-                              letterSpacing: 0.4,
-                            )),
+                        Text(
+                          '${_special.length} / 80 · tampil ke dapur',
+                          style: SatType.mono(
+                            size: 10,
+                            color: sc.textLo,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -457,17 +482,21 @@ class _Head extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.name,
-                    style: SatType.sans(
-                      size: 19,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.19,
-                      height: 1.15,
-                      color: sc.textHi,
-                    )),
+                Text(
+                  item.name,
+                  style: SatType.sans(
+                    size: 19,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.19,
+                    height: 1.15,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(item.description,
-                    style: SatType.sans(size: 12, color: sc.textMd, height: 1.35)),
+                Text(
+                  item.description,
+                  style: SatType.sans(size: 12, color: sc.textMd, height: 1.35),
+                ),
               ],
             ),
           ),
@@ -501,7 +530,9 @@ class _ModGroup extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: border ? sc.border0 : Colors.transparent)),
+        border: Border(
+          bottom: BorderSide(color: border ? sc.border0 : Colors.transparent),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -512,21 +543,25 @@ class _ModGroup extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: Text(title,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.14,
-                        color: sc.textHi,
-                      )),
-                ),
-                Text(tag,
-                    style: SatType.mono(
-                      size: 10,
+                  child: Text(
+                    title,
+                    style: SatType.sans(
+                      size: 14,
                       weight: FontWeight.w600,
-                      letterSpacing: 0.8,
-                      color: tagColor,
-                    )),
+                      letterSpacing: -0.14,
+                      color: sc.textHi,
+                    ),
+                  ),
+                ),
+                Text(
+                  tag,
+                  style: SatType.mono(
+                    size: 10,
+                    weight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                    color: tagColor,
+                  ),
+                ),
               ],
             ),
           ),
@@ -543,12 +578,17 @@ class _ModOpt extends StatelessWidget {
   final String name;
   final String? delta;
   final VoidCallback onTap;
+
+  /// Derived from ingredient stock (ADR-0037): this exact choice cannot be
+  /// made right now, even though the dish itself may still be orderable.
+  final bool soldOut;
   const _ModOpt({
     required this.selected,
     required this.multi,
     required this.name,
     required this.delta,
     required this.onTap,
+    this.soldOut = false,
   });
 
   @override
@@ -556,50 +596,62 @@ class _ModOpt extends StatelessWidget {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Material(
-        color: selected ? sc.accentSoft : sc.bg2,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
+      child: Opacity(
+        opacity: soldOut ? 0.45 : 1,
+        child: Material(
+          color: selected ? sc.accentSoft : sc.bg2,
           borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: selected ? sc.accentBorder : sc.border0),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: selected ? sc.accent : Colors.transparent,
-                    borderRadius: BorderRadius.circular(multi ? 6 : 999),
-                    border: Border.all(
-                      color: selected ? sc.accent : sc.border2,
-                      width: 1.5,
+          child: InkWell(
+            onTap: soldOut ? null : onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: selected ? sc.accentBorder : sc.border0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: selected ? sc.accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(multi ? 6 : 999),
+                      border: Border.all(
+                        color: selected ? sc.accent : sc.border2,
+                        width: 1.5,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: selected
+                        ? Icon(Icons.check, size: 14, color: sc.accentInk)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      soldOut ? '$name · habis' : name,
+                      style: SatType.sans(
+                        size: 14,
+                        color: soldOut ? sc.textLo : sc.textHi,
+                      ),
                     ),
                   ),
-                  alignment: Alignment.center,
-                  child: selected
-                      ? Icon(Icons.check, size: 14, color: sc.accentInk)
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(name,
-                      style: SatType.sans(size: 14, color: sc.textHi)),
-                ),
-                if (delta != null)
-                  Text(delta!,
+                  if (delta != null && !soldOut)
+                    Text(
+                      delta!,
                       style: SatType.mono(
                         size: 12,
                         weight: FontWeight.w500,
                         color: selected ? sc.accent : sc.textMd,
                         letterSpacing: 0,
-                      )),
-              ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -612,8 +664,11 @@ class _CourseChip extends StatelessWidget {
   final Course course;
   final bool selected;
   final VoidCallback onTap;
-  const _CourseChip(
-      {required this.course, required this.selected, required this.onTap});
+  const _CourseChip({
+    required this.course,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -633,15 +688,19 @@ class _CourseChip extends StatelessWidget {
             Container(
               width: 8,
               height: 8,
-              decoration:
-                  BoxDecoration(shape: BoxShape.circle, color: course.color(sc)),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: course.color(sc),
+              ),
             ),
             const SizedBox(width: 8),
-            Text(course.name,
-                style: SatType.sans(
-                  size: 13,
-                  color: selected ? sc.textHi : sc.textMd,
-                )),
+            Text(
+              course.name,
+              style: SatType.sans(
+                size: 13,
+                color: selected ? sc.textHi : sc.textMd,
+              ),
+            ),
           ],
         ),
       ),
@@ -721,7 +780,9 @@ class _Foot extends StatelessWidget {
                   foregroundColor: sc.accentInk,
                   elevation: 0,
                   minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -729,21 +790,25 @@ class _Foot extends StatelessWidget {
                     if (valid)
                       Icon(Icons.add, size: 22, color: sc.accentInk)
                     else
-                      Text('Pilih wajib',
-                          style: SatType.sans(
-                            size: 15,
-                            weight: FontWeight.w600,
-                            color: sc.accentInk,
-                          )),
+                      Text(
+                        'Pilih wajib',
+                        style: SatType.sans(
+                          size: 15,
+                          weight: FontWeight.w600,
+                          color: sc.accentInk,
+                        ),
+                      ),
                     if (valid) ...[
                       const SizedBox(width: 10),
-                      Text(totalLabel,
-                          style: SatType.mono(
-                            size: 14,
-                            weight: FontWeight.w500,
-                            color: sc.accentInk.withValues(alpha: 0.7),
-                            letterSpacing: 0,
-                          )),
+                      Text(
+                        totalLabel,
+                        style: SatType.mono(
+                          size: 14,
+                          weight: FontWeight.w500,
+                          color: sc.accentInk.withValues(alpha: 0.7),
+                          letterSpacing: 0,
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -760,8 +825,11 @@ class _StepperBtn extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool disabled;
-  const _StepperBtn(
-      {required this.label, required this.onTap, required this.disabled});
+  const _StepperBtn({
+    required this.label,
+    required this.onTap,
+    required this.disabled,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -776,11 +844,13 @@ class _StepperBtn extends StatelessWidget {
           disabledForegroundColor: sc.textDim,
           padding: EdgeInsets.zero,
         ),
-        child: Text(label,
-            style: SatType.sans(
-              size: 20,
-              color: disabled ? sc.textDim : sc.textHi,
-            )),
+        child: Text(
+          label,
+          style: SatType.sans(
+            size: 20,
+            color: disabled ? sc.textDim : sc.textHi,
+          ),
+        ),
       ),
     );
   }

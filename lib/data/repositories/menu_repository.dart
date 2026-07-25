@@ -143,8 +143,9 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       dietary: List<String>.of(i.dietary),
       unavailable: i.unavailable,
       photoRev: i.photoRev,
-      stockCount: i.stockCount,
-      autoSoldOutAtZero: i.autoSoldOutAtZero,
+      autoSoldOut: i.autoSoldOut,
+      soldOutVariantIds: List<String>.of(i.soldOutVariantIds),
+      soldOutOptionIds: List<String>.of(i.soldOutOptionIds),
     );
   }
 
@@ -270,32 +271,6 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     }
   }
 
-  Future<void> adjustStock(String id, int delta) async {
-    final cur = state.items.where((i) => i.id == id).firstOrNull;
-    if (cur == null) return;
-    final next = ((cur.stockCount ?? 0) + delta).clamp(0, 9999);
-    SatLog.repo('menu.adjustStock id=$id Δ=$delta → $next');
-    final prev = state;
-    state = state.copyWith(
-      items: [
-        for (final i in state.items)
-          if (i.id == id) i.copyWith(stockCount: next) else i,
-      ],
-    );
-    final cfg = ref.read(apiConfigProvider);
-    if (cfg == null) return;
-    try {
-      final raw = await ref
-          .read(apiClientProvider)
-          .postJson('/menu/items/$id/stock', {'delta': delta});
-      final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
-      _mergeServerItem(dto);
-    } catch (e) {
-      SatLog.repo('menu.adjustStock fail $e');
-      state = prev;
-      rethrow;
-    }
-  }
 
   // ---------- categories ----------
 
@@ -377,9 +352,9 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
         ],
         'allergens': it.allergens,
         'dietary': it.dietary,
+        // Availability derived from ingredient stock is server-owned and never
+        // posted back by a client (ADR-0037).
         'unavailable': it.unavailable,
-        'stockCount': it.stockCount,
-        'autoSoldOutAtZero': it.autoSoldOutAtZero,
       };
 
   // ---------- tags ----------

@@ -12,6 +12,7 @@ import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/menu_routes.dart'
     show guestMenuSnapshot, menuItemPhotoBytes;
 import 'package:satset/server/routes/tables_routes.dart' show ensureVisit;
+import 'package:satset/server/stock.dart' show deriveStockFlags;
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
@@ -242,7 +243,9 @@ Future<_PriceResult> _priceLine(
           .getSingleOrNull();
   if (item == null) return _PriceResult.err('item_not_found');
   if (item.unavailable) return _PriceResult.err('item_unavailable');
-  if (item.autoSoldOutAtZero && (item.stockCount ?? 0) <= 0) {
+  // Auto-habis is derived from ingredient stock, never stored (ADR-0037), so a
+  // guest cannot order a dish the kitchen has no ingredients for.
+  if ((await deriveStockFlags(db))[itemId]?.autoSoldOut == true) {
     return _PriceResult.err('item_sold_out');
   }
 

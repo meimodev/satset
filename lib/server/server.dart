@@ -26,6 +26,7 @@ import 'routes/devices_routes.dart';
 import 'routes/health_routes.dart';
 import 'routes/kds_routes.dart';
 import 'routes/menu_routes.dart';
+import 'routes/stock_routes.dart';
 import 'routes/printers_routes.dart';
 import 'routes/reference_routes.dart';
 import 'routes/reports_routes.dart';
@@ -326,6 +327,7 @@ class ServerRuntime {
                 verifier: venueId.isEmpty ? null : _tokenVerifier)
             .call);
     r.mount('/', menuRoutes(db, hub, auth).call);
+    r.mount('/', stockRoutes(db, hub, auth).call);
     r.mount('/', tablesRoutes(db, hub, auth).call);
     r.mount('/', ticketsRoutes(db, hub, auth).call);
     r.mount('/', referenceRoutes(db, hub, auth).call);

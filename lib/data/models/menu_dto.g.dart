@@ -85,8 +85,17 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
       const <String>[],
   unavailable: json['unavailable'] as bool? ?? false,
   photoRev: (json['photoRev'] as num?)?.toInt() ?? 0,
-  stockCount: (json['stockCount'] as num?)?.toInt(),
-  autoSoldOutAtZero: json['autoSoldOutAtZero'] as bool? ?? false,
+  autoSoldOut: json['autoSoldOut'] as bool? ?? false,
+  soldOutVariantIds:
+      (json['soldOutVariantIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  soldOutOptionIds:
+      (json['soldOutOptionIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
 );
 
 Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
@@ -104,8 +113,9 @@ Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
       'dietary': instance.dietary,
       'unavailable': instance.unavailable,
       'photoRev': instance.photoRev,
-      'stockCount': instance.stockCount,
-      'autoSoldOutAtZero': instance.autoSoldOutAtZero,
+      'autoSoldOut': instance.autoSoldOut,
+      'soldOutVariantIds': instance.soldOutVariantIds,
+      'soldOutOptionIds': instance.soldOutOptionIds,
     };
 
 _$MenuTagDtoImpl _$$MenuTagDtoImplFromJson(Map<String, dynamic> json) =>

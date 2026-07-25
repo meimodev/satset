@@ -8,6 +8,7 @@ import 'package:satset/ui/features/cashier/cashier_bill_screen.dart'
     show PaymentProofThumb;
 import 'package:satset/ui/core/widgets/anim.dart';
 import '_common.dart';
+import 'report_stock_section.dart';
 
 /// The full reports rendering — five sections (sales / staff / menu / ops /
 /// payments) with their section-toggle tabs and staff sort. Extracted from
@@ -25,6 +26,7 @@ class ReportSectionsView extends StatefulWidget {
     required this.isTab,
     this.loading = false,
     this.showProofPhotos = true,
+    this.showStock = true,
   });
 
   final ReportsSnapshotDto snapshot;
@@ -32,11 +34,17 @@ class ReportSectionsView extends StatefulWidget {
   final bool loading;
   final bool showProofPhotos;
 
+  /// The Bahan section reads the **local** server's stock endpoints, which the
+  /// off-site owner (ADR-0036) has no route to — their view renders from a
+  /// cloud snapshot only, so it passes `false`. Same reasoning as
+  /// [showProofPhotos].
+  final bool showStock;
+
   @override
   State<ReportSectionsView> createState() => _ReportSectionsViewState();
 }
 
-enum _Section { sales, staff, menu, ops, payments }
+enum _Section { sales, staff, menu, bahan, ops, payments }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
@@ -53,6 +61,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.sales,
     _Section.staff,
     _Section.menu,
+    _Section.bahan,
     _Section.ops,
     _Section.payments,
   };
@@ -62,6 +71,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.sales: 'Penjualan',
     _Section.staff: 'Staf',
     _Section.menu: 'Menu',
+    _Section.bahan: 'Bahan',
     _Section.ops: 'Operasi',
     _Section.payments: 'Pembayaran',
   };
@@ -145,15 +155,28 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             key: const ValueKey('menu'),
             index: 2,
             child: _menuSection(context, isTab, snapshot.menu)),
+      if (_on.contains(_Section.bahan) && widget.showStock)
+        Reveal(
+            key: const ValueKey('bahan'),
+            index: 3,
+            child: _card(
+              context,
+              'Bahan & stok',
+              sub: 'Pemakaian, terbuang, nilai stok, dan selisih opname',
+              child: ReportStockSection(
+                rangeFrom: snapshot.rangeFrom,
+                rangeTo: snapshot.rangeTo,
+              ),
+            )),
       if (_on.contains(_Section.ops))
         Reveal(
             key: const ValueKey('ops'),
-            index: 3,
+            index: 4,
             child: _opsSection(context, isTab, snapshot.ops)),
       if (_on.contains(_Section.payments))
         Reveal(
             key: const ValueKey('payments'),
-            index: 4,
+            index: 5,
             child: _paymentsSection(context, snapshot.payments)),
     ];
     final col = Column(

@@ -30,6 +30,9 @@ class AppStrings {
   static const String venueHubSectionSystemSub = 'Server, jaringan, printer, perangkat';
   static const String venueHubSectionStaff = 'Staf';
   static const String venueHubSectionStaffSub = 'Akun, peran, dan PIN tim';
+  static const String venueHubSectionStock = 'Stok';
+  static const String venueHubSectionStockSub =
+      'Bahan, terima barang, opname, dan produksi';
   static const String venueHubSectionReports = 'Laporan';
   static const String venueHubSectionReportsSub = 'Ringkasan shift, penjualan, dan ekspor';
   static const String venueHubSeedTitle = 'Mulai cepat';

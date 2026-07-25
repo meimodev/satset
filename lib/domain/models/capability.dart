@@ -14,6 +14,8 @@ enum Capability {
   editMenu(CapabilityGroup.inventory, 'Edit menu'),
   markSoldOut(CapabilityGroup.inventory, 'Mark sold out'),
   adjustStock(CapabilityGroup.inventory, 'Adjust stock'),
+  manageIngredients(CapabilityGroup.inventory, 'Manage ingredients'),
+  overrideStock(CapabilityGroup.inventory, 'Sell when out of stock'),
   manageStaff(CapabilityGroup.admin, 'Manage staff'),
   manageRoles(CapabilityGroup.admin, 'Manage roles'),
   viewReports(CapabilityGroup.admin, 'View reports'),

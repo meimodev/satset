@@ -10,6 +10,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
@@ -108,31 +109,15 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'});
   });
 
-  // Stock delta. Body: { "delta": int } or { "stockCount": int }.
+  // Item-level stock is gone (ADR-0037): stock lives on ingredients, and an
+  // item's auto-habis is derived from its recipe. Kept as an explicit 410 so an
+  // un-upgraded client gets a diagnosable answer instead of a bare 404.
   r.post('/menu/items/<id>/stock', (Request req, String id) async {
-    final denied = await _requireCap(req, db, auth, Capability.adjustStock);
-    if (denied != null) return denied;
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
-        .getSingleOrNull();
-    if (row == null) return Response.notFound('item not found');
-    int? next;
-    if (body.containsKey('delta')) {
-      final delta = (body['delta'] as num).toInt();
-      next = ((row.stockCount ?? 0) + delta).clamp(0, 1 << 30);
-    } else if (body.containsKey('stockCount')) {
-      next = body['stockCount'] == null
-          ? null
-          : (body['stockCount'] as num).toInt();
-    } else {
-      return Response(400, body: 'delta or stockCount required');
-    }
-    await (db.update(db.menuItems)..where((i) => i.id.equals(id)))
-        .write(MenuItemsCompanion(stockCount: Value(next)));
-    final out = await _readItem(db, id);
-    if (out == null) return Response.notFound('item not found');
-    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
-    return Response.ok(jsonEncode(out),
+    return Response(410,
+        body: jsonEncode({
+          'code': 'stock_moved_to_ingredients',
+          'message': 'Stok kini per bahan — lihat /stock/ingredients',
+        }),
         headers: {'content-type': 'application/json'});
   });
 
@@ -384,6 +369,7 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
         ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
       .get();
   final items = await _selectItemsNoBlob(db);
+  final flags = await deriveStockFlags(db);
   final tags = await (db.select(db.menuTags)
         ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
       .get();
@@ -392,7 +378,10 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
     'categories': [
       for (final c in cats) {'id': c.id, 'name': c.name},
     ],
-    'items': [for (final r in items) _itemResultToJson(db, r)],
+    'items': [
+      for (final r in items)
+        _itemResultToJson(db, r, flags: flags[r.read(db.menuItems.id)!]),
+    ],
     'tags': [for (final t in tags) _tagRowToJson(t)],
   };
 }
@@ -409,14 +398,16 @@ Future<Map<String, dynamic>> guestMenuSnapshot(AppDatabase db) async {
         ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
       .get();
   final rows = await _selectItemsNoBlob(db);
+  final flags = await deriveStockFlags(db);
   final visible = <Map<String, dynamic>>[];
   for (final r in rows) {
-    final unavailable = r.read(db.menuItems.unavailable)!;
-    if (unavailable) continue;
-    final autoSoldOut = r.read(db.menuItems.autoSoldOutAtZero)!;
-    final stock = r.read(db.menuItems.stockCount);
-    if (autoSoldOut && (stock ?? 0) <= 0) continue;
-    visible.add(_itemResultToJson(db, r));
+    if (r.read(db.menuItems.unavailable)!) continue;
+    final id = r.read(db.menuItems.id)!;
+    // Guests render from this same snapshot, so ingredient-derived habis
+    // applies to self-order for free: a guest cannot order a dish the kitchen
+    // cannot make (ADR-0037).
+    if (flags[id]?.autoSoldOut == true) continue;
+    visible.add(_itemResultToJson(db, r, flags: flags[id]));
   }
   final usedCats = {for (final i in visible) i['categoryId'] as String};
   final tags = await (db.select(db.menuTags)
@@ -458,8 +449,6 @@ List<Expression> _itemCols(AppDatabase db) => [
       db.menuItems.allergensJson,
       db.menuItems.dietaryJson,
       db.menuItems.unavailable,
-      db.menuItems.stockCount,
-      db.menuItems.autoSoldOutAtZero,
       db.menuItems.photoRev,
     ];
 
@@ -469,7 +458,15 @@ Future<List<TypedResult>> _selectItemsNoBlob(AppDatabase db, {String? id}) {
   return q.get();
 }
 
-Map<String, dynamic> _itemResultToJson(AppDatabase db, TypedResult r) => {
+/// [flags] carries the **derived** availability for this item (item, variant,
+/// and option granularity). Nothing about it is stored — it is recomputed from
+/// ingredient stock, so receiving un-habises an item automatically (ADR-0037).
+Map<String, dynamic> _itemResultToJson(
+  AppDatabase db,
+  TypedResult r, {
+  ItemStockFlags? flags,
+}) =>
+    {
       'id': r.read(db.menuItems.id)!,
       'name': r.read(db.menuItems.name)!,
       'categoryId': r.read(db.menuItems.categoryId)!,
@@ -482,8 +479,9 @@ Map<String, dynamic> _itemResultToJson(AppDatabase db, TypedResult r) => {
       'allergens': jsonDecode(r.read(db.menuItems.allergensJson)!),
       'dietary': jsonDecode(r.read(db.menuItems.dietaryJson)!),
       'unavailable': r.read(db.menuItems.unavailable)!,
-      'stockCount': r.read(db.menuItems.stockCount),
-      'autoSoldOutAtZero': r.read(db.menuItems.autoSoldOutAtZero)!,
+      'autoSoldOut': flags?.autoSoldOut ?? false,
+      'soldOutVariantIds': flags?.soldOutVariantIds.toList() ?? const <String>[],
+      'soldOutOptionIds': flags?.soldOutOptionIds.toList() ?? const <String>[],
       'photoRev': r.read(db.menuItems.photoRev)!,
     };
 
@@ -497,7 +495,9 @@ Map<String, dynamic> _tagRowToJson(MenuTag t) => {
 
 Future<Map<String, dynamic>?> _readItem(AppDatabase db, String id) async {
   final rows = await _selectItemsNoBlob(db, id: id);
-  return rows.isEmpty ? null : _itemResultToJson(db, rows.first);
+  if (rows.isEmpty) return null;
+  final flags = await deriveStockFlags(db);
+  return _itemResultToJson(db, rows.first, flags: flags[id]);
 }
 
 /// Upsert or partial-update a row.  `body` carries DTO-shaped fields. For
@@ -527,9 +527,6 @@ Future<void> _writeItem(
             allergensJson: Value(jsonEncode(body['allergens'] ?? const [])),
             dietaryJson: Value(jsonEncode(body['dietary'] ?? const [])),
             unavailable: Value((body['unavailable'] as bool?) ?? false),
-            stockCount: Value((body['stockCount'] as num?)?.toInt()),
-            autoSoldOutAtZero:
-                Value((body['autoSoldOutAtZero'] as bool?) ?? false),
           ),
         );
   } else {
@@ -567,12 +564,6 @@ Future<void> _writeItem(
             : const Value.absent(),
         unavailable: body.containsKey('unavailable')
             ? Value(body['unavailable'] as bool)
-            : const Value.absent(),
-        stockCount: body.containsKey('stockCount')
-            ? Value((body['stockCount'] as num?)?.toInt())
-            : const Value.absent(),
-        autoSoldOutAtZero: body.containsKey('autoSoldOutAtZero')
-            ? Value(body['autoSoldOutAtZero'] as bool)
             : const Value.absent(),
       ),
     );

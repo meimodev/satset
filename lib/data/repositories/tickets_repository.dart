@@ -7,6 +7,7 @@ import 'package:satset/data/models/ticket_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
@@ -228,7 +229,26 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     // Seed the table's currentVisitId so the just-sent lines resolve on this
     // device before the tableUpdated echo arrives (ADR-0034).
     ref.read(tablesProvider.notifier).seedCurrentVisit(tableId, res.visitId);
+    _reportRejected(res.rejected);
     return res.ticketIds;
+  }
+
+  /// Tell the waiter which lines the kitchen has no ingredients for.
+  ///
+  /// Rejection is per line, so the rest of the order went through — without
+  /// this the dropped lines would just be missing from the table, which reads
+  /// as a bug rather than as "we're out of ayam" (ADR-0038).
+  void _reportRejected(List<RejectedLineDto> rejected) {
+    if (rejected.isEmpty) return;
+    final bus = ref.read(errorBusServiceProvider);
+    for (final r in rejected) {
+      final what = [r.name, if (r.variantName.isNotEmpty) r.variantName].join(' ');
+      final why = r.ingredients.isEmpty
+          ? 'bahan habis'
+          : 'bahan habis: ${r.ingredients.join(", ")}';
+      bus.push('$what tidak dikirim — $why',
+          level: AppErrorLevel.warning, code: 'out_of_stock');
+    }
   }
 
   /// Submit a table-less takeaway (Bawa pulang) order. With no [existingVisitId]
@@ -281,6 +301,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       'actorId': ?actorId,
     });
     final map = (raw as Map).cast<String, dynamic>();
+    _reportRejected([
+      for (final r in (map['rejected'] as List? ?? const []))
+        RejectedLineDto.fromJson((r as Map).cast<String, dynamic>()),
+    ]);
     return (
       ticketIds: (map['ticketIds'] as List).cast<String>(),
       visitId: (map['visitId'] as String?) ?? existingVisitId ?? '',

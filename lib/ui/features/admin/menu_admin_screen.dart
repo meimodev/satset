@@ -619,7 +619,9 @@ class _ItemRow extends ConsumerWidget {
                                 color: sc.textMd,
                               ),
                             ),
-                            if (item.stockCount != null) ...[
+                            // Auto-habis is derived from ingredient stock, so
+                            // the card shows the verdict, not a count (ADR-0037).
+                            if (item.autoSoldOut) ...[
                               Text(
                                 ' · ',
                                 style: SatType.mono(
@@ -628,12 +630,24 @@ class _ItemRow extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                'Stok ${item.stockCount}',
+                                'Bahan habis',
                                 style: SatType.mono(
                                   size: 10,
-                                  color: item.stockCount! == 0
-                                      ? sc.urgent
-                                      : sc.textLo,
+                                  color: sc.urgent,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ] else if (item.soldOutVariantIds.isNotEmpty) ...[
+                              Text(
+                                ' · ',
+                                style: SatType.mono(
+                                    size: 10, color: sc.textDim),
+                              ),
+                              Text(
+                                '${item.soldOutVariantIds.length} varian habis',
+                                style: SatType.mono(
+                                  size: 10,
+                                  color: sc.warn,
                                   letterSpacing: 0.4,
                                 ),
                               ),

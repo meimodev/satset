@@ -189,6 +189,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
         snapshot: snap,
         isTab: context.layout.useTabletShell,
         showProofPhotos: false,
+        showStock: false,
       ),
     );
   }
