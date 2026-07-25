@@ -11,7 +11,7 @@ import 'db/database.dart';
 const _uuid = Uuid();
 
 /// Ingredient-level inventory: recipe resolution, coverage checks, and the
-/// movement ledger. See docs/adr/0037 and docs/adr/0038.
+/// movement ledger. See docs/adr/0040 and docs/adr/0041.
 ///
 /// Every function that writes assumes it is called **inside** a `db.transaction`
 /// so the ledger row and the denormalised `stockOnHand` can never diverge.
@@ -34,7 +34,7 @@ class ResolvedRecipes {
   bool get isEmpty => base.isEmpty && byVariant.isEmpty && byOption.isEmpty;
 
   /// What one portion of `variantId` with `optionIds` consumes. The variant
-  /// list **replaces** the base; option lists **add** on top (ADR-0037).
+  /// list **replaces** the base; option lists **add** on top (ADR-0040).
   Map<String, int> resolve({
     String variantId = '',
     Iterable<String> optionIds = const [],
@@ -158,7 +158,7 @@ Future<Map<String, dynamic>> recipesJson(
 
 /// Derived availability for one item. Nothing here is stored — it is recomputed
 /// from ingredient stock, so receiving un-habises an item automatically and no
-/// one ever has to clear a flag (ADR-0037).
+/// one ever has to clear a flag (ADR-0040).
 class ItemStockFlags {
   final bool autoSoldOut;
   final Set<String> soldOutVariantIds;
@@ -246,7 +246,7 @@ Future<Map<String, ItemStockFlags>> deriveStockFlags(AppDatabase db) async {
 /// Every sale changes stock, but beras going 8.0 → 7.8 kg changes nothing
 /// anyone can see. Broadcasting per movement would flood the LAN mid-service,
 /// so the menu snapshot is re-broadcast **only when a derived flag actually
-/// flips** (ADR-0037).
+/// flips** (ADR-0040).
 ///
 /// ponytail: one process-wide instance — the embedded server owns exactly one
 /// database. If SatSet ever hosts two DBs in one process, key this by db.
@@ -306,7 +306,7 @@ Future<void> writeMovement(
         at: DateTime.now(),
       ));
   // Deliberately NOT clamped at zero: a negative balance is the `overrideStock`
-  // signal that the venue's counts are wrong (ADR-0038).
+  // signal that the venue's counts are wrong (ADR-0041).
   await (db.update(db.ingredients)..where((i) => i.id.equals(ingredientId)))
       .write(IngredientsCompanion(stockOnHand: Value(ing.stockOnHand + delta)));
 }
@@ -328,7 +328,7 @@ Future<void> receiveStock(
   if (unitCostMicro != null) {
     // Moving average. A price spike smears across subsequent sales rather than
     // landing on the batch that caused it — FIFO layers only pay off alongside
-    // expiry tracking (ADR-0037).
+    // expiry tracking (ADR-0040).
     final held = ing.stockOnHand > 0 ? ing.stockOnHand : 0;
     final total = held + qty;
     final blended = total <= 0
@@ -351,7 +351,7 @@ Future<void> receiveStock(
 
 /// Stok opname: the counter enters an **absolute** count and the system writes
 /// the difference. That difference *is* the variance between what recipes said
-/// should be there and what was actually found (ADR-0038).
+/// should be there and what was actually found (ADR-0041).
 Future<int> recordCount(
   AppDatabase db, {
   required String ingredientId,
@@ -379,7 +379,7 @@ Future<int> recordCount(
 
 /// Produce `batches` of a made-in-house ingredient: deduct its inputs, credit
 /// its yield, and price the output from what went in. One level only — a
-/// produced ingredient's recipe may reference non-produced ingredients (ADR-0037).
+/// produced ingredient's recipe may reference non-produced ingredients (ADR-0040).
 Future<String?> produceBatch(
   AppDatabase db, {
   required String ingredientId,
@@ -522,7 +522,7 @@ Future<void> consumeForTicket(
 /// Restock only when the kitchen never touched it. From `prep` onward the
 /// ingredients are physically gone, so the sale is reversed **and** an equal
 /// `waste` is booked — net zero on the balance, but the loss is now visible and
-/// countable instead of hiding inside "sold" (ADR-0038).
+/// countable instead of hiding inside "sold" (ADR-0041).
 Future<void> reverseTicketStock(
   AppDatabase db, {
   required String ticketId,

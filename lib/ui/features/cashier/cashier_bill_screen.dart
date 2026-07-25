@@ -14,6 +14,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 
 const _methodLabels = {
@@ -337,8 +338,15 @@ class _TotalsCard extends StatelessWidget {
       child: Column(
         children: [
           row('Subtotal', bill.subtotal),
+          // The Diskon row's position follows the actual pipeline (ADR-0038),
+          // matching the printed slip: above Layanan when the discount reduced
+          // the base service and tax were computed on, below Pajak otherwise.
+          if (bill.discountAmount > 0 && bill.taxAfterDiscount)
+            row('Diskon', -bill.discountAmount, color: sc.warn),
           if (bill.serviceAmount > 0) row('Layanan', bill.serviceAmount),
           if (bill.taxAmount > 0) row('Pajak', bill.taxAmount),
+          if (bill.discountAmount > 0 && !bill.taxAfterDiscount)
+            row('Diskon', -bill.discountAmount, color: sc.warn),
           Divider(color: sc.border0, height: 16),
           row('Total', bill.total, strong: true),
           row('Terbayar', bill.paidAmount, color: sc.success),
@@ -387,6 +395,26 @@ class _ModeChooser extends StatelessWidget {
               icon: Icons.safety_divider_rounded,
               label: 'Split rata',
               onTap: () async {
+                // Switching to an even split rebuilds every receipt, taking
+                // line discounts with them — an even receipt owns no lines to
+                // carry one (ADR-0037). Warn before that is destroyed.
+                final lineDiscounts = [
+                  for (final rc in bill.receipts)
+                    ...rc.discounts.where((d) => d.isLine),
+                ];
+                if (lineDiscounts.isNotEmpty) {
+                  if (!await _confirm(context,
+                      title: 'Diskon per item akan hilang',
+                      message:
+                          'Split rata membagi total tanpa kepemilikan item, '
+                          'jadi ${lineDiscounts.length} diskon per item akan '
+                          'dihapus. Diskon seluruh pesanan bisa dipasang lagi '
+                          'setelahnya.',
+                      confirmLabel: 'Ya, lanjutkan')) {
+                    return;
+                  }
+                }
+                if (!context.mounted) return;
                 final n = await _askInt(context, 'Bagi rata berapa orang?',
                     initial: bill.pax > 1 ? bill.pax : 2);
                 if (n != null) {
@@ -617,7 +645,7 @@ class _AssignRowState extends State<_AssignRow> {
   }
 }
 
-class _ReceiptCard extends StatelessWidget {
+class _ReceiptCard extends ConsumerWidget {
   final Bill bill;
   final BillReceipt receipt;
   final Future<void> Function(Future<Bill> Function()) run;
@@ -634,7 +662,7 @@ class _ReceiptCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final r = receipt;
     final paid = r.isPaid;
@@ -690,14 +718,16 @@ class _ReceiptCard extends StatelessWidget {
           if (showItems) ...[
             const SizedBox(height: 8),
             for (final rl in r.lines)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  '${rl.qtyUnits}× '
-                  '${lineByTicket[rl.ticketId]?.name ?? 'Item'}'
-                  '${(lineByTicket[rl.ticketId]?.variantName.isNotEmpty ?? false) ? ' · ${lineByTicket[rl.ticketId]!.variantName}' : ''}',
-                  style: SatType.sans(size: 12, color: sc.textHi),
-                ),
+              _ReceiptItemRow(
+                receipt: r,
+                line: lineByTicket[rl.ticketId],
+                ticketId: rl.ticketId,
+                qtyUnits: rl.qtyUnits,
+                // Line discounts are itemized-only — an even receipt owns no
+                // lines to attach one to (ADR-0037) — and are frozen once paid.
+                canDiscount: !paid && r.mode != 'even',
+                run: run,
+                repo: repo,
               ),
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -779,6 +809,42 @@ class _ReceiptCard extends StatelessWidget {
                 _SmallBtn(
                   label: 'Refund',
                   onTap: () => _refundSheet(context, r),
+                ),
+              // Discounts are frozen once paid — reopen to correct a mistaken
+              // settlement (ADR-0037), so the button hides on a paid receipt.
+              if (!paid && r.subtotal > 0 && r.orderDiscount == null)
+                _SmallBtn(
+                  label: 'Diskon',
+                  onTap: () async {
+                    final picked = await showDiscountSheet(
+                      context,
+                      ref,
+                      DiscountTarget(
+                        receipt: r,
+                        ticketId: null,
+                        base: r.subtotal,
+                        title: r.label.isEmpty ? 'Struk' : r.label,
+                      ),
+                    );
+                    if (picked == null) return;
+                    await run(() => repo.applyDiscount(r.id,
+                        presetId: picked.presetId,
+                        approverPin: picked.approverPin));
+                  },
+                ),
+              if (!paid && r.orderDiscount != null)
+                _SmallBtn(
+                  label: 'Hapus diskon',
+                  onTap: () async {
+                    final d = r.orderDiscount!;
+                    if (await _confirm(context,
+                        title: 'Hapus diskon',
+                        message: 'Hapus "${d.label}" (${formatIDR(d.amount)}) '
+                            'dari struk ini?',
+                        confirmLabel: 'Ya, hapus')) {
+                      await run(() => repo.removeDiscount(r.id, d.id));
+                    }
+                  },
                 ),
               if (r.total > 0)
                 _SmallBtn(
@@ -980,6 +1046,106 @@ class _ReceiptCard extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// One owned item inside a receipt card, with its line [[Diskon (discount)]]
+/// shown beneath — the same "indented under the item" grammar the printed slip
+/// uses, so screen and paper agree.
+class _ReceiptItemRow extends ConsumerWidget {
+  final BillReceipt receipt;
+  final BillLine? line;
+  final String ticketId;
+  final int qtyUnits;
+  final bool canDiscount;
+  final Future<void> Function(Future<Bill> Function()) run;
+  final SettlementRepository repo;
+
+  const _ReceiptItemRow({
+    required this.receipt,
+    required this.line,
+    required this.ticketId,
+    required this.qtyUnits,
+    required this.canDiscount,
+    required this.run,
+    required this.repo,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final l = line;
+    final name = l?.name ?? 'Item';
+    final variant = (l?.variantName.isNotEmpty ?? false) ? ' · ${l!.variantName}' : '';
+    final existing = receipt.lineDiscount(ticketId);
+    // The units THIS receipt owns — a qty:3 line split 2/1 discounts only its
+    // own share. Preview only; the server re-resolves authoritatively.
+    final base = (l?.unitPrice ?? 0) * qtyUnits;
+
+    Future<void> onTap() async {
+      if (!canDiscount) return;
+      if (existing != null) {
+        if (await _confirm(context,
+            title: 'Hapus diskon item',
+            message: 'Hapus "${existing.label}" '
+                '(${formatIDR(existing.amount)}) dari $name?',
+            confirmLabel: 'Ya, hapus')) {
+          await run(() => repo.removeDiscount(receipt.id, existing.id));
+        }
+        return;
+      }
+      final picked = await showDiscountSheet(
+        context,
+        ref,
+        DiscountTarget(
+          receipt: receipt,
+          ticketId: ticketId,
+          base: base,
+          title: name,
+        ),
+      );
+      if (picked == null) return;
+      await run(() => repo.applyDiscount(receipt.id,
+          presetId: picked.presetId,
+          ticketId: ticketId,
+          approverPin: picked.approverPin));
+    }
+
+    return InkWell(
+      onTap: canDiscount ? onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text('$qtyUnits× $name$variant',
+                      style: SatType.sans(size: 12, color: sc.textHi)),
+                ),
+                if (canDiscount && existing == null)
+                  Icon(Icons.sell_outlined, size: 14, color: sc.textLo),
+              ],
+            ),
+            if (existing != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 12, top: 1),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(existing.label,
+                          style: SatType.sans(size: 11, color: sc.warn)),
+                    ),
+                    Text('-${formatIDR(existing.amount)}',
+                        style: SatType.mono(size: 11, color: sc.warn)),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

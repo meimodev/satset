@@ -56,8 +56,8 @@ class MenuItemDto with _$MenuItemDto {
     @Default(false) bool unavailable,
     @Default(0) int photoRev,
     // Derived availability — computed server-side from ingredient stock and
-    // never stored (ADR-0037). Replaces the former `stockCount` /
-    // `autoSoldOutAtZero` pair, which v35 dropped.
+    // never stored (ADR-0040). Replaces the former `stockCount` /
+    // `autoSoldOutAtZero` pair, which v36 dropped.
     @Default(false) bool autoSoldOut,
     @Default(<String>[]) List<String> soldOutVariantIds,
     @Default(<String>[]) List<String> soldOutOptionIds,

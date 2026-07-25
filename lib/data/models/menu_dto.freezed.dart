@@ -649,8 +649,8 @@ mixin _$MenuItemDto {
   bool get unavailable => throw _privateConstructorUsedError;
   int get photoRev =>
       throw _privateConstructorUsedError; // Derived availability — computed server-side from ingredient stock and
-  // never stored (ADR-0037). Replaces the former `stockCount` /
-  // `autoSoldOutAtZero` pair, which v35 dropped.
+  // never stored (ADR-0040). Replaces the former `stockCount` /
+  // `autoSoldOutAtZero` pair, which v36 dropped.
   bool get autoSoldOut => throw _privateConstructorUsedError;
   List<String> get soldOutVariantIds => throw _privateConstructorUsedError;
   List<String> get soldOutOptionIds => throw _privateConstructorUsedError;
@@ -1017,8 +1017,8 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
   @JsonKey()
   final int photoRev;
   // Derived availability — computed server-side from ingredient stock and
-  // never stored (ADR-0037). Replaces the former `stockCount` /
-  // `autoSoldOutAtZero` pair, which v35 dropped.
+  // never stored (ADR-0040). Replaces the former `stockCount` /
+  // `autoSoldOutAtZero` pair, which v36 dropped.
   @override
   @JsonKey()
   final bool autoSoldOut;
@@ -1174,8 +1174,8 @@ abstract class _MenuItemDto implements MenuItemDto {
   bool get unavailable;
   @override
   int get photoRev; // Derived availability — computed server-side from ingredient stock and
-  // never stored (ADR-0037). Replaces the former `stockCount` /
-  // `autoSoldOutAtZero` pair, which v35 dropped.
+  // never stored (ADR-0040). Replaces the former `stockCount` /
+  // `autoSoldOutAtZero` pair, which v36 dropped.
   @override
   bool get autoSoldOut;
   @override

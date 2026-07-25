@@ -2,7 +2,7 @@
 
 Status: accepted
 
-SatSet tracked availability with one nullable `MenuItems.stockCount` plus an `autoSoldOutAtZero` flag — a per-dish counter someone decremented by hand. This ADR replaces it with **[[Bahan (Ingredient)|bahan]] + [[Resep (Recipe)|resep]]**: stock is held against raw ingredients, and selling a dish deducts what its recipe says it consumes. `stockCount` and `autoSoldOutAtZero` are **dropped** in migration v35, with existing counts converted into self-named `pcs` bahan.
+SatSet tracked availability with one nullable `MenuItems.stockCount` plus an `autoSoldOutAtZero` flag — a per-dish counter someone decremented by hand. This ADR replaces it with **[[Bahan (Ingredient)|bahan]] + [[Resep (Recipe)|resep]]**: stock is held against raw ingredients, and selling a dish deducts what its recipe says it consumes. `stockCount` and `autoSoldOutAtZero` are **dropped** in migration v36, with existing counts converted into self-named `pcs` bahan.
 
 The item counter could only answer "how many portions of this dish are left", which nobody maintains once the same beras backs six dishes. Recipes make the deduction automatic and make one bahan's depletion mark every dish that needs it.
 
@@ -22,7 +22,7 @@ The item counter could only answer "how many portions of this dish are left", wh
 
 7. **`MenuItems.cost` stays authoritative.** Recipes can derive cost (Σ qty × bahan moving-average cost) but that figure is shown only as a **hint** beside the manual field. Margin and [[Menu classification]] reporting is untouched by this feature.
 
-8. **Migration v35** drops `stockCount` and `autoSoldOutAtZero`. Every item with a non-null `stockCount` gains a self-named bahan (unit `pcs`, stock = the old count) and a 1-pcs recipe, preserving its behaviour on the new spine. One-way, against shipped production data (v1.0.1).
+8. **Migration v36** drops `stockCount` and `autoSoldOutAtZero`. Every item with a non-null `stockCount` gains a self-named bahan (unit `pcs`, stock = the old count) and a 1-pcs recipe, preserving its behaviour on the new spine. One-way, against shipped production data (v1.0.1).
 
 9. **New capabilities** `manageIngredients` and `overrideStock`, group `inventory`. Both are **backfilled** at migration — any role holding `adjustStock` gets `manageIngredients`, any role holding `markSoldOut` gets `overrideStock` — following the existing `voidItem` backfill precedent.
 
@@ -41,5 +41,5 @@ The item counter could only answer "how many portions of this dish are left", wh
 - The `/menu` snapshot grows three derived flag sets (item, variant, option). The [[Guest plane]] self-order SPA renders from that same snapshot, so guests get habis behaviour with no extra work — a guest cannot order a dish the kitchen cannot make.
 - Bahan data is **not** mirrored into a client repository. Only derived flags are cached and broadcast; the bahan list, movements, and opname screens fetch on demand over HTTP, gated by `manageIngredients` rather than by app mode — so an [[Admin-client]] manages stock without being sent to find the host tablet.
 - Recipes are authored in the existing menu **item editor** (beside variants and modifiers, which a per-variant recipe is meaningless without). Bahan, movements, receiving, and opname live in a new `/stock` section off the Venue Hub.
-- Migration v35 is one-way against production data. A venue that had `stockCount = 24` on Coca-Cola wakes up with a Coca-Cola bahan at 24 pcs and a 1-pcs recipe — same behaviour, new spine.
+- Migration v36 is one-way against production data. A venue that had `stockCount = 24` on Coca-Cola wakes up with a Coca-Cola bahan at 24 pcs and a 1-pcs recipe — same behaviour, new spine.
 - Batch-prep venues must record `produce` events or their raw inputs drift; the drift surfaces at opname as variance rather than silently.

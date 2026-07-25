@@ -35,7 +35,7 @@ class MenuItem {
 
   /// Derived from ingredient stock server-side: true when *no* configuration of
   /// this item can be made. Never stored — receiving stock clears it by itself
-  /// (ADR-0037).
+  /// (ADR-0040).
   final bool autoSoldOut;
 
   /// Variants that cannot currently be made. An item with one sellable variant

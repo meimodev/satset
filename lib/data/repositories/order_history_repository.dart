@@ -104,6 +104,8 @@ class OrderHistoryReceipt {
   final String label;
   final String mode;
   final int subtotal;
+  /// Total give-back on this receipt (line + whole-order). ADR-0037.
+  final int discountAmount;
   final int serviceAmount;
   final int taxAmount;
   final int total;
@@ -115,6 +117,7 @@ class OrderHistoryReceipt {
     required this.label,
     required this.mode,
     required this.subtotal,
+    required this.discountAmount,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
@@ -128,6 +131,7 @@ class OrderHistoryReceipt {
         label: j['label'] as String? ?? '',
         mode: j['mode'] as String? ?? 'itemized',
         subtotal: (j['subtotal'] as num?)?.toInt() ?? 0,
+        discountAmount: (j['discountAmount'] as num?)?.toInt() ?? 0,
         serviceAmount: (j['serviceAmount'] as num?)?.toInt() ?? 0,
         taxAmount: (j['taxAmount'] as num?)?.toInt() ?? 0,
         total: (j['total'] as num?)?.toInt() ?? 0,

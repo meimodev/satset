@@ -620,7 +620,7 @@ class _ItemRow extends ConsumerWidget {
                               ),
                             ),
                             // Auto-habis is derived from ingredient stock, so
-                            // the card shows the verdict, not a count (ADR-0037).
+                            // the card shows the verdict, not a count (ADR-0040).
                             if (item.autoSoldOut) ...[
                               Text(
                                 ' · ',

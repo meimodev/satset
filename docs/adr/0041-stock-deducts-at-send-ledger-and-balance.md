@@ -2,7 +2,7 @@
 
 Status: accepted
 
-Given ingredient-level inventory (ADR-0037), *when* stock moves and *what remembers it* are the two decisions that are expensive to change later, because both are baked into history the moment the feature ships. This ADR fixes them: stock deducts **when a line is sent to the kitchen**, every change appends a **self-contained [[Mutasi stok (Stock movement)|movement]] row** *and* updates a denormalised balance in the same transaction, and a [[Void (item)|void]] returns stock **only if the kitchen had not started the line**.
+Given ingredient-level inventory (ADR-0040), *when* stock moves and *what remembers it* are the two decisions that are expensive to change later, because both are baked into history the moment the feature ships. This ADR fixes them: stock deducts **when a line is sent to the kitchen**, every change appends a **self-contained [[Mutasi stok (Stock movement)|movement]] row** *and* updates a denormalised balance in the same transaction, and a [[Void (item)|void]] returns stock **only if the kitchen had not started the line**.
 
 ## Decision
 
@@ -34,7 +34,7 @@ Given ingredient-level inventory (ADR-0037), *when* stock moves and *what rememb
 ## Consequences
 
 - Deduction rides the **existing** idempotency-keyed submit transaction, so a retried submit cannot double-deduct.
-- Every sale changes stock, but derived habis flags are broadcast **only when a flag flips** (ADR-0037) — otherwise the LAN would flood mid-service.
+- Every sale changes stock, but derived habis flags are broadcast **only when a flag flips** (ADR-0040) — otherwise the LAN would flood mid-service.
 - `overrideStock` defaults off for existing roles, which would close the valve at the exact upgrade where it is most needed; migration therefore backfills it from `markSoldOut`.
 - Movements survive the visit that caused them. Live ticket rows are deleted at [[Bill close (Tutup tagihan)|bill close]], so `ticketId` dangles by design and readers must rely on `sourceLabel`.
 - A negative `stockOnHand` is a legitimate, meaningful state — reports and UI must render it as a signal rather than clamping it to zero.

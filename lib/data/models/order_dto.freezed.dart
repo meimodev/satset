@@ -841,7 +841,7 @@ mixin _$SubmitOrderResponseDto {
   /// so its lines resolve without a flash of empty. See ADR-0034.
   String? get visitId => throw _privateConstructorUsedError;
 
-  /// Lines the server refused for want of ingredients (ADR-0038). Only the
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
   /// offending lines are dropped — the rest of the order still lands — so
   /// this must be surfaced, or lines vanish silently.
   List<RejectedLineDto> get rejected => throw _privateConstructorUsedError;
@@ -993,12 +993,12 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
   @override
   final String? visitId;
 
-  /// Lines the server refused for want of ingredients (ADR-0038). Only the
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
   /// offending lines are dropped — the rest of the order still lands — so
   /// this must be surfaced, or lines vanish silently.
   final List<RejectedLineDto> _rejected;
 
-  /// Lines the server refused for want of ingredients (ADR-0038). Only the
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
   /// offending lines are dropped — the rest of the order still lands — so
   /// this must be surfaced, or lines vanish silently.
   @override
@@ -1073,7 +1073,7 @@ abstract class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
   @override
   String? get visitId;
 
-  /// Lines the server refused for want of ingredients (ADR-0038). Only the
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
   /// offending lines are dropped — the rest of the order still lands — so
   /// this must be surfaced, or lines vanish silently.
   @override

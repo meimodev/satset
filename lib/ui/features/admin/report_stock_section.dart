@@ -13,7 +13,7 @@ import 'package:satset/ui/core/design/typography.dart';
 /// Variance rows come from `adjust` movements — the difference between what
 /// recipes said should be on the shelf and what an opname actually found. They
 /// are therefore **opname-anchored**: a row appears only where someone counted
-/// inside this window (ADR-0038).
+/// inside this window (ADR-0041).
 class ReportStockSection extends ConsumerWidget {
   const ReportStockSection({
     super.key,

@@ -50,7 +50,7 @@ Response _json(Object body) => Response.ok(jsonEncode(body),
 /// derived habis flags ride the cached, broadcast menu snapshot. These routes
 /// are fetched on demand by the one screen that needs them, gated by capability
 /// rather than by app mode so an admin-client can run stock without hunting for
-/// the host tablet (ADR-0037).
+/// the host tablet (ADR-0040).
 Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   final r = Router();
 
@@ -204,7 +204,7 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   });
 
   // Stok opname. Body carries the **absolute** counted quantity; the written
-  // `adjust` delta is the variance (ADR-0038).
+  // `adjust` delta is the variance (ADR-0041).
   r.post('/stock/count', (Request req) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
@@ -312,7 +312,7 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 ///
 /// Variance is anchored to **opname events**, not to the caller's date range: a
 /// variance figure over a window that starts and ends mid-count is meaningless
-/// (ADR-0038). Every `adjust` movement *is* one variance observation.
+/// (ADR-0041). Every `adjust` movement *is* one variance observation.
 Future<Map<String, dynamic>> stockReport(
   AppDatabase db, {
   required DateTime from,

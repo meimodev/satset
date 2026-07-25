@@ -912,7 +912,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   /// Σ(qty × moving-average cost) for the base configuration. Shown *beside*
   /// the manual `cost` field, never replacing it — a partially authored recipe
-  /// understates cost and would silently overstate margin (ADR-0037).
+  /// understates cost and would silently overstate margin (ADR-0040).
   int _derivedCost(List<Ingredient> pantry) {
     final by = {for (final i in pantry) i.id: i};
     var total = 0;

@@ -38,6 +38,9 @@ part 'database.g.dart';
   Payments,
   TableSessionReceipts,
   TableSessionPayments,
+  DiscountPresets,
+  Discounts,
+  TableSessionDiscounts,
   DailyCounters,
   Ingredients,
   RecipeLines,
@@ -47,7 +50,20 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36;
+
+  /// At most one whole-order discount per receipt, and one line discount per
+  /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
+  /// in route code. Drift cannot express partial indexes, so they are raw SQL
+  /// and must be created on both fresh and upgraded databases.
+  Future<void> _createDiscountIndexes() async {
+    await customStatement(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_order_uniq '
+        'ON discounts (receipt_id) WHERE ticket_id IS NULL');
+    await customStatement(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_line_uniq '
+        'ON discounts (receipt_id, ticket_id) WHERE ticket_id IS NOT NULL');
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -399,7 +415,30 @@ class AppDatabase extends _$AppDatabase {
                 type: "TEXT NOT NULL DEFAULT 'alert'");
           }
           if (from < 35) {
-            // Ingredient-level inventory (ADR-0037/0038). Stock moves off the
+            // Cashier-stage catalog discounts (ADR-0037/0038/0039).
+            await m.createTable(discountPresets);
+            await m.createTable(discounts);
+            await m.createTable(tableSessionDiscounts);
+            await _createDiscountIndexes();
+            await _safeAddColumnOn('receipts', 'discount_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('table_session_receipts', 'discount_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('table_sessions', 'discount_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            // ADR-0039: netTotal is frozen at its ADR-0023 meaning; settled
+            // revenue moves to settledTotal. Pre-v35 rows carried no discount,
+            // so backfilling settledTotal = netTotal is exact, not an estimate.
+            await _safeAddColumnOn('table_sessions', 'settled_total',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await customStatement(
+                'UPDATE table_sessions SET settled_total = net_total '
+                'WHERE settled_total = 0');
+            await _safeAddColumnOn('venue_settings', 'tax_after_discount',
+                type: 'INTEGER NOT NULL DEFAULT 1');
+          }
+          if (from < 36) {
+            // Ingredient-level inventory (ADR-0040/0041). Stock moves off the
             // per-item counter and onto ingredients + recipes.
             await m.createTable(ingredients);
             await m.createTable(recipeLines);
@@ -420,6 +459,7 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid_unique '
               'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL');
+          await _createDiscountIndexes();
           await into(venueSettings).insertOnConflictUpdate(
             VenueSettingsCompanion.insert(
               id: 'default',
@@ -437,7 +477,7 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  /// Convert the legacy per-item `stock_count` into ingredients (v35, ADR-0037).
+  /// Convert the legacy per-item `stock_count` into ingredients (v36, ADR-0040).
   ///
   /// Every item that was counted becomes a self-named `pcs` ingredient holding
   /// the old count, plus a 1-pcs recipe — same behaviour, new spine. Ids are
@@ -473,11 +513,11 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  /// Grant the v35 inventory capabilities from the nearest existing authority.
+  /// Grant the v36 inventory capabilities from the nearest existing authority.
   ///
   /// A brand-new capability defaults to OFF for every existing role, which
   /// would close the `overrideStock` pressure valve at exactly the upgrade
-  /// where a venue's counts are most likely to be wrong (ADR-0038). Follows the
+  /// where a venue's counts are most likely to be wrong (ADR-0041). Follows the
   /// `voidItem` backfill precedent. Idempotent: skips roles already granted.
   Future<void> backfillInventoryCapabilities() async {
     Future<void> grant(String from, String to) => customStatement(

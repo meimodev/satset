@@ -228,7 +228,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 
     // `overrideStock` is the pressure valve for the venue whose counts have
     // drifted: it sends anyway and still writes the movement, so the balance
-    // goes negative as a visible "go do an opname" signal (ADR-0038).
+    // goes negative as a visible "go do an opname" signal (ADR-0041).
     final canOverrideStock =
         await _hasCap(req, db, auth, Capability.overrideStock);
 
@@ -268,7 +268,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         visitId = await ensureVisit(db, tableId, actorId: actorId);
       }
       orderVisitId = visitId;
-      // Ingredient coverage (ADR-0038). Stock moves at **send** — the last
+      // Ingredient coverage (ADR-0041). Stock moves at **send** — the last
       // point at which refusing a line is still cheap. `running` is mutated as
       // lines are accepted, so two lines of the same order competing for the
       // last portion resolve consistently.
@@ -313,7 +313,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         );
         if (!need.covered && !canOverrideStock) {
           // Reject ONLY this line — one out-of-stock side dish must not kill a
-          // twelve-item order the waiter would have to re-key (ADR-0038).
+          // twelve-item order the waiter would have to re-key (ADR-0041).
           rejected.add({
             'itemId': itemId,
             'name': (l['name'] as String?) ?? itemId,
@@ -343,7 +343,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         );
         await db.into(db.tickets).insert(row);
         // Deduct inside the existing idempotency-keyed transaction, so a
-        // retried submit can never double-deduct (ADR-0038). An overridden
+        // retried submit can never double-deduct (ADR-0041). An overridden
         // line still writes its movements — the balance goes negative on
         // purpose, as the "your counts are wrong" signal.
         if (need.need.isNotEmpty) {
@@ -422,7 +422,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       }
     }
     // Re-broadcast the menu only when a derived habis flag actually flipped —
-    // beras going 8.0 → 7.8 kg must stay silent (ADR-0037).
+    // beras going 8.0 → 7.8 kg must stay silent (ADR-0040).
     if (createdIds.isNotEmpty && await stockFlags.refreshAndDetectFlip(db)) {
       hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
     }
@@ -503,7 +503,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         // Restock only when the kitchen never started the line. The test is the
         // line's lifecycle status — a kitchen fact already on the ticket —
         // rather than the waiter's stated reason, which would wrongly restock a
-        // `customerChange` on a plated dish (ADR-0038).
+        // `customerChange` on a plated dish (ADR-0041).
         await reverseTicketStock(
           db,
           ticketId: id,

@@ -1,6 +1,6 @@
-// The v35 migration runs one-way against shipped production data (v1.0.1), so
+// The v36 migration runs one-way against shipped production data (v1.0.1), so
 // its two data transforms are exercised directly here.
-// See docs/adr/0037-ingredient-level-inventory-replaces-item-stock-counts.md.
+// See docs/adr/0040-ingredient-level-inventory-replaces-item-stock-counts.md.
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
@@ -25,7 +25,7 @@ void main() {
 
   test('legacy item stock counts become pcs ingredients with a 1-pcs recipe',
       () async {
-    // v35 already dropped the columns from the schema, so stand the legacy
+    // v36 already dropped the columns from the schema, so stand the legacy
     // shape back up to migrate from.
     await db.customStatement('ALTER TABLE menu_items ADD COLUMN stock_count INTEGER');
     await db.into(db.menuItems).insert(MenuItemsCompanion.insert(

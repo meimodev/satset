@@ -10,7 +10,7 @@ import 'package:satset/domain/models/ingredient.dart';
 /// habis flags ride the broadcast menu snapshot. Bahan detail is needed by one
 /// screen, opened occasionally, by one or two people — caching it would buy
 /// nothing and reintroduce the mid-service broadcast storm the flip-only rule
-/// exists to prevent (ADR-0037).
+/// exists to prevent (ADR-0040).
 class StockApi {
   StockApi(this.ref);
   final Ref ref;
@@ -70,7 +70,7 @@ class StockApi {
   }
 
   /// Stok opname. Counts are **absolute** — the server writes the difference,
-  /// and that difference is the variance (ADR-0038).
+  /// and that difference is the variance (ADR-0041).
   Future<Map<String, int>> recordCounts(
     Map<String, int> counted, {
     String? note,

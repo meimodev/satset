@@ -579,7 +579,7 @@ class _ModOpt extends StatelessWidget {
   final String? delta;
   final VoidCallback onTap;
 
-  /// Derived from ingredient stock (ADR-0037): this exact choice cannot be
+  /// Derived from ingredient stock (ADR-0040): this exact choice cannot be
   /// made right now, even though the dish itself may still be orderable.
   final bool soldOut;
   const _ModOpt({

@@ -353,7 +353,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
         'allergens': it.allergens,
         'dietary': it.dietary,
         // Availability derived from ingredient stock is server-owned and never
-        // posted back by a client (ADR-0037).
+        // posted back by a client (ADR-0040).
         'unavailable': it.unavailable,
       };
 

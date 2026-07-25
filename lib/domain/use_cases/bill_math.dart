@@ -12,6 +12,15 @@ class TaxServiceConfig {
   final int serviceRateBps; // percent mode
   final int serviceFixedAmount; // fixed mode (per bill)
 
+  /// Where a whole-order [[Diskon (discount)]] sits in the stack (ADR-0038).
+  /// `true` (default, DPP-correct): the discount reduces the base **both**
+  /// add-ons compute from. `false`: service+tax are computed on the gross
+  /// subtotal and the discount comes off the grand total last.
+  ///
+  /// Line discounts are always pre-tax and are **not** governed by this flag —
+  /// they are folded into [subtotal] by the caller before it reaches here.
+  final bool taxAfterDiscount;
+
   const TaxServiceConfig({
     required this.taxEnabled,
     required this.taxRateBps,
@@ -19,17 +28,25 @@ class TaxServiceConfig {
     required this.serviceMode,
     required this.serviceRateBps,
     required this.serviceFixedAmount,
+    this.taxAfterDiscount = true,
   });
 }
 
 /// The computed money breakdown of one receipt (or a whole single-receipt bill).
 class MoneyBreakdown {
+  /// Line subtotal **already net of any line discounts**.
   final int subtotal;
+
+  /// The whole-order discount actually applied, after clamping. May be less
+  /// than the requested amount when the discount would drive the total below
+  /// zero. Does **not** include line discounts (those are inside [subtotal]).
+  final int discountAmount;
   final int serviceAmount;
   final int taxAmount;
   final int total;
   const MoneyBreakdown({
     required this.subtotal,
+    this.discountAmount = 0,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
@@ -39,34 +56,86 @@ class MoneyBreakdown {
 /// Service-then-tax stacking (ID PB1 convention): service applies to the
 /// subtotal, then tax applies to (subtotal + service).
 ///
+/// [subtotal] must already be **net of line discounts** — a line discount is a
+/// price change and so is part of how the subtotal is derived (ADR-0038).
+/// [discount] is the **whole-order** discount only; where it lands depends on
+/// `cfg.taxAfterDiscount`:
+///
+/// ```
+/// taxAfterDiscount = true          taxAfterDiscount = false
+///   base = subtotal − discount       service = subtotal × rate
+///   service = base × rate            tax     = (subtotal+service) × rate
+///   tax     = (base+service) × rate  total   = subtotal+service+tax − discount
+///   total   = base+service+tax
+/// ```
+///
+/// The discount is clamped so the total can never go negative — a discount is
+/// not a refund and must not push money outward. The amount actually applied
+/// is reported on [MoneyBreakdown.discountAmount].
+///
 /// [serviceOverride] forces a fixed service amount (used when distributing a
 /// per-bill fixed service charge proportionally across split receipts); when
-/// null and the config is percent-mode, service is computed from [subtotal].
+/// null and the config is percent-mode, service is computed from the base.
 MoneyBreakdown computeBreakdown(
   int subtotal,
   TaxServiceConfig cfg, {
   int? serviceOverride,
+  int discount = 0,
 }) {
-  var service = 0;
-  if (cfg.serviceEnabled) {
-    if (serviceOverride != null) {
-      service = serviceOverride;
-    } else if (cfg.serviceMode == 'fixed') {
-      service = cfg.serviceFixedAmount;
-    } else {
-      service = (subtotal * cfg.serviceRateBps) ~/ 10000;
-    }
+  int serviceOn(int base) {
+    if (!cfg.serviceEnabled) return 0;
+    if (serviceOverride != null) return serviceOverride;
+    if (cfg.serviceMode == 'fixed') return cfg.serviceFixedAmount;
+    return (base * cfg.serviceRateBps) ~/ 10000;
   }
-  var tax = 0;
-  if (cfg.taxEnabled) {
-    tax = ((subtotal + service) * cfg.taxRateBps) ~/ 10000;
+
+  int taxOn(int base, int service) =>
+      cfg.taxEnabled ? ((base + service) * cfg.taxRateBps) ~/ 10000 : 0;
+
+  final requested = discount < 0 ? 0 : discount;
+
+  if (cfg.taxAfterDiscount) {
+    // Discount reduces the base both add-ons compute from.
+    final applied = requested > subtotal ? subtotal : requested;
+    final base = subtotal - applied;
+    final service = serviceOn(base);
+    final tax = taxOn(base, service);
+    return MoneyBreakdown(
+      subtotal: subtotal,
+      discountAmount: applied,
+      serviceAmount: service,
+      taxAmount: tax,
+      total: base + service + tax,
+    );
   }
+
+  // Gross-then-promo: add-ons on the full subtotal, discount off the total.
+  final service = serviceOn(subtotal);
+  final tax = taxOn(subtotal, service);
+  final gross = subtotal + service + tax;
+  final applied = requested > gross ? gross : requested;
   return MoneyBreakdown(
     subtotal: subtotal,
+    discountAmount: applied,
     serviceAmount: service,
     taxAmount: tax,
-    total: subtotal + service + tax,
+    total: gross - applied,
   );
+}
+
+/// Resolve a [[Preset diskon]]'s `{kind, value}` against a [base] into rupiah.
+/// `percent` reads [value] as basis points (clamped to 100%); `fixed` reads it
+/// as rupiah (clamped to [base]). Shared by the server and the cashier UI so
+/// the quoted and the stored amount can never disagree.
+int resolveDiscountAmount({
+  required String kind,
+  required int value,
+  required int base,
+}) {
+  if (value <= 0 || base <= 0) return 0;
+  if (kind == 'fixed') return value > base ? base : value;
+  final bps = value > 10000 ? 10000 : value;
+  return (base * bps) ~/ 10000;
 }
 
 /// Distribute a whole-bill fixed service charge across receipt subtotals
@@ -103,10 +172,16 @@ List<int> distributeFixed(List<int> subtotals, int fixedTotal) {
 /// receipts proportionally to subtotal. When [billTotalTarget] is given (the
 /// bill is fully assigned), the integer rounding remainder is pushed onto the
 /// largest-subtotal receipt so the receipts sum to the bill total exactly.
+///
+/// [discounts], when given, holds each receipt's own whole-order discount and
+/// must align to [subtotals]. A percent order discount is resolved per receipt
+/// by the caller; a fixed whole-bill one is fanned out with [distributeFixed]
+/// before it gets here, so this function never sees a bill-level amount.
 List<MoneyBreakdown> splitItemized(
   List<int> subtotals,
   TaxServiceConfig cfg, {
   int? billTotalTarget,
+  List<int>? discounts,
 }) {
   final n = subtotals.length;
   if (n == 0) return const [];
@@ -116,7 +191,8 @@ List<MoneyBreakdown> splitItemized(
   final out = <MoneyBreakdown>[
     for (var i = 0; i < n; i++)
       computeBreakdown(subtotals[i], cfg,
-          serviceOverride: fixedShares?[i]),
+          serviceOverride: fixedShares?[i],
+          discount: discounts == null ? 0 : discounts[i]),
   ];
   if (billTotalTarget != null) {
     final sum = out.fold<int>(0, (a, b) => a + b.total);
@@ -125,6 +201,7 @@ List<MoneyBreakdown> splitItemized(
       final i = _largestIndex(subtotals);
       out[i] = MoneyBreakdown(
         subtotal: out[i].subtotal,
+        discountAmount: out[i].discountAmount,
         serviceAmount: out[i].serviceAmount,
         taxAmount: out[i].taxAmount + diff,
         total: out[i].total + diff,

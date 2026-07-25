@@ -59,7 +59,7 @@ class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
     /// so its lines resolve without a flash of empty. See ADR-0034.
     String? visitId,
 
-    /// Lines the server refused for want of ingredients (ADR-0038). Only the
+    /// Lines the server refused for want of ingredients (ADR-0041). Only the
     /// offending lines are dropped — the rest of the order still lands — so
     /// this must be surfaced, or lines vanish silently.
     @Default(<RejectedLineDto>[]) List<RejectedLineDto> rejected,

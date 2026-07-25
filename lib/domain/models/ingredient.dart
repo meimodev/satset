@@ -2,7 +2,7 @@ import 'stock_unit.dart';
 
 /// "Bahan" — a raw stock item the venue holds and counts. The only stock
 /// entity: a bottled drink is an ingredient whose recipe is one of itself.
-/// See CONTEXT.md and ADR-0037.
+/// See CONTEXT.md and ADR-0040.
 class Ingredient {
   final String id;
   final String name;
@@ -82,7 +82,7 @@ class Ingredient {
       );
 }
 
-/// Why stock moved. One uniform shape for every change (ADR-0038).
+/// Why stock moved. One uniform shape for every change (ADR-0041).
 enum StockReason {
   sale('Terjual'),
   voidReturn('Batal — kembali'),
@@ -102,7 +102,7 @@ StockReason stockReasonFromKey(String key) => StockReason.values.firstWhere(
 
 /// One append-only row of the stock ledger. Self-contained on purpose: live
 /// ticket rows are deleted at bill close, so [ticketId] dangles by design and
-/// readers rely on [sourceLabel]. See ADR-0038.
+/// readers rely on [sourceLabel]. See ADR-0041.
 class StockMovement {
   final String id;
   final String ingredientId;
@@ -177,7 +177,7 @@ class RecipeLine {
 /// A variant's list **replaces** [base] entirely; an option's list **adds** on
 /// top of whichever won. An item with no lines anywhere consumes nothing and
 /// never goes auto-habis — the correct default for a menu being migrated one
-/// dish at a time (ADR-0037).
+/// dish at a time (ADR-0040).
 class ItemRecipes {
   final List<RecipeLine> base;
   final Map<String, List<RecipeLine>> byVariant;

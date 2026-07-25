@@ -109,7 +109,7 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'});
   });
 
-  // Item-level stock is gone (ADR-0037): stock lives on ingredients, and an
+  // Item-level stock is gone (ADR-0040): stock lives on ingredients, and an
   // item's auto-habis is derived from its recipe. Kept as an explicit 410 so an
   // un-upgraded client gets a diagnosable answer instead of a bare 404.
   r.post('/menu/items/<id>/stock', (Request req, String id) async {
@@ -405,7 +405,7 @@ Future<Map<String, dynamic>> guestMenuSnapshot(AppDatabase db) async {
     final id = r.read(db.menuItems.id)!;
     // Guests render from this same snapshot, so ingredient-derived habis
     // applies to self-order for free: a guest cannot order a dish the kitchen
-    // cannot make (ADR-0037).
+    // cannot make (ADR-0040).
     if (flags[id]?.autoSoldOut == true) continue;
     visible.add(_itemResultToJson(db, r, flags: flags[id]));
   }
@@ -460,7 +460,7 @@ Future<List<TypedResult>> _selectItemsNoBlob(AppDatabase db, {String? id}) {
 
 /// [flags] carries the **derived** availability for this item (item, variant,
 /// and option granularity). Nothing about it is stored — it is recomputed from
-/// ingredient stock, so receiving un-habises an item automatically (ADR-0037).
+/// ingredient stock, so receiving un-habises an item automatically (ADR-0040).
 Map<String, dynamic> _itemResultToJson(
   AppDatabase db,
   TypedResult r, {

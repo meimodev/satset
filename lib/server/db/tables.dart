@@ -174,8 +174,8 @@ class MenuItems extends Table {
   TextColumn get allergensJson => text().withDefault(const Constant('[]'))();
   TextColumn get dietaryJson => text().withDefault(const Constant('[]'))();
   /// Manual "ditandai habis" toggle. Auto sold-out is **derived** from
-  /// ingredient stock at read time and is never stored — v35 dropped the old
-  /// `stock_count` / `auto_sold_out_at_zero` columns (ADR-0037).
+  /// ingredient stock at read time and is never stored — v36 dropped the old
+  /// `stock_count` / `auto_sold_out_at_zero` columns (ADR-0040).
   BoolColumn get unavailable => boolean().withDefault(const Constant(false))();
   /// Optional photo as a JPEG blob. Null = no photo (UI falls back to the
   /// initials avatar). Read ONLY by the photo route — never select this in
@@ -315,6 +315,14 @@ class VenueSettings extends Table {
   IntColumn get serviceRateBps => integer().withDefault(const Constant(500))();
   IntColumn get serviceFixedAmount =>
       integer().withDefault(const Constant(0))();
+
+  /// Where a whole-order [[Diskon (discount)]] sits in the stack (ADR-0038).
+  /// `true` (default, DPP-correct): the discount reduces the base both service
+  /// and tax compute from. `false`: both are computed on the gross subtotal and
+  /// the discount comes off the grand total last. Line discounts are always
+  /// pre-tax and ignore this flag.
+  BoolColumn get taxAfterDiscount =>
+      boolean().withDefault(const Constant(true))();
   /// Business-day rollover hour (0..23). Reports bucket "today" as
   /// [hour, hour+24h). Default 4 covers late-night service.
   IntColumn get businessDayStartHour =>
@@ -395,10 +403,23 @@ class TableSessions extends Table {
   /// carry 0 (tax/service were never applied before settlement existed).
   IntColumn get serviceAmount => integer().withDefault(const Constant(0))();
   IntColumn get taxAmount => integer().withDefault(const Constant(0))();
-  /// REDEFINED in ADR-0023: now the actually-settled total
+  /// REDEFINED in ADR-0023: the total net of voids plus service and tax
   /// (`subtotal − void + service + tax`), not the old `netTotal == subtotal`.
   /// Historical pre-v28 rows still equal their subtotal.
+  ///
+  /// FROZEN at that formula by ADR-0039 — it deliberately does **not** learn
+  /// about discounts, so its meaning never changes again. Answers "what did we
+  /// ring up net of voids". For money actually collected read [settledTotal].
   IntColumn get netTotal => integer().withDefault(const Constant(0))();
+
+  /// Total [[Diskon (discount)]] on this visit (line + whole-order, across
+  /// every receipt). 0 for pre-v35 sessions. ADR-0037.
+  IntColumn get discountAmount => integer().withDefault(const Constant(0))();
+
+  /// Money actually collected: `netTotal − discountAmount` (ADR-0039). This is
+  /// the revenue figure every report and export reads. Equals [netTotal] on
+  /// pre-v35 rows, which carried no discounts.
+  IntColumn get settledTotal => integer().withDefault(const Constant(0))();
   IntColumn get ticketCount => integer().withDefault(const Constant(0))();
   /// Outstanding written off at bill-close as a recorded loss — a walkout /
   /// "tak tertagih" close. 0 for a normal (Lunas) close. Distinct from a comp
@@ -460,12 +481,71 @@ class Receipts extends Table {
   TextColumn get visitId => text().nullable()();
   TextColumn get mode => text().withDefault(const Constant('itemized'))();
   TextColumn get label => text().withDefault(const Constant(''))();
+  /// Line subtotal **net of line discounts** (ADR-0038) — what the Subtotal row
+  /// prints.
   IntColumn get subtotal => integer().withDefault(const Constant(0))();
+  /// Total [[Diskon (discount)]] on this receipt: line discounts (already
+  /// inside [subtotal]) plus the whole-order one. Reporting figure; the math
+  /// reads the `discounts` rows. ADR-0037.
+  IntColumn get discountAmount => integer().withDefault(const Constant(0))();
   IntColumn get serviceAmount => integer().withDefault(const Constant(0))();
   IntColumn get taxAmount => integer().withDefault(const Constant(0))();
   IntColumn get total => integer().withDefault(const Constant(0))();
   TextColumn get status => text().withDefault(const Constant('unpaid'))();
   DateTimeColumn get createdAt => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Owner-defined discount the [[Cashier]] may pick from — cashiers never type a
+/// percentage (ADR-0037). `scope` ∈ {order, line} keeps a fixed whole-bill
+/// amount off a single cheap line; `kind` ∈ {percent, fixed} mirrors
+/// `VenueSettings.serviceMode`, with `value` in basis points or rupiah.
+/// Hard-deleted rather than archived — safe because every applied discount
+/// snapshots these values onto its `discounts` row. `active` hides a seasonal
+/// preset without deleting it.
+class DiscountPresets extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get scope => text().withDefault(const Constant('order'))();
+  TextColumn get kind => text().withDefault(const Constant('percent'))();
+  IntColumn get value => integer().withDefault(const Constant(0))();
+  BoolColumn get active => boolean().withDefault(const Constant(true))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// An applied [[Diskon (discount)]] — always receipt-scoped, at settlement only
+/// (ADR-0037). `ticketId == null` ⇒ whole-order discount; set ⇒ a line discount
+/// against the units *this receipt* owns.
+///
+/// `name`/`kind`/`value` are **snapshotted** off the preset at apply time so
+/// editing or deleting a preset never rewrites settled history; `presetId` is a
+/// weak reference kept only for the per-preset reporting rollup (ADR-0039).
+///
+/// At most one order discount per receipt and one line discount per line — see
+/// the two partial unique indexes in `AppDatabase.migration`. Rows cascade with
+/// their receipt, which is how `split-even` disposes of line discounts.
+class Discounts extends Table {
+  TextColumn get id => text()();
+  TextColumn get receiptId => text()();
+  /// Null ⇒ whole-order discount. Set ⇒ line discount on this ticket's units.
+  TextColumn get ticketId => text().nullable()();
+  /// Weak reference — the preset may be edited or deleted afterwards. Never
+  /// read it to render or report a settled bill; use the snapshot below.
+  TextColumn get presetId => text().nullable()();
+  TextColumn get name => text()();
+  TextColumn get kind => text()();
+  IntColumn get value => integer().withDefault(const Constant(0))();
+  /// Resolved rupiah amount at apply time (clamped so it can never exceed its
+  /// base). Persisted so history never re-derives from a rate.
+  IntColumn get amount => integer().withDefault(const Constant(0))();
+  /// Who applied it, and — when the applier lacked `applyDiscount` and used
+  /// manager step-up — who authorised it. ADR-0037.
+  TextColumn get byUserId => text().nullable()();
+  TextColumn get approvedByUserId => text().nullable()();
+  DateTimeColumn get at => dateTime()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -513,10 +593,33 @@ class TableSessionReceipts extends Table {
   TextColumn get mode => text().withDefault(const Constant('itemized'))();
   TextColumn get label => text().withDefault(const Constant(''))();
   IntColumn get subtotal => integer().withDefault(const Constant(0))();
+  IntColumn get discountAmount => integer().withDefault(const Constant(0))();
   IntColumn get serviceAmount => integer().withDefault(const Constant(0))();
   IntColumn get taxAmount => integer().withDefault(const Constant(0))();
   IntColumn get total => integer().withDefault(const Constant(0))();
   TextColumn get status => text().withDefault(const Constant('unpaid'))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Per-discount snapshot tied to a TableSession (mirrors Discounts at close).
+/// Keeps the individual applied rows — not just the per-receipt total — so the
+/// accounting export's per-preset rollup and the reprinted money doc's named
+/// `Diskon <preset>` rows still work after live rows are deleted. ADR-0039.
+class TableSessionDiscounts extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get receiptId => text()();
+  /// Null ⇒ whole-order discount; set ⇒ line discount.
+  TextColumn get ticketId => text().nullable()();
+  TextColumn get presetId => text().nullable()();
+  TextColumn get name => text()();
+  TextColumn get kind => text()();
+  IntColumn get value => integer().withDefault(const Constant(0))();
+  IntColumn get amount => integer().withDefault(const Constant(0))();
+  TextColumn get byUserId => text().nullable()();
+  TextColumn get approvedByUserId => text().nullable()();
+  DateTimeColumn get at => dateTime()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -576,7 +679,7 @@ class TableSessionCourses extends Table {
 
 /// A raw stock item — "Bahan" in CONTEXT.md. The ONLY stock entity: a bottled
 /// drink is an ingredient whose recipe is one of itself. Replaces the former
-/// per-item `MenuItems.stockCount`. See ADR-0037.
+/// per-item `MenuItems.stockCount`. See ADR-0040.
 ///
 /// Row class is named explicitly: the default (`Ingredient`) would collide with
 /// the domain model of the same name, which the server imports alongside.
@@ -591,7 +694,7 @@ class Ingredients extends Table {
   TextColumn get unit => text()();
 
   /// On-hand quantity in milli-base units (mg / µl / milli-pcs). Denormalised
-  /// from [StockMovements]; both are written in the same transaction (ADR-0038).
+  /// from [StockMovements]; both are written in the same transaction (ADR-0041).
   /// MAY go negative — an `overrideStock` send is a deliberate "your counts are
   /// wrong" signal and must not be clamped.
   IntColumn get stockOnHand => integer().withDefault(const Constant(0))();
@@ -607,7 +710,7 @@ class Ingredients extends Table {
   /// Output quantity of one production batch, in this ingredient's milli-base
   /// units. Non-null ⇒ this is a **produced** ingredient (sambal, kaldu) with
   /// recipe lines of its own. One level only: a produced ingredient's recipe
-  /// may reference non-produced ingredients exclusively (ADR-0037).
+  /// may reference non-produced ingredients exclusively (ADR-0040).
   IntColumn get batchYield => integer().nullable()();
 
   DateTimeColumn get archivedAt => dateTime().nullable()();
@@ -620,7 +723,7 @@ class Ingredients extends Table {
 /// of lines sharing a scope, and the only header field a recipe needs (yield)
 /// lives on [Ingredients.batchYield].
 ///
-/// Scopes, per ADR-0037:
+/// Scopes, per ADR-0040:
 /// - `item` + empty variant/option — the item's **base** recipe.
 /// - `item` + `variantId` — **replaces** the base entirely for that variant.
 /// - `item` + `optionId` — **adds** on top of whichever won.
@@ -645,7 +748,7 @@ class RecipeLines extends Table {
 /// Append-only ledger of every change to an ingredient's stock — the audit
 /// trail behind every number inventory shows. Rows are **self-contained**
 /// (frozen `sourceLabel`, nullable `ticketId`) because live ticket rows are
-/// deleted at bill close. See ADR-0038.
+/// deleted at bill close. See ADR-0041.
 @DataClassName('StockMovementRow')
 class StockMovements extends Table {
   TextColumn get id => text()();

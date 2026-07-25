@@ -2,8 +2,8 @@
 // partial rejection → void restock vs waste, through the *real* shelf routes
 // and an in-memory database.
 //
-// See docs/adr/0037-ingredient-level-inventory-replaces-item-stock-counts.md
-// and docs/adr/0038-stock-deducts-at-send-ledger-and-balance.md.
+// See docs/adr/0040-ingredient-level-inventory-replaces-item-stock-counts.md
+// and docs/adr/0041-stock-deducts-at-send-ledger-and-balance.md.
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;

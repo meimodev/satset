@@ -14,7 +14,7 @@ import 'package:satset/ui/features/admin/_common.dart';
 /// "Stok" — the bahan list, receiving, opname, produksi, and the movement
 /// ledger. Procurement work, deliberately kept out of the menu editor: recipes
 /// are authored once beside the variants they depend on, while stock is run
-/// daily by whoever counts the walk-in (ADR-0037).
+/// daily by whoever counts the walk-in (ADR-0040).
 class StockScreen extends ConsumerStatefulWidget {
   const StockScreen({super.key});
 
@@ -25,7 +25,7 @@ class StockScreen extends ConsumerStatefulWidget {
 class _StockScreenState extends ConsumerState<StockScreen> {
   /// Absolute counts typed during an opname pass, keyed by ingredient id. The
   /// counter enters what is physically there; the server writes the difference,
-  /// and that difference is the variance (ADR-0038).
+  /// and that difference is the variance (ADR-0041).
   final _counts = <String, int>{};
   bool _opname = false;
   bool _lowOnly = false;
@@ -109,7 +109,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         _pill(sc, 'Menipis', '$low bahan', low > 0 ? sc.warn : sc.textLo,
             onTap: () => setState(() => _lowOnly = !_lowOnly), on: _lowOnly),
         // A negative balance is a real state, never clamped: it means an
-        // override sale outran the counts (ADR-0038).
+        // override sale outran the counts (ADR-0041).
         if (negative > 0)
           _pill(sc, 'Minus', '$negative bahan', sc.urgent),
       ],

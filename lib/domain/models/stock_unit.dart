@@ -9,7 +9,7 @@
 /// A preset converts freely **within** its dimension and never across one.
 /// Count presets are display labels only and are deliberately NOT
 /// inter-convertible — a butir of telur and a siung of bawang are different
-/// ingredients, not different units of one. See ADR-0037.
+/// ingredients, not different units of one. See ADR-0040.
 library;
 
 enum StockDimension { mass, volume, count }

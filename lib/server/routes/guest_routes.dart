@@ -243,7 +243,7 @@ Future<_PriceResult> _priceLine(
           .getSingleOrNull();
   if (item == null) return _PriceResult.err('item_not_found');
   if (item.unavailable) return _PriceResult.err('item_unavailable');
-  // Auto-habis is derived from ingredient stock, never stored (ADR-0037), so a
+  // Auto-habis is derived from ingredient stock, never stored (ADR-0040), so a
   // guest cannot order a dish the kitchen has no ingredients for.
   if ((await deriveStockFlags(db))[itemId]?.autoSoldOut == true) {
     return _PriceResult.err('item_sold_out');

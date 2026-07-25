@@ -237,7 +237,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   ///
   /// Rejection is per line, so the rest of the order went through — without
   /// this the dropped lines would just be missing from the table, which reads
-  /// as a bug rather than as "we're out of ayam" (ADR-0038).
+  /// as a bug rather than as "we're out of ayam" (ADR-0041).
   void _reportRejected(List<RejectedLineDto> rejected) {
     if (rejected.isEmpty) return;
     final bus = ref.read(errorBusServiceProvider);
