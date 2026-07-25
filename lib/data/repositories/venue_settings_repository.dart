@@ -77,6 +77,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     String? serviceMode,
     int? serviceRateBps,
     int? serviceFixedAmount,
+    bool? taxAfterDiscount,
     int? businessDayStartHour,
     int? prepTargetMins,
     bool? guestOrderingEnabled,
@@ -104,6 +105,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       serviceMode: serviceMode ?? state.serviceMode,
       serviceRateBps: serviceRateBps ?? state.serviceRateBps,
       serviceFixedAmount: serviceFixedAmount ?? state.serviceFixedAmount,
+      taxAfterDiscount: taxAfterDiscount ?? state.taxAfterDiscount,
       businessDayStartHour:
           businessDayStartHour ?? state.businessDayStartHour,
       prepTargetMins: prepTargetMins ?? state.prepTargetMins,
@@ -135,6 +137,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'serviceMode': ?serviceMode,
         'serviceRateBps': ?serviceRateBps,
         'serviceFixedAmount': ?serviceFixedAmount,
+        'taxAfterDiscount': ?taxAfterDiscount,
         'businessDayStartHour': ?businessDayStartHour,
         'prepTargetMins': ?prepTargetMins,
         'guestOrderingEnabled': ?guestOrderingEnabled,

@@ -390,8 +390,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
-  // Remove a discount from a receipt.
-  r.delete('/settlement/receipts/<receiptId>/discounts/<discountId>',
+  // Remove a discount from a receipt. POST, not DELETE, because removal may
+  // need to carry a manager step-up PIN in the body — and a PIN must never
+  // ride a query string, where it would land in logs.
+  r.post('/settlement/receipts/<receiptId>/discounts/<discountId>/remove',
       (Request req, String receiptId, String discountId) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;

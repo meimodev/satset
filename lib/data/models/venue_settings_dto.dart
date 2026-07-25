@@ -28,6 +28,10 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default('percent') String serviceMode,
     @Default(500) int serviceRateBps,
     @Default(0) int serviceFixedAmount,
+    /// Where a whole-order discount sits in the stack (ADR-0038). Default true
+    /// = DPP-correct (the discount reduces the base service and tax compute
+    /// from). Line discounts are always pre-tax and ignore this.
+    @Default(true) bool taxAfterDiscount,
     @Default(4) int businessDayStartHour,
     @Default(15) int prepTargetMins,
     @Default(false) bool guestOrderingEnabled,
@@ -56,5 +60,6 @@ extension VenueSettingsTaxCfg on VenueSettingsDto {
         serviceMode: serviceMode,
         serviceRateBps: serviceRateBps,
         serviceFixedAmount: serviceFixedAmount,
+        taxAfterDiscount: taxAfterDiscount,
       );
 }

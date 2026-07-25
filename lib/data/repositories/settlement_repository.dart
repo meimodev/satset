@@ -231,6 +231,41 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _billFrom(raw);
   }
 
+  // ── discounts (ADR-0037). Cashier-stage only; the cashier picks a preset,
+  //    never a free-typed rate. `ticketId` null ⇒ whole-order discount.
+  //    `approverPin` carries a manager step-up when the signed-in user lacks
+  //    `applyDiscount`; it is verified server-side, so an omitted or wrong PIN
+  //    simply fails with `approval_required`. ──
+
+  Future<Bill> applyDiscount(
+    String receiptId, {
+    required String presetId,
+    String? ticketId,
+    String? approverPin,
+  }) async {
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/receipts/$receiptId/discounts',
+      {
+        'presetId': presetId,
+        'ticketId': ?ticketId,
+        'approverPin': ?approverPin,
+      },
+    );
+    return _billFrom(raw);
+  }
+
+  Future<Bill> removeDiscount(
+    String receiptId,
+    String discountId, {
+    String? approverPin,
+  }) async {
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/receipts/$receiptId/discounts/$discountId/remove',
+      {'approverPin': ?approverPin},
+    );
+    return _billFrom(raw);
+  }
+
   // ── printing the money document (server renders to a VENUE printer; device
   //    printers render client-side via the picker). Returns null on success or
   //    a human message on failure. See ADR-0023 / ADR-0020. ──
