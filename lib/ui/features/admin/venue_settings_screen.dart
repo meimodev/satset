@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -1086,6 +1087,51 @@ class _PajakLayananCard extends ConsumerWidget {
                 onChange: (v) => n.patch(serviceFixedAmount: v),
               ),
           ],
+          Divider(height: 28, color: sc.border0),
+          // ADR-0038. Only meaningful once tax or service is on — with both
+          // off, both pipelines produce the same total.
+          _toggleRow(
+            context,
+            sc,
+            label: 'Pajak dihitung setelah diskon',
+            on: s.taxAfterDiscount,
+            onToggle: () => n.patch(taxAfterDiscount: !s.taxAfterDiscount),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            s.taxAfterDiscount
+                ? 'Diskon mengurangi dasar pengenaan — pajak & layanan '
+                    'dihitung dari jumlah setelah diskon.'
+                : 'Pajak & layanan dihitung dari subtotal kotor, diskon '
+                    'dipotong dari total akhir.',
+            style: SatType.sans(size: 11.5, color: sc.textLo),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Diskon per item selalu dihitung sebelum pajak.',
+            style: SatType.sans(size: 11, color: sc.textLo),
+          ),
+          const SizedBox(height: 10),
+          // The catalogue itself lives on its own screen — it is list-shaped
+          // and edited rarely, so it does not belong inline in settings.
+          InkWell(
+            onTap: () => context.push('/venue/diskon'),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.sell_outlined, size: 18, color: sc.textHi),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Preset diskon',
+                        style: SatType.sans(size: 13, color: sc.textHi)),
+                  ),
+                  Icon(Icons.chevron_right, size: 18, color: sc.textLo),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
