@@ -13,6 +13,9 @@ class AccountingRevenue {
   final int voidAmount;
   final int service;
   final int tax;
+  /// Deliberate revenue give-back — kept beside gross/void rather than folded
+  /// into gross, so the cost of promos stays visible (ADR-0039).
+  final int discount;
   final int net;
   final int collected;
   final int refunded;
@@ -23,6 +26,7 @@ class AccountingRevenue {
     required this.voidAmount,
     required this.service,
     required this.tax,
+    required this.discount,
     required this.net,
     required this.collected,
     required this.refunded,
@@ -35,6 +39,7 @@ class AccountingRevenue {
         voidAmount: (j['voidAmount'] as num?)?.toInt() ?? 0,
         service: (j['service'] as num?)?.toInt() ?? 0,
         tax: (j['tax'] as num?)?.toInt() ?? 0,
+        discount: (j['discount'] as num?)?.toInt() ?? 0,
         net: (j['net'] as num?)?.toInt() ?? 0,
         collected: (j['collected'] as num?)?.toInt() ?? 0,
         refunded: (j['refunded'] as num?)?.toInt() ?? 0,
@@ -95,6 +100,7 @@ class AccountingDayRow {
   final int voidAmount;
   final int service;
   final int tax;
+  final int discount;
   final int net;
   final int collected;
   final int refunded;
@@ -105,6 +111,7 @@ class AccountingDayRow {
     required this.voidAmount,
     required this.service,
     required this.tax,
+    required this.discount,
     required this.net,
     required this.collected,
     required this.refunded,
@@ -116,10 +123,49 @@ class AccountingDayRow {
     voidAmount: (j['voidAmount'] as num?)?.toInt() ?? 0,
     service: (j['service'] as num?)?.toInt() ?? 0,
     tax: (j['tax'] as num?)?.toInt() ?? 0,
+    discount: (j['discount'] as num?)?.toInt() ?? 0,
     net: (j['net'] as num?)?.toInt() ?? 0,
     collected: (j['collected'] as num?)?.toInt() ?? 0,
     refunded: (j['refunded'] as num?)?.toInt() ?? 0,
   );
+}
+
+/// One row of the per-preset discount rollup — "which promo cost what".
+/// Labelled from the applied snapshot, so a preset edited or deleted since
+/// still reports under the name it carried when applied (ADR-0037/0039).
+class AccountingDiscountRow {
+  final String? presetId;
+  final String name;
+  final String kind; // percent | fixed
+  final int value;
+  final String scope; // order | line
+  final int amount;
+  final int count;
+
+  const AccountingDiscountRow({
+    required this.presetId,
+    required this.name,
+    required this.kind,
+    required this.value,
+    required this.scope,
+    required this.amount,
+    required this.count,
+  });
+
+  /// "Member 10%" / "Potongan tetap".
+  String get label =>
+      kind == 'percent' ? '$name ${(value / 100).toStringAsFixed(0)}%' : name;
+
+  static AccountingDiscountRow fromJson(Map<String, dynamic> j) =>
+      AccountingDiscountRow(
+        presetId: j['presetId'] as String?,
+        name: j['name'] as String? ?? 'Diskon',
+        kind: j['kind'] as String? ?? 'percent',
+        value: (j['value'] as num?)?.toInt() ?? 0,
+        scope: j['scope'] as String? ?? 'order',
+        amount: (j['amount'] as num?)?.toInt() ?? 0,
+        count: (j['count'] as num?)?.toInt() ?? 0,
+      );
 }
 
 class AccountingReport {
@@ -130,6 +176,7 @@ class AccountingReport {
   final AccountingRevenue revenue;
   final List<AccountingMethodRow> methods;
   final List<AccountingVoidRow> voids;
+  final List<AccountingDiscountRow> discounts;
   final List<AccountingDayRow> daily;
 
   const AccountingReport({
@@ -140,6 +187,7 @@ class AccountingReport {
     required this.revenue,
     required this.methods,
     required this.voids,
+    required this.discounts,
     required this.daily,
   });
 
@@ -159,6 +207,10 @@ class AccountingReport {
         voids: [
           for (final v in (j['voids'] as List? ?? const []))
             AccountingVoidRow.fromJson((v as Map).cast<String, dynamic>()),
+        ],
+        discounts: [
+          for (final d in (j['discounts'] as List? ?? const []))
+            AccountingDiscountRow.fromJson((d as Map).cast<String, dynamic>()),
         ],
         daily: [
           for (final d in (j['daily'] as List? ?? const []))

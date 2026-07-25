@@ -38,6 +38,12 @@ class BillStrukLine {
   final List<String> modifiers; // signed display labels, e.g. '+ Pedas'
   final String note; // item note (Instruksi khusus); '' when none
 
+  /// A line [[Diskon (discount)]] on this line, rendered as an indented
+  /// sub-line beneath it — the same visual grammar as modifiers and the item
+  /// note (ADR-0037). '' when none; [discountAmount] is the rupiah reduction.
+  final String discountLabel;
+  final int discountAmount;
+
   const BillStrukLine({
     required this.qty,
     required this.name,
@@ -46,7 +52,11 @@ class BillStrukLine {
     this.showPrice = true,
     this.modifiers = const [],
     this.note = '',
+    this.discountLabel = '',
+    this.discountAmount = 0,
   });
+
+  bool get hasDiscount => discountLabel.isNotEmpty && discountAmount > 0;
 }
 
 /// One recorded payment, rendered in the payment block. [amount] is negative
@@ -93,6 +103,18 @@ class BillStrukData {
 
   // ── money ──
   final int subtotal;
+
+  /// The whole-order [[Diskon (discount)]] on this document — named, so the
+  /// guest can see *why* it is cheaper ("Diskon Member 10%"). 0 / '' when none.
+  /// Line discounts are not here; they print under their own line.
+  final String discountLabel;
+  final int discountAmount;
+
+  /// Where the Diskon row belongs in the totals block (ADR-0038). True ⇒ above
+  /// Layanan (the discount reduced the base service and tax were computed on);
+  /// false ⇒ below Pajak (they were computed gross and the discount came off
+  /// the total). A fixed position would print arithmetic that does not add up.
+  final bool taxAfterDiscount;
   final int serviceAmount;
   final int taxAmount;
   final int total; // what THIS document owes (receipt share or whole bill)
@@ -124,6 +146,9 @@ class BillStrukData {
     this.docLabel = '',
     required this.lines,
     required this.subtotal,
+    this.discountLabel = '',
+    this.discountAmount = 0,
+    this.taxAfterDiscount = true,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,

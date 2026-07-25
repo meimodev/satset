@@ -54,9 +54,20 @@ const _dailyHeaders = [
   'Void',
   'Service',
   'Pajak',
+  'Diskon',
   'Net',
   'Terkumpul',
   'Refund',
+];
+
+/// Per-preset rollup — answers "which promo is costing me money" (ADR-0039).
+const _discountHeaders = ['Diskon', 'Cakupan', 'Dipakai', 'Nilai'];
+
+List<String> _discountRow(AccountingDiscountRow d) => [
+  d.label,
+  d.scope == 'line' ? 'Per item' : 'Per pesanan',
+  '${d.count}',
+  formatIDR(d.amount),
 ];
 
 List<String> _methodRow(AccountingMethodRow m) => [
@@ -80,6 +91,7 @@ List<String> _dailyRow(AccountingDayRow d) => [
   formatIDR(d.voidAmount),
   formatIDR(d.service),
   formatIDR(d.tax),
+  formatIDR(d.discount),
   formatIDR(d.net),
   formatIDR(d.collected),
   formatIDR(d.refunded),
@@ -111,6 +123,7 @@ String buildAccountingCsv(AccountingReport s) {
   rows.add(csvRow(['Pos', 'Nilai']));
   rows.add(csvRow(['Bruto (subtotal)', formatIDR(r.gross)]));
   rows.add(csvRow(['Void / koreksi', formatIDR(r.voidAmount)]));
+  rows.add(csvRow(['Diskon', formatIDR(r.discount)]));
   rows.add(csvRow(['Net', formatIDR(r.net)]));
   rows.add(csvRow(['Service', formatIDR(r.service)]));
   rows.add(csvRow(['Pajak', formatIDR(r.tax)]));
@@ -128,6 +141,12 @@ String buildAccountingCsv(AccountingReport s) {
   rows.add(csvRow(_voidHeaders));
   for (final v in s.voids) {
     rows.add(csvRow(_voidRow(v)));
+  }
+
+  section('Diskon per Preset');
+  rows.add(csvRow(_discountHeaders));
+  for (final d in s.discounts) {
+    rows.add(csvRow(_discountRow(d)));
   }
 
   section('Rincian Harian');
@@ -199,6 +218,7 @@ Future<Uint8List> buildAccountingPdf(AccountingReport s,
         pdfSectionTitle('Ringkasan Pendapatan'),
         kv('Bruto (subtotal)', formatIDR(r.gross)),
         kv('Void / koreksi', formatIDR(r.voidAmount)),
+        kv('Diskon', formatIDR(r.discount)),
         kv('Net', formatIDR(r.net), strong: true),
         kv('Service', formatIDR(r.service)),
         kv('Pajak', formatIDR(r.tax)),
@@ -226,6 +246,13 @@ Future<Uint8List> buildAccountingPdf(AccountingReport s,
           headers: _voidHeaders,
           rows: [for (final v in s.voids) _voidRow(v)],
           numericFrom: 1,
+        ),
+        pw.SizedBox(height: 16),
+        pdfSectionTitle('Diskon per Preset'),
+        pdfTable(
+          headers: _discountHeaders,
+          rows: [for (final d in s.discounts) _discountRow(d)],
+          numericFrom: 2,
         ),
         pw.SizedBox(height: 16),
         pdfSectionTitle('Rincian Harian'),

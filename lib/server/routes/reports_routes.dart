@@ -186,7 +186,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // ─── SALES ──────────────────────────────────────────────────
     final gross = sessions.fold<int>(0, (a, s) => a + s.subtotal);
     final voidTotal = sessions.fold<int>(0, (a, s) => a + s.voidAmount);
-    final net = sessions.fold<int>(0, (a, s) => a + s.netTotal);
+    final net = sessions.fold<int>(0, (a, s) => a + s.settledTotal);
     final covers = sessions.fold<int>(0, (a, s) => a + s.pax);
     final sessionCount = sessions.length;
     final taxService = (net * 0.18).round();
@@ -255,7 +255,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       final user = userById[entry.key];
       final covers = list.fold<int>(0, (a, s) => a + s.pax);
       final items = list.fold<int>(0, (a, s) => a + s.ticketCount);
-      final netSum = list.fold<int>(0, (a, s) => a + s.netTotal);
+      final netSum = list.fold<int>(0, (a, s) => a + s.settledTotal);
       final grossSum = list.fold<int>(0, (a, s) => a + s.subtotal);
       final voidSum = list.fold<int>(0, (a, s) => a + s.voidAmount);
       final avgTicket = list.isEmpty ? 0 : netSum / list.length;
@@ -739,9 +739,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // count toward net; the split surfaces takeaway share without polluting
     // per-cover / turn-time metrics.
     final takeawayCount = takeawaySessions.length;
-    final takeawayNet = takeawaySessions.fold<int>(0, (a, s) => a + s.netTotal);
+    final takeawayNet = takeawaySessions.fold<int>(0, (a, s) => a + s.settledTotal);
     final dineInCount = dineInSessions.length;
-    final dineInNet = dineInSessions.fold<int>(0, (a, s) => a + s.netTotal);
+    final dineInNet = dineInSessions.fold<int>(0, (a, s) => a + s.settledTotal);
 
     final body = {
       'generatedAt': now.toIso8601String(),
@@ -889,6 +889,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
             'label': r.label,
             'mode': r.mode,
             'subtotal': r.subtotal,
+            'discountAmount': r.discountAmount,
             'serviceAmount': r.serviceAmount,
             'taxAmount': r.taxAmount,
             'total': r.total,
@@ -909,6 +910,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
           'label': '—',
           'mode': 'itemized',
           'subtotal': 0,
+          'discountAmount': 0,
           'serviceAmount': 0,
           'taxAmount': 0,
           'total': 0,
@@ -947,7 +949,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     for (final s in sessions) {
       final ls = linesBySession[s.id] ?? const <TableSessionTicket>[];
       lineCount += ls.length;
-      netTotal += s.netTotal;
+      netTotal += s.settledTotal;
       visits.add({
         'sessionId': s.id,
         'tableLabel': s.tableLabel ?? '—',
@@ -959,7 +961,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
             : userById[s.actorUserId!]?.name,
         'subtotal': s.subtotal,
         'voidAmount': s.voidAmount,
-        'net': s.netTotal,
+        'net': s.settledTotal,
         'lines': [
           for (final t in ls)
             {
@@ -1086,7 +1088,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       final list = byStaff[id] ?? const <TableSession>[];
       final covers = list.fold<int>(0, (a, s) => a + s.pax);
       final items = list.fold<int>(0, (a, s) => a + s.ticketCount);
-      final netSum = list.fold<int>(0, (a, s) => a + s.netTotal);
+      final netSum = list.fold<int>(0, (a, s) => a + s.settledTotal);
       final grossSum = list.fold<int>(0, (a, s) => a + s.subtotal);
       final voidSum = list.fold<int>(0, (a, s) => a + s.voidAmount);
       final avgTicket = list.isEmpty ? 0 : (netSum / list.length).round();
@@ -1188,7 +1190,11 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final voidAmount = sessions.fold<int>(0, (a, s) => a + s.voidAmount);
     final service = sessions.fold<int>(0, (a, s) => a + s.serviceAmount);
     final tax = sessions.fold<int>(0, (a, s) => a + s.taxAmount);
-    final net = sessions.fold<int>(0, (a, s) => a + s.netTotal);
+    final net = sessions.fold<int>(0, (a, s) => a + s.settledTotal);
+    // Deliberate revenue give-back, kept visible beside gross/void rather than
+    // folded into gross — otherwise the cost of promos hides inside the number
+    // the owner judges the business by (ADR-0039).
+    final discount = sessions.fold<int>(0, (a, s) => a + s.discountAmount);
 
     // Payments — every tender (incl. cash); refunds split onto their own line.
     final pays = sessionIds.isEmpty
@@ -1226,6 +1232,38 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
           'net': (methodCharged[m] ?? 0) - (methodRefunded[m] ?? 0),
         },
     ]..sort((a, b) => (b['net'] as int).compareTo(a['net'] as int));
+
+    // Per-preset discount rollup — "which promo is costing me money". This is
+    // the payoff for choosing an owner-defined catalogue over ad-hoc entry
+    // (ADR-0037): ad-hoc discounts could only ever produce one lump figure.
+    // Grouped by the weak `presetId` but LABELLED from the snapshot, so a
+    // preset edited or deleted since still reports under the name it carried
+    // when it was applied (ADR-0039).
+    final discountRows = sessionIds.isEmpty
+        ? <TableSessionDiscount>[]
+        : await (db.select(
+            db.tableSessionDiscounts,
+          )..where((d) => d.sessionId.isIn(sessionIds))).get();
+    final discountAgg = <String, Map<String, dynamic>>{};
+    for (final d in discountRows) {
+      final key = d.presetId ?? 'preset:${d.name}';
+      final agg = discountAgg.putIfAbsent(
+        key,
+        () => {
+          'presetId': d.presetId,
+          'name': d.name,
+          'kind': d.kind,
+          'value': d.value,
+          'scope': d.ticketId == null ? 'order' : 'line',
+          'amount': 0,
+          'count': 0,
+        },
+      );
+      agg['amount'] = (agg['amount'] as int) + d.amount;
+      agg['count'] = (agg['count'] as int) + 1;
+    }
+    final discountRollup = discountAgg.values.toList()
+      ..sort((a, b) => (b['amount'] as int).compareTo(a['amount'] as int));
 
     // Void write-offs by reason (lost rupiah from voided lines).
     final tickets = sessionIds.isEmpty
@@ -1282,7 +1320,8 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       agg.voidAmount += s.voidAmount;
       agg.service += s.serviceAmount;
       agg.tax += s.taxAmount;
-      agg.net += s.netTotal;
+      agg.net += s.settledTotal;
+      agg.discount += s.discountAmount;
     }
     for (final p in pays) {
       final key = dayKey[p.sessionId];
@@ -1303,6 +1342,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
                 'voidAmount': e.value.voidAmount,
                 'service': e.value.service,
                 'tax': e.value.tax,
+                'discount': e.value.discount,
                 'net': e.value.net,
                 'collected': e.value.collected,
                 'refunded': e.value.refunded,
@@ -1323,6 +1363,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'voidAmount': voidAmount,
         'service': service,
         'tax': tax,
+        'discount': discount,
         'net': net,
         'collected': collected,
         'refunded': refunded,
@@ -1330,6 +1371,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       },
       'methods': methods,
       'voids': voids,
+      'discounts': discountRollup,
       'daily': dailyRows,
     };
 
@@ -1369,6 +1411,7 @@ class _AcctDayAgg {
   int voidAmount = 0;
   int service = 0;
   int tax = 0;
+  int discount = 0;
   int net = 0;
   int collected = 0;
   int refunded = 0;

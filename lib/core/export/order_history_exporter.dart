@@ -113,6 +113,8 @@ String buildOrderHistoryCsv(OrderHistory h, ReportRange range,
         r.label.isEmpty ? '—' : r.label,
         'Subtotal',
         formatIDR(r.subtotal),
+        'Diskon',
+        formatIDR(r.discountAmount),
         'Service',
         formatIDR(r.serviceAmount),
         'Pajak',
@@ -283,7 +285,9 @@ List<pw.Widget> _receiptBlock(
             ),
           ),
           pw.Text(
-            'Subtotal ${formatIDR(r.subtotal)}  ·  Service ${formatIDR(r.serviceAmount)}  ·  Pajak ${formatIDR(r.taxAmount)}  ·  Total ${formatIDR(r.total)}',
+            'Subtotal ${formatIDR(r.subtotal)}'
+            '${r.discountAmount > 0 ? '  ·  Diskon ${formatIDR(r.discountAmount)}' : ''}'
+            '  ·  Service ${formatIDR(r.serviceAmount)}  ·  Pajak ${formatIDR(r.taxAmount)}  ·  Total ${formatIDR(r.total)}',
             style: const pw.TextStyle(fontSize: 7.5, color: kPdfInkMd),
           ),
         ],

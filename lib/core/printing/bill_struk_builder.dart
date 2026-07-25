@@ -66,6 +66,11 @@ class BillStrukBuilder {
               ),
         ],
         subtotal: bill.subtotal,
+        // Whole-bill doc: the give-back may span several receipts, so it is
+        // named only when exactly one order discount exists across the bill.
+        discountLabel: _wholeBillDiscountLabel(bill),
+        discountAmount: bill.discountAmount,
+        taxAfterDiscount: bill.taxAfterDiscount,
         serviceAmount: bill.serviceAmount,
         taxAmount: bill.taxAmount,
         total: bill.total,
@@ -110,6 +115,9 @@ class BillStrukBuilder {
       docLabel: receipt.label,
       lines: lines,
       subtotal: receipt.subtotal,
+      discountLabel: receipt.orderDiscount?.label ?? '',
+      discountAmount: receipt.orderDiscount?.amount ?? 0,
+      taxAfterDiscount: bill.taxAfterDiscount,
       serviceAmount: receipt.serviceAmount,
       taxAmount: receipt.taxAmount,
       total: receipt.total,
@@ -127,6 +135,7 @@ class BillStrukBuilder {
     for (final rl in receipt.lines) {
       final l = byTicket[rl.ticketId];
       if (l == null || rl.qtyUnits <= 0) continue;
+      final ld = receipt.lineDiscount(rl.ticketId);
       out.add(BillStrukLine(
         qty: rl.qtyUnits,
         name: l.name,
@@ -134,9 +143,22 @@ class BillStrukBuilder {
         lineTotal: l.unitPrice * rl.qtyUnits,
         modifiers: [for (final m in l.modifiers) m.display],
         note: l.note ?? '',
+        discountLabel: ld?.label ?? '',
+        discountAmount: ld?.amount ?? 0,
       ));
     }
     return out;
+  }
+
+  /// Name the whole-bill Diskon row only when the bill carries exactly one
+  /// order discount. With several receipts discounted differently there is no
+  /// single honest label, so it falls back to a plain "Diskon" total.
+  static String _wholeBillDiscountLabel(Bill bill) {
+    final named = [
+      for (final r in bill.receipts)
+        if (r.orderDiscount != null) r.orderDiscount!,
+    ];
+    return named.length == 1 ? named.first.label : '';
   }
 
   static List<BillStrukPayment> _payments(List<BillPayment> pays) => [
@@ -219,6 +241,32 @@ class BillStrukBuilder {
       return sum > 0 ? sum : null;
     }
 
+    // Discount rows carried on a receipt map. Rendered from the SNAPSHOTTED
+    // name/kind/value, never the live preset (ADR-0037).
+    List<Map> discountsOf(Map r) =>
+        (r['discounts'] as List? ?? const []).cast<Map>();
+    String discountLabel(Map d) {
+      final name = (d['name'] as String?) ?? 'Diskon';
+      if ((d['kind'] as String?) != 'percent') return name;
+      return '$name ${(n(d['value']) / 100).toStringAsFixed(0)}%';
+    }
+
+    Map? orderDiscountOf(Map r) {
+      for (final d in discountsOf(r)) {
+        if (d['ticketId'] == null) return d;
+      }
+      return null;
+    }
+
+    Map? lineDiscountOf(Map r, Object? ticketId) {
+      for (final d in discountsOf(r)) {
+        if (d['ticketId'] == ticketId) return d;
+      }
+      return null;
+    }
+
+    final taxAfterDiscount = (bill['taxAfterDiscount'] as bool?) ?? true;
+
     if (receiptId == null) {
       final allPays = [for (final r in receipts) ...(r['payments'] as List)];
       return BillStrukData(
@@ -251,6 +299,17 @@ class BillStrukBuilder {
               ),
         ],
         subtotal: n(bill['subtotal']),
+        // Named only when the whole bill carries exactly one order discount —
+        // several differently-discounted receipts have no single honest label.
+        discountLabel: () {
+          final named = [
+            for (final r in receipts)
+              if (orderDiscountOf(r) != null) orderDiscountOf(r)!,
+          ];
+          return named.length == 1 ? discountLabel(named.first) : '';
+        }(),
+        discountAmount: n(bill['discountAmount']),
+        taxAfterDiscount: taxAfterDiscount,
         serviceAmount: n(bill['serviceAmount']),
         taxAmount: n(bill['taxAmount']),
         total: billTotal,
@@ -289,6 +348,11 @@ class BillStrukBuilder {
                   modifiers:
                       _modLabels(byTicket[rl['ticketId']]!['modifiersJson']),
                   note: (byTicket[rl['ticketId']]!['note'] as String?) ?? '',
+                  discountLabel: lineDiscountOf(rec, rl['ticketId']) == null
+                      ? ''
+                      : discountLabel(lineDiscountOf(rec, rl['ticketId'])!),
+                  discountAmount:
+                      n(lineDiscountOf(rec, rl['ticketId'])?['amount']),
                 ),
           ];
     final recTotal = n(rec['total']);
@@ -314,6 +378,11 @@ class BillStrukBuilder {
       docLabel: (rec['label'] as String?) ?? '',
       lines: lines,
       subtotal: n(rec['subtotal']),
+      discountLabel: orderDiscountOf(rec) == null
+          ? ''
+          : discountLabel(orderDiscountOf(rec)!),
+      discountAmount: n(orderDiscountOf(rec)?['amount']),
+      taxAfterDiscount: taxAfterDiscount,
       serviceAmount: n(rec['serviceAmount']),
       taxAmount: n(rec['taxAmount']),
       total: recTotal,
