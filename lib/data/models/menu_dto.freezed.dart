@@ -647,9 +647,13 @@ mixin _$MenuItemDto {
   List<String> get allergens => throw _privateConstructorUsedError;
   List<String> get dietary => throw _privateConstructorUsedError;
   bool get unavailable => throw _privateConstructorUsedError;
-  int get photoRev => throw _privateConstructorUsedError;
-  int? get stockCount => throw _privateConstructorUsedError;
-  bool get autoSoldOutAtZero => throw _privateConstructorUsedError;
+  int get photoRev =>
+      throw _privateConstructorUsedError; // Derived availability — computed server-side from ingredient stock and
+  // never stored (ADR-0040). Replaces the former `stockCount` /
+  // `autoSoldOutAtZero` pair, which v36 dropped.
+  bool get autoSoldOut => throw _privateConstructorUsedError;
+  List<String> get soldOutVariantIds => throw _privateConstructorUsedError;
+  List<String> get soldOutOptionIds => throw _privateConstructorUsedError;
 
   /// Serializes this MenuItemDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -682,8 +686,9 @@ abstract class $MenuItemDtoCopyWith<$Res> {
     List<String> dietary,
     bool unavailable,
     int photoRev,
-    int? stockCount,
-    bool autoSoldOutAtZero,
+    bool autoSoldOut,
+    List<String> soldOutVariantIds,
+    List<String> soldOutOptionIds,
   });
 }
 
@@ -715,8 +720,9 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
     Object? dietary = null,
     Object? unavailable = null,
     Object? photoRev = null,
-    Object? stockCount = freezed,
-    Object? autoSoldOutAtZero = null,
+    Object? autoSoldOut = null,
+    Object? soldOutVariantIds = null,
+    Object? soldOutOptionIds = null,
   }) {
     return _then(
       _value.copyWith(
@@ -772,14 +778,18 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
                 ? _value.photoRev
                 : photoRev // ignore: cast_nullable_to_non_nullable
                       as int,
-            stockCount: freezed == stockCount
-                ? _value.stockCount
-                : stockCount // ignore: cast_nullable_to_non_nullable
-                      as int?,
-            autoSoldOutAtZero: null == autoSoldOutAtZero
-                ? _value.autoSoldOutAtZero
-                : autoSoldOutAtZero // ignore: cast_nullable_to_non_nullable
+            autoSoldOut: null == autoSoldOut
+                ? _value.autoSoldOut
+                : autoSoldOut // ignore: cast_nullable_to_non_nullable
                       as bool,
+            soldOutVariantIds: null == soldOutVariantIds
+                ? _value.soldOutVariantIds
+                : soldOutVariantIds // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            soldOutOptionIds: null == soldOutOptionIds
+                ? _value.soldOutOptionIds
+                : soldOutOptionIds // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
           )
           as $Val,
     );
@@ -809,8 +819,9 @@ abstract class _$$MenuItemDtoImplCopyWith<$Res>
     List<String> dietary,
     bool unavailable,
     int photoRev,
-    int? stockCount,
-    bool autoSoldOutAtZero,
+    bool autoSoldOut,
+    List<String> soldOutVariantIds,
+    List<String> soldOutOptionIds,
   });
 }
 
@@ -841,8 +852,9 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
     Object? dietary = null,
     Object? unavailable = null,
     Object? photoRev = null,
-    Object? stockCount = freezed,
-    Object? autoSoldOutAtZero = null,
+    Object? autoSoldOut = null,
+    Object? soldOutVariantIds = null,
+    Object? soldOutOptionIds = null,
   }) {
     return _then(
       _$MenuItemDtoImpl(
@@ -898,14 +910,18 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
             ? _value.photoRev
             : photoRev // ignore: cast_nullable_to_non_nullable
                   as int,
-        stockCount: freezed == stockCount
-            ? _value.stockCount
-            : stockCount // ignore: cast_nullable_to_non_nullable
-                  as int?,
-        autoSoldOutAtZero: null == autoSoldOutAtZero
-            ? _value.autoSoldOutAtZero
-            : autoSoldOutAtZero // ignore: cast_nullable_to_non_nullable
+        autoSoldOut: null == autoSoldOut
+            ? _value.autoSoldOut
+            : autoSoldOut // ignore: cast_nullable_to_non_nullable
                   as bool,
+        soldOutVariantIds: null == soldOutVariantIds
+            ? _value._soldOutVariantIds
+            : soldOutVariantIds // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        soldOutOptionIds: null == soldOutOptionIds
+            ? _value._soldOutOptionIds
+            : soldOutOptionIds // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
       ),
     );
   }
@@ -928,12 +944,15 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     final List<String> dietary = const <String>[],
     this.unavailable = false,
     this.photoRev = 0,
-    this.stockCount,
-    this.autoSoldOutAtZero = false,
+    this.autoSoldOut = false,
+    final List<String> soldOutVariantIds = const <String>[],
+    final List<String> soldOutOptionIds = const <String>[],
   }) : _variants = variants,
        _modifierGroups = modifierGroups,
        _allergens = allergens,
-       _dietary = dietary;
+       _dietary = dietary,
+       _soldOutVariantIds = soldOutVariantIds,
+       _soldOutOptionIds = soldOutOptionIds;
 
   factory _$MenuItemDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$MenuItemDtoImplFromJson(json);
@@ -997,15 +1016,35 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
   @override
   @JsonKey()
   final int photoRev;
-  @override
-  final int? stockCount;
+  // Derived availability — computed server-side from ingredient stock and
+  // never stored (ADR-0040). Replaces the former `stockCount` /
+  // `autoSoldOutAtZero` pair, which v36 dropped.
   @override
   @JsonKey()
-  final bool autoSoldOutAtZero;
+  final bool autoSoldOut;
+  final List<String> _soldOutVariantIds;
+  @override
+  @JsonKey()
+  List<String> get soldOutVariantIds {
+    if (_soldOutVariantIds is EqualUnmodifiableListView)
+      return _soldOutVariantIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_soldOutVariantIds);
+  }
+
+  final List<String> _soldOutOptionIds;
+  @override
+  @JsonKey()
+  List<String> get soldOutOptionIds {
+    if (_soldOutOptionIds is EqualUnmodifiableListView)
+      return _soldOutOptionIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_soldOutOptionIds);
+  }
 
   @override
   String toString() {
-    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroups: $modifierGroups, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, photoRev: $photoRev, stockCount: $stockCount, autoSoldOutAtZero: $autoSoldOutAtZero)';
+    return 'MenuItemDto(id: $id, name: $name, categoryId: $categoryId, description: $description, basePrice: $basePrice, cost: $cost, prepTime: $prepTime, variants: $variants, modifierGroups: $modifierGroups, allergens: $allergens, dietary: $dietary, unavailable: $unavailable, photoRev: $photoRev, autoSoldOut: $autoSoldOut, soldOutVariantIds: $soldOutVariantIds, soldOutOptionIds: $soldOutOptionIds)';
   }
 
   @override
@@ -1038,10 +1077,16 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
                 other.unavailable == unavailable) &&
             (identical(other.photoRev, photoRev) ||
                 other.photoRev == photoRev) &&
-            (identical(other.stockCount, stockCount) ||
-                other.stockCount == stockCount) &&
-            (identical(other.autoSoldOutAtZero, autoSoldOutAtZero) ||
-                other.autoSoldOutAtZero == autoSoldOutAtZero));
+            (identical(other.autoSoldOut, autoSoldOut) ||
+                other.autoSoldOut == autoSoldOut) &&
+            const DeepCollectionEquality().equals(
+              other._soldOutVariantIds,
+              _soldOutVariantIds,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._soldOutOptionIds,
+              _soldOutOptionIds,
+            ));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1061,8 +1106,9 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     const DeepCollectionEquality().hash(_dietary),
     unavailable,
     photoRev,
-    stockCount,
-    autoSoldOutAtZero,
+    autoSoldOut,
+    const DeepCollectionEquality().hash(_soldOutVariantIds),
+    const DeepCollectionEquality().hash(_soldOutOptionIds),
   );
 
   /// Create a copy of MenuItemDto
@@ -1094,8 +1140,9 @@ abstract class _MenuItemDto implements MenuItemDto {
     final List<String> dietary,
     final bool unavailable,
     final int photoRev,
-    final int? stockCount,
-    final bool autoSoldOutAtZero,
+    final bool autoSoldOut,
+    final List<String> soldOutVariantIds,
+    final List<String> soldOutOptionIds,
   }) = _$MenuItemDtoImpl;
 
   factory _MenuItemDto.fromJson(Map<String, dynamic> json) =
@@ -1126,11 +1173,15 @@ abstract class _MenuItemDto implements MenuItemDto {
   @override
   bool get unavailable;
   @override
-  int get photoRev;
+  int get photoRev; // Derived availability — computed server-side from ingredient stock and
+  // never stored (ADR-0040). Replaces the former `stockCount` /
+  // `autoSoldOutAtZero` pair, which v36 dropped.
   @override
-  int? get stockCount;
+  bool get autoSoldOut;
   @override
-  bool get autoSoldOutAtZero;
+  List<String> get soldOutVariantIds;
+  @override
+  List<String> get soldOutOptionIds;
 
   /// Create a copy of MenuItemDto
   /// with the given fields replaced by the non-null parameter values.

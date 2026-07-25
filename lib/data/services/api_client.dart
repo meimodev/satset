@@ -129,6 +129,9 @@ class ApiClient {
   Future<dynamic> patchJson(String path, Object body) =>
       _send('PATCH', path, body: body);
 
+  Future<dynamic> putJson(String path, Object body) =>
+      _send('PUT', path, body: body);
+
   Future<void> delete(String path) async {
     await _send('DELETE', path);
   }

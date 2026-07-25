@@ -58,8 +58,29 @@ class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
     /// table's currentVisitId immediately, before the tableUpdated echo lands,
     /// so its lines resolve without a flash of empty. See ADR-0034.
     String? visitId,
+
+    /// Lines the server refused for want of ingredients (ADR-0041). Only the
+    /// offending lines are dropped — the rest of the order still lands — so
+    /// this must be surfaced, or lines vanish silently.
+    @Default(<RejectedLineDto>[]) List<RejectedLineDto> rejected,
   }) = _SubmitOrderResponseDto;
 
   factory SubmitOrderResponseDto.fromJson(Map<String, dynamic> json) =>
       _$SubmitOrderResponseDtoFromJson(json);
+}
+
+@freezed
+class RejectedLineDto with _$RejectedLineDto {
+  const factory RejectedLineDto({
+    required String itemId,
+    @Default('') String name,
+    @Default('') String variantName,
+
+    /// Names of the bahan that fell short — so the waiter is told *what* ran
+    /// out rather than just "no".
+    @Default(<String>[]) List<String> ingredients,
+  }) = _RejectedLineDto;
+
+  factory RejectedLineDto.fromJson(Map<String, dynamic> json) =>
+      _$RejectedLineDtoFromJson(json);
 }

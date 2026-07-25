@@ -29,6 +29,7 @@ import 'package:satset/ui/features/admin/discount_presets_screen.dart';
 import 'package:satset/ui/features/admin/kitchen_screen.dart';
 import 'package:satset/ui/features/admin/zone_admin_screen.dart';
 import 'package:satset/ui/features/admin/menu_admin_screen.dart';
+import 'package:satset/ui/features/admin/stock_screen.dart';
 import 'package:satset/ui/features/admin/menu_admin_item_screen.dart';
 import 'package:satset/ui/features/admin/reports_screen.dart';
 import 'package:satset/ui/features/admin/venue_hub_screen.dart';
@@ -48,6 +49,7 @@ Capability? _capabilityFor(String loc) {
     return Capability.takeOrder;
   }
   if (loc.startsWith('/venue-settings')) return Capability.editSettings;
+  if (loc.startsWith('/stock')) return Capability.manageIngredients;
   if (loc.startsWith('/reports')) return Capability.viewReports;
   if (loc.startsWith('/venue/diskon')) return Capability.editSettings;
   if (loc.startsWith('/menuadm') || loc.startsWith('/staff') ||
@@ -159,6 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (_, _) => const VenueSettingsScreen()),
           GoRoute(path: '/zone-admin', builder: (_, _) => const ZoneAdminScreen()),
           GoRoute(path: '/menuadm', builder: (_, _) => const MenuAdminScreen()),
+          GoRoute(path: '/stock', builder: (_, _) => const StockScreen()),
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
           GoRoute(path: '/system', builder: (_, _) => const SystemScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),

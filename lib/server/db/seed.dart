@@ -146,8 +146,6 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
               allergensJson: Value(jsonEncode(it.allergens)),
               dietaryJson: Value(jsonEncode(it.dietary)),
               unavailable: Value(it.unavailable),
-              stockCount: Value(it.stockCount),
-              autoSoldOutAtZero: Value(it.autoSoldOutAtZero),
             ),
           );
     }

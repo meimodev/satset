@@ -79,6 +79,11 @@ _$SubmitOrderResponseDtoImpl _$$SubmitOrderResponseDtoImplFromJson(
       .map((e) => e as String)
       .toList(),
   visitId: json['visitId'] as String?,
+  rejected:
+      (json['rejected'] as List<dynamic>?)
+          ?.map((e) => RejectedLineDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <RejectedLineDto>[],
 );
 
 Map<String, dynamic> _$$SubmitOrderResponseDtoImplToJson(
@@ -86,4 +91,27 @@ Map<String, dynamic> _$$SubmitOrderResponseDtoImplToJson(
 ) => <String, dynamic>{
   'ticketIds': instance.ticketIds,
   'visitId': instance.visitId,
+  'rejected': instance.rejected,
+};
+
+_$RejectedLineDtoImpl _$$RejectedLineDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$RejectedLineDtoImpl(
+  itemId: json['itemId'] as String,
+  name: json['name'] as String? ?? '',
+  variantName: json['variantName'] as String? ?? '',
+  ingredients:
+      (json['ingredients'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+);
+
+Map<String, dynamic> _$$RejectedLineDtoImplToJson(
+  _$RejectedLineDtoImpl instance,
+) => <String, dynamic>{
+  'itemId': instance.itemId,
+  'name': instance.name,
+  'variantName': instance.variantName,
+  'ingredients': instance.ingredients,
 };

@@ -52,9 +52,16 @@ A planned future visit: name, phone, party size, expected time, optional zone hi
 The number of guests of a single reservation or walk-in. Distinct from a table's **capacity** (max seats); pax stepper on the table detail is clamped to `[1, capacity]`.
 
 ### Habis / Sold out (menu item out of stock)
-A menu item that is not available to order right now. Surfaced in the menu admin as plain Indonesian — **"Ditandai habis manual"** (waiter or admin flipped the toggle) or **"Otomatis ditandai habis (stok 0)"** (auto-flag tied to stock count). Avoid the English slang "86'd" in user-facing copy; it is opaque to non-restaurant staff.
+A menu item that is not available to order right now, along **two independent axes**:
 
-Code identifiers use **`soldOut`** throughout (English, matching the codebase convention of `unavailable`/`stockCount`): `MenuItem.isSoldOut`, `isAutoSoldOut`, `autoSoldOutAtZero` (DB column `auto_sold_out_at_zero`), `MenuAdminCounts.soldOut`. The staff availability toggle is gated by **`Capability.markSoldOut`**. The earlier "86" naming (`isEightySixed`, `Capability.toggle86`) was fully renamed — no `86`/`eightySix` identifier remains. Migration v21 renames the DB column and rewrites the stored `"toggle86"` capability string in the `roles` table.
+- **Ditandai habis manual** — a waiter or admin flipped the toggle (`MenuItem.unavailable`). Sticky: it stays until someone flips it back.
+- **Otomatis (bahan habis)** — **derived** from [[Bahan (Ingredient)|ingredient]] stock: the item's [[Resep (Recipe)|resep]] cannot be covered. Never stored, so [[Mutasi stok (Stock movement)|receiving stock]] clears it by itself and no one has a flag to remember. An item with **no recipe** is never auto-habis.
+
+Avoid the English slang "86'd" in user-facing copy; it is opaque to non-restaurant staff.
+
+Derived habis is computed at **three granularities** — item, [[Variant (variation)|varian]], and [[Modifier group (add-on)|modifier option]] — so "Besar" can grey out while "Reguler" still sells, and the item itself only goes habis when *no* configuration is makeable. The flags ride the `/menu` snapshot and re-broadcast **only when one flips**; stock merely ticking down inside a bucket is silent, or the LAN would flood mid-service. See [docs/adr/0040-ingredient-level-inventory-replaces-item-stock-counts.md](docs/adr/0040-ingredient-level-inventory-replaces-item-stock-counts.md).
+
+Code identifiers use **`soldOut`** throughout: `MenuItem.isSoldOut`, `autoSoldOut`, `soldOutVariantIds`, `soldOutOptionIds`, `MenuAdminCounts.soldOut`. The staff availability toggle is gated by **`Capability.markSoldOut`**. The earlier "86" naming (`isEightySixed`, `Capability.toggle86`) was fully renamed — no `86`/`eightySix` identifier remains (migration v21). **Migration v36 dropped `stockCount` / `autoSoldOutAtZero`** — the per-item counter that used to drive the auto-flag — converting existing counts into `pcs` bahan with 1-pcs recipes. _Avoid_: reintroducing a per-item stock number alongside bahan (two answers to "how many left" will disagree by the end of the first service).
 
 ### Menu category
 A named, ordered grouping of menu items — e.g. "Starters", "Mains", "Drinks". Managed (create/rename/reorder/delete) from the menu admin's **Kategori** panel. Ordering is by **sortOrder**. Every item always references a valid category: a category with items in it **cannot** be deleted (`409 category_not_empty`) — the admin must move or remove those items first. User-facing copy: **"Kategori"**.
@@ -411,4 +418,40 @@ A **range-scoped** download of venue data as **CSV or PDF**, generated on-device
 - **Akuntansi (accounting export)** — A bookkeeping view of the same window: **revenue summary** (gross subtotal → discounts → net → tax → total collected), **payment-method breakdown** (cash / QRIS / card / transfer, amount + count, refunds on their own line, for drawer-and-bank reconciliation), **voids & refunds** as write-offs, and a **per-calendar-day breakdown** for ledger posting. Tax and service are the **real settled figures** (sum of session `taxAmount` / `serviceAmount`), **not** the on-screen "Pajak + Service" 18% estimate, and the window uses the **same range rule as the on-screen report** rather than settlement-date accrual — see [[../docs/adr/0032-accounting-export-real-settled-figures-on-screen-range|ADR-0032]].
 
 Generated via **dedicated read-only server endpoints** scoped to the range: **Laporan** reuses the [[Reports]] snapshot already in memory; **Pesanan**, **Staf**, and **Akuntansi** each hit a purpose-built window query (`/reports/staff`, `/reports/accounting`) that reuses the snapshot's `_resolveRange`. All gated behind `viewReports` — even the order list (otherwise open to `takeOrder`) — because export exposes historical financial data. _Avoid_: turning the live order board into a historical browser; trusting a client to widen its own range past the gate; splitting kinds into separate header buttons (one **Ekspor** entry, Jenis chosen inside the sheet); basing accounting tax on the cosmetic 18% KPI.
+
+### Bahan (Ingredient)
+A **raw stock item the venue holds and counts** — beras, ayam, keju, or a countable SKU like a bottle of Coca-Cola. The unit inventory is tracked in; a [[Menu category|menu item]] is *not* an ingredient, it is assembled from ingredients via a [[Resep (Recipe)|resep]]. A bottled drink is modelled as an ingredient whose recipe is one of itself — the SKU and the ingredient are the same thing, so there is no second "countable item" concept.
+
+Each bahan carries a **unit preset** from a fixed list, grouped by **dimension**: mass (`mg`/`g`/`kg`), volume (`ml`/`L`), and count (`pcs`, `butir`, `siung`, `lembar`). Units convert freely **within** a dimension and never **across** one — and count presets are display labels only, never inter-convertible (a butir of telur and a siung of bawang are different bahan, not different units of one). Entering a `kg` figure against a volume bahan is rejected.
+
+Quantities — both stock on hand and [[Resep (Recipe)|resep]] amounts — are stored as **integers at 1/1000 of the dimension's canonical base** (milligram, microlitre, milli-pcs), the same exact-integer discipline the codebase uses for money. `0.2 kg` is `200000`; `0.5 butir` is `500`. The chosen preset is an entry/display convenience, not the storage unit. _Avoid_: `double` quantities (drift accumulates over thousands of deductions and makes `<= 0` fuzzy); free-text units (blocks conversion); treating a menu item as a stock item.
+
+### Resep (Recipe)
+The **bill of materials** for one sellable configuration of a [[Menu category|menu item]] — which [[Bahan (Ingredient)|bahan]], and how much of each, one portion consumes. Recipes are what make inventory move: they are the only link between "a guest ordered this" and "this much stock left the building".
+
+A recipe resolves against the **exact configuration ordered**, in three layers:
+
+- **Base recipe** — the item's own list. Used when the item has no [[Variant (variation)|varian]], or when the ordered varian carries none of its own.
+- **Per-variant recipe** — a full list that **replaces** the base entirely, not merges with it. "Besar" is authored as its own complete recipe, not as a multiplier over "Reguler", because a size step is not always proportional.
+- **Per-modifier-option recipe** — a small list that **adds** on top of whichever of the above won. "Extra keju" contributes `+30 g keju`; it never replaces anything.
+
+Recipes are **private to their item**, like [[Modifier group (add-on)|modifier groups]] and [[Variant (variation)|varian]] — there is no shared recipe library. An item with **no recipe at all consumes nothing**, which is the correct default for a menu being migrated onto inventory one dish at a time. _Avoid_: a per-variant multiplier over the base (rejected — it mismodels variants that swap ingredients rather than scale them); merging a variant recipe into the base (it replaces); assuming a recipe-less item is an error state.
+
+### Mutasi stok (Stock movement)
+The **append-only record of one change to one [[Bahan (Ingredient)|bahan]]'s stock** — the audit trail behind every number inventory shows. Carries the bahan, a signed `delta` (in the bahan's milli-base unit), a **reason**, the acting user, the timestamp, and — where one exists — the [[Order elapsed time|ticket]] that caused it.
+
+Every movement writes its row **and** updates the bahan's denormalised `stockOnHand` in the same transaction, so history is complete while sold-out checks stay O(1). Five reasons, one uniform shape:
+
+- **`sale`** (negative, ticket-linked) — a line was [[Batch (kitchen order)|sent]] to the kitchen. See [[Pengurangan stok saat kirim (Deduct at send)]].
+- **`voidReturn`** (positive, ticket-linked) — a [[Void (item)|void]] the kitchen had not started; the stock is genuinely still there.
+- **`waste`** (negative) — a void the kitchen *had* started (the ingredients are gone), or standalone spoilage.
+- **`receive`** (positive) — goods arrived.
+- **`adjust`** (either sign) — a stok opname correction. Requires a reason text.
+
+_Avoid_: a bare mutable balance with no history (an unauditable number is worse than none — staff stop trusting the sold-out flags and route around them); recomputing balances by aggregating the ledger on every menu render.
+
+### Pengurangan stok saat kirim (Deduct at send)
+Stock moves **when a line is sent to the kitchen**, not when it is cooked, served, or paid for. Send is the one point that is already atomic and server-side, and the last point at which refusing a line is still cheap — by `cooked` the ingredients are gone and an "insufficient stock" answer is useless. It is also the only point at which two waiters racing for the last portion can be resolved consistently.
+
+A [[Void (item)|void]] returns stock **only if the line was still `sent`** (the kitchen never touched it); a void from `prep`, `cooked`, or `ready` is recorded as [[Mutasi stok (Stock movement)|waste]] instead. The test is the line's **lifecycle status**, not its void reason code — status is a kitchen fact already on the ticket, whereas a stated reason asks the waiter to predict one (a `customerChange` on a plated dish would wrongly restock). Known ceiling: a kitchen that leaves everything at `sent` until pickup makes every void look untouched. _Avoid_: deducting at serve or at [[Bill close (Tutup tagihan)|bill close]] (sold-out would never fire during service); restocking every void unconditionally.
 

@@ -32,8 +32,18 @@ class MenuItem {
   /// cache-keyed by this rev. The bytes never ride the model — see
   /// docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
   final int photoRev;
-  final int? stockCount;
-  final bool autoSoldOutAtZero;
+
+  /// Derived from ingredient stock server-side: true when *no* configuration of
+  /// this item can be made. Never stored — receiving stock clears it by itself
+  /// (ADR-0040).
+  final bool autoSoldOut;
+
+  /// Variants that cannot currently be made. An item with one sellable variant
+  /// is still orderable, so this is finer-grained than [autoSoldOut].
+  final List<String> soldOutVariantIds;
+
+  /// Modifier options whose own recipe cannot currently be covered.
+  final List<String> soldOutOptionIds;
 
   bool get hasPhoto => photoRev > 0;
 
@@ -51,16 +61,21 @@ class MenuItem {
     this.modifierGroups = const [],
     this.unavailable = false,
     this.photoRev = 0,
-    this.stockCount,
-    this.autoSoldOutAtZero = false,
+    this.autoSoldOut = false,
+    this.soldOutVariantIds = const [],
+    this.soldOutOptionIds = const [],
   });
 
-  /// True when stock is being tracked and depleted.
-  bool get isAutoSoldOut =>
-      autoSoldOutAtZero && stockCount != null && stockCount! <= 0;
+  /// True when ingredient stock cannot cover any configuration of this item.
+  bool get isAutoSoldOut => autoSoldOut;
 
-  /// Effective unavailability: manual toggle OR auto sold-out from stock.
-  bool get isSoldOut => unavailable || isAutoSoldOut;
+  /// Effective unavailability: manual toggle OR derived from ingredient stock.
+  bool get isSoldOut => unavailable || autoSoldOut;
+
+  bool isVariantSoldOut(String variantId) =>
+      soldOutVariantIds.contains(variantId);
+
+  bool isOptionSoldOut(String optionId) => soldOutOptionIds.contains(optionId);
 
   MenuItem copyWith({
     String? id,
@@ -76,8 +91,9 @@ class MenuItem {
     List<ModifierGroup>? modifierGroups,
     bool? unavailable,
     int? photoRev,
-    Object? stockCount = _unset,
-    bool? autoSoldOutAtZero,
+    bool? autoSoldOut,
+    List<String>? soldOutVariantIds,
+    List<String>? soldOutOptionIds,
   }) {
     return MenuItem(
       id: id ?? this.id,
@@ -93,10 +109,9 @@ class MenuItem {
       modifierGroups: modifierGroups ?? this.modifierGroups,
       unavailable: unavailable ?? this.unavailable,
       photoRev: photoRev ?? this.photoRev,
-      stockCount: identical(stockCount, _unset) ? this.stockCount : stockCount as int?,
-      autoSoldOutAtZero: autoSoldOutAtZero ?? this.autoSoldOutAtZero,
+      autoSoldOut: autoSoldOut ?? this.autoSoldOut,
+      soldOutVariantIds: soldOutVariantIds ?? this.soldOutVariantIds,
+      soldOutOptionIds: soldOutOptionIds ?? this.soldOutOptionIds,
     );
   }
 }
-
-const Object _unset = Object();

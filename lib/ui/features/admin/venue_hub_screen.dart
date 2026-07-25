@@ -40,6 +40,13 @@ final _sections = <_Section>[
     tint: (sc) => sc.warn,
   ),
   _Section(
+    label: AppStrings.venueHubSectionStock,
+    sub: AppStrings.venueHubSectionStockSub,
+    icon: Icons.inventory_2_outlined,
+    route: '/stock',
+    tint: (sc) => sc.success,
+  ),
+  _Section(
     label: AppStrings.venueHubSectionVenue,
     sub: AppStrings.venueHubSectionVenueSub,
     icon: Icons.storefront_outlined,

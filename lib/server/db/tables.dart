@@ -173,10 +173,10 @@ class MenuItems extends Table {
       text().withDefault(const Constant('[]'))();
   TextColumn get allergensJson => text().withDefault(const Constant('[]'))();
   TextColumn get dietaryJson => text().withDefault(const Constant('[]'))();
+  /// Manual "ditandai habis" toggle. Auto sold-out is **derived** from
+  /// ingredient stock at read time and is never stored — v36 dropped the old
+  /// `stock_count` / `auto_sold_out_at_zero` columns (ADR-0040).
   BoolColumn get unavailable => boolean().withDefault(const Constant(false))();
-  IntColumn get stockCount => integer().nullable()();
-  BoolColumn get autoSoldOutAtZero =>
-      boolean().withDefault(const Constant(false))();
   /// Optional photo as a JPEG blob. Null = no photo (UI falls back to the
   /// initials avatar). Read ONLY by the photo route — never select this in
   /// the `/menu` snapshot or item upsert path; use `selectOnly` excluding it.
@@ -673,6 +673,110 @@ class TableSessionCourses extends Table {
   DateTimeColumn get firedAt => dateTime().nullable()();
   DateTimeColumn get servedAt => dateTime().nullable()();
   IntColumn get ticketCount => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A raw stock item — "Bahan" in CONTEXT.md. The ONLY stock entity: a bottled
+/// drink is an ingredient whose recipe is one of itself. Replaces the former
+/// per-item `MenuItems.stockCount`. See ADR-0040.
+///
+/// Row class is named explicitly: the default (`Ingredient`) would collide with
+/// the domain model of the same name, which the server imports alongside.
+@DataClassName('IngredientRow')
+class Ingredients extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+
+  /// Unit **preset** key (`mg|g|kg|ml|l|pcs|butir|siung|lembar`) — entry and
+  /// display only. Quantities are stored in the dimension's milli-base, never
+  /// in this unit. See `domain/models/stock_unit.dart`.
+  TextColumn get unit => text()();
+
+  /// On-hand quantity in milli-base units (mg / µl / milli-pcs). Denormalised
+  /// from [StockMovements]; both are written in the same transaction (ADR-0041).
+  /// MAY go negative — an `overrideStock` send is a deliberate "your counts are
+  /// wrong" signal and must not be clamped.
+  IntColumn get stockOnHand => integer().withDefault(const Constant(0))();
+
+  /// Reorder threshold in milli-base units. Null = no low-stock badge.
+  IntColumn get lowStockAt => integer().nullable()();
+
+  /// Moving-average cost, in **micro-money per milli-base unit** (money × 1e6
+  /// per storage unit) so that sub-rupiah per-gram costs survive integer
+  /// storage. Cost of a quantity = `qty * costMicro ~/ 1000000`.
+  IntColumn get costMicro => integer().withDefault(const Constant(0))();
+
+  /// Output quantity of one production batch, in this ingredient's milli-base
+  /// units. Non-null ⇒ this is a **produced** ingredient (sambal, kaldu) with
+  /// recipe lines of its own. One level only: a produced ingredient's recipe
+  /// may reference non-produced ingredients exclusively (ADR-0040).
+  IntColumn get batchYield => integer().nullable()();
+
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// One line of a "Resep" — flat, scoped by `(ownerKind, ownerId, variantId,
+/// optionId)`. There is no separate recipe header table: a recipe *is* the set
+/// of lines sharing a scope, and the only header field a recipe needs (yield)
+/// lives on [Ingredients.batchYield].
+///
+/// Scopes, per ADR-0040:
+/// - `item` + empty variant/option — the item's **base** recipe.
+/// - `item` + `variantId` — **replaces** the base entirely for that variant.
+/// - `item` + `optionId` — **adds** on top of whichever won.
+/// - `ingredient` — the batch recipe for a produced ingredient.
+@DataClassName('RecipeLineRow')
+class RecipeLines extends Table {
+  TextColumn get id => text()();
+
+  /// `item` | `ingredient`.
+  TextColumn get ownerKind => text()();
+  TextColumn get ownerId => text()();
+  TextColumn get variantId => text().withDefault(const Constant(''))();
+  TextColumn get optionId => text().withDefault(const Constant(''))();
+  TextColumn get ingredientId => text()();
+
+  /// Quantity consumed, in the referenced ingredient's milli-base units.
+  IntColumn get qty => integer()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Append-only ledger of every change to an ingredient's stock — the audit
+/// trail behind every number inventory shows. Rows are **self-contained**
+/// (frozen `sourceLabel`, nullable `ticketId`) because live ticket rows are
+/// deleted at bill close. See ADR-0041.
+@DataClassName('StockMovementRow')
+class StockMovements extends Table {
+  TextColumn get id => text()();
+  TextColumn get ingredientId => text()();
+
+  /// Signed change in milli-base units.
+  IntColumn get delta => integer()();
+
+  /// `sale | voidReturn | waste | receive | adjust | produce`.
+  TextColumn get reason => text()();
+
+  /// The ticket that caused this, when there was one. Dangles by design once
+  /// the visit is snapshotted — read [sourceLabel] instead.
+  TextColumn get ticketId => text().nullable()();
+
+  /// Frozen human label of the cause (item + variant as ordered, supplier
+  /// note, "Opname", …). Never resolved by join.
+  TextColumn get sourceLabel => text().withDefault(const Constant(''))();
+  TextColumn get userId => text().nullable()();
+  TextColumn get note => text().nullable()();
+
+  /// Unit cost at the moment of the movement, in micro-money per milli-base
+  /// unit — so waste/usage can be valued historically without re-pricing.
+  IntColumn get costMicro => integer().withDefault(const Constant(0))();
+
+  /// Groups the input rows and the output row of one `produce` batch.
+  TextColumn get batchId => text().nullable()();
+  DateTimeColumn get at => dateTime()();
   @override
   Set<Column> get primaryKey => {id};
 }

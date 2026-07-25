@@ -10,6 +10,7 @@ import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show ensureVisit, syncVisitMoney, createTakeawayVisit;
+import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/ticket.dart' show TicketStatus, ticketStatusFromKey;
@@ -93,6 +94,32 @@ Future<Response?> _requireCap(
         headers: {'content-type': 'application/json'});
   }
   return null;
+}
+
+/// Whether the caller holds [needed]. Unlike [_requireCap] this answers a
+/// question rather than blocking — used for `overrideStock`, which changes what
+/// a submit does instead of whether it is allowed.
+Future<bool> _hasCap(
+  Request req,
+  AppDatabase db,
+  ServerAuth? auth,
+  Capability needed,
+) async {
+  // No auth helper configured (server-mode boot before the secret loads) means
+  // nobody has *proved* they hold this. `_requireCap` opens up in that window
+  // because it gates ordinary work; this one gates a safety bypass, and a
+  // bypass that silently switches itself on is the wrong default.
+  if (auth == null) return false;
+  final token = req.headers['authorization']
+      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final user = await auth.resolveBearer(token);
+  if (user == null) return false;
+  final role = await (db.select(db.roles)..where((r) => r.id.equals(user.roleId)))
+      .getSingleOrNull();
+  if (role == null) return false;
+  return (jsonDecode(role.capabilitiesJson) as List)
+      .cast<String>()
+      .contains(needed.name);
 }
 
 /// Resolve the bearer-token user for void attribution. Null when no auth
@@ -199,8 +226,15 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final lines = (body['lines'] as List).cast<Map<String, dynamic>>();
     final actorId = body['actorId'] as String?;
 
+    // `overrideStock` is the pressure valve for the venue whose counts have
+    // drifted: it sends anyway and still writes the movement, so the balance
+    // goes negative as a visible "go do an opname" signal (ADR-0041).
+    final canOverrideStock =
+        await _hasCap(req, db, auth, Capability.overrideStock);
+
     final createdIds = <String>[];
     final createdRows = <Ticket>[];
+    final rejected = <Map<String, dynamic>>[];
     VenueTable? tableRow;
     String? storedResponse;
     String? orderVisitId;
@@ -234,17 +268,66 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         visitId = await ensureVisit(db, tableId, actorId: actorId);
       }
       orderVisitId = visitId;
+      // Ingredient coverage (ADR-0041). Stock moves at **send** — the last
+      // point at which refusing a line is still cheap. `running` is mutated as
+      // lines are accepted, so two lines of the same order competing for the
+      // last portion resolve consistently.
+      final recipes = await loadRecipes(db);
+      final ingredientRows = await db.select(db.ingredients).get();
+      final running = {for (final i in ingredientRows) i.id: i.stockOnHand};
+      final ingredientNames = {for (final i in ingredientRows) i.id: i.name};
+      // Tickets carry the variant *name*, not its id, so the id is resolved
+      // here against the menu as it reads right now.
+      final variantNameMaps = <String, Map<String, String>>{};
+
       for (final l in lines) {
         final id = uuid.v4();
         final course = l['course'] as String;
         // "Kirim ke dapur" is an explicit fire action: every line enters
         // the KDS queue as `sent`. Course pacing is purely a sort/grouping
         // hint for the kitchen, not a gate.
+        final itemId = l['itemId'] as String;
+        final lineQty = (l['qty'] as num?)?.toInt() ?? 1;
+        final lineVariant = (l['variantName'] as String?) ?? '';
+        if (!variantNameMaps.containsKey(itemId)) {
+          final item = await (db.select(db.menuItems)
+                ..where((i) => i.id.equals(itemId)))
+              .getSingleOrNull();
+          variantNameMaps[itemId] =
+              item == null ? const {} : variantIdsByName(item.variantsJson);
+        }
+        final need = await needForLine(
+          db,
+          itemId: itemId,
+          variantName: lineVariant,
+          optionIds: [
+            for (final m in (l['modifiers'] as List? ?? const []))
+              if (m is Map && (m['optionId'] as String?)?.isNotEmpty == true)
+                m['optionId'] as String,
+          ],
+          qty: lineQty,
+          recipes: recipes,
+          running: running,
+          ingredientNames: ingredientNames,
+          variantIdsByName: variantNameMaps[itemId]!,
+        );
+        if (!need.covered && !canOverrideStock) {
+          // Reject ONLY this line — one out-of-stock side dish must not kill a
+          // twelve-item order the waiter would have to re-key (ADR-0041).
+          rejected.add({
+            'itemId': itemId,
+            'name': (l['name'] as String?) ?? itemId,
+            'variantName': lineVariant,
+            'ingredients': need.shortNames,
+          });
+          continue;
+        }
+
         final row = TicketsCompanion.insert(
           id: id,
           tableId: tableId,
           visitId: Value(visitId),
-          itemId: l['itemId'] as String,
+          itemId: itemId,
           name: (l['name'] as String?) ?? l['itemId'] as String,
           variantName: Value((l['variantName'] as String?) ?? ''),
           course: course,
@@ -259,6 +342,25 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           createdByUserId: Value(actorId),
         );
         await db.into(db.tickets).insert(row);
+        // Deduct inside the existing idempotency-keyed transaction, so a
+        // retried submit can never double-deduct (ADR-0041). An overridden
+        // line still writes its movements — the balance goes negative on
+        // purpose, as the "your counts are wrong" signal.
+        if (need.need.isNotEmpty) {
+          await consumeForTicket(
+            db,
+            ticketId: id,
+            need: need.need,
+            sourceLabel: [
+              (l['name'] as String?) ?? itemId,
+              if (lineVariant.isNotEmpty) lineVariant,
+            ].join(' · '),
+            userId: actorId,
+          );
+          for (final e in need.need.entries) {
+            running[e.key] = (running[e.key] ?? 0) - e.value;
+          }
+        }
         createdIds.add(id);
         final full =
             await (db.select(db.tickets)..where((t) => t.id.equals(id)))
@@ -268,12 +370,17 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       await db.into(db.idempotency).insert(
             IdempotencyCompanion.insert(
               key: idem,
-              responseJson:
-                  jsonEncode({'ticketIds': createdIds, 'visitId': visitId}),
+              responseJson: jsonEncode({
+                'ticketIds': createdIds,
+                'visitId': visitId,
+                if (rejected.isNotEmpty) 'rejected': rejected,
+              }),
               createdAt: DateTime.now(),
             ),
           );
-      if (!takeaway) {
+      // Every line rejected for stock ⇒ nothing was actually ordered, so the
+      // table must not be flipped to `pending` with no lines behind it.
+      if (!takeaway && createdIds.isNotEmpty) {
         // Mark the table `pending` in the same transaction so that all
         // clients observe ticket-creation and table-state changes together
         // and never see one without the other. Set openedAt only on the
@@ -314,8 +421,17 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         await syncVisitMoney(db, hub, orderVisitId!);
       }
     }
+    // Re-broadcast the menu only when a derived habis flag actually flipped —
+    // beras going 8.0 → 7.8 kg must stay silent (ADR-0040).
+    if (createdIds.isNotEmpty && await stockFlags.refreshAndDetectFlip(db)) {
+      hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
+    }
     return Response.ok(
-        jsonEncode({'ticketIds': createdIds, 'visitId': orderVisitId}),
+        jsonEncode({
+          'ticketIds': createdIds,
+          'visitId': orderVisitId,
+          if (rejected.isNotEmpty) 'rejected': rejected,
+        }),
         headers: {'content-type': 'application/json'});
   });
 
@@ -383,6 +499,19 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       row = await (db.select(db.tickets)..where((t) => t.id.equals(id)))
           .getSingleOrNull();
       if (row == null) return;
+      if (isVoid) {
+        // Restock only when the kitchen never started the line. The test is the
+        // line's lifecycle status — a kitchen fact already on the ticket —
+        // rather than the waiter's stated reason, which would wrongly restock a
+        // `customerChange` on a plated dish (ADR-0041).
+        await reverseTicketStock(
+          db,
+          ticketId: id,
+          untouched: from == TicketStatus.sent,
+          userId: actor?.id,
+          note: voidReason,
+        );
+      }
       // Maintain table.readyCount and table.status atomically in the same
       // transition. Entering `ready` bumps the count and flips the table
       // to `ready`; leaving `ready` (served / voided) decrements it and
@@ -434,6 +563,10 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     // Void/serve change the bill subtotal — refresh the floor money badge.
     final rvid = row!.visitId;
     if (rvid != null) await syncVisitMoney(db, hub, rvid);
+    // A restocked void can make a habis item orderable again.
+    if (isVoid && await stockFlags.refreshAndDetectFlip(db)) {
+      hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
+    }
     return Response.ok(jsonEncode(_toJson(row!)),
         headers: {'content-type': 'application/json'});
   });

@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
+import 'package:satset/data/repositories/stock_repository.dart';
+import 'package:satset/domain/models/ingredient.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/menu_tag.dart';
 import 'package:satset/domain/models/modifier_group.dart';
+import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -49,7 +52,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   final _basePrice = TextEditingController();
   final _cost = TextEditingController();
   final _prep = TextEditingController();
-  final _stock = TextEditingController();
+
+  /// Staged recipe edits. Follows the form's staged-until-Save semantics (the
+  /// photo is the deliberate exception — see ADR-0014); on a brand-new item the
+  /// recipe lands right after the row is created, since lines need an owner.
+  ItemRecipes _recipes = const ItemRecipes();
+  bool _recipesLoaded = false;
+
+  /// Which recipe scope the editor is showing: `''` = the item's base recipe,
+  /// `v:<variantId>` = that variant's replacing recipe, `o:<optionId>` = that
+  /// modifier option's additive recipe.
+  String _recipeScope = '';
 
   /// Persistent controllers for dynamic sub-rows (variants, modifier groups,
   /// options), keyed by a stable id so edits commit to the draft on every
@@ -96,7 +109,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _basePrice.dispose();
     _cost.dispose();
     _prep.dispose();
-    _stock.dispose();
     for (final c in _subCtrls.values) {
       c.dispose();
     }
@@ -120,8 +132,26 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _basePrice.text = groupRupiah(_draft.basePrice);
     _cost.text = groupRupiah(_draft.cost);
     _prep.text = _draft.prepTime.toString();
-    _stock.text = (_draft.stockCount ?? 0).toString();
     _initialized = true;
+    _loadRecipes();
+  }
+
+  Future<void> _loadRecipes() async {
+    final id = widget.itemId;
+    if (id == null) {
+      setState(() => _recipesLoaded = true);
+      return;
+    }
+    try {
+      final r = await ref.read(stockApiProvider).recipes(id);
+      if (!mounted) return;
+      setState(() {
+        _recipes = r;
+        _recipesLoaded = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _recipesLoaded = true);
+    }
   }
 
   MenuItem _blankItem() {
@@ -145,8 +175,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final priceCents = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final costCents = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final prep = int.tryParse(_prep.text) ?? _draft.prepTime;
-    final stockTracked = _draft.stockCount != null;
-    final stockN = stockTracked ? (int.tryParse(_stock.text) ?? 0) : null;
     final variants = _draft.variants.isEmpty
         ? [Variant(id: 'reg', name: '', price: priceCents)]
         : [
@@ -160,7 +188,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       cost: costCents,
       prepTime: prep,
       variants: variants,
-      stockCount: stockN,
     );
     final repo = ref.read(menuRepositoryProvider.notifier);
     final messenger = ScaffoldMessenger.of(context);
@@ -173,6 +200,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         await repo.uploadPhoto(saved.id, _pendingPhoto!);
       } else if (_pendingPhotoClear) {
         await repo.deletePhoto(saved.id);
+      }
+      // Recipe lines need an existing owner row, so they follow the item.
+      if (_recipesLoaded) {
+        await ref.read(stockApiProvider).saveRecipes(saved.id, _recipes);
       }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
@@ -286,7 +317,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                       _identitySection(sc, cats, readOnly),
                       _pricingSection(sc, readOnly),
                       _modifiersSection(sc, readOnly),
-                      _inventorySection(sc, readOnly),
+                      _recipeSection(sc, readOnly),
                       _tagsSection(sc, readOnly),
                       _availabilitySection(sc),
                     ].indexed) ...[
@@ -838,53 +869,246 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     );
   }
 
-  Widget _inventorySection(SatColors sc, bool readOnly) {
-    final tracked = _draft.stockCount != null;
+  // ------------------------------------------------------------ resep
+
+  List<RecipeLine> _linesFor(String scope) {
+    if (scope.startsWith('v:')) {
+      return _recipes.byVariant[scope.substring(2)] ?? const [];
+    }
+    if (scope.startsWith('o:')) {
+      return _recipes.byOption[scope.substring(2)] ?? const [];
+    }
+    return _recipes.base;
+  }
+
+  void _setLines(String scope, List<RecipeLine> lines) {
+    setState(() {
+      if (scope.startsWith('v:')) {
+        final next = Map<String, List<RecipeLine>>.of(_recipes.byVariant);
+        if (lines.isEmpty) {
+          next.remove(scope.substring(2));
+        } else {
+          next[scope.substring(2)] = lines;
+        }
+        _recipes = ItemRecipes(
+            base: _recipes.base, byVariant: next, byOption: _recipes.byOption);
+      } else if (scope.startsWith('o:')) {
+        final next = Map<String, List<RecipeLine>>.of(_recipes.byOption);
+        if (lines.isEmpty) {
+          next.remove(scope.substring(2));
+        } else {
+          next[scope.substring(2)] = lines;
+        }
+        _recipes = ItemRecipes(
+            base: _recipes.base, byVariant: _recipes.byVariant, byOption: next);
+      } else {
+        _recipes = ItemRecipes(
+            base: lines,
+            byVariant: _recipes.byVariant,
+            byOption: _recipes.byOption);
+      }
+    });
+  }
+
+  /// Σ(qty × moving-average cost) for the base configuration. Shown *beside*
+  /// the manual `cost` field, never replacing it — a partially authored recipe
+  /// understates cost and would silently overstate margin (ADR-0040).
+  int _derivedCost(List<Ingredient> pantry) {
+    final by = {for (final i in pantry) i.id: i};
+    var total = 0;
+    for (final l in _recipes.base) {
+      final ing = by[l.ingredientId];
+      if (ing != null) total += valueOf(l.qty, ing.costMicro);
+    }
+    return total;
+  }
+
+  Widget _recipeSection(SatColors sc, bool readOnly) {
+    final pantry = ref.watch(ingredientsProvider);
     return _Section(
-      title: 'Inventaris',
-      trailing: _toggleChip(
-        label: tracked ? 'Lacak stok' : 'Tanpa stok',
-        on: tracked,
-        onTap: readOnly ? null : () => _patch(_draft.copyWith(
-          stockCount: tracked ? null : 0,
-          autoSoldOutAtZero: tracked ? false : _draft.autoSoldOutAtZero,
-        )),
-      ),
-      child: ExpandFade(
-        child: tracked
-            ? Column(
-                key: const ValueKey('inv-on'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: _input(_stock, 'Sisa stok', keyboard: TextInputType.number, readOnly: readOnly)),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text('Tandai habis otomatis saat stok = 0',
-                            style: SatType.sans(size: 13, color: sc.textMd)),
-                      ),
-                      adminToggle(context, on: _draft.autoSoldOutAtZero),
-                      const SizedBox(width: 6),
-                      if (!readOnly)
-                        TextButton(
-                          onPressed: () => _patch(_draft.copyWith(
-                              autoSoldOutAtZero: !_draft.autoSoldOutAtZero)),
-                          child: Text(_draft.autoSoldOutAtZero ? 'Off' : 'On'),
-                        ),
-                    ],
-                  ),
-                ],
-              )
-            : Text('Stok tidak dilacak. Status habis diatur manual.',
-                key: const ValueKey('inv-off'),
-                style: SatType.sans(size: 12, color: sc.textLo)),
+      title: 'Resep',
+      child: pantry.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        error: (e, _) => Text('Gagal memuat bahan: $e',
+            style: SatType.sans(size: 12, color: sc.urgent)),
+        data: (list) => list.isEmpty
+            ? Text(
+                'Belum ada bahan. Tambahkan di menu Stok sebelum menyusun resep.',
+                style: SatType.sans(size: 12, color: sc.textLo))
+            : _recipeBody(sc, readOnly, list),
       ),
     );
+  }
+
+  Widget _recipeBody(SatColors sc, bool readOnly, List<Ingredient> pantry) {
+    final byId = {for (final i in pantry) i.id: i};
+    final scopes = <(String, String)>[
+      ('', 'Dasar'),
+      for (final v in _draft.variants)
+        if (v.name.isNotEmpty) ('v:${v.id}', v.name),
+      for (final g in _draft.modifierGroups)
+        for (final o in g.options) ('o:${o.id}', '${g.name}: ${o.name}'),
+    ];
+    if (!scopes.any((s) => s.$1 == _recipeScope)) _recipeScope = '';
+    final lines = _linesFor(_recipeScope);
+    final isVariant = _recipeScope.startsWith('v:');
+    final isOption = _recipeScope.startsWith('o:');
+    final derived = _derivedCost(pantry);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final s in scopes)
+              _toggleChip(
+                label: _linesFor(s.$1).isEmpty ? s.$2 : '${s.$2} ·',
+                on: _recipeScope == s.$1,
+                onTap: () => setState(() => _recipeScope = s.$1),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          isVariant
+              ? 'Resep varian menggantikan resep dasar sepenuhnya. Kosong = ikut resep dasar.'
+              : isOption
+                  ? 'Resep modifier ditambahkan di atas resep yang berlaku.'
+                  : 'Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.',
+          style: SatType.sans(size: 11, color: sc.textLo),
+        ),
+        const SizedBox(height: 10),
+        if (lines.isEmpty)
+          Text('Belum ada bahan pada resep ini.',
+              style: SatType.sans(size: 12, color: sc.textLo)),
+        for (var i = 0; i < lines.length; i++)
+          _recipeLineRow(sc, readOnly, pantry, byId, lines, i),
+        if (!readOnly) ...[
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _setLines(_recipeScope, [
+                ...lines,
+                RecipeLine(
+                  id: '',
+                  ingredientId: pantry.first.id,
+                  qty: pantry.first.unit.perUnit,
+                ),
+              ]),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Tambah bahan'),
+            ),
+          ),
+        ],
+        if (_recipes.base.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Perkiraan HPP dari resep dasar: ${formatIDR(derived)} '
+            '(HPP manual tetap dipakai di laporan)',
+            style: SatType.sans(size: 11, color: sc.textLo),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _recipeLineRow(
+    SatColors sc,
+    bool readOnly,
+    List<Ingredient> pantry,
+    Map<String, Ingredient> byId,
+    List<RecipeLine> lines,
+    int i,
+  ) {
+    final line = lines[i];
+    final ing = byId[line.ingredientId] ?? pantry.first;
+    final ctrlKey = 'recipe-$_recipeScope-$i';
+    final ctrl = _ctrl(ctrlKey, _trimNum(ing.unit.fromBase(line.qty)));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: DropdownButtonFormField<String>(
+              initialValue: ing.id,
+              isExpanded: true,
+              decoration: _fieldDeco('Bahan'),
+              style: SatType.sans(size: 13, color: sc.textHi),
+              items: [
+                for (final p in pantry)
+                  DropdownMenuItem(value: p.id, child: Text(p.name)),
+              ],
+              onChanged: readOnly
+                  ? null
+                  : (v) {
+                      if (v == null) return;
+                      final next = List<RecipeLine>.of(lines);
+                      final target = byId[v]!;
+                      // Units are per-ingredient, so re-read the typed amount
+                      // against the new one rather than carrying milli-base
+                      // across dimensions.
+                      final typed = double.tryParse(
+                              ctrl.text.replaceAll(',', '.')) ??
+                          1;
+                      next[i] = RecipeLine(
+                        id: line.id,
+                        ingredientId: v,
+                        qty: target.unit.toBase(typed),
+                      );
+                      _setLines(_recipeScope, next);
+                    },
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: ctrl,
+              readOnly: readOnly,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              style: SatType.sans(size: 14, color: sc.textHi),
+              decoration: _fieldDeco(ing.unit.label),
+              onChanged: (t) {
+                final v = double.tryParse(t.replaceAll(',', '.'));
+                if (v == null) return;
+                final next = List<RecipeLine>.of(lines);
+                next[i] = RecipeLine(
+                  id: line.id,
+                  ingredientId: line.ingredientId,
+                  qty: ing.unit.toBase(v),
+                );
+                _setLines(_recipeScope, next);
+              },
+            ),
+          ),
+          if (!readOnly)
+            IconButton(
+              tooltip: 'Hapus',
+              icon: Icon(Icons.close, size: 18, color: sc.textLo),
+              onPressed: () {
+                _subCtrls.remove(ctrlKey)?.dispose();
+                _setLines(_recipeScope, List<RecipeLine>.of(lines)..removeAt(i));
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  static String _trimNum(double v) {
+    var s = v.toStringAsFixed(3);
+    if (s.contains('.')) {
+      s = s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    }
+    return s;
   }
 
   Widget _tagsSection(SatColors sc, bool readOnly) {

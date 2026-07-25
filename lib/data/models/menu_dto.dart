@@ -55,8 +55,12 @@ class MenuItemDto with _$MenuItemDto {
     @Default(<String>[]) List<String> dietary,
     @Default(false) bool unavailable,
     @Default(0) int photoRev,
-    int? stockCount,
-    @Default(false) bool autoSoldOutAtZero,
+    // Derived availability — computed server-side from ingredient stock and
+    // never stored (ADR-0040). Replaces the former `stockCount` /
+    // `autoSoldOutAtZero` pair, which v36 dropped.
+    @Default(false) bool autoSoldOut,
+    @Default(<String>[]) List<String> soldOutVariantIds,
+    @Default(<String>[]) List<String> soldOutOptionIds,
   }) = _MenuItemDto;
 
   factory MenuItemDto.fromJson(Map<String, dynamic> json) =>

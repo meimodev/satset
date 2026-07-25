@@ -42,12 +42,15 @@ part 'database.g.dart';
   Discounts,
   TableSessionDiscounts,
   DailyCounters,
+  Ingredients,
+  RecipeLines,
+  StockMovements,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36;
 
   /// At most one whole-order discount per receipt, and one line discount per
   /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
@@ -434,9 +437,22 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('venue_settings', 'tax_after_discount',
                 type: 'INTEGER NOT NULL DEFAULT 1');
           }
+          if (from < 36) {
+            // Ingredient-level inventory (ADR-0040/0041). Stock moves off the
+            // per-item counter and onto ingredients + recipes.
+            await m.createTable(ingredients);
+            await m.createTable(recipeLines);
+            await m.createTable(stockMovements);
+            await _createStockIndexes();
+            await migrateItemStockCountsToIngredients();
+            await _safeDropColumnOn('menu_items', 'stock_count');
+            await _safeDropColumnOn('menu_items', 'auto_sold_out_at_zero');
+            await backfillInventoryCapabilities();
+          }
         },
         onCreate: (m) async {
           await m.createAll();
+          await _createStockIndexes();
           await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique '
               'ON users(email) WHERE email IS NOT NULL');
@@ -460,6 +476,70 @@ class AppDatabase extends _$AppDatabase {
           await _seedMenuTags();
         },
       );
+
+  /// Convert the legacy per-item `stock_count` into ingredients (v36, ADR-0040).
+  ///
+  /// Every item that was counted becomes a self-named `pcs` ingredient holding
+  /// the old count, plus a 1-pcs recipe — same behaviour, new spine. Ids are
+  /// derived from the item id (`ing_<id>` / `rl_<id>`) so a re-run after a
+  /// half-finished migration is idempotent rather than duplicating rows.
+  ///
+  /// One-way, and it runs against shipped production data — hence the test.
+  Future<void> migrateItemStockCountsToIngredients() async {
+    final counted = await customSelect(
+      'SELECT id, name, cost, stock_count FROM menu_items '
+      'WHERE stock_count IS NOT NULL',
+    ).get();
+    for (final row in counted) {
+      final itemId = row.read<String>('id');
+      await customStatement(
+        'INSERT OR IGNORE INTO ingredients '
+        '(id, name, unit, stock_on_hand, cost_micro) VALUES (?, ?, ?, ?, ?)',
+        [
+          'ing_$itemId',
+          row.read<String>('name'),
+          'pcs',
+          // milli-pcs, and micro-money per milli-pcs (see stock_unit.dart).
+          row.read<int>('stock_count') * 1000,
+          row.read<int>('cost') * 1000,
+        ],
+      );
+      await customStatement(
+        'INSERT OR IGNORE INTO recipe_lines '
+        '(id, owner_kind, owner_id, variant_id, option_id, ingredient_id, qty) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+        ['rl_$itemId', 'item', itemId, '', '', 'ing_$itemId', 1000],
+      );
+    }
+  }
+
+  /// Grant the v36 inventory capabilities from the nearest existing authority.
+  ///
+  /// A brand-new capability defaults to OFF for every existing role, which
+  /// would close the `overrideStock` pressure valve at exactly the upgrade
+  /// where a venue's counts are most likely to be wrong (ADR-0041). Follows the
+  /// `voidItem` backfill precedent. Idempotent: skips roles already granted.
+  Future<void> backfillInventoryCapabilities() async {
+    Future<void> grant(String from, String to) => customStatement(
+          'UPDATE roles SET capabilities_json = '
+          'replace(capabilities_json, \'"$from"\', \'"$from","$to"\') '
+          'WHERE capabilities_json LIKE \'%"$from"%\' '
+          'AND capabilities_json NOT LIKE \'%"$to"%\'',
+        );
+    await grant('adjustStock', 'manageIngredients');
+    await grant('markSoldOut', 'overrideStock');
+  }
+
+  /// Recipe lookup is per-owner on every menu render (habis derivation), and
+  /// the movement ledger is only ever read per-ingredient, newest-first.
+  Future<void> _createStockIndexes() async {
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS recipe_lines_owner '
+        'ON recipe_lines(owner_kind, owner_id)');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS stock_movements_ingredient_at '
+        'ON stock_movements(ingredient_id, at)');
+  }
 
   /// Default allergen / diet tags. Ids equal the legacy enum names so existing
   /// items' `allergens_json` / `dietary_json` refs stay valid with no item

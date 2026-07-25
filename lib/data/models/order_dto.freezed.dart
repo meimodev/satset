@@ -841,6 +841,11 @@ mixin _$SubmitOrderResponseDto {
   /// so its lines resolve without a flash of empty. See ADR-0034.
   String? get visitId => throw _privateConstructorUsedError;
 
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
+  /// offending lines are dropped — the rest of the order still lands — so
+  /// this must be surfaced, or lines vanish silently.
+  List<RejectedLineDto> get rejected => throw _privateConstructorUsedError;
+
   /// Serializes this SubmitOrderResponseDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -858,7 +863,11 @@ abstract class $SubmitOrderResponseDtoCopyWith<$Res> {
     $Res Function(SubmitOrderResponseDto) then,
   ) = _$SubmitOrderResponseDtoCopyWithImpl<$Res, SubmitOrderResponseDto>;
   @useResult
-  $Res call({List<String> ticketIds, String? visitId});
+  $Res call({
+    List<String> ticketIds,
+    String? visitId,
+    List<RejectedLineDto> rejected,
+  });
 }
 
 /// @nodoc
@@ -878,7 +887,11 @@ class _$SubmitOrderResponseDtoCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? ticketIds = null, Object? visitId = freezed}) {
+  $Res call({
+    Object? ticketIds = null,
+    Object? visitId = freezed,
+    Object? rejected = null,
+  }) {
     return _then(
       _value.copyWith(
             ticketIds: null == ticketIds
@@ -889,6 +902,10 @@ class _$SubmitOrderResponseDtoCopyWithImpl<
                 ? _value.visitId
                 : visitId // ignore: cast_nullable_to_non_nullable
                       as String?,
+            rejected: null == rejected
+                ? _value.rejected
+                : rejected // ignore: cast_nullable_to_non_nullable
+                      as List<RejectedLineDto>,
           )
           as $Val,
     );
@@ -904,7 +921,11 @@ abstract class _$$SubmitOrderResponseDtoImplCopyWith<$Res>
   ) = __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({List<String> ticketIds, String? visitId});
+  $Res call({
+    List<String> ticketIds,
+    String? visitId,
+    List<RejectedLineDto> rejected,
+  });
 }
 
 /// @nodoc
@@ -921,7 +942,11 @@ class __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? ticketIds = null, Object? visitId = freezed}) {
+  $Res call({
+    Object? ticketIds = null,
+    Object? visitId = freezed,
+    Object? rejected = null,
+  }) {
     return _then(
       _$SubmitOrderResponseDtoImpl(
         ticketIds: null == ticketIds
@@ -932,6 +957,10 @@ class __$$SubmitOrderResponseDtoImplCopyWithImpl<$Res>
             ? _value.visitId
             : visitId // ignore: cast_nullable_to_non_nullable
                   as String?,
+        rejected: null == rejected
+            ? _value._rejected
+            : rejected // ignore: cast_nullable_to_non_nullable
+                  as List<RejectedLineDto>,
       ),
     );
   }
@@ -943,7 +972,9 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
   const _$SubmitOrderResponseDtoImpl({
     required final List<String> ticketIds,
     this.visitId,
-  }) : _ticketIds = ticketIds;
+    final List<RejectedLineDto> rejected = const <RejectedLineDto>[],
+  }) : _ticketIds = ticketIds,
+       _rejected = rejected;
 
   factory _$SubmitOrderResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$SubmitOrderResponseDtoImplFromJson(json);
@@ -962,9 +993,25 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
   @override
   final String? visitId;
 
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
+  /// offending lines are dropped — the rest of the order still lands — so
+  /// this must be surfaced, or lines vanish silently.
+  final List<RejectedLineDto> _rejected;
+
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
+  /// offending lines are dropped — the rest of the order still lands — so
+  /// this must be surfaced, or lines vanish silently.
+  @override
+  @JsonKey()
+  List<RejectedLineDto> get rejected {
+    if (_rejected is EqualUnmodifiableListView) return _rejected;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_rejected);
+  }
+
   @override
   String toString() {
-    return 'SubmitOrderResponseDto(ticketIds: $ticketIds, visitId: $visitId)';
+    return 'SubmitOrderResponseDto(ticketIds: $ticketIds, visitId: $visitId, rejected: $rejected)';
   }
 
   @override
@@ -976,7 +1023,8 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
               other._ticketIds,
               _ticketIds,
             ) &&
-            (identical(other.visitId, visitId) || other.visitId == visitId));
+            (identical(other.visitId, visitId) || other.visitId == visitId) &&
+            const DeepCollectionEquality().equals(other._rejected, _rejected));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -985,6 +1033,7 @@ class _$SubmitOrderResponseDtoImpl implements _SubmitOrderResponseDto {
     runtimeType,
     const DeepCollectionEquality().hash(_ticketIds),
     visitId,
+    const DeepCollectionEquality().hash(_rejected),
   );
 
   /// Create a copy of SubmitOrderResponseDto
@@ -1009,6 +1058,7 @@ abstract class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
   const factory _SubmitOrderResponseDto({
     required final List<String> ticketIds,
     final String? visitId,
+    final List<RejectedLineDto> rejected,
   }) = _$SubmitOrderResponseDtoImpl;
 
   factory _SubmitOrderResponseDto.fromJson(Map<String, dynamic> json) =
@@ -1023,10 +1073,272 @@ abstract class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
   @override
   String? get visitId;
 
+  /// Lines the server refused for want of ingredients (ADR-0041). Only the
+  /// offending lines are dropped — the rest of the order still lands — so
+  /// this must be surfaced, or lines vanish silently.
+  @override
+  List<RejectedLineDto> get rejected;
+
   /// Create a copy of SubmitOrderResponseDto
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SubmitOrderResponseDtoImplCopyWith<_$SubmitOrderResponseDtoImpl>
   get copyWith => throw _privateConstructorUsedError;
+}
+
+RejectedLineDto _$RejectedLineDtoFromJson(Map<String, dynamic> json) {
+  return _RejectedLineDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$RejectedLineDto {
+  String get itemId => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String get variantName => throw _privateConstructorUsedError;
+
+  /// Names of the bahan that fell short — so the waiter is told *what* ran
+  /// out rather than just "no".
+  List<String> get ingredients => throw _privateConstructorUsedError;
+
+  /// Serializes this RejectedLineDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of RejectedLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $RejectedLineDtoCopyWith<RejectedLineDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $RejectedLineDtoCopyWith<$Res> {
+  factory $RejectedLineDtoCopyWith(
+    RejectedLineDto value,
+    $Res Function(RejectedLineDto) then,
+  ) = _$RejectedLineDtoCopyWithImpl<$Res, RejectedLineDto>;
+  @useResult
+  $Res call({
+    String itemId,
+    String name,
+    String variantName,
+    List<String> ingredients,
+  });
+}
+
+/// @nodoc
+class _$RejectedLineDtoCopyWithImpl<$Res, $Val extends RejectedLineDto>
+    implements $RejectedLineDtoCopyWith<$Res> {
+  _$RejectedLineDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of RejectedLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemId = null,
+    Object? name = null,
+    Object? variantName = null,
+    Object? ingredients = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            itemId: null == itemId
+                ? _value.itemId
+                : itemId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            variantName: null == variantName
+                ? _value.variantName
+                : variantName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            ingredients: null == ingredients
+                ? _value.ingredients
+                : ingredients // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$RejectedLineDtoImplCopyWith<$Res>
+    implements $RejectedLineDtoCopyWith<$Res> {
+  factory _$$RejectedLineDtoImplCopyWith(
+    _$RejectedLineDtoImpl value,
+    $Res Function(_$RejectedLineDtoImpl) then,
+  ) = __$$RejectedLineDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String itemId,
+    String name,
+    String variantName,
+    List<String> ingredients,
+  });
+}
+
+/// @nodoc
+class __$$RejectedLineDtoImplCopyWithImpl<$Res>
+    extends _$RejectedLineDtoCopyWithImpl<$Res, _$RejectedLineDtoImpl>
+    implements _$$RejectedLineDtoImplCopyWith<$Res> {
+  __$$RejectedLineDtoImplCopyWithImpl(
+    _$RejectedLineDtoImpl _value,
+    $Res Function(_$RejectedLineDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of RejectedLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemId = null,
+    Object? name = null,
+    Object? variantName = null,
+    Object? ingredients = null,
+  }) {
+    return _then(
+      _$RejectedLineDtoImpl(
+        itemId: null == itemId
+            ? _value.itemId
+            : itemId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        variantName: null == variantName
+            ? _value.variantName
+            : variantName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        ingredients: null == ingredients
+            ? _value._ingredients
+            : ingredients // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$RejectedLineDtoImpl implements _RejectedLineDto {
+  const _$RejectedLineDtoImpl({
+    required this.itemId,
+    this.name = '',
+    this.variantName = '',
+    final List<String> ingredients = const <String>[],
+  }) : _ingredients = ingredients;
+
+  factory _$RejectedLineDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$RejectedLineDtoImplFromJson(json);
+
+  @override
+  final String itemId;
+  @override
+  @JsonKey()
+  final String name;
+  @override
+  @JsonKey()
+  final String variantName;
+
+  /// Names of the bahan that fell short — so the waiter is told *what* ran
+  /// out rather than just "no".
+  final List<String> _ingredients;
+
+  /// Names of the bahan that fell short — so the waiter is told *what* ran
+  /// out rather than just "no".
+  @override
+  @JsonKey()
+  List<String> get ingredients {
+    if (_ingredients is EqualUnmodifiableListView) return _ingredients;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_ingredients);
+  }
+
+  @override
+  String toString() {
+    return 'RejectedLineDto(itemId: $itemId, name: $name, variantName: $variantName, ingredients: $ingredients)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$RejectedLineDtoImpl &&
+            (identical(other.itemId, itemId) || other.itemId == itemId) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.variantName, variantName) ||
+                other.variantName == variantName) &&
+            const DeepCollectionEquality().equals(
+              other._ingredients,
+              _ingredients,
+            ));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    itemId,
+    name,
+    variantName,
+    const DeepCollectionEquality().hash(_ingredients),
+  );
+
+  /// Create a copy of RejectedLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$RejectedLineDtoImplCopyWith<_$RejectedLineDtoImpl> get copyWith =>
+      __$$RejectedLineDtoImplCopyWithImpl<_$RejectedLineDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$RejectedLineDtoImplToJson(this);
+  }
+}
+
+abstract class _RejectedLineDto implements RejectedLineDto {
+  const factory _RejectedLineDto({
+    required final String itemId,
+    final String name,
+    final String variantName,
+    final List<String> ingredients,
+  }) = _$RejectedLineDtoImpl;
+
+  factory _RejectedLineDto.fromJson(Map<String, dynamic> json) =
+      _$RejectedLineDtoImpl.fromJson;
+
+  @override
+  String get itemId;
+  @override
+  String get name;
+  @override
+  String get variantName;
+
+  /// Names of the bahan that fell short — so the waiter is told *what* ran
+  /// out rather than just "no".
+  @override
+  List<String> get ingredients;
+
+  /// Create a copy of RejectedLineDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$RejectedLineDtoImplCopyWith<_$RejectedLineDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
