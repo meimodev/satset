@@ -44,6 +44,9 @@ class WsEventTypes {
   static const auditCreated = 'audit.created';
   static const rolesUpdated = 'roles.updated';
   static const venueSettingsUpdated = 'venueSettings.updated';
+  /// The [[Preset diskon]] catalogue changed — clients refetch the list.
+  /// Fires on create/update/delete; the payload is the full list (ADR-0037).
+  static const discountPresetsUpdated = 'discountPresets.updated';
   static const systemStatus = 'system.status';
   static const devicePaired = 'device.paired';
   static const deviceRevoked = 'device.revoked';

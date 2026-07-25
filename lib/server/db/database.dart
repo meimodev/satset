@@ -38,13 +38,29 @@ part 'database.g.dart';
   Payments,
   TableSessionReceipts,
   TableSessionPayments,
+  DiscountPresets,
+  Discounts,
+  TableSessionDiscounts,
   DailyCounters,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 35;
+
+  /// At most one whole-order discount per receipt, and one line discount per
+  /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
+  /// in route code. Drift cannot express partial indexes, so they are raw SQL
+  /// and must be created on both fresh and upgraded databases.
+  Future<void> _createDiscountIndexes() async {
+    await customStatement(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_order_uniq '
+        'ON discounts (receipt_id) WHERE ticket_id IS NULL');
+    await customStatement(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_line_uniq '
+        'ON discounts (receipt_id, ticket_id) WHERE ticket_id IS NOT NULL');
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -395,6 +411,29 @@ class AppDatabase extends _$AppDatabase {
             await _safeAddColumnOn('venue_settings', 'sound_overdue',
                 type: "TEXT NOT NULL DEFAULT 'alert'");
           }
+          if (from < 35) {
+            // Cashier-stage catalog discounts (ADR-0037/0038/0039).
+            await m.createTable(discountPresets);
+            await m.createTable(discounts);
+            await m.createTable(tableSessionDiscounts);
+            await _createDiscountIndexes();
+            await _safeAddColumnOn('receipts', 'discount_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('table_session_receipts', 'discount_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await _safeAddColumnOn('table_sessions', 'discount_amount',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            // ADR-0039: netTotal is frozen at its ADR-0023 meaning; settled
+            // revenue moves to settledTotal. Pre-v35 rows carried no discount,
+            // so backfilling settledTotal = netTotal is exact, not an estimate.
+            await _safeAddColumnOn('table_sessions', 'settled_total',
+                type: 'INTEGER NOT NULL DEFAULT 0');
+            await customStatement(
+                'UPDATE table_sessions SET settled_total = net_total '
+                'WHERE settled_total = 0');
+            await _safeAddColumnOn('venue_settings', 'tax_after_discount',
+                type: 'INTEGER NOT NULL DEFAULT 1');
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -404,6 +443,7 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid_unique '
               'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL');
+          await _createDiscountIndexes();
           await into(venueSettings).insertOnConflictUpdate(
             VenueSettingsCompanion.insert(
               id: 'default',

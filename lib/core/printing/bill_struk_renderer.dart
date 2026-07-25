@@ -60,6 +60,18 @@ class BillStrukRenderer {
     if (l.note.trim().isNotEmpty) {
       out.addAll(g.text('   * ${l.note.trim()}'));
     }
+    // Line discount: indented under its item with the reduction on the right,
+    // so the guest sees exactly which dish was discounted (ADR-0037).
+    if (l.hasDiscount) {
+      out.addAll(g.row([
+        PosColumn(text: '   ${l.discountLabel}', width: 8),
+        PosColumn(
+          text: _money(-l.discountAmount),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]));
+    }
     return out;
   }
 
@@ -159,8 +171,20 @@ class BillStrukRenderer {
           bold: true));
     } else {
       out.addAll(_kv(g, 'Subtotal', d.subtotal));
+      // The Diskon row's position follows the actual pipeline (ADR-0038):
+      // above Layanan when the discount reduced the base service and tax were
+      // computed on, below Pajak when they were computed gross. Printing it in
+      // a fixed slot would show a guest arithmetic that does not add up.
+      List<int> discountRow() => _kv(
+            g,
+            d.discountLabel.isEmpty ? 'Diskon' : d.discountLabel,
+            -d.discountAmount,
+          );
+      final hasDiscount = d.discountAmount > 0;
+      if (hasDiscount && d.taxAfterDiscount) out.addAll(discountRow());
       if (d.serviceAmount > 0) out.addAll(_kv(g, 'Layanan', d.serviceAmount));
       if (d.taxAmount > 0) out.addAll(_kv(g, 'Pajak', d.taxAmount));
+      if (hasDiscount && !d.taxAfterDiscount) out.addAll(discountRow());
       out.addAll(_kv(g, 'TOTAL', d.total, bold: true));
     }
 

@@ -19,6 +19,7 @@ class DummyData {
   static const roleWaiterId = 'role-waiter';
   static const roleKitchenId = 'role-kitchen';
   static const roleManagerId = 'role-manager';
+  static const roleKasirId = 'role-kasir';
   static const roleAdminId = 'role-admin';
 
   static const maya = AppUser(
@@ -102,6 +103,7 @@ class DummyData {
             Capability.viewKds,
             Capability.openDrawer,
             Capability.applyDiscount,
+            Capability.settleBill,
             Capability.refund,
             Capability.closeShift,
             Capability.editMenu,
@@ -110,6 +112,20 @@ class DummyData {
             Capability.manageStaff,
             Capability.viewReports,
             Capability.editSettings,
+          },
+        ),
+        // The cashier role CONTEXT.md described but the seed never created —
+        // without it no seeded non-Admin user could reach the money screen.
+        // Deliberately WITHOUT applyDiscount (ADR-0037): a cashier reaches a
+        // discount through manager step-up unless the owner grants it. refund
+        // likewise stays manager-approved and is not auto-granted.
+        Role(
+          id: roleKasirId,
+          name: 'Kasir',
+          colorHex: 0xFF4DD487,
+          capabilities: const {
+            Capability.settleBill,
+            Capability.openDrawer,
           },
         ),
         Role(

@@ -111,6 +111,11 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         serviceFixedAmount: body.containsKey('serviceFixedAmount')
             ? Value((body['serviceFixedAmount'] as num).toInt())
             : const Value.absent(),
+        // ADR-0038. Flipping this changes future totals only — settled history
+        // is snapshotted and never recomputed.
+        taxAfterDiscount: body.containsKey('taxAfterDiscount')
+            ? Value(body['taxAfterDiscount'] as bool)
+            : const Value.absent(),
         businessDayStartHour: body.containsKey('businessDayStartHour')
             ? Value(((body['businessDayStartHour'] as num).toInt()).clamp(0, 23))
             : const Value.absent(),
@@ -250,6 +255,7 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
       'serviceMode': s.serviceMode,
       'serviceRateBps': s.serviceRateBps,
       'serviceFixedAmount': s.serviceFixedAmount,
+      'taxAfterDiscount': s.taxAfterDiscount,
       'businessDayStartHour': s.businessDayStartHour,
       'prepTargetMins': s.prepTargetMins,
       'guestOrderingEnabled': s.guestOrderingEnabled,

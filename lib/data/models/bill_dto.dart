@@ -228,11 +228,57 @@ class BillReceiptLine {
   const BillReceiptLine(this.ticketId, this.qtyUnits);
 }
 
+/// An applied [[Diskon (discount)]] on a receipt. `ticketId == null` ⇒ a
+/// whole-order discount; set ⇒ a line discount on that line's units.
+///
+/// `name`/`kind`/`value` were snapshotted when the discount was applied — never
+/// re-read from the live preset, so a later preset edit cannot rewrite what a
+/// settled bill said (ADR-0037).
+class BillDiscount {
+  final String id;
+  final String? ticketId;
+  final String? presetId;
+  final String name;
+  final String kind; // percent | fixed
+  final int value; // bps (percent) | rupiah (fixed)
+  final int amount;
+  final String? approvedByUserId;
+
+  const BillDiscount({
+    required this.id,
+    required this.ticketId,
+    required this.presetId,
+    required this.name,
+    required this.kind,
+    required this.value,
+    required this.amount,
+    required this.approvedByUserId,
+  });
+
+  bool get isLine => ticketId != null;
+
+  /// "Diskon Member 10%" — what prints on the money doc and shows in the UI.
+  String get label =>
+      kind == 'percent' ? '$name ${(value / 100).toStringAsFixed(0)}%' : name;
+
+  factory BillDiscount.fromJson(Map<String, dynamic> j) => BillDiscount(
+        id: (j['id'] ?? j['discountId']) as String? ?? '',
+        ticketId: j['ticketId'] as String?,
+        presetId: j['presetId'] as String?,
+        name: j['name'] as String? ?? 'Diskon',
+        kind: j['kind'] as String? ?? 'percent',
+        value: _int(j['value']),
+        amount: _int(j['amount']),
+        approvedByUserId: j['approvedByUserId'] as String?,
+      );
+}
+
 class BillReceipt {
   final String id;
   final String mode;
   final String label;
   final int subtotal;
+  final int discountAmount;
   final int serviceAmount;
   final int taxAmount;
   final int total;
@@ -240,12 +286,14 @@ class BillReceipt {
   final int paidNet;
   final List<BillReceiptLine> lines;
   final List<BillPayment> payments;
+  final List<BillDiscount> discounts;
 
   const BillReceipt({
     required this.id,
     required this.mode,
     required this.label,
     required this.subtotal,
+    required this.discountAmount,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
@@ -253,16 +301,34 @@ class BillReceipt {
     required this.paidNet,
     required this.lines,
     required this.payments,
+    required this.discounts,
   });
 
   bool get isPaid => status == 'paid';
   int get outstanding => (total - paidNet).clamp(0, 1 << 31);
+
+  /// The whole-order discount, if any. At most one (ADR-0037, no stacking).
+  BillDiscount? get orderDiscount {
+    for (final d in discounts) {
+      if (!d.isLine) return d;
+    }
+    return null;
+  }
+
+  /// The line discount on [ticketId], if any. At most one per line.
+  BillDiscount? lineDiscount(String ticketId) {
+    for (final d in discounts) {
+      if (d.ticketId == ticketId) return d;
+    }
+    return null;
+  }
 
   factory BillReceipt.fromJson(Map<String, dynamic> j) => BillReceipt(
         id: j['id'] as String,
         mode: j['mode'] as String? ?? 'itemized',
         label: j['label'] as String? ?? '',
         subtotal: _int(j['subtotal']),
+        discountAmount: _int(j['discountAmount']),
         serviceAmount: _int(j['serviceAmount']),
         taxAmount: _int(j['taxAmount']),
         total: _int(j['total']),
@@ -276,6 +342,10 @@ class BillReceipt {
         payments: [
           for (final p in (j['payments'] as List? ?? const []))
             BillPayment.fromJson((p as Map).cast<String, dynamic>()),
+        ],
+        discounts: [
+          for (final d in (j['discounts'] as List? ?? const []))
+            BillDiscount.fromJson((d as Map).cast<String, dynamic>()),
         ],
       );
 }
@@ -294,9 +364,14 @@ class Bill {
   final String? guestName;
   final String mode;
   final int subtotal;
+  /// Total give-back on this bill (line + whole-order), across every receipt.
+  final int discountAmount;
   final int serviceAmount;
   final int taxAmount;
   final int total;
+  /// Where a whole-order discount sits in the stack (ADR-0038) — drives the
+  /// Diskon row's position on the money doc, which must match the arithmetic.
+  final bool taxAfterDiscount;
   final int paidAmount;
   final int outstanding;
   final bool fullyAssigned;
@@ -317,9 +392,11 @@ class Bill {
     required this.guestName,
     required this.mode,
     required this.subtotal,
+    required this.discountAmount,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
+    required this.taxAfterDiscount,
     required this.paidAmount,
     required this.outstanding,
     required this.fullyAssigned,
@@ -343,9 +420,11 @@ class Bill {
         guestName: j['guestName'] as String?,
         mode: j['mode'] as String? ?? 'itemized',
         subtotal: _int(j['subtotal']),
+        discountAmount: _int(j['discountAmount']),
         serviceAmount: _int(j['serviceAmount']),
         taxAmount: _int(j['taxAmount']),
         total: _int(j['total']),
+        taxAfterDiscount: j['taxAfterDiscount'] as bool? ?? true,
         paidAmount: _int(j['paidAmount']),
         outstanding: _int(j['outstanding']),
         fullyAssigned: j['fullyAssigned'] as bool? ?? false,

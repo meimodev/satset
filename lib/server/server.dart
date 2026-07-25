@@ -23,6 +23,7 @@ import 'pairing.dart';
 import 'routes/auth_routes.dart';
 import 'routes/guest_routes.dart';
 import 'routes/devices_routes.dart';
+import 'routes/discount_preset_routes.dart';
 import 'routes/health_routes.dart';
 import 'routes/kds_routes.dart';
 import 'routes/menu_routes.dart';
@@ -330,6 +331,7 @@ class ServerRuntime {
     r.mount('/', ticketsRoutes(db, hub, auth).call);
     r.mount('/', referenceRoutes(db, hub, auth).call);
     r.mount('/', venueSettingsRoutes(db, hub, auth).call);
+    r.mount('/', discountPresetRoutes(db, hub, auth).call);
     r.mount('/', serverRoutes(this).call);
     r.mount('/', printersRoutes(db, hub, auth).call);
     r.mount('/', devicesRoutes(db, hub, auth).call);

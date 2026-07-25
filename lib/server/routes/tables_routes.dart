@@ -177,8 +177,36 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
       serviceMode: s?.serviceMode ?? 'percent',
       serviceRateBps: s?.serviceRateBps ?? 500,
       serviceFixedAmount: s?.serviceFixedAmount ?? 0,
+      taxAfterDiscount: s?.taxAfterDiscount ?? true,
     );
+    // netTotal stays FROZEN at the ADR-0023 formula (subtotal − void + service
+    // + tax) — it never learns about discounts, so its meaning never changes
+    // again (ADR-0039). Money actually collected goes to settledTotal below.
     final breakdown = computeBreakdown(subtotal, cfg);
+
+    final visitReceipts = await (db.select(db.receipts)
+          ..where((rc) => rc.visitId.equals(visit.id)))
+        .get();
+    final discountRows = visitReceipts.isEmpty
+        ? <Discount>[]
+        : await (db.select(db.discounts)
+              ..where((x) => x.receiptId.isIn(visitReceipts.map((r) => r.id))))
+            .get();
+    final lineDiscount = discountRows
+        .where((d) => d.ticketId != null)
+        .fold<int>(0, (a, d) => a + d.amount);
+    final orderDiscount = discountRows
+        .where((d) => d.ticketId == null)
+        .fold<int>(0, (a, d) => a + d.amount);
+    final discountTotal = lineDiscount + orderDiscount;
+    // settledTotal is the real money collected, so it must be COMPUTED through
+    // the discount pipeline rather than subtracted from netTotal: under the
+    // default taxAfterDiscount=true the discount also shrinks service and tax,
+    // so `netTotal − discount` would overstate what was taken. The plain
+    // subtraction holds only in the taxAfterDiscount=false case.
+    final settled = computeBreakdown(subtotal - lineDiscount, cfg,
+            discount: orderDiscount)
+        .total;
     final sessionId = _uuid.v4();
     await db.into(db.tableSessions).insert(TableSessionsCompanion.insert(
           id: sessionId,
@@ -195,6 +223,8 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
           serviceAmount: Value(breakdown.serviceAmount),
           taxAmount: Value(breakdown.taxAmount),
           netTotal: Value(breakdown.total),
+          discountAmount: Value(discountTotal),
+          settledTotal: Value(settled),
           ticketCount: Value(tickets.length),
           lossAmount: Value(lossAmount),
           billClosedBy: Value(billClosedBy),
@@ -253,9 +283,28 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
             ),
           );
     }
-    final recs = await (db.select(db.receipts)
-          ..where((rc) => rc.visitId.equals(visit.id)))
-        .get();
+    final recs = visitReceipts;
+    // Freeze the individual discount rows, not just the per-receipt total —
+    // the accounting export's per-preset rollup and a reprinted money doc's
+    // named "Diskon <preset>" rows both need them after the live rows go.
+    for (final d in discountRows) {
+      await db.into(db.tableSessionDiscounts).insert(
+            TableSessionDiscountsCompanion.insert(
+              id: _uuid.v4(),
+              sessionId: sessionId,
+              receiptId: d.receiptId,
+              ticketId: Value(d.ticketId),
+              presetId: Value(d.presetId),
+              name: d.name,
+              kind: d.kind,
+              value: Value(d.value),
+              amount: Value(d.amount),
+              byUserId: Value(d.byUserId),
+              approvedByUserId: Value(d.approvedByUserId),
+              at: d.at,
+            ),
+          );
+    }
     for (final rec in recs) {
       await db.into(db.tableSessionReceipts).insert(
             TableSessionReceiptsCompanion.insert(
@@ -265,12 +314,15 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
               mode: Value(rec.mode),
               label: Value(rec.label),
               subtotal: Value(rec.subtotal),
+              discountAmount: Value(rec.discountAmount),
               serviceAmount: Value(rec.serviceAmount),
               taxAmount: Value(rec.taxAmount),
               total: Value(rec.total),
               status: Value(rec.status),
             ),
           );
+      await (db.delete(db.discounts)..where((x) => x.receiptId.equals(rec.id)))
+          .go();
       final pays = await (db.select(db.payments)
             ..where((p) => p.receiptId.equals(rec.id)))
           .get();

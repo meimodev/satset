@@ -25,6 +25,7 @@ import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/review/review_screen.dart';
 import 'package:satset/ui/features/sent/sent_screen.dart';
 import 'package:satset/ui/features/takeaway/takeaway_detail_screen.dart';
+import 'package:satset/ui/features/admin/discount_presets_screen.dart';
 import 'package:satset/ui/features/admin/kitchen_screen.dart';
 import 'package:satset/ui/features/admin/zone_admin_screen.dart';
 import 'package:satset/ui/features/admin/menu_admin_screen.dart';
@@ -48,6 +49,7 @@ Capability? _capabilityFor(String loc) {
   }
   if (loc.startsWith('/venue-settings')) return Capability.editSettings;
   if (loc.startsWith('/reports')) return Capability.viewReports;
+  if (loc.startsWith('/venue/diskon')) return Capability.editSettings;
   if (loc.startsWith('/menuadm') || loc.startsWith('/staff') ||
       loc.startsWith('/system') ||
       loc.startsWith('/zone-admin') || loc.startsWith('/venue')) {
@@ -252,6 +254,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/menuadm/:id',
         builder: (_, s) =>
             MenuAdminItemScreen(id: s.pathParameters['id']!),
+      ),
+      // Preset diskon catalogue (ADR-0037), pushed from Venue Settings.
+      GoRoute(
+        path: '/venue/diskon',
+        builder: (_, _) => const DiscountPresetsScreen(),
       ),
     ],
   );

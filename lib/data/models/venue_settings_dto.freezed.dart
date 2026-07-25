@@ -42,6 +42,11 @@ mixin _$VenueSettingsDto {
   String get serviceMode => throw _privateConstructorUsedError;
   int get serviceRateBps => throw _privateConstructorUsedError;
   int get serviceFixedAmount => throw _privateConstructorUsedError;
+
+  /// Where a whole-order discount sits in the stack (ADR-0038). Default true
+  /// = DPP-correct (the discount reduces the base service and tax compute
+  /// from). Line discounts are always pre-tax and ignore this.
+  bool get taxAfterDiscount => throw _privateConstructorUsedError;
   int get businessDayStartHour => throw _privateConstructorUsedError;
   int get prepTargetMins => throw _privateConstructorUsedError;
   bool get guestOrderingEnabled =>
@@ -90,6 +95,7 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     String serviceMode,
     int serviceRateBps,
     int serviceFixedAmount,
+    bool taxAfterDiscount,
     int businessDayStartHour,
     int prepTargetMins,
     bool guestOrderingEnabled,
@@ -134,6 +140,7 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? serviceMode = null,
     Object? serviceRateBps = null,
     Object? serviceFixedAmount = null,
+    Object? taxAfterDiscount = null,
     Object? businessDayStartHour = null,
     Object? prepTargetMins = null,
     Object? guestOrderingEnabled = null,
@@ -220,6 +227,10 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.serviceFixedAmount
                 : serviceFixedAmount // ignore: cast_nullable_to_non_nullable
                       as int,
+            taxAfterDiscount: null == taxAfterDiscount
+                ? _value.taxAfterDiscount
+                : taxAfterDiscount // ignore: cast_nullable_to_non_nullable
+                      as bool,
             businessDayStartHour: null == businessDayStartHour
                 ? _value.businessDayStartHour
                 : businessDayStartHour // ignore: cast_nullable_to_non_nullable
@@ -283,6 +294,7 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     String serviceMode,
     int serviceRateBps,
     int serviceFixedAmount,
+    bool taxAfterDiscount,
     int businessDayStartHour,
     int prepTargetMins,
     bool guestOrderingEnabled,
@@ -326,6 +338,7 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? serviceMode = null,
     Object? serviceRateBps = null,
     Object? serviceFixedAmount = null,
+    Object? taxAfterDiscount = null,
     Object? businessDayStartHour = null,
     Object? prepTargetMins = null,
     Object? guestOrderingEnabled = null,
@@ -412,6 +425,10 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.serviceFixedAmount
             : serviceFixedAmount // ignore: cast_nullable_to_non_nullable
                   as int,
+        taxAfterDiscount: null == taxAfterDiscount
+            ? _value.taxAfterDiscount
+            : taxAfterDiscount // ignore: cast_nullable_to_non_nullable
+                  as bool,
         businessDayStartHour: null == businessDayStartHour
             ? _value.businessDayStartHour
             : businessDayStartHour // ignore: cast_nullable_to_non_nullable
@@ -468,6 +485,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.serviceMode = 'percent',
     this.serviceRateBps = 500,
     this.serviceFixedAmount = 0,
+    this.taxAfterDiscount = true,
     this.businessDayStartHour = 4,
     this.prepTargetMins = 15,
     this.guestOrderingEnabled = false,
@@ -539,6 +557,13 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final int serviceFixedAmount;
+
+  /// Where a whole-order discount sits in the stack (ADR-0038). Default true
+  /// = DPP-correct (the discount reduces the base service and tax compute
+  /// from). Line discounts are always pre-tax and ignore this.
+  @override
+  @JsonKey()
+  final bool taxAfterDiscount;
   @override
   @JsonKey()
   final int businessDayStartHour;
@@ -566,7 +591,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, guestOrderingEnabled: $guestOrderingEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, guestOrderingEnabled: $guestOrderingEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue)';
   }
 
   @override
@@ -608,6 +633,8 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
                 other.serviceRateBps == serviceRateBps) &&
             (identical(other.serviceFixedAmount, serviceFixedAmount) ||
                 other.serviceFixedAmount == serviceFixedAmount) &&
+            (identical(other.taxAfterDiscount, taxAfterDiscount) ||
+                other.taxAfterDiscount == taxAfterDiscount) &&
             (identical(other.businessDayStartHour, businessDayStartHour) ||
                 other.businessDayStartHour == businessDayStartHour) &&
             (identical(other.prepTargetMins, prepTargetMins) ||
@@ -647,6 +674,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     serviceMode,
     serviceRateBps,
     serviceFixedAmount,
+    taxAfterDiscount,
     businessDayStartHour,
     prepTargetMins,
     guestOrderingEnabled,
@@ -694,6 +722,7 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final String serviceMode,
     final int serviceRateBps,
     final int serviceFixedAmount,
+    final bool taxAfterDiscount,
     final int businessDayStartHour,
     final int prepTargetMins,
     final bool guestOrderingEnabled,
@@ -745,6 +774,12 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   int get serviceRateBps;
   @override
   int get serviceFixedAmount;
+
+  /// Where a whole-order discount sits in the stack (ADR-0038). Default true
+  /// = DPP-correct (the discount reduces the base service and tax compute
+  /// from). Line discounts are always pre-tax and ignore this.
+  @override
+  bool get taxAfterDiscount;
   @override
   int get businessDayStartHour;
   @override
