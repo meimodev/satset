@@ -6,6 +6,8 @@ enum AuditType {
   tableMoved,
   paymentRecorded,
   refund,
+  discountApplied,
+  discountRemoved,
   billReopened,
   billClosed,
   staffCreated,
@@ -46,6 +48,8 @@ bool isAdminAuditType(AuditType t) {
     case AuditType.tableMoved:
     case AuditType.paymentRecorded:
     case AuditType.refund:
+    case AuditType.discountApplied:
+    case AuditType.discountRemoved:
     case AuditType.billReopened:
     case AuditType.billClosed:
       return false;

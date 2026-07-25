@@ -157,6 +157,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           .go();
       await (db.delete(db.payments)..where((x) => x.receiptId.equals(receiptId)))
           .go();
+      await (db.delete(db.discounts)
+            ..where((x) => x.receiptId.equals(receiptId)))
+          .go();
       await (db.delete(db.receipts)..where((x) => x.id.equals(receiptId))).go();
       await _recompute(db, visitId);
     });
@@ -246,6 +249,184 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             ));
       }
     });
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  /// Resolve a manager step-up (ADR-0037). The caller lacks `applyDiscount`,
+  /// so authority must come from someone who holds it. Verified **server-side**
+  /// from the PIN — unlike `voidApprovedBy`, which is only an audit note on an
+  /// act the caller was already entitled to perform. Accepting a client-supplied
+  /// approver id here would let any cashier self-authorise. Fail-closed:
+  /// returns null when the PIN is absent, wrong, or belongs to someone without
+  /// the capability.
+  Future<String?> resolveStepUp(String? pin) async {
+    if (auth == null || pin == null || pin.isEmpty) return null;
+    final approver = await (db.select(db.users)
+          ..where((u) =>
+              u.pinHash.equals(auth.hashPin(pin)) &
+              u.disabled.equals(false) &
+              u.pinHash.equals('').not()))
+        .getSingleOrNull();
+    if (approver == null) return null;
+    final role = await (db.select(db.roles)
+          ..where((x) => x.id.equals(approver.roleId)))
+        .getSingleOrNull();
+    final caps = role == null
+        ? const <String>[]
+        : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
+    return caps.contains(Capability.applyDiscount.name) ? approver.id : null;
+  }
+
+  // Apply a discount to a receipt. {presetId, ticketId?, approverPin?}.
+  // `ticketId` null ⇒ whole-order discount; set ⇒ line discount. The cashier
+  // picks a preset — never a free-typed rate (ADR-0037).
+  r.post('/settlement/receipts/<receiptId>/discounts',
+      (Request req, String receiptId) async {
+    // settleBill gates the money screen itself; applyDiscount (or a manager
+    // step-up) gates this act specifically.
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+
+    final rec = await (db.select(db.receipts)
+          ..where((x) => x.id.equals(receiptId)))
+        .getSingleOrNull();
+    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    final visitId = rec.visitId;
+    if (visitId == null) return _err(409, 'no_visit', 'receipt has no visit');
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    // Frozen at payment — reopen to correct a mistaken settlement (ADR-0037).
+    if (rec.status == 'paid') {
+      return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
+    }
+
+    final actor = await resolve(req);
+    String? approvedBy;
+    if (!(await capsOf(req)).contains(Capability.applyDiscount.name)) {
+      approvedBy = await resolveStepUp(body['approverPin'] as String?);
+      if (approvedBy == null) {
+        return _err(403, 'approval_required',
+            'butuh persetujuan manajer untuk memberi diskon');
+      }
+    }
+
+    final preset = await (db.select(db.discountPresets)
+          ..where((x) => x.id.equals(body['presetId'] as String? ?? '')))
+        .getSingleOrNull();
+    if (preset == null) return _err(404, 'no_preset', 'preset not found');
+    if (!preset.active) {
+      return _err(409, 'preset_inactive', 'preset diskon tidak aktif');
+    }
+
+    final ticketId = body['ticketId'] as String?;
+    if (ticketId == null) {
+      if (preset.scope != 'order') {
+        return _err(409, 'scope_mismatch', 'preset ini hanya untuk satu item');
+      }
+    } else {
+      if (preset.scope != 'line') {
+        return _err(
+            409, 'scope_mismatch', 'preset ini untuk seluruh pesanan');
+      }
+      // Even receipts own no lines, so a line discount has nothing to attach
+      // to — even mode has already abandoned tracking who ordered what.
+      if (rec.mode == 'even') {
+        return _err(409, 'even_mode',
+            'diskon per item hanya untuk struk itemized');
+      }
+      final t = await (db.select(db.tickets)
+            ..where((x) => x.id.equals(ticketId)))
+          .getSingleOrNull();
+      if (t == null) return _err(404, 'no_ticket', 'line not found');
+      // A voided/comped line is not in the subtotal, so it has no base to
+      // discount — and counting it in both figures would double-count the
+      // give-away (ADR-0037).
+      if (t.status == 'voided' || t.status == 'draft') {
+        return _err(409, 'line_voided', 'item sudah dibatalkan');
+      }
+      final owns = await (db.select(db.receiptLines)
+            ..where((x) =>
+                x.receiptId.equals(receiptId) & x.ticketId.equals(ticketId)))
+          .get();
+      if (owns.isEmpty) {
+        return _err(409, 'line_not_on_receipt',
+            'item ini tidak ada di struk tersebut');
+      }
+    }
+
+    final existing = await (db.select(db.discounts)
+          ..where((x) => ticketId == null
+              ? x.receiptId.equals(receiptId) & x.ticketId.isNull()
+              : x.receiptId.equals(receiptId) &
+                  x.ticketId.equals(ticketId)))
+        .getSingleOrNull();
+    if (existing != null) {
+      // No stacking (ADR-0037) — swap by removing first.
+      return _err(409, 'discount_exists',
+          'sudah ada diskon di sana — hapus dulu untuk mengganti');
+    }
+
+    await db.into(db.discounts).insert(DiscountsCompanion.insert(
+          id: _uuid.v4(),
+          receiptId: receiptId,
+          ticketId: Value(ticketId),
+          presetId: Value(preset.id),
+          // Snapshot: a later preset edit or delete must not rewrite this.
+          name: preset.name,
+          kind: preset.kind,
+          value: Value(preset.value),
+          byUserId: Value(actor?.id),
+          approvedByUserId: Value(approvedBy),
+          at: DateTime.now().toUtc(),
+        ));
+    // _recompute resolves the rupiah amount against the current base.
+    await _recompute(db, visitId);
+    await _audit(db, AuditType.discountApplied,
+        'Diskon ${preset.name}${ticketId == null ? '' : ' (item)'}',
+        tableId: rec.tableId, actor: actor?.id);
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // Remove a discount from a receipt.
+  r.delete('/settlement/receipts/<receiptId>/discounts/<discountId>',
+      (Request req, String receiptId, String discountId) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final rec = await (db.select(db.receipts)
+          ..where((x) => x.id.equals(receiptId)))
+        .getSingleOrNull();
+    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    final visitId = rec.visitId;
+    if (visitId == null) return _err(409, 'no_visit', 'receipt has no visit');
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    if (rec.status == 'paid') {
+      return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
+    }
+    final actor = await resolve(req);
+    if (!(await capsOf(req)).contains(Capability.applyDiscount.name)) {
+      final body = await req.readAsString();
+      final pin = body.isEmpty
+          ? null
+          : (jsonDecode(body) as Map<String, dynamic>)['approverPin']
+              as String?;
+      if (await resolveStepUp(pin) == null) {
+        return _err(403, 'approval_required',
+            'butuh persetujuan manajer untuk mengubah diskon');
+      }
+    }
+    final row = await (db.select(db.discounts)
+          ..where((x) => x.id.equals(discountId) &
+              x.receiptId.equals(receiptId)))
+        .getSingleOrNull();
+    if (row == null) return _err(404, 'no_discount', 'diskon tidak ditemukan');
+    await (db.delete(db.discounts)..where((x) => x.id.equals(discountId))).go();
+    await _recompute(db, visitId);
+    await _audit(db, AuditType.discountRemoved, 'Hapus diskon ${row.name}',
+        tableId: rec.tableId, actor: actor?.id);
     await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
@@ -666,6 +847,10 @@ Future<void> _assignAllUnassigned(
   }
 }
 
+/// Tear down every receipt on a visit — used when re-splitting. Discount rows
+/// go with their receipt: this is how switching to an even split disposes of
+/// line discounts, which even receipts cannot carry (ADR-0037). The cashier is
+/// warned before this runs.
 Future<void> _clearReceipts(AppDatabase db, String visitId) async {
   final recs = await (db.select(db.receipts)
         ..where((x) => x.visitId.equals(visitId)))
@@ -674,6 +859,8 @@ Future<void> _clearReceipts(AppDatabase db, String visitId) async {
     await (db.delete(db.receiptLines)..where((x) => x.receiptId.equals(rec.id)))
         .go();
     await (db.delete(db.payments)..where((x) => x.receiptId.equals(rec.id)))
+        .go();
+    await (db.delete(db.discounts)..where((x) => x.receiptId.equals(rec.id)))
         .go();
   }
   await (db.delete(db.receipts)..where((x) => x.visitId.equals(visitId))).go();
@@ -699,7 +886,41 @@ Future<TaxServiceConfig> _config(AppDatabase db) async {
     serviceMode: s?.serviceMode ?? 'percent',
     serviceRateBps: s?.serviceRateBps ?? 500,
     serviceFixedAmount: s?.serviceFixedAmount ?? 0,
+    taxAfterDiscount: s?.taxAfterDiscount ?? true,
   );
+}
+
+/// Re-resolve a live [[Diskon (discount)]] row's rupiah [amount] from its
+/// snapshotted `kind`/`value` against the CURRENT [base], persisting the
+/// result. The snapshot rule (ADR-0037) freezes `name`/`kind`/`value` so a
+/// preset edit never rewrites history — but `amount` is *derived*, and while a
+/// receipt is still live its base moves as lines are assigned and reassigned.
+/// Leaving a stale amount would silently turn a 10% discount into 20% when a
+/// line moves away. Frozen for good at bill close, into `tableSessionDiscounts`.
+Future<int> _resolveDiscountRow(
+    AppDatabase db, Discount d, int base) async {
+  final amount =
+      resolveDiscountAmount(kind: d.kind, value: d.value, base: base);
+  if (amount != d.amount) {
+    await (db.update(db.discounts)..where((x) => x.id.equals(d.id)))
+        .write(DiscountsCompanion(amount: Value(amount)));
+  }
+  return amount;
+}
+
+/// Every discount row on a visit's receipts, grouped by receipt id.
+Future<Map<String, List<Discount>>> _discountsByReceipt(
+    AppDatabase db, Iterable<String> receiptIds) async {
+  final ids = receiptIds.toList();
+  if (ids.isEmpty) return const {};
+  final rows = await (db.select(db.discounts)
+        ..where((x) => x.receiptId.isIn(ids)))
+      .get();
+  final out = <String, List<Discount>>{};
+  for (final d in rows) {
+    (out[d.receiptId] ??= <Discount>[]).add(d);
+  }
+  return out;
 }
 
 /// Recompute every itemized receipt's money + paid status for a visit.
@@ -710,26 +931,56 @@ Future<void> _recompute(AppDatabase db, String visitId) async {
       .get();
   final tickets = {for (final t in await _sentTickets(db, visitId)) t.id: t};
 
+  final byReceipt = await _discountsByReceipt(db, recs.map((r) => r.id));
+
   final itemized = recs.where((r) => r.mode != 'even').toList();
-  final subtotals = <int>[];
+  final subtotals = <int>[]; // net of line discounts (ADR-0038)
+  final lineDiscounts = <int>[];
+  final orderDiscounts = <int>[];
   for (final rec in itemized) {
     final lines = await (db.select(db.receiptLines)
           ..where((x) => x.receiptId.equals(rec.id)))
         .get();
-    var sub = 0;
+    final units = <String, int>{};
+    var gross = 0;
     for (final l in lines) {
       final t = tickets[l.ticketId];
-      if (t != null) sub += t.price * l.qtyUnits;
+      if (t != null) {
+        gross += t.price * l.qtyUnits;
+        units[l.ticketId] = (units[l.ticketId] ?? 0) + l.qtyUnits;
+      }
     }
-    subtotals.add(sub);
+    final ds = byReceipt[rec.id] ?? const <Discount>[];
+    // A line discount's base is the value of the units THIS receipt owns.
+    var lineDisc = 0;
+    for (final d in ds.where((d) => d.ticketId != null)) {
+      final t = tickets[d.ticketId];
+      final base = t == null ? 0 : t.price * (units[d.ticketId] ?? 0);
+      lineDisc += await _resolveDiscountRow(db, d, base);
+    }
+    final net = gross - lineDisc;
+    // The order discount's base is the subtotal already net of line discounts
+    // — line-then-order (ADR-0038).
+    var orderDisc = 0;
+    for (final d in ds.where((d) => d.ticketId == null)) {
+      orderDisc += await _resolveDiscountRow(db, d, net);
+    }
+    subtotals.add(net);
+    lineDiscounts.add(lineDisc);
+    orderDiscounts.add(orderDisc);
   }
   final billSub = tickets.values.fold<int>(0, (a, t) => a + t.price * t.qty);
-  final assignedSub = subtotals.fold<int>(0, (a, b) => a + b);
+  final assignedSub =
+      subtotals.fold<int>(0, (a, b) => a + b) + _sum(lineDiscounts);
   final fullyAssigned = await _fullyAssigned(db, tickets.values);
-  final billTotal =
-      fullyAssigned ? computeBreakdown(billSub, cfg).total : null;
+  final billTotal = fullyAssigned
+      ? computeBreakdown(billSub - _sum(lineDiscounts), cfg,
+              discount: _sum(orderDiscounts))
+          .total
+      : null;
   final breakdowns = splitItemized(subtotals, cfg,
-      billTotalTarget: (assignedSub == billSub) ? billTotal : null);
+      billTotalTarget: (assignedSub == billSub) ? billTotal : null,
+      discounts: orderDiscounts);
 
   for (var i = 0; i < itemized.length; i++) {
     final rec = itemized[i];
@@ -738,6 +989,9 @@ Future<void> _recompute(AppDatabase db, String visitId) async {
     await (db.update(db.receipts)..where((x) => x.id.equals(rec.id))).write(
       ReceiptsCompanion(
         subtotal: Value(b.subtotal),
+        // Reporting figure: line discounts (already inside subtotal) plus the
+        // whole-order one actually applied after clamping.
+        discountAmount: Value(lineDiscounts[i] + b.discountAmount),
         serviceAmount: Value(b.serviceAmount),
         taxAmount: Value(b.taxAmount),
         total: Value(b.total),
@@ -764,6 +1018,21 @@ Uint8List? _decodePhoto(Object? raw) {
     return null;
   }
 }
+
+int _sum(Iterable<int> xs) => xs.fold<int>(0, (a, b) => a + b);
+
+Map<String, dynamic> _discountJson(Discount d) => {
+      'id': d.id,
+      'ticketId': d.ticketId, // null ⇒ whole-order discount
+      'presetId': d.presetId,
+      'name': d.name,
+      'kind': d.kind,
+      'value': d.value,
+      'amount': d.amount,
+      'byUserId': d.byUserId,
+      'approvedByUserId': d.approvedByUserId,
+      'at': d.at.toIso8601String(),
+    };
 
 Future<int> _paidNet(AppDatabase db, String receiptId) async {
   // Sum amount only — never load the proof-photo blob into the fold (ADR-0025).
@@ -802,12 +1071,23 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
   if (tickets.isEmpty) return null;
   final cfg = await _config(db);
   final billSub = tickets.fold<int>(0, (a, t) => a + t.price * t.qty);
-  final billBreak = computeBreakdown(billSub, cfg);
 
   final recs = await (db.select(db.receipts)
         ..where((x) => x.visitId.equals(visitId)))
       .get();
   final mode = recs.any((r) => r.mode == 'even') ? 'even' : 'itemized';
+
+  // Aggregate the receipts' discounts up to bill level. Without this the bill
+  // total stays undiscounted while the receipts shrink, so `outstanding` never
+  // reaches zero and a fully-paid discounted bill never shows Lunas.
+  final byReceipt = await _discountsByReceipt(db, recs.map((r) => r.id));
+  final allDiscounts = byReceipt.values.expand((x) => x);
+  final billLineDiscount =
+      _sum(allDiscounts.where((d) => d.ticketId != null).map((d) => d.amount));
+  final billOrderDiscount =
+      _sum(allDiscounts.where((d) => d.ticketId == null).map((d) => d.amount));
+  final billBreak = computeBreakdown(billSub - billLineDiscount, cfg,
+      discount: billOrderDiscount);
 
   var paidNet = 0;
   final receiptsJson = <Map<String, dynamic>>[];
@@ -840,11 +1120,18 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       'mode': rec.mode,
       'label': rec.label,
       'subtotal': rec.subtotal,
+      'discountAmount': rec.discountAmount,
       'serviceAmount': rec.serviceAmount,
       'taxAmount': rec.taxAmount,
       'total': rec.total,
       'status': rec.status,
       'paidNet': recPaid,
+      // Individual rows, not just the total — the money doc prints a NAMED
+      // "Diskon <preset>" and line discounts render under their item.
+      'discounts': [
+        for (final d in (byReceipt[rec.id] ?? const <Discount>[]))
+          _discountJson(d)
+      ],
       'lines': [
         for (final l in lines) {'ticketId': l.ticketId, 'qtyUnits': l.qtyUnits}
       ],
@@ -904,8 +1191,12 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
     'guestName': visit.guestName,
     'mode': mode,
     'subtotal': billBreak.subtotal,
+    // Total give-back on this bill (line + whole-order). Reporting/display
+    // figure; the printed rows come off each receipt's `discounts`.
+    'discountAmount': billLineDiscount + billBreak.discountAmount,
     'serviceAmount': billBreak.serviceAmount,
     'taxAmount': billBreak.taxAmount,
+    'taxAfterDiscount': cfg.taxAfterDiscount,
     'total': billBreak.total,
     'paidAmount': paidNet,
     'outstanding': outstanding,

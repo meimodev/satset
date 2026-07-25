@@ -5,7 +5,16 @@
 ## Decision
 
 - **`netTotal` keeps its ADR-0023 formula permanently**: `subtotal − void + service + tax`. It does **not** learn about discounts. From ADR-0023 onward its meaning never changes again, so a query spanning last year and next year compares like with like.
-- **New `settledTotal` = `netTotal − discount`** is the money-collected figure. All reporting, exports, and the cashier's outstanding math migrate to it. `netTotal` becomes a legacy pre-discount net, retained for continuity.
+- **New `settledTotal`** is the money-collected figure. All reporting, exports, and the cashier's outstanding math migrate to it. `netTotal` becomes a legacy pre-discount net, retained for continuity.
+
+  It is **computed through the discount pipeline**, not subtracted from `netTotal`:
+
+  ```
+  settledTotal = computeBreakdown(subtotal − lineDiscount,
+                                  cfg, discount: orderDiscount).total
+  ```
+
+  The tempting one-liner `settledTotal = netTotal − discount` is only correct when `taxAfterDiscount = false`. Under the default (`true`) the discount also shrinks service and tax ([ADR-0038](0038-discount-tax-stacking-order.md)), so subtracting the discount alone **overstates** what was actually taken. Consequently `netTotal − settledTotal ≥ discountAmount`: the gap is the service and tax the venue also gave up.
 - **New `discountAmount`** on `TableSessions` (and on `Receipts` / `TableSessionReceipts`) so the reduction is a first-class figure rather than a difference between two totals.
 - **Nothing is backfilled.** Pre-discount rows get `discountAmount = 0` and `settledTotal == netTotal`, which is already true of them. The single documented anomaly stays the pre-ADR-0023 era where `netTotal == subtotal`.
 - **Reporting surfaces a `Diskon` line** beside Bruto / Pajak / Layanan in the accounting and order-history exports, plus a **`GROUP BY presetId`** per-preset rollup ("Member 10% — 12×, Rp 340.000") in the accounting export only. That rollup is the payoff for choosing a preset catalog over ad-hoc entry in [ADR-0037](0037-cashier-stage-catalog-discounts.md), and it is the reason `presetId` is retained beside the snapshot. No new Reports screen section — it stays a query, not a UI project.
