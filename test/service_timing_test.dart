@@ -139,4 +139,66 @@ void main() {
       expect(courses.length, 2);
     });
   });
+
+  group('ungreeted escalation', () {
+    UngreetedCue cue({
+      required int ageMins,
+      String? seater = 'maya',
+      String? me = 'budi',
+      Set<String>? online = const {'maya', 'budi'},
+    }) =>
+        ungreetedCueFor(
+          age: Duration(minutes: ageMins),
+          ungreetedMins: 7,
+          escalateMins: 5,
+          seaterId: seater,
+          myUserId: me,
+          onlineUserIds: online,
+        );
+
+    test('silent before the first threshold', () {
+      expect(cue(ageMins: 6), UngreetedCue.none);
+    });
+
+    test('stage one reaches only the seating waiter', () {
+      expect(cue(ageMins: 8, me: 'maya'), UngreetedCue.seatingWaiter);
+      // Another waiter's device stays quiet while the seater is online.
+      expect(cue(ageMins: 8, me: 'budi'), UngreetedCue.none);
+    });
+
+    test('escalates floor-wide after the second threshold', () {
+      expect(cue(ageMins: 13, me: 'budi'), UngreetedCue.floorWide);
+      expect(cue(ageMins: 13, me: 'maya'), UngreetedCue.floorWide);
+    });
+
+    test('a signed-out seater skips stage one entirely', () {
+      // Maya seated the table then signed out — waiting out the escalation
+      // would route the cue to a device that will never play it.
+      expect(
+        cue(ageMins: 8, me: 'budi', online: const {'budi'}),
+        UngreetedCue.floorWide,
+      );
+    });
+
+    test('unknown presence degrades to the normal escalation', () {
+      // Null is "cannot tell", NOT "everyone is signed out" — otherwise one
+      // failed fetch cues the whole floor for every seated table.
+      expect(cue(ageMins: 8, me: 'budi', online: null), UngreetedCue.none);
+      expect(cue(ageMins: 13, me: 'budi', online: null), UngreetedCue.floorWide);
+    });
+
+    test('a table with no recorded seater goes wide at stage one', () {
+      expect(
+        cue(ageMins: 8, seater: null, me: 'budi'),
+        UngreetedCue.floorWide,
+      );
+    });
+
+    test('an unauthenticated device never takes the targeted stage', () {
+      expect(
+        cue(ageMins: 8, me: null, online: const {'maya'}),
+        UngreetedCue.none,
+      );
+    });
+  });
 }

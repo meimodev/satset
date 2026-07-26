@@ -49,6 +49,7 @@ class AlertSoundService {
     if (_mode == AppMode.client) {
       _tableTimer = Timer.periodic(const Duration(seconds: 20), (_) {
         _scanPickup();
+        unawaited(_refreshOnline());
         _scanUngreeted();
       });
     }
@@ -92,6 +93,23 @@ class AlertSoundService {
   final Set<String> _overdueAlerted = {};
   final Set<String> _pickupAlerted = {};
   final Set<String> _ungreetedAlerted = {};
+
+  /// User ids with a live staff session, refreshed on the table-scan tick.
+  /// Null until the first successful fetch — distinct from "nobody is online",
+  /// because an unknown set must not be read as "everyone is signed out"
+  /// (that would fire every table floor-wide the moment the network hiccups).
+  Set<String>? _onlineUserIds;
+
+  Future<void> _refreshOnline() async {
+    try {
+      final raw = await ref.read(apiClientProvider).getJson('/auth/online');
+      final ids = ((raw as Map)['userIds'] as List).cast<String>();
+      _onlineUserIds = ids.toSet();
+    } catch (e) {
+      // Keep the last known set rather than dropping to "nobody online".
+      SatLog.vm('alert.online refresh failed $e');
+    }
+  }
   final Set<AlertEvent> _cooling = {};
 
   AppMode get _mode =>
@@ -274,10 +292,6 @@ class AlertSoundService {
     final me = ref.read(authStateProvider).user?.id;
     final now = DateTime.now();
 
-    final firstStage = Duration(minutes: settings.ungreetedMins);
-    final secondStage = firstStage +
-        Duration(minutes: settings.ungreetedEscalateMins);
-
     for (final t in tables) {
       if (t.status == TableStatus.available) continue;
       final openedAt = t.openedAt;
@@ -288,15 +302,23 @@ class AlertSoundService {
           (byVisit[visitId]?.isNotEmpty ?? false);
       if (ordered) continue;
 
-      final age = now.difference(openedAt);
-      if (age >= secondStage) {
-        // Floor-wide: every waiter device cues.
-        if (_ungreetedAlerted.add('${t.id}:2')) _play(AlertEvent.ungreeted);
-      } else if (age >= firstStage) {
-        // Targeted: only the waiter who seated the table.
-        if (me != null && me == t.lastActorId) {
+      final cue = ungreetedCueFor(
+        age: now.difference(openedAt),
+        ungreetedMins: settings.ungreetedMins,
+        escalateMins: settings.ungreetedEscalateMins,
+        seaterId: t.lastActorId,
+        myUserId: me,
+        onlineUserIds: _onlineUserIds,
+      );
+      // Stage keys dedup independently, and a short-circuited stage one uses
+      // the floor-wide key so the scheduled escalation cannot re-fire it.
+      switch (cue) {
+        case UngreetedCue.none:
+          break;
+        case UngreetedCue.seatingWaiter:
           if (_ungreetedAlerted.add('${t.id}:1')) _play(AlertEvent.ungreeted);
-        }
+        case UngreetedCue.floorWide:
+          if (_ungreetedAlerted.add('${t.id}:2')) _play(AlertEvent.ungreeted);
       }
     }
   }
