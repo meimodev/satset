@@ -233,18 +233,32 @@ class OpsSectionDto with _$OpsSectionDto {
       _$OpsSectionDtoFromJson(json);
 }
 
-/// Speed-of-service rollup (ADR-0013). Prep time = sent→ready (kitchen),
-/// pickup lag = ready→served (food at the pass). Medians, since service
-/// times are right-skewed.
+/// Speed-of-service rollup (ADR-0013, amended by ADR-0043). Prep time =
+/// kitchen clock (`firedAt ?? sentAt`) → ready; pickup lag = ready→served.
+/// Medians, since service times are right-skewed.
+///
+/// [slaPct] is now **% of courses** that hit their own resolved target, not %
+/// of lines against one venue number. Every field carries a default so a
+/// snapshot published by an older host (ADR-0036 — host and owner can be on
+/// different builds) still parses instead of blanking the section.
 @freezed
 class SpeedSectionDto with _$SpeedSectionDto {
   const factory SpeedSectionDto({
     @Default(0) int prepMedianMin,
     @Default(0) int pickupMedianMin,
     @Default(0.0) double slaPct,
+    /// The venue *default* target — no longer the only target in play.
     @Default(15) int prepTargetMins,
     @Default(0) int sampleSize,
     @Default(<SpeedItemDto>[]) List<SpeedItemDto> slowItems,
+    // ADR-0044 additions.
+    @Default(4) int pickupTargetMins,
+    @Default(0.0) double pickupSlaPct,
+    @Default(0) int courseSampleSize,
+    @Default(0) int greetMedianMin,
+    @Default(0.0) double greetBreachPct,
+    @Default(7) int ungreetedMins,
+    @Default(0) int greetSampleSize,
   }) = _SpeedSectionDto;
 
   factory SpeedSectionDto.fromJson(Map<String, dynamic> json) =>

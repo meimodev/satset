@@ -260,6 +260,9 @@ mixin _$TicketDto {
   int get price => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
   DateTime get sentAt => throw _privateConstructorUsedError;
+
+  /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
+  DateTime? get firedAt => throw _privateConstructorUsedError;
   DateTime? get readyAt => throw _privateConstructorUsedError;
   DateTime? get servedAt => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
@@ -297,6 +300,7 @@ abstract class $TicketDtoCopyWith<$Res> {
     int price,
     String status,
     DateTime sentAt,
+    DateTime? firedAt,
     DateTime? readyAt,
     DateTime? servedAt,
     String? voidReason,
@@ -335,6 +339,7 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? firedAt = freezed,
     Object? readyAt = freezed,
     Object? servedAt = freezed,
     Object? voidReason = freezed,
@@ -397,6 +402,10 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
                 ? _value.sentAt
                 : sentAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            firedAt: freezed == firedAt
+                ? _value.firedAt
+                : firedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             readyAt: freezed == readyAt
                 ? _value.readyAt
                 : readyAt // ignore: cast_nullable_to_non_nullable
@@ -454,6 +463,7 @@ abstract class _$$TicketDtoImplCopyWith<$Res>
     int price,
     String status,
     DateTime sentAt,
+    DateTime? firedAt,
     DateTime? readyAt,
     DateTime? servedAt,
     String? voidReason,
@@ -491,6 +501,7 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? firedAt = freezed,
     Object? readyAt = freezed,
     Object? servedAt = freezed,
     Object? voidReason = freezed,
@@ -553,6 +564,10 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
             ? _value.sentAt
             : sentAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        firedAt: freezed == firedAt
+            ? _value.firedAt
+            : firedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         readyAt: freezed == readyAt
             ? _value.readyAt
             : readyAt // ignore: cast_nullable_to_non_nullable
@@ -603,6 +618,7 @@ class _$TicketDtoImpl implements _TicketDto {
     required this.price,
     required this.status,
     required this.sentAt,
+    this.firedAt,
     this.readyAt,
     this.servedAt,
     this.voidReason,
@@ -653,6 +669,10 @@ class _$TicketDtoImpl implements _TicketDto {
   final String status;
   @override
   final DateTime sentAt;
+
+  /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
+  @override
+  final DateTime? firedAt;
   @override
   final DateTime? readyAt;
   @override
@@ -670,7 +690,7 @@ class _$TicketDtoImpl implements _TicketDto {
 
   @override
   String toString() {
-    return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
+    return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, firedAt: $firedAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
   }
 
   @override
@@ -695,6 +715,7 @@ class _$TicketDtoImpl implements _TicketDto {
             (identical(other.price, price) || other.price == price) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.sentAt, sentAt) || other.sentAt == sentAt) &&
+            (identical(other.firedAt, firedAt) || other.firedAt == firedAt) &&
             (identical(other.readyAt, readyAt) || other.readyAt == readyAt) &&
             (identical(other.servedAt, servedAt) ||
                 other.servedAt == servedAt) &&
@@ -727,6 +748,7 @@ class _$TicketDtoImpl implements _TicketDto {
     price,
     status,
     sentAt,
+    firedAt,
     readyAt,
     servedAt,
     voidReason,
@@ -765,6 +787,7 @@ abstract class _TicketDto implements TicketDto {
     required final int price,
     required final String status,
     required final DateTime sentAt,
+    final DateTime? firedAt,
     final DateTime? readyAt,
     final DateTime? servedAt,
     final String? voidReason,
@@ -806,6 +829,10 @@ abstract class _TicketDto implements TicketDto {
   String get status;
   @override
   DateTime get sentAt;
+
+  /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
+  @override
+  DateTime? get firedAt;
   @override
   DateTime? get readyAt;
   @override

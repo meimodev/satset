@@ -13,6 +13,10 @@ import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
@@ -37,13 +41,66 @@ const Duration _kCardEnter = Duration(milliseconds: 380);
 const Duration _kPressIn = Duration(milliseconds: 90);
 const int _kStaggerStepMs = 26;
 
-// Elapsed-time heat: linear textLo→warn (0–30min) → urgent (30–60min), clamp red past the hour.
-const Duration _kElapsedAlarm = Duration(hours: 1);
-
-Color _elapsedHeatColor(Duration elapsed, SatColors sc) {
-  final t = (elapsed.inSeconds / _kElapsedAlarm.inSeconds).clamp(0.0, 1.0);
+// Elapsed-time heat, ramped against the venue's "Meja lama" threshold
+// (`longStayMins`, was a hardcoded 1h): linear textLo→warn over the first
+// half, warn→urgent over the second, clamped red past the threshold.
+//
+// This stays **visual only** — deliberately never a cue. A waiter cannot make
+// a party leave, so a sound here would be noise they can't discharge, which
+// devalues every cue they *can* act on. See ADR-0044.
+Color _elapsedHeatColor(Duration elapsed, SatColors sc, int longStayMins) {
+  final full = Duration(minutes: longStayMins).inSeconds;
+  final t = full <= 0 ? 1.0 : (elapsed.inSeconds / full).clamp(0.0, 1.0);
   if (t < 0.5) return Color.lerp(sc.textLo, sc.warn, t / 0.5)!;
   return Color.lerp(sc.warn, sc.urgent, (t - 0.5) / 0.5)!;
+}
+
+/// Derived, never stored: the two silent floor states from ADR-0044.
+enum _ServiceState {
+  none,
+
+  /// Seated, nothing sent yet, past `ungreetedMins`. The audible cue for this
+  /// lives in `AlertSoundService`; the card carries the standing state so a
+  /// one-shot cue that was missed is still visible.
+  ungreeted,
+
+  /// Everything ordered is served and nothing has moved for `idleTableMins` —
+  /// probably wants dessert or the bill.
+  idle,
+}
+
+_ServiceState _serviceStateFor(
+  VenueTable table,
+  List<Ticket> lines,
+  VenueSettingsDto s,
+  DateTime now,
+) {
+  if (table.status == TableStatus.available) return _ServiceState.none;
+  final openedAt = table.openedAt;
+  if (openedAt == null) return _ServiceState.none;
+
+  final live = lines.where((t) => t.status != TicketStatus.voided).toList();
+  if (live.isEmpty) {
+    return now.difference(openedAt) >= Duration(minutes: s.ungreetedMins)
+        ? _ServiceState.ungreeted
+        : _ServiceState.none;
+  }
+
+  // Idle needs *everything* terminal, and a last-activity stamp to measure
+  // from. A line still in the kitchen means the visit is plainly not idle.
+  if (live.any((t) => t.status != TicketStatus.served)) {
+    return _ServiceState.none;
+  }
+  DateTime? lastServed;
+  for (final t in live) {
+    final at = t.servedAtTime;
+    if (at == null) return _ServiceState.none; // Can't date it — stay silent.
+    if (lastServed == null || at.isAfter(lastServed)) lastServed = at;
+  }
+  if (lastServed == null) return _ServiceState.none;
+  return now.difference(lastServed) >= Duration(minutes: s.idleTableMins)
+      ? _ServiceState.idle
+      : _ServiceState.none;
 }
 
 bool _animationsDisabled(BuildContext context) =>
@@ -561,6 +618,34 @@ class _TableCardState extends ConsumerState<_TableCard>
                             letterSpacing: 0.24,
                           )),
                     ),
+                  // Silent floor states (ADR-0044) — never a sound, just a
+                  // standing marker the waiter can scan for.
+                  Builder(builder: (ctx) {
+                    ref.watch(_tableElapsedTickerProvider);
+                    final s = ref.watch(venueSettingsProvider);
+                    final visitId = table.currentVisitId;
+                    final lines = visitId == null
+                        ? const <Ticket>[]
+                        : (ref.watch(ticketsProvider)[visitId] ??
+                            const <Ticket>[]);
+                    final state = _serviceStateFor(
+                        table, lines, s, DateTime.now());
+                    return switch (state) {
+                      _ServiceState.none => const SizedBox.shrink(),
+                      _ServiceState.ungreeted => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: _MoneyPill(
+                              label: AppStrings.tableStateUngreeted,
+                              color: sc.urgent),
+                        ),
+                      _ServiceState.idle => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: _MoneyPill(
+                              label: AppStrings.tableStateIdle,
+                              color: sc.info),
+                        ),
+                    };
+                  }),
                   const Spacer(),
                   if (table.openedAt != null)
                     Padding(
@@ -568,11 +653,13 @@ class _TableCardState extends ConsumerState<_TableCard>
                       child: Builder(builder: (ctx) {
                         ref.watch(_tableElapsedTickerProvider);
                         final elapsed = DateTime.now().difference(table.openedAt!);
+                        final timing = ref.watch(venueSettingsProvider);
                         return Text(
                           formatElapsedId(elapsed),
                           style: SatType.mono(
                             size: tablet ? 12 : 11,
-                            color: _elapsedHeatColor(elapsed, sc),
+                            color: _elapsedHeatColor(
+                                elapsed, sc, timing.longStayMins),
                             letterSpacing: 0.44,
                           ),
                         );

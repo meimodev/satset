@@ -66,7 +66,7 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
   description: json['description'] as String? ?? '',
   basePrice: (json['basePrice'] as num).toInt(),
   cost: (json['cost'] as num?)?.toInt() ?? 0,
-  prepTime: (json['prepTime'] as num?)?.toInt() ?? 5,
+  prepTime: (json['prepTime'] as num?)?.toInt(),
   variants:
       (json['variants'] as List<dynamic>?)
           ?.map((e) => VariantDto.fromJson(e as Map<String, dynamic>))

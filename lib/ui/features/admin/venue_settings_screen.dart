@@ -8,7 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/alert_sound.dart';
+import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -394,11 +396,23 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                   sc,
                   label: AppStrings.venueSettingsSectionReports,
                   value:
-                      'Mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00 · target ${s.prepTargetMins}m',
+                      'Mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00',
                   onTap: () => _openDetail(
                     context,
                     AppStrings.venueSettingsSectionReports,
                     (c, _) => _ReportsHourCard(),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: AppStrings.venueSettingsSectionTiming,
+                  value: 'Siap ${s.prepTargetMins}m · '
+                      'belum dilayani ${s.ungreetedMins}m',
+                  onTap: () => _openDetail(
+                    context,
+                    AppStrings.venueSettingsSectionTiming,
+                    (c, _) => _TimingCard(),
                   ),
                 ),
                 _phoneRow(
@@ -1551,6 +1565,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     (AlertEvent.orderReady, AppStrings.venueSettingsSoundReady),
     (AlertEvent.voided, AppStrings.venueSettingsSoundVoid),
     (AlertEvent.overdue, AppStrings.venueSettingsSoundOverdue),
+    (AlertEvent.ungreeted, AppStrings.venueSettingsSoundUngreeted),
+    (AlertEvent.pickup, AppStrings.venueSettingsSoundPickup),
   ];
 
   String _currentId(VenueSettingsDto s, AlertEvent e) => switch (e) {
@@ -1558,6 +1574,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     AlertEvent.orderReady => s.soundReady,
     AlertEvent.voided => s.soundVoid,
     AlertEvent.overdue => s.soundOverdue,
+    AlertEvent.ungreeted => s.soundUngreeted,
+    AlertEvent.pickup => s.soundPickup,
   };
 
   void _patch(AlertEvent e, String id) {
@@ -1571,6 +1589,10 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
         n.patch(soundVoid: id);
       case AlertEvent.overdue:
         n.patch(soundOverdue: id);
+      case AlertEvent.ungreeted:
+        n.patch(soundUngreeted: id);
+      case AlertEvent.pickup:
+        n.patch(soundPickup: id);
     }
   }
 
@@ -1738,6 +1760,296 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
   }
 }
 
+/// Every service threshold in one named place (ADR-0043/0044). Thresholds
+/// decide *when* a cue fires; the "Suara" section decides *what it sounds
+/// like*; the per-device mute list at the bottom decides whether this handset
+/// plays it at all. Three orthogonal axes, deliberately not merged.
+class _TimingCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final s = ref.watch(venueSettingsProvider);
+    final n = ref.read(venueSettingsProvider.notifier);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        border: Border.all(color: sc.border0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppStrings.venueSettingsSectionTiming,
+            style: SatType.sans(
+              size: 15,
+              weight: FontWeight.w600,
+              color: sc.textHi,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingPrepTarget,
+            hint: AppStrings.venueSettingsTimingPrepTargetHint,
+            value: s.prepTargetMins,
+            min: 5,
+            max: 60,
+            onChanged: (v) => n.patch(prepTargetMins: v),
+          ),
+          _rule(sc),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingPickup,
+            hint: AppStrings.venueSettingsTimingPickupHint,
+            value: s.pickupTargetMins,
+            min: 1,
+            max: 30,
+            step: 1,
+            onChanged: (v) => n.patch(pickupTargetMins: v),
+            enabled: s.pickupAlertEnabled,
+            onEnabledChanged: (v) => n.patch(pickupAlertEnabled: v),
+          ),
+          _rule(sc),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingUngreeted,
+            hint: AppStrings.venueSettingsTimingUngreetedHint,
+            value: s.ungreetedMins,
+            min: 1,
+            max: 30,
+            step: 1,
+            onChanged: (v) => n.patch(ungreetedMins: v),
+            enabled: s.ungreetedAlertEnabled,
+            onEnabledChanged: (v) => n.patch(ungreetedAlertEnabled: v),
+          ),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingUngreetedEscalate,
+            hint: AppStrings.venueSettingsTimingUngreetedEscalateHint,
+            value: s.ungreetedEscalateMins,
+            min: 1,
+            max: 30,
+            step: 1,
+            onChanged: (v) => n.patch(ungreetedEscalateMins: v),
+          ),
+          _rule(sc),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingLongStay,
+            hint: AppStrings.venueSettingsTimingLongStayHint,
+            value: s.longStayMins,
+            min: 15,
+            max: 240,
+            step: 15,
+            onChanged: (v) => n.patch(longStayMins: v),
+          ),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingIdle,
+            hint: AppStrings.venueSettingsTimingIdleHint,
+            value: s.idleTableMins,
+            min: 5,
+            max: 120,
+            onChanged: (v) => n.patch(idleTableMins: v),
+          ),
+          _rule(sc),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingReservationGrace,
+            hint: AppStrings.venueSettingsTimingReservationGraceHint,
+            value: s.reservationGraceMins,
+            min: 0,
+            max: 120,
+            onChanged: (v) => n.patch(reservationGraceMins: v),
+          ),
+          _rule(sc),
+          const _DeviceMuteList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _rule(SatColors sc) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Divider(height: 1, color: sc.border0),
+      );
+}
+
+/// Label + hint on the left, a −/value/+ stepper on the right, and (for the
+/// two audible cues) a venue-wide on/off. "Off" is this switch, never a
+/// degenerate threshold — a disabled cue and a mistyped one must stay
+/// distinguishable (ADR-0044).
+class _MinutesRow extends StatelessWidget {
+  const _MinutesRow({
+    required this.label,
+    required this.hint,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.step = 5,
+    this.enabled,
+    this.onEnabledChanged,
+  });
+
+  final String label;
+  final String hint;
+  final int value;
+  final int min;
+  final int max;
+  final int step;
+  final ValueChanged<int> onChanged;
+  final bool? enabled;
+  final ValueChanged<bool>? onEnabledChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final on = enabled ?? true;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: SatType.sans(
+                    size: 13,
+                    color: on ? sc.textMd : sc.textLo,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(hint, style: SatType.sans(size: 11, color: sc.textLo)),
+              ],
+            ),
+          ),
+          if (onEnabledChanged != null) ...[
+            Switch(
+              value: on,
+              onChanged: (v) => onEnabledChanged!(v),
+            ),
+            const SizedBox(width: 4),
+          ],
+          _step(sc, Icons.remove,
+              on && value > min ? () => onChanged(value - step) : null),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 66,
+            child: Text(
+              '$value min',
+              textAlign: TextAlign.center,
+              style: SatType.mono(
+                size: 13,
+                weight: FontWeight.w600,
+                color: on ? sc.textHi : sc.textLo,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _step(sc, Icons.add,
+              on && value < max ? () => onChanged(value + step) : null),
+        ],
+      ),
+    );
+  }
+
+  Widget _step(SatColors sc, IconData icon, VoidCallback? onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: onTap == null ? sc.bg2 : sc.bg3,
+            border: Border.all(color: sc.border1),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(
+            icon,
+            size: 17,
+            color: onTap == null ? sc.textLo : sc.textHi,
+          ),
+        ),
+      );
+}
+
+/// Device-local per-event mute. Lists only the cues this device's role can
+/// actually receive, so a waiter is never offered a switch for a kitchen cue.
+class _DeviceMuteList extends ConsumerWidget {
+  const _DeviceMuteList();
+
+  static const _labels = <AlertEvent, String>{
+    AlertEvent.newOrder: AppStrings.venueSettingsSoundNewOrder,
+    AlertEvent.orderReady: AppStrings.venueSettingsSoundReady,
+    AlertEvent.voided: AppStrings.venueSettingsSoundVoid,
+    AlertEvent.overdue: AppStrings.venueSettingsSoundOverdue,
+    AlertEvent.ungreeted: AppStrings.venueSettingsSoundUngreeted,
+    AlertEvent.pickup: AppStrings.venueSettingsSoundPickup,
+  };
+
+  /// Mirrors the routing in `AlertSoundService`: the kitchen (Server mode)
+  /// hears the kitchen cues, waiters hear the guest-facing ones.
+  static const _kitchen = {
+    AlertEvent.newOrder,
+    AlertEvent.overdue,
+    AlertEvent.voided,
+  };
+  static const _waiter = {
+    AlertEvent.orderReady,
+    AlertEvent.voided,
+    AlertEvent.ungreeted,
+    AlertEvent.pickup,
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final muted = ref.watch(mutedAlertsProvider);
+    final mode = ref.watch(prefsServiceProvider).valueOrNull?.appMode();
+    final visible =
+        (mode == AppMode.server ? _kitchen : _waiter).toList()
+          ..sort((a, b) => a.index.compareTo(b.index));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppStrings.venueSettingsTimingMuteTitle,
+          style: SatType.sans(
+            size: 13,
+            weight: FontWeight.w600,
+            color: sc.textHi,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          AppStrings.venueSettingsTimingMuteHint,
+          style: SatType.sans(size: 11, color: sc.textLo),
+        ),
+        const SizedBox(height: 6),
+        for (final e in visible)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _labels[e]!,
+                  style: SatType.sans(size: 13, color: sc.textMd),
+                ),
+              ),
+              Switch(
+                value: !muted.contains(e),
+                onChanged: (v) async {
+                  final prefs = ref.read(prefsServiceProvider).valueOrNull;
+                  if (prefs == null) return;
+                  await prefs.setAlertMuted(e, !v);
+                  ref.invalidate(prefsServiceProvider);
+                },
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
 class _ReportsHourCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1841,71 +2153,9 @@ class _ReportsHourCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Divider(height: 1, color: sc.border0),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              SizedBox(
-                width: 200,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Target kecepatan dapur',
-                      style: SatType.sans(size: 13, color: sc.textMd),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Batas "telat" di zona + SLA laporan',
-                      style: SatType.sans(size: 11, color: sc.textLo),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    _stepBtn(
-                      sc,
-                      Icons.remove,
-                      s.prepTargetMins > 5
-                          ? () => n.patch(prepTargetMins: s.prepTargetMins - 5)
-                          : null,
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: sc.bg3,
-                        border: Border.all(color: sc.border1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${s.prepTargetMins} min',
-                        style: SatType.mono(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    _stepBtn(
-                      sc,
-                      Icons.add,
-                      s.prepTargetMins < 60
-                          ? () => n.patch(prepTargetMins: s.prepTargetMins + 5)
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          // The kitchen target moved to "Waktu & Peringatan" (ADR-0043) — it
+          // drives live alerting, not just reporting, and filing it under
+          // Laporan hid it from anyone chasing a noise complaint.
         ],
       ),
     );

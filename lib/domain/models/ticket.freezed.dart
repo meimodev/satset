@@ -38,6 +38,18 @@ mixin _$Ticket {
   TicketStatus get status => throw _privateConstructorUsedError;
   String get sentAt => throw _privateConstructorUsedError;
   DateTime get sentAtTime => throw _privateConstructorUsedError;
+
+  /// When the kitchen started owning this line — stamped on the `held → sent`
+  /// fire, null on a normal send. The prep clock runs from
+  /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.
+  /// See [kitchenClockStart]. ADR-0043.
+  DateTime? get firedAtTime => throw _privateConstructorUsedError;
+
+  /// First entry into `ready` — the pass clock starts here (ADR-0013).
+  DateTime? get readyAtTime => throw _privateConstructorUsedError;
+
+  /// Most recent entry into `served`.
+  DateTime? get servedAtTime => throw _privateConstructorUsedError;
   String? get voidReason => throw _privateConstructorUsedError;
   String? get voidReasonCode => throw _privateConstructorUsedError;
   String? get voidApprovedBy => throw _privateConstructorUsedError;
@@ -70,6 +82,9 @@ abstract class $TicketCopyWith<$Res> {
     TicketStatus status,
     String sentAt,
     DateTime sentAtTime,
+    DateTime? firedAtTime,
+    DateTime? readyAtTime,
+    DateTime? servedAtTime,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
@@ -107,6 +122,9 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
     Object? status = null,
     Object? sentAt = null,
     Object? sentAtTime = null,
+    Object? firedAtTime = freezed,
+    Object? readyAtTime = freezed,
+    Object? servedAtTime = freezed,
     Object? voidReason = freezed,
     Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
@@ -171,6 +189,18 @@ class _$TicketCopyWithImpl<$Res, $Val extends Ticket>
                 ? _value.sentAtTime
                 : sentAtTime // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            firedAtTime: freezed == firedAtTime
+                ? _value.firedAtTime
+                : firedAtTime // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            readyAtTime: freezed == readyAtTime
+                ? _value.readyAtTime
+                : readyAtTime // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            servedAtTime: freezed == servedAtTime
+                ? _value.servedAtTime
+                : servedAtTime // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             voidReason: freezed == voidReason
                 ? _value.voidReason
                 : voidReason // ignore: cast_nullable_to_non_nullable
@@ -220,6 +250,9 @@ abstract class _$$TicketImplCopyWith<$Res> implements $TicketCopyWith<$Res> {
     TicketStatus status,
     String sentAt,
     DateTime sentAtTime,
+    DateTime? firedAtTime,
+    DateTime? readyAtTime,
+    DateTime? servedAtTime,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
@@ -256,6 +289,9 @@ class __$$TicketImplCopyWithImpl<$Res>
     Object? status = null,
     Object? sentAt = null,
     Object? sentAtTime = null,
+    Object? firedAtTime = freezed,
+    Object? readyAtTime = freezed,
+    Object? servedAtTime = freezed,
     Object? voidReason = freezed,
     Object? voidReasonCode = freezed,
     Object? voidApprovedBy = freezed,
@@ -320,6 +356,18 @@ class __$$TicketImplCopyWithImpl<$Res>
             ? _value.sentAtTime
             : sentAtTime // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        firedAtTime: freezed == firedAtTime
+            ? _value.firedAtTime
+            : firedAtTime // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        readyAtTime: freezed == readyAtTime
+            ? _value.readyAtTime
+            : readyAtTime // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        servedAtTime: freezed == servedAtTime
+            ? _value.servedAtTime
+            : servedAtTime // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         voidReason: freezed == voidReason
             ? _value.voidReason
             : voidReason // ignore: cast_nullable_to_non_nullable
@@ -347,7 +395,7 @@ class __$$TicketImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$TicketImpl implements _Ticket {
+class _$TicketImpl extends _Ticket {
   const _$TicketImpl({
     required this.id,
     this.visitId,
@@ -363,12 +411,16 @@ class _$TicketImpl implements _Ticket {
     required this.status,
     required this.sentAt,
     required this.sentAtTime,
+    this.firedAtTime,
+    this.readyAtTime,
+    this.servedAtTime,
     this.voidReason,
     this.voidReasonCode,
     this.voidApprovedBy,
     this.createdBy,
     this.voidedBy,
-  }) : _modifiers = modifiers;
+  }) : _modifiers = modifiers,
+       super._();
 
   @override
   final String id;
@@ -415,6 +467,21 @@ class _$TicketImpl implements _Ticket {
   final String sentAt;
   @override
   final DateTime sentAtTime;
+
+  /// When the kitchen started owning this line — stamped on the `held → sent`
+  /// fire, null on a normal send. The prep clock runs from
+  /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.
+  /// See [kitchenClockStart]. ADR-0043.
+  @override
+  final DateTime? firedAtTime;
+
+  /// First entry into `ready` — the pass clock starts here (ADR-0013).
+  @override
+  final DateTime? readyAtTime;
+
+  /// Most recent entry into `served`.
+  @override
+  final DateTime? servedAtTime;
   @override
   final String? voidReason;
   @override
@@ -428,7 +495,7 @@ class _$TicketImpl implements _Ticket {
 
   @override
   String toString() {
-    return 'Ticket(id: $id, visitId: $visitId, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
+    return 'Ticket(id: $id, visitId: $visitId, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, firedAtTime: $firedAtTime, readyAtTime: $readyAtTime, servedAtTime: $servedAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
   }
 
   @override
@@ -455,6 +522,12 @@ class _$TicketImpl implements _Ticket {
             (identical(other.sentAt, sentAt) || other.sentAt == sentAt) &&
             (identical(other.sentAtTime, sentAtTime) ||
                 other.sentAtTime == sentAtTime) &&
+            (identical(other.firedAtTime, firedAtTime) ||
+                other.firedAtTime == firedAtTime) &&
+            (identical(other.readyAtTime, readyAtTime) ||
+                other.readyAtTime == readyAtTime) &&
+            (identical(other.servedAtTime, servedAtTime) ||
+                other.servedAtTime == servedAtTime) &&
             (identical(other.voidReason, voidReason) ||
                 other.voidReason == voidReason) &&
             (identical(other.voidReasonCode, voidReasonCode) ||
@@ -484,6 +557,9 @@ class _$TicketImpl implements _Ticket {
     status,
     sentAt,
     sentAtTime,
+    firedAtTime,
+    readyAtTime,
+    servedAtTime,
     voidReason,
     voidReasonCode,
     voidApprovedBy,
@@ -500,7 +576,7 @@ class _$TicketImpl implements _Ticket {
       __$$TicketImplCopyWithImpl<_$TicketImpl>(this, _$identity);
 }
 
-abstract class _Ticket implements Ticket {
+abstract class _Ticket extends Ticket {
   const factory _Ticket({
     required final String id,
     final String? visitId,
@@ -516,12 +592,16 @@ abstract class _Ticket implements Ticket {
     required final TicketStatus status,
     required final String sentAt,
     required final DateTime sentAtTime,
+    final DateTime? firedAtTime,
+    final DateTime? readyAtTime,
+    final DateTime? servedAtTime,
     final String? voidReason,
     final String? voidReasonCode,
     final String? voidApprovedBy,
     final String? createdBy,
     final String? voidedBy,
   }) = _$TicketImpl;
+  const _Ticket._() : super._();
 
   @override
   String get id;
@@ -558,6 +638,21 @@ abstract class _Ticket implements Ticket {
   String get sentAt;
   @override
   DateTime get sentAtTime;
+
+  /// When the kitchen started owning this line — stamped on the `held → sent`
+  /// fire, null on a normal send. The prep clock runs from
+  /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.
+  /// See [kitchenClockStart]. ADR-0043.
+  @override
+  DateTime? get firedAtTime;
+
+  /// First entry into `ready` — the pass clock starts here (ADR-0013).
+  @override
+  DateTime? get readyAtTime;
+
+  /// Most recent entry into `served`.
+  @override
+  DateTime? get servedAtTime;
   @override
   String? get voidReason;
   @override

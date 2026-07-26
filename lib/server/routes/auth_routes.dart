@@ -113,6 +113,31 @@ Router authRoutes(
     return Response(204);
   });
 
+  /// User ids with a live [[Shift|staff session]] right now — sign-out deletes
+  /// the session row, so this is "who could actually hear a cue".
+  ///
+  /// Exists for the "Belum dilayani" escalation (ADR-0044): the first cue is
+  /// routed to the seating waiter, and if that waiter is signed out the cue
+  /// must go floor-wide *immediately* rather than waiting out the escalation
+  /// delay for a device that will never play it. Any authenticated staff
+  /// member may read it — it carries no capability or identity detail beyond
+  /// ids the caller already sees on the floor.
+  r.get('/auth/online', (Request req) async {
+    final user = await auth.resolveBearer(_bearer(req));
+    if (user == null) return Response(401);
+    final now = DateTime.now();
+    final rows = await auth.db.select(auth.db.sessions).get();
+    final live = rows
+        .where((s) => s.expiresAt.isAfter(now))
+        .map((s) => s.userId)
+        .toSet()
+        .toList();
+    return Response.ok(
+      jsonEncode({'userIds': live}),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
   r.get('/auth/me', (Request req) async {
     final t = _bearer(req);
     final user = await auth.resolveBearer(t);
