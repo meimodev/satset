@@ -150,10 +150,7 @@ class _FloatingTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final brightness = Theme.of(context).brightness;
-    final bg = brightness == Brightness.dark
-        ? const Color(0xEB1C1F23)
-        : const Color(0xDBFFFFFF);
+    final bg = sc.scrim.withValues(alpha: 0.92);
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
@@ -294,7 +291,7 @@ class _Tab extends StatelessWidget {
                       size: 10,
                       weight: FontWeight.w600,
                       letterSpacing: 0,
-                      color: badgeAlert ? const Color(0xFF0A0A0A) : sc.accentInk,
+                      color: badgeAlert ? sc.successInk : sc.accentInk,
                     ),
                   ),
                 ),

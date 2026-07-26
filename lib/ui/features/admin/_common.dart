@@ -318,7 +318,7 @@ Widget adminToggle(BuildContext context, {required bool on}) {
         width: 14,
         height: 14,
         decoration: BoxDecoration(
-          color: on ? const Color(0xFF0A0A0A) : sc.textLo,
+          color: on ? sc.successInk : sc.textLo,
           shape: BoxShape.circle,
         ),
       ),

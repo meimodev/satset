@@ -1322,7 +1322,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.check_circle, size: 20, color: Colors.white),
+                Icon(Icons.check_circle, size: 20, color: sc.successInk),
                 const SizedBox(width: 10),
                 Text(
                   widget.label,
@@ -1330,7 +1330,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
                     size: 15,
                     weight: FontWeight.w700,
                     letterSpacing: -0.15,
-                    color: Colors.white,
+                    color: sc.successInk,
                   ),
                 ),
               ],

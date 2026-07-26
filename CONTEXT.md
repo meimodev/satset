@@ -483,3 +483,12 @@ Stock moves **when a line is sent to the kitchen**, not when it is cooked, serve
 
 A [[Void (item)|void]] returns stock **only if the line was still `sent`** (the kitchen never touched it); a void from `prep`, `cooked`, or `ready` is recorded as [[Mutasi stok (Stock movement)|waste]] instead. The test is the line's **lifecycle status**, not its void reason code — status is a kitchen fact already on the ticket, whereas a stated reason asks the waiter to predict one (a `customerChange` on a plated dish would wrongly restock). Known ceiling: a kitchen that leaves everything at `sent` until pickup makes every void look untouched. _Avoid_: deducting at serve or at [[Bill close (Tutup tagihan)|bill close]] (sold-out would never fire during service); restocking every void unconditionally.
 
+
+### Tema (Theme)
+The whole look of the staff app — background ramp, accent, and semantic hues together — picked as one named unit, not assembled from a palette plus a light/dark switch. Four ship today: **Amber Gelap** (default), **Amber Terang**, **Neon Hijau**, **Indigo Terang**. Each declares its own brightness, so there is no separate dark-mode toggle and no OS-follow.
+
+A theme is **device-local**: it lives in `SharedPreferences` on one handset, next to the audio-alert flag and that device's printers. It is deliberately neither per-user (shared hardware would re-theme on every shift change, destroying the muscle memory the app is built for) nor per-venue (the hot line tablet and the terrace phone want different palettes at the same moment). Staff pick by the light in the room they are standing in.
+
+The six semantic hues ([[Habis / Sold out (menu item out of stock)|habis]], ready, urgent, and friends) are byte-identical across themes so the colour vocabulary is learned once — except where a theme's accent would collide with one of them, in which case only that one token is retuned. See [docs/adr/0045-device-local-theme-selection.md](docs/adr/0045-device-local-theme-selection.md).
+
+_Avoid_: treating theme as a user profile setting or a venue policy; putting the picker behind an admin capability (every waiter sets their own); adding a theme whose accent duplicates a semantic hue.

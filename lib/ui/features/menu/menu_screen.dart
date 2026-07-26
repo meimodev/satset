@@ -557,10 +557,7 @@ class _CartFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final brightness = Theme.of(context).brightness;
-    final bg = brightness == Brightness.dark
-        ? const Color(0xF01C1F23)
-        : const Color(0xF0FFFFFF);
+    final bg = sc.scrim.withValues(alpha: 0.94);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 10, 12, 10),
       decoration: BoxDecoration(

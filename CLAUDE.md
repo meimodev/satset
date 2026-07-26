@@ -129,3 +129,56 @@ Standard triage label mapping is used. See `docs/agents/triage-labels.md`.
 
 Single-context layout is used (CONTEXT.md + docs/adr/ at the root). See `docs/agents/domain.md`.
 
+
+## Design Context
+
+> Guides every UI decision. Tokens live in `lib/ui/core/design/`; this section is the *why*.
+
+### Users
+
+Four staff roles on shared Android hardware, one guest role on the web:
+
+- **Waiter** — phone, one-handed, walking, tray in the other hand. Glances for half a second between tables. The busiest, least forgiving context.
+- **Kitchen** — tablet KDS on a hot line, read from 1–2 m, often through steam, frequently never touched. Read-at-distance beats touch density.
+- **Cashier** — settling, splitting, capturing payment proof. Accuracy over speed; money is on the line.
+- **Owner / admin** — menu, staff, reports, inventory. Lower frequency, higher complexity tolerance. Seated, not rushed.
+- **Guest** — hand-rolled web SPA (ADR-0029), own phone, zero training, one-shot use.
+
+Job to be done: get an order from a guest's mouth into the kitchen, correctly, in seconds, without the internet. Everything else is bookkeeping around that.
+
+UI language is **Bahasa Indonesia** (`kosong`, `terisi`, `habis`, `Dikelola pengelola`). Copy goes through `lib/core/localization/app_strings.dart` — never hardcode user-facing text.
+
+### Brand Personality
+
+**Sharp, warm, dependable.** Tool-like precision, softened. Amber `#FF9233` on charcoal is the whole thesis: an instrument panel that doesn't feel cold, in a business that is fundamentally about hospitality.
+
+Voice: direct, unfussy, Indonesian-plain. State what happened, not how the system feels about it. No exclamation marks, no apology copy, no personality in error states — a waiter mid-rush needs the fact and the next action.
+
+Emotional goals, in order:
+
+1. **Fast + in control** — every tap resolves visibly. Never ambiguous whether an order was sent.
+2. **Calm under chaos** — the screen stays quiet while the room is loud. Nothing shouts unless it genuinely must (`urgent` is a scarce resource).
+3. **Effortless / low-thought** — muscle memory. A new hire is productive on shift one, untrained.
+
+### Aesthetic Direction
+
+Dark-first. Restaurants run dim, so **dark is the real default and light is the exception** — but light mode is a first-class citizen, not a fallback: terrace and daylight service must survive glare, so light mode needs genuine high contrast, not washed-out grays.
+
+Color is signal, never decoration. The neutral ramp (`bg0`–`bg4`, `border0`–`border2`, `textHi`→`textDim`) carries structure; semantic tokens (`accent`, `success`, `warn`, `urgent`, `info`, `violet`) carry meaning only. Course colors (`cDrinks`/`cStarters`/`cMains`/`cDesserts`/`cFire`) alias the semantic set deliberately — one hue vocabulary, learned once.
+
+Motion is welcome but purposeful: `satEaseOut`, transform + opacity only, always collapsing to a static final state under reduced motion (`motionEnabled(context)`). Motion clarifies what changed; it never entertains and never costs a waiter time.
+
+**Anti-references — explicitly not this:**
+
+- **Legacy Windows POS.** Gray gradients, beveled buttons, 6pt dense grids, 2005 enterprise chrome. This is the thing being replaced; resembling it is failure.
+- **Generic Material 3 default.** No purple seed, no stock M3 look. `useMaterial3: true` is a substrate, overridden by `SatColors` + `SatType`. If a screen could be any Flutter demo, it's wrong.
+- **Consumer food-delivery app.** No hero photography, gradients, promo banners, or gamification. Staff tools, not a storefront. (Guest SPA may lean slightly warmer — different audience, still not this.)
+
+### Design Principles
+
+1. **Glanceable beats dense.** Optimize for the half-second look from arm's length. Tap targets sized for a moving thumb; KDS text sized for 2 m. When density and legibility conflict, legibility wins.
+2. **Color is signal, not decoration.** Reach for the neutral ramp first. `urgent` earns its red by being rare — if everything is urgent, nothing is.
+3. **State must be unambiguous.** Sent vs. unsent, locked vs. free, ready vs. pending, settled vs. open — never inferable only from subtle color. Pair every state with text, shape, or position.
+4. **Both themes, both real.** Every surface ships dark and light with genuine contrast. Never hardcode a `Color` — go through `context.sat`.
+5. **Quiet motion, honest feedback.** Every action produces immediate visible acknowledgement; no animation delays a confirmation. Reduced motion always yields the final state instantly.
+6. **Degrade loudly, fail safely.** Offline, mid-reconnect, and stale-cache states are first-class UI — this app's whole promise is working when the network doesn't.

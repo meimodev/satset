@@ -23,10 +23,16 @@ class ReadyToast extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(12, 56, 12, 0),
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          // Green wash derived from the palette's own `success` rather than a
+          // fixed pair of greens — under `neonHijau` a baked-in emerald would
+          // fight the accent it sits next to.
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF2C5F3F), Color(0xFF163A23)],
+            colors: [
+              Color.alphaBlend(sc.success.withValues(alpha: 0.30), sc.bg2),
+              Color.alphaBlend(sc.success.withValues(alpha: 0.12), sc.bg1),
+            ],
           ),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: sc.success.withValues(alpha: 0.45)),
@@ -47,8 +53,8 @@ class ReadyToast extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.notifications_active,
-                  size: 18, color: Color(0xFF0A0A0A)),
+              child: Icon(Icons.notifications_active,
+                  size: 18, color: sc.successInk),
             ),
             const SizedBox(width: 12),
             Expanded(

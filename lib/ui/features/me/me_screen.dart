@@ -1,19 +1,16 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/audit_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
-import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/roles_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart';
-import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
@@ -21,15 +18,11 @@ import 'package:satset/server/server.dart' show serverRuntimeProvider;
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/sat_theme.dart';
+import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/ui/core/state/ready_alert_view_model.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
-import 'package:satset/ui/core/widgets/ready_banner.dart';
-import 'package:satset/ui/core/widgets/ready_toast.dart';
-
-import '../menu/modifier_sheet.dart';
-import '../void_flow/line_item_action_sheet.dart';
 
 class _ShiftMetrics {
   final String name;
@@ -144,7 +137,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final tables = ref.watch(tablesProvider);
     final tickets = ref.watch(ticketsProvider);
     final rawAudit = ref.watch(auditProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final theme = ref.watch(satThemeProvider);
     final user = ref.watch(authStateProvider).user;
     final roles = ref.watch(rolesRepositoryProvider);
     // Hide staff/role admin audit rows from users without `manageStaff`.
@@ -191,11 +184,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       elapsed: elapsed,
     );
 
-    void toggleTheme() {
-      final next =
-          themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-      ref.read(themeModeProvider.notifier).state = next;
-    }
+    void pickTheme() => showThemeSheet(context, ref);
 
     // Phone/tablet layout toggle — only on the Server-mode host AND only on a
     // tablet device (forcing phone-layout on a real phone is a no-op, so staff
@@ -249,8 +238,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         m: m,
         audit: audit,
         tableNames: tableNames,
-        themeMode: themeMode,
-        onToggleTheme: toggleTheme,
+        theme: theme,
+        onPickTheme: pickTheme,
         onEndShift: endShift,
         showLayoutToggle: showLayoutToggle,
         forcePhone: forcePhone,
@@ -261,8 +250,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       m: m,
       audit: audit,
       tableNames: tableNames,
-      themeMode: themeMode,
-      onToggleTheme: toggleTheme,
+      theme: theme,
+      onPickTheme: pickTheme,
       onEndShift: endShift,
       showLayoutToggle: showLayoutToggle,
       forcePhone: forcePhone,
@@ -277,8 +266,8 @@ class _MePhone extends StatelessWidget {
   final _ShiftMetrics m;
   final List<AuditEntry> audit;
   final Map<String, String> tableNames;
-  final ThemeMode themeMode;
-  final VoidCallback onToggleTheme;
+  final SatTheme theme;
+  final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
   final bool showLayoutToggle;
   final bool forcePhone;
@@ -288,8 +277,8 @@ class _MePhone extends StatelessWidget {
     required this.m,
     required this.audit,
     required this.tableNames,
-    required this.themeMode,
-    required this.onToggleTheme,
+    required this.theme,
+    required this.onPickTheme,
     required this.onEndShift,
     required this.showLayoutToggle,
     required this.forcePhone,
@@ -307,8 +296,8 @@ class _MePhone extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(0, l.topInset, 0, l.bottomInset + 40),
           children: [
             _TopBar(
-              themeMode: themeMode,
-              onToggleTheme: onToggleTheme,
+              theme: theme,
+              onPickTheme: onPickTheme,
               showLayoutToggle: showLayoutToggle,
               forcePhone: forcePhone,
               onToggleLayout: onToggleLayout,
@@ -336,13 +325,6 @@ class _MePhone extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _ActivityCard(audit: audit, tableNames: tableNames, max: 5),
             ),
-            if (kDebugMode) ...[
-              const _SectionLabel(label: 'DEBUG · TRIGGER UI'),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: _DebugSection(),
-              ),
-            ],
             SizedBox(height: l.bottomInset),
           ],
         ),
@@ -357,8 +339,8 @@ class _MeTablet extends StatelessWidget {
   final _ShiftMetrics m;
   final List<AuditEntry> audit;
   final Map<String, String> tableNames;
-  final ThemeMode themeMode;
-  final VoidCallback onToggleTheme;
+  final SatTheme theme;
+  final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
   final bool showLayoutToggle;
   final bool forcePhone;
@@ -368,8 +350,8 @@ class _MeTablet extends StatelessWidget {
     required this.m,
     required this.audit,
     required this.tableNames,
-    required this.themeMode,
-    required this.onToggleTheme,
+    required this.theme,
+    required this.onPickTheme,
     required this.onEndShift,
     required this.showLayoutToggle,
     required this.forcePhone,
@@ -402,7 +384,7 @@ class _MeTablet extends StatelessWidget {
                     forcePhone: forcePhone, onTap: onToggleLayout),
                 const SizedBox(width: 8),
               ],
-              _ThemeIconButton(themeMode: themeMode, onTap: onToggleTheme),
+              _ThemeIconButton(theme: theme, onTap: onPickTheme),
             ],
           ),
         ),
@@ -424,10 +406,6 @@ class _MeTablet extends StatelessWidget {
                       _KpiGrid(m: m, columns: 4),
                       const SizedBox(height: 12),
                       _PacingCard(m: m, big: true),
-                      if (kDebugMode) ...[
-                        const SizedBox(height: 16),
-                        const _DebugSection(),
-                      ],
                     ],
                   ),
                 ),
@@ -452,14 +430,14 @@ class _MeTablet extends StatelessWidget {
 // ────────────────────────────────── PIECES
 
 class _TopBar extends StatelessWidget {
-  final ThemeMode themeMode;
-  final VoidCallback onToggleTheme;
+  final SatTheme theme;
+  final VoidCallback onPickTheme;
   final bool showLayoutToggle;
   final bool forcePhone;
   final VoidCallback onToggleLayout;
   const _TopBar({
-    required this.themeMode,
-    required this.onToggleTheme,
+    required this.theme,
+    required this.onPickTheme,
     required this.showLayoutToggle,
     required this.forcePhone,
     required this.onToggleLayout,
@@ -476,7 +454,7 @@ class _TopBar extends StatelessWidget {
             _LayoutToggleButton(forcePhone: forcePhone, onTap: onToggleLayout),
             const SizedBox(width: 8),
           ],
-          _ThemeIconButton(themeMode: themeMode, onTap: onToggleTheme),
+          _ThemeIconButton(theme: theme, onTap: onPickTheme),
         ],
       ),
     );
@@ -520,15 +498,17 @@ class _LayoutToggleButton extends StatelessWidget {
   }
 }
 
+/// Opens the theme sheet. Shows the active theme's accent as the affordance —
+/// the palette is the thing being chosen, so the swatch is a truer preview than
+/// a sun/moon glyph (two of the four themes share a brightness).
 class _ThemeIconButton extends StatelessWidget {
-  final ThemeMode themeMode;
+  final SatTheme theme;
   final VoidCallback onTap;
-  const _ThemeIconButton({required this.themeMode, required this.onTap});
+  const _ThemeIconButton({required this.theme, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final dark = themeMode == ThemeMode.dark;
     return Material(
       color: Colors.transparent,
       shape: const CircleBorder(),
@@ -543,10 +523,14 @@ class _ThemeIconButton extends StatelessWidget {
             border: Border.all(color: sc.border1),
           ),
           alignment: Alignment.center,
-          child: Icon(
-            dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-            size: 16,
-            color: sc.textMd,
+          child: Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colors.accent,
+              border: Border.all(color: sc.border2),
+            ),
           ),
         ),
       ),
@@ -1019,223 +1003,4 @@ class _EndShiftButton extends StatelessWidget {
   }
 }
 
-// ────────────────────────────────── DEBUG (unchanged behavior)
 
-class _DebugSection extends ConsumerWidget {
-  const _DebugSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    return Container(
-      decoration: BoxDecoration(
-        color: sc.bg2,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: sc.border0),
-      ),
-      child: Column(
-        children: [
-          _DebugRow(
-            icon: Icons.notifications_active_rounded,
-            label: 'ReadyToast',
-            sub: 'Notification bar atas',
-            onTap: () => _showReadyToast(context),
-          ),
-          Divider(height: 1, color: sc.border0),
-          _DebugRow(
-            icon: Icons.campaign_outlined,
-            label: 'ReadyBanner',
-            sub: 'Banner di dalam layar',
-            onTap: () => _showReadyBannerPreview(context),
-          ),
-          Divider(height: 1, color: sc.border0),
-          _DebugRow(
-            icon: Icons.tune_rounded,
-            label: 'ModifierSheet',
-            sub: 'Dialog / bottom sheet menu',
-            onTap: () => _showModifierSheetDebug(context, ref),
-          ),
-          Divider(height: 1, color: sc.border0),
-          _DebugRow(
-            icon: Icons.receipt_long_outlined,
-            label: 'LineItemActionSheet',
-            sub: 'Aksi tiket: kirim / sajikan / void',
-            onTap: () => _showLineItemSheetDebug(context, ref),
-          ),
-          Divider(height: 1, color: sc.border0),
-          _DebugRow(
-            icon: Icons.info_outline,
-            label: 'Snackbar',
-            sub: 'Belum ada impl custom',
-            disabled: true,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DebugRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String sub;
-  final VoidCallback? onTap;
-  final bool disabled;
-  const _DebugRow({
-    required this.icon,
-    required this.label,
-    required this.sub,
-    this.onTap,
-    this.disabled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final labelColor = disabled ? sc.textLo : sc.textHi;
-    final subColor = disabled ? sc.textDim : sc.textLo;
-    final iconColor = disabled ? sc.textDim : sc.warn;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: disabled ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                    color: sc.bg3, borderRadius: BorderRadius.circular(8)),
-                alignment: Alignment.center,
-                child: Icon(icon, size: 16, color: iconColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w500,
-                            color: labelColor)),
-                    const SizedBox(height: 2),
-                    Text(sub,
-                        style: SatType.mono(
-                            size: 11, color: subColor, letterSpacing: 0.44)),
-                  ],
-                ),
-              ),
-              if (!disabled)
-                Icon(Icons.play_arrow_rounded, size: 20, color: sc.textMd)
-              else
-                Text('SKIP',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 0.8,
-                      color: sc.textDim,
-                    )),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-void _showReadyToast(BuildContext context) {
-  final overlay = Overlay.of(context, rootOverlay: true);
-  late OverlayEntry entry;
-  Timer? autoDismiss;
-  void remove() {
-    autoDismiss?.cancel();
-    if (entry.mounted) entry.remove();
-  }
-
-  entry = OverlayEntry(
-    builder: (ctx) => Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        bottom: false,
-        child: Material(
-          color: Colors.transparent,
-          child: ReadyToast(
-            alert: const ReadyAlert(
-              tableId: 'T2',
-              tableLabel: 'T2',
-              zone: 'Teras',
-              what: '2 item',
-            ),
-            onView: remove,
-            onDismiss: remove,
-          ),
-        ),
-      ),
-    ),
-  );
-  overlay.insert(entry);
-  autoDismiss = Timer(const Duration(seconds: 3), remove);
-}
-
-void _showReadyBannerPreview(BuildContext context) {
-  showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: context.sat.bg1,
-    builder: (ctx) => const Padding(
-      padding: EdgeInsets.fromLTRB(0, 24, 0, 32),
-      child: ReadyBanner(),
-    ),
-  );
-}
-
-void _showModifierSheetDebug(BuildContext context, WidgetRef ref) {
-  final items = ref.read(menuItemsProvider);
-  if (items.isEmpty) return;
-  final item = items.firstWhere(
-    (i) => i.modifierGroups.isNotEmpty,
-    orElse: () => items.first,
-  );
-  showModifierSheet(context: context, item: item, onAdd: (_) {});
-}
-
-void _showLineItemSheetDebug(BuildContext context, WidgetRef ref) {
-  final tickets = ref.read(ticketsProvider);
-  String? tableId;
-  Ticket? ticket;
-  for (final entry in tickets.entries) {
-    if (entry.value.isNotEmpty) {
-      ticket = entry.value.first;
-      tableId = ticket.tableId.isNotEmpty ? ticket.tableId : entry.key;
-      break;
-    }
-  }
-  tableId ??= 'T2';
-  ticket ??= _stubTicket(ref);
-  showLineItemActionSheet(
-    context: context,
-    tableId: tableId,
-    ticket: ticket,
-  );
-}
-
-Ticket _stubTicket(WidgetRef ref) {
-  final items = ref.read(menuItemsProvider);
-  final item = items.isEmpty ? null : items.first;
-  return Ticket(
-    id: 'debug-${DateTime.now().millisecondsSinceEpoch}',
-    itemId: item?.id ?? 'debug-item',
-    name: item?.name ?? 'Debug item',
-    course: CourseId.mains,
-    qty: 1,
-    price: item?.basePrice ?? 0,
-    status: TicketStatus.sent,
-    sentAt: '17:42',
-    sentAtTime: DateTime.now(),
-  );
-}

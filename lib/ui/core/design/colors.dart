@@ -20,6 +20,7 @@ class SatColors extends ThemeExtension<SatColors> {
     required this.accentInk,
     required this.success,
     required this.successSoft,
+    required this.successInk,
     required this.warn,
     required this.warnSoft,
     required this.urgent,
@@ -28,6 +29,7 @@ class SatColors extends ThemeExtension<SatColors> {
     required this.infoSoft,
     required this.violet,
     required this.violetSoft,
+    required this.scrim,
     required this.cDrinks,
     required this.cStarters,
     required this.cMains,
@@ -53,6 +55,11 @@ class SatColors extends ThemeExtension<SatColors> {
   final Color accentInk;
   final Color success;
   final Color successSoft;
+
+  /// Ink for text/icons sitting *on* a filled [success] surface (badges,
+  /// toggles, check pips). Declared per palette because a theme is free to
+  /// darken [success] — see `neonHijau`, where the accent owns bright green.
+  final Color successInk;
   final Color warn;
   final Color warnSoft;
   final Color urgent;
@@ -61,6 +68,11 @@ class SatColors extends ThemeExtension<SatColors> {
   final Color infoSoft;
   final Color violet;
   final Color violetSoft;
+
+  /// Opaque base for translucent overlays (floating bars, sheets scrims).
+  /// Call sites apply their own alpha — this token only fixes *which* surface
+  /// the overlay is tinted from, which differs per palette.
+  final Color scrim;
   final Color cDrinks;
   final Color cStarters;
   final Color cMains;
@@ -74,6 +86,12 @@ class SatColors extends ThemeExtension<SatColors> {
   static const _urgent = Color(0xFFFF5C5C);
   static const _info = Color(0xFF6DB5FF);
   static const _violet = Color(0xFFC08AFF);
+
+  /// Every shipped palette's `success` is light enough to take near-black ink
+  /// (the darkest, `neonHijau`'s emerald, still clears 6:1). Kept as a token so
+  /// a future palette with a dark `success` declares white here instead of
+  /// silently shipping unreadable badges.
+  static const _onSuccessInk = Color(0xFF0A0A0A);
 
   static const dark = SatColors(
     bg0: Color(0xFF0D0E10),
@@ -94,6 +112,7 @@ class SatColors extends ThemeExtension<SatColors> {
     accentInk: _accentInk,
     success: _success,
     successSoft: Color(0x244DD487),
+    successInk: _onSuccessInk,
     warn: _warn,
     warnSoft: Color(0x24FFC04D),
     urgent: _urgent,
@@ -102,6 +121,7 @@ class SatColors extends ThemeExtension<SatColors> {
     infoSoft: Color(0x246DB5FF),
     violet: _violet,
     violetSoft: Color(0x24C08AFF),
+    scrim: Color(0xFF1C1F23),
     cDrinks: _info,
     cStarters: _warn,
     cMains: _success,
@@ -128,6 +148,7 @@ class SatColors extends ThemeExtension<SatColors> {
     accentInk: _accentInk,
     success: _success,
     successSoft: Color(0x244DD487),
+    successInk: _onSuccessInk,
     warn: _warn,
     warnSoft: Color(0x24FFC04D),
     urgent: _urgent,
@@ -136,11 +157,99 @@ class SatColors extends ThemeExtension<SatColors> {
     infoSoft: Color(0x246DB5FF),
     violet: _violet,
     violetSoft: Color(0x24C08AFF),
+    scrim: Color(0xFFFFFFFF),
     cDrinks: _info,
     cStarters: _warn,
     cMains: _success,
     cDesserts: _violet,
     cFire: _accent,
+  );
+
+  // ── Neon Hijau ────────────────────────────────────────────────────────────
+  // Pure black ground, hue-neutral grey ramp so the neon stays the only
+  // saturated thing on screen. `success` is retuned to a deep emerald (ADR-0045)
+  // because the accent owns "bright green" here — two greens on a KDS card read
+  // at 1–2 m is exactly the collision the palette must not ship.
+  static const _neonAccent = Color(0xFFB6FF3D);
+  static const _neonSuccess = Color(0xFF2FA35F);
+
+  static const neonHijau = SatColors(
+    bg0: Color(0xFF000000),
+    bg1: Color(0xFF0B0B0B),
+    bg2: Color(0xFF131313),
+    bg3: Color(0xFF1C1C1C),
+    bg4: Color(0xFF262626),
+    border0: Color(0x0FFFFFFF),
+    border1: Color(0x1AFFFFFF),
+    border2: Color(0x29FFFFFF),
+    textHi: Color(0xFFF2F2F0),
+    textMd: Color(0xFFADADA8),
+    textLo: Color(0xFF78786F),
+    textDim: Color(0xFF4F4F4A),
+    accent: _neonAccent,
+    accentSoft: Color(0x24B6FF3D),
+    accentBorder: Color(0x59B6FF3D),
+    accentInk: Color(0xFF0A1400),
+    success: _neonSuccess,
+    successSoft: Color(0x242FA35F),
+    successInk: _onSuccessInk,
+    warn: _warn,
+    warnSoft: Color(0x24FFC04D),
+    urgent: _urgent,
+    urgentSoft: Color(0x24FF5C5C),
+    info: _info,
+    infoSoft: Color(0x246DB5FF),
+    violet: _violet,
+    violetSoft: Color(0x24C08AFF),
+    scrim: Color(0xFF131313),
+    cDrinks: _info,
+    cStarters: _warn,
+    cMains: _neonSuccess,
+    cDesserts: _violet,
+    cFire: _neonAccent,
+  );
+
+  // ── Indigo Terang ─────────────────────────────────────────────────────────
+  // Cool paper rather than the warm cream of `light`, so the two light themes
+  // are told apart at a glance. `info` shifts to cyan (ADR-0045) so the indigo
+  // accent is the only blue that means "primary".
+  static const _indigoAccent = Color(0xFF3538CD);
+  static const _indigoInfo = Color(0xFF0891B2);
+
+  static const indigoTerang = SatColors(
+    bg0: Color(0xFFF4F5F8),
+    bg1: Color(0xFFFFFFFF),
+    bg2: Color(0xFFFAFBFD),
+    bg3: Color(0xFFE9EBF1),
+    bg4: Color(0xFFDCDFE8),
+    border0: Color(0x0D000000),
+    border1: Color(0x17000000),
+    border2: Color(0x29000000),
+    textHi: Color(0xFF16181D),
+    textMd: Color(0xFF4B4F5A),
+    textLo: Color(0xFF7C818E),
+    textDim: Color(0xFFAAAEB9),
+    accent: _indigoAccent,
+    accentSoft: Color(0x1A3538CD),
+    accentBorder: Color(0x593538CD),
+    accentInk: Color(0xFFFFFFFF),
+    success: _success,
+    successSoft: Color(0x244DD487),
+    successInk: _onSuccessInk,
+    warn: _warn,
+    warnSoft: Color(0x24FFC04D),
+    urgent: _urgent,
+    urgentSoft: Color(0x24FF5C5C),
+    info: _indigoInfo,
+    infoSoft: Color(0x240891B2),
+    violet: _violet,
+    violetSoft: Color(0x24C08AFF),
+    scrim: Color(0xFFFFFFFF),
+    cDrinks: _indigoInfo,
+    cStarters: _warn,
+    cMains: _success,
+    cDesserts: _violet,
+    cFire: _indigoAccent,
   );
 
   @override
@@ -163,6 +272,7 @@ class SatColors extends ThemeExtension<SatColors> {
     Color? accentInk,
     Color? success,
     Color? successSoft,
+    Color? successInk,
     Color? warn,
     Color? warnSoft,
     Color? urgent,
@@ -171,6 +281,7 @@ class SatColors extends ThemeExtension<SatColors> {
     Color? infoSoft,
     Color? violet,
     Color? violetSoft,
+    Color? scrim,
     Color? cDrinks,
     Color? cStarters,
     Color? cMains,
@@ -196,6 +307,7 @@ class SatColors extends ThemeExtension<SatColors> {
       accentInk: accentInk ?? this.accentInk,
       success: success ?? this.success,
       successSoft: successSoft ?? this.successSoft,
+      successInk: successInk ?? this.successInk,
       warn: warn ?? this.warn,
       warnSoft: warnSoft ?? this.warnSoft,
       urgent: urgent ?? this.urgent,
@@ -204,6 +316,7 @@ class SatColors extends ThemeExtension<SatColors> {
       infoSoft: infoSoft ?? this.infoSoft,
       violet: violet ?? this.violet,
       violetSoft: violetSoft ?? this.violetSoft,
+      scrim: scrim ?? this.scrim,
       cDrinks: cDrinks ?? this.cDrinks,
       cStarters: cStarters ?? this.cStarters,
       cMains: cMains ?? this.cMains,
@@ -234,6 +347,7 @@ class SatColors extends ThemeExtension<SatColors> {
       accentInk: Color.lerp(accentInk, other.accentInk, t)!,
       success: Color.lerp(success, other.success, t)!,
       successSoft: Color.lerp(successSoft, other.successSoft, t)!,
+      successInk: Color.lerp(successInk, other.successInk, t)!,
       warn: Color.lerp(warn, other.warn, t)!,
       warnSoft: Color.lerp(warnSoft, other.warnSoft, t)!,
       urgent: Color.lerp(urgent, other.urgent, t)!,
@@ -242,6 +356,7 @@ class SatColors extends ThemeExtension<SatColors> {
       infoSoft: Color.lerp(infoSoft, other.infoSoft, t)!,
       violet: Color.lerp(violet, other.violet, t)!,
       violetSoft: Color.lerp(violetSoft, other.violetSoft, t)!,
+      scrim: Color.lerp(scrim, other.scrim, t)!,
       cDrinks: Color.lerp(cDrinks, other.cDrinks, t)!,
       cStarters: Color.lerp(cStarters, other.cStarters, t)!,
       cMains: Color.lerp(cMains, other.cMains, t)!,

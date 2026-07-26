@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
+import 'sat_theme.dart';
 import 'typography.dart';
 
 ThemeData _build(SatColors sc, Brightness brightness) {
@@ -50,5 +51,4 @@ ThemeData _build(SatColors sc, Brightness brightness) {
   );
 }
 
-ThemeData satDarkTheme() => _build(SatColors.dark, Brightness.dark);
-ThemeData satLightTheme() => _build(SatColors.light, Brightness.light);
+ThemeData satTheme(SatTheme t) => _build(t.colors, t.brightness);

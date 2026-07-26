@@ -154,7 +154,7 @@ class _StationChip extends StatelessWidget {
                     color: sc.success,
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.check, size: 11, color: Color(0xFF0A0A0A)),
+                  child: Icon(Icons.check, size: 11, color: sc.successInk),
                 )
               : SizedBox(
                   width: 18,

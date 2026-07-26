@@ -167,4 +167,12 @@ class AppStrings {
   static const String crumbStafAkun = 'Staf & akun';
   static const String crumbLaporanShift = 'Laporan shift';
   static const String crumbKonfigurasi = 'Konfigurasi';
+
+  // Theme picker (ADR-0045)
+  static const String themeSheetTitle = 'Tema';
+  static const String themeSheetSubtitle = 'Berlaku untuk perangkat ini saja';
+  static const String themeAmberGelap = 'Amber Gelap';
+  static const String themeAmberTerang = 'Amber Terang';
+  static const String themeNeonHijau = 'Neon Hijau';
+  static const String themeIndigoTerang = 'Indigo Terang';
 }

@@ -217,7 +217,7 @@ class _RailBtn extends StatelessWidget {
                         style: SatType.mono(
                           size: 10,
                           weight: FontWeight.w600,
-                          color: alert ? const Color(0xFF0A0A0A) : sc.accentInk,
+                          color: alert ? sc.successInk : sc.accentInk,
                         ),
                       ),
                     ),

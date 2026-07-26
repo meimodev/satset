@@ -15,6 +15,7 @@ import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/modifier_group.dart';
 import 'package:satset/ui/core/design/theme.dart';
+import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/menu/modifier_sheet.dart';
 
 /// A button that opens the real modifier sheet for [item] and captures the
@@ -64,7 +65,7 @@ void main() {
 
     await $.pumpWidget(ProviderScope(
       child: MaterialApp(
-        theme: satLightTheme(),
+        theme: satTheme(SatTheme.amberTerang),
         home: _SheetHost(item: item, onAdd: (ci) => captured = ci),
       ),
     ));

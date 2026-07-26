@@ -911,7 +911,7 @@ class _Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final base = user.avatarColorHex != null
         ? Color(user.avatarColorHex!)
-        : (role?.color ?? const Color(0xFF6DB5FF));
+        : (role?.color ?? context.sat.info);
     return Container(
       width: size,
       height: size,

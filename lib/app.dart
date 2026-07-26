@@ -11,13 +11,13 @@ class SatSetApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    final mode = ref.watch(themeModeProvider);
+    // One theme, one code path — brightness is a property of the selected
+    // SatTheme, so there is no darkTheme/themeMode pair. See ADR-0045.
+    final theme = ref.watch(satThemeProvider);
     return MaterialApp.router(
       title: 'SatSet',
       debugShowCheckedModeBanner: false,
-      theme: satLightTheme(),
-      darkTheme: satDarkTheme(),
-      themeMode: mode,
+      theme: satTheme(theme),
       routerConfig: router,
       builder: (context, child) {
         final bg = Theme.of(context).scaffoldBackgroundColor;

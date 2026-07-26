@@ -18,6 +18,7 @@ class PrefsService {
   static const _kAudioAlert = 'satset.audio_alert';
   static const _kMutedAlerts = 'satset.muted_alerts';
   static const _kDevicePrinters = 'satset.device_printers';
+  static const _kTheme = 'satset.theme';
 
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
   Future<void> setAppMode(AppMode m) async {
@@ -92,6 +93,17 @@ class PrefsService {
   Future<void> setDevicePrinters(List<DevicePrinter> printers) async {
     await _p.setString(
         _kDevicePrinters, jsonEncode([for (final p in printers) p.toJson()]));
+  }
+
+  /// Device-local look (ADR-0045). Deliberately not per-user and not per-venue:
+  /// staff pick by the light in the room they are standing in, and shared
+  /// hardware must not re-theme on every shift change.
+  ///
+  /// Stored as an opaque key — resolving it to a palette is the UI layer's job,
+  /// since `data/` must not import `ui/`.
+  String? themeKey() => _p.getString(_kTheme);
+  Future<void> setThemeKey(String key) async {
+    await _p.setString(_kTheme, key);
   }
 }
 

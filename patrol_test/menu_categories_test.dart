@@ -20,6 +20,7 @@ import 'package:patrol/patrol.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/ui/core/design/theme.dart';
+import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/admin/menu_admin_screen.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 
@@ -76,7 +77,7 @@ Widget _harness() {
       menuRepositoryProvider.overrideWith((ref) => _FakeMenuRepository(ref)),
     ],
     child: MaterialApp(
-      theme: satLightTheme(),
+      theme: satTheme(SatTheme.amberTerang),
       home: const Scaffold(body: MenuAdminScreen()),
     ),
   );

@@ -21,6 +21,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/ticket_modifier.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/theme.dart';
+import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/admin/kitchen_screen.dart';
 
 /// Seeds [ticketsProvider] directly. apiConfig is null in the test scope, so
@@ -62,7 +63,7 @@ Widget _kdsHarness() {
           ref, const [VenueTable(id: 'tbl1', zoneId: 'z1')])),
     ],
     child: MaterialApp(
-      theme: satLightTheme(),
+      theme: satTheme(SatTheme.amberTerang),
       home: const Scaffold(body: KitchenScreen()),
     ),
   );
