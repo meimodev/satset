@@ -76,7 +76,19 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           ..where((i) => i.archivedAt.isNull())
           ..orderBy([(i) => OrderingTerm(expression: i.name)]))
         .get();
-    return _json([for (final i in rows) ingredientRowToJson(i)]);
+    // Recipe links + last receive ride along so the stock card can show what
+    // an ingredient feeds without a fetch per row.
+    final links = await loadRecipeLinks(db);
+    final lastReceived = await loadLastReceived(db);
+    return _json([
+      for (final i in rows)
+        {
+          ...ingredientRowToJson(i),
+          'usedBy': links.usedBy[i.id] ?? const <String>[],
+          'madeFrom': links.madeFrom[i.id] ?? const <String>[],
+          'lastReceivedAt': lastReceived[i.id]?.toIso8601String(),
+        },
+    ]);
   });
 
   r.post('/stock/ingredients', (Request req) async {

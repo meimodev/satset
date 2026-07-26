@@ -572,6 +572,73 @@ Future<void> reverseTicketStock(
   }
 }
 
+// ------------------------------------------------------- reverse recipe index
+
+/// The recipe links the stock list shows on every card, keyed by ingredient id.
+///
+/// `usedBy` is the reverse of [loadRecipes]: which menu items and produced
+/// ingredients consume this one — i.e. what stops selling when it runs out.
+/// `madeFrom` is the forward direction, and only exists for produced
+/// ingredients. Names are resolved once here rather than per row.
+class RecipeLinks {
+  final Map<String, List<String>> usedBy;
+  final Map<String, List<String>> madeFrom;
+
+  const RecipeLinks({this.usedBy = const {}, this.madeFrom = const {}});
+}
+
+Future<RecipeLinks> loadRecipeLinks(AppDatabase db) async {
+  final lines = await db.select(db.recipeLines).get();
+  if (lines.isEmpty) return const RecipeLinks();
+
+  final itemNames = {
+    for (final m in await db.select(db.menuItems).get()) m.id: m.name,
+  };
+  final ingredientNames = {
+    for (final i in await db.select(db.ingredients).get()) i.id: i.name,
+  };
+
+  // Sets, because a recipe may touch the same ingredient across several
+  // variant/option scopes and the card must not repeat the chip.
+  final usedBy = <String, Set<String>>{};
+  final madeFrom = <String, Set<String>>{};
+
+  for (final l in lines) {
+    final ownerName = l.ownerKind == 'item'
+        ? itemNames[l.ownerId]
+        : ingredientNames[l.ownerId];
+    final ingredientName = ingredientNames[l.ingredientId];
+    // Dangling line (owner or ingredient hard-deleted) — nothing to label.
+    if (ownerName == null || ingredientName == null) continue;
+
+    (usedBy[l.ingredientId] ??= <String>{}).add(ownerName);
+    if (l.ownerKind == 'ingredient') {
+      (madeFrom[l.ownerId] ??= <String>{}).add(ingredientName);
+    }
+  }
+
+  List<String> sorted(Set<String> s) =>
+      s.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+  return RecipeLinks(
+    usedBy: {for (final e in usedBy.entries) e.key: sorted(e.value)},
+    madeFrom: {for (final e in madeFrom.entries) e.key: sorted(e.value)},
+  );
+}
+
+/// Newest `receive` movement per ingredient — the "Terakhir terima" column.
+Future<Map<String, DateTime>> loadLastReceived(AppDatabase db) async {
+  final at = db.stockMovements.at.max();
+  final q = db.selectOnly(db.stockMovements)
+    ..addColumns([db.stockMovements.ingredientId, at])
+    ..where(db.stockMovements.reason.equals(StockReason.receive.name))
+    ..groupBy([db.stockMovements.ingredientId]);
+  return {
+    for (final r in await q.get())
+      if (r.read(at) != null) r.read(db.stockMovements.ingredientId)!: r.read(at)!,
+  };
+}
+
 // ------------------------------------------------------------------- JSON
 
 Map<String, dynamic> ingredientRowToJson(IngredientRow i) => {

@@ -22,6 +22,17 @@ class Ingredient {
   /// ingredient is produced from others (sambal, kaldu) rather than bought.
   final int? batchYield;
 
+  /// Names of the menu items and produced ingredients whose recipes consume
+  /// this one — what stops selling when it runs out. Sorted, server-resolved.
+  final List<String> usedBy;
+
+  /// Names of the ingredients this one is produced from. Empty unless
+  /// [isProduced].
+  final List<String> madeFrom;
+
+  /// When stock was last received. Null = never bought in.
+  final DateTime? lastReceivedAt;
+
   const Ingredient({
     required this.id,
     required this.name,
@@ -30,6 +41,9 @@ class Ingredient {
     this.lowStockAt,
     this.costMicro = 0,
     this.batchYield,
+    this.usedBy = const [],
+    this.madeFrom = const [],
+    this.lastReceivedAt,
   });
 
   bool get isProduced => batchYield != null;
@@ -49,6 +63,9 @@ class Ingredient {
         lowStockAt: (j['lowStockAt'] as num?)?.toInt(),
         costMicro: (j['costMicro'] as num?)?.toInt() ?? 0,
         batchYield: (j['batchYield'] as num?)?.toInt(),
+        usedBy: _names(j['usedBy']),
+        madeFrom: _names(j['madeFrom']),
+        lastReceivedAt: DateTime.tryParse(j['lastReceivedAt'] as String? ?? ''),
       );
 
   Map<String, dynamic> toJson() => {
@@ -79,8 +96,15 @@ class Ingredient {
         costMicro: costMicro ?? this.costMicro,
         batchYield:
             identical(batchYield, _unset) ? this.batchYield : batchYield as int?,
+        usedBy: usedBy,
+        madeFrom: madeFrom,
+        lastReceivedAt: lastReceivedAt,
       );
 }
+
+/// Derived name lists are server-resolved and absent on older payloads.
+List<String> _names(Object? raw) =>
+    raw is List ? [for (final n in raw) n as String] : const [];
 
 /// Why stock moved. One uniform shape for every change (ADR-0041).
 enum StockReason {
