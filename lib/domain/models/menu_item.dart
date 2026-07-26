@@ -21,7 +21,9 @@ class MenuItem {
 
   /// Diet tag ids (resolve against the menu snapshot's [MenuTag] list).
   final List<String> dietary;
-  final int prepTime;
+  /// Per-item ready target in minutes ("Waktu siap"). **Null = inherit** the
+  /// venue default — resolve with `resolvedPrepMins`, never read raw.
+  final int? prepTime;
   final int basePrice;
   final int cost;
   final List<Variant> variants;
@@ -54,7 +56,7 @@ class MenuItem {
     required this.description,
     this.allergens = const [],
     this.dietary = const [],
-    this.prepTime = 5,
+    this.prepTime,
     required this.basePrice,
     this.cost = 0,
     required this.variants,
@@ -94,6 +96,10 @@ class MenuItem {
     bool? autoSoldOut,
     List<String>? soldOutVariantIds,
     List<String>? soldOutOptionIds,
+    /// `prepTime` is nullable-meaningful (null = inherit the venue default),
+    /// so passing null cannot express "clear it". Set this to drop the
+    /// per-item override back to inherit. ADR-0043.
+    bool clearPrepTime = false,
   }) {
     return MenuItem(
       id: id ?? this.id,
@@ -102,7 +108,7 @@ class MenuItem {
       description: description ?? this.description,
       allergens: allergens ?? this.allergens,
       dietary: dietary ?? this.dietary,
-      prepTime: prepTime ?? this.prepTime,
+      prepTime: clearPrepTime ? null : (prepTime ?? this.prepTime),
       basePrice: basePrice ?? this.basePrice,
       cost: cost ?? this.cost,
       variants: variants ?? this.variants,

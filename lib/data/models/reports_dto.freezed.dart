@@ -4294,9 +4294,19 @@ mixin _$SpeedSectionDto {
   int get prepMedianMin => throw _privateConstructorUsedError;
   int get pickupMedianMin => throw _privateConstructorUsedError;
   double get slaPct => throw _privateConstructorUsedError;
+
+  /// The venue *default* target — no longer the only target in play.
   int get prepTargetMins => throw _privateConstructorUsedError;
   int get sampleSize => throw _privateConstructorUsedError;
-  List<SpeedItemDto> get slowItems => throw _privateConstructorUsedError;
+  List<SpeedItemDto> get slowItems =>
+      throw _privateConstructorUsedError; // ADR-0044 additions.
+  int get pickupTargetMins => throw _privateConstructorUsedError;
+  double get pickupSlaPct => throw _privateConstructorUsedError;
+  int get courseSampleSize => throw _privateConstructorUsedError;
+  int get greetMedianMin => throw _privateConstructorUsedError;
+  double get greetBreachPct => throw _privateConstructorUsedError;
+  int get ungreetedMins => throw _privateConstructorUsedError;
+  int get greetSampleSize => throw _privateConstructorUsedError;
 
   /// Serializes this SpeedSectionDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -4322,6 +4332,13 @@ abstract class $SpeedSectionDtoCopyWith<$Res> {
     int prepTargetMins,
     int sampleSize,
     List<SpeedItemDto> slowItems,
+    int pickupTargetMins,
+    double pickupSlaPct,
+    int courseSampleSize,
+    int greetMedianMin,
+    double greetBreachPct,
+    int ungreetedMins,
+    int greetSampleSize,
   });
 }
 
@@ -4346,6 +4363,13 @@ class _$SpeedSectionDtoCopyWithImpl<$Res, $Val extends SpeedSectionDto>
     Object? prepTargetMins = null,
     Object? sampleSize = null,
     Object? slowItems = null,
+    Object? pickupTargetMins = null,
+    Object? pickupSlaPct = null,
+    Object? courseSampleSize = null,
+    Object? greetMedianMin = null,
+    Object? greetBreachPct = null,
+    Object? ungreetedMins = null,
+    Object? greetSampleSize = null,
   }) {
     return _then(
       _value.copyWith(
@@ -4373,6 +4397,34 @@ class _$SpeedSectionDtoCopyWithImpl<$Res, $Val extends SpeedSectionDto>
                 ? _value.slowItems
                 : slowItems // ignore: cast_nullable_to_non_nullable
                       as List<SpeedItemDto>,
+            pickupTargetMins: null == pickupTargetMins
+                ? _value.pickupTargetMins
+                : pickupTargetMins // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pickupSlaPct: null == pickupSlaPct
+                ? _value.pickupSlaPct
+                : pickupSlaPct // ignore: cast_nullable_to_non_nullable
+                      as double,
+            courseSampleSize: null == courseSampleSize
+                ? _value.courseSampleSize
+                : courseSampleSize // ignore: cast_nullable_to_non_nullable
+                      as int,
+            greetMedianMin: null == greetMedianMin
+                ? _value.greetMedianMin
+                : greetMedianMin // ignore: cast_nullable_to_non_nullable
+                      as int,
+            greetBreachPct: null == greetBreachPct
+                ? _value.greetBreachPct
+                : greetBreachPct // ignore: cast_nullable_to_non_nullable
+                      as double,
+            ungreetedMins: null == ungreetedMins
+                ? _value.ungreetedMins
+                : ungreetedMins // ignore: cast_nullable_to_non_nullable
+                      as int,
+            greetSampleSize: null == greetSampleSize
+                ? _value.greetSampleSize
+                : greetSampleSize // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -4395,6 +4447,13 @@ abstract class _$$SpeedSectionDtoImplCopyWith<$Res>
     int prepTargetMins,
     int sampleSize,
     List<SpeedItemDto> slowItems,
+    int pickupTargetMins,
+    double pickupSlaPct,
+    int courseSampleSize,
+    int greetMedianMin,
+    double greetBreachPct,
+    int ungreetedMins,
+    int greetSampleSize,
   });
 }
 
@@ -4418,6 +4477,13 @@ class __$$SpeedSectionDtoImplCopyWithImpl<$Res>
     Object? prepTargetMins = null,
     Object? sampleSize = null,
     Object? slowItems = null,
+    Object? pickupTargetMins = null,
+    Object? pickupSlaPct = null,
+    Object? courseSampleSize = null,
+    Object? greetMedianMin = null,
+    Object? greetBreachPct = null,
+    Object? ungreetedMins = null,
+    Object? greetSampleSize = null,
   }) {
     return _then(
       _$SpeedSectionDtoImpl(
@@ -4445,6 +4511,34 @@ class __$$SpeedSectionDtoImplCopyWithImpl<$Res>
             ? _value._slowItems
             : slowItems // ignore: cast_nullable_to_non_nullable
                   as List<SpeedItemDto>,
+        pickupTargetMins: null == pickupTargetMins
+            ? _value.pickupTargetMins
+            : pickupTargetMins // ignore: cast_nullable_to_non_nullable
+                  as int,
+        pickupSlaPct: null == pickupSlaPct
+            ? _value.pickupSlaPct
+            : pickupSlaPct // ignore: cast_nullable_to_non_nullable
+                  as double,
+        courseSampleSize: null == courseSampleSize
+            ? _value.courseSampleSize
+            : courseSampleSize // ignore: cast_nullable_to_non_nullable
+                  as int,
+        greetMedianMin: null == greetMedianMin
+            ? _value.greetMedianMin
+            : greetMedianMin // ignore: cast_nullable_to_non_nullable
+                  as int,
+        greetBreachPct: null == greetBreachPct
+            ? _value.greetBreachPct
+            : greetBreachPct // ignore: cast_nullable_to_non_nullable
+                  as double,
+        ungreetedMins: null == ungreetedMins
+            ? _value.ungreetedMins
+            : ungreetedMins // ignore: cast_nullable_to_non_nullable
+                  as int,
+        greetSampleSize: null == greetSampleSize
+            ? _value.greetSampleSize
+            : greetSampleSize // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -4460,6 +4554,13 @@ class _$SpeedSectionDtoImpl implements _SpeedSectionDto {
     this.prepTargetMins = 15,
     this.sampleSize = 0,
     final List<SpeedItemDto> slowItems = const <SpeedItemDto>[],
+    this.pickupTargetMins = 4,
+    this.pickupSlaPct = 0.0,
+    this.courseSampleSize = 0,
+    this.greetMedianMin = 0,
+    this.greetBreachPct = 0.0,
+    this.ungreetedMins = 7,
+    this.greetSampleSize = 0,
   }) : _slowItems = slowItems;
 
   factory _$SpeedSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -4474,6 +4575,8 @@ class _$SpeedSectionDtoImpl implements _SpeedSectionDto {
   @override
   @JsonKey()
   final double slaPct;
+
+  /// The venue *default* target — no longer the only target in play.
   @override
   @JsonKey()
   final int prepTargetMins;
@@ -4489,9 +4592,32 @@ class _$SpeedSectionDtoImpl implements _SpeedSectionDto {
     return EqualUnmodifiableListView(_slowItems);
   }
 
+  // ADR-0044 additions.
+  @override
+  @JsonKey()
+  final int pickupTargetMins;
+  @override
+  @JsonKey()
+  final double pickupSlaPct;
+  @override
+  @JsonKey()
+  final int courseSampleSize;
+  @override
+  @JsonKey()
+  final int greetMedianMin;
+  @override
+  @JsonKey()
+  final double greetBreachPct;
+  @override
+  @JsonKey()
+  final int ungreetedMins;
+  @override
+  @JsonKey()
+  final int greetSampleSize;
+
   @override
   String toString() {
-    return 'SpeedSectionDto(prepMedianMin: $prepMedianMin, pickupMedianMin: $pickupMedianMin, slaPct: $slaPct, prepTargetMins: $prepTargetMins, sampleSize: $sampleSize, slowItems: $slowItems)';
+    return 'SpeedSectionDto(prepMedianMin: $prepMedianMin, pickupMedianMin: $pickupMedianMin, slaPct: $slaPct, prepTargetMins: $prepTargetMins, sampleSize: $sampleSize, slowItems: $slowItems, pickupTargetMins: $pickupTargetMins, pickupSlaPct: $pickupSlaPct, courseSampleSize: $courseSampleSize, greetMedianMin: $greetMedianMin, greetBreachPct: $greetBreachPct, ungreetedMins: $ungreetedMins, greetSampleSize: $greetSampleSize)';
   }
 
   @override
@@ -4511,7 +4637,21 @@ class _$SpeedSectionDtoImpl implements _SpeedSectionDto {
             const DeepCollectionEquality().equals(
               other._slowItems,
               _slowItems,
-            ));
+            ) &&
+            (identical(other.pickupTargetMins, pickupTargetMins) ||
+                other.pickupTargetMins == pickupTargetMins) &&
+            (identical(other.pickupSlaPct, pickupSlaPct) ||
+                other.pickupSlaPct == pickupSlaPct) &&
+            (identical(other.courseSampleSize, courseSampleSize) ||
+                other.courseSampleSize == courseSampleSize) &&
+            (identical(other.greetMedianMin, greetMedianMin) ||
+                other.greetMedianMin == greetMedianMin) &&
+            (identical(other.greetBreachPct, greetBreachPct) ||
+                other.greetBreachPct == greetBreachPct) &&
+            (identical(other.ungreetedMins, ungreetedMins) ||
+                other.ungreetedMins == ungreetedMins) &&
+            (identical(other.greetSampleSize, greetSampleSize) ||
+                other.greetSampleSize == greetSampleSize));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4524,6 +4664,13 @@ class _$SpeedSectionDtoImpl implements _SpeedSectionDto {
     prepTargetMins,
     sampleSize,
     const DeepCollectionEquality().hash(_slowItems),
+    pickupTargetMins,
+    pickupSlaPct,
+    courseSampleSize,
+    greetMedianMin,
+    greetBreachPct,
+    ungreetedMins,
+    greetSampleSize,
   );
 
   /// Create a copy of SpeedSectionDto
@@ -4551,6 +4698,13 @@ abstract class _SpeedSectionDto implements SpeedSectionDto {
     final int prepTargetMins,
     final int sampleSize,
     final List<SpeedItemDto> slowItems,
+    final int pickupTargetMins,
+    final double pickupSlaPct,
+    final int courseSampleSize,
+    final int greetMedianMin,
+    final double greetBreachPct,
+    final int ungreetedMins,
+    final int greetSampleSize,
   }) = _$SpeedSectionDtoImpl;
 
   factory _SpeedSectionDto.fromJson(Map<String, dynamic> json) =
@@ -4562,12 +4716,28 @@ abstract class _SpeedSectionDto implements SpeedSectionDto {
   int get pickupMedianMin;
   @override
   double get slaPct;
+
+  /// The venue *default* target — no longer the only target in play.
   @override
   int get prepTargetMins;
   @override
   int get sampleSize;
   @override
-  List<SpeedItemDto> get slowItems;
+  List<SpeedItemDto> get slowItems; // ADR-0044 additions.
+  @override
+  int get pickupTargetMins;
+  @override
+  double get pickupSlaPct;
+  @override
+  int get courseSampleSize;
+  @override
+  int get greetMedianMin;
+  @override
+  double get greetBreachPct;
+  @override
+  int get ungreetedMins;
+  @override
+  int get greetSampleSize;
 
   /// Create a copy of SpeedSectionDto
   /// with the given fields replaced by the non-null parameter values.

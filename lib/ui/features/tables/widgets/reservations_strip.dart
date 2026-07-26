@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/reservations_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -477,8 +479,24 @@ class _ReservationChip extends ConsumerWidget {
             .map((t) => t.displayName)
             .firstOrNull ??
             reservation.tableId!;
-    final bg = isSeated ? sc.success.withValues(alpha: 0.1) : sc.bg2;
-    final border = isSeated ? sc.success.withValues(alpha: 0.4) : sc.border1;
+    // "Terlambat" is a **derived display state**, never a stored status
+    // (ADR-0044): a clock must not decide a no-show, and auto-flipping would
+    // force `seated` to be reachable from `noShow` for the party that turns
+    // up at +46m. Only pending reservations can read as late.
+    final graceMins = ref.watch(venueSettingsProvider).reservationGraceMins;
+    final isLate = reservation.status == ReservationStatus.pending &&
+        DateTime.now().difference(reservation.expectedAt) >
+            Duration(minutes: graceMins);
+    final bg = isSeated
+        ? sc.success.withValues(alpha: 0.1)
+        : isLate
+            ? sc.warn.withValues(alpha: 0.1)
+            : sc.bg2;
+    final border = isSeated
+        ? sc.success.withValues(alpha: 0.4)
+        : isLate
+            ? sc.warn.withValues(alpha: 0.45)
+            : sc.border1;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -500,8 +518,20 @@ class _ReservationChip extends ConsumerWidget {
                     style: SatType.mono(
                         size: 11,
                         weight: FontWeight.w600,
-                        color: isSeated ? sc.success : sc.textHi,
+                        color: isSeated
+                            ? sc.success
+                            : isLate
+                                ? sc.warn
+                                : sc.textHi,
                         letterSpacing: 0.4)),
+                if (isLate) ...[
+                  const SizedBox(width: 5),
+                  Text(AppStrings.reservationLate,
+                      style: SatType.sans(
+                          size: 10,
+                          weight: FontWeight.w600,
+                          color: sc.warn)),
+                ],
                 const SizedBox(width: 6),
                 Icon(Icons.person, size: 10, color: sc.textLo),
                 Text('${reservation.partySize}',

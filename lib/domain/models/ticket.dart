@@ -74,6 +74,13 @@ TicketStatus ticketStatusFromKey(String? raw) => switch (raw) {
 /// from Freezed.
 @freezed
 class Ticket with _$Ticket {
+  const Ticket._();
+
+  /// When the kitchen's clock starts for this line: the fire if it was held,
+  /// otherwise the send. Read this, never `sentAtTime`, for prep timing —
+  /// `sentAtTime` means "when the guest ordered" (ADR-0043).
+  DateTime get kitchenClockStart => firedAtTime ?? sentAtTime;
+
   const factory Ticket({
     required String id,
     /// The [[Visit]] this line belongs to — used to resolve a table-less
@@ -94,6 +101,15 @@ class Ticket with _$Ticket {
     required TicketStatus status,
     required String sentAt,
     required DateTime sentAtTime,
+    /// When the kitchen started owning this line — stamped on the `held → sent`
+    /// fire, null on a normal send. The prep clock runs from
+    /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.
+    /// See [kitchenClockStart]. ADR-0043.
+    DateTime? firedAtTime,
+    /// First entry into `ready` — the pass clock starts here (ADR-0013).
+    DateTime? readyAtTime,
+    /// Most recent entry into `served`.
+    DateTime? servedAtTime,
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,

@@ -404,6 +404,13 @@ _$SpeedSectionDtoImpl _$$SpeedSectionDtoImplFromJson(
           ?.map((e) => SpeedItemDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <SpeedItemDto>[],
+  pickupTargetMins: (json['pickupTargetMins'] as num?)?.toInt() ?? 4,
+  pickupSlaPct: (json['pickupSlaPct'] as num?)?.toDouble() ?? 0.0,
+  courseSampleSize: (json['courseSampleSize'] as num?)?.toInt() ?? 0,
+  greetMedianMin: (json['greetMedianMin'] as num?)?.toInt() ?? 0,
+  greetBreachPct: (json['greetBreachPct'] as num?)?.toDouble() ?? 0.0,
+  ungreetedMins: (json['ungreetedMins'] as num?)?.toInt() ?? 7,
+  greetSampleSize: (json['greetSampleSize'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$$SpeedSectionDtoImplToJson(
@@ -415,6 +422,13 @@ Map<String, dynamic> _$$SpeedSectionDtoImplToJson(
   'prepTargetMins': instance.prepTargetMins,
   'sampleSize': instance.sampleSize,
   'slowItems': instance.slowItems,
+  'pickupTargetMins': instance.pickupTargetMins,
+  'pickupSlaPct': instance.pickupSlaPct,
+  'courseSampleSize': instance.courseSampleSize,
+  'greetMedianMin': instance.greetMedianMin,
+  'greetBreachPct': instance.greetBreachPct,
+  'ungreetedMins': instance.ungreetedMins,
+  'greetSampleSize': instance.greetSampleSize,
 };
 
 _$SpeedItemDtoImpl _$$SpeedItemDtoImplFromJson(Map<String, dynamic> json) =>

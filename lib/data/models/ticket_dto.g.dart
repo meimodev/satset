@@ -45,6 +45,9 @@ _$TicketDtoImpl _$$TicketDtoImplFromJson(Map<String, dynamic> json) =>
       price: (json['price'] as num).toInt(),
       status: json['status'] as String,
       sentAt: DateTime.parse(json['sentAt'] as String),
+      firedAt: json['firedAt'] == null
+          ? null
+          : DateTime.parse(json['firedAt'] as String),
       readyAt: json['readyAt'] == null
           ? null
           : DateTime.parse(json['readyAt'] as String),
@@ -73,6 +76,7 @@ Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
       'price': instance.price,
       'status': instance.status,
       'sentAt': instance.sentAt.toIso8601String(),
+      'firedAt': instance.firedAt?.toIso8601String(),
       'readyAt': instance.readyAt?.toIso8601String(),
       'servedAt': instance.servedAt?.toIso8601String(),
       'voidReason': instance.voidReason,

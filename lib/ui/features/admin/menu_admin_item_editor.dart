@@ -16,6 +16,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:uuid/uuid.dart';
 
@@ -131,7 +132,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _desc.text = _draft.description;
     _basePrice.text = groupRupiah(_draft.basePrice);
     _cost.text = groupRupiah(_draft.cost);
-    _prep.text = _draft.prepTime.toString();
+    // Empty = "ikut target venue" (ADR-0043). The hint carries the number it
+    // would inherit, so the field always communicates a value.
+    _prep.text = _draft.prepTime?.toString() ?? '';
     _initialized = true;
     _loadRecipes();
   }
@@ -174,7 +177,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Future<void> _save() async {
     final priceCents = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final costCents = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
-    final prep = int.tryParse(_prep.text) ?? _draft.prepTime;
+    // Blank (or unparseable) clears the override back to inherit.
+    final prep = int.tryParse(_prep.text.trim());
     final variants = _draft.variants.isEmpty
         ? [Variant(id: 'reg', name: '', price: priceCents)]
         : [
@@ -187,6 +191,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       basePrice: priceCents,
       cost: costCents,
       prepTime: prep,
+      clearPrepTime: prep == null,
       variants: variants,
     );
     final repo = ref.read(menuRepositoryProvider.notifier);
@@ -588,7 +593,18 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             children: [
               Expanded(child: _input(_basePrice, 'Harga dasar (Rp)', keyboard: TextInputType.number, amount: true, readOnly: readOnly, onChanged: (_) => setState(() {}))),
               const SizedBox(width: 12),
-              Expanded(child: _input(_prep, 'Prep (menit)', keyboard: TextInputType.number, readOnly: readOnly)),
+              Expanded(
+                child: _input(
+                  _prep,
+                  // Empty field reads as what it inherits, so a blank is never
+                  // mistaken for "no target" (ADR-0043).
+                  'Ikut venue '
+                      '(${ref.watch(venueSettingsProvider).prepTargetMins}m)',
+                  label: 'Waktu siap (menit)',
+                  keyboard: TextInputType.number,
+                  readOnly: readOnly,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -1193,10 +1209,12 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   // ---- shared field bits -----------------------------------------------
 
-  InputDecoration _fieldDeco(String hint) {
+  InputDecoration _fieldDeco(String hint, {String? label}) {
     final sc = context.sat;
     return InputDecoration(
       hintText: hint,
+      labelText: label,
+      labelStyle: SatType.sans(size: 12, color: sc.textLo),
       hintStyle: SatType.sans(size: 13, color: sc.textLo),
       filled: true,
       fillColor: sc.bg2,
@@ -1224,6 +1242,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     bool readOnly = false,
     bool amount = false,
     ValueChanged<String>? onChanged,
+    String? label,
   }) {
     return TextField(
       controller: c,
@@ -1232,7 +1251,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       keyboardType: keyboard,
       onChanged: onChanged,
       style: SatType.sans(size: 14, color: context.sat.textHi),
-      decoration: _fieldDeco(hint),
+      decoration: _fieldDeco(hint, label: label),
       inputFormatters: amount
           ? const [RupiahInputFormatter()]
           : keyboard == TextInputType.number

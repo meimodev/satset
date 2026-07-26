@@ -48,7 +48,8 @@ class MenuItemDto with _$MenuItemDto {
     @Default('') String description,
     required int basePrice,
     @Default(0) int cost,
-    @Default(5) int prepTime,
+    /// Null = inherit the venue default (`prepTargetMins`). ADR-0043.
+    int? prepTime,
     @Default(<VariantDto>[]) List<VariantDto> variants,
     @Default(<ModifierGroupDto>[]) List<ModifierGroupDto> modifierGroups,
     @Default(<String>[]) List<String> allergens,

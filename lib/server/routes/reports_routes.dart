@@ -7,6 +7,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/service_timing.dart';
 
 /// Default business-day start hour when VenueSettings is unreachable.
 const _defaultBusinessDayStartHour = 4;
@@ -482,17 +483,35 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // Real lifecycle timing off readyAt / servedAt, not a sentAt proxy.
     // Voided lines and lines that never reached ready drop out (NULL stamp).
     final prepTargetMins = settings?.prepTargetMins ?? 15;
-    final prepSecs = <double>[]; // sentAt → readyAt (kitchen prep)
+    final pickupTargetMins = settings?.pickupTargetMins ?? 4;
+    final prepSecs = <double>[]; // kitchen clock → readyAt (per line)
     final pickupSecs = <double>[]; // readyAt → servedAt (food at the pass)
     final prepByItem = <String, _SpeedAgg>{};
+    // Course rollup input. The unit of "late" is the course, so the SLA is
+    // measured on courses even though per-item medians stay per line.
+    final timedLines = <TimedLine>[];
     for (final t in tickets) {
       if (t.status == 'voided' || t.readyAt == null) continue;
-      final prep = t.readyAt!.difference(t.sentAt).inSeconds;
+      // ADR-0043: the kitchen's clock starts at the fire for a held course.
+      final start = t.firedAt ?? t.sentAt;
+      final prep = t.readyAt!.difference(start).inSeconds;
       if (prep < 0) continue; // clock skew guard
       prepSecs.add(prep.toDouble());
       final agg = prepByItem.putIfAbsent(t.itemId, () => _SpeedAgg());
       agg.totalSec += prep;
       agg.count += 1;
+      timedLines.add(TimedLine(
+        visitKey: t.sessionId,
+        course: t.course,
+        start: start,
+        readyAt: t.readyAt,
+        // Targets live-resolve against the current menu, like allergens
+        // (ADR-0012) — history is not re-priced, only re-judged.
+        targetMins: resolvePrepMins(
+          itemById[t.itemId]?.prepTime,
+          prepTargetMins,
+        ),
+      ));
       if (t.servedAt != null) {
         final lag = t.servedAt!.difference(t.readyAt!).inSeconds;
         if (lag >= 0) pickupSecs.add(lag.toDouble());
@@ -502,9 +521,20 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final pickupMedianMin = pickupSecs.isEmpty
         ? 0
         : (_median(pickupSecs) ~/ 60);
-    final slaTargetSec = prepTargetMins * 60;
-    final slaHits = prepSecs.where((s) => s <= slaTargetSec).length;
-    final slaPct = prepSecs.isEmpty ? 0.0 : (slaHits / prepSecs.length * 100);
+    // SLA hit-rate is now "% of *courses* that hit their own target" — a
+    // single honest percentage, even though the target it is measured
+    // against is no longer a single number (ADR-0043).
+    final completedCourses =
+        rollUpCourses(timedLines).where((c) => c.isComplete).toList();
+    final slaHits = completedCourses.where((c) => c.onTime).length;
+    final slaPct = completedCourses.isEmpty
+        ? 0.0
+        : (slaHits / completedCourses.length * 100);
+    // Pickup SLA closes the loop on the new "Menunggu diantar" threshold.
+    final pickupLimitSec = pickupTargetMins * 60;
+    final pickupHits = pickupSecs.where((s) => s <= pickupLimitSec).length;
+    final pickupSlaPct =
+        pickupSecs.isEmpty ? 0.0 : (pickupHits / pickupSecs.length * 100);
     // Slowest dishes by average prep time (min 1 sample shown, top 5).
     final slowItems =
         prepByItem.entries
@@ -522,13 +552,52 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
               a['avgPrepMin'] as double,
             ),
           );
+    // ─── TIME TO FIRST ORDER (ADR-0044) ──────────────────────────
+    // The KPI that justifies the "Belum dilayani" cue: without it there is no
+    // way to tell whether the alert improved anything. Derived from existing
+    // timestamps — no alert-event log, so this measures *the service*, not
+    // the alerting.
+    final ungreetedMins = settings?.ungreetedMins ?? 7;
+    final greetSecs = <double>[];
+    for (final s in dineInSessions) {
+      final openedAt = s.openedAt;
+      if (openedAt == null) continue;
+      final lines = ticketsBySession[s.id];
+      if (lines == null || lines.isEmpty) continue;
+      var firstSent = lines.first.sentAt;
+      for (final l in lines.skip(1)) {
+        if (l.sentAt.isBefore(firstSent)) firstSent = l.sentAt;
+      }
+      final wait = firstSent.difference(openedAt).inSeconds;
+      if (wait < 0) continue; // clock skew guard
+      greetSecs.add(wait.toDouble());
+    }
+    final greetMedianMin = greetSecs.isEmpty ? 0 : (_median(greetSecs) ~/ 60);
+    final greetLimitSec = ungreetedMins * 60;
+    final greetBreaches = greetSecs.where((s) => s > greetLimitSec).length;
+    final greetBreachPct = greetSecs.isEmpty
+        ? 0.0
+        : (greetBreaches / greetSecs.length * 100);
+    final greetStats = {
+      'greetMedianMin': greetMedianMin,
+      'greetBreachPct': greetBreachPct,
+      'ungreetedMins': ungreetedMins,
+      'greetSampleSize': greetSecs.length,
+    };
+
     final speed = {
       'prepMedianMin': prepMedianMin,
       'pickupMedianMin': pickupMedianMin,
       'slaPct': slaPct,
+      // Retained as the venue *default* — the headline no longer names a
+      // number, since targets resolve per item (ADR-0043).
       'prepTargetMins': prepTargetMins,
+      'pickupTargetMins': pickupTargetMins,
+      'pickupSlaPct': pickupSlaPct,
+      'courseSampleSize': completedCourses.length,
       'sampleSize': prepSecs.length,
       'slowItems': slowItems.take(5).toList(),
+      ...greetStats,
     };
 
     final opsKpis = [
@@ -586,11 +655,31 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final reservationRows = await (db.select(
       db.reservations,
     )..where((r) => r.expectedAt.isBetweenValues(from, to))).get();
+    // "Terlambat" is a *derived display state*, never a stored status
+    // (ADR-0044) — so lateness is recomputed here from the same grace the
+    // floor uses, rather than counted off a flag.
+    final graceMins = settings?.reservationGraceMins ?? 15;
+    final grace = Duration(minutes: graceMins);
+    final lateRows = reservationRows.where((r) {
+      final seatedAt = r.seatedAt;
+      if (seatedAt == null) return false;
+      return seatedAt.difference(r.expectedAt) > grace;
+    }).length;
+    final noShowCount =
+        reservationRows.where((r) => r.status == 'noShow').length;
     final reservations = {
       'booked': reservationRows.length,
       'seated': reservationRows.where((r) => r.status == 'seated').length,
-      'noShow': reservationRows.where((r) => r.status == 'noShow').length,
+      'noShow': noShowCount,
       'cancelled': reservationRows.where((r) => r.status == 'cancelled').length,
+      'late': lateRows,
+      'graceMins': graceMins,
+      'latePct': reservationRows.isEmpty
+          ? 0.0
+          : (lateRows / reservationRows.length * 100),
+      'noShowPct': reservationRows.isEmpty
+          ? 0.0
+          : (noShowCount / reservationRows.length * 100),
     };
     if (opsKpis.length >= 4) {
       opsKpis[3] = {

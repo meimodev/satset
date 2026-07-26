@@ -36,6 +36,8 @@ class TicketDto with _$TicketDto {
     required int price,
     required String status,
     required DateTime sentAt,
+    /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
+    DateTime? firedAt,
     DateTime? readyAt,
     DateTime? servedAt,
     String? voidReason,

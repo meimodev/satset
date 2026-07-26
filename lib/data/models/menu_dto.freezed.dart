@@ -640,7 +640,9 @@ mixin _$MenuItemDto {
   String get description => throw _privateConstructorUsedError;
   int get basePrice => throw _privateConstructorUsedError;
   int get cost => throw _privateConstructorUsedError;
-  int get prepTime => throw _privateConstructorUsedError;
+
+  /// Null = inherit the venue default (`prepTargetMins`). ADR-0043.
+  int? get prepTime => throw _privateConstructorUsedError;
   List<VariantDto> get variants => throw _privateConstructorUsedError;
   List<ModifierGroupDto> get modifierGroups =>
       throw _privateConstructorUsedError;
@@ -679,7 +681,7 @@ abstract class $MenuItemDtoCopyWith<$Res> {
     String description,
     int basePrice,
     int cost,
-    int prepTime,
+    int? prepTime,
     List<VariantDto> variants,
     List<ModifierGroupDto> modifierGroups,
     List<String> allergens,
@@ -713,7 +715,7 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
     Object? description = null,
     Object? basePrice = null,
     Object? cost = null,
-    Object? prepTime = null,
+    Object? prepTime = freezed,
     Object? variants = null,
     Object? modifierGroups = null,
     Object? allergens = null,
@@ -750,10 +752,10 @@ class _$MenuItemDtoCopyWithImpl<$Res, $Val extends MenuItemDto>
                 ? _value.cost
                 : cost // ignore: cast_nullable_to_non_nullable
                       as int,
-            prepTime: null == prepTime
+            prepTime: freezed == prepTime
                 ? _value.prepTime
                 : prepTime // ignore: cast_nullable_to_non_nullable
-                      as int,
+                      as int?,
             variants: null == variants
                 ? _value.variants
                 : variants // ignore: cast_nullable_to_non_nullable
@@ -812,7 +814,7 @@ abstract class _$$MenuItemDtoImplCopyWith<$Res>
     String description,
     int basePrice,
     int cost,
-    int prepTime,
+    int? prepTime,
     List<VariantDto> variants,
     List<ModifierGroupDto> modifierGroups,
     List<String> allergens,
@@ -845,7 +847,7 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
     Object? description = null,
     Object? basePrice = null,
     Object? cost = null,
-    Object? prepTime = null,
+    Object? prepTime = freezed,
     Object? variants = null,
     Object? modifierGroups = null,
     Object? allergens = null,
@@ -882,10 +884,10 @@ class __$$MenuItemDtoImplCopyWithImpl<$Res>
             ? _value.cost
             : cost // ignore: cast_nullable_to_non_nullable
                   as int,
-        prepTime: null == prepTime
+        prepTime: freezed == prepTime
             ? _value.prepTime
             : prepTime // ignore: cast_nullable_to_non_nullable
-                  as int,
+                  as int?,
         variants: null == variants
             ? _value._variants
             : variants // ignore: cast_nullable_to_non_nullable
@@ -937,7 +939,7 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
     this.description = '',
     required this.basePrice,
     this.cost = 0,
-    this.prepTime = 5,
+    this.prepTime,
     final List<VariantDto> variants = const <VariantDto>[],
     final List<ModifierGroupDto> modifierGroups = const <ModifierGroupDto>[],
     final List<String> allergens = const <String>[],
@@ -971,9 +973,10 @@ class _$MenuItemDtoImpl implements _MenuItemDto {
   @override
   @JsonKey()
   final int cost;
+
+  /// Null = inherit the venue default (`prepTargetMins`). ADR-0043.
   @override
-  @JsonKey()
-  final int prepTime;
+  final int? prepTime;
   final List<VariantDto> _variants;
   @override
   @JsonKey()
@@ -1133,7 +1136,7 @@ abstract class _MenuItemDto implements MenuItemDto {
     final String description,
     required final int basePrice,
     final int cost,
-    final int prepTime,
+    final int? prepTime,
     final List<VariantDto> variants,
     final List<ModifierGroupDto> modifierGroups,
     final List<String> allergens,
@@ -1160,8 +1163,10 @@ abstract class _MenuItemDto implements MenuItemDto {
   int get basePrice;
   @override
   int get cost;
+
+  /// Null = inherit the venue default (`prepTargetMins`). ADR-0043.
   @override
-  int get prepTime;
+  int? get prepTime;
   @override
   List<VariantDto> get variants;
   @override

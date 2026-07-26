@@ -50,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 36;
+  int get schemaVersion => 37;
 
   /// At most one whole-order discount per receipt, and one line discount per
   /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
@@ -448,6 +448,59 @@ class AppDatabase extends _$AppDatabase {
             await _safeDropColumnOn('menu_items', 'stock_count');
             await _safeDropColumnOn('menu_items', 'auto_sold_out_at_zero');
             await backfillInventoryCapabilities();
+          }
+          if (from < 37) {
+            // Configurable service timings (ADR-0043/0044).
+            //
+            // `menu_items.prep_time` existed since v1 but nothing consumed it.
+            // It becomes the per-item ready target, nullable so null can mean
+            // "inherit the venue default" live. Rows still sitting at the old
+            // column default (5) are treated as untouched and nulled so they
+            // inherit; any other value is a deliberate override and survives.
+            // The generic seed uses no 5s, so seeded venues migrate cleanly.
+            // TableMigration is the only supported way to relax a NOT NULL
+            // column in Drift/SQLite (SQLite has no ALTER COLUMN).
+            await m.alterTable(
+              // ignore: experimental_member_use
+              TableMigration(
+                menuItems,
+                columnTransformer: {
+                  menuItems.prepTime: const CustomExpression<int>(
+                    'CASE WHEN prep_time = 5 THEN NULL ELSE prep_time END',
+                  ),
+                },
+              ),
+            );
+            // Kitchen-ownership clock, so a held course is not born overdue.
+            await _safeAddColumnOn('tickets', 'fired_at', type: 'INTEGER');
+            await _safeAddColumnOn('table_session_tickets', 'fired_at',
+                type: 'INTEGER');
+            await _safeAddColumnOn('reservations', 'seated_at',
+                type: 'INTEGER');
+            // Thresholds. Defaults are live on upgrade (both audible cues
+            // included) — see ADR-0044 for the trade-off accepted here.
+            await _safeAddColumnOn('venue_settings', 'pickup_target_mins',
+                type: 'INTEGER NOT NULL DEFAULT 4');
+            await _safeAddColumnOn('venue_settings', 'ungreeted_mins',
+                type: 'INTEGER NOT NULL DEFAULT 7');
+            await _safeAddColumnOn(
+                'venue_settings', 'ungreeted_escalate_mins',
+                type: 'INTEGER NOT NULL DEFAULT 5');
+            await _safeAddColumnOn('venue_settings', 'long_stay_mins',
+                type: 'INTEGER NOT NULL DEFAULT 90');
+            await _safeAddColumnOn('venue_settings', 'idle_table_mins',
+                type: 'INTEGER NOT NULL DEFAULT 20');
+            await _safeAddColumnOn('venue_settings', 'reservation_grace_mins',
+                type: 'INTEGER NOT NULL DEFAULT 15');
+            await _safeAddColumnOn(
+                'venue_settings', 'ungreeted_alert_enabled',
+                type: 'INTEGER NOT NULL DEFAULT 1');
+            await _safeAddColumnOn('venue_settings', 'pickup_alert_enabled',
+                type: 'INTEGER NOT NULL DEFAULT 1');
+            await _safeAddColumnOn('venue_settings', 'sound_ungreeted',
+                type: "TEXT NOT NULL DEFAULT 'chime'");
+            await _safeAddColumnOn('venue_settings', 'sound_pickup',
+                type: "TEXT NOT NULL DEFAULT 'chime'");
           }
         },
         onCreate: (m) async {
