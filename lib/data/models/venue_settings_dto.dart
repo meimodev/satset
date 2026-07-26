@@ -34,6 +34,16 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(true) bool taxAfterDiscount,
     @Default(4) int businessDayStartHour,
     @Default(15) int prepTargetMins,
+    // Service timings (ADR-0043/0044). `prepTargetMins` above is now the
+    // venue *default* every item with a null `prepTime` inherits.
+    @Default(4) int pickupTargetMins,
+    @Default(7) int ungreetedMins,
+    @Default(5) int ungreetedEscalateMins,
+    @Default(90) int longStayMins,
+    @Default(20) int idleTableMins,
+    @Default(15) int reservationGraceMins,
+    @Default(true) bool ungreetedAlertEnabled,
+    @Default(true) bool pickupAlertEnabled,
     @Default(false) bool guestOrderingEnabled,
     // Per-event alert sound choice (ADR-0035). Each holds a preset id from
     // `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
@@ -42,6 +52,8 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default('chime') String soundReady,
     @Default('alert') String soundVoid,
     @Default('alert') String soundOverdue,
+    @Default('chime') String soundUngreeted,
+    @Default('chime') String soundPickup,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

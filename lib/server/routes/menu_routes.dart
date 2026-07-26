@@ -473,7 +473,9 @@ Map<String, dynamic> _itemResultToJson(
       'description': r.read(db.menuItems.description)!,
       'basePrice': r.read(db.menuItems.basePrice)!,
       'cost': r.read(db.menuItems.cost)!,
-      'prepTime': r.read(db.menuItems.prepTime)!,
+      // Null rides the wire as null — the client resolves it against the
+      // venue default so the inherit stays live (ADR-0043).
+      'prepTime': r.read(db.menuItems.prepTime),
       'variants': jsonDecode(r.read(db.menuItems.variantsJson)!),
       'modifierGroups': jsonDecode(r.read(db.menuItems.modifierGroupsJson)!),
       'allergens': jsonDecode(r.read(db.menuItems.allergensJson)!),
@@ -520,7 +522,8 @@ Future<void> _writeItem(
             description: Value((body['description'] as String?) ?? ''),
             basePrice: (body['basePrice'] as num?)?.toInt() ?? 0,
             cost: Value((body['cost'] as num?)?.toInt() ?? 0),
-            prepTime: Value((body['prepTime'] as num?)?.toInt() ?? 5),
+            // Absent ⇒ null ⇒ inherits the venue default (ADR-0043).
+            prepTime: Value((body['prepTime'] as num?)?.toInt()),
             variantsJson: Value(jsonEncode(body['variants'] ?? const [])),
             modifierGroupsJson:
                 Value(jsonEncode(body['modifierGroups'] ?? const [])),
@@ -547,8 +550,9 @@ Future<void> _writeItem(
         cost: body.containsKey('cost')
             ? Value((body['cost'] as num).toInt())
             : const Value.absent(),
+        // Explicit null clears the override back to "ikut target venue".
         prepTime: body.containsKey('prepTime')
-            ? Value((body['prepTime'] as num).toInt())
+            ? Value((body['prepTime'] as num?)?.toInt())
             : const Value.absent(),
         variantsJson: body.containsKey('variants')
             ? Value(jsonEncode(body['variants']))

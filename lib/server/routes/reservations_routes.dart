@@ -125,6 +125,11 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         partySize: body.containsKey('partySize') ? Value((body['partySize'] as num).toInt()) : const Value.absent(),
         expectedAt: body.containsKey('expectedAt') ? Value(DateTime.parse(body['expectedAt'] as String)) : const Value.absent(),
         status: statusRaw != null ? Value(statusRaw) : const Value.absent(),
+        // Set-once on the first flip into `seated` — a later edit must not
+        // move it, or lateness stops being measurable (ADR-0044).
+        seatedAt: statusRaw == 'seated' && existing.seatedAt == null
+            ? Value(DateTime.now())
+            : const Value.absent(),
         zoneId: body.containsKey('zoneId') ? Value((body['zoneId'] as String?)?.trim()) : const Value.absent(),
         tableId: body.containsKey('tableId') ? Value((body['tableId'] as String?)?.trim()) : const Value.absent(),
         notes: body.containsKey('notes') ? Value((body['notes'] as String?)?.trim()) : const Value.absent(),

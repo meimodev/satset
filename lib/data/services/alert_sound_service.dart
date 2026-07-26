@@ -8,6 +8,7 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/ticket_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
@@ -19,6 +20,8 @@ import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/alert_sound.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/domain/service_timing.dart';
 import 'package:satset/ui/core/state/ready_alert_view_model.dart';
 
 /// Burst-coalescing window: bunched events of one kind collapse to a single
@@ -37,9 +40,18 @@ class AlertSoundService {
     if (cfg == null) return; // Idle until paired; provider re-creates us later.
     unawaited(_initPlayers());
     _wsSub = ref.read(wsClientProvider).events.listen(_onEvent);
+    // Routing is by device role (ADR-0007): the kitchen owns the overdue
+    // sweep, waiters own the table cues.
     if (_mode == AppMode.server) {
-      _overdueTimer =
-          Timer.periodic(const Duration(seconds: 20), (_) => _scanOverdue());
+      _overdueTimer = Timer.periodic(
+          const Duration(seconds: 20), (_) => _scanCourseOverdue());
+    }
+    if (_mode == AppMode.client) {
+      _tableTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+        _scanPickup();
+        unawaited(_refreshOnline());
+        _scanUngreeted();
+      });
     }
     SatLog.vm('alert.service started mode=${_mode.name}');
   }
@@ -54,6 +66,7 @@ class AlertSoundService {
   bool _ready = false;
   StreamSubscription? _wsSub;
   Timer? _overdueTimer;
+  Timer? _tableTimer;
 
   Future<void> _initPlayers() async {
     // Per-preset try: a missing/bad clip skips only that preset (it falls back
@@ -75,7 +88,28 @@ class AlertSoundService {
   }
 
   final Map<String, TicketStatus> _lastStatus = {};
+  /// One-shot ledgers. Cues never loop or demand acknowledgement — the
+  /// escalation *is* the second chance (ADR-0044).
   final Set<String> _overdueAlerted = {};
+  final Set<String> _pickupAlerted = {};
+  final Set<String> _ungreetedAlerted = {};
+
+  /// User ids with a live staff session, refreshed on the table-scan tick.
+  /// Null until the first successful fetch — distinct from "nobody is online",
+  /// because an unknown set must not be read as "everyone is signed out"
+  /// (that would fire every table floor-wide the moment the network hiccups).
+  Set<String>? _onlineUserIds;
+
+  Future<void> _refreshOnline() async {
+    try {
+      final raw = await ref.read(apiClientProvider).getJson('/auth/online');
+      final ids = ((raw as Map)['userIds'] as List).cast<String>();
+      _onlineUserIds = ids.toSet();
+    } catch (e) {
+      // Keep the last known set rather than dropping to "nobody online".
+      SatLog.vm('alert.online refresh failed $e');
+    }
+  }
   final Set<AlertEvent> _cooling = {};
 
   AppMode get _mode =>
@@ -90,6 +124,8 @@ class AlertSoundService {
       AlertEvent.orderReady => s.soundReady,
       AlertEvent.voided => s.soundVoid,
       AlertEvent.overdue => s.soundOverdue,
+      AlertEvent.ungreeted => s.soundUngreeted,
+      AlertEvent.pickup => s.soundPickup,
     };
     return resolveSoundId(event, stored);
   }
@@ -183,43 +219,120 @@ class AlertSoundService {
     );
   }
 
-  void _scanOverdue() {
-    final byTable = ref.read(ticketsProvider);
+  /// Kitchen cue. The unit of "late" is the **course**, not the line: a
+  /// course's target is the `max` of its lines' resolved targets, so a
+  /// "Bersama Utama" side is not flagged for correctly waiting on its mains.
+  /// One-shot per course (ADR-0043/0044).
+  void _scanCourseOverdue() {
+    final byVisit = ref.read(ticketsProvider);
+    final settings = ref.read(venueSettingsProvider);
+    final prepByItem = {
+      for (final i in ref.read(menuItemsProvider)) i.id: i.prepTime,
+    };
     final now = DateTime.now();
-    // Overdue line = the venue's configurable service target (ADR-0013).
-    final overdueMinutes = ref.read(venueSettingsProvider).prepTargetMins;
-    for (final list in byTable.values) {
+
+    final lines = <TimedLine>[];
+    for (final entry in byVisit.entries) {
+      for (final t in entry.value) {
+        if (t.status == TicketStatus.voided) continue;
+        if (t.status == TicketStatus.held) continue; // Not the kitchen's yet.
+        lines.add(TimedLine(
+          visitKey: entry.key,
+          course: t.course.name,
+          start: t.kitchenClockStart,
+          readyAt: t.readyAtTime,
+          targetMins: resolvePrepMins(
+            prepByItem[t.itemId],
+            settings.prepTargetMins,
+          ),
+        ));
+      }
+    }
+
+    for (final c in rollUpCourses(lines)) {
+      final key = '${c.visitKey}:${c.course}:'
+          '${c.firedAt.millisecondsSinceEpoch}';
+      if (_overdueAlerted.contains(key)) continue;
+      if (c.isOverdueAt(now)) {
+        _overdueAlerted.add(key);
+        _play(AlertEvent.overdue);
+      }
+    }
+  }
+
+  /// Waiter cue: food is sitting at the pass going cold (`readyAt → servedAt`).
+  /// One-shot per line.
+  void _scanPickup() {
+    final settings = ref.read(venueSettingsProvider);
+    if (!settings.pickupAlertEnabled) return;
+    final limit = Duration(minutes: settings.pickupTargetMins);
+    final now = DateTime.now();
+    for (final list in ref.read(ticketsProvider).values) {
       for (final t in list) {
-        final kitchenActive = t.status == TicketStatus.sent ||
-            t.status == TicketStatus.prep ||
-            t.status == TicketStatus.cooked;
-        if (!kitchenActive) continue;
-        if (_overdueAlerted.contains(t.id)) continue;
-        if (_ageMinutes(t.sentAt, now) >= overdueMinutes) {
-          _overdueAlerted.add(t.id);
-          _play(AlertEvent.overdue);
+        if (t.status != TicketStatus.ready) continue;
+        final readyAt = t.readyAtTime;
+        if (readyAt == null) continue;
+        if (_pickupAlerted.contains(t.id)) continue;
+        if (now.difference(readyAt) >= limit) {
+          _pickupAlerted.add(t.id);
+          _play(AlertEvent.pickup);
         }
       }
     }
   }
 
-  /// Parses the domain `HH:mm` stamp into elapsed whole minutes.
-  int _ageMinutes(String hhmm, DateTime now) {
-    final parts = hhmm.split(':');
-    if (parts.length != 2) return 0;
-    final h = int.tryParse(parts[0]);
-    final m = int.tryParse(parts[1]);
-    if (h == null || m == null) return 0;
-    var sent = DateTime(now.year, now.month, now.day, h, m);
-    if (sent.isAfter(now)) sent = sent.subtract(const Duration(days: 1));
-    final diff = now.difference(sent).inMinutes;
-    return diff < 0 ? 0 : diff;
+  /// Waiter cue: a seated table with nothing sent yet. Escalates — the seating
+  /// waiter is cued first, then the whole floor `ungreetedEscalateMins` later,
+  /// so one busy or signed-out waiter cannot swallow it (ADR-0044).
+  void _scanUngreeted() {
+    final settings = ref.read(venueSettingsProvider);
+    if (!settings.ungreetedAlertEnabled) return;
+    final tables = ref.read(tablesProvider);
+    final byVisit = ref.read(ticketsProvider);
+    final me = ref.read(authStateProvider).user?.id;
+    final now = DateTime.now();
+
+    for (final t in tables) {
+      if (t.status == TableStatus.available) continue;
+      final openedAt = t.openedAt;
+      if (openedAt == null) continue;
+      // Any line at all — held included — means someone took the order.
+      final visitId = t.currentVisitId;
+      final ordered = visitId != null &&
+          (byVisit[visitId]?.isNotEmpty ?? false);
+      if (ordered) continue;
+
+      final cue = ungreetedCueFor(
+        age: now.difference(openedAt),
+        ungreetedMins: settings.ungreetedMins,
+        escalateMins: settings.ungreetedEscalateMins,
+        seaterId: t.lastActorId,
+        myUserId: me,
+        onlineUserIds: _onlineUserIds,
+      );
+      // Stage keys dedup independently, and a short-circuited stage one uses
+      // the floor-wide key so the scheduled escalation cannot re-fire it.
+      switch (cue) {
+        case UngreetedCue.none:
+          break;
+        case UngreetedCue.seatingWaiter:
+          if (_ungreetedAlerted.add('${t.id}:1')) _play(AlertEvent.ungreeted);
+        case UngreetedCue.floorWide:
+          if (_ungreetedAlerted.add('${t.id}:2')) _play(AlertEvent.ungreeted);
+      }
+    }
   }
 
   void _play(AlertEvent event) {
-    if (!(ref.read(prefsServiceProvider).valueOrNull?.audioAlertEnabled() ??
-        true)) {
+    final prefs = ref.read(prefsServiceProvider).valueOrNull;
+    if (!(prefs?.audioAlertEnabled() ?? true)) {
       SatLog.vm('alert.skip ${event.name} (muted)');
+      return;
+    }
+    // Device-local per-event mute — one annoying cue no longer costs the
+    // operator every other cue (ADR-0044).
+    if (prefs?.mutedAlerts().contains(event) ?? false) {
+      SatLog.vm('alert.skip ${event.name} (event muted)');
       return;
     }
     final soundId = _soundIdFor(event);
@@ -256,6 +369,7 @@ class AlertSoundService {
   void dispose() {
     _wsSub?.cancel();
     _overdueTimer?.cancel();
+    _tableTimer?.cancel();
     for (final p in _players.values) {
       p.dispose();
     }

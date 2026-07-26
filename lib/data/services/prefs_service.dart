@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:satset/data/models/device_printer.dart';
+import 'package:satset/domain/models/alert_sound.dart';
 import 'package:satset/domain/models/app_mode.dart';
 
 /// Non-sensitive preferences: app mode, paired host/port, last selected mode.
@@ -15,6 +16,7 @@ class PrefsService {
   static const _kPairedHost = 'satset.paired.host';
   static const _kPairedPort = 'satset.paired.port';
   static const _kAudioAlert = 'satset.audio_alert';
+  static const _kMutedAlerts = 'satset.muted_alerts';
   static const _kDevicePrinters = 'satset.device_printers';
 
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
@@ -48,6 +50,30 @@ class PrefsService {
     await _p.setBool(_kAudioAlert, v);
   }
 
+  /// Device-local per-event mute (ADR-0044). Orthogonal to the venue-wide
+  /// sound choice (which clip) and to the venue-wide `*AlertEnabled` flags
+  /// (venue policy) — this is one operator silencing one cue on their own
+  /// handset. Stored as preset-stable enum names so adding an event never
+  /// invalidates a stored set.
+  Set<AlertEvent> mutedAlerts() {
+    final raw = _p.getStringList(_kMutedAlerts);
+    if (raw == null || raw.isEmpty) return const {};
+    return {
+      for (final e in AlertEvent.values)
+        if (raw.contains(e.name)) e,
+    };
+  }
+
+  Future<void> setAlertMuted(AlertEvent event, bool muted) async {
+    final next = mutedAlerts().toSet();
+    if (muted) {
+      next.add(event);
+    } else {
+      next.remove(event);
+    }
+    await _p.setStringList(_kMutedAlerts, [for (final e in next) e.name]);
+  }
+
   /// Device-local (per-phone) printers. Stored as a JSON array. See ADR-0020.
   List<DevicePrinter> devicePrinters() {
     final raw = _p.getString(_kDevicePrinters);
@@ -73,6 +99,13 @@ class PrefsService {
 final audioAlertEnabledProvider = Provider<bool>((ref) {
   final p = ref.watch(prefsServiceProvider).valueOrNull;
   return p?.audioAlertEnabled() ?? true;
+});
+
+/// Device-local muted cues. Empty = every cue this device's role receives
+/// will play. See ADR-0044.
+final mutedAlertsProvider = Provider<Set<AlertEvent>>((ref) {
+  final p = ref.watch(prefsServiceProvider).valueOrNull;
+  return p?.mutedAlerts() ?? const {};
 });
 
 final prefsServiceProvider = FutureProvider<PrefsService>((ref) async {

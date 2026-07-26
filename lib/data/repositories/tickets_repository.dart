@@ -128,6 +128,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // Full-precision twin of sentAt — drives the live KDS age counter
       // (sentAt's HH:mm has no seconds). See ADR-0008.
       sentAtTime: d.sentAt.toLocal(),
+      firedAtTime: d.firedAt?.toLocal(),
+      readyAtTime: d.readyAt?.toLocal(),
+      servedAtTime: d.servedAt?.toLocal(),
       voidReason: d.voidReason,
       voidReasonCode: d.voidReasonCode,
       voidApprovedBy: d.voidApprovedBy,

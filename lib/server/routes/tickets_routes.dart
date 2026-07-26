@@ -482,12 +482,17 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final stampNow = DateTime.now();
     final stampReady = to == TicketStatus.ready && current.readyAt == null;
     final stampServed = to == TicketStatus.served;
+    // ADR-0043: firing a held line hands it to the kitchen now — the prep
+    // clock starts here, not at `sentAt` (when the guest ordered it).
+    final stampFired =
+        from == TicketStatus.held && to == TicketStatus.sent;
     Ticket? row;
     VenueTable? tableRow;
     await db.transaction(() async {
       await (db.update(db.tickets)..where((t) => t.id.equals(id))).write(
         TicketsCompanion(
           status: Value(statusRaw),
+          firedAt: stampFired ? Value(stampNow) : const Value.absent(),
           readyAt: stampReady ? Value(stampNow) : const Value.absent(),
           servedAt: stampServed ? Value(stampNow) : const Value.absent(),
           voidReason: Value(voidReason),
@@ -586,7 +591,12 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
                 t.tableId.equals(tableId) &
                 t.course.equals(course) &
                 t.status.equals('held')))
-          .write(TicketsCompanion(status: const Value('sent')));
+          // One write ⇒ every line of the course shares an identical
+          // `firedAt`, which is what groups them as one course (ADR-0043).
+          .write(TicketsCompanion(
+            status: const Value('sent'),
+            firedAt: Value(DateTime.now()),
+          ));
       final rows = await (db.select(db.tickets)
             ..where((t) =>
                 t.tableId.equals(tableId) &
@@ -752,6 +762,7 @@ Map<String, dynamic> _toJson(Ticket t) => {
       'price': t.price,
       'status': t.status,
       'sentAt': t.sentAt.toIso8601String(),
+      'firedAt': t.firedAt?.toIso8601String(),
       'readyAt': t.readyAt?.toIso8601String(),
       'servedAt': t.servedAt?.toIso8601String(),
       'voidReason': t.voidReason,

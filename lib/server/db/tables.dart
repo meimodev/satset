@@ -164,7 +164,12 @@ class MenuItems extends Table {
   /// Cost of goods (same int-cents unit as `basePrice`). Used for margin
   /// reports + menu-engineering matrix. 0 = unknown (treated as full margin).
   IntColumn get cost => integer().withDefault(const Constant(0))();
-  IntColumn get prepTime => integer().withDefault(const Constant(5))();
+  /// Per-item ready target in minutes ("Waktu siap"). **Null = inherit** the
+  /// venue default (`VenueSettings.prepTargetMins`) live — so moving the venue
+  /// default shifts every non-overridden item. A value is a deliberate
+  /// per-item override. Resolved per line, then rolled up to the course (the
+  /// unit of "late"). See docs/adr/0043-per-item-ready-target-and-course-lateness.md.
+  IntColumn get prepTime => integer().nullable()();
   TextColumn get variantsJson => text().withDefault(const Constant('[]'))();
   /// Full modifier groups embedded per-item (private, not a shared library).
   /// JSON: [{id,name,required,multi,options:[{id,name,priceDelta}]}]. See
@@ -219,7 +224,14 @@ class Tickets extends Table {
   IntColumn get price => integer()();
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
-  /// Set once, on first entry into `ready` (prep time = readyAt − sentAt).
+  /// When the kitchen actually started owning this line. Null on a normal
+  /// send (the clock starts at `sentAt`); stamped on the `held → sent` fire
+  /// so a course held 40 minutes is not born overdue. `sentAt` keeps meaning
+  /// "guest ordered". Prep clock = `readyAt − (firedAt ?? sentAt)`.
+  /// See docs/adr/0043-per-item-ready-target-and-course-lateness.md.
+  DateTimeColumn get firedAt => dateTime().nullable()();
+  /// Set once, on first entry into `ready`
+  /// (prep time = readyAt − (firedAt ?? sentAt)).
   /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
   DateTimeColumn get readyAt => dateTime().nullable()();
   /// Last-write, most recent `served` (pickup lag = servedAt − readyAt).
@@ -328,11 +340,43 @@ class VenueSettings extends Table {
   IntColumn get businessDayStartHour =>
       integer().withDefault(const Constant(4))();
 
-  /// Single configurable "kitchen should be ready by now" threshold (minutes).
-  /// Drives BOTH the floor/audio overdue alert and the report SLA hit-rate.
-  /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
+  /// Venue-wide **default** ready target (minutes) — "Target siap (default
+  /// semua menu)". Every menu item with a null `prepTime` inherits this live,
+  /// so changing it shifts the whole floor. Still drives the report SLA, now
+  /// measured per course. See ADR-0013 (amended by ADR-0043).
   IntColumn get prepTargetMins =>
       integer().withDefault(const Constant(15))();
+
+  /// "Menunggu diantar" — how long food may sit at the pass (`readyAt →
+  /// servedAt`) before the waiters are cued. See ADR-0044.
+  IntColumn get pickupTargetMins => integer().withDefault(const Constant(4))();
+
+  /// "Belum dilayani" — a seated table with no line sent yet. First cue goes
+  /// to the seating waiter at `ungreetedMins`; escalates floor-wide a further
+  /// `ungreetedEscalateMins` later. See ADR-0044.
+  IntColumn get ungreetedMins => integer().withDefault(const Constant(7))();
+  IntColumn get ungreetedEscalateMins =>
+      integer().withDefault(const Constant(5))();
+
+  /// "Meja lama" — long-occupancy visual state on the floor grid (replaces the
+  /// hardcoded 1h colour ramp). Visual only, never audible.
+  IntColumn get longStayMins => integer().withDefault(const Constant(90))();
+
+  /// "Meja selesai makan" — everything served and idle this long. Visual only.
+  IntColumn get idleTableMins => integer().withDefault(const Constant(20))();
+
+  /// "Terlambat" — grace past a reservation's `expectedAt` before the chip
+  /// renders late. Display state only: never auto-flips status to `noShow`.
+  IntColumn get reservationGraceMins =>
+      integer().withDefault(const Constant(15))();
+
+  /// Venue-wide off switches for the two **audible** table cues. Distinct from
+  /// the per-device mute (device-local) and from the threshold value — a
+  /// disabled cue is not a mistyped one. See ADR-0044.
+  BoolColumn get ungreetedAlertEnabled =>
+      boolean().withDefault(const Constant(true))();
+  BoolColumn get pickupAlertEnabled =>
+      boolean().withDefault(const Constant(true))();
 
   /// Venue master switch for guest QR self-ordering (ADR-0027/0028). Default
   /// OFF so shipping the feature exposes no venue automatically. When true,
@@ -348,6 +392,10 @@ class VenueSettings extends Table {
   TextColumn get soundReady => text().withDefault(const Constant('chime'))();
   TextColumn get soundVoid => text().withDefault(const Constant('alert'))();
   TextColumn get soundOverdue => text().withDefault(const Constant('alert'))();
+  /// Presets for the two table cues added by ADR-0044.
+  TextColumn get soundUngreeted =>
+      text().withDefault(const Constant('chime'))();
+  TextColumn get soundPickup => text().withDefault(const Constant('chime'))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -451,6 +499,9 @@ class TableSessionTickets extends Table {
   IntColumn get price => integer()();
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
+  /// Mirrors Tickets.firedAt — the kitchen-ownership clock, so a held course
+  /// is not reported as slow for the time it sat unfired. ADR-0043.
+  DateTimeColumn get firedAt => dateTime().nullable()();
   /// Mirrors Tickets.readyAt / Tickets.servedAt at session close, so speed-of-
   /// service survives the live-ticket delete. See ADR-0013.
   DateTimeColumn get readyAt => dateTime().nullable()();
@@ -658,6 +709,11 @@ class Reservations extends Table {
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
+  /// Stamped when the reservation is actually seated. Distinct from
+  /// [updatedAt], which any later edit moves — lateness (`seatedAt −
+  /// expectedAt` past the venue grace) needs a stamp that only the seat sets.
+  /// ADR-0044.
+  DateTimeColumn get seatedAt => dateTime().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

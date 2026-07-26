@@ -80,11 +80,21 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     bool? taxAfterDiscount,
     int? businessDayStartHour,
     int? prepTargetMins,
+    int? pickupTargetMins,
+    int? ungreetedMins,
+    int? ungreetedEscalateMins,
+    int? longStayMins,
+    int? idleTableMins,
+    int? reservationGraceMins,
+    bool? ungreetedAlertEnabled,
+    bool? pickupAlertEnabled,
     bool? guestOrderingEnabled,
     String? soundNewOrder,
     String? soundReady,
     String? soundVoid,
     String? soundOverdue,
+    String? soundUngreeted,
+    String? soundPickup,
   }) async {
     final prev = state;
     state = state.copyWith(
@@ -109,12 +119,25 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       businessDayStartHour:
           businessDayStartHour ?? state.businessDayStartHour,
       prepTargetMins: prepTargetMins ?? state.prepTargetMins,
+      pickupTargetMins: pickupTargetMins ?? state.pickupTargetMins,
+      ungreetedMins: ungreetedMins ?? state.ungreetedMins,
+      ungreetedEscalateMins:
+          ungreetedEscalateMins ?? state.ungreetedEscalateMins,
+      longStayMins: longStayMins ?? state.longStayMins,
+      idleTableMins: idleTableMins ?? state.idleTableMins,
+      reservationGraceMins:
+          reservationGraceMins ?? state.reservationGraceMins,
+      ungreetedAlertEnabled:
+          ungreetedAlertEnabled ?? state.ungreetedAlertEnabled,
+      pickupAlertEnabled: pickupAlertEnabled ?? state.pickupAlertEnabled,
       guestOrderingEnabled:
           guestOrderingEnabled ?? state.guestOrderingEnabled,
       soundNewOrder: soundNewOrder ?? state.soundNewOrder,
       soundReady: soundReady ?? state.soundReady,
       soundVoid: soundVoid ?? state.soundVoid,
       soundOverdue: soundOverdue ?? state.soundOverdue,
+      soundUngreeted: soundUngreeted ?? state.soundUngreeted,
+      soundPickup: soundPickup ?? state.soundPickup,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -140,11 +163,21 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'taxAfterDiscount': ?taxAfterDiscount,
         'businessDayStartHour': ?businessDayStartHour,
         'prepTargetMins': ?prepTargetMins,
+        'pickupTargetMins': ?pickupTargetMins,
+        'ungreetedMins': ?ungreetedMins,
+        'ungreetedEscalateMins': ?ungreetedEscalateMins,
+        'longStayMins': ?longStayMins,
+        'idleTableMins': ?idleTableMins,
+        'reservationGraceMins': ?reservationGraceMins,
+        'ungreetedAlertEnabled': ?ungreetedAlertEnabled,
+        'pickupAlertEnabled': ?pickupAlertEnabled,
         'guestOrderingEnabled': ?guestOrderingEnabled,
         'soundNewOrder': ?soundNewOrder,
         'soundReady': ?soundReady,
         'soundVoid': ?soundVoid,
         'soundOverdue': ?soundOverdue,
+        'soundUngreeted': ?soundUngreeted,
+        'soundPickup': ?soundPickup,
       };
       final raw = await ref
           .read(apiClientProvider)

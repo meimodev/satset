@@ -75,6 +75,46 @@ class AppStrings {
   static const String venueSettingsSoundReady = 'Pesanan siap';
   static const String venueSettingsSoundVoid = 'Void';
   static const String venueSettingsSoundOverdue = 'Lewat waktu';
+  static const String venueSettingsSoundUngreeted = 'Belum dilayani';
+  static const String venueSettingsSoundPickup = 'Menunggu diantar';
+
+  // Waktu & Peringatan (ADR-0043/0044). Every service threshold lives in one
+  // named section — an owner chasing "why does the floor beep" looks for
+  // alerts, not for "Laporan".
+  static const String venueSettingsSectionTiming = 'Waktu & Peringatan';
+  static const String venueSettingsTimingPrepTarget =
+      'Target siap (default semua menu)';
+  static const String venueSettingsTimingPrepTargetHint =
+      'Menu tanpa "Waktu siap" sendiri ikut angka ini.';
+  static const String venueSettingsTimingPickup = 'Menunggu diantar';
+  static const String venueSettingsTimingPickupHint =
+      'Makanan siap tapi belum diantar selama ini.';
+  static const String venueSettingsTimingUngreeted = 'Belum dilayani';
+  static const String venueSettingsTimingUngreetedHint =
+      'Meja terisi tapi belum ada pesanan terkirim.';
+  static const String venueSettingsTimingUngreetedEscalate =
+      'Naik ke semua waiter setelah';
+  static const String venueSettingsTimingUngreetedEscalateHint =
+      'Awalnya hanya waiter yang mendudukkan tamu.';
+  static const String venueSettingsTimingLongStay = 'Meja lama';
+  static const String venueSettingsTimingLongStayHint =
+      'Tanda visual di lantai. Tanpa suara.';
+  static const String venueSettingsTimingIdle = 'Meja selesai makan';
+  static const String venueSettingsTimingIdleHint =
+      'Semua terhidang dan tidak ada aktivitas. Tanpa suara.';
+  static const String venueSettingsTimingReservationGrace =
+      'Toleransi reservasi';
+  static const String venueSettingsTimingReservationGraceHint =
+      'Lewat ini chip reservasi ditandai terlambat. Status tidak berubah.';
+  static const String venueSettingsTimingAlertsOn = 'Bunyikan peringatan';
+  static const String venueSettingsTimingMuteTitle = 'Senyapkan di alat ini';
+  static const String venueSettingsTimingMuteHint =
+      'Hanya untuk alat ini. Pilihan nada tetap milik venue.';
+
+  // Silent floor states (ADR-0044) — visual markers, never cues.
+  static const String tableStateUngreeted = 'Belum dilayani';
+  static const String tableStateIdle = 'Selesai makan';
+  static const String reservationLate = 'Terlambat';
   static const String venueSettingsSoundPreview = 'Dengar';
 
   // Zone Admin Screen (formerly Floor Screen)

@@ -1356,8 +1356,11 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       size: 26, weight: FontWeight.w700, color: slaColor)),
               const SizedBox(width: 8),
               Expanded(
+                // Targets resolve per item now, so the headline cannot name a
+                // single number — the percentage is still one honest figure
+                // ("% of courses that hit their own target"). ADR-0043.
                 child: Text(
-                    'siap di bawah target ${s.prepTargetMins} menit',
+                    'kursus siap di bawah target masing-masing',
                     style: SatType.sans(size: 12, color: sc.textMd)),
               ),
             ],
@@ -1368,8 +1371,27 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               color: slaColor,
               track: sc.bg3,
               height: 6),
+          // The two thresholds added by ADR-0044, each reported against the
+          // number that actually drives its cue.
+          if (s.pickupSlaPct > 0 || s.pickupMedianMin > 0)
+            _MiniStatRow(
+              label: 'Diantar < ${s.pickupTargetMins}m',
+              value: '${s.pickupSlaPct.round()}%',
+              sub: 'median ${s.pickupMedianMin}m',
+            ),
+          if (s.greetSampleSize > 0)
+            _MiniStatRow(
+              label: 'Telat dilayani > ${s.ungreetedMins}m',
+              value: '${s.greetBreachPct.round()}%',
+              sub: 'median ${s.greetMedianMin}m · '
+                  '${s.greetSampleSize} kunjungan',
+            ),
           if (s.slowItems.isNotEmpty) ...[
             const SizedBox(height: 16),
+            // Neutral ranked list, no pass/fail verdict: once coursing governs
+            // lateness, an item's own target is not what it was judged on, and
+            // a "sides" item would red permanently for correctly waiting on
+            // its mains. ADR-0043.
             Text('Menu paling lambat (rata-rata prep)',
                 style: SatType.sans(
                     size: 11,
@@ -1395,9 +1417,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                             style: SatType.mono(
                                 size: 12,
                                 weight: FontWeight.w600,
-                                color: it.avgPrepMin > s.prepTargetMins
-                                    ? sc.urgent
-                                    : sc.textHi,
+                                color: sc.textHi,
                                 letterSpacing: 0.4)),
                         const SizedBox(width: 8),
                         Text('×${it.count}',
@@ -1408,8 +1428,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     const SizedBox(height: 5),
                     AnimatedBarFill(
                       factor: it.avgPrepMin / maxAvg,
-                      color:
-                          it.avgPrepMin > s.prepTargetMins ? sc.urgent : sc.info,
+                      color: sc.info,
                       track: sc.bg3,
                     ),
                   ],
@@ -1697,5 +1716,47 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (v >= 1000000) return 'Rp ${(v / 1000000).toStringAsFixed(1)}jt';
     if (v >= 1000) return 'Rp ${(v / 1000).round()}rb';
     return 'Rp $v';
+  }
+}
+
+/// Compact secondary metric row: a label, its figure, and one line of context.
+/// Deliberately verdict-free — these report against thresholds the owner set,
+/// so the number is the point, not a colour telling them how to feel about it.
+class _MiniStatRow extends StatelessWidget {
+  const _MiniStatRow({
+    required this.label,
+    required this.value,
+    required this.sub,
+  });
+
+  final String label;
+  final String value;
+  final String sub;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: SatType.sans(size: 12, color: sc.textMd)),
+                const SizedBox(height: 1),
+                Text(sub, style: SatType.sans(size: 11, color: sc.textLo)),
+              ],
+            ),
+          ),
+          Text(value,
+              style: SatType.mono(
+                  size: 15, weight: FontWeight.w700, color: sc.textHi)),
+        ],
+      ),
+    );
   }
 }

@@ -5,9 +5,14 @@
 /// venue settings "Suara" section; the choice is venue-wide ([VenueSettingsDto]).
 library;
 
-/// The four moments that can sound a cue. Routing (who hears each) stays a
+/// The moments that can sound a cue. Routing (who hears each) stays a
 /// per-device-role decision in `AlertSoundService` — see ADR-0007.
-enum AlertEvent { newOrder, orderReady, voided, overdue }
+///
+/// [ungreeted] and [pickup] were added by ADR-0044. The other table states
+/// ("Meja lama", "Meja selesai makan") are deliberately **visual only** and so
+/// are absent here — a cue a waiter cannot discharge is noise that devalues
+/// every other cue.
+enum AlertEvent { newOrder, orderReady, voided, overdue, ungreeted, pickup }
 
 /// A selectable bundled clip. [asset] is null for the silent "none" preset.
 class AlertSoundPreset {
@@ -56,6 +61,8 @@ const alertEventDefaults = <AlertEvent, String>{
   AlertEvent.orderReady: 'chime',
   AlertEvent.voided: 'alert',
   AlertEvent.overdue: 'alert',
+  AlertEvent.ungreeted: 'chime',
+  AlertEvent.pickup: 'chime',
 };
 
 /// Preset for [id], or null if [id] is unknown (e.g. a removed preset).

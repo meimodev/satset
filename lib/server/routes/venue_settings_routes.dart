@@ -122,6 +122,35 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         prepTargetMins: body.containsKey('prepTargetMins')
             ? Value(((body['prepTargetMins'] as num).toInt()).clamp(1, 120))
             : const Value.absent(),
+        // Service timings (ADR-0043/0044). Clamped server-side so a bad client
+        // can't disable a cue by writing 0 — "off" is the explicit
+        // `*AlertEnabled` flag, never a degenerate threshold.
+        pickupTargetMins: body.containsKey('pickupTargetMins')
+            ? Value(((body['pickupTargetMins'] as num).toInt()).clamp(1, 60))
+            : const Value.absent(),
+        ungreetedMins: body.containsKey('ungreetedMins')
+            ? Value(((body['ungreetedMins'] as num).toInt()).clamp(1, 60))
+            : const Value.absent(),
+        ungreetedEscalateMins: body.containsKey('ungreetedEscalateMins')
+            ? Value(
+                ((body['ungreetedEscalateMins'] as num).toInt()).clamp(1, 60))
+            : const Value.absent(),
+        longStayMins: body.containsKey('longStayMins')
+            ? Value(((body['longStayMins'] as num).toInt()).clamp(15, 480))
+            : const Value.absent(),
+        idleTableMins: body.containsKey('idleTableMins')
+            ? Value(((body['idleTableMins'] as num).toInt()).clamp(5, 240))
+            : const Value.absent(),
+        reservationGraceMins: body.containsKey('reservationGraceMins')
+            ? Value(
+                ((body['reservationGraceMins'] as num).toInt()).clamp(0, 240))
+            : const Value.absent(),
+        ungreetedAlertEnabled: body.containsKey('ungreetedAlertEnabled')
+            ? Value(body['ungreetedAlertEnabled'] == true)
+            : const Value.absent(),
+        pickupAlertEnabled: body.containsKey('pickupAlertEnabled')
+            ? Value(body['pickupAlertEnabled'] == true)
+            : const Value.absent(),
         guestOrderingEnabled: body.containsKey('guestOrderingEnabled')
             ? Value(body['guestOrderingEnabled'] == true)
             : const Value.absent(),
@@ -136,6 +165,12 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             : const Value.absent(),
         soundOverdue: body.containsKey('soundOverdue')
             ? Value((body['soundOverdue'] as String).trim())
+            : const Value.absent(),
+        soundUngreeted: body.containsKey('soundUngreeted')
+            ? Value((body['soundUngreeted'] as String).trim())
+            : const Value.absent(),
+        soundPickup: body.containsKey('soundPickup')
+            ? Value((body['soundPickup'] as String).trim())
             : const Value.absent(),
       ),
     );
@@ -258,11 +293,21 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
       'taxAfterDiscount': s.taxAfterDiscount,
       'businessDayStartHour': s.businessDayStartHour,
       'prepTargetMins': s.prepTargetMins,
+      'pickupTargetMins': s.pickupTargetMins,
+      'ungreetedMins': s.ungreetedMins,
+      'ungreetedEscalateMins': s.ungreetedEscalateMins,
+      'longStayMins': s.longStayMins,
+      'idleTableMins': s.idleTableMins,
+      'reservationGraceMins': s.reservationGraceMins,
+      'ungreetedAlertEnabled': s.ungreetedAlertEnabled,
+      'pickupAlertEnabled': s.pickupAlertEnabled,
       'guestOrderingEnabled': s.guestOrderingEnabled,
       'soundNewOrder': s.soundNewOrder,
       'soundReady': s.soundReady,
       'soundVoid': s.soundVoid,
       'soundOverdue': s.soundOverdue,
+      'soundUngreeted': s.soundUngreeted,
+      'soundPickup': s.soundPickup,
     };
 
 /// Best-effort private LAN IPv4 the server is reachable at, for building guest

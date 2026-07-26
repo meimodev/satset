@@ -3975,10 +3975,9 @@ class $MenuItemsTable extends MenuItems
   late final GeneratedColumn<int> prepTime = GeneratedColumn<int>(
     'prep_time',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultValue: const Constant(5),
   );
   static const VerificationMeta _variantsJsonMeta = const VerificationMeta(
     'variantsJson',
@@ -4236,7 +4235,7 @@ class $MenuItemsTable extends MenuItems
       prepTime: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}prep_time'],
-      )!,
+      ),
       variantsJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}variants_json'],
@@ -4284,7 +4283,13 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
   /// Cost of goods (same int-cents unit as `basePrice`). Used for margin
   /// reports + menu-engineering matrix. 0 = unknown (treated as full margin).
   final int cost;
-  final int prepTime;
+
+  /// Per-item ready target in minutes ("Waktu siap"). **Null = inherit** the
+  /// venue default (`VenueSettings.prepTargetMins`) live — so moving the venue
+  /// default shifts every non-overridden item. A value is a deliberate
+  /// per-item override. Resolved per line, then rolled up to the course (the
+  /// unit of "late"). See docs/adr/0043-per-item-ready-target-and-course-lateness.md.
+  final int? prepTime;
   final String variantsJson;
 
   /// Full modifier groups embedded per-item (private, not a shared library).
@@ -4315,7 +4320,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     required this.description,
     required this.basePrice,
     required this.cost,
-    required this.prepTime,
+    this.prepTime,
     required this.variantsJson,
     required this.modifierGroupsJson,
     required this.allergensJson,
@@ -4333,7 +4338,9 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     map['description'] = Variable<String>(description);
     map['base_price'] = Variable<int>(basePrice);
     map['cost'] = Variable<int>(cost);
-    map['prep_time'] = Variable<int>(prepTime);
+    if (!nullToAbsent || prepTime != null) {
+      map['prep_time'] = Variable<int>(prepTime);
+    }
     map['variants_json'] = Variable<String>(variantsJson);
     map['modifier_groups_json'] = Variable<String>(modifierGroupsJson);
     map['allergens_json'] = Variable<String>(allergensJson);
@@ -4354,7 +4361,9 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       description: Value(description),
       basePrice: Value(basePrice),
       cost: Value(cost),
-      prepTime: Value(prepTime),
+      prepTime: prepTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(prepTime),
       variantsJson: Value(variantsJson),
       modifierGroupsJson: Value(modifierGroupsJson),
       allergensJson: Value(allergensJson),
@@ -4379,7 +4388,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       description: serializer.fromJson<String>(json['description']),
       basePrice: serializer.fromJson<int>(json['basePrice']),
       cost: serializer.fromJson<int>(json['cost']),
-      prepTime: serializer.fromJson<int>(json['prepTime']),
+      prepTime: serializer.fromJson<int?>(json['prepTime']),
       variantsJson: serializer.fromJson<String>(json['variantsJson']),
       modifierGroupsJson: serializer.fromJson<String>(
         json['modifierGroupsJson'],
@@ -4401,7 +4410,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       'description': serializer.toJson<String>(description),
       'basePrice': serializer.toJson<int>(basePrice),
       'cost': serializer.toJson<int>(cost),
-      'prepTime': serializer.toJson<int>(prepTime),
+      'prepTime': serializer.toJson<int?>(prepTime),
       'variantsJson': serializer.toJson<String>(variantsJson),
       'modifierGroupsJson': serializer.toJson<String>(modifierGroupsJson),
       'allergensJson': serializer.toJson<String>(allergensJson),
@@ -4419,7 +4428,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     String? description,
     int? basePrice,
     int? cost,
-    int? prepTime,
+    Value<int?> prepTime = const Value.absent(),
     String? variantsJson,
     String? modifierGroupsJson,
     String? allergensJson,
@@ -4434,7 +4443,7 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     description: description ?? this.description,
     basePrice: basePrice ?? this.basePrice,
     cost: cost ?? this.cost,
-    prepTime: prepTime ?? this.prepTime,
+    prepTime: prepTime.present ? prepTime.value : this.prepTime,
     variantsJson: variantsJson ?? this.variantsJson,
     modifierGroupsJson: modifierGroupsJson ?? this.modifierGroupsJson,
     allergensJson: allergensJson ?? this.allergensJson,
@@ -4541,7 +4550,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
   final Value<String> description;
   final Value<int> basePrice;
   final Value<int> cost;
-  final Value<int> prepTime;
+  final Value<int?> prepTime;
   final Value<String> variantsJson;
   final Value<String> modifierGroupsJson;
   final Value<String> allergensJson;
@@ -4631,7 +4640,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Value<String>? description,
     Value<int>? basePrice,
     Value<int>? cost,
-    Value<int>? prepTime,
+    Value<int?>? prepTime,
     Value<String>? variantsJson,
     Value<String>? modifierGroupsJson,
     Value<String>? allergensJson,
@@ -5212,6 +5221,17 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _firedAtMeta = const VerificationMeta(
+    'firedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> firedAt = GeneratedColumn<DateTime>(
+    'fired_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _readyAtMeta = const VerificationMeta(
     'readyAt',
   );
@@ -5304,6 +5324,7 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     price,
     status,
     sentAt,
+    firedAt,
     readyAt,
     servedAt,
     voidReason,
@@ -5421,6 +5442,12 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     } else if (isInserting) {
       context.missing(_sentAtMeta);
     }
+    if (data.containsKey('fired_at')) {
+      context.handle(
+        _firedAtMeta,
+        firedAt.isAcceptableOrUnknown(data['fired_at']!, _firedAtMeta),
+      );
+    }
     if (data.containsKey('ready_at')) {
       context.handle(
         _readyAtMeta,
@@ -5536,6 +5563,10 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}sent_at'],
       )!,
+      firedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fired_at'],
+      ),
       readyAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}ready_at'],
@@ -5593,7 +5624,15 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   final String status;
   final DateTime sentAt;
 
-  /// Set once, on first entry into `ready` (prep time = readyAt − sentAt).
+  /// When the kitchen actually started owning this line. Null on a normal
+  /// send (the clock starts at `sentAt`); stamped on the `held → sent` fire
+  /// so a course held 40 minutes is not born overdue. `sentAt` keeps meaning
+  /// "guest ordered". Prep clock = `readyAt − (firedAt ?? sentAt)`.
+  /// See docs/adr/0043-per-item-ready-target-and-course-lateness.md.
+  final DateTime? firedAt;
+
+  /// Set once, on first entry into `ready`
+  /// (prep time = readyAt − (firedAt ?? sentAt)).
   /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
   final DateTime? readyAt;
 
@@ -5624,6 +5663,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     required this.price,
     required this.status,
     required this.sentAt,
+    this.firedAt,
     this.readyAt,
     this.servedAt,
     this.voidReason,
@@ -5652,6 +5692,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     map['price'] = Variable<int>(price);
     map['status'] = Variable<String>(status);
     map['sent_at'] = Variable<DateTime>(sentAt);
+    if (!nullToAbsent || firedAt != null) {
+      map['fired_at'] = Variable<DateTime>(firedAt);
+    }
     if (!nullToAbsent || readyAt != null) {
       map['ready_at'] = Variable<DateTime>(readyAt);
     }
@@ -5693,6 +5736,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       price: Value(price),
       status: Value(status),
       sentAt: Value(sentAt),
+      firedAt: firedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firedAt),
       readyAt: readyAt == null && nullToAbsent
           ? const Value.absent()
           : Value(readyAt),
@@ -5736,6 +5782,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       price: serializer.fromJson<int>(json['price']),
       status: serializer.fromJson<String>(json['status']),
       sentAt: serializer.fromJson<DateTime>(json['sentAt']),
+      firedAt: serializer.fromJson<DateTime?>(json['firedAt']),
       readyAt: serializer.fromJson<DateTime?>(json['readyAt']),
       servedAt: serializer.fromJson<DateTime?>(json['servedAt']),
       voidReason: serializer.fromJson<String?>(json['voidReason']),
@@ -5762,6 +5809,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'price': serializer.toJson<int>(price),
       'status': serializer.toJson<String>(status),
       'sentAt': serializer.toJson<DateTime>(sentAt),
+      'firedAt': serializer.toJson<DateTime?>(firedAt),
       'readyAt': serializer.toJson<DateTime?>(readyAt),
       'servedAt': serializer.toJson<DateTime?>(servedAt),
       'voidReason': serializer.toJson<String?>(voidReason),
@@ -5786,6 +5834,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     int? price,
     String? status,
     DateTime? sentAt,
+    Value<DateTime?> firedAt = const Value.absent(),
     Value<DateTime?> readyAt = const Value.absent(),
     Value<DateTime?> servedAt = const Value.absent(),
     Value<String?> voidReason = const Value.absent(),
@@ -5807,6 +5856,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     price: price ?? this.price,
     status: status ?? this.status,
     sentAt: sentAt ?? this.sentAt,
+    firedAt: firedAt.present ? firedAt.value : this.firedAt,
     readyAt: readyAt.present ? readyAt.value : this.readyAt,
     servedAt: servedAt.present ? servedAt.value : this.servedAt,
     voidReason: voidReason.present ? voidReason.value : this.voidReason,
@@ -5842,6 +5892,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       price: data.price.present ? data.price.value : this.price,
       status: data.status.present ? data.status.value : this.status,
       sentAt: data.sentAt.present ? data.sentAt.value : this.sentAt,
+      firedAt: data.firedAt.present ? data.firedAt.value : this.firedAt,
       readyAt: data.readyAt.present ? data.readyAt.value : this.readyAt,
       servedAt: data.servedAt.present ? data.servedAt.value : this.servedAt,
       voidReason: data.voidReason.present
@@ -5878,6 +5929,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('firedAt: $firedAt, ')
           ..write('readyAt: $readyAt, ')
           ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
@@ -5890,7 +5942,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     tableId,
     visitId,
@@ -5904,6 +5956,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     price,
     status,
     sentAt,
+    firedAt,
     readyAt,
     servedAt,
     voidReason,
@@ -5911,7 +5964,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     voidApprovedBy,
     createdByUserId,
     voidedByUserId,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5929,6 +5982,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.price == this.price &&
           other.status == this.status &&
           other.sentAt == this.sentAt &&
+          other.firedAt == this.firedAt &&
           other.readyAt == this.readyAt &&
           other.servedAt == this.servedAt &&
           other.voidReason == this.voidReason &&
@@ -5952,6 +6006,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<int> price;
   final Value<String> status;
   final Value<DateTime> sentAt;
+  final Value<DateTime?> firedAt;
   final Value<DateTime?> readyAt;
   final Value<DateTime?> servedAt;
   final Value<String?> voidReason;
@@ -5974,6 +6029,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.price = const Value.absent(),
     this.status = const Value.absent(),
     this.sentAt = const Value.absent(),
+    this.firedAt = const Value.absent(),
     this.readyAt = const Value.absent(),
     this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
@@ -5997,6 +6053,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     required int price,
     required String status,
     required DateTime sentAt,
+    this.firedAt = const Value.absent(),
     this.readyAt = const Value.absent(),
     this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
@@ -6027,6 +6084,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<int>? price,
     Expression<String>? status,
     Expression<DateTime>? sentAt,
+    Expression<DateTime>? firedAt,
     Expression<DateTime>? readyAt,
     Expression<DateTime>? servedAt,
     Expression<String>? voidReason,
@@ -6050,6 +6108,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (price != null) 'price': price,
       if (status != null) 'status': status,
       if (sentAt != null) 'sent_at': sentAt,
+      if (firedAt != null) 'fired_at': firedAt,
       if (readyAt != null) 'ready_at': readyAt,
       if (servedAt != null) 'served_at': servedAt,
       if (voidReason != null) 'void_reason': voidReason,
@@ -6075,6 +6134,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<int>? price,
     Value<String>? status,
     Value<DateTime>? sentAt,
+    Value<DateTime?>? firedAt,
     Value<DateTime?>? readyAt,
     Value<DateTime?>? servedAt,
     Value<String?>? voidReason,
@@ -6098,6 +6158,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       price: price ?? this.price,
       status: status ?? this.status,
       sentAt: sentAt ?? this.sentAt,
+      firedAt: firedAt ?? this.firedAt,
       readyAt: readyAt ?? this.readyAt,
       servedAt: servedAt ?? this.servedAt,
       voidReason: voidReason ?? this.voidReason,
@@ -6151,6 +6212,9 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     if (sentAt.present) {
       map['sent_at'] = Variable<DateTime>(sentAt.value);
     }
+    if (firedAt.present) {
+      map['fired_at'] = Variable<DateTime>(firedAt.value);
+    }
     if (readyAt.present) {
       map['ready_at'] = Variable<DateTime>(readyAt.value);
     }
@@ -6194,6 +6258,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('firedAt: $firedAt, ')
           ..write('readyAt: $readyAt, ')
           ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
@@ -8377,6 +8442,105 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(15),
   );
+  static const VerificationMeta _pickupTargetMinsMeta = const VerificationMeta(
+    'pickupTargetMins',
+  );
+  @override
+  late final GeneratedColumn<int> pickupTargetMins = GeneratedColumn<int>(
+    'pickup_target_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(4),
+  );
+  static const VerificationMeta _ungreetedMinsMeta = const VerificationMeta(
+    'ungreetedMins',
+  );
+  @override
+  late final GeneratedColumn<int> ungreetedMins = GeneratedColumn<int>(
+    'ungreeted_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(7),
+  );
+  static const VerificationMeta _ungreetedEscalateMinsMeta =
+      const VerificationMeta('ungreetedEscalateMins');
+  @override
+  late final GeneratedColumn<int> ungreetedEscalateMins = GeneratedColumn<int>(
+    'ungreeted_escalate_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
+  static const VerificationMeta _longStayMinsMeta = const VerificationMeta(
+    'longStayMins',
+  );
+  @override
+  late final GeneratedColumn<int> longStayMins = GeneratedColumn<int>(
+    'long_stay_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(90),
+  );
+  static const VerificationMeta _idleTableMinsMeta = const VerificationMeta(
+    'idleTableMins',
+  );
+  @override
+  late final GeneratedColumn<int> idleTableMins = GeneratedColumn<int>(
+    'idle_table_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(20),
+  );
+  static const VerificationMeta _reservationGraceMinsMeta =
+      const VerificationMeta('reservationGraceMins');
+  @override
+  late final GeneratedColumn<int> reservationGraceMins = GeneratedColumn<int>(
+    'reservation_grace_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(15),
+  );
+  static const VerificationMeta _ungreetedAlertEnabledMeta =
+      const VerificationMeta('ungreetedAlertEnabled');
+  @override
+  late final GeneratedColumn<bool> ungreetedAlertEnabled =
+      GeneratedColumn<bool>(
+        'ungreeted_alert_enabled',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("ungreeted_alert_enabled" IN (0, 1))',
+        ),
+        defaultValue: const Constant(true),
+      );
+  static const VerificationMeta _pickupAlertEnabledMeta =
+      const VerificationMeta('pickupAlertEnabled');
+  @override
+  late final GeneratedColumn<bool> pickupAlertEnabled = GeneratedColumn<bool>(
+    'pickup_alert_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("pickup_alert_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _guestOrderingEnabledMeta =
       const VerificationMeta('guestOrderingEnabled');
   @override
@@ -8439,6 +8603,30 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('alert'),
   );
+  static const VerificationMeta _soundUngreetedMeta = const VerificationMeta(
+    'soundUngreeted',
+  );
+  @override
+  late final GeneratedColumn<String> soundUngreeted = GeneratedColumn<String>(
+    'sound_ungreeted',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('chime'),
+  );
+  static const VerificationMeta _soundPickupMeta = const VerificationMeta(
+    'soundPickup',
+  );
+  @override
+  late final GeneratedColumn<String> soundPickup = GeneratedColumn<String>(
+    'sound_pickup',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('chime'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8464,11 +8652,21 @@ class $VenueSettingsTable extends VenueSettings
     taxAfterDiscount,
     businessDayStartHour,
     prepTargetMins,
+    pickupTargetMins,
+    ungreetedMins,
+    ungreetedEscalateMins,
+    longStayMins,
+    idleTableMins,
+    reservationGraceMins,
+    ungreetedAlertEnabled,
+    pickupAlertEnabled,
     guestOrderingEnabled,
     soundNewOrder,
     soundReady,
     soundVoid,
     soundOverdue,
+    soundUngreeted,
+    soundPickup,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8667,6 +8865,78 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('pickup_target_mins')) {
+      context.handle(
+        _pickupTargetMinsMeta,
+        pickupTargetMins.isAcceptableOrUnknown(
+          data['pickup_target_mins']!,
+          _pickupTargetMinsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ungreeted_mins')) {
+      context.handle(
+        _ungreetedMinsMeta,
+        ungreetedMins.isAcceptableOrUnknown(
+          data['ungreeted_mins']!,
+          _ungreetedMinsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ungreeted_escalate_mins')) {
+      context.handle(
+        _ungreetedEscalateMinsMeta,
+        ungreetedEscalateMins.isAcceptableOrUnknown(
+          data['ungreeted_escalate_mins']!,
+          _ungreetedEscalateMinsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('long_stay_mins')) {
+      context.handle(
+        _longStayMinsMeta,
+        longStayMins.isAcceptableOrUnknown(
+          data['long_stay_mins']!,
+          _longStayMinsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('idle_table_mins')) {
+      context.handle(
+        _idleTableMinsMeta,
+        idleTableMins.isAcceptableOrUnknown(
+          data['idle_table_mins']!,
+          _idleTableMinsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reservation_grace_mins')) {
+      context.handle(
+        _reservationGraceMinsMeta,
+        reservationGraceMins.isAcceptableOrUnknown(
+          data['reservation_grace_mins']!,
+          _reservationGraceMinsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ungreeted_alert_enabled')) {
+      context.handle(
+        _ungreetedAlertEnabledMeta,
+        ungreetedAlertEnabled.isAcceptableOrUnknown(
+          data['ungreeted_alert_enabled']!,
+          _ungreetedAlertEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pickup_alert_enabled')) {
+      context.handle(
+        _pickupAlertEnabledMeta,
+        pickupAlertEnabled.isAcceptableOrUnknown(
+          data['pickup_alert_enabled']!,
+          _pickupAlertEnabledMeta,
+        ),
+      );
+    }
     if (data.containsKey('guest_ordering_enabled')) {
       context.handle(
         _guestOrderingEnabledMeta,
@@ -8703,6 +8973,24 @@ class $VenueSettingsTable extends VenueSettings
         soundOverdue.isAcceptableOrUnknown(
           data['sound_overdue']!,
           _soundOverdueMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sound_ungreeted')) {
+      context.handle(
+        _soundUngreetedMeta,
+        soundUngreeted.isAcceptableOrUnknown(
+          data['sound_ungreeted']!,
+          _soundUngreetedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sound_pickup')) {
+      context.handle(
+        _soundPickupMeta,
+        soundPickup.isAcceptableOrUnknown(
+          data['sound_pickup']!,
+          _soundPickupMeta,
         ),
       );
     }
@@ -8807,6 +9095,38 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.int,
         data['${effectivePrefix}prep_target_mins'],
       )!,
+      pickupTargetMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pickup_target_mins'],
+      )!,
+      ungreetedMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ungreeted_mins'],
+      )!,
+      ungreetedEscalateMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ungreeted_escalate_mins'],
+      )!,
+      longStayMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}long_stay_mins'],
+      )!,
+      idleTableMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}idle_table_mins'],
+      )!,
+      reservationGraceMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reservation_grace_mins'],
+      )!,
+      ungreetedAlertEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}ungreeted_alert_enabled'],
+      )!,
+      pickupAlertEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}pickup_alert_enabled'],
+      )!,
       guestOrderingEnabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}guest_ordering_enabled'],
@@ -8826,6 +9146,14 @@ class $VenueSettingsTable extends VenueSettings
       soundOverdue: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sound_overdue'],
+      )!,
+      soundUngreeted: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_ungreeted'],
+      )!,
+      soundPickup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_pickup'],
       )!,
     );
   }
@@ -8885,10 +9213,38 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// [hour, hour+24h). Default 4 covers late-night service.
   final int businessDayStartHour;
 
-  /// Single configurable "kitchen should be ready by now" threshold (minutes).
-  /// Drives BOTH the floor/audio overdue alert and the report SLA hit-rate.
-  /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
+  /// Venue-wide **default** ready target (minutes) — "Target siap (default
+  /// semua menu)". Every menu item with a null `prepTime` inherits this live,
+  /// so changing it shifts the whole floor. Still drives the report SLA, now
+  /// measured per course. See ADR-0013 (amended by ADR-0043).
   final int prepTargetMins;
+
+  /// "Menunggu diantar" — how long food may sit at the pass (`readyAt →
+  /// servedAt`) before the waiters are cued. See ADR-0044.
+  final int pickupTargetMins;
+
+  /// "Belum dilayani" — a seated table with no line sent yet. First cue goes
+  /// to the seating waiter at `ungreetedMins`; escalates floor-wide a further
+  /// `ungreetedEscalateMins` later. See ADR-0044.
+  final int ungreetedMins;
+  final int ungreetedEscalateMins;
+
+  /// "Meja lama" — long-occupancy visual state on the floor grid (replaces the
+  /// hardcoded 1h colour ramp). Visual only, never audible.
+  final int longStayMins;
+
+  /// "Meja selesai makan" — everything served and idle this long. Visual only.
+  final int idleTableMins;
+
+  /// "Terlambat" — grace past a reservation's `expectedAt` before the chip
+  /// renders late. Display state only: never auto-flips status to `noShow`.
+  final int reservationGraceMins;
+
+  /// Venue-wide off switches for the two **audible** table cues. Distinct from
+  /// the per-device mute (device-local) and from the threshold value — a
+  /// disabled cue is not a mistyped one. See ADR-0044.
+  final bool ungreetedAlertEnabled;
+  final bool pickupAlertEnabled;
 
   /// Venue master switch for guest QR self-ordering (ADR-0027/0028). Default
   /// OFF so shipping the feature exposes no venue automatically. When true,
@@ -8903,6 +9259,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   final String soundReady;
   final String soundVoid;
   final String soundOverdue;
+
+  /// Presets for the two table cues added by ADR-0044.
+  final String soundUngreeted;
+  final String soundPickup;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -8927,11 +9287,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.taxAfterDiscount,
     required this.businessDayStartHour,
     required this.prepTargetMins,
+    required this.pickupTargetMins,
+    required this.ungreetedMins,
+    required this.ungreetedEscalateMins,
+    required this.longStayMins,
+    required this.idleTableMins,
+    required this.reservationGraceMins,
+    required this.ungreetedAlertEnabled,
+    required this.pickupAlertEnabled,
     required this.guestOrderingEnabled,
     required this.soundNewOrder,
     required this.soundReady,
     required this.soundVoid,
     required this.soundOverdue,
+    required this.soundUngreeted,
+    required this.soundPickup,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8961,11 +9331,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['tax_after_discount'] = Variable<bool>(taxAfterDiscount);
     map['business_day_start_hour'] = Variable<int>(businessDayStartHour);
     map['prep_target_mins'] = Variable<int>(prepTargetMins);
+    map['pickup_target_mins'] = Variable<int>(pickupTargetMins);
+    map['ungreeted_mins'] = Variable<int>(ungreetedMins);
+    map['ungreeted_escalate_mins'] = Variable<int>(ungreetedEscalateMins);
+    map['long_stay_mins'] = Variable<int>(longStayMins);
+    map['idle_table_mins'] = Variable<int>(idleTableMins);
+    map['reservation_grace_mins'] = Variable<int>(reservationGraceMins);
+    map['ungreeted_alert_enabled'] = Variable<bool>(ungreetedAlertEnabled);
+    map['pickup_alert_enabled'] = Variable<bool>(pickupAlertEnabled);
     map['guest_ordering_enabled'] = Variable<bool>(guestOrderingEnabled);
     map['sound_new_order'] = Variable<String>(soundNewOrder);
     map['sound_ready'] = Variable<String>(soundReady);
     map['sound_void'] = Variable<String>(soundVoid);
     map['sound_overdue'] = Variable<String>(soundOverdue);
+    map['sound_ungreeted'] = Variable<String>(soundUngreeted);
+    map['sound_pickup'] = Variable<String>(soundPickup);
     return map;
   }
 
@@ -8994,11 +9374,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       taxAfterDiscount: Value(taxAfterDiscount),
       businessDayStartHour: Value(businessDayStartHour),
       prepTargetMins: Value(prepTargetMins),
+      pickupTargetMins: Value(pickupTargetMins),
+      ungreetedMins: Value(ungreetedMins),
+      ungreetedEscalateMins: Value(ungreetedEscalateMins),
+      longStayMins: Value(longStayMins),
+      idleTableMins: Value(idleTableMins),
+      reservationGraceMins: Value(reservationGraceMins),
+      ungreetedAlertEnabled: Value(ungreetedAlertEnabled),
+      pickupAlertEnabled: Value(pickupAlertEnabled),
       guestOrderingEnabled: Value(guestOrderingEnabled),
       soundNewOrder: Value(soundNewOrder),
       soundReady: Value(soundReady),
       soundVoid: Value(soundVoid),
       soundOverdue: Value(soundOverdue),
+      soundUngreeted: Value(soundUngreeted),
+      soundPickup: Value(soundPickup),
     );
   }
 
@@ -9033,6 +9423,20 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
         json['businessDayStartHour'],
       ),
       prepTargetMins: serializer.fromJson<int>(json['prepTargetMins']),
+      pickupTargetMins: serializer.fromJson<int>(json['pickupTargetMins']),
+      ungreetedMins: serializer.fromJson<int>(json['ungreetedMins']),
+      ungreetedEscalateMins: serializer.fromJson<int>(
+        json['ungreetedEscalateMins'],
+      ),
+      longStayMins: serializer.fromJson<int>(json['longStayMins']),
+      idleTableMins: serializer.fromJson<int>(json['idleTableMins']),
+      reservationGraceMins: serializer.fromJson<int>(
+        json['reservationGraceMins'],
+      ),
+      ungreetedAlertEnabled: serializer.fromJson<bool>(
+        json['ungreetedAlertEnabled'],
+      ),
+      pickupAlertEnabled: serializer.fromJson<bool>(json['pickupAlertEnabled']),
       guestOrderingEnabled: serializer.fromJson<bool>(
         json['guestOrderingEnabled'],
       ),
@@ -9040,6 +9444,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundReady: serializer.fromJson<String>(json['soundReady']),
       soundVoid: serializer.fromJson<String>(json['soundVoid']),
       soundOverdue: serializer.fromJson<String>(json['soundOverdue']),
+      soundUngreeted: serializer.fromJson<String>(json['soundUngreeted']),
+      soundPickup: serializer.fromJson<String>(json['soundPickup']),
     );
   }
   @override
@@ -9069,11 +9475,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'taxAfterDiscount': serializer.toJson<bool>(taxAfterDiscount),
       'businessDayStartHour': serializer.toJson<int>(businessDayStartHour),
       'prepTargetMins': serializer.toJson<int>(prepTargetMins),
+      'pickupTargetMins': serializer.toJson<int>(pickupTargetMins),
+      'ungreetedMins': serializer.toJson<int>(ungreetedMins),
+      'ungreetedEscalateMins': serializer.toJson<int>(ungreetedEscalateMins),
+      'longStayMins': serializer.toJson<int>(longStayMins),
+      'idleTableMins': serializer.toJson<int>(idleTableMins),
+      'reservationGraceMins': serializer.toJson<int>(reservationGraceMins),
+      'ungreetedAlertEnabled': serializer.toJson<bool>(ungreetedAlertEnabled),
+      'pickupAlertEnabled': serializer.toJson<bool>(pickupAlertEnabled),
       'guestOrderingEnabled': serializer.toJson<bool>(guestOrderingEnabled),
       'soundNewOrder': serializer.toJson<String>(soundNewOrder),
       'soundReady': serializer.toJson<String>(soundReady),
       'soundVoid': serializer.toJson<String>(soundVoid),
       'soundOverdue': serializer.toJson<String>(soundOverdue),
+      'soundUngreeted': serializer.toJson<String>(soundUngreeted),
+      'soundPickup': serializer.toJson<String>(soundPickup),
     };
   }
 
@@ -9101,11 +9517,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     bool? taxAfterDiscount,
     int? businessDayStartHour,
     int? prepTargetMins,
+    int? pickupTargetMins,
+    int? ungreetedMins,
+    int? ungreetedEscalateMins,
+    int? longStayMins,
+    int? idleTableMins,
+    int? reservationGraceMins,
+    bool? ungreetedAlertEnabled,
+    bool? pickupAlertEnabled,
     bool? guestOrderingEnabled,
     String? soundNewOrder,
     String? soundReady,
     String? soundVoid,
     String? soundOverdue,
+    String? soundUngreeted,
+    String? soundPickup,
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -9130,11 +9556,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     taxAfterDiscount: taxAfterDiscount ?? this.taxAfterDiscount,
     businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
     prepTargetMins: prepTargetMins ?? this.prepTargetMins,
+    pickupTargetMins: pickupTargetMins ?? this.pickupTargetMins,
+    ungreetedMins: ungreetedMins ?? this.ungreetedMins,
+    ungreetedEscalateMins: ungreetedEscalateMins ?? this.ungreetedEscalateMins,
+    longStayMins: longStayMins ?? this.longStayMins,
+    idleTableMins: idleTableMins ?? this.idleTableMins,
+    reservationGraceMins: reservationGraceMins ?? this.reservationGraceMins,
+    ungreetedAlertEnabled: ungreetedAlertEnabled ?? this.ungreetedAlertEnabled,
+    pickupAlertEnabled: pickupAlertEnabled ?? this.pickupAlertEnabled,
     guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
     soundNewOrder: soundNewOrder ?? this.soundNewOrder,
     soundReady: soundReady ?? this.soundReady,
     soundVoid: soundVoid ?? this.soundVoid,
     soundOverdue: soundOverdue ?? this.soundOverdue,
+    soundUngreeted: soundUngreeted ?? this.soundUngreeted,
+    soundPickup: soundPickup ?? this.soundPickup,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -9195,6 +9631,30 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       prepTargetMins: data.prepTargetMins.present
           ? data.prepTargetMins.value
           : this.prepTargetMins,
+      pickupTargetMins: data.pickupTargetMins.present
+          ? data.pickupTargetMins.value
+          : this.pickupTargetMins,
+      ungreetedMins: data.ungreetedMins.present
+          ? data.ungreetedMins.value
+          : this.ungreetedMins,
+      ungreetedEscalateMins: data.ungreetedEscalateMins.present
+          ? data.ungreetedEscalateMins.value
+          : this.ungreetedEscalateMins,
+      longStayMins: data.longStayMins.present
+          ? data.longStayMins.value
+          : this.longStayMins,
+      idleTableMins: data.idleTableMins.present
+          ? data.idleTableMins.value
+          : this.idleTableMins,
+      reservationGraceMins: data.reservationGraceMins.present
+          ? data.reservationGraceMins.value
+          : this.reservationGraceMins,
+      ungreetedAlertEnabled: data.ungreetedAlertEnabled.present
+          ? data.ungreetedAlertEnabled.value
+          : this.ungreetedAlertEnabled,
+      pickupAlertEnabled: data.pickupAlertEnabled.present
+          ? data.pickupAlertEnabled.value
+          : this.pickupAlertEnabled,
       guestOrderingEnabled: data.guestOrderingEnabled.present
           ? data.guestOrderingEnabled.value
           : this.guestOrderingEnabled,
@@ -9208,6 +9668,12 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundOverdue: data.soundOverdue.present
           ? data.soundOverdue.value
           : this.soundOverdue,
+      soundUngreeted: data.soundUngreeted.present
+          ? data.soundUngreeted.value
+          : this.soundUngreeted,
+      soundPickup: data.soundPickup.present
+          ? data.soundPickup.value
+          : this.soundPickup,
     );
   }
 
@@ -9237,11 +9703,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('taxAfterDiscount: $taxAfterDiscount, ')
           ..write('businessDayStartHour: $businessDayStartHour, ')
           ..write('prepTargetMins: $prepTargetMins, ')
+          ..write('pickupTargetMins: $pickupTargetMins, ')
+          ..write('ungreetedMins: $ungreetedMins, ')
+          ..write('ungreetedEscalateMins: $ungreetedEscalateMins, ')
+          ..write('longStayMins: $longStayMins, ')
+          ..write('idleTableMins: $idleTableMins, ')
+          ..write('reservationGraceMins: $reservationGraceMins, ')
+          ..write('ungreetedAlertEnabled: $ungreetedAlertEnabled, ')
+          ..write('pickupAlertEnabled: $pickupAlertEnabled, ')
           ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
           ..write('soundNewOrder: $soundNewOrder, ')
           ..write('soundReady: $soundReady, ')
           ..write('soundVoid: $soundVoid, ')
-          ..write('soundOverdue: $soundOverdue')
+          ..write('soundOverdue: $soundOverdue, ')
+          ..write('soundUngreeted: $soundUngreeted, ')
+          ..write('soundPickup: $soundPickup')
           ..write(')'))
         .toString();
   }
@@ -9271,11 +9747,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     taxAfterDiscount,
     businessDayStartHour,
     prepTargetMins,
+    pickupTargetMins,
+    ungreetedMins,
+    ungreetedEscalateMins,
+    longStayMins,
+    idleTableMins,
+    reservationGraceMins,
+    ungreetedAlertEnabled,
+    pickupAlertEnabled,
     guestOrderingEnabled,
     soundNewOrder,
     soundReady,
     soundVoid,
     soundOverdue,
+    soundUngreeted,
+    soundPickup,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -9304,11 +9790,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.taxAfterDiscount == this.taxAfterDiscount &&
           other.businessDayStartHour == this.businessDayStartHour &&
           other.prepTargetMins == this.prepTargetMins &&
+          other.pickupTargetMins == this.pickupTargetMins &&
+          other.ungreetedMins == this.ungreetedMins &&
+          other.ungreetedEscalateMins == this.ungreetedEscalateMins &&
+          other.longStayMins == this.longStayMins &&
+          other.idleTableMins == this.idleTableMins &&
+          other.reservationGraceMins == this.reservationGraceMins &&
+          other.ungreetedAlertEnabled == this.ungreetedAlertEnabled &&
+          other.pickupAlertEnabled == this.pickupAlertEnabled &&
           other.guestOrderingEnabled == this.guestOrderingEnabled &&
           other.soundNewOrder == this.soundNewOrder &&
           other.soundReady == this.soundReady &&
           other.soundVoid == this.soundVoid &&
-          other.soundOverdue == this.soundOverdue);
+          other.soundOverdue == this.soundOverdue &&
+          other.soundUngreeted == this.soundUngreeted &&
+          other.soundPickup == this.soundPickup);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -9335,11 +9831,21 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<bool> taxAfterDiscount;
   final Value<int> businessDayStartHour;
   final Value<int> prepTargetMins;
+  final Value<int> pickupTargetMins;
+  final Value<int> ungreetedMins;
+  final Value<int> ungreetedEscalateMins;
+  final Value<int> longStayMins;
+  final Value<int> idleTableMins;
+  final Value<int> reservationGraceMins;
+  final Value<bool> ungreetedAlertEnabled;
+  final Value<bool> pickupAlertEnabled;
   final Value<bool> guestOrderingEnabled;
   final Value<String> soundNewOrder;
   final Value<String> soundReady;
   final Value<String> soundVoid;
   final Value<String> soundOverdue;
+  final Value<String> soundUngreeted;
+  final Value<String> soundPickup;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -9365,11 +9871,21 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.taxAfterDiscount = const Value.absent(),
     this.businessDayStartHour = const Value.absent(),
     this.prepTargetMins = const Value.absent(),
+    this.pickupTargetMins = const Value.absent(),
+    this.ungreetedMins = const Value.absent(),
+    this.ungreetedEscalateMins = const Value.absent(),
+    this.longStayMins = const Value.absent(),
+    this.idleTableMins = const Value.absent(),
+    this.reservationGraceMins = const Value.absent(),
+    this.ungreetedAlertEnabled = const Value.absent(),
+    this.pickupAlertEnabled = const Value.absent(),
     this.guestOrderingEnabled = const Value.absent(),
     this.soundNewOrder = const Value.absent(),
     this.soundReady = const Value.absent(),
     this.soundVoid = const Value.absent(),
     this.soundOverdue = const Value.absent(),
+    this.soundUngreeted = const Value.absent(),
+    this.soundPickup = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -9396,11 +9912,21 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.taxAfterDiscount = const Value.absent(),
     this.businessDayStartHour = const Value.absent(),
     this.prepTargetMins = const Value.absent(),
+    this.pickupTargetMins = const Value.absent(),
+    this.ungreetedMins = const Value.absent(),
+    this.ungreetedEscalateMins = const Value.absent(),
+    this.longStayMins = const Value.absent(),
+    this.idleTableMins = const Value.absent(),
+    this.reservationGraceMins = const Value.absent(),
+    this.ungreetedAlertEnabled = const Value.absent(),
+    this.pickupAlertEnabled = const Value.absent(),
     this.guestOrderingEnabled = const Value.absent(),
     this.soundNewOrder = const Value.absent(),
     this.soundReady = const Value.absent(),
     this.soundVoid = const Value.absent(),
     this.soundOverdue = const Value.absent(),
+    this.soundUngreeted = const Value.absent(),
+    this.soundPickup = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -9427,11 +9953,21 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<bool>? taxAfterDiscount,
     Expression<int>? businessDayStartHour,
     Expression<int>? prepTargetMins,
+    Expression<int>? pickupTargetMins,
+    Expression<int>? ungreetedMins,
+    Expression<int>? ungreetedEscalateMins,
+    Expression<int>? longStayMins,
+    Expression<int>? idleTableMins,
+    Expression<int>? reservationGraceMins,
+    Expression<bool>? ungreetedAlertEnabled,
+    Expression<bool>? pickupAlertEnabled,
     Expression<bool>? guestOrderingEnabled,
     Expression<String>? soundNewOrder,
     Expression<String>? soundReady,
     Expression<String>? soundVoid,
     Expression<String>? soundOverdue,
+    Expression<String>? soundUngreeted,
+    Expression<String>? soundPickup,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9460,12 +9996,26 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (businessDayStartHour != null)
         'business_day_start_hour': businessDayStartHour,
       if (prepTargetMins != null) 'prep_target_mins': prepTargetMins,
+      if (pickupTargetMins != null) 'pickup_target_mins': pickupTargetMins,
+      if (ungreetedMins != null) 'ungreeted_mins': ungreetedMins,
+      if (ungreetedEscalateMins != null)
+        'ungreeted_escalate_mins': ungreetedEscalateMins,
+      if (longStayMins != null) 'long_stay_mins': longStayMins,
+      if (idleTableMins != null) 'idle_table_mins': idleTableMins,
+      if (reservationGraceMins != null)
+        'reservation_grace_mins': reservationGraceMins,
+      if (ungreetedAlertEnabled != null)
+        'ungreeted_alert_enabled': ungreetedAlertEnabled,
+      if (pickupAlertEnabled != null)
+        'pickup_alert_enabled': pickupAlertEnabled,
       if (guestOrderingEnabled != null)
         'guest_ordering_enabled': guestOrderingEnabled,
       if (soundNewOrder != null) 'sound_new_order': soundNewOrder,
       if (soundReady != null) 'sound_ready': soundReady,
       if (soundVoid != null) 'sound_void': soundVoid,
       if (soundOverdue != null) 'sound_overdue': soundOverdue,
+      if (soundUngreeted != null) 'sound_ungreeted': soundUngreeted,
+      if (soundPickup != null) 'sound_pickup': soundPickup,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9494,11 +10044,21 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<bool>? taxAfterDiscount,
     Value<int>? businessDayStartHour,
     Value<int>? prepTargetMins,
+    Value<int>? pickupTargetMins,
+    Value<int>? ungreetedMins,
+    Value<int>? ungreetedEscalateMins,
+    Value<int>? longStayMins,
+    Value<int>? idleTableMins,
+    Value<int>? reservationGraceMins,
+    Value<bool>? ungreetedAlertEnabled,
+    Value<bool>? pickupAlertEnabled,
     Value<bool>? guestOrderingEnabled,
     Value<String>? soundNewOrder,
     Value<String>? soundReady,
     Value<String>? soundVoid,
     Value<String>? soundOverdue,
+    Value<String>? soundUngreeted,
+    Value<String>? soundPickup,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -9525,11 +10085,23 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       taxAfterDiscount: taxAfterDiscount ?? this.taxAfterDiscount,
       businessDayStartHour: businessDayStartHour ?? this.businessDayStartHour,
       prepTargetMins: prepTargetMins ?? this.prepTargetMins,
+      pickupTargetMins: pickupTargetMins ?? this.pickupTargetMins,
+      ungreetedMins: ungreetedMins ?? this.ungreetedMins,
+      ungreetedEscalateMins:
+          ungreetedEscalateMins ?? this.ungreetedEscalateMins,
+      longStayMins: longStayMins ?? this.longStayMins,
+      idleTableMins: idleTableMins ?? this.idleTableMins,
+      reservationGraceMins: reservationGraceMins ?? this.reservationGraceMins,
+      ungreetedAlertEnabled:
+          ungreetedAlertEnabled ?? this.ungreetedAlertEnabled,
+      pickupAlertEnabled: pickupAlertEnabled ?? this.pickupAlertEnabled,
       guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
       soundNewOrder: soundNewOrder ?? this.soundNewOrder,
       soundReady: soundReady ?? this.soundReady,
       soundVoid: soundVoid ?? this.soundVoid,
       soundOverdue: soundOverdue ?? this.soundOverdue,
+      soundUngreeted: soundUngreeted ?? this.soundUngreeted,
+      soundPickup: soundPickup ?? this.soundPickup,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9608,6 +10180,34 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (prepTargetMins.present) {
       map['prep_target_mins'] = Variable<int>(prepTargetMins.value);
     }
+    if (pickupTargetMins.present) {
+      map['pickup_target_mins'] = Variable<int>(pickupTargetMins.value);
+    }
+    if (ungreetedMins.present) {
+      map['ungreeted_mins'] = Variable<int>(ungreetedMins.value);
+    }
+    if (ungreetedEscalateMins.present) {
+      map['ungreeted_escalate_mins'] = Variable<int>(
+        ungreetedEscalateMins.value,
+      );
+    }
+    if (longStayMins.present) {
+      map['long_stay_mins'] = Variable<int>(longStayMins.value);
+    }
+    if (idleTableMins.present) {
+      map['idle_table_mins'] = Variable<int>(idleTableMins.value);
+    }
+    if (reservationGraceMins.present) {
+      map['reservation_grace_mins'] = Variable<int>(reservationGraceMins.value);
+    }
+    if (ungreetedAlertEnabled.present) {
+      map['ungreeted_alert_enabled'] = Variable<bool>(
+        ungreetedAlertEnabled.value,
+      );
+    }
+    if (pickupAlertEnabled.present) {
+      map['pickup_alert_enabled'] = Variable<bool>(pickupAlertEnabled.value);
+    }
     if (guestOrderingEnabled.present) {
       map['guest_ordering_enabled'] = Variable<bool>(
         guestOrderingEnabled.value,
@@ -9624,6 +10224,12 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     }
     if (soundOverdue.present) {
       map['sound_overdue'] = Variable<String>(soundOverdue.value);
+    }
+    if (soundUngreeted.present) {
+      map['sound_ungreeted'] = Variable<String>(soundUngreeted.value);
+    }
+    if (soundPickup.present) {
+      map['sound_pickup'] = Variable<String>(soundPickup.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -9657,11 +10263,21 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('taxAfterDiscount: $taxAfterDiscount, ')
           ..write('businessDayStartHour: $businessDayStartHour, ')
           ..write('prepTargetMins: $prepTargetMins, ')
+          ..write('pickupTargetMins: $pickupTargetMins, ')
+          ..write('ungreetedMins: $ungreetedMins, ')
+          ..write('ungreetedEscalateMins: $ungreetedEscalateMins, ')
+          ..write('longStayMins: $longStayMins, ')
+          ..write('idleTableMins: $idleTableMins, ')
+          ..write('reservationGraceMins: $reservationGraceMins, ')
+          ..write('ungreetedAlertEnabled: $ungreetedAlertEnabled, ')
+          ..write('pickupAlertEnabled: $pickupAlertEnabled, ')
           ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
           ..write('soundNewOrder: $soundNewOrder, ')
           ..write('soundReady: $soundReady, ')
           ..write('soundVoid: $soundVoid, ')
           ..write('soundOverdue: $soundOverdue, ')
+          ..write('soundUngreeted: $soundUngreeted, ')
+          ..write('soundPickup: $soundPickup, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11432,6 +12048,17 @@ class $TableSessionTicketsTable extends TableSessionTickets
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _firedAtMeta = const VerificationMeta(
+    'firedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> firedAt = GeneratedColumn<DateTime>(
+    'fired_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _readyAtMeta = const VerificationMeta(
     'readyAt',
   );
@@ -11524,6 +12151,7 @@ class $TableSessionTicketsTable extends TableSessionTickets
     price,
     status,
     sentAt,
+    firedAt,
     readyAt,
     servedAt,
     voidReason,
@@ -11643,6 +12271,12 @@ class $TableSessionTicketsTable extends TableSessionTickets
     } else if (isInserting) {
       context.missing(_sentAtMeta);
     }
+    if (data.containsKey('fired_at')) {
+      context.handle(
+        _firedAtMeta,
+        firedAt.isAcceptableOrUnknown(data['fired_at']!, _firedAtMeta),
+      );
+    }
     if (data.containsKey('ready_at')) {
       context.handle(
         _readyAtMeta,
@@ -11758,6 +12392,10 @@ class $TableSessionTicketsTable extends TableSessionTickets
         DriftSqlType.dateTime,
         data['${effectivePrefix}sent_at'],
       )!,
+      firedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fired_at'],
+      ),
       readyAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}ready_at'],
@@ -11811,6 +12449,10 @@ class TableSessionTicket extends DataClass
   final String status;
   final DateTime sentAt;
 
+  /// Mirrors Tickets.firedAt — the kitchen-ownership clock, so a held course
+  /// is not reported as slow for the time it sat unfired. ADR-0043.
+  final DateTime? firedAt;
+
   /// Mirrors Tickets.readyAt / Tickets.servedAt at session close, so speed-of-
   /// service survives the live-ticket delete. See ADR-0013.
   final DateTime? readyAt;
@@ -11838,6 +12480,7 @@ class TableSessionTicket extends DataClass
     required this.price,
     required this.status,
     required this.sentAt,
+    this.firedAt,
     this.readyAt,
     this.servedAt,
     this.voidReason,
@@ -11864,6 +12507,9 @@ class TableSessionTicket extends DataClass
     map['price'] = Variable<int>(price);
     map['status'] = Variable<String>(status);
     map['sent_at'] = Variable<DateTime>(sentAt);
+    if (!nullToAbsent || firedAt != null) {
+      map['fired_at'] = Variable<DateTime>(firedAt);
+    }
     if (!nullToAbsent || readyAt != null) {
       map['ready_at'] = Variable<DateTime>(readyAt);
     }
@@ -11903,6 +12549,9 @@ class TableSessionTicket extends DataClass
       price: Value(price),
       status: Value(status),
       sentAt: Value(sentAt),
+      firedAt: firedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firedAt),
       readyAt: readyAt == null && nullToAbsent
           ? const Value.absent()
           : Value(readyAt),
@@ -11946,6 +12595,7 @@ class TableSessionTicket extends DataClass
       price: serializer.fromJson<int>(json['price']),
       status: serializer.fromJson<String>(json['status']),
       sentAt: serializer.fromJson<DateTime>(json['sentAt']),
+      firedAt: serializer.fromJson<DateTime?>(json['firedAt']),
       readyAt: serializer.fromJson<DateTime?>(json['readyAt']),
       servedAt: serializer.fromJson<DateTime?>(json['servedAt']),
       voidReason: serializer.fromJson<String?>(json['voidReason']),
@@ -11972,6 +12622,7 @@ class TableSessionTicket extends DataClass
       'price': serializer.toJson<int>(price),
       'status': serializer.toJson<String>(status),
       'sentAt': serializer.toJson<DateTime>(sentAt),
+      'firedAt': serializer.toJson<DateTime?>(firedAt),
       'readyAt': serializer.toJson<DateTime?>(readyAt),
       'servedAt': serializer.toJson<DateTime?>(servedAt),
       'voidReason': serializer.toJson<String?>(voidReason),
@@ -11996,6 +12647,7 @@ class TableSessionTicket extends DataClass
     int? price,
     String? status,
     DateTime? sentAt,
+    Value<DateTime?> firedAt = const Value.absent(),
     Value<DateTime?> readyAt = const Value.absent(),
     Value<DateTime?> servedAt = const Value.absent(),
     Value<String?> voidReason = const Value.absent(),
@@ -12017,6 +12669,7 @@ class TableSessionTicket extends DataClass
     price: price ?? this.price,
     status: status ?? this.status,
     sentAt: sentAt ?? this.sentAt,
+    firedAt: firedAt.present ? firedAt.value : this.firedAt,
     readyAt: readyAt.present ? readyAt.value : this.readyAt,
     servedAt: servedAt.present ? servedAt.value : this.servedAt,
     voidReason: voidReason.present ? voidReason.value : this.voidReason,
@@ -12052,6 +12705,7 @@ class TableSessionTicket extends DataClass
       price: data.price.present ? data.price.value : this.price,
       status: data.status.present ? data.status.value : this.status,
       sentAt: data.sentAt.present ? data.sentAt.value : this.sentAt,
+      firedAt: data.firedAt.present ? data.firedAt.value : this.firedAt,
       readyAt: data.readyAt.present ? data.readyAt.value : this.readyAt,
       servedAt: data.servedAt.present ? data.servedAt.value : this.servedAt,
       voidReason: data.voidReason.present
@@ -12088,6 +12742,7 @@ class TableSessionTicket extends DataClass
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('firedAt: $firedAt, ')
           ..write('readyAt: $readyAt, ')
           ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
@@ -12100,7 +12755,7 @@ class TableSessionTicket extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     sessionId,
     ticketId,
@@ -12114,6 +12769,7 @@ class TableSessionTicket extends DataClass
     price,
     status,
     sentAt,
+    firedAt,
     readyAt,
     servedAt,
     voidReason,
@@ -12121,7 +12777,7 @@ class TableSessionTicket extends DataClass
     voidApprovedBy,
     createdByUserId,
     voidedByUserId,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -12139,6 +12795,7 @@ class TableSessionTicket extends DataClass
           other.price == this.price &&
           other.status == this.status &&
           other.sentAt == this.sentAt &&
+          other.firedAt == this.firedAt &&
           other.readyAt == this.readyAt &&
           other.servedAt == this.servedAt &&
           other.voidReason == this.voidReason &&
@@ -12162,6 +12819,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
   final Value<int> price;
   final Value<String> status;
   final Value<DateTime> sentAt;
+  final Value<DateTime?> firedAt;
   final Value<DateTime?> readyAt;
   final Value<DateTime?> servedAt;
   final Value<String?> voidReason;
@@ -12184,6 +12842,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     this.price = const Value.absent(),
     this.status = const Value.absent(),
     this.sentAt = const Value.absent(),
+    this.firedAt = const Value.absent(),
     this.readyAt = const Value.absent(),
     this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
@@ -12207,6 +12866,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     required int price,
     required String status,
     required DateTime sentAt,
+    this.firedAt = const Value.absent(),
     this.readyAt = const Value.absent(),
     this.servedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
@@ -12238,6 +12898,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Expression<int>? price,
     Expression<String>? status,
     Expression<DateTime>? sentAt,
+    Expression<DateTime>? firedAt,
     Expression<DateTime>? readyAt,
     Expression<DateTime>? servedAt,
     Expression<String>? voidReason,
@@ -12261,6 +12922,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       if (price != null) 'price': price,
       if (status != null) 'status': status,
       if (sentAt != null) 'sent_at': sentAt,
+      if (firedAt != null) 'fired_at': firedAt,
       if (readyAt != null) 'ready_at': readyAt,
       if (servedAt != null) 'served_at': servedAt,
       if (voidReason != null) 'void_reason': voidReason,
@@ -12286,6 +12948,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Value<int>? price,
     Value<String>? status,
     Value<DateTime>? sentAt,
+    Value<DateTime?>? firedAt,
     Value<DateTime?>? readyAt,
     Value<DateTime?>? servedAt,
     Value<String?>? voidReason,
@@ -12309,6 +12972,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       price: price ?? this.price,
       status: status ?? this.status,
       sentAt: sentAt ?? this.sentAt,
+      firedAt: firedAt ?? this.firedAt,
       readyAt: readyAt ?? this.readyAt,
       servedAt: servedAt ?? this.servedAt,
       voidReason: voidReason ?? this.voidReason,
@@ -12362,6 +13026,9 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     if (sentAt.present) {
       map['sent_at'] = Variable<DateTime>(sentAt.value);
     }
+    if (firedAt.present) {
+      map['fired_at'] = Variable<DateTime>(firedAt.value);
+    }
     if (readyAt.present) {
       map['ready_at'] = Variable<DateTime>(readyAt.value);
     }
@@ -12405,6 +13072,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('firedAt: $firedAt, ')
           ..write('readyAt: $readyAt, ')
           ..write('servedAt: $servedAt, ')
           ..write('voidReason: $voidReason, ')
@@ -12951,6 +13619,17 @@ class $ReservationsTable extends Reservations
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _seatedAtMeta = const VerificationMeta(
+    'seatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> seatedAt = GeneratedColumn<DateTime>(
+    'seated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -12964,6 +13643,7 @@ class $ReservationsTable extends Reservations
     notes,
     createdAt,
     updatedAt,
+    seatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -13048,6 +13728,12 @@ class $ReservationsTable extends Reservations
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('seated_at')) {
+      context.handle(
+        _seatedAtMeta,
+        seatedAt.isAcceptableOrUnknown(data['seated_at']!, _seatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -13101,6 +13787,10 @@ class $ReservationsTable extends Reservations
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       ),
+      seatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}seated_at'],
+      ),
     );
   }
 
@@ -13122,6 +13812,12 @@ class Reservation extends DataClass implements Insertable<Reservation> {
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
+
+  /// Stamped when the reservation is actually seated. Distinct from
+  /// [updatedAt], which any later edit moves — lateness (`seatedAt −
+  /// expectedAt` past the venue grace) needs a stamp that only the seat sets.
+  /// ADR-0044.
+  final DateTime? seatedAt;
   const Reservation({
     required this.id,
     required this.name,
@@ -13134,6 +13830,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     this.notes,
     required this.createdAt,
     this.updatedAt,
+    this.seatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -13158,6 +13855,9 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || seatedAt != null) {
+      map['seated_at'] = Variable<DateTime>(seatedAt);
     }
     return map;
   }
@@ -13185,6 +13885,9 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      seatedAt: seatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seatedAt),
     );
   }
 
@@ -13205,6 +13908,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      seatedAt: serializer.fromJson<DateTime?>(json['seatedAt']),
     );
   }
   @override
@@ -13222,6 +13926,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'seatedAt': serializer.toJson<DateTime?>(seatedAt),
     };
   }
 
@@ -13237,6 +13942,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
+    Value<DateTime?> seatedAt = const Value.absent(),
   }) => Reservation(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -13249,6 +13955,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    seatedAt: seatedAt.present ? seatedAt.value : this.seatedAt,
   );
   Reservation copyWithCompanion(ReservationsCompanion data) {
     return Reservation(
@@ -13265,6 +13972,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      seatedAt: data.seatedAt.present ? data.seatedAt.value : this.seatedAt,
     );
   }
 
@@ -13281,7 +13989,8 @@ class Reservation extends DataClass implements Insertable<Reservation> {
           ..write('tableId: $tableId, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('seatedAt: $seatedAt')
           ..write(')'))
         .toString();
   }
@@ -13299,6 +14008,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     notes,
     createdAt,
     updatedAt,
+    seatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -13314,7 +14024,8 @@ class Reservation extends DataClass implements Insertable<Reservation> {
           other.tableId == this.tableId &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.seatedAt == this.seatedAt);
 }
 
 class ReservationsCompanion extends UpdateCompanion<Reservation> {
@@ -13329,6 +14040,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
   final Value<String?> notes;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
+  final Value<DateTime?> seatedAt;
   final Value<int> rowid;
   const ReservationsCompanion({
     this.id = const Value.absent(),
@@ -13342,6 +14054,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.seatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ReservationsCompanion.insert({
@@ -13356,6 +14069,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     this.notes = const Value.absent(),
     required DateTime createdAt,
     this.updatedAt = const Value.absent(),
+    this.seatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -13373,6 +14087,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? seatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -13387,6 +14102,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (seatedAt != null) 'seated_at': seatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -13403,6 +14119,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     Value<String?>? notes,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
+    Value<DateTime?>? seatedAt,
     Value<int>? rowid,
   }) {
     return ReservationsCompanion(
@@ -13417,6 +14134,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      seatedAt: seatedAt ?? this.seatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -13457,6 +14175,9 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (seatedAt.present) {
+      map['seated_at'] = Variable<DateTime>(seatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -13477,6 +14198,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('seatedAt: $seatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -21956,7 +22678,7 @@ typedef $$MenuItemsTableCreateCompanionBuilder =
       Value<String> description,
       required int basePrice,
       Value<int> cost,
-      Value<int> prepTime,
+      Value<int?> prepTime,
       Value<String> variantsJson,
       Value<String> modifierGroupsJson,
       Value<String> allergensJson,
@@ -21974,7 +22696,7 @@ typedef $$MenuItemsTableUpdateCompanionBuilder =
       Value<String> description,
       Value<int> basePrice,
       Value<int> cost,
-      Value<int> prepTime,
+      Value<int?> prepTime,
       Value<String> variantsJson,
       Value<String> modifierGroupsJson,
       Value<String> allergensJson,
@@ -22245,7 +22967,7 @@ class $$MenuItemsTableTableManager
                 Value<String> description = const Value.absent(),
                 Value<int> basePrice = const Value.absent(),
                 Value<int> cost = const Value.absent(),
-                Value<int> prepTime = const Value.absent(),
+                Value<int?> prepTime = const Value.absent(),
                 Value<String> variantsJson = const Value.absent(),
                 Value<String> modifierGroupsJson = const Value.absent(),
                 Value<String> allergensJson = const Value.absent(),
@@ -22279,7 +23001,7 @@ class $$MenuItemsTableTableManager
                 Value<String> description = const Value.absent(),
                 required int basePrice,
                 Value<int> cost = const Value.absent(),
-                Value<int> prepTime = const Value.absent(),
+                Value<int?> prepTime = const Value.absent(),
                 Value<String> variantsJson = const Value.absent(),
                 Value<String> modifierGroupsJson = const Value.absent(),
                 Value<String> allergensJson = const Value.absent(),
@@ -22536,6 +23258,7 @@ typedef $$TicketsTableCreateCompanionBuilder =
       required int price,
       required String status,
       required DateTime sentAt,
+      Value<DateTime?> firedAt,
       Value<DateTime?> readyAt,
       Value<DateTime?> servedAt,
       Value<String?> voidReason,
@@ -22560,6 +23283,7 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<int> price,
       Value<String> status,
       Value<DateTime> sentAt,
+      Value<DateTime?> firedAt,
       Value<DateTime?> readyAt,
       Value<DateTime?> servedAt,
       Value<String?> voidReason,
@@ -22641,6 +23365,11 @@ class $$TicketsTableFilterComposer
 
   ColumnFilters<DateTime> get sentAt => $composableBuilder(
     column: $table.sentAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get firedAt => $composableBuilder(
+    column: $table.firedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -22754,6 +23483,11 @@ class $$TicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get firedAt => $composableBuilder(
+    column: $table.firedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get readyAt => $composableBuilder(
     column: $table.readyAt,
     builder: (column) => ColumnOrderings(column),
@@ -22842,6 +23576,9 @@ class $$TicketsTableAnnotationComposer
   GeneratedColumn<DateTime> get sentAt =>
       $composableBuilder(column: $table.sentAt, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get firedAt =>
+      $composableBuilder(column: $table.firedAt, builder: (column) => column);
+
   GeneratedColumn<DateTime> get readyAt =>
       $composableBuilder(column: $table.readyAt, builder: (column) => column);
 
@@ -22915,6 +23652,7 @@ class $$TicketsTableTableManager
                 Value<int> price = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> sentAt = const Value.absent(),
+                Value<DateTime?> firedAt = const Value.absent(),
                 Value<DateTime?> readyAt = const Value.absent(),
                 Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
@@ -22937,6 +23675,7 @@ class $$TicketsTableTableManager
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                firedAt: firedAt,
                 readyAt: readyAt,
                 servedAt: servedAt,
                 voidReason: voidReason,
@@ -22961,6 +23700,7 @@ class $$TicketsTableTableManager
                 required int price,
                 required String status,
                 required DateTime sentAt,
+                Value<DateTime?> firedAt = const Value.absent(),
                 Value<DateTime?> readyAt = const Value.absent(),
                 Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
@@ -22983,6 +23723,7 @@ class $$TicketsTableTableManager
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                firedAt: firedAt,
                 readyAt: readyAt,
                 servedAt: servedAt,
                 voidReason: voidReason,
@@ -24053,11 +24794,21 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<bool> taxAfterDiscount,
       Value<int> businessDayStartHour,
       Value<int> prepTargetMins,
+      Value<int> pickupTargetMins,
+      Value<int> ungreetedMins,
+      Value<int> ungreetedEscalateMins,
+      Value<int> longStayMins,
+      Value<int> idleTableMins,
+      Value<int> reservationGraceMins,
+      Value<bool> ungreetedAlertEnabled,
+      Value<bool> pickupAlertEnabled,
       Value<bool> guestOrderingEnabled,
       Value<String> soundNewOrder,
       Value<String> soundReady,
       Value<String> soundVoid,
       Value<String> soundOverdue,
+      Value<String> soundUngreeted,
+      Value<String> soundPickup,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -24085,11 +24836,21 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<bool> taxAfterDiscount,
       Value<int> businessDayStartHour,
       Value<int> prepTargetMins,
+      Value<int> pickupTargetMins,
+      Value<int> ungreetedMins,
+      Value<int> ungreetedEscalateMins,
+      Value<int> longStayMins,
+      Value<int> idleTableMins,
+      Value<int> reservationGraceMins,
+      Value<bool> ungreetedAlertEnabled,
+      Value<bool> pickupAlertEnabled,
       Value<bool> guestOrderingEnabled,
       Value<String> soundNewOrder,
       Value<String> soundReady,
       Value<String> soundVoid,
       Value<String> soundOverdue,
+      Value<String> soundUngreeted,
+      Value<String> soundPickup,
       Value<int> rowid,
     });
 
@@ -24217,6 +24978,46 @@ class $$VenueSettingsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get pickupTargetMins => $composableBuilder(
+    column: $table.pickupTargetMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ungreetedMins => $composableBuilder(
+    column: $table.ungreetedMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ungreetedEscalateMins => $composableBuilder(
+    column: $table.ungreetedEscalateMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get longStayMins => $composableBuilder(
+    column: $table.longStayMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idleTableMins => $composableBuilder(
+    column: $table.idleTableMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reservationGraceMins => $composableBuilder(
+    column: $table.reservationGraceMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get ungreetedAlertEnabled => $composableBuilder(
+    column: $table.ungreetedAlertEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get pickupAlertEnabled => $composableBuilder(
+    column: $table.pickupAlertEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<bool> get guestOrderingEnabled => $composableBuilder(
     column: $table.guestOrderingEnabled,
     builder: (column) => ColumnFilters(column),
@@ -24239,6 +25040,16 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<String> get soundOverdue => $composableBuilder(
     column: $table.soundOverdue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundUngreeted => $composableBuilder(
+    column: $table.soundUngreeted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundPickup => $composableBuilder(
+    column: $table.soundPickup,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -24367,6 +25178,46 @@ class $$VenueSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pickupTargetMins => $composableBuilder(
+    column: $table.pickupTargetMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ungreetedMins => $composableBuilder(
+    column: $table.ungreetedMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ungreetedEscalateMins => $composableBuilder(
+    column: $table.ungreetedEscalateMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get longStayMins => $composableBuilder(
+    column: $table.longStayMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idleTableMins => $composableBuilder(
+    column: $table.idleTableMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reservationGraceMins => $composableBuilder(
+    column: $table.reservationGraceMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get ungreetedAlertEnabled => $composableBuilder(
+    column: $table.ungreetedAlertEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get pickupAlertEnabled => $composableBuilder(
+    column: $table.pickupAlertEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get guestOrderingEnabled => $composableBuilder(
     column: $table.guestOrderingEnabled,
     builder: (column) => ColumnOrderings(column),
@@ -24389,6 +25240,16 @@ class $$VenueSettingsTableOrderingComposer
 
   ColumnOrderings<String> get soundOverdue => $composableBuilder(
     column: $table.soundOverdue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get soundUngreeted => $composableBuilder(
+    column: $table.soundUngreeted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get soundPickup => $composableBuilder(
+    column: $table.soundPickup,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -24505,6 +25366,46 @@ class $$VenueSettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get pickupTargetMins => $composableBuilder(
+    column: $table.pickupTargetMins,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get ungreetedMins => $composableBuilder(
+    column: $table.ungreetedMins,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get ungreetedEscalateMins => $composableBuilder(
+    column: $table.ungreetedEscalateMins,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get longStayMins => $composableBuilder(
+    column: $table.longStayMins,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idleTableMins => $composableBuilder(
+    column: $table.idleTableMins,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reservationGraceMins => $composableBuilder(
+    column: $table.reservationGraceMins,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get ungreetedAlertEnabled => $composableBuilder(
+    column: $table.ungreetedAlertEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get pickupAlertEnabled => $composableBuilder(
+    column: $table.pickupAlertEnabled,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get guestOrderingEnabled => $composableBuilder(
     column: $table.guestOrderingEnabled,
     builder: (column) => column,
@@ -24525,6 +25426,16 @@ class $$VenueSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get soundOverdue => $composableBuilder(
     column: $table.soundOverdue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get soundUngreeted => $composableBuilder(
+    column: $table.soundUngreeted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get soundPickup => $composableBuilder(
+    column: $table.soundPickup,
     builder: (column) => column,
   );
 }
@@ -24583,11 +25494,21 @@ class $$VenueSettingsTableTableManager
                 Value<bool> taxAfterDiscount = const Value.absent(),
                 Value<int> businessDayStartHour = const Value.absent(),
                 Value<int> prepTargetMins = const Value.absent(),
+                Value<int> pickupTargetMins = const Value.absent(),
+                Value<int> ungreetedMins = const Value.absent(),
+                Value<int> ungreetedEscalateMins = const Value.absent(),
+                Value<int> longStayMins = const Value.absent(),
+                Value<int> idleTableMins = const Value.absent(),
+                Value<int> reservationGraceMins = const Value.absent(),
+                Value<bool> ungreetedAlertEnabled = const Value.absent(),
+                Value<bool> pickupAlertEnabled = const Value.absent(),
                 Value<bool> guestOrderingEnabled = const Value.absent(),
                 Value<String> soundNewOrder = const Value.absent(),
                 Value<String> soundReady = const Value.absent(),
                 Value<String> soundVoid = const Value.absent(),
                 Value<String> soundOverdue = const Value.absent(),
+                Value<String> soundUngreeted = const Value.absent(),
+                Value<String> soundPickup = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -24613,11 +25534,21 @@ class $$VenueSettingsTableTableManager
                 taxAfterDiscount: taxAfterDiscount,
                 businessDayStartHour: businessDayStartHour,
                 prepTargetMins: prepTargetMins,
+                pickupTargetMins: pickupTargetMins,
+                ungreetedMins: ungreetedMins,
+                ungreetedEscalateMins: ungreetedEscalateMins,
+                longStayMins: longStayMins,
+                idleTableMins: idleTableMins,
+                reservationGraceMins: reservationGraceMins,
+                ungreetedAlertEnabled: ungreetedAlertEnabled,
+                pickupAlertEnabled: pickupAlertEnabled,
                 guestOrderingEnabled: guestOrderingEnabled,
                 soundNewOrder: soundNewOrder,
                 soundReady: soundReady,
                 soundVoid: soundVoid,
                 soundOverdue: soundOverdue,
+                soundUngreeted: soundUngreeted,
+                soundPickup: soundPickup,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -24645,11 +25576,21 @@ class $$VenueSettingsTableTableManager
                 Value<bool> taxAfterDiscount = const Value.absent(),
                 Value<int> businessDayStartHour = const Value.absent(),
                 Value<int> prepTargetMins = const Value.absent(),
+                Value<int> pickupTargetMins = const Value.absent(),
+                Value<int> ungreetedMins = const Value.absent(),
+                Value<int> ungreetedEscalateMins = const Value.absent(),
+                Value<int> longStayMins = const Value.absent(),
+                Value<int> idleTableMins = const Value.absent(),
+                Value<int> reservationGraceMins = const Value.absent(),
+                Value<bool> ungreetedAlertEnabled = const Value.absent(),
+                Value<bool> pickupAlertEnabled = const Value.absent(),
                 Value<bool> guestOrderingEnabled = const Value.absent(),
                 Value<String> soundNewOrder = const Value.absent(),
                 Value<String> soundReady = const Value.absent(),
                 Value<String> soundVoid = const Value.absent(),
                 Value<String> soundOverdue = const Value.absent(),
+                Value<String> soundUngreeted = const Value.absent(),
+                Value<String> soundPickup = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -24675,11 +25616,21 @@ class $$VenueSettingsTableTableManager
                 taxAfterDiscount: taxAfterDiscount,
                 businessDayStartHour: businessDayStartHour,
                 prepTargetMins: prepTargetMins,
+                pickupTargetMins: pickupTargetMins,
+                ungreetedMins: ungreetedMins,
+                ungreetedEscalateMins: ungreetedEscalateMins,
+                longStayMins: longStayMins,
+                idleTableMins: idleTableMins,
+                reservationGraceMins: reservationGraceMins,
+                ungreetedAlertEnabled: ungreetedAlertEnabled,
+                pickupAlertEnabled: pickupAlertEnabled,
                 guestOrderingEnabled: guestOrderingEnabled,
                 soundNewOrder: soundNewOrder,
                 soundReady: soundReady,
                 soundVoid: soundVoid,
                 soundOverdue: soundOverdue,
+                soundUngreeted: soundUngreeted,
+                soundPickup: soundPickup,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -25480,6 +26431,7 @@ typedef $$TableSessionTicketsTableCreateCompanionBuilder =
       required int price,
       required String status,
       required DateTime sentAt,
+      Value<DateTime?> firedAt,
       Value<DateTime?> readyAt,
       Value<DateTime?> servedAt,
       Value<String?> voidReason,
@@ -25504,6 +26456,7 @@ typedef $$TableSessionTicketsTableUpdateCompanionBuilder =
       Value<int> price,
       Value<String> status,
       Value<DateTime> sentAt,
+      Value<DateTime?> firedAt,
       Value<DateTime?> readyAt,
       Value<DateTime?> servedAt,
       Value<String?> voidReason,
@@ -25585,6 +26538,11 @@ class $$TableSessionTicketsTableFilterComposer
 
   ColumnFilters<DateTime> get sentAt => $composableBuilder(
     column: $table.sentAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get firedAt => $composableBuilder(
+    column: $table.firedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25698,6 +26656,11 @@ class $$TableSessionTicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get firedAt => $composableBuilder(
+    column: $table.firedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get readyAt => $composableBuilder(
     column: $table.readyAt,
     builder: (column) => ColumnOrderings(column),
@@ -25785,6 +26748,9 @@ class $$TableSessionTicketsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get sentAt =>
       $composableBuilder(column: $table.sentAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get firedAt =>
+      $composableBuilder(column: $table.firedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get readyAt =>
       $composableBuilder(column: $table.readyAt, builder: (column) => column);
@@ -25874,6 +26840,7 @@ class $$TableSessionTicketsTableTableManager
                 Value<int> price = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> sentAt = const Value.absent(),
+                Value<DateTime?> firedAt = const Value.absent(),
                 Value<DateTime?> readyAt = const Value.absent(),
                 Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
@@ -25896,6 +26863,7 @@ class $$TableSessionTicketsTableTableManager
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                firedAt: firedAt,
                 readyAt: readyAt,
                 servedAt: servedAt,
                 voidReason: voidReason,
@@ -25920,6 +26888,7 @@ class $$TableSessionTicketsTableTableManager
                 required int price,
                 required String status,
                 required DateTime sentAt,
+                Value<DateTime?> firedAt = const Value.absent(),
                 Value<DateTime?> readyAt = const Value.absent(),
                 Value<DateTime?> servedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
@@ -25942,6 +26911,7 @@ class $$TableSessionTicketsTableTableManager
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                firedAt: firedAt,
                 readyAt: readyAt,
                 servedAt: servedAt,
                 voidReason: voidReason,
@@ -26230,6 +27200,7 @@ typedef $$ReservationsTableCreateCompanionBuilder =
       Value<String?> notes,
       required DateTime createdAt,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> seatedAt,
       Value<int> rowid,
     });
 typedef $$ReservationsTableUpdateCompanionBuilder =
@@ -26245,6 +27216,7 @@ typedef $$ReservationsTableUpdateCompanionBuilder =
       Value<String?> notes,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> seatedAt,
       Value<int> rowid,
     });
 
@@ -26309,6 +27281,11 @@ class $$ReservationsTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get seatedAt => $composableBuilder(
+    column: $table.seatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -26376,6 +27353,11 @@ class $$ReservationsTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get seatedAt => $composableBuilder(
+    column: $table.seatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ReservationsTableAnnotationComposer
@@ -26421,6 +27403,9 @@ class $$ReservationsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get seatedAt =>
+      $composableBuilder(column: $table.seatedAt, builder: (column) => column);
 }
 
 class $$ReservationsTableTableManager
@@ -26465,6 +27450,7 @@ class $$ReservationsTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> seatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReservationsCompanion(
                 id: id,
@@ -26478,6 +27464,7 @@ class $$ReservationsTableTableManager
                 notes: notes,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                seatedAt: seatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -26493,6 +27480,7 @@ class $$ReservationsTableTableManager
                 Value<String?> notes = const Value.absent(),
                 required DateTime createdAt,
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> seatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReservationsCompanion.insert(
                 id: id,
@@ -26506,6 +27494,7 @@ class $$ReservationsTableTableManager
                 notes: notes,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                seatedAt: seatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
