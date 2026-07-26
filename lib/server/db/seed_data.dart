@@ -505,6 +505,11 @@ class DummyData {
           capabilities: const {
             Capability.viewKds,
             Capability.markSoldOut,
+            // The people who physically receive and count stock are the ones
+            // who record it (ADR-0042). `overrideStock` stays a deliberate
+            // grant — no seeded role sells past zero by default.
+            Capability.adjustStock,
+            Capability.manageIngredients,
           },
         ),
       ];

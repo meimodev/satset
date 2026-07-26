@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 
+import '../stock.dart';
 import 'database.dart';
 import 'seed_data.dart' as seed;
+import 'seed_inventory_data.dart';
 
 /// Always-on **infra** seed. Runs on every Server boot; idempotent.
 ///
@@ -38,7 +40,8 @@ Future<bool> needsGenericSeed(AppDatabase db) async {
 
 /// The prompted **generic restaurant** dataset (ADR-0017): 2 zones
 /// (Dalam / Luar) with 2 tables each, the generic menu (categories + items),
-/// and 2 staff — one waiter, one kitchen — with their roles + capabilities.
+/// the inventory half — bahan + resep with opening stock (ADR-0042) — and
+/// 2 staff — one waiter, one kitchen — with their roles + capabilities.
 ///
 /// Idempotent (`insertOnConflictUpdate`). Seeds **no** PIN admin (admin is
 /// Firebase-only) and **no** fake report history. Safe to call from the
@@ -149,7 +152,60 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
             ),
           );
     }
+
+    await _seedInventory(db);
   });
+
+  // Recipes changed which items *can* go habis, so the cached flag signatures
+  // no longer describe the same menu.
+  stockFlags.invalidate();
+}
+
+/// Bahan + resep (ADR-0042).
+///
+/// Bahan are **insert-if-absent**: `stockOnHand` is the one number in this
+/// dataset that becomes real the moment the venue starts trading, and
+/// `/seed/generic` can be re-posted at any time. Recipes are reference data
+/// like the menu itself and are replaced wholesale.
+Future<void> _seedInventory(AppDatabase db) async {
+  for (final b in seedIngredients) {
+    final existing = await (db.select(db.ingredients)
+          ..where((i) => i.id.equals(b.id)))
+        .getSingleOrNull();
+    if (existing != null) continue;
+
+    await db.into(db.ingredients).insert(IngredientsCompanion.insert(
+          id: b.id,
+          name: b.name,
+          unit: b.unit.name,
+          lowStockAt: Value(b.lowAtBase),
+          batchYield: Value(b.batchYieldBase),
+        ));
+    // Opening stock arrives the way real stock does — a `receive` movement
+    // that also prices the moving average — so the ledger sums to the balance
+    // from the first row (ADR-0041 §2). This is not fake report history: no
+    // sales, no wastage, one arrival per bahan.
+    await receiveStock(
+      db,
+      ingredientId: b.id,
+      qty: b.openingBase,
+      unitCostMicro: b.costMicro,
+      sourceLabel: 'Stok awal',
+      note: 'Contoh data restoran',
+    );
+  }
+
+  for (final e in seedIngredientRecipes.entries) {
+    await writeRecipes(
+      db,
+      e.key,
+      seedRecipePayload(SeedRecipe(base: e.value)),
+      ownerKind: 'ingredient',
+    );
+  }
+  for (final e in seedItemRecipes.entries) {
+    await writeRecipes(db, e.key, seedRecipePayload(e.value));
+  }
 }
 
 String _hex(int v) =>
