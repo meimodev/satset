@@ -8,13 +8,16 @@ import 'package:satset/domain/models/ingredient.dart';
 import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 
-/// "Stok" — the bahan list, receiving, opname, produksi, and the movement
-/// ledger. Procurement work, deliberately kept out of the menu editor: recipes
-/// are authored once beside the variants they depend on, while stock is run
-/// daily by whoever counts the walk-in (ADR-0040).
+enum _StockFilter { all, low, negative, produced }
+
+/// "Stok" — Heritage Hospitality Pantry & Stock Ledger Management.
+///
+/// Handles ingredient lists, receiving inventory, batch production, opname audits,
+/// and append-only stock movement history (ADR-0040, ADR-0041).
 class StockScreen extends ConsumerStatefulWidget {
   const StockScreen({super.key});
 
@@ -23,70 +26,144 @@ class StockScreen extends ConsumerStatefulWidget {
 }
 
 class _StockScreenState extends ConsumerState<StockScreen> {
-  /// Absolute counts typed during an opname pass, keyed by ingredient id. The
-  /// counter enters what is physically there; the server writes the difference,
-  /// and that difference is the variance (ADR-0041).
   final _counts = <String, int>{};
+  final _searchCtrl = TextEditingController();
+
   bool _opname = false;
-  bool _lowOnly = false;
+  _StockFilter _activeFilter = _StockFilter.all;
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     final async = ref.watch(ingredientsProvider);
+
     return Column(
       children: [
         AdminEmbeddedStrip(
           title: 'Stok',
-          sub: _opname ? 'Stok opname' : 'Bahan & mutasi',
+          sub: _opname ? 'Stok opname physical audit' : 'Bahan, penerimaan & mutasi',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!_opname)
-                IconButton(
-                  tooltip: 'Tambah bahan',
-                  icon: Icon(Icons.add, color: sc.textMd),
-                  onPressed: () => _editIngredient(null),
+              if (!_opname) ...[
+                PressableScale(
+                  child: IconButton(
+                    tooltip: 'Tambah bahan',
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: sc.accentSoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.add, size: 18, color: sc.accent),
+                    ),
+                    onPressed: () => _editIngredient(null),
+                  ),
                 ),
-              TextButton(
-                onPressed: () => setState(() {
-                  _opname = !_opname;
-                  _counts.clear();
-                }),
-                child: Text(_opname ? 'Batal' : 'Opname'),
+                const SizedBox(width: 8),
+              ],
+              PressableScale(
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() {
+                    _opname = !_opname;
+                    _counts.clear();
+                  }),
+                  icon: Icon(_opname ? Icons.close : Icons.inventory_2_outlined, size: 16),
+                  label: Text(_opname ? 'Batal' : 'Opname'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _opname ? sc.urgent : sc.accent,
+                    side: BorderSide(color: _opname ? sc.urgent : sc.accentBorder),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
               ),
-              if (_opname)
-                TextButton(
-                  onPressed: _counts.isEmpty ? null : _submitOpname,
-                  child: const Text('Simpan'),
+              if (_opname) ...[
+                const SizedBox(width: 8),
+                PressableScale(
+                  child: FilledButton.icon(
+                    onPressed: _counts.isEmpty ? null : _submitOpname,
+                    icon: const Icon(Icons.check_circle_outline, size: 16),
+                    label: Text('Simpan (${_counts.length})'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: sc.accent,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
                 ),
+              ],
             ],
           ),
         ),
         Expanded(
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => _Message('Gagal memuat stok: $e', color: sc.urgent),
+            error: (e, _) => _Message(
+              'Gagal memuat stok: $e',
+              color: sc.urgent,
+              icon: Icons.error_outline,
+            ),
             data: (list) {
-              final shown = _lowOnly
-                  ? list.where((i) => i.isLow || i.stockOnHand < 0).toList()
-                  : list;
               if (list.isEmpty) {
-                return const _Message(
-                    'Belum ada bahan. Tambahkan bahan, lalu susun resepnya di '
-                    'editor menu agar stok berkurang otomatis saat pesanan '
-                    'dikirim.');
+                return _EmptyState(
+                  title: 'Belum Ada Bahan',
+                  message:
+                      'Tambahkan bahan pertama Anda, lalu susun resepnya di editor menu '
+                      'agar stok berkurang otomatis saat pesanan dikirim.',
+                  onAction: () => _editIngredient(null),
+                );
               }
+
+              // Apply Search & Filter
+              final filtered = list.where((i) {
+                final matchesSearch = _searchQuery.isEmpty ||
+                    i.name.toLowerCase().contains(_searchQuery.toLowerCase());
+                final matchesFilter = switch (_activeFilter) {
+                  _StockFilter.all => true,
+                  _StockFilter.low => i.isLow || i.stockOnHand < 0,
+                  _StockFilter.negative => i.stockOnHand < 0,
+                  _StockFilter.produced => i.isProduced,
+                };
+                return matchesSearch && matchesFilter;
+              }).toList();
+
               return RefreshIndicator(
                 onRefresh: () async => ref.invalidate(ingredientsProvider),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                   children: [
-                    _summary(sc, list),
-                    const SizedBox(height: 12),
-                    for (final i in shown) _row(sc, i),
-                    if (shown.isEmpty)
-                      const _Message('Tidak ada bahan yang menipis.'),
+                    // Smooth Animated CrossFade between KPI Summary and Opname Banner
+                    AnimatedCrossFade(
+                      firstChild: _summaryGrid(sc, list),
+                      secondChild: _opnameBanner(sc),
+                      crossFadeState:
+                          _opname ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 240),
+                      firstCurve: satEaseOut,
+                      secondCurve: satEaseOut,
+                    ),
+                    const SizedBox(height: 16),
+                    _searchAndFilterBar(sc, list),
+                    const SizedBox(height: 16),
+                    if (filtered.isEmpty)
+                      _Message(
+                        'Tidak ada bahan yang cocok dengan pencarian / filter.',
+                        icon: Icons.search_off,
+                      )
+                    else
+                      for (int idx = 0; idx < filtered.length; idx++)
+                        Reveal(
+                          index: idx,
+                          child: _row(sc, filtered[idx]),
+                        ),
                   ],
                 ),
               );
@@ -97,152 +174,739 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     );
   }
 
-  Widget _summary(SatColors sc, List<Ingredient> list) {
+  // ---------------------------------------------------------------- KPI Summary
+  Widget _summaryGrid(SatColors sc, List<Ingredient> list) {
     final value = list.fold<int>(0, (a, i) => a + i.stockValue);
     final low = list.where((i) => i.isLow).length;
     final negative = list.where((i) => i.stockOnHand < 0).length;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _pill(sc, 'Nilai stok', formatIDR(value), sc.textHi),
-        _pill(sc, 'Menipis', '$low bahan', low > 0 ? sc.warn : sc.textLo,
-            onTap: () => setState(() => _lowOnly = !_lowOnly), on: _lowOnly),
-        // A negative balance is a real state, never clamped: it means an
-        // override sale outran the counts (ADR-0041).
-        if (negative > 0)
-          _pill(sc, 'Minus', '$negative bahan', sc.urgent),
-      ],
-    );
-  }
+    final produced = list.where((i) => i.isProduced).length;
 
-  Widget _pill(SatColors sc, String label, String value, Color color,
-      {VoidCallback? onTap, bool on = false}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: on ? sc.bg3 : sc.bg2,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: on ? color : sc.border1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 550;
+        final cards = [
+          _statCard(
+            sc,
+            index: 0,
+            label: 'NILAI TOTAL STOK',
+            value: formatIDR(value),
+            sub: '${list.length} item terdaftar',
+            icon: Icons.account_balance_wallet_outlined,
+            color: sc.textHi,
+            bg: sc.bg2,
+          ),
+          _statCard(
+            sc,
+            index: 1,
+            label: 'MENIPIS',
+            value: '$low Bahan',
+            sub: low > 0 ? 'Perlu reorder' : 'Stok aman',
+            icon: Icons.warning_amber_rounded,
+            color: low > 0 ? sc.warn : sc.textLo,
+            bg: low > 0 ? sc.warnSoft : sc.bg2,
+            borderColor: low > 0 ? sc.warn : null,
+            active: _activeFilter == _StockFilter.low,
+            onTap: () => setState(() {
+              _activeFilter = _activeFilter == _StockFilter.low
+                  ? _StockFilter.all
+                  : _StockFilter.low;
+            }),
+          ),
+          if (negative > 0)
+            _statCard(
+              sc,
+              index: 2,
+              label: 'STOK MINUS',
+              value: '$negative Bahan',
+              sub: 'Perlu opname segera',
+              icon: Icons.remove_circle_outline,
+              color: sc.urgent,
+              bg: sc.urgentSoft,
+              borderColor: sc.urgent,
+              active: _activeFilter == _StockFilter.negative,
+              onTap: () => setState(() {
+                _activeFilter = _activeFilter == _StockFilter.negative
+                    ? _StockFilter.all
+                    : _StockFilter.negative;
+              }),
+            ),
+          _statCard(
+            sc,
+            index: 3,
+            label: 'PRODUKSI MANDIRI',
+            value: '$produced Bahan',
+            sub: 'Hasil racikan internal',
+            icon: Icons.blender_outlined,
+            color: sc.info,
+            bg: sc.bg2,
+            active: _activeFilter == _StockFilter.produced,
+            onTap: () => setState(() {
+              _activeFilter = _activeFilter == _StockFilter.produced
+                  ? _StockFilter.all
+                  : _StockFilter.produced;
+            }),
+          ),
+        ];
+
+        if (isWide) {
+          return Row(
+            children: [
+              for (int i = 0; i < cards.length; i++) ...[
+                Expanded(child: cards[i]),
+                if (i < cards.length - 1) const SizedBox(width: 10),
+              ]
+            ],
+          );
+        }
+
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
           children: [
-            Text(label.toUpperCase(),
-                style: SatType.mono(
-                    size: 9, color: sc.textLo, letterSpacing: 0.6)),
-            const SizedBox(height: 2),
-            Text(value,
-                style: SatType.sans(
-                    size: 14, weight: FontWeight.w600, color: color)),
+            for (final card in cards)
+              SizedBox(
+                width: (constraints.maxWidth - 10) / 2,
+                child: card,
+              ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _row(SatColors sc, Ingredient i) {
-    final negative = i.stockOnHand < 0;
-    final color = negative
-        ? sc.urgent
-        : i.isLow
-            ? sc.warn
-            : sc.textHi;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-      decoration: BoxDecoration(
-        color: sc.bg2,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: sc.border1),
-      ),
-      child: Row(
-        children: [
-          Expanded(
+  Widget _statCard(
+    SatColors sc, {
+    required int index,
+    required String label,
+    required String value,
+    required String sub,
+    required IconData icon,
+    required Color color,
+    required Color bg,
+    Color? borderColor,
+    bool active = false,
+    VoidCallback? onTap,
+  }) {
+    return Reveal(
+      index: index,
+      child: PressableScale(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: satEaseOut,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: active ? sc.bg3 : bg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: active ? color : (borderColor ?? sc.border1),
+                width: active ? 1.5 : 1,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
-                      child: Text(i.name,
-                          style: SatType.sans(
-                              size: 14,
-                              weight: FontWeight.w600,
-                              color: sc.textHi)),
+                    Expanded(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: SatType.mono(
+                          size: 9,
+                          weight: FontWeight.w600,
+                          color: sc.textLo,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
                     ),
-                    if (i.isProduced) ...[
-                      const SizedBox(width: 6),
-                      Icon(Icons.blender_outlined, size: 14, color: sc.info),
-                    ],
+                    Icon(icon, size: 16, color: color),
                   ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: SatType.sans(
+                    size: 16,
+                    weight: FontWeight.w600,
+                    color: color,
+                    letterSpacing: -0.2,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${i.onHandLabel}'
-                  '${i.costMicro > 0 ? ' · ${formatIDR(i.stockValue)}' : ''}'
-                  '${i.isLow ? ' · menipis' : ''}'
-                  '${negative ? ' · perlu opname' : ''}',
-                  style: SatType.mono(size: 11, color: color),
+                  sub,
+                  style: SatType.sans(size: 10, color: sc.textLo),
                 ),
               ],
             ),
           ),
-          if (_opname)
-            SizedBox(
-              width: 110,
-              child: TextField(
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.right,
-                style: SatType.sans(size: 14, color: sc.textHi),
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: i.unit.label,
-                  hintStyle: SatType.sans(size: 12, color: sc.textLo),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------- Opname Banner
+  Widget _opnameBanner(SatColors sc) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: sc.accentSoft,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: sc.accentBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: sc.accent.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.edit_note_rounded, size: 20, color: sc.accent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'MODE STOK OPNAME',
+                  style: SatType.mono(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: sc.accent,
+                    letterSpacing: 0.8,
+                  ),
                 ),
-                onChanged: (t) {
-                  final v = double.tryParse(t.replaceAll(',', '.'));
-                  setState(() {
-                    if (v == null) {
-                      _counts.remove(i.id);
-                    } else {
-                      _counts[i.id] = i.unit.toBase(v);
-                    }
-                  });
-                },
-              ),
-            )
-          else
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, size: 18, color: sc.textLo),
-              onSelected: (v) => switch (v) {
-                'receive' => _receive(i),
-                'produce' => _produce(i),
-                'ledger' => _ledger(i),
-                'edit' => _editIngredient(i),
-                'archive' => _archive(i),
-                _ => null,
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(value: 'receive', child: Text('Terima barang')),
-                if (i.isProduced)
-                  const PopupMenuItem(value: 'produce', child: Text('Produksi')),
-                const PopupMenuItem(value: 'ledger', child: Text('Riwayat mutasi')),
-                const PopupMenuItem(value: 'edit', child: Text('Ubah')),
-                const PopupMenuItem(value: 'archive', child: Text('Arsipkan')),
+                const SizedBox(height: 2),
+                Text(
+                  'Ketik jumlah fisik di gudang saat ini. Selisih akan otomatis dihitung sebagai penyesuaian mutasi.',
+                  style: SatType.sans(size: 12, color: sc.textMd),
+                ),
               ],
             ),
+          ),
+          if (_counts.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+              child: Container(
+                key: ValueKey(_counts.length),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: sc.accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${_counts.length} diisi',
+                  style: SatType.mono(size: 10, weight: FontWeight.w600, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // ---------------------------------------------------------------- actions
+  // ---------------------------------------------------------------- Search & Filter
+  Widget _searchAndFilterBar(SatColors sc, List<Ingredient> list) {
+    final lowCount = list.where((i) => i.isLow || i.stockOnHand < 0).length;
+    final negCount = list.where((i) => i.stockOnHand < 0).length;
+    final prodCount = list.where((i) => i.isProduced).length;
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchCtrl,
+                style: SatType.sans(size: 13, color: sc.textHi),
+                decoration: InputDecoration(
+                  hintText: 'Cari nama bahan...',
+                  hintStyle: SatType.sans(size: 13, color: sc.textLo),
+                  prefixIcon: Icon(Icons.search, size: 18, color: sc.textLo),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, size: 16, color: sc.textLo),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: sc.bg2,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: sc.border1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: sc.border1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: sc.accent),
+                  ),
+                ),
+                onChanged: (val) => setState(() => _searchQuery = val),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _filterChip(sc, _StockFilter.all, 'Semua (${list.length})'),
+              const SizedBox(width: 6),
+              _filterChip(sc, _StockFilter.low, 'Menipis ($lowCount)',
+                  highlightColor: lowCount > 0 ? sc.warn : null),
+              if (negCount > 0) ...[
+                const SizedBox(width: 6),
+                _filterChip(sc, _StockFilter.negative, 'Minus ($negCount)',
+                    highlightColor: sc.urgent),
+              ],
+              const SizedBox(width: 6),
+              _filterChip(sc, _StockFilter.produced, 'Produksi ($prodCount)',
+                  highlightColor: sc.info),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _filterChip(SatColors sc, _StockFilter filter, String label,
+      {Color? highlightColor}) {
+    final active = _activeFilter == filter;
+    final color = active ? (highlightColor ?? sc.accent) : sc.textMd;
+
+    return PressableScale(
+      child: InkWell(
+        onTap: () => setState(() => _activeFilter = filter),
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: satEaseOut,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: active ? (highlightColor?.withValues(alpha: 0.15) ?? sc.accentSoft) : sc.bg2,
+            border: Border.all(
+              color: active ? color : sc.border1,
+            ),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: SatType.sans(
+              size: 11,
+              weight: active ? FontWeight.w600 : FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------- Ingredient Row Card
+  Widget _row(SatColors sc, Ingredient i) {
+    final negative = i.stockOnHand < 0;
+    final statusColor = negative
+        ? sc.urgent
+        : i.isLow
+            ? sc.warn
+            : sc.success;
+
+    // Physical count entered in opname mode
+    final physicalCount = _counts[i.id];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: physicalCount != null ? sc.accent : sc.border1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Health status accent strip on left
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 4,
+                color: statusColor,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header line: Name + Badges
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              i.name,
+                              style: SatType.sans(
+                                size: 15,
+                                weight: FontWeight.w600,
+                                color: sc.textHi,
+                              ),
+                            ),
+                          ),
+                          if (i.isProduced) ...[
+                            const SizedBox(width: 6),
+                            _badge(
+                              sc,
+                              label: 'PRODUKSI',
+                              color: sc.info,
+                              icon: Icons.blender_outlined,
+                            ),
+                          ],
+                          if (i.isLow && !negative) ...[
+                            const SizedBox(width: 6),
+                            _badge(
+                              sc,
+                              label: 'MENIPIS',
+                              color: sc.warn,
+                              icon: Icons.warning_amber_rounded,
+                            ),
+                          ],
+                          if (negative) ...[
+                            const SizedBox(width: 6),
+                            _badge(
+                              sc,
+                              label: 'MINUS',
+                              color: sc.urgent,
+                              icon: Icons.remove_circle_outline,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Metrics Grid
+                      Row(
+                        children: [
+                          // Stock On Hand
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'STOK SAAT INI',
+                                  style: SatType.mono(
+                                    size: 9,
+                                    color: sc.textLo,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  i.onHandLabel,
+                                  style: SatType.mono(
+                                    size: 13,
+                                    weight: FontWeight.w600,
+                                    color: statusColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Price / Base Unit
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'HARGA / ${i.unit.label.toUpperCase()}',
+                                  style: SatType.mono(
+                                    size: 9,
+                                    color: sc.textLo,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  i.costMicro > 0
+                                      ? formatIDR(unitPriceFromCostMicro(i.costMicro, i.unit))
+                                      : '—',
+                                  style: SatType.mono(
+                                    size: 13,
+                                    color: sc.textMd,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Total Valuation
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'NILAI STOK',
+                                  style: SatType.mono(
+                                    size: 9,
+                                    color: sc.textLo,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  formatIDR(i.stockValue),
+                                  style: SatType.mono(
+                                    size: 13,
+                                    weight: FontWeight.w600,
+                                    color: sc.textHi,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Low stock threshold progress line
+                      if (i.lowStockAt != null && i.lowStockAt! > 0) ...[
+                        const SizedBox(height: 8),
+                        _stockLevelMeter(sc, i),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              // Right Actions / Opname Input
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: _opname
+                    ? SizedBox(
+                        width: 120,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextField(
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.right,
+                              style: SatType.mono(size: 13, weight: FontWeight.w600, color: sc.textHi),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: i.unit.label,
+                                hintStyle: SatType.sans(size: 12, color: sc.textLo),
+                                filled: true,
+                                fillColor: sc.bg3,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: sc.border1),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              ),
+                              onChanged: (t) {
+                                final v = double.tryParse(t.replaceAll(',', '.'));
+                                setState(() {
+                                  if (v == null) {
+                                    _counts.remove(i.id);
+                                  } else {
+                                    _counts[i.id] = i.unit.toBase(v);
+                                  }
+                                });
+                              },
+                            ),
+                            if (physicalCount != null) ...[
+                              const SizedBox(height: 4),
+                              _varianceDeltaBadge(sc, i, physicalCount),
+                            ],
+                          ],
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PressableScale(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _receive(i),
+                              icon: const Icon(Icons.add_shopping_cart, size: 14),
+                              label: const Text('Terima'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: sc.accent,
+                                side: BorderSide(color: sc.border1),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                textStyle: SatType.sans(size: 11, weight: FontWeight.w500),
+                              ),
+                            ),
+                          ),
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert, size: 18, color: sc.textLo),
+                            onSelected: (v) => switch (v) {
+                              'receive' => _receive(i),
+                              'produce' => _produce(i),
+                              'ledger' => _ledger(i),
+                              'edit' => _editIngredient(i),
+                              'archive' => _archive(i),
+                              _ => null,
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'receive',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.add_shopping_cart, size: 16),
+                                    SizedBox(width: 10),
+                                    Text('Terima barang'),
+                                  ],
+                                ),
+                              ),
+                              if (i.isProduced)
+                                const PopupMenuItem(
+                                  value: 'produce',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.blender_outlined, size: 16),
+                                      SizedBox(width: 10),
+                                      Text('Produksi batch'),
+                                    ],
+                                  ),
+                                ),
+                              const PopupMenuItem(
+                                value: 'ledger',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.history, size: 16),
+                                    SizedBox(width: 10),
+                                    Text('Riwayat mutasi'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_outlined, size: 16),
+                                    SizedBox(width: 10),
+                                    Text('Ubah bahan'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'archive',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.archive_outlined, size: 16, color: sc.urgent),
+                                    const SizedBox(width: 10),
+                                    Text('Arsipkan', style: TextStyle(color: sc.urgent)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _badge(SatColors sc, {required String label, required Color color, IconData? icon}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 10, color: color),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: SatType.mono(size: 9, weight: FontWeight.w600, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stockLevelMeter(SatColors sc, Ingredient i) {
+    final threshold = i.lowStockAt!;
+    final ratio = (i.stockOnHand / threshold).clamp(0.0, 1.5);
+    final color = i.stockOnHand <= 0
+        ? sc.urgent
+        : i.isLow
+            ? sc.warn
+            : sc.success;
+
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: (ratio / 1.5).clamp(0.0, 1.0),
+              backgroundColor: sc.bg3,
+              color: color,
+              minHeight: 3,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Batas min: ${formatQty(threshold, i.unit)}',
+          style: SatType.mono(size: 9, color: sc.textLo),
+        ),
+      ],
+    );
+  }
+
+  Widget _varianceDeltaBadge(SatColors sc, Ingredient i, int physicalCount) {
+    final delta = physicalCount - i.stockOnHand;
+    final positive = delta > 0;
+    final color = delta == 0
+        ? sc.success
+        : positive
+            ? sc.success
+            : sc.warn;
+    final sign = positive ? '+' : '';
+    final text = delta == 0 ? 'Pas' : '$sign${formatQty(delta, i.unit)}';
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+      child: Text(
+        text,
+        key: ValueKey(text),
+        style: SatType.mono(size: 10, weight: FontWeight.w600, color: color),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------- Actions
   Future<void> _submitOpname() async {
     final api = ref.read(stockApiProvider);
     final messenger = ScaffoldMessenger.of(context);
@@ -271,12 +935,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             : '');
     final supplierCtrl = TextEditingController();
     var unit = i.unit;
+
     final ok = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => _Sheet(
         title: 'Terima ${i.name}',
+        subtitle: 'Catat penambahan stok dan harga beli terbaru.',
         children: [
           StatefulBuilder(
             builder: (_, setSheet) => Row(
@@ -287,7 +954,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     autofocus: true,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Jumlah'),
+                    decoration: const InputDecoration(
+                      labelText: 'Jumlah',
+                      prefixIcon: Icon(Icons.numbers_outlined, size: 18),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -308,12 +978,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
               labelText: 'Harga per ${i.unit.label} (opsional)',
-              helperText: 'Kosongkan untuk tidak mengubah harga rata-rata',
+              helperText: 'Kosongkan jika tidak mengubah harga rata-rata',
+              prefixIcon: const Icon(Icons.payments_outlined, size: 18),
             ),
           ),
           TextField(
             controller: supplierCtrl,
-            decoration: const InputDecoration(labelText: 'Pemasok (opsional)'),
+            decoration: const InputDecoration(
+              labelText: 'Pemasok (opsional)',
+              prefixIcon: Icon(Icons.storefront_outlined, size: 18),
+            ),
           ),
         ],
         onConfirm: () => Navigator.of(ctx).pop(true),
@@ -334,7 +1008,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 : supplierCtrl.text.trim(),
           );
       ref.invalidate(ingredientsProvider);
-      messenger.showSnackBar(const SnackBar(content: Text('Stok ditambahkan')));
+      messenger.showSnackBar(const SnackBar(content: Text('Stok berhasil ditambahkan')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Gagal: $e')));
     }
@@ -346,19 +1020,23 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => _Sheet(
         title: 'Produksi ${i.name}',
         subtitle: i.batchYield == null
             ? null
             : '1 batch = ${formatQty(i.batchYield!, i.unit)}. '
-                'Bahan bakunya berkurang otomatis.',
+                'Bahan baku penyusun akan berkurang otomatis.',
         children: [
           TextField(
             controller: ctrl,
             autofocus: true,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Jumlah batch'),
+            decoration: const InputDecoration(
+              labelText: 'Jumlah batch',
+              prefixIcon: Icon(Icons.blender_outlined, size: 18),
+            ),
           ),
         ],
         onConfirm: () => Navigator.of(ctx).pop(true),
@@ -372,7 +1050,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     try {
       await ref.read(stockApiProvider).produce(i.id, n);
       ref.invalidate(ingredientsProvider);
-      messenger.showSnackBar(const SnackBar(content: Text('Produksi dicatat')));
+      messenger.showSnackBar(const SnackBar(content: Text('Produksi berhasil dicatat')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Gagal: $e')));
     }
@@ -383,6 +1061,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => _LedgerSheet(ingredient: i),
     );
   }
@@ -416,18 +1095,26 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (_, setSheet) => _Sheet(
-          title: existing == null ? 'Bahan baru' : 'Ubah ${existing.name}',
+          title: existing == null ? 'Bahan Baru' : 'Ubah ${existing.name}',
+          subtitle: 'Atur nama, satuan unit, dan batas reorder.',
           children: [
             TextField(
               controller: nameCtrl,
               autofocus: existing == null,
-              decoration: const InputDecoration(labelText: 'Nama bahan'),
+              decoration: const InputDecoration(
+                labelText: 'Nama bahan',
+                prefixIcon: Icon(Icons.inventory_outlined, size: 18),
+              ),
             ),
             DropdownButtonFormField<StockUnit>(
               initialValue: unit,
-              decoration: const InputDecoration(labelText: 'Satuan'),
+              decoration: const InputDecoration(
+                labelText: 'Satuan',
+                prefixIcon: Icon(Icons.straighten_outlined, size: 18),
+              ),
               items: [
                 for (final u in StockUnit.values)
                   DropdownMenuItem(
@@ -445,7 +1132,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Stok awal (${unit.label})',
-                  helperText: 'Dicatat sebagai mutasi, bukan angka telanjang',
+                  helperText: 'Dicatat sebagai mutasi awal',
+                  prefixIcon: const Icon(Icons.assessment_outlined, size: 18),
                 ),
               ),
             TextField(
@@ -453,6 +1141,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Batas menipis (${unit.label}, opsional)',
+                helperText: 'Munculkan peringatan saat stok di bawah angka ini',
+                prefixIcon: const Icon(Icons.warning_amber_rounded, size: 18),
               ),
             ),
             TextField(
@@ -461,7 +1151,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               decoration: InputDecoration(
                 labelText: 'Hasil 1 batch (${unit.label}, opsional)',
                 helperText:
-                    'Isi bila bahan ini dibuat sendiri, lalu susun resepnya',
+                    'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
+                prefixIcon: const Icon(Icons.blender_outlined, size: 18),
               ),
             ),
           ],
@@ -492,7 +1183,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 existing == null && opening != null ? unit.toBase(opening) : 0,
           );
       ref.invalidate(ingredientsProvider);
-      messenger.showSnackBar(const SnackBar(content: Text('Bahan disimpan')));
+      messenger.showSnackBar(const SnackBar(content: Text('Bahan berhasil disimpan')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Gagal: $e')));
     }
@@ -507,8 +1198,118 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 }
 
-/// The append-only ledger for one bahan — the answer to "why does the app say
-/// 2 kg when the cook says 5?".
+// ---------------------------------------------------------------- Sheet Container
+class _Sheet extends StatelessWidget {
+  const _Sheet({
+    required this.title,
+    required this.children,
+    required this.onConfirm,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<Widget> children;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      decoration: BoxDecoration(
+        color: sc.bg1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: sc.border1),
+      ),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Handle pill
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: sc.border1,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: SatType.sans(
+                          size: 18,
+                          weight: FontWeight.w600,
+                          color: sc.textHi,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          style: SatType.sans(size: 12, color: sc.textLo),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, size: 20, color: sc.textLo),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Children
+            for (final c in children)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: c,
+              ),
+            const SizedBox(height: 8),
+
+            // Primary Action Button
+            PressableScale(
+              child: FilledButton(
+                onPressed: onConfirm,
+                style: FilledButton.styleFrom(
+                  backgroundColor: sc.accent,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  'Simpan',
+                  style: SatType.sans(size: 14, weight: FontWeight.w600, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------- Ledger Sheet
 class _LedgerSheet extends ConsumerWidget {
   const _LedgerSheet({required this.ingredient});
   final Ingredient ingredient;
@@ -517,75 +1318,146 @@ class _LedgerSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final async = ref.watch(stockMovementsProvider(ingredient.id));
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Mutasi ${ingredient.name}',
-                style: SatType.sans(
-                    size: 16, weight: FontWeight.w600, color: sc.textHi)),
-            const SizedBox(height: 12),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 420),
-              child: async.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
+
+    return Container(
+      decoration: BoxDecoration(
+        color: sc.bg1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: sc.border1),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle pill
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: sc.border1,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                error: (e, _) => _Message('Gagal memuat: $e', color: sc.urgent),
-                data: (rows) => rows.isEmpty
-                    ? const _Message('Belum ada mutasi.')
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: rows.length,
-                        itemBuilder: (_, i) {
-                          final m = rows[i];
-                          final positive = m.delta > 0;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(m.reason.label,
-                                          style: SatType.sans(
-                                              size: 13, color: sc.textHi)),
-                                      Text(
-                                        [
-                                          if (m.sourceLabel.isNotEmpty)
-                                            m.sourceLabel,
-                                          _stamp(m.at),
-                                          if (m.note != null) m.note!,
-                                        ].join(' · '),
-                                        style: SatType.mono(
-                                            size: 10, color: sc.textLo),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  '${positive ? '+' : ''}'
-                                  '${formatQty(m.delta, ingredient.unit)}',
-                                  style: SatType.mono(
-                                    size: 12,
-                                    weight: FontWeight.w600,
-                                    color: positive ? sc.success : sc.textMd,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Riwayat Mutasi',
+                        style: SatType.sans(
+                          size: 18,
+                          weight: FontWeight.w600,
+                          color: sc.textHi,
+                        ),
+                      ),
+                      Text(
+                        ingredient.name.toUpperCase(),
+                        style: SatType.mono(
+                          size: 11,
+                          color: sc.accent,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 20, color: sc.textLo),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 420),
+                child: async.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, _) => _Message('Gagal memuat: $e', color: sc.urgent),
+                  data: (rows) => rows.isEmpty
+                      ? const _Message('Belum ada riwayat mutasi untuk bahan ini.')
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: rows.length,
+                          separatorBuilder: (context, index) => Divider(color: sc.border0, height: 1),
+                          itemBuilder: (_, i) {
+                            final m = rows[i];
+                            final positive = m.delta > 0;
+                            return Reveal(
+                              index: i,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: positive
+                                            ? sc.success.withValues(alpha: 0.1)
+                                            : sc.bg3,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        positive ? Icons.arrow_upward : Icons.arrow_downward,
+                                        size: 16,
+                                        color: positive ? sc.success : sc.textLo,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            m.reason.label,
+                                            style: SatType.sans(
+                                              size: 13,
+                                              weight: FontWeight.w600,
+                                              color: sc.textHi,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            [
+                                              if (m.sourceLabel.isNotEmpty) m.sourceLabel,
+                                              _stamp(m.at),
+                                              if (m.note != null) m.note!,
+                                            ].join(' · '),
+                                            style: SatType.mono(size: 10, color: sc.textLo),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      '${positive ? '+' : ''}'
+                                      '${formatQty(m.delta, ingredient.unit)}',
+                                      style: SatType.mono(
+                                        size: 13,
+                                        weight: FontWeight.w600,
+                                        color: positive ? sc.success : sc.textMd,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -598,49 +1470,59 @@ String _stamp(DateTime at) {
   return '${two(l.day)}/${two(l.month)} ${two(l.hour)}:${two(l.minute)}';
 }
 
-class _Sheet extends StatelessWidget {
-  const _Sheet({
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
     required this.title,
-    required this.children,
-    required this.onConfirm,
-    this.subtitle,
+    required this.message,
+    required this.onAction,
   });
+
   final String title;
-  final String? subtitle;
-  final List<Widget> children;
-  final VoidCallback onConfirm;
+  final String message;
+  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 18,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: SingleChildScrollView(
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(title,
-                style: SatType.sans(
-                    size: 16, weight: FontWeight.w600, color: sc.textHi)),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Text(subtitle!,
-                  style: SatType.sans(size: 12, color: sc.textLo)),
-            ],
-            const SizedBox(height: 12),
-            for (final c in children)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: c,
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: sc.bg2,
+                shape: BoxShape.circle,
+                border: Border.all(color: sc.border1),
               ),
-            const SizedBox(height: 6),
-            FilledButton(onPressed: onConfirm, child: const Text('Simpan')),
+              child: Icon(Icons.inventory_2_outlined, size: 48, color: sc.textLo),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: SatType.sans(size: 18, weight: FontWeight.w600, color: sc.textHi),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: SatType.sans(size: 13, color: sc.textLo),
+            ),
+            const SizedBox(height: 20),
+            PressableScale(
+              child: FilledButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Tambah Bahan Pertama'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: sc.accent,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -649,18 +1531,32 @@ class _Sheet extends StatelessWidget {
 }
 
 class _Message extends StatelessWidget {
-  const _Message(this.text, {this.color});
+  const _Message(this.text, {this.color, this.icon});
   final String text;
   final Color? color;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Text(text,
-          textAlign: TextAlign.center,
-          style: SatType.sans(size: 13, color: color ?? sc.textLo)),
+      padding: const EdgeInsets.all(32),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 28, color: color ?? sc.textLo),
+              const SizedBox(height: 10),
+            ],
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: SatType.sans(size: 13, color: color ?? sc.textLo),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
