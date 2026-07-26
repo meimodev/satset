@@ -130,8 +130,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     }
     _name.text = _draft.name;
     _desc.text = _draft.description;
-    _basePrice.text = groupRupiah(_draft.basePrice);
-    _cost.text = groupRupiah(_draft.cost);
+    // Zero seeds a blank, not a literal "0" — an untouched field must show its
+    // hint, not a value the admin has to select-all-delete before typing.
+    _basePrice.text = _draft.basePrice == 0 ? '' : groupRupiah(_draft.basePrice);
+    _cost.text = _draft.cost == 0 ? '' : groupRupiah(_draft.cost);
+    _showErrors = false;
     // Empty = "ikut target venue" (ADR-0043). The hint carries the number it
     // would inherit, so the field always communicates a value.
     _prep.text = _draft.prepTime?.toString() ?? '';
@@ -174,7 +177,37 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   void _patch(MenuItem next) => setState(() => _draft = next);
 
-  Future<void> _save() async {
+  /// The implicit single variant [_blankItem] and [_save] create for items that
+  /// have no real variants. Identified by id+empty-name rather than by "name is
+  /// blank", so a user-added variant stays visible before it's named.
+  static bool _isSentinelVariant(Variant v) => v.id == 'reg' && v.name.isEmpty;
+
+  /// Set once a save is blocked, so fields only turn red after the admin has
+  /// actually tried to save — not while they're still filling the form in.
+  bool _showErrors = false;
+
+  List<Variant> get _realVariants =>
+      _draft.variants.where((v) => !_isSentinelVariant(v)).toList();
+
+  /// Every name that must be filled before the item can be saved. A blank name
+  /// is unusable downstream: it can't be shown on a chip, a ticket, or the KDS.
+  bool get _hasBlankNames =>
+      _name.text.trim().isEmpty ||
+      _realVariants.any((v) => v.name.trim().isEmpty) ||
+      _draft.modifierGroups.any((g) =>
+          g.name.trim().isEmpty ||
+          g.options.any((o) => o.name.trim().isEmpty));
+
+  /// Returns false when the save did not land, so the footer skips its success
+  /// tick instead of flashing a green check over a failure.
+  Future<bool> _save() async {
+    if (_hasBlankNames) {
+      setState(() => _showErrors = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lengkapi nama yang masih kosong')),
+      );
+      return false;
+    }
     final priceCents = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final costCents = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     // Blank (or unparseable) clears the override back to inherit.
@@ -186,7 +219,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               v.id == 'reg' && v.name.isEmpty ? v.copyWith(price: priceCents) : v,
           ];
     final saved = _draft.copyWith(
-      name: _name.text.trim().isEmpty ? '(tanpa nama)' : _name.text.trim(),
+      name: _name.text.trim(),
       description: _desc.text.trim(),
       basePrice: priceCents,
       cost: costCents,
@@ -212,7 +245,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
-      return;
+      return false;
     }
     if (wasNew) {
       ref.read(menuAdminSelectedItemIdProvider.notifier).state = saved.id;
@@ -221,6 +254,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       SnackBar(content: Text(wasNew ? 'Item ditambahkan' : 'Perubahan tersimpan')),
     );
     widget.onClose?.call();
+    return true;
   }
 
   void _delete() async {
@@ -309,7 +343,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           children: [
             _Header(
               title: _isNew ? 'Item baru' : _draft.name,
-              sub: readOnly ? 'Hanya admin yang bisa edit' : 'Edit lengkap',
+              // 'Edit lengkap' carried no information; the availability badge
+              // takes its place. Staff keep the sub line, since it's the only
+              // thing explaining why every field is inert (ADR-0046).
+              sub: readOnly ? 'Hanya admin yang bisa edit' : null,
+              badge: _availabilityBadge(sc),
               onClose: widget.onClose,
             ),
             Expanded(
@@ -319,12 +357,12 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (final (i, section) in [
+                      _availabilitySection(sc),
                       _identitySection(sc, cats, readOnly),
                       _pricingSection(sc, readOnly),
                       _modifiersSection(sc, readOnly),
                       _recipeSection(sc, readOnly),
                       _tagsSection(sc, readOnly),
-                      _availabilitySection(sc),
                     ].indexed) ...[
                       if (i > 0) const SizedBox(height: 18),
                       // Cascade sections in on load; animKey carries the draft
@@ -363,7 +401,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _input(_name, 'Nama item', readOnly: readOnly),
+                    _input(_name, 'Nama item',
+                        readOnly: readOnly,
+                        error: _errorIfBlank(_name.text),
+                        onChanged: (_) => setState(() {})),
                     const SizedBox(height: 10),
                     _input(_desc, 'Deskripsi singkat', maxLines: 3, readOnly: readOnly),
                   ],
@@ -591,7 +632,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         children: [
           Row(
             children: [
-              Expanded(child: _input(_basePrice, 'Harga dasar (Rp)', keyboard: TextInputType.number, amount: true, readOnly: readOnly, onChanged: (_) => setState(() {}))),
+              Expanded(child: _input(_basePrice, 'Harga dasar', keyboard: TextInputType.number, amount: true, money: true, readOnly: readOnly, onChanged: (_) => setState(() {}))),
               const SizedBox(width: 12),
               Expanded(
                 child: _input(
@@ -610,7 +651,21 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _input(_cost, 'HPP (Rp)', keyboard: TextInputType.number, amount: true, readOnly: readOnly, onChanged: (_) => setState(() {}))),
+              Expanded(
+                child: _input(
+                  _cost,
+                  'HPP',
+                  keyboard: TextInputType.number,
+                  amount: true,
+                  money: true,
+                  readOnly: readOnly,
+                  // Recipe-derived cost sits *below* the field, not in the
+                  // hint, so it stays readable next to the number it's meant
+                  // to be checked against (ADR-0040).
+                  helper: _derivedCostHelper(),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(child: _marginPreview(sc)),
             ],
@@ -619,7 +674,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           _subhead('Varian ukuran', trailing: readOnly ? null : _ghostButton('+ Varian', onTap: _addVariant)),
           const SizedBox(height: 6),
           ExpandFade(
-            child: _draft.variants.where((v) => v.name.isNotEmpty).isEmpty
+            child: _realVariants.isEmpty
                 ? Text('Belum ada varian. Hanya pakai harga dasar.',
                     key: const ValueKey('var-empty'),
                     style: SatType.sans(size: 12, color: sc.textLo))
@@ -628,7 +683,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     child: Column(
                       children: [
                         for (var i = 0; i < _draft.variants.length; i++)
-                          if (_draft.variants[i].name.isNotEmpty)
+                          if (!_isSentinelVariant(_draft.variants[i]))
                             KeyedSubtree(
                               key: ValueKey('v:${_draft.variants[i].id}'),
                               child: _variantRow(sc, i, readOnly),
@@ -652,29 +707,33 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             child: TextField(
               controller: _ctrl('v:${v.id}:name', v.name),
               readOnly: readOnly,
-              decoration: _fieldDeco('Nama (mis. Besar)'),
-              onChanged: (t) {
+              decoration: _fieldDeco('Nama (mis. Besar)',
+                  error: _errorIfBlank(v.name)),
+              // setState, not a bare assign: the recipe scope chips are built
+              // from these names and must repaint as they're typed.
+              onChanged: (t) => setState(() {
                 final next = List<Variant>.of(_draft.variants);
                 next[idx] = next[idx].copyWith(name: t);
                 _draft = _draft.copyWith(variants: next);
-              },
+              }),
             ),
           ),
           const SizedBox(width: 10),
           SizedBox(
-            width: 130,
+            width: 140,
             child: TextField(
-              controller: _ctrl('v:${v.id}:price', groupRupiah(v.price)),
+              controller:
+                  _ctrl('v:${v.id}:price', v.price == 0 ? '' : groupRupiah(v.price)),
               readOnly: readOnly,
               keyboardType: TextInputType.number,
               inputFormatters: const [RupiahInputFormatter()],
-              decoration: _fieldDeco('Harga'),
-              onChanged: (t) {
+              decoration: _fieldDeco('Harga', money: true),
+              onChanged: (t) => setState(() {
                 final n = int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0;
                 final next = List<Variant>.of(_draft.variants);
                 next[idx] = next[idx].copyWith(price: n);
                 _draft = _draft.copyWith(variants: next);
-              },
+              }),
             ),
           ),
           if (!readOnly)
@@ -692,8 +751,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   void _addVariant() {
     final id = 'v${const Uuid().v4().substring(0, 6)}';
+    // No seeded name or price — the row renders regardless (it isn't the
+    // sentinel), so the admin sees the hints before filling anything in.
     final next = List<Variant>.of(_draft.variants)
-      ..add(Variant(id: id, name: 'Baru', price: _draft.basePrice));
+      ..add(Variant(id: id, name: '', price: 0));
     _patch(_draft.copyWith(variants: next));
   }
 
@@ -728,8 +789,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final next = List<ModifierGroup>.of(_draft.modifierGroups)
       ..add(ModifierGroup(
         id: id,
-        name: 'Grup baru',
-        options: [ModifierOption(id: oid, name: 'Opsi 1')],
+        name: '',
+        options: [ModifierOption(id: oid, name: '')],
       ));
     _patch(_draft.copyWith(modifierGroups: next));
   }
@@ -753,12 +814,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   controller: _ctrl('g:${g.id}:name', g.name),
                   readOnly: readOnly,
                   style: SatType.sans(size: 14, weight: FontWeight.w600, color: sc.textHi),
-                  decoration: _fieldDeco('Nama grup').copyWith(isDense: true),
-                  onChanged: (t) {
+                  decoration: _fieldDeco('Nama grup', error: _errorIfBlank(g.name))
+                      .copyWith(isDense: true),
+                  onChanged: (t) => setState(() {
                     final next = List<ModifierGroup>.of(_draft.modifierGroups);
                     next[gi] = next[gi].copyWith(name: t);
                     _draft = _draft.copyWith(modifierGroups: next);
-                  },
+                  }),
                 ),
               ),
               if (!readOnly)
@@ -813,8 +875,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               child: _ghostButton('+ Opsi', onTap: () {
                 final opts = List<ModifierOption>.of(g.options)
                   ..add(ModifierOption(
-                      id: 'o${const Uuid().v4().substring(0, 6)}',
-                      name: 'Opsi baru'));
+                      id: 'o${const Uuid().v4().substring(0, 6)}', name: ''));
                 final next = List<ModifierGroup>.of(_draft.modifierGroups);
                 next[gi] = next[gi].copyWith(options: opts);
                 _patch(_draft.copyWith(modifierGroups: next));
@@ -836,29 +897,35 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             child: TextField(
               controller: _ctrl('o:${g.id}:${o.id}:name', o.name),
               readOnly: readOnly,
-              decoration: _fieldDeco('Nama opsi').copyWith(isDense: true),
-              onChanged: (t) {
+              decoration: _fieldDeco('Nama opsi', error: _errorIfBlank(o.name))
+                  .copyWith(isDense: true),
+              onChanged: (t) => setState(() {
                 final opts = List<ModifierOption>.of(g.options);
                 opts[oi] = opts[oi].copyWith(name: t);
                 final next = List<ModifierGroup>.of(_draft.modifierGroups);
                 next[gi] = next[gi].copyWith(options: opts);
                 _draft = _draft.copyWith(modifierGroups: next);
-              },
+              }),
             ),
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 110,
+            // Wide enough for the 'Rp ' prefix plus a signed five-digit delta.
+            width: 140,
             child: TextField(
-              controller: _ctrl('o:${g.id}:${o.id}:price',
-                  o.priceDelta < 0
-                      ? '-${groupRupiah(-o.priceDelta)}'
-                      : groupRupiah(o.priceDelta)),
+              controller: _ctrl(
+                  'o:${g.id}:${o.id}:price',
+                  o.priceDelta == 0
+                      ? ''
+                      : o.priceDelta < 0
+                          ? '-${groupRupiah(-o.priceDelta)}'
+                          : groupRupiah(o.priceDelta)),
               readOnly: readOnly,
               keyboardType: const TextInputType.numberWithOptions(signed: true),
               inputFormatters: const [RupiahInputFormatter(allowNegative: true)],
-              decoration: _fieldDeco('+/- Rp').copyWith(isDense: true),
-              onChanged: (t) {
+              decoration:
+                  _fieldDeco('+/-', money: true).copyWith(isDense: true),
+              onChanged: (t) => setState(() {
                 final neg = t.trimLeft().startsWith('-');
                 final digits = t.replaceAll(RegExp(r'[^0-9]'), '');
                 final n = (int.tryParse(digits) ?? 0) * (neg ? -1 : 1);
@@ -867,7 +934,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 final next = List<ModifierGroup>.of(_draft.modifierGroups);
                 next[gi] = next[gi].copyWith(options: opts);
                 _draft = _draft.copyWith(modifierGroups: next);
-              },
+              }),
             ),
           ),
           if (!readOnly)
@@ -966,13 +1033,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       for (final v in _draft.variants)
         if (v.name.isNotEmpty) ('v:${v.id}', v.name),
       for (final g in _draft.modifierGroups)
-        for (final o in g.options) ('o:${o.id}', '${g.name}: ${o.name}'),
+        if (g.name.isNotEmpty)
+          for (final o in g.options)
+            // Both halves required, or a half-typed group yields a chip
+            // reading ': Pedas'. The chip appears on the first keystroke.
+            if (o.name.isNotEmpty) ('o:${o.id}', '${g.name}: ${o.name}'),
     ];
     if (!scopes.any((s) => s.$1 == _recipeScope)) _recipeScope = '';
     final lines = _linesFor(_recipeScope);
     final isVariant = _recipeScope.startsWith('v:');
     final isOption = _recipeScope.startsWith('o:');
-    final derived = _derivedCost(pantry);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1022,14 +1092,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ),
           ),
         ],
-        if (_recipes.base.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(
-            'Perkiraan HPP dari resep dasar: ${formatIDR(derived)} '
-            '(HPP manual tetap dipakai di laporan)',
-            style: SatType.sans(size: 11, color: sc.textLo),
-          ),
-        ],
       ],
     );
   }
@@ -1059,7 +1121,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               style: SatType.sans(size: 13, color: sc.textHi),
               items: [
                 for (final p in pantry)
-                  DropdownMenuItem(value: p.id, child: Text(p.name)),
+                  DropdownMenuItem(
+                      value: p.id, child: Text('${p.name} (${p.unit.label})')),
               ],
               onChanged: readOnly
                   ? null
@@ -1091,7 +1154,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               style: SatType.sans(size: 14, color: sc.textHi),
-              decoration: _fieldDeco(ing.unit.label),
+              // Unit as a suffix, not a hint: a hint vanishes the moment a
+              // number is typed, which is exactly when "g or kg?" matters.
+              decoration: _fieldDeco('Jumlah', suffix: ing.unit.label),
               onChanged: (t) {
                 final v = double.tryParse(t.replaceAll(',', '.'));
                 if (v == null) return;
@@ -1184,9 +1249,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         children: [
           Expanded(
             child: Text(
+              // One word for "cannot be sold", cause in the parenthetical —
+              // ADR-0046.
               auto
-                  ? 'Otomatis ditandai habis (stok 0)'
-                  : (_draft.unavailable ? 'Ditandai habis manual' : 'Aktif untuk dijual'),
+                  ? 'Tidak tersedia (stok 0)'
+                  : (_draft.unavailable
+                      ? 'Tidak tersedia (manual)'
+                      : 'Aktif untuk dijual'),
               style: SatType.sans(
                 size: 14,
                 weight: FontWeight.w600,
@@ -1200,20 +1269,70 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             onPressed: auto
                 ? null
                 : () => _patch(_draft.copyWith(unavailable: !_draft.unavailable)),
-            child: Text(_draft.unavailable ? 'Aktifkan' : 'Habis'),
+            child: Text(
+                _draft.unavailable ? 'Aktifkan' : 'Tandai tidak tersedia'),
           ),
         ],
       ),
     );
   }
 
+  /// Read-only status pill for the header. The control itself lives in the
+  /// Ketersediaan section — this only reports, so there's nothing to mistrust.
+  Widget _availabilityBadge(SatColors sc) {
+    final out = _draft.isSoldOut;
+    final tone = out ? sc.urgent : sc.success;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        out ? 'Tidak tersedia' : 'Aktif',
+        style: SatType.sans(size: 11, weight: FontWeight.w600, color: tone),
+      ),
+    );
+  }
+
+  /// `≈ Rp 12.400 dari resep dasar`, or null when there is no base recipe.
+  /// Sits under the HPP field rather than replacing it: a partially authored
+  /// recipe understates cost and would silently overstate margin (ADR-0040).
+  String? _derivedCostHelper() {
+    if (_recipes.base.isEmpty) return null;
+    final pantry = ref.watch(ingredientsProvider).valueOrNull;
+    if (pantry == null) return null;
+    return '≈ ${formatIDR(_derivedCost(pantry))} dari resep dasar';
+  }
+
   // ---- shared field bits -----------------------------------------------
 
-  InputDecoration _fieldDeco(String hint, {String? label}) {
+  String? _errorIfBlank(String value) =>
+      _showErrors && value.trim().isEmpty ? 'Wajib diisi' : null;
+
+  InputDecoration _fieldDeco(
+    String hint, {
+    String? label,
+    String? suffix,
+    String? error,
+    String? helper,
+    bool money = false,
+  }) {
     final sc = context.sat;
     return InputDecoration(
       hintText: hint,
       labelText: label,
+      suffixText: suffix,
+      errorText: error,
+      helperText: helper,
+      // Always visible, unlike a hint — the field reads as money even once a
+      // number is in it.
+      prefixText: money ? 'Rp ' : null,
+      prefixStyle: SatType.sans(size: 13, color: sc.textLo),
+      suffixStyle: SatType.sans(size: 13, color: sc.textLo),
+      helperStyle: SatType.sans(size: 11, color: sc.textLo),
+      helperMaxLines: 2,
+      errorStyle: SatType.sans(size: 11, color: sc.urgent),
       labelStyle: SatType.sans(size: 12, color: sc.textLo),
       hintStyle: SatType.sans(size: 13, color: sc.textLo),
       filled: true,
@@ -1241,8 +1360,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     TextInputType? keyboard,
     bool readOnly = false,
     bool amount = false,
+    bool money = false,
     ValueChanged<String>? onChanged,
     String? label,
+    String? error,
+    String? helper,
   }) {
     return TextField(
       controller: c,
@@ -1251,7 +1373,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       keyboardType: keyboard,
       onChanged: onChanged,
       style: SatType.sans(size: 14, color: context.sat.textHi),
-      decoration: _fieldDeco(hint, label: label),
+      decoration: _fieldDeco(hint,
+          label: label, money: money, error: error, helper: helper),
       inputFormatters: amount
           ? const [RupiahInputFormatter()]
           : keyboard == TextInputType.number
@@ -1459,9 +1582,13 @@ class _Section extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   final String title;
-  final String sub;
+  /// Null for admins — the availability badge takes the line instead. Staff
+  /// keep it, since it explains why the form is inert (ADR-0046).
+  final String? sub;
+  final Widget? badge;
   final VoidCallback? onClose;
-  const _Header({required this.title, required this.sub, this.onClose});
+  const _Header(
+      {required this.title, this.sub, this.badge, this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -1484,10 +1611,20 @@ class _Header extends StatelessWidget {
                       letterSpacing: -0.3, color: sc.textHi,
                     )),
                 const SizedBox(height: 4),
-                Text(sub.toUpperCase(),
-                    style: SatType.mono(
-                      size: 11, color: sc.textLo, letterSpacing: 0.66,
-                    )),
+                Row(
+                  children: [
+                    ?badge,
+                    if (badge != null && sub != null) const SizedBox(width: 8),
+                    if (sub != null)
+                      Flexible(
+                        child: Text(sub!.toUpperCase(),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: SatType.mono(
+                              size: 11, color: sc.textLo, letterSpacing: 0.66,
+                            )),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -1503,7 +1640,7 @@ class _Header extends StatelessWidget {
 }
 
 class _Footer extends StatefulWidget {
-  final Future<void> Function() onSave;
+  final Future<bool> Function() onSave;
   final VoidCallback? onDelete;
   const _Footer({required this.onSave, this.onDelete});
 
@@ -1519,12 +1656,18 @@ class _FooterState extends State<_Footer> {
   Future<void> _run() async {
     if (_state != _SaveState.idle) return;
     setState(() => _state = _SaveState.saving);
+    var ok = false;
     try {
-      await widget.onSave();
+      ok = await widget.onSave();
     } catch (_) {
       // Errors surface via snackbar in onSave; just reset the button.
     }
     if (!mounted) return;
+    // A blocked or failed save must not flash a green check.
+    if (!ok) {
+      setState(() => _state = _SaveState.idle);
+      return;
+    }
     // Brief success tick before the pane closes / resets.
     setState(() => _state = _SaveState.done);
     await Future.delayed(const Duration(milliseconds: 600));

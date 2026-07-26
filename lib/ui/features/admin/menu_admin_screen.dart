@@ -51,21 +51,23 @@ class _TabletLayout extends ConsumerWidget {
         AdminEmbeddedStrip(
           title: 'Menu',
           sub:
-              '${counts.total} item · ${counts.categories} kategori · ${counts.soldOut} habis',
+              '${counts.total} item · ${counts.categories} kategori · ${counts.soldOut} tidak tersedia',
+          // Add sits leftmost so the tabs and badge hold position when it
+          // disappears on the Kategori / Tag tabs (ADR-0046 UI pass).
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (admin) ...[const _TabSwitcher(), const SizedBox(width: 10)],
-              _RoleBadge(perm: perm),
               if (admin && !onCats && !onTags) ...[
-                const SizedBox(width: 10),
                 _PrimaryButton(
                   label: '+ Tambah item',
                   onTap: () =>
                       ref.read(menuAdminSelectedItemIdProvider.notifier).state =
                           null,
                 ),
+                const SizedBox(width: 10),
               ],
+              if (admin) ...[const _TabSwitcher(), const SizedBox(width: 10)],
+              _RoleBadge(perm: perm),
             ],
           ),
         ),
@@ -274,7 +276,7 @@ class _PhoneLayout extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${counts.total} item · ${counts.soldOut} habis',
+                        '${counts.total} item · ${counts.soldOut} tidak tersedia',
                         style: SatType.mono(
                           size: 11,
                           color: sc.textLo,
