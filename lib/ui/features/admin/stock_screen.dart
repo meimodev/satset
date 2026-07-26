@@ -29,6 +29,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   final _counts = <String, int>{};
   final _searchCtrl = TextEditingController();
 
+  /// Ingredient ids whose recipe chips the user unclipped past the 2-line cap.
+  final _expandedLinks = <String>{};
+
   bool _opname = false;
   _StockFilter _activeFilter = _StockFilter.all;
   String _searchQuery = '';
@@ -58,10 +61,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     tooltip: 'Tambah bahan',
                     icon: Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: sc.accentSoft,
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: BoxDecoration(color: sc.accentSoft, shape: BoxShape.circle),
                       child: Icon(Icons.add, size: 18, color: sc.accent),
                     ),
                     onPressed: () => _editIngredient(null),
@@ -106,11 +106,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         Expanded(
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => _Message(
-              'Gagal memuat stok: $e',
-              color: sc.urgent,
-              icon: Icons.error_outline,
-            ),
+            error: (e, _) =>
+                _Message('Gagal memuat stok: $e', color: sc.urgent, icon: Icons.error_outline),
             data: (list) {
               if (list.isEmpty) {
                 return _EmptyState(
@@ -123,9 +120,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               }
 
               // Apply Search & Filter
+              final q = _searchQuery.toLowerCase();
               final filtered = list.where((i) {
-                final matchesSearch = _searchQuery.isEmpty ||
-                    i.name.toLowerCase().contains(_searchQuery.toLowerCase());
+                // Recipe names match too, so "nasi goreng" lists everything
+                // that dish consumes.
+                final matchesSearch =
+                    q.isEmpty ||
+                    i.name.toLowerCase().contains(q) ||
+                    i.usedBy.any((n) => n.toLowerCase().contains(q)) ||
+                    i.madeFrom.any((n) => n.toLowerCase().contains(q));
                 final matchesFilter = switch (_activeFilter) {
                   _StockFilter.all => true,
                   _StockFilter.low => i.isLow || i.stockOnHand < 0,
@@ -144,8 +147,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     AnimatedCrossFade(
                       firstChild: _summaryGrid(sc, list),
                       secondChild: _opnameBanner(sc),
-                      crossFadeState:
-                          _opname ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                      crossFadeState: _opname
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
                       duration: const Duration(milliseconds: 240),
                       firstCurve: satEaseOut,
                       secondCurve: satEaseOut,
@@ -160,10 +164,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       )
                     else
                       for (int idx = 0; idx < filtered.length; idx++)
-                        Reveal(
-                          index: idx,
-                          child: _row(sc, filtered[idx]),
-                        ),
+                        Reveal(index: idx, child: _row(sc, filtered[idx])),
                   ],
                 ),
               );
@@ -176,7 +177,6 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
   // ---------------------------------------------------------------- KPI Summary
   Widget _summaryGrid(SatColors sc, List<Ingredient> list) {
-    final value = list.fold<int>(0, (a, i) => a + i.stockValue);
     final low = list.where((i) => i.isLow).length;
     final negative = list.where((i) => i.stockOnHand < 0).length;
     final produced = list.where((i) => i.isProduced).length;
@@ -188,16 +188,6 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           _statCard(
             sc,
             index: 0,
-            label: 'NILAI TOTAL STOK',
-            value: formatIDR(value),
-            sub: '${list.length} item terdaftar',
-            icon: Icons.account_balance_wallet_outlined,
-            color: sc.textHi,
-            bg: sc.bg2,
-          ),
-          _statCard(
-            sc,
-            index: 1,
             label: 'MENIPIS',
             value: '$low Bahan',
             sub: low > 0 ? 'Perlu reorder' : 'Stok aman',
@@ -215,7 +205,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           if (negative > 0)
             _statCard(
               sc,
-              index: 2,
+              index: 1,
               label: 'STOK MINUS',
               value: '$negative Bahan',
               sub: 'Perlu opname segera',
@@ -232,10 +222,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             ),
           _statCard(
             sc,
-            index: 3,
+            index: 2,
             label: 'PRODUKSI MANDIRI',
             value: '$produced Bahan',
-            sub: 'Hasil racikan internal',
+            sub: 'dari ${list.length} bahan terdaftar',
             icon: Icons.blender_outlined,
             color: sc.info,
             bg: sc.bg2,
@@ -254,7 +244,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               for (int i = 0; i < cards.length; i++) ...[
                 Expanded(child: cards[i]),
                 if (i < cards.length - 1) const SizedBox(width: 10),
-              ]
+              ],
             ],
           );
         }
@@ -263,11 +253,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           spacing: 10,
           runSpacing: 10,
           children: [
-            for (final card in cards)
-              SizedBox(
-                width: (constraints.maxWidth - 10) / 2,
-                child: card,
-              ),
+            for (final card in cards) SizedBox(width: (constraints.maxWidth - 10) / 2, child: card),
           ],
         );
       },
@@ -337,10 +323,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  sub,
-                  style: SatType.sans(size: 10, color: sc.textLo),
-                ),
+                Text(sub, style: SatType.sans(size: 10, color: sc.textLo)),
               ],
             ),
           ),
@@ -404,7 +387,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 ),
                 child: Text(
                   '${_counts.length} diisi',
-                  style: SatType.mono(size: 10, weight: FontWeight.w600, color: Colors.white),
+                  style: SatType.mono(size: 10, weight: FontWeight.w600, color: sc.accentInk),
                 ),
               ),
             ),
@@ -470,16 +453,28 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             children: [
               _filterChip(sc, _StockFilter.all, 'Semua (${list.length})'),
               const SizedBox(width: 6),
-              _filterChip(sc, _StockFilter.low, 'Menipis ($lowCount)',
-                  highlightColor: lowCount > 0 ? sc.warn : null),
+              _filterChip(
+                sc,
+                _StockFilter.low,
+                'Menipis ($lowCount)',
+                highlightColor: lowCount > 0 ? sc.warn : null,
+              ),
               if (negCount > 0) ...[
                 const SizedBox(width: 6),
-                _filterChip(sc, _StockFilter.negative, 'Minus ($negCount)',
-                    highlightColor: sc.urgent),
+                _filterChip(
+                  sc,
+                  _StockFilter.negative,
+                  'Minus ($negCount)',
+                  highlightColor: sc.urgent,
+                ),
               ],
               const SizedBox(width: 6),
-              _filterChip(sc, _StockFilter.produced, 'Produksi ($prodCount)',
-                  highlightColor: sc.info),
+              _filterChip(
+                sc,
+                _StockFilter.produced,
+                'Produksi ($prodCount)',
+                highlightColor: sc.info,
+              ),
             ],
           ),
         ),
@@ -487,8 +482,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     );
   }
 
-  Widget _filterChip(SatColors sc, _StockFilter filter, String label,
-      {Color? highlightColor}) {
+  Widget _filterChip(SatColors sc, _StockFilter filter, String label, {Color? highlightColor}) {
     final active = _activeFilter == filter;
     final color = active ? (highlightColor ?? sc.accent) : sc.textMd;
 
@@ -502,9 +496,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: active ? (highlightColor?.withValues(alpha: 0.15) ?? sc.accentSoft) : sc.bg2,
-            border: Border.all(
-              color: active ? color : sc.border1,
-            ),
+            border: Border.all(color: active ? color : sc.border1),
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
@@ -526,8 +518,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final statusColor = negative
         ? sc.urgent
         : i.isLow
-            ? sc.warn
-            : sc.success;
+        ? sc.warn
+        : sc.success;
 
     // Physical count entered in opname mode
     final physicalCount = _counts[i.id];
@@ -541,289 +533,318 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
+        // Stack, not IntrinsicHeight: the strip only needs to stretch to the
+        // row's height, and an intrinsic pass would ask the chip LayoutBuilder
+        // below for a width it cannot answer.
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
               // Health status accent strip on left
-              AnimatedContainer(
+              child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: 4,
                 color: statusColor,
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header line: Name + Badges
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              i.name,
-                              style: SatType.sans(
-                                size: 15,
-                                weight: FontWeight.w600,
-                                color: sc.textHi,
-                              ),
-                            ),
-                          ),
-                          if (i.isProduced) ...[
-                            const SizedBox(width: 6),
-                            _badge(
-                              sc,
-                              label: 'PRODUKSI',
-                              color: sc.info,
-                              icon: Icons.blender_outlined,
-                            ),
-                          ],
-                          if (i.isLow && !negative) ...[
-                            const SizedBox(width: 6),
-                            _badge(
-                              sc,
-                              label: 'MENIPIS',
-                              color: sc.warn,
-                              icon: Icons.warning_amber_rounded,
-                            ),
-                          ],
-                          if (negative) ...[
-                            const SizedBox(width: 6),
-                            _badge(
-                              sc,
-                              label: 'MINUS',
-                              color: sc.urgent,
-                              icon: Icons.remove_circle_outline,
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Metrics Grid
-                      Row(
-                        children: [
-                          // Stock On Hand
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'STOK SAAT INI',
-                                  style: SatType.mono(
-                                    size: 9,
-                                    color: sc.textLo,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  i.onHandLabel,
-                                  style: SatType.mono(
-                                    size: 13,
-                                    weight: FontWeight.w600,
-                                    color: statusColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Price / Base Unit
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'HARGA / ${i.unit.label.toUpperCase()}',
-                                  style: SatType.mono(
-                                    size: 9,
-                                    color: sc.textLo,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  i.costMicro > 0
-                                      ? formatIDR(unitPriceFromCostMicro(i.costMicro, i.unit))
-                                      : '—',
-                                  style: SatType.mono(
-                                    size: 13,
-                                    color: sc.textMd,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Total Valuation
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'NILAI STOK',
-                                  style: SatType.mono(
-                                    size: 9,
-                                    color: sc.textLo,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  formatIDR(i.stockValue),
-                                  style: SatType.mono(
-                                    size: 13,
-                                    weight: FontWeight.w600,
-                                    color: sc.textHi,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Low stock threshold progress line
-                      if (i.lowStockAt != null && i.lowStockAt! > 0) ...[
-                        const SizedBox(height: 8),
-                        _stockLevelMeter(sc, i),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              // Right Actions / Opname Input
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: _opname
-                    ? SizedBox(
-                        width: 120,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+            ),
+            Row(
+              children: [
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header line: Name + Badges
+                        Row(
                           children: [
-                            TextField(
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(decimal: true),
-                              textAlign: TextAlign.right,
-                              style: SatType.mono(size: 13, weight: FontWeight.w600, color: sc.textHi),
-                              decoration: InputDecoration(
-                                isDense: true,
-                                hintText: i.unit.label,
-                                hintStyle: SatType.sans(size: 12, color: sc.textLo),
-                                filled: true,
-                                fillColor: sc.bg3,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: sc.border1),
+                            Expanded(
+                              child: Text(
+                                i.name,
+                                style: SatType.sans(
+                                  size: 15,
+                                  weight: FontWeight.w600,
+                                  color: sc.textHi,
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               ),
-                              onChanged: (t) {
-                                final v = double.tryParse(t.replaceAll(',', '.'));
-                                setState(() {
-                                  if (v == null) {
-                                    _counts.remove(i.id);
-                                  } else {
-                                    _counts[i.id] = i.unit.toBase(v);
-                                  }
-                                });
-                              },
                             ),
-                            if (physicalCount != null) ...[
-                              const SizedBox(height: 4),
-                              _varianceDeltaBadge(sc, i, physicalCount),
+                            if (i.isProduced) ...[
+                              const SizedBox(width: 6),
+                              _badge(
+                                sc,
+                                label: 'PRODUKSI',
+                                color: sc.info,
+                                icon: Icons.blender_outlined,
+                              ),
+                            ],
+                            if (i.isLow && !negative) ...[
+                              const SizedBox(width: 6),
+                              _badge(
+                                sc,
+                                label: 'MENIPIS',
+                                color: sc.warn,
+                                icon: Icons.warning_amber_rounded,
+                              ),
+                            ],
+                            if (negative) ...[
+                              const SizedBox(width: 6),
+                              _badge(
+                                sc,
+                                label: 'MINUS',
+                                color: sc.urgent,
+                                icon: Icons.remove_circle_outline,
+                              ),
                             ],
                           ],
                         ),
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          PressableScale(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _receive(i),
-                              icon: const Icon(Icons.add_shopping_cart, size: 14),
-                              label: const Text('Terima'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: sc.accent,
-                                side: BorderSide(color: sc.border1),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                textStyle: SatType.sans(size: 11, weight: FontWeight.w500),
+                        const SizedBox(height: 8),
+
+                        // Metrics Grid
+                        Row(
+                          children: [
+                            // Stock On Hand
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'STOK SAAT INI',
+                                    style: SatType.mono(
+                                      size: 9,
+                                      color: sc.textLo,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    i.onHandLabel,
+                                    style: SatType.mono(
+                                      size: 13,
+                                      weight: FontWeight.w600,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+
+                            // Price / Base Unit
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'HARGA / ${i.unit.label.toUpperCase()}',
+                                    style: SatType.mono(
+                                      size: 9,
+                                      color: sc.textLo,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    i.costMicro > 0
+                                        ? formatIDR(unitPriceFromCostMicro(i.costMicro, i.unit))
+                                        : '—',
+                                    style: SatType.mono(size: 13, color: sc.textMd),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Last receive — freshness, not valuation
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'TERAKHIR TERIMA',
+                                    style: SatType.mono(
+                                      size: 9,
+                                      color: sc.textLo,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    i.lastReceivedAt == null
+                                        ? '—'
+                                        : formatElapsedId(
+                                            DateTime.now().difference(i.lastReceivedAt!),
+                                          ),
+                                    style: SatType.mono(size: 13, color: sc.textMd),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Low stock threshold progress line
+                        if (i.lowStockAt != null && i.lowStockAt! > 0) ...[
+                          const SizedBox(height: 8),
+                          _stockLevelMeter(sc, i),
+                        ],
+
+                        // Recipe links — counting doesn't need them, and the row
+                        // already grows a count field in opname mode.
+                        if (!_opname) ...[
+                          const SizedBox(height: 8),
+                          _RecipeLinkChips(
+                            sc: sc,
+                            madeFrom: i.madeFrom,
+                            usedBy: i.usedBy,
+                            expanded: _expandedLinks.contains(i.id),
+                            onExpand: () => setState(() => _expandedLinks.add(i.id)),
                           ),
-                          PopupMenuButton<String>(
-                            icon: Icon(Icons.more_vert, size: 18, color: sc.textLo),
-                            onSelected: (v) => switch (v) {
-                              'receive' => _receive(i),
-                              'produce' => _produce(i),
-                              'ledger' => _ledger(i),
-                              'edit' => _editIngredient(i),
-                              'archive' => _archive(i),
-                              _ => null,
-                            },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                value: 'receive',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.add_shopping_cart, size: 16),
-                                    SizedBox(width: 10),
-                                    Text('Terima barang'),
-                                  ],
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Right Actions / Opname Input
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: _opname
+                      ? SizedBox(
+                          width: 120,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextField(
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                textAlign: TextAlign.right,
+                                style: SatType.mono(
+                                  size: 13,
+                                  weight: FontWeight.w600,
+                                  color: sc.textHi,
+                                ),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: i.unit.label,
+                                  hintStyle: SatType.sans(size: 12, color: sc.textLo),
+                                  filled: true,
+                                  fillColor: sc.bg3,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(color: sc.border1),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onChanged: (t) {
+                                  final v = double.tryParse(t.replaceAll(',', '.'));
+                                  setState(() {
+                                    if (v == null) {
+                                      _counts.remove(i.id);
+                                    } else {
+                                      _counts[i.id] = i.unit.toBase(v);
+                                    }
+                                  });
+                                },
+                              ),
+                              if (physicalCount != null) ...[
+                                const SizedBox(height: 4),
+                                _varianceDeltaBadge(sc, i, physicalCount),
+                              ],
+                            ],
+                          ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PressableScale(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _receive(i),
+                                icon: const Icon(Icons.add_shopping_cart, size: 14),
+                                label: const Text('Terima'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: sc.accent,
+                                  side: BorderSide(color: sc.border1),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  textStyle: SatType.sans(size: 11, weight: FontWeight.w500),
                                 ),
                               ),
-                              if (i.isProduced)
+                            ),
+                            PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert, size: 18, color: sc.textLo),
+                              onSelected: (v) => switch (v) {
+                                'receive' => _receive(i),
+                                'produce' => _produce(i),
+                                'ledger' => _ledger(i),
+                                'edit' => _editIngredient(i),
+                                'archive' => _archive(i),
+                                _ => null,
+                              },
+                              itemBuilder: (_) => [
                                 const PopupMenuItem(
-                                  value: 'produce',
+                                  value: 'receive',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.blender_outlined, size: 16),
+                                      Icon(Icons.add_shopping_cart, size: 16),
                                       SizedBox(width: 10),
-                                      Text('Produksi batch'),
+                                      Text('Terima barang'),
                                     ],
                                   ),
                                 ),
-                              const PopupMenuItem(
-                                value: 'ledger',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.history, size: 16),
-                                    SizedBox(width: 10),
-                                    Text('Riwayat mutasi'),
-                                  ],
+                                if (i.isProduced)
+                                  const PopupMenuItem(
+                                    value: 'produce',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.blender_outlined, size: 16),
+                                        SizedBox(width: 10),
+                                        Text('Produksi batch'),
+                                      ],
+                                    ),
+                                  ),
+                                const PopupMenuItem(
+                                  value: 'ledger',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.history, size: 16),
+                                      SizedBox(width: 10),
+                                      Text('Riwayat mutasi'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit_outlined, size: 16),
-                                    SizedBox(width: 10),
-                                    Text('Ubah bahan'),
-                                  ],
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, size: 16),
+                                      SizedBox(width: 10),
+                                      Text('Ubah bahan'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              PopupMenuItem(
-                                value: 'archive',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.archive_outlined, size: 16, color: sc.urgent),
-                                    const SizedBox(width: 10),
-                                    Text('Arsipkan', style: TextStyle(color: sc.urgent)),
-                                  ],
+                                PopupMenuItem(
+                                  value: 'archive',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.archive_outlined, size: 16, color: sc.urgent),
+                                      const SizedBox(width: 10),
+                                      Text('Arsipkan', style: TextStyle(color: sc.urgent)),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-              ),
-            ],
-          ),
+                              ],
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -840,10 +861,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 10, color: color),
-            const SizedBox(width: 3),
-          ],
+          if (icon != null) ...[Icon(icon, size: 10, color: color), const SizedBox(width: 3)],
           Text(
             label,
             style: SatType.mono(size: 9, weight: FontWeight.w600, color: color),
@@ -859,8 +877,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final color = i.stockOnHand <= 0
         ? sc.urgent
         : i.isLow
-            ? sc.warn
-            : sc.success;
+        ? sc.warn
+        : sc.success;
 
     return Row(
       children: [
@@ -890,8 +908,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final color = delta == 0
         ? sc.success
         : positive
-            ? sc.success
-            : sc.warn;
+        ? sc.success
+        : sc.warn;
     final sign = positive ? '+' : '';
     final text = delta == 0 ? 'Pas' : '$sign${formatQty(delta, i.unit)}';
 
@@ -913,10 +931,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     try {
       final deltas = await api.recordCounts(Map.of(_counts));
       final changed = deltas.values.where((d) => d != 0).length;
-      messenger.showSnackBar(SnackBar(
-          content: Text(changed == 0
-              ? 'Opname selesai — tidak ada selisih'
-              : 'Opname selesai — $changed bahan disesuaikan')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            changed == 0
+                ? 'Opname selesai — tidak ada selisih'
+                : 'Opname selesai — $changed bahan disesuaikan',
+          ),
+        ),
+      );
       setState(() {
         _opname = false;
         _counts.clear();
@@ -930,9 +953,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   Future<void> _receive(Ingredient i) async {
     final qtyCtrl = TextEditingController();
     final priceCtrl = TextEditingController(
-        text: i.costMicro > 0
-            ? unitPriceFromCostMicro(i.costMicro, i.unit).toString()
-            : '');
+      text: i.costMicro > 0 ? unitPriceFromCostMicro(i.costMicro, i.unit).toString() : '',
+    );
     final supplierCtrl = TextEditingController();
     var unit = i.unit;
 
@@ -952,8 +974,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   child: TextField(
                     controller: qtyCtrl,
                     autofocus: true,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
                       labelText: 'Jumlah',
                       prefixIcon: Icon(Icons.numbers_outlined, size: 18),
@@ -999,13 +1020,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(stockApiProvider).receive(
+      await ref
+          .read(stockApiProvider)
+          .receive(
             ingredientId: i.id,
             qty: unit.toBase(amount),
             unitPrice: int.tryParse(priceCtrl.text),
-            supplier: supplierCtrl.text.trim().isEmpty
-                ? null
-                : supplierCtrl.text.trim(),
+            supplier: supplierCtrl.text.trim().isEmpty ? null : supplierCtrl.text.trim(),
           );
       ref.invalidate(ingredientsProvider);
       messenger.showSnackBar(const SnackBar(content: Text('Stok berhasil ditambahkan')));
@@ -1026,7 +1047,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         subtitle: i.batchYield == null
             ? null
             : '1 batch = ${formatQty(i.batchYield!, i.unit)}. '
-                'Bahan baku penyusun akan berkurang otomatis.',
+                  'Bahan baku penyusun akan berkurang otomatis.',
         children: [
           TextField(
             controller: ctrl,
@@ -1082,13 +1103,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final openingCtrl = TextEditingController();
     final lowCtrl = TextEditingController(
-        text: existing?.lowStockAt == null
-            ? ''
-            : _trim(existing!.unit.fromBase(existing.lowStockAt!)));
+      text: existing?.lowStockAt == null
+          ? ''
+          : _trim(existing!.unit.fromBase(existing.lowStockAt!)),
+    );
     final yieldCtrl = TextEditingController(
-        text: existing?.batchYield == null
-            ? ''
-            : _trim(existing!.unit.fromBase(existing.batchYield!)));
+      text: existing?.batchYield == null
+          ? ''
+          : _trim(existing!.unit.fromBase(existing.batchYield!)),
+    );
     var unit = existing?.unit ?? StockUnit.pcs;
 
     final ok = await showModalBottomSheet<bool>(
@@ -1119,8 +1142,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 for (final u in StockUnit.values)
                   DropdownMenuItem(
                     value: u,
-                    child: Text(
-                        '${u.label} · ${stockDimensionLabel(u.dimension)}'),
+                    child: Text('${u.label} · ${stockDimensionLabel(u.dimension)}'),
                   ),
               ],
               onChanged: (u) => setSheet(() => unit = u ?? unit),
@@ -1128,8 +1150,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             if (existing == null)
               TextField(
                 controller: openingCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Stok awal (${unit.label})',
                   helperText: 'Dicatat sebagai mutasi awal',
@@ -1150,8 +1171,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Hasil 1 batch (${unit.label}, opsional)',
-                helperText:
-                    'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
+                helperText: 'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
                 prefixIcon: const Icon(Icons.blender_outlined, size: 18),
               ),
             ),
@@ -1163,15 +1183,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     if (ok != true) return;
     final name = nameCtrl.text.trim();
     if (name.isEmpty) return;
-    double? parse(TextEditingController c) =>
-        double.tryParse(c.text.replaceAll(',', '.'));
+    double? parse(TextEditingController c) => double.tryParse(c.text.replaceAll(',', '.'));
     final low = parse(lowCtrl);
     final batch = parse(yieldCtrl);
     final opening = parse(openingCtrl);
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(stockApiProvider).save(
+      await ref
+          .read(stockApiProvider)
+          .save(
             Ingredient(
               id: existing?.id ?? const Uuid().v4(),
               name: name,
@@ -1179,8 +1200,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               lowStockAt: low == null ? null : unit.toBase(low),
               batchYield: batch == null ? null : unit.toBase(batch),
             ),
-            openingStock:
-                existing == null && opening != null ? unit.toBase(opening) : 0,
+            openingStock: existing == null && opening != null ? unit.toBase(opening) : 0,
           );
       ref.invalidate(ingredientsProvider);
       messenger.showSnackBar(const SnackBar(content: Text('Bahan berhasil disimpan')));
@@ -1255,18 +1275,11 @@ class _Sheet extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.sans(size: 18, weight: FontWeight.w600, color: sc.textHi),
                       ),
                       if (subtitle != null) ...[
                         const SizedBox(height: 2),
-                        Text(
-                          subtitle!,
-                          style: SatType.sans(size: 12, color: sc.textLo),
-                        ),
+                        Text(subtitle!, style: SatType.sans(size: 12, color: sc.textLo)),
                       ],
                     ],
                   ),
@@ -1280,11 +1293,7 @@ class _Sheet extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Children
-            for (final c in children)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: c,
-              ),
+            for (final c in children) Padding(padding: const EdgeInsets.only(bottom: 12), child: c),
             const SizedBox(height: 8),
 
             // Primary Action Button
@@ -1298,7 +1307,7 @@ class _Sheet extends StatelessWidget {
                 ),
                 child: Text(
                   'Simpan',
-                  style: SatType.sans(size: 14, weight: FontWeight.w600, color: Colors.white),
+                  style: SatType.sans(size: 14, weight: FontWeight.w600, color: sc.accentInk),
                 ),
               ),
             ),
@@ -1353,19 +1362,11 @@ class _LedgerSheet extends ConsumerWidget {
                     children: [
                       Text(
                         'Riwayat Mutasi',
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.sans(size: 18, weight: FontWeight.w600, color: sc.textHi),
                       ),
                       Text(
                         ingredient.name.toUpperCase(),
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.accent,
-                          letterSpacing: 0.8,
-                        ),
+                        style: SatType.mono(size: 11, color: sc.accent, letterSpacing: 0.8),
                       ),
                     ],
                   ),
@@ -1390,7 +1391,8 @@ class _LedgerSheet extends ConsumerWidget {
                       : ListView.separated(
                           shrinkWrap: true,
                           itemCount: rows.length,
-                          separatorBuilder: (context, index) => Divider(color: sc.border0, height: 1),
+                          separatorBuilder: (context, index) =>
+                              Divider(color: sc.border0, height: 1),
                           itemBuilder: (_, i) {
                             final m = rows[i];
                             final positive = m.delta > 0;
@@ -1471,11 +1473,7 @@ String _stamp(DateTime at) {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.title,
-    required this.message,
-    required this.onAction,
-  });
+  const _EmptyState({required this.title, required this.message, required this.onAction});
 
   final String title;
   final String message;
@@ -1559,4 +1557,161 @@ class _Message extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The recipe links on a stock card: what this ingredient is made from, then
+/// what consumes it. Direction is carried by icon + color rather than group
+/// labels, so both sets flow through one wrap.
+///
+/// Capped at two lines so one onion used in a dozen dishes can't make its card
+/// five times taller than its neighbours; the overflow chip unclips it.
+class _RecipeLinkChips extends StatelessWidget {
+  const _RecipeLinkChips({
+    required this.sc,
+    required this.madeFrom,
+    required this.usedBy,
+    required this.expanded,
+    required this.onExpand,
+  });
+
+  final SatColors sc;
+  final List<String> madeFrom;
+  final List<String> usedBy;
+  final bool expanded;
+  final VoidCallback onExpand;
+
+  static const _maxLines = 2;
+  static const _gap = 6.0;
+  static const _padH = 6.0;
+  static const _iconSize = 11.0;
+  static const _iconGap = 3.0;
+  static const _border = 1.0;
+  static const _fontSize = 11.0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (madeFrom.isEmpty && usedBy.isEmpty) {
+      return _chip(context, 'belum dipakai', null, sc.textLo);
+    }
+
+    // Made-from first: it is the rarer, more explanatory direction, and
+    // ordering it first keeps it visible when the cap bites.
+    final chips = <(String, IconData, Color)>[
+      for (final n in madeFrom) (n, Icons.blender_outlined, sc.info),
+      for (final n in usedBy) (n, Icons.restaurant_outlined, sc.textMd),
+    ];
+
+    if (expanded) {
+      return Wrap(
+        spacing: _gap,
+        runSpacing: _gap,
+        children: [for (final c in chips) _chip(context, c.$1, c.$2, c.$3)],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scaler = MediaQuery.textScalerOf(context);
+        final widths = [for (final c in chips) _chipWidth(c.$1, scaler)];
+        // Upper-bound the overflow chip: "+N" can only shrink as N drops, so
+        // reserving the worst case never overflows the line.
+        final overflowWidth = _chipWidth('+${chips.length}', scaler);
+
+        final shown = fitChipCount(
+          widths,
+          maxWidth: constraints.maxWidth,
+          overflowWidth: overflowWidth,
+          gap: _gap,
+          maxLines: _maxLines,
+        );
+        final hidden = chips.length - shown;
+
+        return Wrap(
+          spacing: _gap,
+          runSpacing: _gap,
+          children: [
+            for (final c in chips.take(shown)) _chip(context, c.$1, c.$2, c.$3),
+            if (hidden > 0)
+              GestureDetector(onTap: onExpand, child: _chip(context, '+$hidden', null, sc.textLo)),
+          ],
+        );
+      },
+    );
+  }
+
+  double _chipWidth(String label, TextScaler scaler) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: SatType.sans(size: _fontSize),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+    )..layout();
+    return tp.width + _padH * 2 + _border * 2 + _iconSize + _iconGap;
+  }
+
+  Widget _chip(BuildContext context, String label, IconData? icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: 3),
+      decoration: BoxDecoration(
+        color: sc.bg3,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: sc.border1, width: _border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Kept even when iconless so measured and rendered widths agree.
+          SizedBox(
+            width: _iconSize,
+            child: icon == null ? null : Icon(icon, size: _iconSize, color: color),
+          ),
+          const SizedBox(width: _iconGap),
+          Text(
+            label,
+            style: SatType.sans(size: _fontSize, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// How many chips of the given [widths] fit within [maxLines] rows of
+/// [maxWidth], laid out the way `Wrap` does (greedy, [gap] between chips).
+///
+/// Returns `widths.length` when everything fits — only then is no overflow
+/// chip needed, so [overflowWidth] is reserved on the last line otherwise, and
+/// the result is capped below `widths.length` so a "+N" always has an N.
+@visibleForTesting
+int fitChipCount(
+  List<double> widths, {
+  required double maxWidth,
+  required double overflowWidth,
+  required double gap,
+  required int maxLines,
+}) {
+  int pack(double reserve) {
+    var line = 1;
+    var used = 0.0;
+    for (var i = 0; i < widths.length; i++) {
+      // The last line must leave room for the overflow chip.
+      final limit = line == maxLines ? maxWidth - reserve - gap : maxWidth;
+      final w = widths[i];
+      final needed = used == 0 ? w : used + gap + w;
+      // An over-wide chip still gets its own line rather than vanishing.
+      if (needed <= limit || used == 0) {
+        used = needed;
+        continue;
+      }
+      if (line == maxLines) return i;
+      line++;
+      used = w;
+    }
+    return widths.length;
+  }
+
+  if (pack(0) == widths.length) return widths.length;
+  return pack(overflowWidth).clamp(0, widths.length - 1);
 }
