@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -92,10 +93,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(12),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(12),
       ),
       child: Row(
         children: [
@@ -113,9 +114,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   duration: const Duration(milliseconds: 160),
                   padding: const EdgeInsets.symmetric(vertical: 9),
                   margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: _on.contains(s) ? sc.bg4 : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: SatR.a(8),
                   ),
                   alignment: Alignment.center,
                   child: Text(_sectionLabel[s]!,
@@ -214,10 +215,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(999),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -234,7 +235,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             height: 13,
             child: CircularProgressIndicator(
               strokeWidth: 1.8,
-              valueColor: AlwaysStoppedAnimation(sc.accent),
+              valueColor: AlwaysStoppedAnimation(sc.accentText),
             ),
           ),
           const SizedBox(width: 9),
@@ -251,10 +252,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,10 +333,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.bg1,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: sc.border0),
+                    borderRadius: SatR.a(999),
+                    border: SatB.all(color: sc.border0),
                   ),
                   child: Text(
                       '${_payMethodLabel[m.method] ?? m.method} · '
@@ -361,9 +362,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       width: 44,
                       height: 44,
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: sc.bg1,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: SatR.a(6),
                       ),
                       child: Icon(
                           r.hasPhoto
@@ -552,16 +553,16 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                               width: 9,
                               height: 100 * pairs[i].lastWeek / maxVal,
                               color: sc.bg4,
-                              radius: const BorderRadius.vertical(
-                                  top: Radius.circular(2)),
+                              radius: BorderRadius.vertical(
+                                  top: SatR.c(2)),
                             ),
                             const SizedBox(width: 3),
                             GrowBarV(
                               width: 9,
                               height: 100 * pairs[i].thisWeek / maxVal,
                               color: sc.accent,
-                              radius: const BorderRadius.vertical(
-                                  top: Radius.circular(2)),
+                              radius: BorderRadius.vertical(
+                                  top: SatR.c(2)),
                             ),
                           ],
                         ),
@@ -580,11 +581,11 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Container(width: 9, height: 9, decoration: BoxDecoration(color: sc.accent, borderRadius: BorderRadius.circular(2))),
+              Container(width: 9, height: 9, decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(2))),
               const SizedBox(width: 6),
               Text('Minggu ini', style: SatType.sans(size: 11, color: sc.textMd)),
               const SizedBox(width: 14),
-              Container(width: 9, height: 9, decoration: BoxDecoration(color: sc.bg4, borderRadius: BorderRadius.circular(2))),
+              Container(width: 9, height: 9, decoration: SatBox.d(color: sc.bg4, borderRadius: SatR.a(2))),
               const SizedBox(width: 6),
               Text('Minggu lalu', style: SatType.sans(size: 11, color: sc.textMd)),
             ],
@@ -617,7 +618,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       height: 100 * safe[i],
                       color: safe[i] >= 0.9 ? sc.accent : sc.bg4,
                       radius:
-                          const BorderRadius.vertical(top: Radius.circular(3)),
+                          BorderRadius.vertical(top: SatR.c(3)),
                     ),
                     const SizedBox(height: 6),
                     Text(hours[i],
@@ -708,10 +709,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg3,
-          border: Border.all(color: sc.border1),
-          borderRadius: BorderRadius.circular(8),
+          border: SatB.all(color: sc.border1),
+          borderRadius: SatR.a(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -764,17 +765,17 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   width: 22,
                   height: 22,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: idx == 0 ? sc.accentSoft : sc.bg3,
-                    border: Border.all(
+                    border: SatB.all(
                         color: idx == 0 ? sc.accentBorder : sc.border0),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: SatR.a(6),
                   ),
                   child: Text('${idx + 1}',
                       style: SatType.mono(
                           size: 10,
                           weight: FontWeight.w600,
-                          color: idx == 0 ? sc.accent : sc.textMd)),
+                          color: idx == 0 ? sc.accentText : sc.textMd)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -930,16 +931,16 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(
-                        color: sc.bg3, borderRadius: BorderRadius.circular(2)),
+                    decoration: SatBox.d(
+                        color: sc.bg3, borderRadius: SatR.a(2)),
                     alignment: Alignment.centerLeft,
                     child: FractionallySizedBox(
                       widthFactor: rows[i].fill.clamp(0.0, 1.0),
                       heightFactor: 1,
                       child: Container(
-                        decoration: BoxDecoration(
+                        decoration: SatBox.d(
                           color: top ? sc.success : sc.warn,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: SatR.a(2),
                         ),
                       ),
                     ),
@@ -1066,7 +1067,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     height: 6,
                     margin: const EdgeInsets.only(right: 8),
                     decoration:
-                        BoxDecoration(color: spec.color, shape: BoxShape.circle),
+                        SatBox.d(color: spec.color, shape: BoxShape.circle),
                   ),
                   Expanded(
                     child: Text(it.name,
@@ -1114,7 +1115,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           Text('MINGGU INI', style: SatType.mono(size: 9, weight: FontWeight.w600, letterSpacing: 1.0, color: sc.textLo)),
           const SizedBox(height: 6),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: SatR.a(4),
             child: Row(children: [
               for (var i = 0; i < cats.length; i++)
                 Expanded(
@@ -1126,7 +1127,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           Text('MINGGU LALU', style: SatType.mono(size: 9, weight: FontWeight.w600, letterSpacing: 1.0, color: sc.textLo)),
           const SizedBox(height: 6),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: SatR.a(4),
             child: Row(children: [
               for (var i = 0; i < cats.length; i++)
                 Expanded(
@@ -1145,9 +1146,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   Container(
                       width: 9,
                       height: 9,
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                           color: palette[i % palette.length],
-                          borderRadius: BorderRadius.circular(2))),
+                          borderRadius: SatR.a(2))),
                   const SizedBox(width: 10),
                   Expanded(child: Text(cats[i].name, style: SatType.sans(size: 13, color: sc.textHi))),
                   Text('${(cats[i].shareThisWeek * 100).round()}%',
@@ -1171,9 +1172,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final txt = '${up ? '+' : ''}${pct.toStringAsFixed(1)}pp';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: SatR.a(4),
       ),
       child: Text(txt,
           style: SatType.mono(
@@ -1486,9 +1487,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                         child: Container(
                           width: cell - 2,
                           height: cell - 2,
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             color: Color.lerp(sc.bg3, sc.accent, grid[r][col].clamp(0.0, 1.0)),
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: SatR.a(3),
                           ),
                         ),
                       ),
@@ -1504,9 +1505,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   Container(
                     width: 12,
                     height: 12,
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: Color.lerp(sc.bg3, sc.accent, i / 4),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: SatR.a(2),
                     ),
                   ),
                   const SizedBox(width: 2),
@@ -1543,7 +1544,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: SatR.a(6),
             child: Row(children: [
               Expanded(flex: (seatedPct * 1000).round().clamp(1, 10000), child: Container(height: 14, color: sc.success)),
               Expanded(flex: (noShowPct * 1000).round().clamp(1, 10000), child: Container(height: 14, color: sc.warn)),
@@ -1564,7 +1565,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(children: [
-        Container(width: 9, height: 9, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+        Container(width: 9, height: 9, decoration: SatBox.d(color: color, borderRadius: SatR.a(2))),
         const SizedBox(width: 10),
         Expanded(child: Text(label, style: SatType.sans(size: 13, color: sc.textHi))),
         Text('$n', style: SatType.mono(size: 12, color: sc.textMd, letterSpacing: 0.4)),
@@ -1685,10 +1686,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0, style: BorderStyle.solid),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0, style: BorderStyle.solid),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         children: [

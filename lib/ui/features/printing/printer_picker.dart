@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -353,9 +354,9 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     final offlineEntries = entries.where((e) => !e.online).toList();
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: SatR.c(22)),
       ),
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
@@ -368,9 +369,9 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.border2,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: SatR.a(2),
               ),
             ),
           ),
@@ -397,7 +398,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: sc.accent),
+                      strokeWidth: 2, color: sc.accentText),
                 ),
             ],
           ),
@@ -437,7 +438,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: sc.accent))),
+                        strokeWidth: 2, color: sc.accentText))),
           ],
         ],
         ),
@@ -471,10 +472,10 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
         padding: const EdgeInsets.only(bottom: 8),
         child: Material(
           color: sc.bg2,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: SatR.a(14),
           child: InkWell(
             onTap: tappable ? () => _print(e) : null,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: SatR.a(14),
             child: Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -499,7 +500,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       shape: BoxShape.circle,
                       color: e.online ? sc.success : sc.border2,
                     ),
@@ -508,10 +509,10 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.bg1,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: sc.border0),
+                      borderRadius: SatR.a(999),
+                      border: SatB.all(color: sc.border0),
                     ),
                     child: Text(e.scopeTag,
                         style: SatType.sans(
@@ -552,10 +553,10 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
       SatColors sc, IconData icon, String label, VoidCallback? onTap) {
     return Material(
       color: sc.bg2,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: SatR.a(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: SatR.a(14),
         child: Container(
           height: 46,
           alignment: Alignment.center,

@@ -38,6 +38,13 @@ void main() {
             reason: '${t.name}: accentInk on accent');
         expect(_contrast(c.successInk, c.success), greaterThanOrEqualTo(4.5),
             reason: '${t.name}: successInk on success');
+        // The accent role drawn as text/icon, over every ground it lands on.
+        // Untested until `accentText` existed, which is how `neoKertas` shipped
+        // siren yellow on white (1.3:1) and `light` amber on paper (2.2:1).
+        for (final (name, bg) in [('bg0', c.bg0), ('bg1', c.bg1), ('bg2', c.bg2)]) {
+          expect(_contrast(c.accentText, bg), greaterThanOrEqualTo(4.5),
+              reason: '${t.name}: accentText on $name');
+        }
       });
     }
   });

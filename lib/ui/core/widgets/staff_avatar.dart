@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -32,14 +33,14 @@ class StaffAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [base, dark],
         ),
         shape: BoxShape.circle,
-        border: Border.all(
+        border: SatB.all(
           color: mine ? sc.accent : Colors.transparent,
           width: mine ? 2 : 0,
         ),

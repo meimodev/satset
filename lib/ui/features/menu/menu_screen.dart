@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -141,8 +142,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.fromLTRB(28, 18, 28, 12),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: sc.border0)),
+                    decoration: SatBox.d(
+                      border: Border(bottom: SatB.side(color: sc.border0)),
                     ),
                     child: Row(
                       children: [
@@ -150,10 +151,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           onTap: () => safePop(context, fallback: _backFallback),
                           child: Container(
                             width: 36, height: 36,
-                            decoration: BoxDecoration(
+                            decoration: SatBox.d(
                               color: sc.bg2,
-                              border: Border.all(color: sc.border0),
-                              borderRadius: BorderRadius.circular(10),
+                              border: SatB.all(color: sc.border0),
+                              borderRadius: SatR.a(10),
                             ),
                             alignment: Alignment.center,
                             child: Icon(Icons.arrow_back, size: 18, color: sc.textMd),
@@ -192,10 +193,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           height: 36,
                           width: 200,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             color: sc.bg2,
-                            border: Border.all(color: sc.border0),
-                            borderRadius: BorderRadius.circular(10),
+                            border: SatB.all(color: sc.border0),
+                            borderRadius: SatR.a(10),
                           ),
                           child: Row(
                             children: [
@@ -211,8 +212,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                   ),
                   Container(
                     padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: sc.border0)),
+                    decoration: SatBox.d(
+                      border: Border(bottom: SatB.side(color: sc.border0)),
                     ),
                     child: _CatTabs(active: _cat, onChange: (id) => setState(() => _cat = id)),
                   ),
@@ -295,10 +296,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 child: Container(
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.bg2,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: sc.border0),
+                    borderRadius: SatR.a(14),
+                    border: SatB.all(color: sc.border0),
                   ),
                   child: Row(
                     children: [
@@ -387,16 +388,16 @@ class _CatTabs extends ConsumerWidget {
             onTap: () => onChange(c.id),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: isActive ? sc.accentSoft : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: SatR.a(999),
               ),
               alignment: Alignment.center,
               child: Text(c.name,
                   style: SatType.sans(
                     size: 13,
                     weight: FontWeight.w500,
-                    color: isActive ? sc.accent : sc.textMd,
+                    color: isActive ? sc.accentText : sc.textMd,
                   )),
             ),
           );
@@ -421,14 +422,14 @@ class _ItemCard extends ConsumerWidget {
       opacity: disabled ? 0.4 : 1,
       child: Material(
         color: inCart > 0 ? sc.bg3 : sc.bg2,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: SatR.a(22),
         child: InkWell(
           onTap: disabled ? null : onTap,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: SatR.a(22),
           child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: inCart > 0 ? sc.accentBorder : sc.border0),
+            decoration: SatBox.d(
+              borderRadius: SatR.a(22),
+              border: SatB.all(color: inCart > 0 ? sc.accentBorder : sc.border0),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,8 +443,8 @@ class _ItemCard extends ConsumerWidget {
                           itemId: item.id,
                           name: item.name,
                           photoRev: item.photoRev,
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(21)),
+                          borderRadius: BorderRadius.vertical(
+                              top: SatR.c(21)),
                           initialsSize: 30,
                         ),
                       ),
@@ -453,9 +454,9 @@ class _ItemCard extends ConsumerWidget {
                           top: 8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
+                            decoration: SatBox.d(
                               color: Colors.black.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: SatR.a(999),
                             ),
                             child: Text("HABIS",
                                 style: SatType.mono(
@@ -472,9 +473,9 @@ class _ItemCard extends ConsumerWidget {
                           child: Container(
                             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                             padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
+                            decoration: SatBox.d(
                               color: sc.accent,
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: SatR.a(999),
                             ),
                             alignment: Alignment.center,
                             child: Text('×$inCart',
@@ -557,14 +558,15 @@ class _CartFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final bg = sc.scrim.withValues(alpha: 0.94);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: sc.border1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 32)],
+      decoration: SatBox.d(
+        color: SatShape.veil(sc.scrim, 0.94),
+        borderRadius: SatR.a(22),
+        border: SatB.all(color: sc.border1),
+        boxShadow: SatShape.brutal
+            ? SatShape.hardShadow(5)
+            : [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 32)],
       ),
       child: Row(
         children: [
@@ -586,7 +588,7 @@ class _CartFooter extends StatelessWidget {
               elevation: 0,
               minimumSize: const Size(0, 44),
               padding: const EdgeInsets.symmetric(horizontal: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -644,16 +646,16 @@ class _TabletCartPane extends ConsumerWidget {
 
     return Container(
       width: 380,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        border: Border(left: BorderSide(color: sc.border0)),
+        border: Border(left: SatB.side(color: sc.border0)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(22, 18, 22, 14),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: sc.border0)),
+            decoration: SatBox.d(
+              border: Border(bottom: SatB.side(color: sc.border0)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,10 +703,10 @@ class _TabletCartPane extends ConsumerWidget {
                           Container(
                             margin: const EdgeInsets.only(bottom: 6),
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
+                            decoration: SatBox.d(
                               color: sc.bg2,
-                              border: Border.all(color: sc.border0),
-                              borderRadius: BorderRadius.circular(12),
+                              border: SatB.all(color: sc.border0),
+                              borderRadius: SatR.a(12),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,8 +759,8 @@ class _TabletCartPane extends ConsumerWidget {
           if (cart.isNotEmpty)
             Container(
               padding: const EdgeInsets.fromLTRB(22, 14, 22, 20),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: sc.border0)),
+              decoration: SatBox.d(
+                border: Border(top: SatB.side(color: sc.border0)),
               ),
               child: Column(
                 children: [
@@ -777,8 +779,8 @@ class _TabletCartPane extends ConsumerWidget {
                           padding: const EdgeInsets.only(top: 8),
                           child: Container(
                             padding: const EdgeInsets.only(top: 8),
-                            decoration: BoxDecoration(
-                              border: Border(top: BorderSide(color: sc.border0)),
+                            decoration: SatBox.d(
+                              border: Border(top: SatB.side(color: sc.border0)),
                             ),
                             child: Row(
                               children: [
@@ -798,10 +800,10 @@ class _TabletCartPane extends ConsumerWidget {
                     width: double.infinity,
                     child: Material(
                       color: sc.accent,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: SatR.a(16),
                       child: InkWell(
                         onTap: onReview,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: SatR.a(16),
                         child: Container(
                           height: 56,
                           alignment: Alignment.center,

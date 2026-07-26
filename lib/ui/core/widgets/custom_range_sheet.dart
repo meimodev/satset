@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/data/repositories/reports_repository.dart'
     show kCustomRangeMaxDays;
@@ -144,10 +145,10 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: set ? sc.accentSoft : sc.bg2,
-          border: Border.all(color: set ? sc.accentBorder : sc.border0),
-          borderRadius: BorderRadius.circular(12),
+          border: SatB.all(color: set ? sc.accentBorder : sc.border0),
+          borderRadius: SatR.a(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +165,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
                 style: SatType.sans(
                   size: 14,
                   weight: FontWeight.w500,
-                  color: set ? sc.accent : sc.textLo,
+                  color: set ? sc.accentText : sc.textLo,
                 )),
           ],
         ),
@@ -179,9 +180,9 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
       child: Container(
         height: 50,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: _valid ? sc.accent : sc.bg3,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: SatR.a(14),
         ),
         child: Text('Terapkan',
             style: SatType.sans(

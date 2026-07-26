@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 
 /// Sweeps a soft highlight across its child while content loads. Collapses to a
@@ -70,9 +71,9 @@ class SkeletonBox extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: SatR.a(radius),
       ),
     );
   }
@@ -90,10 +91,10 @@ class SkeletonCard extends StatelessWidget {
     return Container(
       height: height,
       margin: margin,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Shimmer(
         child: Padding(
@@ -121,10 +122,10 @@ class ReportsSkeleton extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: child,
     );
@@ -136,10 +137,10 @@ class ReportsSkeleton extends StatelessWidget {
     Widget tile() => Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.bg2,
-              border: Border.all(color: sc.border0),
-              borderRadius: BorderRadius.circular(14),
+              border: SatB.all(color: sc.border0),
+              borderRadius: SatR.a(14),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

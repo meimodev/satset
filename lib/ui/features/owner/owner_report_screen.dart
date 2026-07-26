@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,8 +79,8 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
     final pending = _isPending(report);
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 12, 12),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +111,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               Container(
                 width: 7,
                 height: 7,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: pending ? sc.warn : sc.textLo,
                   shape: BoxShape.circle,
                 ),
@@ -134,10 +135,10 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(12),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(12),
       ),
       child: Row(
         children: [
@@ -150,9 +151,9 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 9),
                   margin: const EdgeInsets.symmetric(horizontal: 2),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: _range == key ? sc.bg4 : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: SatR.a(8),
                   ),
                   child: Text(_rangeLabel[key] ?? key,
                       style: SatType.sans(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/domain/models/menu_item.dart';
@@ -84,9 +85,9 @@ class _TabletLayout extends ConsumerWidget {
                       Expanded(
                         flex: 5,
                         child: Container(
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             border: Border(
-                              right: BorderSide(color: sc.border0),
+                              right: SatB.side(color: sc.border0),
                             ),
                           ),
                           child: const _ListPane(),
@@ -347,8 +348,8 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
     final isTab = context.layout.useTabletShell;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
@@ -370,16 +371,16 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
                 filled: true,
                 fillColor: sc.bg2,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide(color: sc.border1),
+                  borderRadius: SatR.a(999),
+                  borderSide: SatB.side(color: sc.border1),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide(color: sc.border1),
+                  borderRadius: SatR.a(999),
+                  borderSide: SatB.side(color: sc.border1),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide(color: sc.accent),
+                  borderRadius: SatR.a(999),
+                  borderSide: SatB.side(color: sc.accent),
                 ),
               ),
             ),
@@ -414,8 +415,8 @@ class _CategoryRail extends ConsumerWidget {
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -456,10 +457,10 @@ class _CategoryRail extends ConsumerWidget {
             duration: const Duration(milliseconds: 200),
             curve: kSatEase,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: on ? sc.accentSoft : sc.bg2,
-              border: Border.all(color: on ? sc.accentBorder : sc.border1),
-              borderRadius: BorderRadius.circular(999),
+              border: SatB.all(color: on ? sc.accentBorder : sc.border1),
+              borderRadius: SatR.a(999),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -469,7 +470,7 @@ class _CategoryRail extends ConsumerWidget {
                   style: SatType.sans(
                     size: 12,
                     weight: FontWeight.w500,
-                    color: on ? sc.accent : sc.textMd,
+                    color: on ? sc.accentText : sc.textMd,
                   ),
                   child: Text(name),
                 ),
@@ -481,7 +482,7 @@ class _CategoryRail extends ConsumerWidget {
                     style: SatType.mono(
                       size: 10,
                       weight: FontWeight.w600,
-                      color: on ? sc.accent : sc.textLo,
+                      color: on ? sc.accentText : sc.textLo,
                     ),
                   ),
                 ),
@@ -559,7 +560,7 @@ class _ItemRow extends ConsumerWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: SatR.a(12),
             onTap: () {
               if (compact) {
                 context.push('/menuadm/${item.id}');
@@ -576,13 +577,13 @@ class _ItemRow extends ConsumerWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: kSatEase,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: isSelected ? sc.accentSoft : sc.bg2,
-                border: Border.all(
+                border: SatB.all(
                   color: isSelected ? sc.accentBorder : sc.border0,
                   width: isSelected ? 1.5 : 1,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: SatR.a(12),
               ),
               padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
               child: Row(
@@ -698,13 +699,13 @@ class _ItemRow extends ConsumerWidget {
   }
 
   Widget _thumb(SatColors sc) {
-    final radius = BorderRadius.circular(8);
+    final radius = SatR.a(8);
     return Container(
       width: 42,
       height: 42,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        border: Border.all(color: sc.border1),
+        border: SatB.all(color: sc.border1),
         borderRadius: radius,
       ),
       child: MenuPhoto(
@@ -720,9 +721,9 @@ class _ItemRow extends ConsumerWidget {
   Widget _miniBadge(SatColors sc, String t, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: bg,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: SatR.a(4),
       ),
       child: Text(
         t,
@@ -764,10 +765,10 @@ class _StatusToggle extends ConsumerWidget {
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: out ? sc.urgentSoft : sc.successSoft,
-            border: Border.all(color: fg),
-            borderRadius: BorderRadius.circular(999),
+            border: SatB.all(color: fg),
+            borderRadius: SatR.a(999),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -779,7 +780,7 @@ class _StatusToggle extends ConsumerWidget {
                 curve: kSatEase,
                 width: 6,
                 height: 6,
-                decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+                decoration: SatBox.d(color: fg, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
               AnimatedSwitcher(
@@ -819,9 +820,9 @@ class _PrimaryButton extends StatelessWidget {
       pressedScale: 0.95,
       child: Material(
         color: sc.accent,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: SatR.a(10),
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: SatR.a(10),
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -857,9 +858,9 @@ class _TabSwitcher extends ConsumerWidget {
             duration: const Duration(milliseconds: 220),
             curve: kSatEase,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: on ? sc.accent : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: SatR.a(8),
             ),
             child: AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 220),
@@ -877,10 +878,10 @@ class _TabSwitcher extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(10),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -927,10 +928,10 @@ class _CategoriesPanel extends ConsumerWidget {
                   index: i.clamp(0, 11),
                   animKey: 'cat:${c.id}',
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.bg2,
-                      border: Border.all(color: sc.border0),
-                      borderRadius: BorderRadius.circular(12),
+                      border: SatB.all(color: sc.border0),
+                      borderRadius: SatR.a(12),
                     ),
                     padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
                     child: Row(
@@ -1139,10 +1140,10 @@ class _TagsPanel extends ConsumerWidget {
               index: i.clamp(0, 11),
               animKey: 'tag:${t.id}',
               child: Container(
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.bg2,
-                  border: Border.all(color: sc.border0),
-                  borderRadius: BorderRadius.circular(12),
+                  border: SatB.all(color: sc.border0),
+                  borderRadius: SatR.a(12),
                 ),
                 padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
                 child: Row(
@@ -1152,9 +1153,9 @@ class _TagsPanel extends ConsumerWidget {
                         horizontal: 6,
                         vertical: 2,
                       ),
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: tint.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: SatR.a(4),
                       ),
                       child: Text(
                         t.code,
@@ -1324,10 +1325,10 @@ class _RoleBadge extends StatelessWidget {
     final isAdmin = perm == MenuPermission.admin;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: isAdmin ? sc.accentSoft : sc.bg3,
-        border: Border.all(color: isAdmin ? sc.accentBorder : sc.border1),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: isAdmin ? sc.accentBorder : sc.border1),
+        borderRadius: SatR.a(999),
       ),
       child: Text(
         isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
@@ -1335,7 +1336,7 @@ class _RoleBadge extends StatelessWidget {
           size: 10,
           weight: FontWeight.w600,
           letterSpacing: 0.8,
-          color: isAdmin ? sc.accent : sc.textMd,
+          color: isAdmin ? sc.accentText : sc.textMd,
         ),
       ),
     );

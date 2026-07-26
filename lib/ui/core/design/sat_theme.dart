@@ -2,26 +2,45 @@ import 'package:flutter/material.dart';
 
 import 'package:satset/core/localization/app_strings.dart';
 import 'colors.dart';
+import 'skin.dart';
 
-/// A whole look, picked as one unit — background ramp, accent, and semantic
-/// hues together. Brightness is a property of the theme, so there is no
-/// separate light/dark toggle and no OS-follow. See ADR-0045.
+/// A whole look, picked as one unit — background ramp, accent, semantic hues,
+/// and shape language together. Brightness is a property of the theme, so there
+/// is no separate light/dark toggle and no OS-follow. See ADR-0045.
 ///
 /// Identity lives here rather than on [SatColors] so the extension stays a pure
 /// token bag: [Brightness] does not interpolate, and putting it inside a
-/// `ThemeExtension` would force a snap in `lerp`.
+/// `ThemeExtension` would force a snap in `lerp`. [SatSkin] rides along for the
+/// same reason — and because a palette and its shape language are one decision,
+/// not two (see ADR-0047).
 enum SatTheme {
   amberGelap(AppStrings.themeAmberGelap, Brightness.dark, SatColors.dark),
   amberTerang(AppStrings.themeAmberTerang, Brightness.light, SatColors.light),
   neonHijau(AppStrings.themeNeonHijau, Brightness.dark, SatColors.neonHijau),
   indigoTerang(
-      AppStrings.themeIndigoTerang, Brightness.light, SatColors.indigoTerang);
+      AppStrings.themeIndigoTerang, Brightness.light, SatColors.indigoTerang),
+  neoKertas(AppStrings.themeNeoKertas, Brightness.light, SatColors.neoKertas,
+      SatSkin.brutal),
+  neoMidnight(AppStrings.themeNeoMidnight, Brightness.dark,
+      SatColors.neoMidnight, SatSkin.brutal);
 
-  const SatTheme(this.label, this.brightness, this.colors);
+  const SatTheme(this.label, this.brightness, this.colors,
+      [this.skin = SatSkin.lembut]);
 
   final String label;
   final Brightness brightness;
   final SatColors colors;
+  final SatSkin skin;
+
+  /// Publishes this theme's shape language to [SatShape], where the `SatR` /
+  /// `SatB` / `SatBox` helpers and the type ramp read it from. Called by
+  /// `satTheme()` on every build, which runs in `SatSetApp.build` — ahead of
+  /// any descendant that draws a decoration.
+  void adopt() {
+    SatShape.skin = skin;
+    SatShape.ink = colors.border0;
+    SatShape.brightness = brightness;
+  }
 
   /// What a device gets before it has ever chosen — the palette the app
   /// shipped with, so an upgrade is visually a no-op.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
@@ -95,9 +96,9 @@ class _TabToggle extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: active ? sc.bg0 : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: SatR.a(9),
           ),
           child: Text(label,
               style: SatType.sans(
@@ -110,9 +111,9 @@ class _TabToggle extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: SatR.a(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -189,9 +190,9 @@ class _PayableTile extends StatelessWidget {
     return PressableScale(
       child: Material(
       color: sc.bg1,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: SatR.a(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: SatR.a(16),
         onTap: () => Navigator.of(context).push(MaterialPageRoute(
           builder: (_) =>
               CashierBillScreen(visitId: b.visitId, tableId: b.tableId),
@@ -203,16 +204,16 @@ class _PayableTile extends StatelessWidget {
               Container(
                 width: 46,
                 height: 46,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: b.isTakeaway
                       ? sc.accentSoft
                       : (b.detached ? sc.warnSoft : sc.bg3),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: SatR.a(12),
                 ),
                 alignment: Alignment.center,
                 child: b.isTakeaway
                     ? Icon(Icons.shopping_bag_rounded,
-                        size: 20, color: sc.accent)
+                        size: 20, color: sc.accentText)
                     : Text(b.tableLabel ?? '—',
                         style: SatType.mono(
                             size: 15,
@@ -252,7 +253,7 @@ class _PayableTile extends StatelessWidget {
                                 ? FontWeight.w600
                                 : FontWeight.w400,
                             color: b.isTakeaway
-                                ? sc.accent
+                                ? sc.accentText
                                 : (b.detached ? sc.warn : sc.textLo))),
                   ],
                 ),
@@ -271,9 +272,9 @@ class _PayableTile extends StatelessWidget {
                     curve: satEaseOut,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: badgeColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: SatR.a(6),
                     ),
                     child: AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 240),

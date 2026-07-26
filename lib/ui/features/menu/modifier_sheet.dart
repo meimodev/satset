@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
@@ -35,7 +36,7 @@ Future<void> showModifierSheet({
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: SatR.a(28),
             child: Container(
               color: ctx.sat.bg1,
               child: _ModifierSheetBody(
@@ -213,11 +214,11 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
     final tagsById = ref.watch(menuTagsByIdProvider);
     final isTablet = l.useTabletShell;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
         borderRadius: isTablet
-            ? BorderRadius.circular(28)
-            : const BorderRadius.vertical(top: Radius.circular(28)),
+            ? SatR.a(28)
+            : BorderRadius.vertical(top: SatR.c(28)),
       ),
       child: Column(
         children: [
@@ -227,9 +228,9 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
               child: Container(
                 width: 38,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.textDim,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: SatR.a(4),
                 ),
               ),
             ),
@@ -249,10 +250,10 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                         horizontal: 12,
                         vertical: 10,
                       ),
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: sc.bg2,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: sc.border0),
+                        borderRadius: SatR.a(12),
+                        border: SatB.all(color: sc.border0),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,24 +364,24 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                             filled: true,
                             fillColor: sc.bg2,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(
+                              borderRadius: SatR.a(14),
+                              borderSide: SatB.side(
                                 color: _special.isEmpty
                                     ? sc.border0
                                     : sc.accentBorder,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(
+                              borderRadius: SatR.a(14),
+                              borderSide: SatB.side(
                                 color: _special.isEmpty
                                     ? sc.border0
                                     : sc.accentBorder,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: sc.accentBorder),
+                              borderRadius: SatR.a(14),
+                              borderSide: SatB.side(color: sc.accentBorder),
                             ),
                             hintText:
                                 'mis. alergi belum tertera, catatan plating…',
@@ -474,7 +475,7 @@ class _Head extends StatelessWidget {
               itemId: item.id,
               name: item.name,
               photoRev: item.photoRev,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: SatR.a(14),
             ),
           ),
           const SizedBox(width: 14),
@@ -529,9 +530,9 @@ class _ModGroup extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         border: Border(
-          bottom: BorderSide(color: border ? sc.border0 : Colors.transparent),
+          bottom: SatB.side(color: border ? sc.border0 : Colors.transparent),
         ),
       ),
       child: Column(
@@ -600,15 +601,15 @@ class _ModOpt extends StatelessWidget {
         opacity: soldOut ? 0.45 : 1,
         child: Material(
           color: selected ? sc.accentSoft : sc.bg2,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: SatR.a(14),
           child: InkWell(
             onTap: soldOut ? null : onTap,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: SatR.a(14),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
+              decoration: SatBox.d(
+                borderRadius: SatR.a(14),
+                border: SatB.all(
                   color: selected ? sc.accentBorder : sc.border0,
                 ),
               ),
@@ -617,10 +618,10 @@ class _ModOpt extends StatelessWidget {
                   Container(
                     width: 22,
                     height: 22,
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: selected ? sc.accent : Colors.transparent,
-                      borderRadius: BorderRadius.circular(multi ? 6 : 999),
-                      border: Border.all(
+                      borderRadius: SatR.a(multi ? 6 : 999),
+                      border: SatB.all(
                         color: selected ? sc.accent : sc.border2,
                         width: 1.5,
                       ),
@@ -646,7 +647,7 @@ class _ModOpt extends StatelessWidget {
                       style: SatType.mono(
                         size: 12,
                         weight: FontWeight.w500,
-                        color: selected ? sc.accent : sc.textMd,
+                        color: selected ? sc.accentText : sc.textMd,
                         letterSpacing: 0,
                       ),
                     ),
@@ -677,10 +678,10 @@ class _CourseChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: selected ? sc.bg4 : sc.bg2,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? sc.border2 : sc.border0),
+          borderRadius: SatR.a(999),
+          border: SatB.all(color: selected ? sc.border2 : sc.border0),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -688,7 +689,7 @@ class _CourseChip extends StatelessWidget {
             Container(
               width: 8,
               height: 8,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 shape: BoxShape.circle,
                 color: course.color(sc),
               ),
@@ -734,19 +735,19 @@ class _Foot extends StatelessWidget {
         16,
         MediaQuery.of(context).padding.bottom + 18,
       ),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        border: Border(top: BorderSide(color: sc.border0)),
+        border: Border(top: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
           Container(
             height: 52,
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.bg2,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: sc.border0),
+              borderRadius: SatR.a(14),
+              border: SatB.all(color: sc.border0),
             ),
             child: Row(
               children: [
@@ -781,7 +782,7 @@ class _Foot extends StatelessWidget {
                   elevation: 0,
                   minimumSize: const Size.fromHeight(52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: SatR.a(18),
                   ),
                 ),
                 child: Row(

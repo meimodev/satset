@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -262,8 +263,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       context: context,
       useRootNavigator: true,
       backgroundColor: context.sat.bg1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
       builder: (ctx) {
         final sc = ctx.sat;
@@ -278,9 +279,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   child: Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.border1,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: SatR.a(2),
                     ),
                   ),
                 ),
@@ -436,7 +437,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       _pendingPhoto != null || (!_pendingPhotoClear && _draft.hasPhoto);
 
   Widget _photoSlot(SatColors sc, bool readOnly) {
-    final radius = BorderRadius.circular(14);
+    final radius = SatR.a(14);
     Widget preview;
     String sig;
     if (_pendingPhoto != null) {
@@ -468,8 +469,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         children: [
           Container(
             width: 92, height: 92,
-            decoration: BoxDecoration(
-              border: Border.all(color: sc.border1),
+            decoration: SatBox.d(
+              border: SatB.all(color: sc.border1),
               borderRadius: radius,
             ),
             child: preview,
@@ -479,11 +480,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               right: 0, bottom: 0,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: Colors.black.withValues(alpha: 0.6),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    bottomRight: Radius.circular(13),
+                  borderRadius: BorderRadius.only(
+                    topLeft: SatR.c(8),
+                    bottomRight: SatR.c(13),
                   ),
                 ),
                 child: Text(_hasPhotoNow ? 'UBAH' : 'FOTO',
@@ -504,8 +505,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       context: context,
       useRootNavigator: true,
       backgroundColor: sc.bg1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -514,8 +515,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             const SizedBox(height: 12),
             Container(
               width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: sc.border1, borderRadius: BorderRadius.circular(2),
+              decoration: SatBox.d(
+                color: sc.border1, borderRadius: SatR.a(2),
               ),
             ),
             const SizedBox(height: 8),
@@ -799,9 +800,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final g = _draft.modifierGroups[gi];
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(12),
+      decoration: SatBox.d(
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(12),
       ),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
@@ -1284,9 +1285,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final tone = out ? sc.urgent : sc.success;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: tone.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: SatR.a(6),
       ),
       child: Text(
         out ? 'Tidak tersedia' : 'Aktif',
@@ -1339,16 +1340,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       fillColor: sc.bg2,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: sc.border1),
+        borderRadius: SatR.a(10),
+        borderSide: SatB.side(color: sc.border1),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: sc.border1),
+        borderRadius: SatR.a(10),
+        borderSide: SatB.side(color: sc.border1),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: sc.accent, width: 1.5),
+        borderRadius: SatR.a(10),
+        borderSide: SatB.side(color: sc.accent, width: 1.5),
       ),
     );
   }
@@ -1408,10 +1409,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       duration: const Duration(milliseconds: 240),
       curve: kSatEase,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: tone.withValues(alpha: 0.08),
-        border: Border.all(color: tone.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(10),
+        border: SatB.all(color: tone.withValues(alpha: 0.3)),
+        borderRadius: SatR.a(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1469,17 +1470,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           duration: const Duration(milliseconds: 200),
           curve: kSatEase,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: selected ? sc.accentSoft : sc.bg2,
-            border: Border.all(color: selected ? sc.accentBorder : sc.border1),
-            borderRadius: BorderRadius.circular(999),
+            border: SatB.all(color: selected ? sc.accentBorder : sc.border1),
+            borderRadius: SatR.a(999),
           ),
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: SatType.sans(
               size: 12,
               weight: FontWeight.w500,
-              color: selected ? sc.accent : sc.textMd,
+              color: selected ? sc.accentText : sc.textMd,
             ),
             child: Text(label),
           ),
@@ -1498,10 +1499,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           duration: const Duration(milliseconds: 200),
           curve: kSatEase,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: on ? sc.successSoft : sc.bg2,
-            border: Border.all(color: on ? sc.success : sc.border1),
-            borderRadius: BorderRadius.circular(999),
+            border: SatB.all(color: on ? sc.success : sc.border1),
+            borderRadius: SatR.a(999),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1510,7 +1511,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 duration: const Duration(milliseconds: 200),
                 curve: kSatEase,
                 width: 6, height: 6,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: on ? sc.success : sc.textLo,
                   shape: BoxShape.circle,
                 ),
@@ -1534,9 +1535,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       onPressed: onTap,
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        foregroundColor: sc.accent,
+        foregroundColor: sc.accentText,
       ),
-      child: Text(t, style: SatType.sans(size: 12, weight: FontWeight.w600, color: sc.accent)),
+      child: Text(t, style: SatType.sans(size: 12, weight: FontWeight.w600, color: sc.accentText)),
     );
   }
 }
@@ -1551,10 +1552,10 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(14),
       ),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       child: Column(
@@ -1595,8 +1596,8 @@ class _Header extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 16, 16, 14),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
@@ -1699,9 +1700,9 @@ class _FooterState extends State<_Footer> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        border: Border(top: BorderSide(color: sc.border0)),
+        border: Border(top: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
@@ -1724,7 +1725,7 @@ class _FooterState extends State<_Footer> {
                 foregroundColor: sc.accentInk,
                 disabledBackgroundColor: done ? sc.success : sc.accent,
                 padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
               ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),

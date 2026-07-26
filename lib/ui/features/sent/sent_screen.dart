@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -65,7 +66,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
               Container(
                 width: 96,
                 height: 96,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   shape: BoxShape.circle,
                   color: sc.successSoft,
                 ),
@@ -137,10 +138,10 @@ class _StationChip extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: sc.border0),
+        borderRadius: SatR.a(14),
+        border: SatB.all(color: sc.border0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -149,7 +150,7 @@ class _StationChip extends StatelessWidget {
               ? Container(
                   width: 18,
                   height: 18,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     shape: BoxShape.circle,
                     color: sc.success,
                   ),
@@ -161,7 +162,7 @@ class _StationChip extends StatelessWidget {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: sc.accent,
+                    color: sc.accentText,
                     backgroundColor: sc.border2,
                   ),
                 ),

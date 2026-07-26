@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/app_strings.dart';
@@ -39,9 +40,9 @@ class _ThemeSheet extends ConsumerWidget {
               child: Container(
                 width: 36,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.border2,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: SatR.a(2),
                 ),
               ),
             ),
@@ -97,15 +98,15 @@ class _ThemeRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: selected ? sc.accentSoft : sc.bg2,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: SatR.a(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
+            decoration: SatBox.d(
+              borderRadius: SatR.a(14),
+              border: SatB.all(
                 color: selected ? sc.accentBorder : sc.border1,
               ),
             ),
@@ -129,7 +130,7 @@ class _ThemeRow extends StatelessWidget {
                       ? Icons.radio_button_checked
                       : Icons.radio_button_unchecked,
                   size: 18,
-                  color: selected ? sc.accent : sc.textDim,
+                  color: selected ? sc.accentText : sc.textDim,
                 ),
               ],
             ),
@@ -154,10 +155,10 @@ class _Swatch extends StatelessWidget {
     return Container(
       width: 44,
       height: 30,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: sc.border2),
+        borderRadius: SatR.a(8),
+        border: SatB.all(color: sc.border2),
       ),
       alignment: Alignment.center,
       child: Row(
@@ -166,15 +167,15 @@ class _Swatch extends StatelessWidget {
           Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
+            decoration: SatBox.d(shape: BoxShape.circle, color: accent),
           ),
           const SizedBox(width: 5),
           Container(
             width: 12,
             height: 3,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: text,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: SatR.a(2),
             ),
           ),
         ],

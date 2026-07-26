@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -130,10 +131,10 @@ class _PresetTile extends StatelessWidget {
     final p = preset;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: sc.border0),
+        borderRadius: SatR.a(12),
+        border: SatB.all(color: sc.border0),
       ),
       child: ListTile(
         title: Row(

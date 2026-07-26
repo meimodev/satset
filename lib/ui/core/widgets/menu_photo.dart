@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/menu_repository.dart';
@@ -17,7 +18,9 @@ class MenuPhoto extends ConsumerWidget {
   final String itemId;
   final String name;
   final int photoRev;
-  final BorderRadius borderRadius;
+  /// Null means the widget's own default, resolved at build so it can follow
+  /// the active skin — a const default value cannot call SatR.
+  final BorderRadius? borderRadius;
   final double initialsSize;
 
   const MenuPhoto({
@@ -25,7 +28,7 @@ class MenuPhoto extends ConsumerWidget {
     required this.itemId,
     required this.name,
     required this.photoRev,
-    this.borderRadius = const BorderRadius.all(Radius.circular(14)),
+    this.borderRadius,
     this.initialsSize = 22,
   });
 
@@ -35,7 +38,7 @@ class MenuPhoto extends ConsumerWidget {
     final async =
         ref.watch(menuPhotoBytesProvider((id: itemId, rev: photoRev)));
     return ClipRRect(
-      borderRadius: borderRadius,
+      borderRadius: borderRadius ?? SatR.a(14),
       child: async.when(
         data: (bytes) => bytes == null
             ? _avatar(context)
@@ -64,8 +67,8 @@ class MenuPhoto extends ConsumerWidget {
             .join()
             .toUpperCase();
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: borderRadius,
+      decoration: SatBox.d(
+        borderRadius: borderRadius ?? SatR.a(14),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

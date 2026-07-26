@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -57,10 +58,10 @@ class ReceiptPreview extends StatelessWidget {
     return Container(
       width: 300,
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: _paper,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE3E0D8)),
+        borderRadius: SatR.a(6),
+        border: SatB.all(color: const Color(0xFFE3E0D8)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x22000000),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -61,8 +62,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     tooltip: 'Tambah bahan',
                     icon: Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: sc.accentSoft, shape: BoxShape.circle),
-                      child: Icon(Icons.add, size: 18, color: sc.accent),
+                      decoration: SatBox.d(color: sc.accentSoft, shape: BoxShape.circle),
+                      child: Icon(Icons.add, size: 18, color: sc.accentText),
                     ),
                     onPressed: () => _editIngredient(null),
                   ),
@@ -78,10 +79,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   icon: Icon(_opname ? Icons.close : Icons.inventory_2_outlined, size: 16),
                   label: Text(_opname ? 'Batal' : 'Opname'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _opname ? sc.urgent : sc.accent,
-                    side: BorderSide(color: _opname ? sc.urgent : sc.accentBorder),
+                    foregroundColor: _opname ? sc.urgent : sc.accentText,
+                    side: SatB.side(color: _opname ? sc.urgent : sc.accentBorder),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
                   ),
                 ),
               ),
@@ -95,7 +96,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: sc.accent,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
                     ),
                   ),
                 ),
@@ -278,15 +279,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       child: PressableScale(
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: SatR.a(14),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: satEaseOut,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: active ? sc.bg3 : bg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
+              borderRadius: SatR.a(14),
+              border: SatB.all(
                 color: active ? color : (borderColor ?? sc.border1),
                 width: active ? 1.5 : 1,
               ),
@@ -336,20 +337,20 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   Widget _opnameBanner(SatColors sc) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.accentSoft,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: sc.accentBorder),
+        borderRadius: SatR.a(14),
+        border: SatB.all(color: sc.accentBorder),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.accent.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.edit_note_rounded, size: 20, color: sc.accent),
+            child: Icon(Icons.edit_note_rounded, size: 20, color: sc.accentText),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -361,7 +362,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   style: SatType.mono(
                     size: 11,
                     weight: FontWeight.w600,
-                    color: sc.accent,
+                    color: sc.accentText,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -381,9 +382,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               child: Container(
                 key: ValueKey(_counts.length),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.accent,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: SatR.a(999),
                 ),
                 child: Text(
                   '${_counts.length} diisi',
@@ -429,16 +430,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   fillColor: sc.bg2,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: sc.border1),
+                    borderRadius: SatR.a(12),
+                    borderSide: SatB.side(color: sc.border1),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: sc.border1),
+                    borderRadius: SatR.a(12),
+                    borderSide: SatB.side(color: sc.border1),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: sc.accent),
+                    borderRadius: SatR.a(12),
+                    borderSide: SatB.side(color: sc.accent),
                   ),
                 ),
                 onChanged: (val) => setState(() => _searchQuery = val),
@@ -484,20 +485,20 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
   Widget _filterChip(SatColors sc, _StockFilter filter, String label, {Color? highlightColor}) {
     final active = _activeFilter == filter;
-    final color = active ? (highlightColor ?? sc.accent) : sc.textMd;
+    final color = active ? (highlightColor ?? sc.accentText) : sc.textMd;
 
     return PressableScale(
       child: InkWell(
         onTap: () => setState(() => _activeFilter = filter),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SatR.a(999),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: satEaseOut,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: active ? (highlightColor?.withValues(alpha: 0.15) ?? sc.accentSoft) : sc.bg2,
-            border: Border.all(color: active ? color : sc.border1),
-            borderRadius: BorderRadius.circular(999),
+            border: SatB.all(color: active ? color : sc.border1),
+            borderRadius: SatR.a(999),
           ),
           child: Text(
             label,
@@ -526,13 +527,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: physicalCount != null ? sc.accent : sc.border1),
+        borderRadius: SatR.a(14),
+        border: SatB.all(color: physicalCount != null ? sc.accent : sc.border1),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: SatR.a(14),
         // Stack, not IntrinsicHeight: the strip only needs to stretch to the
         // row's height, and an intrinsic pass would ask the chip LayoutBuilder
         // below for a width it cannot answer.
@@ -730,8 +731,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   filled: true,
                                   fillColor: sc.bg3,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: sc.border1),
+                                    borderRadius: SatR.a(8),
+                                    borderSide: SatB.side(color: sc.border1),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 8,
@@ -765,11 +766,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 icon: const Icon(Icons.add_shopping_cart, size: 14),
                                 label: const Text('Terima'),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: sc.accent,
-                                  side: BorderSide(color: sc.border1),
+                                  foregroundColor: sc.accentText,
+                                  side: SatB.side(color: sc.border1),
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: SatR.a(8),
                                   ),
                                   textStyle: SatType.sans(size: 11, weight: FontWeight.w500),
                                 ),
@@ -853,10 +854,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   Widget _badge(SatColors sc, {required String label, required Color color, IconData? icon}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        borderRadius: SatR.a(6),
+        border: SatB.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -884,7 +885,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       children: [
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: SatR.a(2),
             child: LinearProgressIndicator(
               value: (ratio / 1.5).clamp(0.0, 1.0),
               backgroundColor: sc.bg3,
@@ -1236,10 +1237,10 @@ class _Sheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.vertical(top: SatR.c(20)),
+        border: SatB.all(color: sc.border1),
       ),
       padding: EdgeInsets.only(
         left: 24,
@@ -1257,9 +1258,9 @@ class _Sheet extends StatelessWidget {
               child: Container(
                 width: 36,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.border1,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: SatR.a(2),
                 ),
               ),
             ),
@@ -1303,7 +1304,7 @@ class _Sheet extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: sc.accent,
                   minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: SatR.a(12)),
                 ),
                 child: Text(
                   'Simpan',
@@ -1329,10 +1330,10 @@ class _LedgerSheet extends ConsumerWidget {
     final async = ref.watch(stockMovementsProvider(ingredient.id));
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border.all(color: sc.border1),
+        borderRadius: BorderRadius.vertical(top: SatR.c(20)),
+        border: SatB.all(color: sc.border1),
       ),
       child: SafeArea(
         child: Padding(
@@ -1346,9 +1347,9 @@ class _LedgerSheet extends ConsumerWidget {
                 child: Container(
                   width: 36,
                   height: 4,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.border1,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: SatR.a(2),
                   ),
                 ),
               ),
@@ -1366,7 +1367,7 @@ class _LedgerSheet extends ConsumerWidget {
                       ),
                       Text(
                         ingredient.name.toUpperCase(),
-                        style: SatType.mono(size: 11, color: sc.accent, letterSpacing: 0.8),
+                        style: SatType.mono(size: 11, color: sc.accentText, letterSpacing: 0.8),
                       ),
                     ],
                   ),
@@ -1404,7 +1405,7 @@ class _LedgerSheet extends ConsumerWidget {
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
+                                      decoration: SatBox.d(
                                         color: positive
                                             ? sc.success.withValues(alpha: 0.1)
                                             : sc.bg3,
@@ -1490,10 +1491,10 @@ class _EmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.bg2,
                 shape: BoxShape.circle,
-                border: Border.all(color: sc.border1),
+                border: SatB.all(color: sc.border1),
               ),
               child: Icon(Icons.inventory_2_outlined, size: 48, color: sc.textLo),
             ),
@@ -1517,7 +1518,7 @@ class _EmptyState extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: sc.accent,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: SatR.a(12)),
                 ),
               ),
             ),
@@ -1654,10 +1655,10 @@ class _RecipeLinkChips extends StatelessWidget {
   Widget _chip(BuildContext context, String label, IconData? icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: 3),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: sc.border1, width: _border),
+        borderRadius: SatR.a(6),
+        border: SatB.all(color: sc.border1, width: _border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

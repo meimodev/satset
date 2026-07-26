@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -283,10 +284,10 @@ class _UnassignedBanner extends StatelessWidget {
     final n = bill.lines.fold<int>(0, (s, l) => s + l.unassignedUnits);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.warn.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: sc.warn.withValues(alpha: 0.35)),
+        borderRadius: SatR.a(10),
+        border: SatB.all(color: sc.warn.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
@@ -333,8 +334,8 @@ class _TotalsCard extends StatelessWidget {
         );
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-          color: sc.bg1, borderRadius: BorderRadius.circular(14)),
+      decoration: SatBox.d(
+          color: sc.bg1, borderRadius: SatR.a(14)),
       child: Column(
         children: [
           row('Subtotal', bill.subtotal),
@@ -493,8 +494,8 @@ class _LinesSection extends StatelessWidget {
     });
 
     return Container(
-      decoration: BoxDecoration(
-          color: sc.bg1, borderRadius: BorderRadius.circular(14)),
+      decoration: SatBox.d(
+          color: sc.bg1, borderRadius: SatR.a(14)),
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(children: children),
     );
@@ -509,7 +510,7 @@ class _LinesSection extends StatelessWidget {
       dense: true,
       tileColor: pending ? sc.warn.withValues(alpha: 0.08) : null,
       shape: pending
-          ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+          ? RoundedRectangleBorder(borderRadius: SatR.a(8))
           : null,
       title: Text(
           '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
@@ -679,10 +680,10 @@ class _ReceiptCard extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
       curve: satEaseOut,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: paid ? sc.success : sc.border0),
+        borderRadius: SatR.a(14),
+        border: SatB.all(color: paid ? sc.success : sc.border0),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -699,9 +700,9 @@ class _ReceiptCard extends ConsumerWidget {
                 duration: const Duration(milliseconds: 280),
                 curve: satEaseOut,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: (paid ? sc.success : sc.warn).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: SatR.a(6),
                 ),
                 child: AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 280),
@@ -999,7 +1000,7 @@ class _ReceiptCard extends ConsumerWidget {
                     children: [
                       if (photoBytes != null)
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: SatR.a(8),
                           child: Image.memory(photoBytes!,
                               width: 56, height: 56, fit: BoxFit.cover),
                         ),
@@ -1218,9 +1219,9 @@ class _CloseBar extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        border: Border(top: BorderSide(color: sc.border0)),
+        border: Border(top: SatB.side(color: sc.border0)),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -1263,7 +1264,7 @@ class _TopActions extends StatelessWidget {
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: sc.textHi,
-              side: BorderSide(color: sc.border0),
+              side: SatB.side(color: sc.border0),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             icon: const Icon(Icons.receipt_long_outlined, size: 18),
@@ -1279,11 +1280,11 @@ class _TopActions extends StatelessWidget {
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: sc.urgent,
-              side: BorderSide(
+              side: SatB.side(
                   color: sc.urgent.withValues(alpha: canWriteOff ? 0.5 : 0.15)),
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                  borderRadius: SatR.a(10)),
             ),
             onPressed: canWriteOff ? onWriteOff : null,
             child: Tooltip(
@@ -1307,9 +1308,9 @@ class _DetachedBanner extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.warn.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: SatR.a(12),
       ),
       child: Row(
         children: [
@@ -1341,9 +1342,9 @@ class _BigBtn extends StatelessWidget {
       pressedScale: 0.96,
       child: Material(
       color: sc.bg3,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: SatR.a(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: SatR.a(12),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
@@ -1378,9 +1379,9 @@ class _SmallBtn extends StatelessWidget {
     return PressableScale(
       child: Material(
       color: filled ? sc.accent : sc.bg3,
-      borderRadius: BorderRadius.circular(9),
+      borderRadius: SatR.a(9),
       child: InkWell(
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: SatR.a(9),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -1685,16 +1686,16 @@ class _FilterChip extends StatelessWidget {
     return PressableScale(
       child: Material(
       color: active ? sc.accent : sc.bg2,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: SatR.a(20),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: SatR.a(20),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: active ? sc.accent : sc.border1),
+          decoration: SatBox.d(
+            borderRadius: SatR.a(20),
+            border: SatB.all(color: active ? sc.accent : sc.border1),
           ),
           child: Text(label,
               style: SatType.sans(
@@ -1777,8 +1778,8 @@ class _TableChip extends StatelessWidget {
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(
-          color: sc.bg3, borderRadius: BorderRadius.circular(12)),
+      decoration: SatBox.d(
+          color: sc.bg3, borderRadius: SatR.a(12)),
       alignment: Alignment.center,
       child: Text(label ?? '—',
           style:
@@ -1799,10 +1800,10 @@ class _TakeawayChip extends StatelessWidget {
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(
-          color: sc.accentSoft, borderRadius: BorderRadius.circular(12)),
+      decoration: SatBox.d(
+          color: sc.accentSoft, borderRadius: SatR.a(12)),
       alignment: Alignment.center,
-      child: Icon(Icons.shopping_bag_rounded, size: 20, color: sc.accent),
+      child: Icon(Icons.shopping_bag_rounded, size: 20, color: sc.accentText),
     );
   }
 }
@@ -1860,9 +1861,9 @@ class _PastBillTile extends StatelessWidget {
     return PressableScale(
       child: Material(
       color: sc.bg1,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: SatR.a(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: SatR.a(14),
         onTap: () => Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => PastBillDetailScreen(
               sessionId: b.sessionId, tableLabel: b.tableLabel),
@@ -2029,7 +2030,7 @@ class PaymentProofThumb extends ConsumerWidget {
                     builder: (_) => _ProofViewer(bytes),
                   )),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: SatR.a(6),
             child: Container(
               width: size,
               height: size,

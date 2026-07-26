@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,8 +24,8 @@ class TakeawayStrip extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: tablet ? 32 : 16, vertical: tablet ? 12 : 8),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -43,15 +44,15 @@ class TakeawayStrip extends ConsumerWidget {
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.accent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: SatR.a(4),
                 ),
                 child: Text('${visits.length} aktif',
                     style: SatType.mono(
                         size: 9,
                         weight: FontWeight.w600,
-                        color: sc.accent,
+                        color: sc.accentText,
                         letterSpacing: 0.6)),
               ),
             ],
@@ -105,10 +106,10 @@ class _TakeawayChip extends ConsumerWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: bg,
-          border: Border.all(color: border),
-          borderRadius: BorderRadius.circular(10),
+          border: SatB.all(color: border),
+          borderRadius: SatR.a(10),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -127,9 +128,9 @@ class _TakeawayChip extends ConsumerWidget {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: SatR.a(3),
                   ),
                   child: Text(statusLabel,
                       style: SatType.mono(

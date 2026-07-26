@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -173,8 +174,8 @@ class _Header extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
@@ -223,10 +224,10 @@ class _LockedPill extends StatelessWidget {
     return Container(
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(999),
       ),
       child: Row(
         children: [
@@ -263,8 +264,8 @@ class _ZoneBar extends StatelessWidget {
     final sc = context.sat;
     return Container(
       height: 60,
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
@@ -317,23 +318,23 @@ class _ZoneChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
         padding: const EdgeInsets.fromLTRB(8, 0, 14, 0),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: selected
               ? zone.color.withValues(alpha: 0.14)
               : sc.bg2,
-          border: Border.all(
+          border: SatB.all(
             color: selected
                 ? zone.color.withValues(alpha: 0.55)
                 : sc.border1,
           ),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: SatR.a(999),
         ),
         child: Row(
           children: [
             Container(
               width: 26,
               height: 26,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: zone.color.withValues(alpha: selected ? 0.22 : 0.16),
                 shape: BoxShape.circle,
               ),
@@ -383,10 +384,10 @@ class _TableRow extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.fromLTRB(6, 10, 12, 10),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: sc.bg2,
-            border: Border.all(color: sc.border1),
-            borderRadius: BorderRadius.circular(14),
+            border: SatB.all(color: sc.border1),
+            borderRadius: SatR.a(14),
           ),
           child: Row(
             children: [
@@ -428,9 +429,9 @@ class _TableRow extends StatelessWidget {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.urgentSoft,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: SatR.a(999),
                   ),
                   child: Text(AppStrings.inactive,
                       style: SatType.sans(
@@ -648,10 +649,10 @@ class _ActiveRow extends StatelessWidget {
       onTap: () => onChanged(!active),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          border: Border.all(color: sc.border1),
-          borderRadius: BorderRadius.circular(14),
+          border: SatB.all(color: sc.border1),
+          borderRadius: SatR.a(14),
         ),
         child: Row(
           children: [
@@ -693,10 +694,10 @@ class _GuestOrderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(14),
       ),
       child: Column(
         children: [
@@ -707,7 +708,7 @@ class _GuestOrderRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  Icon(Icons.qr_code_2, size: 18, color: sc.accent),
+                  Icon(Icons.qr_code_2, size: 18, color: sc.accentText),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -739,13 +740,13 @@ class _GuestOrderRow extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    Icon(Icons.qr_code, size: 16, color: sc.accent),
+                    Icon(Icons.qr_code, size: 16, color: sc.accentText),
                     const SizedBox(width: 8),
                     Text(AppStrings.zoneAdminShowQr,
                         style: SatType.sans(
                             size: 13,
                             weight: FontWeight.w600,
-                            color: sc.accent)),
+                            color: sc.accentText)),
                   ],
                 ),
               ),
@@ -768,7 +769,7 @@ class _QrDialog extends ConsumerWidget {
     return Dialog(
       backgroundColor: sc.bg1,
       shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          RoundedRectangleBorder(borderRadius: SatR.a(20)),
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: Column(
@@ -797,9 +798,9 @@ class _QrDialog extends ConsumerWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: SatR.a(14),
                       ),
                       child: QrImageView(
                         data: url,
@@ -828,7 +829,7 @@ class _QrDialog extends ConsumerWidget {
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(AppStrings.close,
-                    style: SatType.sans(size: 14, color: sc.accent)),
+                    style: SatType.sans(size: 14, color: sc.accentText)),
               ),
             ),
           ],
@@ -841,10 +842,10 @@ class _QrDialog extends ConsumerWidget {
     final c = warn ? sc.warn : sc.urgent;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: c.withValues(alpha: 0.12),
-        border: Border.all(color: c.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(10),
+        border: SatB.all(color: c.withValues(alpha: 0.5)),
+        borderRadius: SatR.a(10),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -950,10 +951,10 @@ class _ZoneRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(14),
       ),
       child: Row(
         children: [
@@ -967,9 +968,9 @@ class _ZoneRow extends StatelessWidget {
           Container(
             width: 38,
             height: 38,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: zone.color.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: SatR.a(10),
             ),
             child: Icon(zone.icon, size: 20, color: zone.color),
           ),
@@ -1182,19 +1183,19 @@ class _ZonePreview extends StatelessWidget {
     final shown = name.trim().isEmpty ? 'Zona baru' : name;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: color.withValues(alpha: 0.45)),
+        borderRadius: SatR.a(16),
       ),
       child: Row(
         children: [
           Container(
             width: 46,
             height: 46,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: color.withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: SatR.a(12),
             ),
             child: Icon(icon, size: 24, color: color),
           ),
@@ -1246,9 +1247,9 @@ class _ColorDot extends StatelessWidget {
         duration: const Duration(milliseconds: 130),
         width: 38,
         height: 38,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: color.withValues(alpha: selected ? 0.95 : 0.2),
-          border: Border.all(
+          border: SatB.all(
             color: selected ? color : sc.border1,
             width: selected ? 2 : 1,
           ),
@@ -1283,13 +1284,13 @@ class _IconTile extends StatelessWidget {
         duration: const Duration(milliseconds: 130),
         width: 46,
         height: 46,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: selected ? color.withValues(alpha: 0.18) : sc.bg2,
-          border: Border.all(
+          border: SatB.all(
             color: selected ? color : sc.border1,
             width: selected ? 1.4 : 1,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: SatR.a(12),
         ),
         child: Icon(
           icon,
@@ -1310,10 +1311,10 @@ class _MetaRow extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(14),
       ),
       child: Row(
         children: [
@@ -1349,10 +1350,10 @@ class _SheetShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(24),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(24),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1362,9 +1363,9 @@ class _SheetShell extends StatelessWidget {
           Container(
             width: 38,
             height: 4,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.border2,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: SatR.a(999),
             ),
           ),
           Padding(
@@ -1404,8 +1405,8 @@ class _SheetShell extends StatelessWidget {
           Flexible(child: body),
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: sc.border0)),
+            decoration: SatBox.d(
+              border: Border(top: SatB.side(color: sc.border0)),
             ),
             child: SafeArea(top: false, child: footer),
           ),
@@ -1437,9 +1438,9 @@ Future<void> _present(BuildContext context, Widget child) {
 Widget _sheetHandle(SatColors sc) => Container(
       width: 40,
       height: 4,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.border1,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: SatR.a(2),
       ),
     );
 
@@ -1448,8 +1449,8 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
     context: context,
     useRootNavigator: true,
     backgroundColor: context.sat.bg1,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
     ),
     builder: (ctx) {
       final sc = ctx.sat;
@@ -1517,7 +1518,7 @@ class _SatField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       style: SatType.sans(size: 14, color: sc.textHi),
-      cursorColor: sc.accent,
+      cursorColor: sc.accentText,
       decoration: InputDecoration(
         isDense: true,
         hintText: hint,
@@ -1527,12 +1528,12 @@ class _SatField extends StatelessWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: sc.border1),
+          borderRadius: SatR.a(12),
+          borderSide: SatB.side(color: sc.border1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: sc.accentBorder),
+          borderRadius: SatR.a(12),
+          borderSide: SatB.side(color: sc.accentBorder),
         ),
       ),
     );
@@ -1555,10 +1556,10 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(12),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: Row(
@@ -1587,9 +1588,9 @@ class _Stepper extends StatelessWidget {
       child: Container(
         width: 40,
         height: 36,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: onTap == null ? sc.bg3 : sc.bg4,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: SatR.a(8),
         ),
         child: Icon(icon,
             size: 18, color: onTap == null ? sc.textDim : sc.textHi),
@@ -1615,18 +1616,18 @@ class _SelectChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final c = tint ?? sc.accent;
+    final c = tint ?? sc.accentText;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 130),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: selected ? c.withValues(alpha: 0.18) : sc.bg2,
-          border: Border.all(
+          border: SatB.all(
             color: selected ? c.withValues(alpha: 0.6) : sc.border1,
           ),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: SatR.a(999),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1659,10 +1660,10 @@ class _Switch extends StatelessWidget {
       duration: const Duration(milliseconds: 160),
       width: 44,
       height: 26,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: on ? sc.success : sc.bg3,
-        border: Border.all(color: on ? sc.success : sc.border1),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: on ? sc.success : sc.border1),
+        borderRadius: SatR.a(999),
       ),
       child: AnimatedAlign(
         duration: const Duration(milliseconds: 160),
@@ -1671,7 +1672,7 @@ class _Switch extends StatelessWidget {
           margin: const EdgeInsets.all(2),
           width: 20,
           height: 20,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: on ? sc.successInk : sc.textLo,
             shape: BoxShape.circle,
           ),
@@ -1701,9 +1702,9 @@ class _FilledBtn extends StatelessWidget {
       child: Container(
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.accent,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: SatR.a(999),
         ),
         child: Row(
           mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
@@ -1746,10 +1747,10 @@ class _GhostBtn extends StatelessWidget {
       child: Container(
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          border: Border.all(color: sc.border1),
-          borderRadius: BorderRadius.circular(999),
+          border: SatB.all(color: sc.border1),
+          borderRadius: SatR.a(999),
         ),
         child: Row(
           mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
@@ -1791,10 +1792,10 @@ class _DangerBtn extends StatelessWidget {
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.urgentSoft,
-          border: Border.all(color: sc.urgent),
-          borderRadius: BorderRadius.circular(999),
+          border: SatB.all(color: sc.urgent),
+          borderRadius: SatR.a(999),
         ),
         child: Text(label,
             style: SatType.sans(
@@ -1832,10 +1833,10 @@ class _IconBtn extends StatelessWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          border: Border.all(color: sc.border1),
-          borderRadius: BorderRadius.circular(10),
+          border: SatB.all(color: sc.border1),
+          borderRadius: SatR.a(10),
         ),
         child: Icon(icon, size: 18, color: fg),
       ),

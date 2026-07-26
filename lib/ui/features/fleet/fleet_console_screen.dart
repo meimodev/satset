@@ -69,7 +69,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
               ),
             ),
             if (_busy)
-              LinearProgressIndicator(minHeight: 2, color: sc.accent)
+              LinearProgressIndicator(minHeight: 2, color: sc.accentText)
             else
               const SizedBox(height: 2),
             Expanded(child: _venueList(sc, venues)),
@@ -81,7 +81,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
 
   Widget _venueList(SatColors sc, AsyncValue<List<Venue>> venues) {
     return venues.when(
-      loading: () => Center(child: CircularProgressIndicator(color: sc.accent)),
+      loading: () => Center(child: CircularProgressIndicator(color: sc.accentText)),
       error: (e, _) => _errorBox(sc, e),
       data: (list) {
         // Surface venues nearing the offline-grace lockout first — the SA's job

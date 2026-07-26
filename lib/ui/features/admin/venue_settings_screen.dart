@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -410,10 +411,10 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,9 +422,9 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           Container(
             width: 64,
             height: 64,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.textHi,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: SatR.a(14),
             ),
             alignment: Alignment.center,
             child: Text(
@@ -649,10 +650,10 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.bg1,
-                border: Border.all(color: sc.border0),
-                borderRadius: BorderRadius.circular(8),
+                border: SatB.all(color: sc.border0),
+                borderRadius: SatR.a(8),
               ),
               clipBehavior: Clip.antiAlias,
               alignment: Alignment.center,
@@ -671,7 +672,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: sc.accent,
+                  color: sc.accentText,
                 ),
               )
             else ...[
@@ -704,15 +705,15 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     VoidCallback onTap, {
     bool danger = false,
   }) {
-    final c = danger ? sc.urgent : sc.accent;
+    final c = danger ? sc.urgent : sc.accentText;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: c.withValues(alpha: 0.10),
-          border: Border.all(color: c.withValues(alpha: 0.4)),
-          borderRadius: BorderRadius.circular(8),
+          border: SatB.all(color: c.withValues(alpha: 0.4)),
+          borderRadius: SatR.a(8),
         ),
         child: Text(
           label,
@@ -839,10 +840,10 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -891,10 +892,10 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
       child: Container(
         margin: EdgeInsets.only(bottom: last ? 0 : 8),
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          border: Border.all(color: sc.border0),
-          borderRadius: BorderRadius.circular(12),
+          border: SatB.all(color: sc.border0),
+          borderRadius: SatR.a(12),
         ),
         child: Row(
           children: [
@@ -979,10 +980,10 @@ class _PajakLayananCard extends ConsumerWidget {
     final n = ref.read(venueSettingsProvider.notifier);
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1100,7 +1101,7 @@ class _PajakLayananCard extends ConsumerWidget {
           // and edited rarely, so it does not belong inline in settings.
           InkWell(
             onTap: () => context.push('/venue/diskon'),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: SatR.a(10),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Row(
@@ -1182,17 +1183,17 @@ class _PajakLayananCard extends ConsumerWidget {
       onTap: () => onPick(value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: on ? sc.accentSoft : sc.bg3,
-          border: Border.all(color: on ? sc.accentBorder : sc.border1),
-          borderRadius: BorderRadius.circular(999),
+          border: SatB.all(color: on ? sc.accentBorder : sc.border1),
+          borderRadius: SatR.a(999),
         ),
         child: Text(
           label,
           style: SatType.sans(
             size: 12,
             weight: FontWeight.w600,
-            color: on ? sc.accent : sc.textMd,
+            color: on ? sc.accentText : sc.textMd,
           ),
         ),
       ),
@@ -1233,10 +1234,10 @@ class _PajakLayananCard extends ConsumerWidget {
                   horizontal: 14,
                   vertical: 8,
                 ),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.bg3,
-                  border: Border.all(color: sc.border1),
-                  borderRadius: BorderRadius.circular(10),
+                  border: SatB.all(color: sc.border1),
+                  borderRadius: SatR.a(10),
                 ),
                 child: Text(
                   _fmtPct(valueBps),
@@ -1296,10 +1297,10 @@ class _PajakLayananCard extends ConsumerWidget {
                   horizontal: 14,
                   vertical: 8,
                 ),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.bg3,
-                  border: Border.all(color: sc.border1),
-                  borderRadius: BorderRadius.circular(10),
+                  border: SatB.all(color: sc.border1),
+                  borderRadius: SatR.a(10),
                 ),
                 child: Text(
                   formatIDR(amount),
@@ -1329,10 +1330,10 @@ class _PajakLayananCard extends ConsumerWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: onTap == null ? sc.bg2 : sc.bg3,
-          border: Border.all(color: sc.border1),
-          borderRadius: BorderRadius.circular(10),
+          border: SatB.all(color: sc.border1),
+          borderRadius: SatR.a(10),
         ),
         child: Icon(
           icon,
@@ -1353,10 +1354,10 @@ class _GuestOrderingCard extends ConsumerWidget {
     final net = ref.watch(guestNetInfoProvider);
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1438,10 +1439,10 @@ class _GuestOrderingCard extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 onPressed: () => ref.invalidate(guestNetInfoProvider),
-                icon: Icon(Icons.refresh, size: 16, color: sc.accent),
+                icon: Icon(Icons.refresh, size: 16, color: sc.accentText),
                 label: Text(
                   'Cek ulang alamat',
-                  style: SatType.sans(size: 12, color: sc.accent),
+                  style: SatType.sans(size: 12, color: sc.accentText),
                 ),
               ),
             ),
@@ -1457,10 +1458,10 @@ class _GuestOrderingCard extends ConsumerWidget {
 
   Widget _netRow(SatColors sc, String text, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(
+    decoration: SatBox.d(
       color: sc.bg1,
-      border: Border.all(color: sc.border0),
-      borderRadius: BorderRadius.circular(10),
+      border: SatB.all(color: sc.border0),
+      borderRadius: SatR.a(10),
     ),
     child: Row(
       children: [
@@ -1477,10 +1478,10 @@ class _GuestOrderingCard extends ConsumerWidget {
     final c = warn ? sc.warn : sc.urgent;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: c.withValues(alpha: 0.12),
-        border: Border.all(color: c.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(10),
+        border: SatB.all(color: c.withValues(alpha: 0.5)),
+        borderRadius: SatR.a(10),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1512,10 +1513,10 @@ class _ReportsHourCard extends ConsumerWidget {
     final hour = s.businessDayStartHour;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1579,10 +1580,10 @@ class _ReportsHourCard extends ConsumerWidget {
                         horizontal: 14,
                         vertical: 8,
                       ),
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: sc.bg3,
-                        border: Border.all(color: sc.border1),
-                        borderRadius: BorderRadius.circular(10),
+                        border: SatB.all(color: sc.border1),
+                        borderRadius: SatR.a(10),
                       ),
                       child: Text(
                         '${hour.toString().padLeft(2, '0')}:00',
@@ -1620,10 +1621,10 @@ class _ReportsHourCard extends ConsumerWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: onTap == null ? sc.bg2 : sc.bg3,
-          border: Border.all(color: sc.border1),
-          borderRadius: BorderRadius.circular(10),
+          border: SatB.all(color: sc.border1),
+          borderRadius: SatR.a(10),
         ),
         child: Icon(
           icon,

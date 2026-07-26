@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -28,10 +29,10 @@ class StubScreen extends StatelessWidget {
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.bg2,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: sc.border1),
+                borderRadius: SatR.a(20),
+                border: SatB.all(color: sc.border1),
               ),
               alignment: Alignment.center,
               child: Icon(icon, size: 32, color: sc.textMd),

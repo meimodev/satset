@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -162,7 +163,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
           child: SizedBox(
             width: 28,
             height: 28,
-            child: CircularProgressIndicator(strokeWidth: 2, color: sc.accent),
+            child: CircularProgressIndicator(strokeWidth: 2, color: sc.accentText),
           ),
         ),
       );
@@ -243,8 +244,8 @@ class _PinScreenState extends ConsumerState<PinScreen>
       final rightCol = state.mode == SignInMode.admin
           ? Container(
               width: 480,
-              decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: sc.border0)),
+              decoration: SatBox.d(
+                border: Border(left: SatB.side(color: sc.border0)),
               ),
               padding: const EdgeInsets.fromLTRB(48, 56, 48, 32),
               child: Center(
@@ -493,17 +494,17 @@ class _AdminAuthForm extends StatelessWidget {
                 filled: true,
                 fillColor: sc.bg2,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: pwBorder),
+                  borderRadius: SatR.a(12),
+                  borderSide: SatB.side(color: pwBorder),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: pwBorder),
+                  borderRadius: SatR.a(12),
+                  borderSide: SatB.side(color: pwBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: SatR.a(12),
                   borderSide:
-                      BorderSide(color: pwHasError ? sc.urgent : sc.accent),
+                      SatB.side(color: pwHasError ? sc.urgent : sc.accent),
                 ),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -574,7 +575,7 @@ class _AdminAuthForm extends StatelessWidget {
               foregroundColor: sc.accentInk,
               disabledBackgroundColor: sc.accent.withValues(alpha: 0.7),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                  borderRadius: SatR.a(16)),
             ),
           ),
         ),
@@ -612,10 +613,10 @@ class _ModeSwitcher extends StatelessWidget {
     final isAdmin = mode == SignInMode.admin;
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(14),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -630,9 +631,9 @@ class _ModeSwitcher extends StatelessWidget {
                 child: Container(
                   width: pillW,
                   height: 52,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.accentSoft,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: SatR.a(10),
                   ),
                 ),
               ),
@@ -678,7 +679,7 @@ class _ModeSwitcher extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: SatR.a(10),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Row(
@@ -690,7 +691,7 @@ class _ModeSwitcher extends StatelessWidget {
               builder: (context, t, _) => Icon(
                 icon,
                 size: 18,
-                color: Color.lerp(sc.textMd, sc.accent, t),
+                color: Color.lerp(sc.textMd, sc.accentText, t),
               ),
             ),
             const SizedBox(width: 10),
@@ -738,10 +739,10 @@ class _ServerList extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: sc.bg2,
-            border: Border.all(color: sc.border0),
-            borderRadius: BorderRadius.circular(14),
+            border: SatB.all(color: sc.border0),
+            borderRadius: SatR.a(14),
           ),
           child: servers.isEmpty
               ? Padding(
@@ -851,13 +852,13 @@ class _ServerRow extends StatelessWidget {
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: sc.accent),
+                      strokeWidth: 2, color: sc.accentText),
                 )
               else if (selected && server.paired)
                 Container(
                   width: 22,
                   height: 22,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     shape: BoxShape.circle,
                     color: sc.accent,
                   ),
@@ -866,14 +867,14 @@ class _ServerRow extends StatelessWidget {
                 )
               else if (!server.paired)
                 Icon(Icons.wifi_tethering_rounded,
-                    size: 18, color: sc.accent)
+                    size: 18, color: sc.accentText)
               else
                 Container(
                   width: 22,
                   height: 22,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     shape: BoxShape.circle,
-                    border: Border.all(color: sc.border2),
+                    border: SatB.all(color: sc.border2),
                   ),
                 ),
             ],
@@ -906,7 +907,7 @@ class _RestoreLoadingScreen extends StatelessWidget {
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: sc.accent),
+                    strokeWidth: 2, color: sc.accentText),
               ),
               const SizedBox(height: 16),
               Text('Memeriksa sesi…',
@@ -932,9 +933,9 @@ class _Brand extends StatelessWidget {
         Container(
           width: 32,
           height: 32,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: sc.accent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: SatR.a(8),
           ),
           alignment: Alignment.center,
           child: Text(
@@ -969,9 +970,9 @@ class _TabletBrand extends StatelessWidget {
         Container(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: sc.accent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: SatR.a(12),
           ),
           alignment: Alignment.center,
           child: Text(
@@ -1039,17 +1040,17 @@ class _Field extends StatelessWidget {
             filled: true,
             fillColor: sc.bg2,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: borderColor),
+              borderRadius: SatR.a(12),
+              borderSide: SatB.side(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: borderColor),
+              borderRadius: SatR.a(12),
+              borderSide: SatB.side(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: SatR.a(12),
               borderSide:
-                  BorderSide(color: hasError ? sc.urgent : sc.accent),
+                  SatB.side(color: hasError ? sc.urgent : sc.accent),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1133,7 +1134,7 @@ class _ServerReachabilityPill extends ConsumerWidget {
         Container(
           width: 7,
           height: 7,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             shape: BoxShape.circle,
             color: v.dot,
             boxShadow: [BoxShadow(color: v.glow, spreadRadius: 3)],
@@ -1182,14 +1183,14 @@ class _ConnectedServerCard extends ConsumerWidget {
         ),
         Material(
           color: sc.bg2,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: SatR.a(14),
           child: InkWell(
             onTap: onReenterPin,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: SatR.a(14),
             child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: sc.border0),
-                borderRadius: BorderRadius.circular(14),
+              decoration: SatBox.d(
+                border: SatB.all(color: sc.border0),
+                borderRadius: SatR.a(14),
               ),
               padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
               child: Row(
@@ -1197,7 +1198,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       shape: BoxShape.circle,
                       color: v.dot,
                       boxShadow: [
@@ -1346,7 +1347,7 @@ class _PulseDotState extends State<_PulseDot>
         return Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             shape: BoxShape.circle,
             color: widget.color,
             boxShadow: [BoxShadow(color: widget.glow, spreadRadius: spread)],

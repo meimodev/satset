@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -33,9 +34,9 @@ class TagBadgeRow extends StatelessWidget {
             Container(
               width: 14,
               height: 14,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: bg,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: SatR.a(4),
               ),
               alignment: Alignment.center,
               child: Text(tagsById[id]?.code ?? '?',

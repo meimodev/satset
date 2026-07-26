@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -78,9 +79,17 @@ class TabletSideRail extends StatelessWidget {
     final sc = context.sat;
     return Container(
       width: 76,
-      decoration: BoxDecoration(
-        color: sc.bg1,
-        border: Border(right: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        // The paper skin fills the whole rail with the accent and lets the
+        // nav blocks read as cut-outs; midnight keeps the surface and inverts
+        // the blocks instead. Same rule, heavier than a card's (neo.css §7).
+        color: SatShape.brutalPaper ? sc.accent : sc.bg1,
+        border: Border(
+          right: BorderSide(
+            color: sc.border0,
+            width: SatShape.brutal ? 4 : 1,
+          ),
+        ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Column(
@@ -116,21 +125,33 @@ class _Mark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    // The mark always opposes the rail: ink block on the siren rail, siren
+    // block on the dark one. On paper that means the logo, not the rail, is
+    // the black slab.
+    final onAccentRail = SatShape.brutalPaper;
     return Container(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        color: sc.accent,
-        borderRadius: BorderRadius.circular(12),
+      decoration: SatBox.d(
+        color: onAccentRail ? SatShape.ink : sc.accent,
+        borderRadius: SatR.a(12),
+        border: SatShape.brutal ? SatB.all(color: SatShape.ink) : null,
+        boxShadow: SatShape.brutal ? SatShape.hardShadow() : null,
       ),
       alignment: Alignment.center,
       child: Text('S',
-          style: SatType.mono(
-            size: 20,
-            weight: FontWeight.w700,
-            letterSpacing: -0.8,
-            color: sc.accentInk,
-          )),
+          style: SatShape.brutal
+              ? SatType.display(
+                  size: 20,
+                  letterSpacing: -0.8,
+                  color: onAccentRail ? sc.accent : sc.accentInk,
+                )
+              : SatType.mono(
+                  size: 20,
+                  weight: FontWeight.w700,
+                  letterSpacing: -0.8,
+                  color: sc.accentInk,
+                )),
     );
   }
 }
@@ -141,7 +162,8 @@ class _RailDiv extends StatelessWidget {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(width: 36, height: 1, color: sc.border0),
+      child: Container(
+          width: 36, height: SatShape.brutal ? 3 : 1, color: sc.border0),
     );
   }
 }
@@ -164,6 +186,15 @@ class _RailBtn extends StatelessWidget {
     this.alert = false,
   });
 
+  /// On paper the rail is the accent itself, so both states sit on a bright
+  /// ground and take ink. On midnight the active block *is* the accent, so
+  /// only it flips to accent ink.
+  Color _fg(SatColors sc, bool isActive) {
+    if (!SatShape.brutal) return isActive ? sc.textHi : sc.textLo;
+    if (SatShape.brutalPaper) return SatShape.ink;
+    return isActive ? sc.accentInk : sc.textMd;
+  }
+
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
@@ -174,13 +205,27 @@ class _RailBtn extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => context.go(route),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: SatR.a(14),
           child: Container(
             width: 56,
             height: 56,
-            decoration: BoxDecoration(
-              color: isActive ? sc.bg3 : Colors.transparent,
-              borderRadius: BorderRadius.circular(14),
+            // Brutal marks the active tab as a lifted block cut out of the
+            // rail — paper drops to the surface colour, midnight rises to the
+            // accent. Idle tabs read straight off the rail, so their label
+            // takes the rail's own ink rather than the ramp's dim greys.
+            decoration: SatBox.d(
+              color: SatShape.brutal
+                  ? (isActive
+                      ? (SatShape.brutalPaper ? sc.bg1 : sc.accent)
+                      : Colors.transparent)
+                  : (isActive ? sc.bg3 : Colors.transparent),
+              borderRadius: SatR.a(14),
+              border: SatShape.brutal && isActive
+                  ? SatB.all(color: SatShape.ink)
+                  : null,
+              boxShadow: SatShape.brutal && isActive
+                  ? SatShape.hardShadow()
+                  : null,
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -188,14 +233,21 @@ class _RailBtn extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(icon, size: 22, color: isActive ? sc.textHi : sc.textLo),
+                    Icon(icon, size: 22, color: _fg(sc, isActive)),
                     const SizedBox(height: 2),
-                    Text(label,
+                    Text(SatShape.caps(label),
+                        // The active block's 3px rule eats 6px of the 56px
+                        // tile, and uppercase at +0.06em tracking runs past
+                        // what is left — "MANDIRI" wrapped to two lines and
+                        // overflowed the column. One line, sized to fit it.
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: SatType.sans(
-                          size: 10,
-                          weight: FontWeight.w500,
-                          letterSpacing: 0.2,
-                          color: isActive ? sc.textHi : sc.textLo,
+                          size: SatShape.brutal ? 9 : 10,
+                          weight:
+                              SatShape.brutal ? FontWeight.w700 : FontWeight.w500,
+                          letterSpacing: SatShape.brutal ? 0.6 : 0.2,
+                          color: _fg(sc, isActive),
                         )),
                   ],
                 ),
@@ -207,9 +259,14 @@ class _RailBtn extends StatelessWidget {
                       constraints: const BoxConstraints(minWidth: 16),
                       height: 16,
                       padding: const EdgeInsets.symmetric(horizontal: 5),
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: alert ? sc.success : sc.accent,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: SatR.a(8),
+                        // Thinner than the 3px rule — a 16px pip fattened to
+                        // the full width would be all border and no count.
+                        border: SatShape.brutal
+                            ? Border.all(color: SatShape.ink, width: 2)
+                            : null,
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -242,37 +299,49 @@ class _AvatarBtn extends ConsumerWidget {
     final initials = (user?.initials.isNotEmpty ?? false) ? user!.initials : '—';
     final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
     final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base);
+    // ADR-0047 keeps status pips round because a radius token cannot reach
+    // `BoxShape.circle`. The rail avatar is the one the source design squares
+    // explicitly, and at 42px it reads as a nameplate rather than a pip.
+    final shape = SatShape.brutal ? BoxShape.rectangle : BoxShape.circle;
+    final border = SatShape.brutal ? null : const CircleBorder();
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Material(
         color: Colors.transparent,
-        shape: const CircleBorder(),
+        shape: border,
         child: InkWell(
-          customBorder: const CircleBorder(),
+          customBorder: border,
           onTap: () => context.go('/me'),
           child: Container(
             width: 46,
             height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: active ? sc.accentBorder : Colors.transparent,
-                width: 2,
-              ),
+            decoration: SatBox.d(
+              shape: shape,
+              border: SatShape.brutal
+                  ? null
+                  : SatB.all(
+                      color: active ? sc.accentBorder : Colors.transparent,
+                      width: 2,
+                    ),
               boxShadow: active
-                  ? [BoxShadow(color: sc.bg1, blurRadius: 0, spreadRadius: 3)]
+                  ? (SatShape.brutal
+                      ? null
+                      : [BoxShadow(color: sc.bg1, blurRadius: 0, spreadRadius: 3)])
                   : null,
             ),
             alignment: Alignment.center,
             child: Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+              decoration: SatBox.d(
+                shape: shape,
+                border: SatShape.brutal ? SatB.all(color: SatShape.ink) : null,
+                boxShadow:
+                    SatShape.brutal && active ? SatShape.hardShadow() : null,
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [base, dark],
+                  colors: SatShape.brutal ? [base, base] : [base, dark],
                 ),
               ),
               alignment: Alignment.center,
@@ -354,10 +423,10 @@ class TabletCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(18),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(18),
       ),
       padding: padding,
       child: Column(
@@ -400,10 +469,10 @@ class TabletStatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: bg ?? sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(14),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(

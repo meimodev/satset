@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -23,8 +24,8 @@ Future<String?> showMoveTableSheet({
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: context.sat.bg1,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
     ),
     builder: (_) => _MoveTableSheet(sourceId: sourceId),
   );
@@ -75,9 +76,9 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.border1,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: SatR.a(2),
                 ),
               ),
             ),
@@ -156,15 +157,15 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Material(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: SatR.a(12),
         child: InkWell(
           onTap: _moving ? null : () => _confirmAndMove(target, source),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: SatR.a(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: sc.border0),
-              borderRadius: BorderRadius.circular(12),
+            decoration: SatBox.d(
+              border: SatB.all(color: sc.border0),
+              borderRadius: SatR.a(12),
             ),
             child: Row(
               children: [

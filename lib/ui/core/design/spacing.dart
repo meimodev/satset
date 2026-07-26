@@ -11,12 +11,6 @@ class Sp {
   static const double s12 = 48;
 }
 
-class Radii {
-  Radii._();
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 22;
-  static const double xl2 = 28;
-  static const double full = 9999;
-}
+// `Radii` lived here and had no callers — every corner in the app was a literal.
+// Removed rather than left to rot: a shape token that ignores the active skin is
+// worse than none. Use `SatR` in design/skin.dart (ADR-0047).

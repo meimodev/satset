@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
@@ -147,10 +148,10 @@ class _PinSheetState extends State<_PinSheet>
             constraints: BoxConstraints(maxWidth: maxW),
             child: Container(
               margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.bg1,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: sc.border0),
+                borderRadius: SatR.a(22),
+                border: SatB.all(color: sc.border0),
               ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
@@ -162,9 +163,9 @@ class _PinSheetState extends State<_PinSheet>
                       child: Container(
                         width: 36,
                         height: 4,
-                        decoration: BoxDecoration(
+                        decoration: SatBox.d(
                           color: sc.border2,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: SatR.a(2),
                         ),
                       ),
                     ),
@@ -241,7 +242,7 @@ class _PinDots extends StatelessWidget {
                 child: Container(
                   width: size,
                   height: size,
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     shape: BoxShape.circle,
                     color: Color.lerp(sc.bg3, sc.accent, t)!,
                   ),
@@ -299,7 +300,7 @@ class _PinHelper extends StatelessWidget {
       return const SizedBox(height: 14);
     }
     final text = busy || complete ? 'Memverifikasi...' : '$pinLength / $kPinLength digit';
-    final color = (busy || complete) ? sc.accent : sc.textLo;
+    final color = (busy || complete) ? sc.accentText : sc.textLo;
     return Center(
       child: Text(
         text,
@@ -368,13 +369,13 @@ class _PinKeyState extends State<_PinKey> {
         child: AnimatedContainer(
           duration: _d(context, _kMicroDur),
           curve: Curves.easeOutQuart,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: muted
                 ? Colors.transparent
                 : (disabled
                     ? sc.bg2.withValues(alpha: 0.6)
                     : (_pressed ? sc.accentSoft : sc.bg2)),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: SatR.a(22),
           ),
           alignment: Alignment.center,
           child: muted
@@ -402,10 +403,10 @@ class _DebugCredsHint extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.warnSoft,
-        border: Border.all(color: sc.warn.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(12),
+        border: SatB.all(color: sc.warn.withValues(alpha: 0.4)),
+        borderRadius: SatR.a(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,7 +456,7 @@ class _DebugCredRow extends StatelessWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: SatR.a(6),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(

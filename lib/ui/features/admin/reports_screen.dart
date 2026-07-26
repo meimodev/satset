@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/export/export_share.dart' show customRangeLabel;
@@ -153,7 +154,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Container(
       width: 7,
       height: 7,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: live ? sc.success : sc.textLo,
         shape: BoxShape.circle,
       ),
@@ -175,7 +176,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(sc.accent),
+                valueColor: AlwaysStoppedAnimation<Color>(sc.accentText),
               ),
             )
           : Icon(Icons.refresh, color: sc.textMd),
@@ -230,10 +231,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.warn.withValues(alpha: 0.08),
-        border: Border.all(color: sc.warn.withValues(alpha: 0.25)),
-        borderRadius: BorderRadius.circular(12),
+        border: SatB.all(color: sc.warn.withValues(alpha: 0.25)),
+        borderRadius: SatR.a(12),
       ),
       child: Row(
         children: [
@@ -365,7 +366,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ListTile(
                     title: Text(o.name, style: SatType.sans(size: 14, color: sc.textHi)),
                     trailing: o.name == value
-                        ? Icon(Icons.check, color: sc.accent, size: 18)
+                        ? Icon(Icons.check, color: sc.accentText, size: 18)
                         : null,
                     onTap: () => Navigator.pop(c, o),
                   ),
@@ -375,13 +376,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         );
         if (picked != null) onPick(picked);
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: SatR.a(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: active ? sc.accentSoft : sc.bg2,
-          border: Border.all(color: active ? sc.accentBorder : sc.border0),
-          borderRadius: BorderRadius.circular(12),
+          border: SatB.all(color: active ? sc.accentBorder : sc.border0),
+          borderRadius: SatR.a(12),
         ),
         child: Row(
           children: [
@@ -403,7 +404,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       style: SatType.sans(
                         size: 13,
                         weight: FontWeight.w500,
-                        color: active ? sc.accent : sc.textHi,
+                        color: active ? sc.accentText : sc.textHi,
                       )),
                 ],
               ),

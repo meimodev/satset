@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -192,10 +193,10 @@ class ReviewScreen extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                        decoration: BoxDecoration(
+                        decoration: SatBox.d(
                           color: sc.bg2,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: sc.border0),
+                          borderRadius: SatR.a(18),
+                          border: SatB.all(color: sc.border0),
                         ),
                         child: Column(
                           children: [
@@ -213,9 +214,9 @@ class ReviewScreen extends ConsumerWidget {
                             Container(
                               margin: const EdgeInsets.only(top: 8),
                               padding: const EdgeInsets.only(top: 12),
-                              decoration: BoxDecoration(
+                              decoration: SatBox.d(
                                 border:
-                                    Border(top: BorderSide(color: sc.border0)),
+                                    Border(top: SatB.side(color: sc.border0)),
                               ),
                               child: _TotalsRow(
                                 label: 'Total perkiraan',
@@ -360,7 +361,7 @@ class ReviewScreen extends ConsumerWidget {
                   foregroundColor: sc.accentInk,
                   elevation: 0,
                   minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -419,8 +420,8 @@ Future<_Commit?> _chooseCommit(BuildContext context) {
     context: context,
     useRootNavigator: true,
     backgroundColor: sc.bg1,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
     ),
     builder: (ctx) => SafeArea(
       child: Padding(
@@ -433,9 +434,9 @@ Future<_Commit?> _chooseCommit(BuildContext context) {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.border1,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: SatR.a(2),
                 ),
               ),
             ),
@@ -480,19 +481,19 @@ class _CommitTile extends StatelessWidget {
     final sc = context.sat;
     return Material(
       color: sc.bg2,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: SatR.a(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: SatR.a(14),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border.all(color: sc.border0),
-            borderRadius: BorderRadius.circular(14),
+          decoration: SatBox.d(
+            border: SatB.all(color: sc.border0),
+            borderRadius: SatR.a(14),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: sc.accent),
+              Icon(icon, size: 22, color: sc.accentText),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -579,7 +580,7 @@ class _Pill extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      decoration: SatBox.d(color: bg, borderRadius: SatR.a(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -623,7 +624,7 @@ class _CourseBlock extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration:
-                      BoxDecoration(shape: BoxShape.circle, color: course.color(sc)),
+                      SatBox.d(shape: BoxShape.circle, color: course.color(sc)),
                 ),
                 const SizedBox(width: 10),
                 Text(course.name.toUpperCase(),
@@ -645,10 +646,10 @@ class _CourseBlock extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 6),
               child: Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.bg2,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: sc.border0),
+                  borderRadius: SatR.a(14),
+                  border: SatB.all(color: sc.border0),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

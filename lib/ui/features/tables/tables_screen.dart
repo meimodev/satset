@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -317,7 +318,7 @@ class _NewOrderButton extends ConsumerWidget {
         padding: EdgeInsets.symmetric(
             horizontal: tablet ? 18 : 14, vertical: tablet ? 14 : 11),
         shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            RoundedRectangleBorder(borderRadius: SatR.a(14)),
       ),
       icon: const Icon(Icons.add_rounded, size: 18),
       label: Text('Pesanan baru',
@@ -365,10 +366,10 @@ class _ZoneRow extends StatelessWidget {
                   duration: dur,
                   curve: _kEase,
                   padding: EdgeInsets.symmetric(horizontal: tablet ? 16 : 14, vertical: tablet ? 10 : 9),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: isActive ? sc.textHi : sc.bg2,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: isActive ? sc.textHi : sc.border0),
+                    borderRadius: SatR.a(999),
+                    border: SatB.all(color: isActive ? sc.textHi : sc.border0),
                   ),
                   child: Row(
                     children: [
@@ -521,14 +522,14 @@ class _TableCardState extends ConsumerState<_TableCard>
       child: AnimatedContainer(
         duration: xfade,
         curve: _kEase,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: bg,
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: border),
+          borderRadius: SatR.a(radius),
+          border: SatB.all(color: border),
         ),
         child: Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: SatR.a(radius),
           child: InkWell(
             onTap: widget.onTap,
             onLongPress: widget.onLongPress,
@@ -541,7 +542,7 @@ class _TableCardState extends ConsumerState<_TableCard>
             onTapUp: (_) {
               if (_pressed) setState(() => _pressed = false);
             },
-            borderRadius: BorderRadius.circular(radius),
+            borderRadius: SatR.a(radius),
             child: Padding(
               padding: padding,
               child: Column(
@@ -672,7 +673,7 @@ class _TableCardState extends ConsumerState<_TableCard>
                         curve: _kEase,
                         width: 10,
                         height: 10,
-                        decoration: BoxDecoration(
+                        decoration: SatBox.d(
                           shape: BoxShape.circle,
                           color: statusDot,
                         ),
@@ -718,8 +719,8 @@ class _TableCardState extends ConsumerState<_TableCard>
       builder: (_, child) {
         final t = Curves.easeInOut.transform(_pulse.value);
         return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(radius),
+          decoration: SatBox.d(
+            borderRadius: SatR.a(radius),
             boxShadow: [
               BoxShadow(
                 color: sc.success.withValues(alpha: 0.10 + 0.22 * t),
@@ -757,10 +758,10 @@ class _ActorAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         gradient: grad,
         shape: BoxShape.circle,
-        border: Border.all(
+        border: SatB.all(
           color: mine ? sc.accent : Colors.transparent,
           width: mine ? 2 : 0,
         ),
@@ -878,10 +879,10 @@ class _EmptyZoneState extends State<_EmptyZone>
     final iconBubble = Container(
       width: tablet ? 72 : 56,
       height: tablet ? 72 : 56,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
         shape: BoxShape.circle,
-        border: Border.all(color: sc.border0),
+        border: SatB.all(color: sc.border0),
       ),
       alignment: Alignment.center,
       child: Icon(Icons.grid_view_rounded, size: tablet ? 32 : 26, color: sc.textLo),
@@ -945,9 +946,9 @@ class _MoneyPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: SatR.a(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

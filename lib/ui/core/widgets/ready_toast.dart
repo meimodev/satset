@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/ready_alert_view_model.dart';
@@ -22,7 +23,7 @@ class ReadyToast extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.fromLTRB(12, 56, 12, 0),
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           // Green wash derived from the palette's own `success` rather than a
           // fixed pair of greens — under `neonHijau` a baked-in emerald would
           // fight the accent it sits next to.
@@ -34,8 +35,8 @@ class ReadyToast extends StatelessWidget {
               Color.alphaBlend(sc.success.withValues(alpha: 0.12), sc.bg1),
             ],
           ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: sc.success.withValues(alpha: 0.45)),
+          borderRadius: SatR.a(18),
+          border: SatB.all(color: sc.success.withValues(alpha: 0.45)),
           boxShadow: [
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.55),
@@ -48,9 +49,9 @@ class ReadyToast extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.success,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: SatR.a(12),
               ),
               alignment: Alignment.center,
               child: Icon(Icons.notifications_active,
@@ -92,7 +93,7 @@ class ReadyToast extends StatelessWidget {
                 backgroundColor: Colors.white.withValues(alpha: 0.18),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
               ),
               child: Text('Ambil',
                   style: SatType.sans(

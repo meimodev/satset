@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/tables_repository.dart';
@@ -34,8 +35,8 @@ Future<AssignTableResult?> showAssignTableSheet({
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: context.sat.bg1,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
     ),
     builder: (_) => const _AssignTableSheet(),
   );
@@ -86,9 +87,9 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.border1,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: SatR.a(2),
                 ),
               ),
             ),
@@ -136,12 +137,12 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: sc.border0),
+                  borderRadius: SatR.a(12),
+                  borderSide: SatB.side(color: sc.border0),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: sc.border0),
+                  borderRadius: SatR.a(12),
+                  borderSide: SatB.side(color: sc.border0),
                 ),
               ),
             ),
@@ -196,7 +197,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Material(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: SatR.a(12),
         child: InkWell(
           onTap: () {
             final name = _guestCtrl.text.trim();
@@ -206,12 +207,12 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               guestName: name.isEmpty ? null : name,
             ));
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: SatR.a(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: sc.border0),
-              borderRadius: BorderRadius.circular(12),
+            decoration: SatBox.d(
+              border: SatB.all(color: sc.border0),
+              borderRadius: SatR.a(12),
             ),
             child: Row(
               children: [

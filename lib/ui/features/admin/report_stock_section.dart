@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/stock_repository.dart';
@@ -93,10 +94,10 @@ class ReportStockSection extends ConsumerWidget {
   Widget _kpi(SatColors sc, String label, String value, Color color) =>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: sc.border1),
+          borderRadius: SatR.a(10),
+          border: SatB.all(color: sc.border1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

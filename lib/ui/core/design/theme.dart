@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
 import 'sat_theme.dart';
+import 'skin.dart';
 import 'typography.dart';
+
+/// M3 defaults every button to a stadium pill. Under `lembut` that is the
+/// shipped look, so this stays null and Flutter's default wins; under `brutal`
+/// a pill in a square-corner skin is the one shape the eye catches first.
+/// Only bare Material buttons see this — the app's own buttons are hand-built.
+OutlinedBorder? get _buttonShape =>
+    SatShape.brutal ? const RoundedRectangleBorder() : null;
 
 ThemeData _build(SatColors sc, Brightness brightness) {
   final scheme = ColorScheme(
@@ -44,11 +52,45 @@ ThemeData _build(SatColors sc, Brightness brightness) {
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: sc.bg1,
       surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(28)),
+      ),
+    ),
+    // M3 spends `colorScheme.primary` on both roles: the filled button's
+    // surface and the text button's label. The palette splits them, so the
+    // foreground-only defaults are repointed here — otherwise a dialog's
+    // "Batal" is siren yellow on a white sheet.
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+          foregroundColor: sc.accentText, shape: _buttonShape),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+          foregroundColor: sc.accentText, shape: _buttonShape),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(shape: _buttonShape),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(shape: _buttonShape),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: sc.bg2,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: SatR.a(28),
+        // SatBox.d never sees a dialog — the shape comes from the theme, so the
+        // brutal rule is drawn here instead.
+        side: SatShape.brutal
+            ? BorderSide(color: sc.border0, width: SatShape.brutalBorder)
+            : BorderSide.none,
       ),
     ),
   );
 }
 
-ThemeData satTheme(SatTheme t) => _build(t.colors, t.brightness);
+ThemeData satTheme(SatTheme t) {
+  // Must run before `_build`: the type ramp below already branches on the skin.
+  t.adopt();
+  return _build(t.colors, t.brightness);
+}

@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -80,12 +81,12 @@ class _ScopeCard extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         // Device-local config sits on a different surface so it never reads as
         // "one more venue setting".
         color: deviceScoped ? sc.bg1 : sc.bg2,
-        border: Border.all(color: deviceScoped ? sc.border1 : sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: deviceScoped ? sc.border1 : sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,10 +106,10 @@ class _ScopeCard extends StatelessWidget {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: deviceScoped ? sc.bg3 : sc.bg1,
-                  border: Border.all(color: sc.border0),
-                  borderRadius: BorderRadius.circular(999),
+                  border: SatB.all(color: sc.border0),
+                  borderRadius: SatR.a(999),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -333,10 +334,10 @@ class _MinutesRow extends StatelessWidget {
         child: Container(
           width: 34,
           height: 34,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: onTap == null ? sc.bg2 : sc.bg3,
-            border: Border.all(color: sc.border1),
-            borderRadius: BorderRadius.circular(9),
+            border: SatB.all(color: sc.border1),
+            borderRadius: SatR.a(9),
           ),
           child: Icon(
             icon,
@@ -448,10 +449,10 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
             onTap: () => _openPicker(sc, event),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.bg1,
-                border: Border.all(color: sc.border0),
-                borderRadius: BorderRadius.circular(10),
+                border: SatB.all(color: sc.border0),
+                borderRadius: SatR.a(10),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -477,7 +478,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                   ? Icons.volume_off
                   : Icons.play_circle_outline,
               size: 22,
-              color: preset == null || preset.isSilent ? sc.textDim : sc.accent,
+              color: preset == null || preset.isSilent ? sc.textDim : sc.accentText,
             ),
             tooltip: AppStrings.venueSettingsSoundPreview,
           ),
@@ -494,8 +495,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: sc.bg2,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(18)),
       ),
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
@@ -517,7 +518,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                     preset.id == selected
                         ? Icons.radio_button_checked
                         : Icons.radio_button_unchecked,
-                    color: preset.id == selected ? sc.accent : sc.textLo,
+                    color: preset.id == selected ? sc.accentText : sc.textLo,
                   ),
                   title: Text(
                     preset.label,
@@ -531,7 +532,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                       preset.isSilent
                           ? Icons.volume_off
                           : Icons.play_circle_outline,
-                      color: preset.isSilent ? sc.textDim : sc.accent,
+                      color: preset.isSilent ? sc.textDim : sc.accentText,
                     ),
                   ),
                 ),

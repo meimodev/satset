@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/ui/core/design/skin.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -270,9 +271,9 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
       child: Container(
         height: 50,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: _busy ? sc.accentSoft : sc.accent,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: SatR.a(14),
         ),
         child: _busy
             ? Row(
@@ -283,7 +284,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(sc.accent),
+                      valueColor: AlwaysStoppedAnimation(sc.accentText),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -292,7 +293,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                     style: SatType.sans(
                       size: 14,
                       weight: FontWeight.w600,
-                      color: sc.accent,
+                      color: sc.accentText,
                     ),
                   ),
                 ],
@@ -317,17 +318,17 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       alignment: Alignment.center,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.accentSoft,
-        border: Border.all(color: sc.accentBorder),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: sc.accentBorder),
+        borderRadius: SatR.a(999),
       ),
       child: Text(
         rangeLabelId(_range, from: _from, to: _to),
         style: SatType.sans(
           size: 13,
           weight: FontWeight.w600,
-          color: sc.accent,
+          color: sc.accentText,
         ),
       ),
     );
@@ -371,17 +372,17 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: on ? sc.accentSoft : sc.bg3,
-            border: Border.all(color: on ? sc.accentBorder : sc.border1),
-            borderRadius: BorderRadius.circular(999),
+            border: SatB.all(color: on ? sc.accentBorder : sc.border1),
+            borderRadius: SatR.a(999),
           ),
           child: Text(
             text,
             style: SatType.sans(
               size: 13,
               weight: on ? FontWeight.w600 : FontWeight.w500,
-              color: on ? sc.accent : sc.textMd,
+              color: on ? sc.accentText : sc.textMd,
             ),
           ),
         ),

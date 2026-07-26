@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -43,7 +44,7 @@ final _sections = <_Section>[
     sub: AppStrings.venueHubSectionZonaSub,
     icon: Icons.place_outlined,
     route: '/zone-admin',
-    tint: (sc) => sc.accent,
+    tint: (sc) => sc.accentText,
     badgeBuilder: (ref) {
       final z = ref.watch(zonesProvider);
       final t = ref.watch(tablesProvider);
@@ -177,10 +178,10 @@ class _VenueHeroStrip extends ConsumerWidget {
     final lowStock = stockItems.where((i) => i.isLow).length;
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: sc.border0),
+        borderRadius: SatR.a(18),
+        border: SatB.all(color: sc.border0),
       ),
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -191,13 +192,13 @@ class _VenueHeroStrip extends ConsumerWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: sc.accent.withValues(alpha: 0.25)),
+                  borderRadius: SatR.a(12),
+                  border: SatB.all(color: sc.accent.withValues(alpha: 0.25)),
                 ),
                 alignment: Alignment.center,
-                child: Icon(Icons.storefront_rounded, size: 22, color: sc.accent),
+                child: Icon(Icons.storefront_rounded, size: 22, color: sc.accentText),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -222,10 +223,10 @@ class _VenueHeroStrip extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             color: sc.successSoft,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: sc.success.withValues(alpha: 0.3)),
+                            borderRadius: SatR.a(20),
+                            border: SatB.all(color: sc.success.withValues(alpha: 0.3)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -233,7 +234,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                               Container(
                                 width: 5,
                                 height: 5,
-                                decoration: BoxDecoration(
+                                decoration: SatBox.d(
                                   color: sc.success,
                                   shape: BoxShape.circle,
                                 ),
@@ -268,12 +269,12 @@ class _VenueHeroStrip extends ConsumerWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () => context.push('/venue-settings'),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: SatR.a(10),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: sc.border1),
+                  decoration: SatBox.d(
+                    borderRadius: SatR.a(10),
+                    border: SatB.all(color: sc.border1),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -292,7 +293,7 @@ class _VenueHeroStrip extends ConsumerWidget {
             spacing: 12,
             runSpacing: 6,
             children: [
-              _StatBadge(icon: Icons.place_outlined, text: '${tables.length} meja (${zones.length} zona)', color: sc.accent),
+              _StatBadge(icon: Icons.place_outlined, text: '${tables.length} meja (${zones.length} zona)', color: sc.accentText),
               _StatBadge(icon: Icons.restaurant_menu_rounded, text: '${menuItems.length} item menu', color: sc.warn),
               _StatBadge(
                 icon: Icons.inventory_2_outlined,
@@ -346,17 +347,17 @@ class SeedDataBanner extends ConsumerWidget {
     final ctrl = ref.read(genericSeedProvider.notifier);
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: sc.accent.withValues(alpha: 0.35)),
+        borderRadius: SatR.a(16),
+        border: SatB.all(color: sc.accent.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.auto_fix_high_rounded, size: 18, color: sc.accent),
+              Icon(Icons.auto_fix_high_rounded, size: 18, color: sc.accentText),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(AppStrings.venueHubSeedTitle,
@@ -428,15 +429,15 @@ class _BannerBtn extends StatelessWidget {
     final sc = context.sat;
     return Material(
       color: filled ? sc.accent : Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: SatR.a(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: SatR.a(10),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: filled ? null : Border.all(color: sc.border1),
+          decoration: SatBox.d(
+            borderRadius: SatR.a(10),
+            border: filled ? null : SatB.all(color: sc.border1),
           ),
           alignment: Alignment.center,
           child: Row(
@@ -586,15 +587,15 @@ class _HubCard extends ConsumerWidget {
     return PressScale(
       child: Material(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: SatR.a(radius),
         child: InkWell(
           onTap: () => context.push(section.route),
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: SatR.a(radius),
           child: Container(
             padding: EdgeInsets.all(big ? 16 : 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(radius),
-              border: Border.all(
+            decoration: SatBox.d(
+              borderRadius: SatR.a(radius),
+              border: SatB.all(
                 color: hasAlert ? sc.warn.withValues(alpha: 0.5) : sc.border0,
               ),
             ),
@@ -608,9 +609,9 @@ class _HubCard extends ConsumerWidget {
                     Container(
                       width: iconBox,
                       height: iconBox,
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: tint.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(big ? 14 : 12),
+                        borderRadius: SatR.a(big ? 14 : 12),
                       ),
                       alignment: Alignment.center,
                       child: Icon(section.icon, size: iconSize, color: tint),
@@ -620,10 +621,10 @@ class _HubCard extends ConsumerWidget {
                         child: Container(
                           margin: const EdgeInsets.only(left: 6),
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             color: hasAlert ? sc.warnSoft : sc.bg1,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
+                            borderRadius: SatR.a(10),
+                            border: SatB.all(
                               color: hasAlert ? sc.warn : sc.border0,
                             ),
                           ),

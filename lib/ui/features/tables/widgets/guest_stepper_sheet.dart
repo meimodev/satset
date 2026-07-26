@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -19,8 +20,8 @@ Future<void> showGuestStepperSheet({
     context: context,
     useRootNavigator: true,
     backgroundColor: context.sat.bg1,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
     ),
     builder: (ctx) => _GuestStepperSheet(tableId: tableId),
   );
@@ -56,9 +57,9 @@ class _GuestStepperSheet extends ConsumerWidget {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.border1,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: SatR.a(2),
                 ),
               ),
             ),
@@ -128,7 +129,7 @@ class _GuestStepperSheet extends ConsumerWidget {
                     backgroundColor: sc.bg3,
                     foregroundColor: sc.textHi,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: SatR.a(14),
                     ),
                   ),
                   icon: const Icon(Icons.swap_horiz_rounded, size: 18),
@@ -150,9 +151,9 @@ class _GuestStepperSheet extends ConsumerWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: sc.textHi,
-                  side: BorderSide(color: sc.border2),
+                  side: SatB.side(color: sc.border2),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: SatR.a(14),
                   ),
                 ),
                 child: Text(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -402,10 +403,10 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,10 +529,10 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       child: Container(
         margin: EdgeInsets.only(bottom: last ? 0 : 8),
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          border: Border.all(color: sc.border0),
-          borderRadius: BorderRadius.circular(12),
+          border: SatB.all(color: sc.border0),
+          borderRadius: SatR.a(12),
         ),
         child: Row(
           children: [

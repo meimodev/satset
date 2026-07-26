@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
@@ -11,10 +12,10 @@ class ReadyBanner extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.successSoft,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: sc.success.withValues(alpha: 0.3)),
+        borderRadius: SatR.a(12),
+        border: SatB.all(color: sc.success.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

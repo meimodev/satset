@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -85,9 +86,9 @@ class ElapsedPill extends ConsumerWidget {
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: bg,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: SatR.a(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

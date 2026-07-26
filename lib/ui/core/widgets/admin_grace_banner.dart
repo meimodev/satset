@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/admin_grace.dart';
@@ -27,10 +28,10 @@ class AdminGraceBanner extends ConsumerWidget {
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: fg.withValues(alpha: 0.35)),
+        borderRadius: SatR.a(12),
+        border: SatB.all(color: fg.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [

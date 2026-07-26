@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,10 +81,10 @@ class SatBackButton extends StatelessWidget {
       child: Container(
         width: 38,
         height: 38,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: sc.border0),
+          borderRadius: SatR.a(12),
+          border: SatB.all(color: sc.border0),
         ),
         alignment: Alignment.center,
         child: Icon(icon, size: 20, color: sc.textMd),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
@@ -48,10 +49,10 @@ class _GuestStepperState extends State<GuestStepper> {
     final goingUp = pax >= _prevPax;
     return Container(
       height: size,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        borderRadius: BorderRadius.circular(size / 2),
-        border: Border.all(color: sc.border0),
+        borderRadius: SatR.a(size / 2),
+        border: SatB.all(color: sc.border0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -112,7 +113,7 @@ class _GuestStepperState extends State<GuestStepper> {
       color: Colors.transparent,
       child: InkWell(
         onTap: cb,
-        borderRadius: BorderRadius.circular(size / 2),
+        borderRadius: SatR.a(size / 2),
         child: SizedBox(
           width: size,
           height: size,

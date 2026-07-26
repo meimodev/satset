@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 
 /// Shared motion primitives for SatSet screens. Every animation here collapses
 /// to its final frame when the platform requests reduced motion, so callers
@@ -164,8 +165,8 @@ class AnimatedBarFill extends StatelessWidget {
     return Stack(children: [
       Container(
         height: height,
-        decoration: BoxDecoration(
-            color: track, borderRadius: BorderRadius.circular(radius)),
+        decoration: SatBox.d(
+            color: track, borderRadius: SatR.a(radius)),
       ),
       TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: f),
@@ -175,8 +176,8 @@ class AnimatedBarFill extends StatelessWidget {
           widthFactor: v,
           child: Container(
             height: height,
-            decoration: BoxDecoration(
-                color: color, borderRadius: BorderRadius.circular(radius)),
+            decoration: SatBox.d(
+                color: color, borderRadius: SatR.a(radius)),
           ),
         ),
       ),
@@ -208,7 +209,7 @@ class GrowBarV extends StatelessWidget {
       builder: (context, h, _) => Container(
         width: width,
         height: h,
-        decoration: BoxDecoration(color: color, borderRadius: radius),
+        decoration: SatBox.d(color: color, borderRadius: radius),
       ),
     );
   }

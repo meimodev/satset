@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/app_strings.dart';
@@ -37,8 +38,8 @@ class ReservationsStrip extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: tablet ? 32 : 16, vertical: tablet ? 12 : 8),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -61,9 +62,9 @@ class ReservationsStrip extends ConsumerWidget {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.warn.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: SatR.a(4),
                   ),
                   child: Text('$pendingCount menunggu',
                       style: SatType.mono(
@@ -78,21 +79,21 @@ class ReservationsStrip extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.accentSoft,
-                    border: Border.all(color: sc.accentBorder),
-                    borderRadius: BorderRadius.circular(8),
+                    border: SatB.all(color: sc.accentBorder),
+                    borderRadius: SatR.a(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, size: 14, color: sc.accent),
+                      Icon(Icons.add, size: 14, color: sc.accentText),
                       const SizedBox(width: 4),
                       Text('Reservasi',
                           style: SatType.sans(
                               size: 11,
                               weight: FontWeight.w600,
-                              color: sc.accent)),
+                              color: sc.accentText)),
                     ],
                   ),
                 ),
@@ -145,8 +146,8 @@ class ReservationsStrip extends ConsumerWidget {
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: sc.bg1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setLocal) {
@@ -166,9 +167,9 @@ class ReservationsStrip extends ConsumerWidget {
                   child: Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.border1,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: SatR.a(2),
                     ),
                   ),
                 ),
@@ -315,8 +316,8 @@ class ReservationsStrip extends ConsumerWidget {
       context: context,
       useRootNavigator: true,
       backgroundColor: sc.bg1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
       builder: (ctx) {
         return SafeArea(
@@ -330,9 +331,9 @@ class ReservationsStrip extends ConsumerWidget {
                   child: Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.border1,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: SatR.a(2),
                     ),
                   ),
                 ),
@@ -362,10 +363,10 @@ class ReservationsStrip extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.bg2,
-                      border: Border.all(color: sc.border0),
-                      borderRadius: BorderRadius.circular(8),
+                      border: SatB.all(color: sc.border0),
+                      borderRadius: SatR.a(8),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,10 +503,10 @@ class _ReservationChip extends ConsumerWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: bg,
-          border: Border.all(color: border),
-          borderRadius: BorderRadius.circular(10),
+          border: SatB.all(color: border),
+          borderRadius: SatR.a(10),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -541,9 +542,9 @@ class _ReservationChip extends ConsumerWidget {
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.bg3,
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: SatR.a(3),
                     ),
                     child: Text(tableLabel,
                         style: SatType.mono(
@@ -624,11 +625,11 @@ class _SeatPickerState extends ConsumerState<_SeatPicker> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: isActive ? sc.textHi : sc.bg2,
-                      border: Border.all(
+                      border: SatB.all(
                           color: isActive ? sc.textHi : sc.border1),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: SatR.a(999),
                     ),
                     child: Text(z.name,
                         style: SatType.sans(
@@ -666,10 +667,10 @@ class _SeatPickerState extends ConsumerState<_SeatPicker> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: sc.bg2,
-                      border: Border.all(color: sc.border1),
-                      borderRadius: BorderRadius.circular(8),
+                      border: SatB.all(color: sc.border1),
+                      borderRadius: SatR.a(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

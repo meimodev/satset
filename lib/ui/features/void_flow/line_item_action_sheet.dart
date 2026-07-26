@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -131,9 +132,9 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
     final sc = context.sat;
     final ticket = _live;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(top: SatR.c(28)),
       ),
       child: Column(
         children: [
@@ -143,7 +144,7 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
               width: 38,
               height: 4,
               decoration:
-                  BoxDecoration(color: sc.textDim, borderRadius: BorderRadius.circular(4)),
+                  SatBox.d(color: sc.textDim, borderRadius: SatR.a(4)),
             ),
           ),
           _Head(
@@ -269,7 +270,7 @@ class _StatusChip extends StatelessWidget {
         break;
       case TicketStatus.cooked:
         bg = sc.accentSoft;
-        fg = sc.accent;
+        fg = sc.accentText;
         break;
       case TicketStatus.ready:
         bg = sc.successSoft;
@@ -291,7 +292,7 @@ class _StatusChip extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: Text(
         ticketStatusLabel(status).toUpperCase(),
         style: SatType.mono(
@@ -412,7 +413,7 @@ class _ActionRow extends StatelessWidget {
       case _Tone.accent:
         border = sc.accentBorder;
         iconBg = sc.accentSoft;
-        iconFg = sc.accent;
+        iconFg = sc.accentText;
         break;
       case _Tone.warn:
         border = sc.warn.withValues(alpha: 0.25);
@@ -429,24 +430,24 @@ class _ActionRow extends StatelessWidget {
     }
     return Material(
       color: sc.bg2,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: SatR.a(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: SatR.a(14),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: border),
+          decoration: SatBox.d(
+            borderRadius: SatR.a(14),
+            border: SatB.all(color: border),
           ),
           child: Row(
             children: [
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: SatR.a(10),
                 ),
                 alignment: Alignment.center,
                 child: Icon(item.icon, size: 18, color: iconFg),
@@ -508,10 +509,10 @@ class _VoidReasonListState extends State<_VoidReasonList> {
           Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.bg2,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: sc.border0),
+              borderRadius: SatR.a(12),
+              border: SatB.all(color: sc.border0),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,15 +533,15 @@ class _VoidReasonListState extends State<_VoidReasonList> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Material(
                 color: _pickedId == r['id'] ? sc.accentSoft : sc.bg2,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: SatR.a(14),
                 child: InkWell(
                   onTap: () => setState(() => _pickedId = r['id']),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: SatR.a(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
+                    decoration: SatBox.d(
+                      borderRadius: SatR.a(14),
+                      border: SatB.all(
                         color: _pickedId == r['id'] ? sc.accentBorder : sc.border0,
                       ),
                     ),
@@ -549,10 +550,10 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                         Container(
                           width: 22,
                           height: 22,
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             color: _pickedId == r['id'] ? sc.accent : Colors.transparent,
                             shape: BoxShape.circle,
-                            border: Border.all(
+                            border: SatB.all(
                               color: _pickedId == r['id'] ? sc.accent : sc.border2,
                               width: 1.5,
                             ),
@@ -593,12 +594,12 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                   filled: true,
                   fillColor: sc.bg2,
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: sc.urgent),
+                    borderRadius: SatR.a(14),
+                    borderSide: SatB.side(color: sc.urgent),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: sc.urgent),
+                    borderRadius: SatR.a(14),
+                    borderSide: SatB.side(color: sc.urgent),
                   ),
                   counterText: '',
                   hintStyle: SatType.sans(size: 13, color: sc.textLo),
@@ -622,7 +623,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 foregroundColor: sc.accentInk,
                 elevation: 0,
                 minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -659,7 +660,7 @@ class _ConfirmedView extends StatelessWidget {
           Container(
             width: 96,
             height: 96,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               shape: BoxShape.circle,
               color: sc.urgent.withValues(alpha: 0.16),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
@@ -23,8 +24,8 @@ class AdminEmbeddedStrip extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 14, 22, 12),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
@@ -116,10 +117,10 @@ class SetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(14),
       ),
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       child: Column(
@@ -170,10 +171,10 @@ class SetHero extends StatelessWidget {
     final accent = warn ? sc.warn : sc.success;
     final soft = warn ? sc.warnSoft : sc.successSoft;
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: soft,
-        border: Border.all(color: accent, width: 1.5),
-        borderRadius: BorderRadius.circular(18),
+        border: SatB.all(color: accent, width: 1.5),
+        borderRadius: SatR.a(18),
       ),
       padding: const EdgeInsets.all(22),
       child: Column(
@@ -210,9 +211,9 @@ class SetHero extends StatelessWidget {
                   Expanded(
                     child: Container(
                       height: 5,
-                      decoration: BoxDecoration(
+                      decoration: SatBox.d(
                         color: on ? accent.withValues(alpha: 0.5) : sc.bg3,
-                        borderRadius: BorderRadius.circular(3),
+                        borderRadius: SatR.a(3),
                       ),
                     ),
                   ),
@@ -245,9 +246,9 @@ class AdminRow extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         border: Border(
-          bottom: last ? BorderSide.none : BorderSide(color: sc.border0),
+          bottom: last ? BorderSide.none : SatB.side(color: sc.border0),
         ),
       ),
       child: Row(
@@ -275,7 +276,7 @@ Widget adminPill(BuildContext context, String text, {bool on = false, bool dange
   if (on) {
     bg = sc.accentSoft;
     border = sc.accentBorder;
-    fg = sc.accent;
+    fg = sc.accentText;
   }
   if (danger) {
     bg = sc.urgentSoft;
@@ -286,10 +287,10 @@ Widget adminPill(BuildContext context, String text, {bool on = false, bool dange
     height: 30,
     padding: const EdgeInsets.symmetric(horizontal: 12),
     alignment: Alignment.center,
-    decoration: BoxDecoration(
+    decoration: SatBox.d(
       color: bg,
-      border: Border.all(color: border),
-      borderRadius: BorderRadius.circular(999),
+      border: SatB.all(color: border),
+      borderRadius: SatR.a(999),
     ),
     child: Text(text,
         style: SatType.sans(
@@ -305,10 +306,10 @@ Widget adminToggle(BuildContext context, {required bool on}) {
   return Container(
     width: 36,
     height: 20,
-    decoration: BoxDecoration(
+    decoration: SatBox.d(
       color: on ? sc.success : sc.bg3,
-      border: Border.all(color: on ? sc.success : sc.border1),
-      borderRadius: BorderRadius.circular(999),
+      border: SatB.all(color: on ? sc.success : sc.border1),
+      borderRadius: SatR.a(999),
     ),
     child: AnimatedAlign(
       duration: const Duration(milliseconds: 180),
@@ -317,7 +318,7 @@ Widget adminToggle(BuildContext context, {required bool on}) {
         margin: const EdgeInsets.symmetric(horizontal: 2),
         width: 14,
         height: 14,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: on ? sc.successInk : sc.textLo,
           shape: BoxShape.circle,
         ),

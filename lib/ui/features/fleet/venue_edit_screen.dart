@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/services/firebase_admin_service.dart';
@@ -170,13 +171,13 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 style: SatType.sans(
                     size: 14,
                     weight: FontWeight.w700,
-                    color: _busy || !_nameValid ? sc.textLo : sc.accent)),
+                    color: _busy || !_nameValid ? sc.textLo : sc.accentText)),
           ),
         ],
         bottom: _busy
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(2),
-                child: LinearProgressIndicator(minHeight: 2, color: sc.accent),
+                child: LinearProgressIndicator(minHeight: 2, color: sc.accentText),
               )
             : null,
       ),
@@ -268,7 +269,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Center(
-                child: CircularProgressIndicator(color: sc.accent)),
+                child: CircularProgressIndicator(color: sc.accentText)),
           )
         else if (rows.isEmpty)
           Padding(
@@ -395,10 +396,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final blocked = admins.isNotEmpty;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.urgentSoft,
-        border: Border.all(color: sc.urgent),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.urgent),
+        borderRadius: SatR.a(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,10 +420,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           const SizedBox(height: 14),
           Material(
             color: blocked || _busy ? sc.bg3 : sc.urgent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: SatR.a(12),
             child: InkWell(
               onTap: blocked || _busy ? null : _confirmDeleteVenue,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: SatR.a(12),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 alignment: Alignment.center,
@@ -485,7 +486,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   Widget _sectionLabel(SatColors sc, String text) => Text(text,
       style: SatType.mono(
-          size: 11, weight: FontWeight.w700, letterSpacing: 2, color: sc.accent));
+          size: 11, weight: FontWeight.w700, letterSpacing: 2, color: sc.accentText));
 
   Widget _paidUntilRow(SatColors sc) {
     final p = _paidUntil;
@@ -494,10 +495,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         : '${p.year}-${p.month.toString().padLeft(2, '0')}-${p.day.toString().padLeft(2, '0')}';
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(12),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(12),
       ),
       child: Row(
         children: [
@@ -524,7 +525,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             onPressed: _pickPaidUntil,
             child: Text('Pilih',
                 style: SatType.sans(
-                    size: 14, weight: FontWeight.w600, color: sc.accent)),
+                    size: 14, weight: FontWeight.w600, color: sc.accentText)),
           ),
         ],
       ),

@@ -175,4 +175,6 @@ class AppStrings {
   static const String themeAmberTerang = 'Amber Terang';
   static const String themeNeonHijau = 'Neon Hijau';
   static const String themeIndigoTerang = 'Indigo Terang';
+  static const String themeNeoKertas = 'Neo Kertas';
+  static const String themeNeoMidnight = 'Neo Tengah Malam';
 }

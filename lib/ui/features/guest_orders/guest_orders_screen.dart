@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/guest_orders_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -77,10 +78,10 @@ class _BatchCard extends ConsumerWidget {
     final sc = context.sat;
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg0,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: sc.border1),
+        borderRadius: SatR.a(14),
+        border: SatB.all(color: sc.border1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,7 +90,7 @@ class _BatchCard extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Row(
               children: [
-                Icon(Icons.table_restaurant, size: 18, color: sc.accent),
+                Icon(Icons.table_restaurant, size: 18, color: sc.accentText),
                 const SizedBox(width: 8),
                 Text('Meja ${batch.tableLabel}',
                     style: TextStyle(
@@ -152,7 +153,7 @@ class _BatchCard extends ConsumerWidget {
                         .reject(batch.visitId),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: sc.urgent,
-                      side: BorderSide(color: sc.urgent),
+                      side: SatB.side(color: sc.urgent),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: const Text('Tolak'),
@@ -197,7 +198,7 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration:
-            BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+            SatBox.d(color: color, borderRadius: SatR.a(10)),
         child: Text('$count',
             style: const TextStyle(
                 color: Colors.white,

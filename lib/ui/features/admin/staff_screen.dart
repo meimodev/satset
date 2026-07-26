@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/roles_repository.dart';
@@ -74,10 +75,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.bg2,
-                  border: Border.all(color: sc.border0),
-                  borderRadius: BorderRadius.circular(14),
+                  border: SatB.all(color: sc.border0),
+                  borderRadius: SatR.a(14),
                 ),
                 child: Row(
                   children: [
@@ -131,10 +132,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               child: Container(
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.bg2,
-                  border: Border.all(color: sc.border0),
-                  borderRadius: BorderRadius.circular(10),
+                  border: SatB.all(color: sc.border0),
+                  borderRadius: SatR.a(10),
                 ),
                 child: Row(
                   children: [
@@ -185,10 +186,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             alignment: Alignment.center,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.bg2,
-              border: Border.all(color: sc.border0),
-              borderRadius: BorderRadius.circular(14),
+              border: SatB.all(color: sc.border0),
+              borderRadius: SatR.a(14),
             ),
             child: Text('No staff match these filters',
                 style: SatType.sans(size: 13, color: sc.textLo)),
@@ -231,10 +232,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         ),
         const SizedBox(height: 14),
         Container(
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: sc.bg2,
-            border: Border.all(color: sc.border0),
-            borderRadius: BorderRadius.circular(14),
+            border: SatB.all(color: sc.border0),
+            borderRadius: SatR.a(14),
           ),
           child: Column(
             children: [
@@ -254,9 +255,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final isAdminRole = r.has(Capability.manageStaff);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         border: Border(
-          bottom: last ? BorderSide.none : BorderSide(color: sc.border0),
+          bottom: last ? BorderSide.none : SatB.side(color: sc.border0),
         ),
       ),
       child: Row(
@@ -264,7 +265,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           Container(
             width: 14,
             height: 14,
-            decoration: BoxDecoration(color: r.color, shape: BoxShape.circle),
+            decoration: SatBox.d(color: r.color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -321,10 +322,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(16),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,9 +358,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 for (final r in roles)
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       border: Border(
-                          top: BorderSide(color: sc.border0)),
+                          top: SatB.side(color: sc.border0)),
                     ),
                     child: Row(
                       children: [
@@ -370,7 +371,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                               Container(
                                 width: 10,
                                 height: 10,
-                                decoration: BoxDecoration(
+                                decoration: SatBox.d(
                                     color: r.color,
                                     shape: BoxShape.circle),
                               ),
@@ -411,10 +412,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         height: 26,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: on ? sc.successSoft : sc.bg3,
-          border: Border.all(color: on ? sc.success : sc.border1),
-          borderRadius: BorderRadius.circular(6),
+          border: SatB.all(color: on ? sc.success : sc.border1),
+          borderRadius: SatR.a(6),
         ),
         alignment: Alignment.center,
         child: Text(on ? '✓' : '—',
@@ -485,8 +486,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: context.sat.bg1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
       builder: (_) =>
           _NewStaffDialog(roles: selectable, takenColors: takenColors),
@@ -530,8 +531,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       context: context,
       useRootNavigator: true,
       backgroundColor: context.sat.bg1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
       builder: (ctx) {
         final sc = ctx.sat;
@@ -560,10 +561,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                         child: Container(
                           width: 44,
                           height: 44,
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             color: Color(c),
                             shape: BoxShape.circle,
-                            border: Border.all(
+                            border: SatB.all(
                               color: c == r.colorHex ? sc.textHi : sc.border1,
                               width: c == r.colorHex ? 3 : 1,
                             ),
@@ -636,11 +637,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         height: 28,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: on ? sc.accentSoft : sc.bg3,
           border:
-              Border.all(color: on ? sc.accentBorder : sc.border1),
-          borderRadius: BorderRadius.circular(999),
+              SatB.all(color: on ? sc.accentBorder : sc.border1),
+          borderRadius: SatR.a(999),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -650,14 +651,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                   width: 8,
                   height: 8,
                   decoration:
-                      BoxDecoration(color: color, shape: BoxShape.circle)),
+                      SatBox.d(color: color, shape: BoxShape.circle)),
               const SizedBox(width: 6),
             ],
             Text(label,
                 style: SatType.sans(
                     size: 11,
                     weight: FontWeight.w500,
-                    color: on ? sc.accent : sc.textMd)),
+                    color: on ? sc.accentText : sc.textMd)),
           ],
         ),
       ),
@@ -678,7 +679,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
+          SatBox.d(color: bg, borderRadius: SatR.a(5)),
       child: Text(t,
           style: SatType.mono(
               size: 9,
@@ -698,8 +699,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: context.sat.bg1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
       builder: (ctx) {
         final sc = ctx.sat;
@@ -765,9 +766,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 Widget _sheetHandle(SatColors sc) => Container(
       width: 40,
       height: 4,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.border1,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: SatR.a(2),
       ),
     );
 
@@ -782,8 +783,8 @@ Future<bool?> _confirmSheet(
     context: context,
     useRootNavigator: true,
     backgroundColor: context.sat.bg1,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
     ),
     builder: (ctx) {
       final sc = ctx.sat;
@@ -851,10 +852,10 @@ class _StaffCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: sc.bg2,
-            border: Border.all(color: sc.border0),
-            borderRadius: BorderRadius.circular(14),
+            border: SatB.all(color: sc.border0),
+            borderRadius: SatR.a(14),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -873,9 +874,9 @@ class _StaffCard extends StatelessWidget {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                       color: role!.color.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(5)),
+                      borderRadius: SatR.a(5)),
                   child: Text(role!.name.toUpperCase(),
                       style: SatType.mono(
                           size: 9,
@@ -915,7 +916,7 @@ class _Avatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -994,10 +995,10 @@ class _SwatchDot extends StatelessWidget {
         child: Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: color,
             shape: BoxShape.circle,
-            border: Border.all(
+            border: SatB.all(
               color: selected ? borderColor : faintBorder,
               width: selected ? 3 : 1,
             ),
@@ -1193,7 +1194,7 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
     return Material(
       color: sc.bg1,
       clipBehavior: Clip.antiAlias,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       child: SizedBox(
         height: double.infinity,
         child: SafeArea(
@@ -1322,8 +1323,8 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
               ),
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: sc.border0)),
+                decoration: SatBox.d(
+                  border: Border(top: SatB.side(color: sc.border0)),
                 ),
                 child: Row(
                   children: [

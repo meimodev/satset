@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -27,7 +28,7 @@ import 'package:satset/ui/core/widgets/anim.dart';
 Widget fleetPill(SatColors sc, String text, Color fg, Color bg) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+          SatBox.d(color: bg, borderRadius: SatR.a(8)),
       child: Text(text,
           style: SatType.mono(size: 10, weight: FontWeight.w700, color: fg)),
     );
@@ -69,10 +70,10 @@ class FleetTile extends StatelessWidget {
 
     final body = Container(
       padding: EdgeInsets.fromLTRB(big ? 16 : 14, 14, trailing == null ? 16 : 6, 14),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(radius),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(radius),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,9 +81,9 @@ class FleetTile extends StatelessWidget {
           Container(
             width: iconBox,
             height: iconBox,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: tint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(big ? 14 : 12),
+              borderRadius: SatR.a(big ? 14 : 12),
             ),
             alignment: Alignment.center,
             child: Icon(icon, size: iconSize, color: tint),
@@ -131,10 +132,10 @@ class FleetTile extends StatelessWidget {
     return PressScale(
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: SatR.a(radius),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: SatR.a(radius),
           child: body,
         ),
       ),
@@ -208,7 +209,7 @@ class FleetHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 14, color: sc.accent),
+            Icon(icon, size: 14, color: sc.accentText),
             const SizedBox(width: 6),
             Expanded(
               child: Text(kicker,
@@ -216,7 +217,7 @@ class FleetHeader extends StatelessWidget {
                       size: 11,
                       weight: FontWeight.w700,
                       letterSpacing: 2,
-                      color: sc.accent)),
+                      color: sc.accentText)),
             ),
             ?trailing,
           ],
@@ -254,10 +255,10 @@ class FleetPrimaryButton extends StatelessWidget {
     final sc = context.sat;
     return Material(
       color: onTap == null ? sc.bg3 : sc.accent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: SatR.a(12),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: SatR.a(12),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 13),
           alignment: Alignment.center,

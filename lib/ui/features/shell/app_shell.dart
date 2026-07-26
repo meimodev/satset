@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -150,72 +151,76 @@ class _FloatingTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final bg = sc.scrim.withValues(alpha: 0.92);
+    final bar = Container(
+      height: 64,
+      decoration: SatBox.d(
+        color: SatShape.veil(sc.scrim, 0.92),
+        borderRadius: SatR.a(22),
+        border: SatB.all(color: sc.border1),
+        boxShadow: SatShape.brutal
+            ? SatShape.hardShadow(5)
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          _Tab(
+            id: 'tables',
+            label: AppStrings.tabMeja,
+            icon: Icons.grid_view_rounded,
+            active: active == 'tables',
+            onTap: () => context.go('/tables'),
+          ),
+          _Tab(
+            id: 'orders',
+            label: AppStrings.tabPesanan,
+            icon: Icons.description_outlined,
+            active: active == 'orders',
+            badge: readyCount,
+            badgeAlert: readyCount > 0,
+            onTap: () => context.go('/orders'),
+          ),
+          if (showGuest)
+            _Tab(
+              id: 'guest',
+              label: AppStrings.tabMandiri,
+              icon: Icons.qr_code_2,
+              active: active == 'guest',
+              badge: guestCount,
+              badgeAlert: guestCount > 0,
+              onTap: () => context.go('/guestorders'),
+            ),
+          if (showKasir)
+            _Tab(
+              id: 'kasir',
+              label: AppStrings.tabKasir,
+              icon: Icons.point_of_sale_rounded,
+              active: active == 'kasir',
+              onTap: () => context.go('/kasir'),
+            ),
+          _Tab(
+            id: 'me',
+            label: AppStrings.tabSaya,
+            icon: Icons.person_outline_rounded,
+            active: active == 'me',
+            onTap: () => context.go('/me'),
+          ),
+        ],
+      ),
+    );
+    // The brutal skin has no frosted glass — an opaque slab on a hard shadow.
+    if (SatShape.brutal) return bar;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: SatR.a(22),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          height: 64,
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: sc.border1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Row(
-            children: [
-              _Tab(
-                id: 'tables',
-                label: AppStrings.tabMeja,
-                icon: Icons.grid_view_rounded,
-                active: active == 'tables',
-                onTap: () => context.go('/tables'),
-              ),
-              _Tab(
-                id: 'orders',
-                label: AppStrings.tabPesanan,
-                icon: Icons.description_outlined,
-                active: active == 'orders',
-                badge: readyCount,
-                badgeAlert: readyCount > 0,
-                onTap: () => context.go('/orders'),
-              ),
-              if (showGuest)
-                _Tab(
-                  id: 'guest',
-                  label: AppStrings.tabMandiri,
-                  icon: Icons.qr_code_2,
-                  active: active == 'guest',
-                  badge: guestCount,
-                  badgeAlert: guestCount > 0,
-                  onTap: () => context.go('/guestorders'),
-                ),
-              if (showKasir)
-                _Tab(
-                  id: 'kasir',
-                  label: AppStrings.tabKasir,
-                  icon: Icons.point_of_sale_rounded,
-                  active: active == 'kasir',
-                  onTap: () => context.go('/kasir'),
-                ),
-              _Tab(
-                id: 'me',
-                label: AppStrings.tabSaya,
-                icon: Icons.person_outline_rounded,
-                active: active == 'me',
-                onTap: () => context.go('/me'),
-              ),
-            ],
-          ),
-        ),
+        child: bar,
       ),
     );
   }
@@ -251,9 +256,9 @@ class _Tab extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Container(
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: active ? sc.bg4 : Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: SatR.a(18),
               ),
               alignment: Alignment.center,
               child: Column(
@@ -280,9 +285,9 @@ class _Tab extends StatelessWidget {
                 child: Container(
                   constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: badgeAlert ? sc.success : sc.accent,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: SatR.a(8),
                   ),
                   alignment: Alignment.center,
                   child: Text(

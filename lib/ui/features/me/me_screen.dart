@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -482,9 +483,9 @@ class _LayoutToggleButton extends StatelessWidget {
         child: Container(
           width: 32,
           height: 32,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             shape: BoxShape.circle,
-            border: Border.all(color: sc.border1),
+            border: SatB.all(color: sc.border1),
           ),
           alignment: Alignment.center,
           child: Icon(
@@ -518,18 +519,18 @@ class _ThemeIconButton extends StatelessWidget {
         child: Container(
           width: 32,
           height: 32,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             shape: BoxShape.circle,
-            border: Border.all(color: sc.border1),
+            border: SatB.all(color: sc.border1),
           ),
           alignment: Alignment.center,
           child: Container(
             width: 14,
             height: 14,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               shape: BoxShape.circle,
               color: theme.colors.accent,
-              border: Border.all(color: sc.border2),
+              border: SatB.all(color: sc.border2),
             ),
           ),
         ),
@@ -561,13 +562,13 @@ class _Identity extends StatelessWidget {
                 value: m.shiftProgress,
                 strokeWidth: 3,
                 backgroundColor: sc.border0,
-                valueColor: AlwaysStoppedAnimation<Color>(sc.accent),
+                valueColor: AlwaysStoppedAnimation<Color>(sc.accentText),
               ),
             ),
             Container(
               width: size,
               height: size,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -717,10 +718,10 @@ class _KpiBox extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border),
+        borderRadius: SatR.a(16),
+        border: SatB.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -759,22 +760,22 @@ class _PacingCard extends StatelessWidget {
     final perHour = (ratio * 60).toStringAsFixed(1);
     return Container(
       padding: EdgeInsets.fromLTRB(18, big ? 18 : 16, 18, big ? 18 : 16),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(18),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(18),
       ),
       child: Row(
         children: [
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: sc.accentSoft,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: SatR.a(10),
             ),
             alignment: Alignment.center,
-            child: Icon(Icons.show_chart_rounded, size: 18, color: sc.accent),
+            child: Icon(Icons.show_chart_rounded, size: 18, color: sc.accentText),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -834,10 +835,10 @@ class _ActivityCard extends StatelessWidget {
     if (padded) {
       return Container(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg2,
-          border: Border.all(color: sc.border0),
-          borderRadius: BorderRadius.circular(20),
+          border: SatB.all(color: sc.border0),
+          borderRadius: SatR.a(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -865,10 +866,10 @@ class _ActivityCard extends StatelessWidget {
     }
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: sc.border0),
+        borderRadius: SatR.a(16),
+        border: SatB.all(color: sc.border0),
       ),
       child: inner,
     );
@@ -914,7 +915,7 @@ class _AuditRow extends StatelessWidget {
       AuditType.voidItem => (Icons.delete_outline, sc.urgentSoft, sc.urgent),
       AuditType.comp => (Icons.card_giftcard_rounded, sc.warnSoft, sc.warn),
       AuditType.modify => (Icons.edit_outlined, sc.infoSoft, sc.info),
-      AuditType.fire => (Icons.local_fire_department, sc.accentSoft, sc.accent),
+      AuditType.fire => (Icons.local_fire_department, sc.accentSoft, sc.accentText),
       AuditType.tableMoved => (Icons.swap_horiz_rounded, sc.infoSoft, sc.info),
       AuditType.paymentRecorded => (Icons.payments_outlined, sc.successSoft, sc.success),
       AuditType.refund => (Icons.undo_rounded, sc.warnSoft, sc.warn),
@@ -943,8 +944,8 @@ class _AuditRow extends StatelessWidget {
           Container(
             width: 28,
             height: 28,
-            decoration: BoxDecoration(
-                color: bg, borderRadius: BorderRadius.circular(8)),
+            decoration: SatBox.d(
+                color: bg, borderRadius: SatR.a(8)),
             alignment: Alignment.center,
             child: Icon(icon, size: 14, color: fg),
           ),
@@ -993,9 +994,9 @@ class _EndShiftButton extends StatelessWidget {
                 size: 15, weight: FontWeight.w600, color: sc.textHi)),
         style: OutlinedButton.styleFrom(
           foregroundColor: sc.textHi,
-          side: BorderSide(color: sc.border2),
+          side: SatB.side(color: sc.border2),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18)),
+              borderRadius: SatR.a(18)),
           minimumSize: const Size.fromHeight(52),
         ),
       ),

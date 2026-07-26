@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -54,7 +55,7 @@ class SatAppBar extends ConsumerWidget {
             const SizedBox(width: 10),
             Flexible(
               child: Text(
-                title!,
+                SatShape.caps(title!),
                 overflow: TextOverflow.ellipsis,
                 style: SatType.sans(
                   size: 13,
@@ -81,8 +82,8 @@ class SatAppBar extends ConsumerWidget {
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: sc.border0)),
+      decoration: SatBox.d(
+        border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -101,7 +102,7 @@ class SatAppBar extends ConsumerWidget {
                 else if (title != null)
                   Flexible(
                     child: Text(
-                      title!,
+                      SatShape.caps(title!),
                       overflow: TextOverflow.ellipsis,
                       style: SatType.sans(
                         size: 14,
@@ -151,10 +152,10 @@ class _NetworkPill extends ConsumerWidget {
     return Container(
       height: 26,
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -162,7 +163,7 @@ class _NetworkPill extends ConsumerWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
+            decoration: SatBox.d(
               color: dotColor,
               shape: BoxShape.circle,
               boxShadow: [
@@ -208,7 +209,7 @@ class _AvatarBtn extends ConsumerWidget {
         child: Container(
           width: size,
           height: size,
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             shape: BoxShape.circle,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -251,7 +252,7 @@ class _Crumbs extends StatelessWidget {
       }
       children.add(
         Text(
-          items[i],
+          SatShape.caps(items[i]),
           overflow: TextOverflow.ellipsis,
           style: SatType.mono(
             size: 12,
@@ -281,10 +282,10 @@ class SatAppBarPill extends StatelessWidget {
     return Container(
       height: 26,
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border1),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: sc.border1),
+        borderRadius: SatR.a(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

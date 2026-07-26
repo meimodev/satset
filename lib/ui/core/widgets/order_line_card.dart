@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/staff_repository.dart';
@@ -118,10 +119,10 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
             return AnimatedContainer(
               duration: reduced ? Duration.zero : _kStatusXfade,
               curve: _kEase,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: bg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: border),
+                borderRadius: SatR.a(14),
+                border: SatB.all(color: border),
                 boxShadow: glowT > 0
                     ? [
                         BoxShadow(
@@ -138,10 +139,10 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
           },
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: SatR.a(14),
             child: InkWell(
               onTap: readOnly ? null : onTap,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: SatR.a(14),
               child: Container(
                 padding: const EdgeInsets.all(14),
                 child: Row(
@@ -281,7 +282,7 @@ class _StatusChip extends StatelessWidget {
         break;
       case TicketStatus.cooked:
         bg = sc.accentSoft;
-        fg = sc.accent;
+        fg = sc.accentText;
         break;
       case TicketStatus.ready:
         bg = sc.successSoft;
@@ -308,7 +309,7 @@ class _StatusChip extends StatelessWidget {
       curve: _kEase,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+          SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: AnimatedSwitcher(
         duration: reduced ? Duration.zero : _kChipMorph,
         switchInCurve: _kEase,
@@ -350,9 +351,9 @@ class _SmallSuccessButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: sc.successSoft,
           foregroundColor: sc.success,
-          side: BorderSide(color: sc.success.withValues(alpha: 0.4)),
+          side: SatB.side(color: sc.success.withValues(alpha: 0.4)),
           padding: const EdgeInsets.symmetric(vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
         ),
         icon: Icon(icon, size: 14, color: sc.success),
         label: Text(label.toUpperCase(),

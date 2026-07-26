@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -285,17 +286,17 @@ class _CompletedFilter extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SatR.a(999),
         onTap: () => onChanged(!value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             color: value ? sc.success.withValues(alpha: 0.14) : sc.bg2,
-            border: Border.all(
+            border: SatB.all(
               color: value ? sc.success.withValues(alpha: 0.5) : sc.border0,
             ),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: SatR.a(999),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -352,13 +353,13 @@ class _OrderCard extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(
+        border: SatB.all(
           color: age >= 10 ? ageColor.withValues(alpha: 0.5) : sc.border0,
           width: age >= 10 ? 1.5 : 1,
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: SatR.a(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -370,9 +371,9 @@ class _OrderCard extends ConsumerWidget {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                  decoration: BoxDecoration(
+                  decoration: SatBox.d(
                     color: sc.bg3,
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: SatR.a(9),
                   ),
                   child: Text(tableLabel,
                       style: SatType.mono(
@@ -441,9 +442,9 @@ class _AgePill extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SatR.a(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -521,7 +522,7 @@ class _PulseDotState extends State<_PulseDot>
     final dot = Container(
       width: 6,
       height: 6,
-      decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+      decoration: SatBox.d(color: widget.color, shape: BoxShape.circle),
     );
     if (!widget.pulse) return dot;
     return AnimatedBuilder(
@@ -614,9 +615,9 @@ class _ItemRowState extends State<_ItemRow>
         child: Container(
           constraints: const BoxConstraints(minHeight: 60),
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          decoration: BoxDecoration(
+          decoration: SatBox.d(
             border: Border(
-              top: BorderSide(color: sc.border0),
+              top: SatB.side(color: sc.border0),
             ),
           ),
           child: Row(
@@ -626,9 +627,9 @@ class _ItemRowState extends State<_ItemRow>
                 margin: const EdgeInsets.only(top: 1),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.bg3,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: SatR.a(6),
                 ),
                 child: Text('×${ticket.qty}',
                     style: SatType.mono(
@@ -749,10 +750,10 @@ class _CheckButtonState extends State<_CheckButton>
         curve: Curves.easeOut,
         width: 34,
         height: 34,
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: widget.cooked ? sc.success : Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(
+          border: SatB.all(
             color: widget.cooked ? sc.success : sc.border2,
             width: 2,
           ),

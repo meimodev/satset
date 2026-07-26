@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -382,10 +383,10 @@ class _SegBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: active ? sc.textHi : sc.bg2,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: active ? sc.textHi : sc.border0),
+          borderRadius: SatR.a(999),
+          border: SatB.all(color: active ? sc.textHi : sc.border0),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -435,15 +436,15 @@ class _OrderRow extends StatelessWidget {
         opacity: isVoided ? 0.55 : 1,
         child: Material(
           color: bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: SatR.a(16),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: SatR.a(16),
             child: Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: border),
+              decoration: SatBox.d(
+                borderRadius: SatR.a(16),
+                border: SatB.all(color: border),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,11 +452,11 @@ class _OrderRow extends StatelessWidget {
                   Container(
                     constraints: const BoxConstraints(minWidth: 42, maxWidth: 88),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
+                    decoration: SatBox.d(
                       color: isReady
                           ? sc.success.withValues(alpha: 0.2)
                           : sc.bg3,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: SatR.a(10),
                     ),
                     alignment: Alignment.center,
                     child: Row(
@@ -568,10 +569,10 @@ class _ServeButton extends StatelessWidget {
     final sc = context.sat;
     return Material(
       color: sc.success,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: SatR.a(999),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SatR.a(999),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -615,7 +616,7 @@ class _StatusChip extends StatelessWidget {
         break;
       case TicketStatus.cooked:
         bg = sc.accentSoft;
-        fg = sc.accent;
+        fg = sc.accentText;
         break;
       case TicketStatus.ready:
         bg = sc.successSoft;
@@ -637,7 +638,7 @@ class _StatusChip extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: Text(
         ticketStatusLabel(status).toUpperCase(),
         style: SatType.mono(
@@ -665,10 +666,10 @@ class _TabletSeg extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: active ? sc.textHi : sc.bg2,
-          border: Border.all(color: active ? sc.textHi : sc.border0),
-          borderRadius: BorderRadius.circular(999),
+          border: SatB.all(color: active ? sc.textHi : sc.border0),
+          borderRadius: SatR.a(999),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

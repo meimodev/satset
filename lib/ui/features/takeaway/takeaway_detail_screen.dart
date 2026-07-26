@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -216,9 +217,9 @@ class _Footer extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, 16 + MediaQuery.of(context).padding.bottom),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg1,
-        border: Border(top: BorderSide(color: sc.border0)),
+        border: Border(top: SatB.side(color: sc.border0)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -243,10 +244,10 @@ class _Footer extends StatelessWidget {
                     label: const Text('Tambah item'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: sc.textHi,
-                      side: BorderSide(color: sc.border2),
+                      side: SatB.side(color: sc.border2),
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                          borderRadius: SatR.a(14)),
                     ),
                   ),
                 ),
@@ -258,10 +259,10 @@ class _Footer extends StatelessWidget {
                   label: const Text('Tagihan'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: sc.textHi,
-                    side: BorderSide(color: sc.border2),
+                    side: SatB.side(color: sc.border2),
                     minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: SatR.a(14)),
                   ),
                 ),
               ),
@@ -285,7 +286,7 @@ class _Footer extends StatelessWidget {
                   backgroundColor: sc.accent,
                   foregroundColor: sc.accentInk,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                      borderRadius: SatR.a(16)),
                 ),
               ),
             ),

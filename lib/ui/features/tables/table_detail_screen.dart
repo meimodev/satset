@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -733,10 +734,10 @@ class _LiveSeatedChip extends ConsumerWidget {
     return Container(
       height: height,
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        borderRadius: BorderRadius.circular(height / 2),
-        border: Border.all(color: sc.border0),
+        borderRadius: SatR.a(height / 2),
+        border: SatB.all(color: sc.border0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -768,10 +769,10 @@ class _SeatedDurationChip extends StatelessWidget {
     return Container(
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: sc.border0),
+        borderRadius: SatR.a(16),
+        border: SatB.all(color: sc.border0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -803,9 +804,9 @@ class _HPill extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg3,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SatR.a(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -848,9 +849,9 @@ class _ContextTriggerBtn extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Container(
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   shape: BoxShape.circle,
-                  border: Border.all(color: sc.border0),
+                  border: SatB.all(color: sc.border0),
                 ),
                 alignment: Alignment.center,
                 child: Icon(Icons.info_outline, size: 16, color: sc.textMd),
@@ -874,15 +875,15 @@ class _ContextTriggerBtn extends StatelessWidget {
                           constraints: const BoxConstraints(
                               minWidth: 16, minHeight: 16),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
+                          decoration: SatBox.d(
                             color: sc.urgent,
                             shape: alertCount < 10
                                 ? BoxShape.circle
                                 : BoxShape.rectangle,
                             borderRadius: alertCount < 10
                                 ? null
-                                : BorderRadius.circular(8),
-                            border: Border.all(color: sc.bg0, width: 1.5),
+                                : SatR.a(8),
+                            border: SatB.all(color: sc.bg0, width: 1.5),
                           ),
                           alignment: Alignment.center,
                           child: Text(
@@ -923,10 +924,10 @@ class _ContextSheet extends StatelessWidget {
       maxChildSize: 0.95,
       expand: false,
       builder: (_, scroll) => Container(
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.bg1,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-          border: Border.all(color: sc.border0),
+          borderRadius: BorderRadius.vertical(top: SatR.c(22)),
+          border: SatB.all(color: sc.border0),
         ),
         child: ListView(
           controller: scroll,
@@ -937,9 +938,9 @@ class _ContextSheet extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(vertical: 10),
                 width: 36,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: SatBox.d(
                   color: sc.border1,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: SatR.a(2),
                 ),
               ),
             ),
@@ -1011,7 +1012,7 @@ class _CourseBlock extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: course.color(sc)),
+                  decoration: SatBox.d(shape: BoxShape.circle, color: course.color(sc)),
                 ),
                 const SizedBox(width: 10),
                 Text(course.name.toUpperCase(),
@@ -1061,18 +1062,18 @@ class _FireButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           backgroundColor: sc.accentSoft,
-          foregroundColor: sc.accent,
-          side: BorderSide(color: sc.accentBorder, style: BorderStyle.solid),
+          foregroundColor: sc.accentText,
+          side: SatB.side(color: sc.accentBorder, style: BorderStyle.solid),
           padding: const EdgeInsets.symmetric(vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
         ),
-        icon: Icon(Icons.local_fire_department, size: 14, color: sc.accent),
+        icon: Icon(Icons.local_fire_department, size: 14, color: sc.accentText),
         label: Text(label.toUpperCase(),
             style: SatType.sans(
               size: 12,
               weight: FontWeight.w600,
               letterSpacing: 0.48,
-              color: sc.accent,
+              color: sc.accentText,
             )),
       ),
     );
@@ -1144,9 +1145,9 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
+              decoration: SatBox.d(
                 color: sc.bg2,
-                borderRadius: BorderRadius.circular(36),
+                borderRadius: SatR.a(36),
               ),
               child: Icon(Icons.event_seat_outlined,
                   size: 36, color: sc.textMd),
@@ -1174,8 +1175,8 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                   return Transform.scale(
                     scale: scale,
                     child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                      decoration: SatBox.d(
+                        borderRadius: SatR.a(16),
                         boxShadow: glow > 0
                             ? [
                                 BoxShadow(
@@ -1193,13 +1194,13 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                 },
                 child: Material(
                   color: bg,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: SatR.a(16),
                   child: InkWell(
                     onTap: enabled ? widget.onTap : null,
                     onHighlightChanged: (h) {
                       if (enabled) setState(() => _pressed = h);
                     },
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: SatR.a(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 28, vertical: 16),
@@ -1262,7 +1263,7 @@ class _PrimaryIconButtonState extends State<_PrimaryIconButton> {
         child: AnimatedContainer(
           duration: reduced ? Duration.zero : _kStatusXfade,
           curve: _kEase,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+          decoration: SatBox.d(color: bg, shape: BoxShape.circle),
           child: Material(
             color: Colors.transparent,
             shape: const CircleBorder(),
@@ -1310,12 +1311,12 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
         height: 52,
         child: Material(
           color: sc.success,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: SatR.a(18),
           elevation: 0,
           child: InkWell(
             onTap: widget.onTap,
             onHighlightChanged: (h) => setState(() => _pressed = h),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: SatR.a(18),
             child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 22),
             alignment: Alignment.center,
@@ -1363,10 +1364,10 @@ class _LockedBanner extends StatelessWidget {
         width: double.infinity,
         margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
+        decoration: SatBox.d(
           color: sc.warnSoft,
-          border: Border.all(color: sc.warn.withValues(alpha: 0.35)),
-          borderRadius: BorderRadius.circular(12),
+          border: SatB.all(color: sc.warn.withValues(alpha: 0.35)),
+          borderRadius: SatR.a(12),
         ),
         child: Row(
           children: [
@@ -1459,8 +1460,8 @@ class _TabletSplit extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.fromLTRB(28, 22, 28, 16),
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: sc.border0)),
+                  decoration: SatBox.d(
+                    border: Border(bottom: SatB.side(color: sc.border0)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1587,8 +1588,8 @@ class _TabletSplit extends StatelessWidget {
                 if (!isKosong)
                   Container(
                     padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
-                    decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: sc.border0)),
+                    decoration: SatBox.d(
+                      border: Border(top: SatB.side(color: sc.border0)),
                     ),
                     child: Row(
                       children: [
@@ -1607,10 +1608,10 @@ class _TabletSplit extends StatelessWidget {
                             opacity: readOnly ? 0.5 : 1,
                             child: Material(
                               color: sc.accent,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: SatR.a(14),
                               child: InkWell(
                                 onTap: readOnly ? null : onAdd,
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: SatR.a(14),
                                 child: Container(
                                   height: 52,
                                   alignment: Alignment.center,
@@ -1669,10 +1670,10 @@ class _TabletSplit extends StatelessWidget {
     if (tone == 'success') { bg = sc.successSoft; fg = sc.success; border = sc.success.withValues(alpha: 0.3); }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: bg,
-        border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(999),
+        border: SatB.all(color: border),
+        borderRadius: SatR.a(999),
       ),
       child: Text(text,
           style: SatType.sans(
@@ -1757,10 +1758,10 @@ class _ContextPane extends ConsumerWidget {
                                   padding: const EdgeInsets.only(bottom: 6),
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
+                                    decoration: SatBox.d(
                                       color: sc.bg2,
-                                      border: Border.all(color: sc.border0),
-                                      borderRadius: BorderRadius.circular(12),
+                                      border: SatB.all(color: sc.border0),
+                                      borderRadius: SatR.a(12),
                                     ),
                                     child: NoteLine(
                                         label: 'Instruksi khusus', text: note),
@@ -1779,10 +1780,10 @@ class _ContextPane extends ConsumerWidget {
                               for (final a in allergens)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
+                                  decoration: SatBox.d(
                                     color: sc.urgentSoft,
-                                    border: Border.all(color: sc.urgent.withValues(alpha: 0.35)),
-                                    borderRadius: BorderRadius.circular(999),
+                                    border: SatB.all(color: sc.urgent.withValues(alpha: 0.35)),
+                                    borderRadius: SatR.a(999),
                                   ),
                                   child: Text(a,
                                       style: SatType.sans(
@@ -1869,10 +1870,10 @@ class _ContextPane extends ConsumerWidget {
   Widget _stat(BuildContext context, SatColors sc, String v, String l) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(14),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1889,10 +1890,10 @@ class _ContextPane extends ConsumerWidget {
   Widget _card(BuildContext context, SatColors sc, String head, Widget child) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
+      decoration: SatBox.d(
         color: sc.bg2,
-        border: Border.all(color: sc.border0),
-        borderRadius: BorderRadius.circular(18),
+        border: SatB.all(color: sc.border0),
+        borderRadius: SatR.a(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1916,29 +1917,29 @@ class _ContextPane extends ConsumerWidget {
   }) {
     return Material(
       color: accent ? sc.accentSoft : sc.bg3,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: SatR.a(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: SatR.a(10),
         child: Container(
           height: 38,
-          decoration: BoxDecoration(
-            border: Border.all(
+          decoration: SatBox.d(
+            border: SatB.all(
               color: accent ? sc.accentBorder : sc.border1,
             ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: SatR.a(10),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 14, color: accent ? sc.accent : sc.textMd),
+              Icon(icon, size: 14, color: accent ? sc.accentText : sc.textMd),
               const SizedBox(width: 8),
               Text(label.toUpperCase(),
                   style: SatType.sans(
                     size: 12,
                     weight: FontWeight.w600,
                     letterSpacing: 0.48,
-                    color: accent ? sc.accent : sc.textMd,
+                    color: accent ? sc.accentText : sc.textMd,
                   )),
             ],
           ),
