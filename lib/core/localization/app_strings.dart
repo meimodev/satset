@@ -35,6 +35,9 @@ class AppStrings {
       'Bahan, terima barang, opname, dan produksi';
   static const String venueHubSectionReports = 'Laporan';
   static const String venueHubSectionReportsSub = 'Ringkasan shift, penjualan, dan ekspor';
+  static const String venueHubSectionAlerts = 'Peringatan';
+  static const String venueHubSectionAlertsSub =
+      'Ambang waktu, suara, dan senyap perangkat';
   static const String venueHubSeedTitle = 'Mulai cepat';
   static const String venueHubSeedBody = 'Muat contoh data restoran umum: 2 zona (Dalam & Luar) dengan meja, menu lengkap, dan 2 staf (pelayan & dapur). Bisa diubah kapan saja.';
   static const String venueHubSeedBtnLoad = 'Muat contoh data';
@@ -110,6 +113,14 @@ class AppStrings {
   static const String venueSettingsTimingMuteTitle = 'Senyapkan di alat ini';
   static const String venueSettingsTimingMuteHint =
       'Hanya untuk alat ini. Pilihan nada tetap milik venue.';
+
+  // Layar Peringatan (/alerts). Dikelompokkan per cakupan, karena cakupan
+  // yang paling sering salah dibaca: ambang & nada milik venue, senyap milik
+  // satu perangkat.
+  static const String alertsTitle = 'Peringatan';
+  static const String alertsSectionThresholds = 'Ambang waktu';
+  static const String alertsScopeVenue = 'Semua perangkat';
+  static const String alertsScopeDevice = 'Hanya perangkat ini';
 
   // Silent floor states (ADR-0044) — visual markers, never cues.
   static const String tableStateUngreeted = 'Belum dilayani';

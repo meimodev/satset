@@ -45,12 +45,12 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 ### Layers
 
 **`lib/ui/`** — Flutter only.
-- `ui/core/design/` — tokens + theme: `colors.dart`, `typography.dart`, `spacing.dart`, `layout.dart`, `theme.dart`, plus `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart`, `format.dart`. Heritage Hospitality palette: Soft Cream `#FBF9F4`, Rich Brown `#4A3728`. Fonts (Noto Serif, Be Vietnam Pro) via `google_fonts` — needs network on first launch.
+- `ui/core/design/` — tokens + theme: `colors.dart`, `typography.dart`, `spacing.dart`, `layout.dart`, `theme.dart`, plus `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart`, `format.dart`, `motion.dart`. Amber-on-charcoal palette: accent `#FF9233`, dark `bg0 #0D0E10`, light `bg0 #F6F4EF`. Fonts (IBM Plex Sans + IBM Plex Mono) via `google_fonts` — needs network on first launch. See §Design Context for the intent behind these.
 - `ui/core/state/` — cross-feature view-models (`theme_view_model.dart`, `view_mode_view_model.dart`, `ready_alert_view_model.dart`).
 - `ui/core/widgets/` — cross-feature chrome: `sat_app_bar.dart`, `satset_top_bar.dart`, `tablet_chrome.dart`, `ready_banner.dart`, `ready_toast.dart`.
 - `ui/features/<area>/` — screens grouped by flow. Each feature owns `view_models/` and `views/` (or top-level screens + `widgets/`).
   - Order-taking: `tables/` → `menu/` (+ `modifier_sheet.dart`) → `review/` → `sent/` → `orders/`.
-  - Admin: `admin/` (`venue_hub_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
+  - Admin: `admin/` (`venue_hub_screen`, `alerts_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
   - Onboarding: `onboarding/views/` (`mode_select_screen`, `pair_screen`, `forbidden_screen`).
   - Auth: `auth/views/pin_screen.dart`.
   - Other: `me/`, `void_flow/`, `shell/app_shell.dart`, `_stub/`.
@@ -80,7 +80,8 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 - `/pair` — `PairScreen` (mDNS browse + QR scan).
 - `/pin` — `PinScreen` (carries inline mode-select + pair flow if unpaired).
 - `/forbidden` — capability-denied landing.
-- `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/reports`, `/settings`, `/staff`, `/me`.
+- `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
+  - `/alerts` = alert config (thresholds + sounds + this-device mute), reached from the Venue hub. Gated `editSettings`.
 - **Outside the shell** (root-navigator pushes, full-page transitions):
   - `/table/:id` (+ `/menu`, `/review`, `/sent` subroutes) — order-taking flow.
   - `/menuadm/:id` — menu item editor.

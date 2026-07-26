@@ -3,10 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/generic_seed.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/data/repositories/staff_repository.dart';
+import 'package:satset/data/repositories/stock_repository.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
+import 'package:satset/data/services/api_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/features/admin/alerts_screen.dart';
 import '_common.dart';
 
 class _Section {
@@ -15,12 +23,17 @@ class _Section {
   final IconData icon;
   final String route;
   final Color Function(SatColors) tint;
+  final String Function(WidgetRef ref)? badgeBuilder;
+  final bool Function(WidgetRef ref)? hasAlert;
+
   const _Section({
     required this.label,
     required this.sub,
     required this.icon,
     required this.route,
     required this.tint,
+    this.badgeBuilder,
+    this.hasAlert,
   });
 }
 
@@ -31,13 +44,23 @@ final _sections = <_Section>[
     icon: Icons.place_outlined,
     route: '/zone-admin',
     tint: (sc) => sc.accent,
+    badgeBuilder: (ref) {
+      final z = ref.watch(zonesProvider);
+      final t = ref.watch(tablesProvider);
+      return '${t.length} meja · ${z.length} zona';
+    },
   ),
   _Section(
     label: AppStrings.venueHubSectionMenu,
     sub: AppStrings.venueHubSectionMenuSub,
-    icon: Icons.menu_rounded,
+    icon: Icons.restaurant_menu_rounded,
     route: '/menuadm',
     tint: (sc) => sc.warn,
+    badgeBuilder: (ref) {
+      final m = ref.watch(menuItemsProvider);
+      final c = ref.watch(menuCategoriesProvider);
+      return '${m.length} item · ${c.length} kategori';
+    },
   ),
   _Section(
     label: AppStrings.venueHubSectionStock,
@@ -45,6 +68,15 @@ final _sections = <_Section>[
     icon: Icons.inventory_2_outlined,
     route: '/stock',
     tint: (sc) => sc.success,
+    badgeBuilder: (ref) {
+      final s = ref.watch(ingredientsProvider).valueOrNull ?? const [];
+      final low = s.where((i) => i.isLow).length;
+      return low > 0 ? '$low perhatian' : '${s.length} bahan';
+    },
+    hasAlert: (ref) {
+      final s = ref.watch(ingredientsProvider).valueOrNull ?? const [];
+      return s.any((i) => i.isLow);
+    },
   ),
   _Section(
     label: AppStrings.venueHubSectionVenue,
@@ -52,6 +84,20 @@ final _sections = <_Section>[
     icon: Icons.storefront_outlined,
     route: '/venue-settings',
     tint: (sc) => sc.violet,
+    badgeBuilder: (ref) {
+      final v = ref.watch(venueSettingsProvider);
+      final tax = (v.taxRateBps / 100.0).toStringAsFixed(0);
+      final svc = (v.serviceRateBps / 100.0).toStringAsFixed(0);
+      return 'Pajak $tax% · Service $svc%';
+    },
+  ),
+  _Section(
+    label: AppStrings.venueHubSectionAlerts,
+    sub: AppStrings.venueHubSectionAlertsSub,
+    icon: Icons.notifications_active_outlined,
+    route: '/alerts',
+    tint: (sc) => sc.urgent,
+    badgeBuilder: (ref) => alertsSummary(ref.watch(venueSettingsProvider)),
   ),
   _Section(
     label: AppStrings.venueHubSectionSystem,
@@ -59,6 +105,11 @@ final _sections = <_Section>[
     icon: Icons.wifi_rounded,
     route: '/system',
     tint: (sc) => sc.info,
+    badgeBuilder: (ref) {
+      final cfg = ref.watch(apiConfigProvider);
+      if (cfg == null) return 'Offline';
+      return 'LAN · ${cfg.baseUri.host}';
+    },
   ),
   _Section(
     label: AppStrings.venueHubSectionStaff,
@@ -66,6 +117,10 @@ final _sections = <_Section>[
     icon: Icons.person_outline_rounded,
     route: '/staff',
     tint: (sc) => sc.success,
+    badgeBuilder: (ref) {
+      final st = ref.watch(staffRepositoryProvider);
+      return '${st.length} staf';
+    },
   ),
   _Section(
     label: AppStrings.venueHubSectionReports,
@@ -73,6 +128,7 @@ final _sections = <_Section>[
     icon: Icons.auto_awesome_outlined,
     route: '/reports',
     tint: (sc) => sc.urgent,
+    badgeBuilder: (ref) => 'Laporan shift',
   ),
 ];
 
@@ -83,20 +139,200 @@ class VenueHubScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.layout;
     final showSeed = ref.watch(genericSeedProvider).showPrompt;
+
     if (l.useTabletShell) {
       return AdminPage(
         title: AppStrings.venueHubTitle,
         sub: AppStrings.venueHubSubtitle,
         children: [
+          const Reveal(index: 0, child: _VenueHeroStrip()),
+          const SizedBox(height: 16),
           if (showSeed) ...[
-            const Reveal(index: 0, child: SeedDataBanner()),
+            const Reveal(index: 1, child: SeedDataBanner()),
             const SizedBox(height: 16),
           ],
-          _HubGrid(sections: _sections, seedOffset: showSeed ? 1 : 0, big: true),
+          _HubGrid(sections: _sections, seedOffset: showSeed ? 2 : 1, big: true),
         ],
       );
     }
+
     return _PhoneHub(sections: _sections, showSeed: showSeed);
+  }
+}
+
+class _VenueHeroStrip extends ConsumerWidget {
+  const _VenueHeroStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final venue = ref.watch(venueSettingsProvider);
+    final tables = ref.watch(tablesProvider);
+    final zones = ref.watch(zonesProvider);
+    final menuItems = ref.watch(menuItemsProvider);
+    final stockItems = ref.watch(ingredientsProvider).valueOrNull ?? const [];
+    final staffList = ref.watch(staffRepositoryProvider);
+    final apiConfig = ref.watch(apiConfigProvider);
+
+    final lowStock = stockItems.where((i) => i.isLow).length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: sc.bg2,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: sc.border0),
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: sc.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: sc.accent.withValues(alpha: 0.25)),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.storefront_rounded, size: 22, color: sc.accent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            venue.displayName.isNotEmpty
+                                ? venue.displayName
+                                : AppStrings.venueHubTitle,
+                            style: SatType.sans(
+                              size: 18,
+                              weight: FontWeight.w700,
+                              color: sc.textHi,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: sc.successSoft,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: sc.success.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: sc.success,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                apiConfig != null ? 'LAN AKTIF' : 'LOKAL',
+                                style: SatType.mono(
+                                  size: 9.5,
+                                  weight: FontWeight.w700,
+                                  color: sc.success,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      venue.legalName.isNotEmpty
+                          ? '${venue.legalName} · ${venue.address.isNotEmpty ? venue.address : 'Mode Operasional'}'
+                          : AppStrings.venueHubSubtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SatType.sans(size: 12, color: sc.textLo),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => context.push('/venue-settings'),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: sc.border1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.tune_rounded, size: 14, color: sc.textHi),
+                      const SizedBox(width: 6),
+                      Text('Pengaturan', style: SatType.sans(size: 12, weight: FontWeight.w600, color: sc.textHi)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              _StatBadge(icon: Icons.place_outlined, text: '${tables.length} meja (${zones.length} zona)', color: sc.accent),
+              _StatBadge(icon: Icons.restaurant_menu_rounded, text: '${menuItems.length} item menu', color: sc.warn),
+              _StatBadge(
+                icon: Icons.inventory_2_outlined,
+                text: lowStock > 0 ? '${stockItems.length} bahan ($lowStock low)' : '${stockItems.length} bahan',
+                color: lowStock > 0 ? sc.warn : sc.success,
+              ),
+              _StatBadge(icon: Icons.badge_outlined, text: '${staffList.length} staf', color: sc.info),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  const _StatBadge({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: SatType.sans(size: 11.5, weight: FontWeight.w500, color: sc.textLo),
+        ),
+      ],
+    );
   }
 }
 
@@ -229,7 +465,6 @@ class _BannerBtn extends StatelessWidget {
   }
 }
 
-/// 2-column grid of hub cards. Wraps in rows of 2.
 class _HubGrid extends StatelessWidget {
   final List<_Section> sections;
   final int seedOffset;
@@ -315,33 +550,39 @@ class _PhoneHub extends StatelessWidget {
             ),
           ),
         ),
+        const Reveal(index: 2, child: _VenueHeroStrip()),
+        const SizedBox(height: 14),
         if (showSeed) ...[
-          const Reveal(index: 2, child: SeedDataBanner()),
+          const Reveal(index: 3, child: SeedDataBanner()),
           const SizedBox(height: 12),
         ],
         _HubGrid(
           sections: sections,
-          seedOffset: showSeed ? 3 : 2,
+          seedOffset: showSeed ? 4 : 3,
         ),
       ],
     );
   }
 }
 
-class _HubCard extends StatelessWidget {
+class _HubCard extends ConsumerWidget {
   final _Section section;
   final bool big;
   const _HubCard({required this.section, required this.big});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final tint = section.tint(sc);
     final radius = big ? 18.0 : 16.0;
-    final iconBox = big ? 48.0 : 42.0;
-    final iconSize = big ? 24.0 : 20.0;
+    final iconBox = big ? 46.0 : 40.0;
+    final iconSize = big ? 22.0 : 20.0;
     final labelSize = big ? 15.0 : 14.0;
     final subSize = big ? 11.5 : 11.0;
+
+    final badgeText = section.badgeBuilder?.call(ref);
+    final hasAlert = section.hasAlert?.call(ref) ?? false;
+
     return PressScale(
       child: Material(
         color: sc.bg2,
@@ -353,20 +594,52 @@ class _HubCard extends StatelessWidget {
             padding: EdgeInsets.all(big ? 16 : 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
-              border: Border.all(color: sc.border0),
+              border: Border.all(
+                color: hasAlert ? sc.warn.withValues(alpha: 0.5) : sc.border0,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: iconBox,
-                  height: iconBox,
-                  decoration: BoxDecoration(
-                    color: tint.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(big ? 14 : 12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(section.icon, size: iconSize, color: tint),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: iconBox,
+                      height: iconBox,
+                      decoration: BoxDecoration(
+                        color: tint.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(big ? 14 : 12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(section.icon, size: iconSize, color: tint),
+                    ),
+                    if (badgeText != null)
+                      Flexible(
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: hasAlert ? sc.warnSoft : sc.bg1,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: hasAlert ? sc.warn : sc.border0,
+                            ),
+                          ),
+                          child: Text(
+                            badgeText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: SatType.mono(
+                              size: 9.5,
+                              weight: FontWeight.w600,
+                              color: hasAlert ? sc.warn : sc.textLo,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 14),
                 Text(section.label,
