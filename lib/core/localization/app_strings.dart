@@ -227,7 +227,8 @@ class AppStrings {
   static const String themeSheetSubtitle = 'Berlaku untuk perangkat ini saja';
   static const String themeAmberGelap = 'Amber Gelap';
   static const String themeAmberTerang = 'Amber Terang';
-  static const String themeNeonHijau = 'Neon Hijau';
+  static const String themeNeonGelap = 'Neon Gelap';
+  static const String themeNeonTerang = 'Neon Terang';
   static const String themeIndigoTerang = 'Indigo Terang';
   static const String themeNeoKertas = 'Neo Kertas';
   static const String themeNeoMidnight = 'Neo Tengah Malam';

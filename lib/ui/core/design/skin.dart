@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 /// `lembut` is the original soft look: rounded corners, hairline translucent
 /// rules, no drop shadows. `brutal` is the neo-brutalist skin: every corner
 /// square, every rule a fat solid ink line, every card lifted on a hard
-/// un-blurred offset shadow.
+/// un-blurred offset shadow. `glow` is the third: generous radii, no rules at
+/// all, cards floating on a soft ambient lift, and full-bleed obsidian slabs
+/// stacked against a bone ground (ADR-0050).
 ///
 /// Shape is picked by the palette rather than toggled separately — the neo
 /// colours (siren yellow on cream, solid-ink borders) only read correctly with
 /// square corners and fat rules, and the reverse holds too. One choice in the
 /// existing theme picker, no second setting to explain.
-enum SatSkin { lembut, brutal }
+enum SatSkin { lembut, brutal, glow }
 
 /// Live shape tokens for the selected skin.
 ///

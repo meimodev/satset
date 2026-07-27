@@ -189,14 +189,21 @@ void main() {
       expect(SatR.a(14), BorderRadius.circular(14));
     });
 
-    test('every soft palette stays lembut', () {
+    test('every palette declares the skin its colours were drawn for', () {
+      const expected = {
+        SatTheme.amberGelap: SatSkin.lembut,
+        SatTheme.amberTerang: SatSkin.lembut,
+        SatTheme.indigoTerang: SatSkin.lembut,
+        SatTheme.neoKertas: SatSkin.brutal,
+        SatTheme.neoMidnight: SatSkin.brutal,
+        SatTheme.neonGelap: SatSkin.glow,
+        SatTheme.neonTerang: SatSkin.glow,
+      };
+      // Exhaustive by construction: a new theme that forgets to pick a side
+      // fails here rather than silently inheriting `lembut`.
+      expect(expected.keys, unorderedEquals(SatTheme.values));
       for (final t in SatTheme.values) {
-        final brutal = t == SatTheme.neoKertas || t == SatTheme.neoMidnight;
-        expect(
-          t.skin,
-          brutal ? SatSkin.brutal : SatSkin.lembut,
-          reason: t.name,
-        );
+        expect(t.skin, expected[t], reason: t.name);
       }
     });
   });
