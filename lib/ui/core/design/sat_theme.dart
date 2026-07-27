@@ -18,14 +18,29 @@ enum SatTheme {
   amberTerang(AppStrings.themeAmberTerang, Brightness.light, SatColors.light),
   neonHijau(AppStrings.themeNeonHijau, Brightness.dark, SatColors.neonHijau),
   indigoTerang(
-      AppStrings.themeIndigoTerang, Brightness.light, SatColors.indigoTerang),
-  neoKertas(AppStrings.themeNeoKertas, Brightness.light, SatColors.neoKertas,
-      SatSkin.brutal),
-  neoMidnight(AppStrings.themeNeoMidnight, Brightness.dark,
-      SatColors.neoMidnight, SatSkin.brutal);
+    AppStrings.themeIndigoTerang,
+    Brightness.light,
+    SatColors.indigoTerang,
+  ),
+  neoKertas(
+    AppStrings.themeNeoKertas,
+    Brightness.light,
+    SatColors.neoKertas,
+    SatSkin.brutal,
+  ),
+  neoMidnight(
+    AppStrings.themeNeoMidnight,
+    Brightness.dark,
+    SatColors.neoMidnight,
+    SatSkin.brutal,
+  );
 
-  const SatTheme(this.label, this.brightness, this.colors,
-      [this.skin = SatSkin.lembut]);
+  const SatTheme(
+    this.label,
+    this.brightness,
+    this.colors, [
+    this.skin = SatSkin.lembut,
+  ]);
 
   final String label;
   final Brightness brightness;

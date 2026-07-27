@@ -28,6 +28,7 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default('percent') String serviceMode,
     @Default(500) int serviceRateBps,
     @Default(0) int serviceFixedAmount,
+
     /// Where a whole-order discount sits in the stack (ADR-0038). Default true
     /// = DPP-correct (the discount reduces the base service and tax compute
     /// from). Line discounts are always pre-tax and ignore this.
@@ -42,6 +43,7 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(90) int longStayMins,
     @Default(20) int idleTableMins,
     @Default(15) int reservationGraceMins,
+
     /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
     /// unreviewed before the floor card goes critical. Visual only, never a cue.
     @Default(6) int pendingReviewMins,
@@ -69,12 +71,12 @@ class VenueSettingsDto with _$VenueSettingsDto {
 /// CONTEXT.md "Tax & service charge".
 extension VenueSettingsTaxCfg on VenueSettingsDto {
   TaxServiceConfig toTaxServiceConfig() => TaxServiceConfig(
-        taxEnabled: taxEnabled,
-        taxRateBps: taxRateBps,
-        serviceEnabled: serviceEnabled,
-        serviceMode: serviceMode,
-        serviceRateBps: serviceRateBps,
-        serviceFixedAmount: serviceFixedAmount,
-        taxAfterDiscount: taxAfterDiscount,
-      );
+    taxEnabled: taxEnabled,
+    taxRateBps: taxRateBps,
+    serviceEnabled: serviceEnabled,
+    serviceMode: serviceMode,
+    serviceRateBps: serviceRateBps,
+    serviceFixedAmount: serviceFixedAmount,
+    taxAfterDiscount: taxAfterDiscount,
+  );
 }

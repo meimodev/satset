@@ -39,15 +39,15 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (tableId == null || tableId.isEmpty) {
       return _err(400, 'missing table');
     }
-    final settings = await (db.select(db.venueSettings)
-          ..where((s) => s.id.equals('default')))
-        .getSingleOrNull();
+    final settings = await (db.select(
+      db.venueSettings,
+    )..where((s) => s.id.equals('default'))).getSingleOrNull();
     if (settings == null || !settings.guestOrderingEnabled) {
       return _err(403, 'guest_ordering_disabled');
     }
-    final table = await (db.select(db.venueTables)
-          ..where((t) => t.id.equals(tableId)))
-        .getSingleOrNull();
+    final table = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(tableId))).getSingleOrNull();
     if (table == null) return _err(404, 'table_not_found');
     if (!table.guestOrderingEnabled) {
       return _err(403, 'table_disabled');
@@ -76,10 +76,13 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (await _guest(req, db, auth) == null) return _err(401, 'unauthorized');
     final bytes = await menuItemPhotoBytes(db, itemId);
     if (bytes == null) return Response.notFound('no photo');
-    return Response.ok(bytes, headers: {
-      'content-type': 'image/jpeg',
-      'cache-control': 'public, max-age=86400',
-    });
+    return Response.ok(
+      bytes,
+      headers: {
+        'content-type': 'image/jpeg',
+        'cache-control': 'public, max-age=86400',
+      },
+    );
   });
 
   // ── Submit a self-order batch ────────────────────────────────────────────
@@ -91,17 +94,21 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
 
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final idem = (body['idempotencyKey'] as String?)?.trim();
-    if (idem == null || idem.isEmpty) return _err(400, 'missing idempotencyKey');
+    if (idem == null || idem.isEmpty) {
+      return _err(400, 'missing idempotencyKey');
+    }
     final rawLines = body['lines'];
     if (rawLines is! List || rawLines.isEmpty) return _err(400, 'empty order');
 
     // Rate-limit: at most one pending batch per visit (ADR-0028). A guest must
     // wait for staff to clear the current batch before sending another.
-    final existingPending = await (db.select(db.tickets)
-          ..where((t) =>
-              t.visitId.equals(claims.visitId) &
-              t.status.equals('pendingReview')))
-        .get();
+    final existingPending =
+        await (db.select(db.tickets)..where(
+              (t) =>
+                  t.visitId.equals(claims.visitId) &
+                  t.status.equals('pendingReview'),
+            ))
+            .get();
     if (existingPending.isNotEmpty) {
       return _err(429, 'pending_batch_open');
     }
@@ -118,56 +125,66 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final createdIds = <String>[];
     final createdRows = <Ticket>[];
     String? storedResponse;
-    await db.transaction(() async {
-      final existing = await (db.select(db.idempotency)
-            ..where((k) => k.key.equals(idem)))
-          .getSingleOrNull();
-      if (existing != null) {
-        storedResponse = existing.responseJson;
-        return;
-      }
-      // Re-check the visit is still orderable inside the txn (closed/detached
-      // visit ⇒ the party left / bill locked ⇒ token is stale).
-      final visit = await (db.select(db.visits)
-            ..where((v) => v.id.equals(claims.visitId)))
-          .getSingleOrNull();
-      if (visit == null ||
-          visit.billClosedAt != null ||
-          visit.tableFreedAt != null) {
-        throw _VisitClosed();
-      }
-      for (final pl in priced) {
-        final id = _uuid.v4();
-        await db.into(db.tickets).insert(TicketsCompanion.insert(
-              id: id,
-              tableId: claims.tableId,
-              visitId: Value(claims.visitId),
-              itemId: pl.itemId,
-              name: pl.name,
-              variantName: Value(pl.variantName),
-              course: _guestDefaultCourse,
-              qty: Value(pl.qty),
-              modifiersJson: Value(jsonEncode(pl.modifiers)),
-              note: Value(pl.note),
-              price: pl.unitPrice,
-              status: 'pendingReview',
-              sentAt: DateTime.now(),
-            ));
-        createdIds.add(id);
-        final full =
-            await (db.select(db.tickets)..where((t) => t.id.equals(id)))
-                .getSingle();
-        createdRows.add(full);
-      }
-      await db.into(db.idempotency).insert(IdempotencyCompanion.insert(
-            key: idem,
-            responseJson: jsonEncode({'ticketIds': createdIds}),
-            createdAt: DateTime.now(),
-          ));
-    }).catchError((Object e) {
-      if (e is _VisitClosed) return;
-      throw e;
-    });
+    await db
+        .transaction(() async {
+          final existing = await (db.select(
+            db.idempotency,
+          )..where((k) => k.key.equals(idem))).getSingleOrNull();
+          if (existing != null) {
+            storedResponse = existing.responseJson;
+            return;
+          }
+          // Re-check the visit is still orderable inside the txn (closed/detached
+          // visit ⇒ the party left / bill locked ⇒ token is stale).
+          final visit = await (db.select(
+            db.visits,
+          )..where((v) => v.id.equals(claims.visitId))).getSingleOrNull();
+          if (visit == null ||
+              visit.billClosedAt != null ||
+              visit.tableFreedAt != null) {
+            throw _VisitClosed();
+          }
+          for (final pl in priced) {
+            final id = _uuid.v4();
+            await db
+                .into(db.tickets)
+                .insert(
+                  TicketsCompanion.insert(
+                    id: id,
+                    tableId: claims.tableId,
+                    visitId: Value(claims.visitId),
+                    itemId: pl.itemId,
+                    name: pl.name,
+                    variantName: Value(pl.variantName),
+                    course: _guestDefaultCourse,
+                    qty: Value(pl.qty),
+                    modifiersJson: Value(jsonEncode(pl.modifiers)),
+                    note: Value(pl.note),
+                    price: pl.unitPrice,
+                    status: 'pendingReview',
+                    sentAt: DateTime.now(),
+                  ),
+                );
+            createdIds.add(id);
+            final full = await (db.select(
+              db.tickets,
+            )..where((t) => t.id.equals(id))).getSingle();
+            createdRows.add(full);
+          }
+          await db
+              .into(db.idempotency)
+              .insert(
+                IdempotencyCompanion.insert(
+                  key: idem,
+                  responseJson: jsonEncode({'ticketIds': createdIds}),
+                  createdAt: DateTime.now(),
+                ),
+              );
+        })
+        .catchError((Object e) {
+          if (e is _VisitClosed) return;
+          throw e;
+        });
 
     if (storedResponse != null) {
       return _json(jsonDecode(storedResponse!) as Map<String, dynamic>);
@@ -183,7 +200,9 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       'visitId': claims.visitId,
       'ticketIds': createdIds,
     });
-    SatLog.srv('guest order visit=${claims.visitId} lines=${createdIds.length}');
+    SatLog.srv(
+      'guest order visit=${claims.visitId} lines=${createdIds.length}',
+    );
     return _json({'ticketIds': createdIds, 'status': 'pendingReview'});
   });
 
@@ -191,10 +210,11 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.get('/guest/orders', (Request req) async {
     final claims = await _guest(req, db, auth);
     if (claims == null) return _err(401, 'unauthorized');
-    final rows = await (db.select(db.tickets)
-          ..where((t) => t.visitId.equals(claims.visitId))
-          ..orderBy([(t) => OrderingTerm(expression: t.sentAt)]))
-        .get();
+    final rows =
+        await (db.select(db.tickets)
+              ..where((t) => t.visitId.equals(claims.visitId))
+              ..orderBy([(t) => OrderingTerm(expression: t.sentAt)]))
+            .get();
     return _json({
       'orders': [
         for (final t in rows)
@@ -215,14 +235,17 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
 /// Resolve + authorize a guest request: a valid `guest`-scope token bound to a
 /// still-open dine-in visit. Returns null (caller → 401) otherwise.
 Future<GuestClaims?> _guest(
-    Request req, AppDatabase db, ServerAuth auth) async {
+  Request req,
+  AppDatabase db,
+  ServerAuth auth,
+) async {
   final header = req.headers['authorization'];
   final token = header?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
   final claims = auth.resolveGuest(token);
   if (claims == null) return null;
-  final visit = await (db.select(db.visits)
-        ..where((v) => v.id.equals(claims.visitId)))
-      .getSingleOrNull();
+  final visit = await (db.select(
+    db.visits,
+  )..where((v) => v.id.equals(claims.visitId))).getSingleOrNull();
   if (visit == null ||
       visit.billClosedAt != null ||
       visit.tableFreedAt != null) {
@@ -235,12 +258,16 @@ Future<GuestClaims?> _guest(
 /// Never trusts a client-sent price. Input: {itemId, variantId?, optionIds?,
 /// qty?, note?}.
 Future<_PriceResult> _priceLine(
-    AppDatabase db, Map<String, dynamic> raw) async {
+  AppDatabase db,
+  Map<String, dynamic> raw,
+) async {
   final itemId = raw['itemId'];
-  if (itemId is! String || itemId.isEmpty) return _PriceResult.err('bad itemId');
-  final item =
-      await (db.select(db.menuItems)..where((i) => i.id.equals(itemId)))
-          .getSingleOrNull();
+  if (itemId is! String || itemId.isEmpty) {
+    return _PriceResult.err('bad itemId');
+  }
+  final item = await (db.select(
+    db.menuItems,
+  )..where((i) => i.id.equals(itemId))).getSingleOrNull();
   if (item == null) return _PriceResult.err('item_not_found');
   if (item.unavailable) return _PriceResult.err('item_unavailable');
   // Auto-habis is derived from ingredient stock, never stored (ADR-0040), so a
@@ -273,15 +300,17 @@ Future<_PriceResult> _priceLine(
   // Modifiers: validate against the item's embedded groups, build the frozen
   // snapshot ({groupId, optionId, label, priceDelta}), sum the deltas.
   final groups = (jsonDecode(item.modifierGroupsJson) as List).cast<Map>();
-  final selectedIds =
-      ((raw['optionIds'] as List?) ?? const []).whereType<String>().toSet();
+  final selectedIds = ((raw['optionIds'] as List?) ?? const [])
+      .whereType<String>()
+      .toSet();
   final snapshot = <Map<String, dynamic>>[];
   var modDelta = 0;
   final claimed = <String>{};
   for (final g in groups) {
     final opts = (g['options'] as List).cast<Map>();
-    final chosen =
-        opts.where((o) => selectedIds.contains(o['id'] as String)).toList();
+    final chosen = opts
+        .where((o) => selectedIds.contains(o['id'] as String))
+        .toList();
     if ((g['required'] == true) && chosen.isEmpty) {
       return _PriceResult.err('modifier_required');
     }
@@ -315,15 +344,17 @@ Future<_PriceResult> _priceLine(
     if (note.isEmpty) note = null;
   }
 
-  return _PriceResult.ok(_PricedLine(
-    itemId: itemId,
-    name: item.name,
-    variantName: variantName,
-    qty: qty,
-    unitPrice: unitPrice,
-    modifiers: snapshot,
-    note: note,
-  ));
+  return _PriceResult.ok(
+    _PricedLine(
+      itemId: itemId,
+      name: item.name,
+      variantName: variantName,
+      qty: qty,
+      unitPrice: unitPrice,
+      modifiers: snapshot,
+      note: note,
+    ),
+  );
 }
 
 class _PricedLine {
@@ -355,12 +386,12 @@ class _PriceResult {
 class _VisitClosed implements Exception {}
 
 Response _json(Map<String, dynamic> body) => Response.ok(
-      jsonEncode(body),
-      headers: {'content-type': 'application/json'},
-    );
+  jsonEncode(body),
+  headers: {'content-type': 'application/json'},
+);
 
 Response _err(int status, String code) => Response(
-      status,
-      body: jsonEncode({'code': code}),
-      headers: {'content-type': 'application/json'},
-    );
+  status,
+  body: jsonEncode({'code': code}),
+  headers: {'content-type': 'application/json'},
+);

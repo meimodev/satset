@@ -21,8 +21,10 @@ const _uuid = Uuid();
 /// the [_requireCap] editSettings gate.
 Future<Response?> _requireAuth(Request req, ServerAuth? auth) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
   return null;
@@ -35,23 +37,27 @@ Future<Response?> _requireCap(
   Capability needed,
 ) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (!caps.contains(needed.name)) {
-    return Response(403,
-        body: jsonEncode({
-          'code': 'forbidden',
-          'message': 'missing capability ${needed.name}',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      403,
+      body: jsonEncode({
+        'code': 'forbidden',
+        'message': 'missing capability ${needed.name}',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   }
   return null;
 }
@@ -59,15 +65,15 @@ Future<Response?> _requireCap(
 /// Wire shape for a venue printer row. Public so the heartbeat in
 /// [ServerRuntime] can broadcast the same payload. See ADR-0022.
 Map<String, dynamic> printerJson(Printer p) => {
-      'id': p.id,
-      'label': p.label,
-      'host': p.host,
-      'port': p.port,
-      'kind': p.kind,
-      'enabled': p.enabled,
-      'lastSeenAt': p.lastSeenAt?.toIso8601String(),
-      'createdAt': p.createdAt.toIso8601String(),
-    };
+  'id': p.id,
+  'label': p.label,
+  'host': p.host,
+  'port': p.port,
+  'kind': p.kind,
+  'enabled': p.enabled,
+  'lastSeenAt': p.lastSeenAt?.toIso8601String(),
+  'createdAt': p.createdAt.toIso8601String(),
+};
 
 Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   final r = Router();
@@ -86,7 +92,9 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final id = (body['id'] as String?) ?? _uuid.v4();
-    await db.into(db.printers).insertOnConflictUpdate(
+    await db
+        .into(db.printers)
+        .insertOnConflictUpdate(
           PrintersCompanion.insert(
             id: id,
             label: body['label'] as String,
@@ -97,12 +105,15 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             createdAt: DateTime.now(),
           ),
         );
-    final row = await (db.select(db.printers)..where((p) => p.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.printers,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.internalServerError();
     hub.broadcast(WsEventTypes.printerCreated, printerJson(row));
-    return Response.ok(jsonEncode(printerJson(row)),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(printerJson(row)),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.patch('/printers/<id>', (Request req, String id) async {
@@ -127,18 +138,23 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             ? Value(body['enabled'] as bool)
             : const Value.absent(),
         lastSeenAt: body.containsKey('lastSeenAt')
-            ? Value(body['lastSeenAt'] == null
-                ? null
-                : DateTime.tryParse(body['lastSeenAt'] as String))
+            ? Value(
+                body['lastSeenAt'] == null
+                    ? null
+                    : DateTime.tryParse(body['lastSeenAt'] as String),
+              )
             : const Value.absent(),
       ),
     );
-    final row = await (db.select(db.printers)..where((p) => p.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.printers,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('printer not found');
     hub.broadcast(WsEventTypes.printerUpdated, printerJson(row));
-    return Response.ok(jsonEncode(printerJson(row)),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(printerJson(row)),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.delete('/printers/<id>', (Request req, String id) async {
@@ -146,8 +162,10 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     await (db.delete(db.printers)..where((p) => p.id.equals(id))).go();
     hub.broadcast(WsEventTypes.printerDeleted, {'id': id});
-    return Response.ok(jsonEncode({'id': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Real ESC/POS test slip: render + send over the socket. "Connected" means
@@ -155,27 +173,36 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.post('/printers/<id>/test', (Request req, String id) async {
     final denied = await _requireAuth(req, auth);
     if (denied != null) return denied;
-    final row = await (db.select(db.printers)..where((p) => p.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.printers,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('printer not found');
     SatLog.srv('printer test id=$id host=${row.host}:${row.port}');
     try {
-      final bytes = await StrukRenderer.renderTest(row.label, row.host, row.port);
+      final bytes = await StrukRenderer.renderTest(
+        row.label,
+        row.host,
+        row.port,
+      );
       await StrukSocket.send(row.host, row.port, bytes);
     } catch (e) {
       SatLog.srv('printer test fail id=$id ${row.host}:${row.port} $e');
-      return Response(502,
-          body: jsonEncode(
-              {'code': 'print_failed', 'message': 'printer tak terhubung'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        502,
+        body: jsonEncode({
+          'code': 'print_failed',
+          'message': 'printer tak terhubung',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final now = DateTime.now();
     await (db.update(db.printers)..where((p) => p.id.equals(id))).write(
       PrintersCompanion(lastSeenAt: Value(now)),
     );
-    final updated =
-        await (db.select(db.printers)..where((p) => p.id.equals(id)))
-            .getSingleOrNull();
+    final updated = await (db.select(
+      db.printers,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
     if (updated != null) {
       hub.broadcast(WsEventTypes.printerUpdated, printerJson(updated));
     }

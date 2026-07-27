@@ -47,12 +47,14 @@ class ServerAuth {
     // Demo users use PIN sign-in. Reject the dedicated admin from this path
     // even when its `pinHash` happens to collide (it shouldn't, but be
     // defensive): admin must use /auth/admin/login.
-    final user = await (db.select(db.users)
-          ..where((u) =>
-              u.pinHash.equals(h) &
-              u.disabled.equals(false) &
-              u.pinHash.equals('').not()))
-        .getSingleOrNull();
+    final user =
+        await (db.select(db.users)..where(
+              (u) =>
+                  u.pinHash.equals(h) &
+                  u.disabled.equals(false) &
+                  u.pinHash.equals('').not(),
+            ))
+            .getSingleOrNull();
     if (user == null) return null;
 
     final now = DateTime.now();
@@ -93,9 +95,9 @@ class ServerAuth {
   }) async {
     final cleanName = name.trim();
     final initials = _initialsFor(cleanName);
-    final existing = await (db.select(db.users)
-          ..where((u) => u.firebaseUid.equals(firebaseUid)))
-        .getSingleOrNull();
+    final existing = await (db.select(
+      db.users,
+    )..where((u) => u.firebaseUid.equals(firebaseUid))).getSingleOrNull();
     if (existing != null) {
       await (db.update(db.users)..where((u) => u.id.equals(existing.id))).write(
         UsersCompanion(
@@ -109,15 +111,19 @@ class ServerAuth {
       return existing.id;
     }
     final id = const Uuid().v4();
-    await db.into(db.users).insert(UsersCompanion.insert(
-          id: id,
-          name: cleanName.isEmpty ? 'Admin' : cleanName,
-          initials: initials.isEmpty ? 'AD' : initials,
-          roleId: adminRoleId,
-          pinHash: '',
-          firebaseUid: Value(firebaseUid),
-          avatarColorHex: Value(avatarColorHex),
-        ));
+    await db
+        .into(db.users)
+        .insert(
+          UsersCompanion.insert(
+            id: id,
+            name: cleanName.isEmpty ? 'Admin' : cleanName,
+            initials: initials.isEmpty ? 'AD' : initials,
+            roleId: adminRoleId,
+            pinHash: '',
+            firebaseUid: Value(firebaseUid),
+            avatarColorHex: Value(avatarColorHex),
+          ),
+        );
     return id;
   }
 
@@ -128,8 +134,9 @@ class ServerAuth {
     required String userId,
     required String deviceId,
   }) async {
-    final user = await (db.select(db.users)..where((u) => u.id.equals(userId)))
-        .getSingle();
+    final user = await (db.select(
+      db.users,
+    )..where((u) => u.id.equals(userId))).getSingle();
     final now = DateTime.now();
     final expiry = now.add(tokenTtl);
     final jwt = JWT({
@@ -140,13 +147,17 @@ class ServerAuth {
       'exp': expiry.millisecondsSinceEpoch ~/ 1000,
     });
     final token = jwt.sign(SecretKey(secret));
-    await db.into(db.sessions).insertOnConflictUpdate(SessionsCompanion.insert(
-          token: token,
-          userId: user.id,
-          deviceId: deviceId,
-          issuedAt: now,
-          expiresAt: expiry,
-        ));
+    await db
+        .into(db.sessions)
+        .insertOnConflictUpdate(
+          SessionsCompanion.insert(
+            token: token,
+            userId: user.id,
+            deviceId: deviceId,
+            issuedAt: now,
+            expiresAt: expiry,
+          ),
+        );
     return Session(
       token: token,
       userId: user.id,
@@ -212,11 +223,13 @@ class ServerAuth {
     } catch (_) {
       return null;
     }
-    final s = await (db.select(db.sessions)..where((s) => s.token.equals(token)))
-        .getSingleOrNull();
+    final s = await (db.select(
+      db.sessions,
+    )..where((s) => s.token.equals(token))).getSingleOrNull();
     if (s == null || s.expiresAt.isBefore(DateTime.now())) return null;
-    return (db.select(db.users)..where((u) => u.id.equals(s.userId)))
-        .getSingleOrNull();
+    return (db.select(
+      db.users,
+    )..where((u) => u.id.equals(s.userId))).getSingleOrNull();
   }
 
   Future<void> revoke(String token) async {

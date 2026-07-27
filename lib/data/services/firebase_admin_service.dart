@@ -12,11 +12,11 @@ import 'package:satset/data/services/secure_storage_service.dart';
 enum AdminStatus { active, suspended, banned, unknown }
 
 AdminStatus _parseStatus(String? raw) => switch (raw) {
-      'active' => AdminStatus.active,
-      'suspended' => AdminStatus.suspended,
-      'banned' => AdminStatus.banned,
-      _ => AdminStatus.unknown,
-    };
+  'active' => AdminStatus.active,
+  'suspended' => AdminStatus.suspended,
+  'banned' => AdminStatus.banned,
+  _ => AdminStatus.unknown,
+};
 
 /// Fleet role on `admins/{uid}.role`. A `super` admin manages the whole fleet
 /// (many venues + their admins) and never runs a local server; a plain `admin`
@@ -25,10 +25,10 @@ AdminStatus _parseStatus(String? raw) => switch (raw) {
 enum AdminRole { admin, superAdmin, owner }
 
 AdminRole _parseRole(String? raw) => switch (raw) {
-      'super' => AdminRole.superAdmin,
-      'owner' => AdminRole.owner,
-      _ => AdminRole.admin,
-    };
+  'super' => AdminRole.superAdmin,
+  'owner' => AdminRole.owner,
+  _ => AdminRole.admin,
+};
 
 /// Snapshot of an admin's `admins/{uid}` doc. `fromCache` distinguishes a
 /// server-confirmed read from a locally-cached one (drives the staleness guard).
@@ -109,8 +109,8 @@ class AdminBootDecision {
 /// stays the capability authority. Android-only; only exercised in Server mode.
 class FirebaseAdminService {
   FirebaseAdminService({fb.FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _auth = auth ?? fb.FirebaseAuth.instance,
-        _fs = firestore ?? FirebaseFirestore.instance;
+    : _auth = auth ?? fb.FirebaseAuth.instance,
+      _fs = firestore ?? FirebaseFirestore.instance;
 
   final fb.FirebaseAuth _auth;
   final FirebaseFirestore _fs;
@@ -131,8 +131,7 @@ class FirebaseAdminService {
     required String email,
     required String password,
   }) =>
-      _auth.signInWithEmailAndPassword(
-          email: email.trim(), password: password);
+      _auth.signInWithEmailAndPassword(email: email.trim(), password: password);
 
   Future<void> signOut() => _auth.signOut();
 
@@ -146,7 +145,9 @@ class FirebaseAdminService {
       _fs.collection('venues').doc(vid);
 
   AdminProfile? _fromSnap(
-      String uid, DocumentSnapshot<Map<String, dynamic>> snap) {
+    String uid,
+    DocumentSnapshot<Map<String, dynamic>> snap,
+  ) {
     if (!snap.exists) return null;
     final d = snap.data() ?? const {};
     return AdminProfile(
@@ -161,7 +162,9 @@ class FirebaseAdminService {
   }
 
   Venue? _venueFromSnap(
-      String vid, DocumentSnapshot<Map<String, dynamic>> snap) {
+    String vid,
+    DocumentSnapshot<Map<String, dynamic>> snap,
+  ) {
     if (!snap.exists) return null;
     final d = snap.data() ?? const {};
     return Venue(
@@ -181,14 +184,16 @@ class FirebaseAdminService {
   /// otherwise falls back to cache when offline.
   Future<AdminProfile?> fetch(String uid, {bool serverOnly = false}) async {
     final opts = GetOptions(
-        source: serverOnly ? Source.server : Source.serverAndCache);
+      source: serverOnly ? Source.server : Source.serverAndCache,
+    );
     final snap = await _doc(uid).get(opts);
     return _fromSnap(uid, snap);
   }
 
   Future<Venue?> fetchVenue(String vid, {bool serverOnly = false}) async {
     final opts = GetOptions(
-        source: serverOnly ? Source.server : Source.serverAndCache);
+      source: serverOnly ? Source.server : Source.serverAndCache,
+    );
     final snap = await _venueDoc(vid).get(opts);
     return _venueFromSnap(vid, snap);
   }
@@ -210,15 +215,19 @@ class FirebaseAdminService {
   /// Decide whether a cached Firebase session may boot the server at cold
   /// start (gated on a Firestore snapshot, with a 7-day offline staleness
   /// guard). See ADR-0015.
-  Future<AdminBootDecision> evaluateForBoot(SecureStorageService storage) async {
+  Future<AdminBootDecision> evaluateForBoot(
+    SecureStorageService storage,
+  ) async {
     final u = currentUser;
     if (u == null) return const AdminBootDecision(AdminBootGate.noUser);
 
     // Try a server-confirmed read first.
     AdminProfile? server;
     try {
-      server = await fetch(u.uid, serverOnly: true)
-          .timeout(const Duration(seconds: 8));
+      server = await fetch(
+        u.uid,
+        serverOnly: true,
+      ).timeout(const Duration(seconds: 8));
     } catch (_) {
       server = null; // offline / timeout
     }
@@ -237,9 +246,10 @@ class FirebaseAdminService {
       // Boot also requires the venue's kill switch to be active (ADR-0016).
       final venue = server.venueId.isEmpty
           ? null
-          : await fetchVenue(server.venueId, serverOnly: true)
-              .timeout(const Duration(seconds: 8))
-              .catchError((_) => null);
+          : await fetchVenue(
+              server.venueId,
+              serverOnly: true,
+            ).timeout(const Duration(seconds: 8)).catchError((_) => null);
       if (venue == null || !venue.isActive) {
         return AdminBootDecision(AdminBootGate.ineligible, server);
       }
@@ -249,7 +259,8 @@ class FirebaseAdminService {
 
     // Offline: fall back to the staleness guard.
     final confirmedAt = await storage.readAdminConfirmedAt();
-    final fresh = confirmedAt != null &&
+    final fresh =
+        confirmedAt != null &&
         DateTime.now().difference(confirmedAt) <= staleAfter;
     if (!fresh) {
       SatLog.repo('admin.boot stale/offline → block');
@@ -269,8 +280,9 @@ class FirebaseAdminService {
   }
 }
 
-final firebaseAdminServiceProvider =
-    Provider<FirebaseAdminService>((_) => FirebaseAdminService());
+final firebaseAdminServiceProvider = Provider<FirebaseAdminService>(
+  (_) => FirebaseAdminService(),
+);
 
 /// Set at cold boot when a cached admin session was blocked (`stale` |
 /// `ineligible`). The PIN screen surfaces a banner; null = no block.

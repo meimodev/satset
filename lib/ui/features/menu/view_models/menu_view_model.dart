@@ -15,18 +15,20 @@ class MenuScreenState {
   });
 
   MenuScreenState copyWith({String? selectedCategoryId}) => MenuScreenState(
-        categories: categories,
-        items: items,
-        selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
-      );
+    categories: categories,
+    items: items,
+    selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
+  );
 }
 
 class MenuViewModel extends StateNotifier<MenuScreenState> {
   MenuViewModel(this.ref)
-      : super(MenuScreenState(
+    : super(
+        MenuScreenState(
           categories: ref.read(menuCategoriesProvider),
           items: ref.read(menuItemsProvider),
-        )) {
+        ),
+      ) {
     ref.listen(menuItemsProvider, (_, n) {
       state = MenuScreenState(
         categories: state.categories,
@@ -44,4 +46,5 @@ class MenuViewModel extends StateNotifier<MenuScreenState> {
 
 final menuViewModelProvider =
     StateNotifierProvider.autoDispose<MenuViewModel, MenuScreenState>(
-        (ref) => MenuViewModel(ref));
+      (ref) => MenuViewModel(ref),
+    );

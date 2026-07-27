@@ -103,14 +103,17 @@ Reservation? reservationHoldFor(
   required DateTime dayStart,
 }) {
   if (table.status != TableStatus.available) return null;
-  final held = reservations
-      .where((r) =>
-          r.tableId == table.id &&
-          r.status == ReservationStatus.pending &&
-          !r.expectedAt.isBefore(dayStart) &&
-          r.expectedAt.isBefore(now.add(kReservationHoldWindow)))
-      .toList()
-    ..sort((a, b) => a.expectedAt.compareTo(b.expectedAt));
+  final held =
+      reservations
+          .where(
+            (r) =>
+                r.tableId == table.id &&
+                r.status == ReservationStatus.pending &&
+                !r.expectedAt.isBefore(dayStart) &&
+                r.expectedAt.isBefore(now.add(kReservationHoldWindow)),
+          )
+          .toList()
+        ..sort((a, b) => a.expectedAt.compareTo(b.expectedAt));
   return held.firstOrNull;
 }
 
@@ -121,13 +124,16 @@ Reservation? nextReservationFor(
   List<Reservation> reservations,
   DateTime now,
 ) {
-  final upcoming = reservations
-      .where((r) =>
-          r.tableId == table.id &&
-          r.status == ReservationStatus.pending &&
-          r.expectedAt.isAfter(now))
-      .toList()
-    ..sort((a, b) => a.expectedAt.compareTo(b.expectedAt));
+  final upcoming =
+      reservations
+          .where(
+            (r) =>
+                r.tableId == table.id &&
+                r.status == ReservationStatus.pending &&
+                r.expectedAt.isAfter(now),
+          )
+          .toList()
+        ..sort((a, b) => a.expectedAt.compareTo(b.expectedAt));
   final next = upcoming.firstOrNull;
   if (next == null) return null;
   // The holding booking is already the card's headline; don't repeat it.
@@ -160,7 +166,9 @@ TableStale? staleFor({
       final mins = now.difference(readyAt).inMinutes;
       if (mins > s.pickupTargetMins * 2) {
         return TableStale(
-            StaleSeverity.crit, AppStrings.staleReadyUncollected(mins));
+          StaleSeverity.crit,
+          AppStrings.staleReadyUncollected(mins),
+        );
       }
     }
   }
@@ -169,7 +177,9 @@ TableStale? staleFor({
     final lateBy = now.difference(hold.expectedAt).inMinutes;
     if (lateBy > s.reservationGraceMins) {
       return TableStale(
-          StaleSeverity.crit, AppStrings.staleReservationLate(lateBy));
+        StaleSeverity.crit,
+        AppStrings.staleReservationLate(lateBy),
+      );
     }
   }
 
@@ -187,7 +197,9 @@ TableStale? staleFor({
       final mins = now.difference(since).inMinutes;
       if (mins > s.pendingReviewMins) {
         return TableStale(
-            StaleSeverity.crit, AppStrings.stalePendingReview(mins));
+          StaleSeverity.crit,
+          AppStrings.stalePendingReview(mins),
+        );
       }
     }
   }
@@ -206,7 +218,9 @@ TableStale? staleFor({
     final elapsed = now.difference(openedAt);
     if (elapsed > Duration(minutes: s.longStayMins)) {
       return TableStale(
-          StaleSeverity.warn, AppStrings.staleLongStay(formatElapsedId(elapsed)));
+        StaleSeverity.warn,
+        AppStrings.staleLongStay(formatElapsedId(elapsed)),
+      );
     }
   }
 

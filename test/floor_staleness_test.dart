@@ -19,43 +19,41 @@ void main() {
     TableStatus status = TableStatus.occupied,
     DateTime? openedAt,
     String id = 'T1',
-  }) =>
-      VenueTable(
-        id: id,
-        zoneId: 'terrace',
-        status: status,
-        openedAt: openedAt,
-        currentVisitId: 'v1',
-      );
+  }) => VenueTable(
+    id: id,
+    zoneId: 'terrace',
+    status: status,
+    openedAt: openedAt,
+    currentVisitId: 'v1',
+  );
 
   Ticket line({
     required TicketStatus status,
     DateTime? readyAt,
     DateTime? servedAt,
     DateTime? sentAt,
-  }) =>
-      Ticket(
-        id: 't1',
-        itemId: 'i1',
-        name: 'Nasi Goreng',
-        course: CourseId.mains,
-        price: 45000,
-        status: status,
-        sentAt: '18:00',
-        sentAtTime: sentAt ?? now.subtract(const Duration(minutes: 30)),
-        readyAtTime: readyAt,
-        servedAtTime: servedAt,
-      );
+  }) => Ticket(
+    id: 't1',
+    itemId: 'i1',
+    name: 'Nasi Goreng',
+    course: CourseId.mains,
+    price: 45000,
+    status: status,
+    sentAt: '18:00',
+    sentAtTime: sentAt ?? now.subtract(const Duration(minutes: 30)),
+    readyAtTime: readyAt,
+    servedAtTime: servedAt,
+  );
 
   Reservation booking(DateTime at, {String table = 'T1'}) => Reservation(
-        id: 'r1',
-        name: 'Budi',
-        partySize: 2,
-        expectedAt: at,
-        status: ReservationStatus.pending,
-        tableId: table,
-        createdAt: at,
-      );
+    id: 'r1',
+    name: 'Budi',
+    partySize: 2,
+    expectedAt: at,
+    status: ReservationStatus.pending,
+    tableId: table,
+    createdAt: at,
+  );
 
   group('staleFor', () {
     test('a quiet occupied table is not stale', () {
@@ -78,7 +76,7 @@ void main() {
           line(
             status: TicketStatus.ready,
             readyAt: now.subtract(const Duration(minutes: 7)),
-          )
+          ),
         ],
         hold: null,
         service: ServiceState.none,
@@ -93,7 +91,7 @@ void main() {
           line(
             status: TicketStatus.ready,
             readyAt: now.subtract(const Duration(minutes: 12)),
-          )
+          ),
         ],
         hold: null,
         service: ServiceState.none,
@@ -138,7 +136,7 @@ void main() {
           line(
             status: TicketStatus.sent,
             sentAt: now.subtract(const Duration(minutes: 30)),
-          )
+          ),
         ],
         hold: null,
         service: ServiceState.none,
@@ -188,7 +186,10 @@ void main() {
     test('a booking beyond the window is a footnote, not a hold', () {
       final free = table(status: TableStatus.available);
       final later = booking(now.add(const Duration(minutes: 180)));
-      expect(reservationHoldFor(free, [later], now, dayStart: dayStart), isNull);
+      expect(
+        reservationHoldFor(free, [later], now, dayStart: dayStart),
+        isNull,
+      );
       expect(nextReservationFor(free, [later], now), isNotNull);
     });
 
@@ -206,7 +207,10 @@ void main() {
     test('the holding booking is not repeated as the next one', () {
       final free = table(status: TableStatus.available);
       final soon = booking(now.add(const Duration(minutes: 20)));
-      expect(reservationHoldFor(free, [soon], now, dayStart: dayStart), isNotNull);
+      expect(
+        reservationHoldFor(free, [soon], now, dayStart: dayStart),
+        isNotNull,
+      );
       expect(nextReservationFor(free, [soon], now), isNull);
     });
   });

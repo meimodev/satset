@@ -18,23 +18,27 @@ Future<Response?> _requireCap(
   Capability needed,
 ) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (!caps.contains(needed.name)) {
-    return Response(403,
-        body: jsonEncode({
-          'code': 'forbidden',
-          'message': 'missing capability ${needed.name}',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      403,
+      body: jsonEncode({
+        'code': 'forbidden',
+        'message': 'missing capability ${needed.name}',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   }
   return null;
 }
@@ -60,13 +64,15 @@ Future<Map<String, dynamic>> buildServerStatusWithCounts(
   ServerRuntime rt,
 ) async {
   final now = DateTime.now();
-  final activeSessions = await rt.db.customSelect(
-    'SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?',
-    variables: [Variable.withDateTime(now)],
-  ).getSingle();
-  final pairedDevices = await rt.db.customSelect(
-    'SELECT COUNT(*) AS c FROM devices WHERE revoked = 0',
-  ).getSingle();
+  final activeSessions = await rt.db
+      .customSelect(
+        'SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?',
+        variables: [Variable.withDateTime(now)],
+      )
+      .getSingle();
+  final pairedDevices = await rt.db
+      .customSelect('SELECT COUNT(*) AS c FROM devices WHERE revoked = 0')
+      .getSingle();
   return {
     ...buildServerStatus(rt),
     'activeSessions': activeSessions.read<int>('c'),
@@ -90,8 +96,12 @@ Router serverRoutes(ServerRuntime rt) {
   // Restart requires manageStaff. Kicks the restart in a microtask so the
   // 202 response can flush before the listener closes.
   r.post('/server/restart', (Request req) async {
-    final denied =
-        await _requireCap(req, rt.db, rt.auth, Capability.manageStaff);
+    final denied = await _requireCap(
+      req,
+      rt.db,
+      rt.auth,
+      Capability.manageStaff,
+    );
     if (denied != null) return denied;
     // Notify everyone *before* the request returns; the listener tears
     // down right after this response is written.

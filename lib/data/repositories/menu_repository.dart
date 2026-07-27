@@ -30,18 +30,18 @@ class MenuSnapshot {
     List<MenuCategory>? categories,
     List<MenuItem>? items,
     List<MenuTag>? tags,
-  }) =>
-      MenuSnapshot(
-        categories: categories ?? this.categories,
-        items: items ?? this.items,
-        tags: tags ?? this.tags,
-      );
+  }) => MenuSnapshot(
+    categories: categories ?? this.categories,
+    items: items ?? this.items,
+    tags: tags ?? this.tags,
+  );
 }
 
 /// Surfaces bootstrap progress so the menu/table-detail UIs can render
 /// loading and error states. Mirrors [tablesStatusProvider].
-final menuStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final menuStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 /// LAN-aware menu cache.
 ///
@@ -61,20 +61,17 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     SatLog.repo('menu.bootstrap');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(menuStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(menuStatusProvider.notifier).state = const AsyncValue.data(null);
       return;
     }
     state = MenuSnapshot.empty;
     ref.read(menuStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
-      ref.read(menuStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(menuStatusProvider.notifier).state = const AsyncValue.data(null);
     } catch (e, st) {
       SatLog.repo('menu.bootstrap fail $e');
-      ref.read(menuStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(menuStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
     // WS: any peer's menu mutation triggers a full refetch. Cheap; the
     // snapshot is small and refetch keeps modifier-group state consistent.
@@ -97,7 +94,8 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     final dto = MenuSnapshotDto.fromJson(raw);
     state = _toDomain(dto);
     SatLog.repo(
-        'menu.loaded cats=${state.categories.length} items=${state.items.length}');
+      'menu.loaded cats=${state.categories.length} items=${state.items.length}',
+    );
   }
 
   Future<void> refresh() {
@@ -134,11 +132,10 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       cost: i.cost,
       prepTime: i.prepTime,
       variants: [
-        for (final v in i.variants) Variant(id: v.id, name: v.name, price: v.price),
+        for (final v in i.variants)
+          Variant(id: v.id, name: v.name, price: v.price),
       ],
-      modifierGroups: [
-        for (final g in i.modifierGroups) _modGroupFromDto(g),
-      ],
+      modifierGroups: [for (final g in i.modifierGroups) _modGroupFromDto(g)],
       allergens: List<String>.of(i.allergens),
       dietary: List<String>.of(i.dietary),
       unavailable: i.unavailable,
@@ -150,15 +147,15 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   }
 
   ModifierGroup _modGroupFromDto(ModifierGroupDto g) => ModifierGroup(
-        id: g.id,
-        name: g.name,
-        required: g.required,
-        multi: g.multi,
-        options: [
-          for (final o in g.options)
-            ModifierOption(id: o.id, name: o.name, priceDelta: o.priceDelta),
-        ],
-      );
+    id: g.id,
+    name: g.name,
+    required: g.required,
+    multi: g.multi,
+    options: [
+      for (final o in g.options)
+        ModifierOption(id: o.id, name: o.name, priceDelta: o.priceDelta),
+    ],
+  );
 
   /// Lookup an item by id from the snapshot. Returns null when the
   /// repository has not yet loaded the item — callers must handle the
@@ -183,7 +180,10 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     state = state.copyWith(
       items: isInsert
           ? [...state.items, item]
-          : [for (final i in state.items) if (i.id == item.id) item else i],
+          : [
+              for (final i in state.items)
+                if (i.id == item.id) item else i,
+            ],
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -192,8 +192,8 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       final raw = isInsert
           ? await ref.read(apiClientProvider).postJson('/menu/items', body)
           : await ref
-              .read(apiClientProvider)
-              .patchJson('/menu/items/${item.id}', body);
+                .read(apiClientProvider)
+                .patchJson('/menu/items/${item.id}', body);
       final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
       _mergeServerItem(dto);
     } catch (e) {
@@ -209,8 +209,9 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   Future<void> uploadPhoto(String id, List<int> bytes) async {
     SatLog.repo('menu.photo.upload id=$id bytes=${bytes.length}');
     if (ref.read(apiConfigProvider) == null) return;
-    final raw =
-        await ref.read(apiClientProvider).putBytes('/menu/items/$id/photo', bytes);
+    final raw = await ref
+        .read(apiClientProvider)
+        .putBytes('/menu/items/$id/photo', bytes);
     if (raw is Map) {
       _mergeServerItem(MenuItemDto.fromJson(raw.cast<String, dynamic>()));
     }
@@ -220,8 +221,9 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   Future<void> deletePhoto(String id) async {
     SatLog.repo('menu.photo.delete id=$id');
     if (ref.read(apiConfigProvider) == null) return;
-    final raw =
-        await ref.read(apiClientProvider).deleteJson('/menu/items/$id/photo');
+    final raw = await ref
+        .read(apiClientProvider)
+        .deleteJson('/menu/items/$id/photo');
     if (raw is Map) {
       _mergeServerItem(MenuItemDto.fromJson(raw.cast<String, dynamic>()));
     }
@@ -231,7 +233,10 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     SatLog.repo('menu.remove id=$id');
     final prev = state;
     state = state.copyWith(
-      items: [for (final i in state.items) if (i.id != id) i],
+      items: [
+        for (final i in state.items)
+          if (i.id != id) i,
+      ],
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -259,9 +264,10 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     try {
-      final raw = await ref
-          .read(apiClientProvider)
-          .postJson('/menu/items/$id/availability', {'unavailable': next});
+      final raw = await ref.read(apiClientProvider).postJson(
+        '/menu/items/$id/availability',
+        {'unavailable': next},
+      );
       final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
       _mergeServerItem(dto);
     } catch (e) {
@@ -271,14 +277,15 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     }
   }
 
-
   // ---------- categories ----------
 
   Future<void> createCategory(String name) async {
     SatLog.repo('menu.category.create $name');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
-    await ref.read(apiClientProvider).postJson('/menu/categories', {'name': name});
+    await ref.read(apiClientProvider).postJson('/menu/categories', {
+      'name': name,
+    });
     await _refetch();
   }
 
@@ -286,9 +293,9 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     SatLog.repo('menu.category.rename $id → $name');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
-    await ref
-        .read(apiClientProvider)
-        .patchJson('/menu/categories/$id', {'name': name});
+    await ref.read(apiClientProvider).patchJson('/menu/categories/$id', {
+      'name': name,
+    });
     await _refetch();
   }
 
@@ -305,9 +312,9 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     SatLog.repo('menu.category.reorder ${ids.length}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
-    await ref
-        .read(apiClientProvider)
-        .postJson('/menu/categories/reorder', {'ids': ids});
+    await ref.read(apiClientProvider).postJson('/menu/categories/reorder', {
+      'ids': ids,
+    });
     await _refetch();
   }
 
@@ -326,36 +333,36 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   }
 
   Map<String, dynamic> _itemToJson(MenuItem it) => {
-        'id': it.id,
-        'name': it.name,
-        'categoryId': it.categoryId,
-        'description': it.description,
-        'basePrice': it.basePrice,
-        'cost': it.cost,
-        'prepTime': it.prepTime,
-        'variants': [
-          for (final v in it.variants)
-            {'id': v.id, 'name': v.name, 'price': v.price}
-        ],
-        'modifierGroups': [
-          for (final g in it.modifierGroups)
-            {
-              'id': g.id,
-              'name': g.name,
-              'required': g.required,
-              'multi': g.multi,
-              'options': [
-                for (final o in g.options)
-                  {'id': o.id, 'name': o.name, 'priceDelta': o.priceDelta}
-              ],
-            }
-        ],
-        'allergens': it.allergens,
-        'dietary': it.dietary,
-        // Availability derived from ingredient stock is server-owned and never
-        // posted back by a client (ADR-0040).
-        'unavailable': it.unavailable,
-      };
+    'id': it.id,
+    'name': it.name,
+    'categoryId': it.categoryId,
+    'description': it.description,
+    'basePrice': it.basePrice,
+    'cost': it.cost,
+    'prepTime': it.prepTime,
+    'variants': [
+      for (final v in it.variants)
+        {'id': v.id, 'name': v.name, 'price': v.price},
+    ],
+    'modifierGroups': [
+      for (final g in it.modifierGroups)
+        {
+          'id': g.id,
+          'name': g.name,
+          'required': g.required,
+          'multi': g.multi,
+          'options': [
+            for (final o in g.options)
+              {'id': o.id, 'name': o.name, 'priceDelta': o.priceDelta},
+          ],
+        },
+    ],
+    'allergens': it.allergens,
+    'dietary': it.dietary,
+    // Availability derived from ingredient stock is server-owned and never
+    // posted back by a client (ADR-0040).
+    'unavailable': it.unavailable,
+  };
 
   // ---------- tags ----------
 
@@ -390,16 +397,18 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   Future<void> reorderTags(List<String> ids) async {
     SatLog.repo('menu.tag.reorder ${ids.length}');
     if (ref.read(apiConfigProvider) == null) return;
-    await ref.read(apiClientProvider).postJson('/menu/tags/reorder', {'ids': ids});
+    await ref.read(apiClientProvider).postJson('/menu/tags/reorder', {
+      'ids': ids,
+    });
     await _refetch();
   }
 }
 
 final menuRepositoryProvider =
     StateNotifierProvider<MenuRepository, MenuSnapshot>((ref) {
-  ref.watch(apiConfigProvider);
-  return MenuRepository(ref: ref);
-});
+      ref.watch(apiConfigProvider);
+      return MenuRepository(ref: ref);
+    });
 
 /// Photo bytes for one menu item, keyed by `(id, rev)`. A photoRev change
 /// produces a new key → fresh fetch; the stale-rev entry auto-disposes. Only
@@ -407,23 +416,27 @@ final menuRepositoryProvider =
 /// the pinned client (see ApiClient.getBytes). Returns null when unpaired.
 final menuPhotoBytesProvider = FutureProvider.autoDispose
     .family<Uint8List?, ({String id, int rev})>((ref, key) async {
-  if (key.rev <= 0) return null;
-  if (ref.watch(apiConfigProvider) == null) return null;
-  final bytes =
-      await ref.read(apiClientProvider).getBytes('/menu/items/${key.id}/photo');
-  ref.keepAlive();
-  return bytes;
-});
+      if (key.rev <= 0) return null;
+      if (ref.watch(apiConfigProvider) == null) return null;
+      final bytes = await ref
+          .read(apiClientProvider)
+          .getBytes('/menu/items/${key.id}/photo');
+      ref.keepAlive();
+      return bytes;
+    });
 
 final menuCategoriesProvider = Provider<List<MenuCategory>>(
-    (ref) => ref.watch(menuRepositoryProvider).categories);
+  (ref) => ref.watch(menuRepositoryProvider).categories,
+);
 
 final menuItemsProvider = Provider<List<MenuItem>>(
-    (ref) => ref.watch(menuRepositoryProvider).items);
+  (ref) => ref.watch(menuRepositoryProvider).items,
+);
 
 /// All tags, snapshot order (sorted server-side by kind+sortOrder).
 final menuTagsProvider = Provider<List<MenuTag>>(
-    (ref) => ref.watch(menuRepositoryProvider).tags);
+  (ref) => ref.watch(menuRepositoryProvider).tags,
+);
 
 /// Tag id → tag, for resolving the ids stored on items.
 final menuTagsByIdProvider = Provider<Map<String, MenuTag>>((ref) {
@@ -431,5 +444,7 @@ final menuTagsByIdProvider = Provider<Map<String, MenuTag>>((ref) {
 });
 
 /// Tags of a given kind, in sort order.
-List<MenuTag> menuTagsOfKind(List<MenuTag> all, MenuTagKind kind) =>
-    [for (final t in all) if (t.kind == kind) t];
+List<MenuTag> menuTagsOfKind(List<MenuTag> all, MenuTagKind kind) => [
+  for (final t in all)
+    if (t.kind == kind) t,
+];

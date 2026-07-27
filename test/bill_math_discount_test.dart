@@ -86,16 +86,22 @@ void main() {
 
   group('resolveDiscountAmount', () {
     test('percent reads bps', () {
-      expect(resolveDiscountAmount(kind: 'percent', value: 1000, base: 50000),
-          5000);
+      expect(
+        resolveDiscountAmount(kind: 'percent', value: 1000, base: 50000),
+        5000,
+      );
     });
     test('percent clamps at 100%', () {
-      expect(resolveDiscountAmount(kind: 'percent', value: 20000, base: 50000),
-          50000);
+      expect(
+        resolveDiscountAmount(kind: 'percent', value: 20000, base: 50000),
+        50000,
+      );
     });
     test('fixed clamps to base — cannot invent money', () {
-      expect(resolveDiscountAmount(kind: 'fixed', value: 50000, base: 25000),
-          25000);
+      expect(
+        resolveDiscountAmount(kind: 'fixed', value: 50000, base: 25000),
+        25000,
+      );
     });
     test('zero base or value yields nothing', () {
       expect(resolveDiscountAmount(kind: 'percent', value: 1000, base: 0), 0);
@@ -105,8 +111,11 @@ void main() {
 
   group('split bill', () {
     test('per-receipt discounts apply to their own receipt', () {
-      final out = splitItemized([60000, 40000], svc5tax11,
-          discounts: [6000, 0]);
+      final out = splitItemized(
+        [60000, 40000],
+        svc5tax11,
+        discounts: [6000, 0],
+      );
       expect(out[0].discountAmount, 6000);
       expect(out[1].discountAmount, 0);
       // untouched receipt matches a standalone computation
@@ -116,14 +125,22 @@ void main() {
 
     test('receipts sum to billTotalTarget exactly, remainder on largest', () {
       const target = 93240;
-      final out = splitItemized([33333, 33333, 33334], svc5tax11,
-          billTotalTarget: target, discounts: [6667, 6667, 6666]);
+      final out = splitItemized(
+        [33333, 33333, 33334],
+        svc5tax11,
+        billTotalTarget: target,
+        discounts: [6667, 6667, 6666],
+      );
       expect(out.fold<int>(0, (a, b) => a + b.total), target);
     });
 
     test('remainder push preserves discountAmount', () {
-      final out = splitItemized([33333, 66667], svc5tax11,
-          billTotalTarget: 100000, discounts: [3333, 6667]);
+      final out = splitItemized(
+        [33333, 66667],
+        svc5tax11,
+        billTotalTarget: 100000,
+        discounts: [3333, 6667],
+      );
       expect(out.map((b) => b.discountAmount), [3333, 6667]);
     });
 

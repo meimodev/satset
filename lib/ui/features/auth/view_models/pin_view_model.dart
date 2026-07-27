@@ -79,20 +79,19 @@ class PinState {
     Object? selectedServerKey = _unset,
     bool? pairingBusy,
     Object? pairingError = _unset,
-  }) =>
-      PinState(
-        mode: mode ?? this.mode,
-        adminBusy: adminBusy ?? this.adminBusy,
-        adminError:
-            adminError == _unset ? this.adminError : adminError as String?,
-        servers: servers ?? this.servers,
-        selectedServerKey: selectedServerKey == _unset
-            ? this.selectedServerKey
-            : selectedServerKey as String?,
-        pairingBusy: pairingBusy ?? this.pairingBusy,
-        pairingError:
-            pairingError == _unset ? this.pairingError : pairingError as String?,
-      );
+  }) => PinState(
+    mode: mode ?? this.mode,
+    adminBusy: adminBusy ?? this.adminBusy,
+    adminError: adminError == _unset ? this.adminError : adminError as String?,
+    servers: servers ?? this.servers,
+    selectedServerKey: selectedServerKey == _unset
+        ? this.selectedServerKey
+        : selectedServerKey as String?,
+    pairingBusy: pairingBusy ?? this.pairingBusy,
+    pairingError: pairingError == _unset
+        ? this.pairingError
+        : pairingError as String?,
+  );
 }
 
 const Object _unset = Object();
@@ -109,12 +108,14 @@ const Object _unset = Object();
 /// it does not own auth, pairing or mode logic.
 class PinViewModel extends StateNotifier<PinState> {
   PinViewModel(this._ref, PrefsService prefs, this._storage, this._mdns)
-      : _prefs = prefs,
-        super(PinState(
+    : _prefs = prefs,
+      super(
+        PinState(
           mode: prefs.appMode() == AppMode.server
               ? SignInMode.admin
               : SignInMode.staff,
-        )) {
+        ),
+      ) {
     refreshPairedServers();
     _startDiscovery();
   }
@@ -147,7 +148,11 @@ class PinViewModel extends StateNotifier<PinState> {
     final host = _prefs.pairedHost();
     final port = _prefs.pairedPort();
     final fp = await _storage.readServerFingerprint();
-    if (host == null || host.isEmpty || port == null || fp == null || fp.isEmpty) {
+    if (host == null ||
+        host.isEmpty ||
+        port == null ||
+        fp == null ||
+        fp.isEmpty) {
       _pairedFromPrefs = null;
     } else {
       _pairedFromPrefs = PairedServerInfo(
@@ -176,8 +181,10 @@ class PinViewModel extends StateNotifier<PinState> {
             d.fingerprint.toLowerCase() == cur.fingerprint.toLowerCase();
         final moved = d.host != cur.host || d.port != cur.port;
         if (sameFp && moved) {
-          SatLog.vm('PinVM: paired server re-homed ${cur.host}:${cur.port}'
-              ' → ${d.host}:${d.port} (fingerprint match)');
+          SatLog.vm(
+            'PinVM: paired server re-homed ${cur.host}:${cur.port}'
+            ' → ${d.host}:${d.port} (fingerprint match)',
+          );
           unawaited(_prefs.setPairedHost(d.host));
           unawaited(_prefs.setPairedPort(d.port));
           pairedLocal = PairedServerInfo(
@@ -206,8 +213,10 @@ class PinViewModel extends StateNotifier<PinState> {
 
       String fp = d.fingerprint;
       if (isPaired && paired.fingerprint != d.fingerprint) {
-        SatLog.vm('PinVM: Stale fingerprint detected for paired server at ${d.host}:${d.port}. '
-            'Updating stored fingerprint from ${paired.fingerprint} to ${d.fingerprint}');
+        SatLog.vm(
+          'PinVM: Stale fingerprint detected for paired server at ${d.host}:${d.port}. '
+          'Updating stored fingerprint from ${paired.fingerprint} to ${d.fingerprint}',
+        );
         unawaited(_storage.writeServerFingerprint(d.fingerprint));
         _pairedFromPrefs = PairedServerInfo(
           host: paired.host,
@@ -249,10 +258,7 @@ class PinViewModel extends StateNotifier<PinState> {
       }
     }
 
-    state = state.copyWith(
-      servers: list,
-      selectedServerKey: sel,
-    );
+    state = state.copyWith(servers: list, selectedServerKey: sel);
 
     // Don't override the loopback ApiConfig that Admin/Server mode publishes.
     if (state.mode != SignInMode.admin && sel != null) {
@@ -267,10 +273,7 @@ class PinViewModel extends StateNotifier<PinState> {
   void setMode(SignInMode m) {
     if (state.mode == m) return;
     SatLog.vm('PinVM setMode ${m.name}');
-    state = state.copyWith(
-      mode: m,
-      adminError: null,
-    );
+    state = state.copyWith(mode: m, adminError: null);
     if (m == SignInMode.staff) {
       // verifyPin() re-persists mode and is the authoritative gate.
       _persistMode(AppMode.client).catchError((Object e) {
@@ -491,10 +494,7 @@ class PinViewModel extends StateNotifier<PinState> {
       await _prefs.setPairedPort(s.port);
       _publishApiConfig(s);
       await refreshPairedServers();
-      state = state.copyWith(
-        pairingBusy: false,
-        selectedServerKey: s.key,
-      );
+      state = state.copyWith(pairingBusy: false, selectedServerKey: s.key);
       return true;
     } catch (e) {
       SatLog.vm('PinVM autoClaim fail $e');
@@ -538,8 +538,8 @@ class PinViewModel extends StateNotifier<PinState> {
 
 final pinViewModelProvider =
     StateNotifierProvider.autoDispose<PinViewModel, PinState>((ref) {
-  final prefs = ref.watch(prefsServiceProvider).requireValue;
-  final storage = ref.watch(secureStorageServiceProvider);
-  final mdns = ref.watch(mdnsBrowserServiceProvider);
-  return PinViewModel(ref, prefs, storage, mdns);
-});
+      final prefs = ref.watch(prefsServiceProvider).requireValue;
+      final storage = ref.watch(secureStorageServiceProvider);
+      final mdns = ref.watch(mdnsBrowserServiceProvider);
+      return PinViewModel(ref, prefs, storage, mdns);
+    });

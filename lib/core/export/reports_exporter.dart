@@ -32,8 +32,12 @@ String _pct(double v) => '${(v * 100).toStringAsFixed(1)}%';
 
 // ─── CSV ────────────────────────────────────────────────────────────────────
 
-String buildReportsCsv(ReportsSnapshotDto s, ReportRange range,
-    {DateTime? from, DateTime? to}) {
+String buildReportsCsv(
+  ReportsSnapshotDto s,
+  ReportRange range, {
+  DateTime? from,
+  DateTime? to,
+}) {
   final rows = <String>[];
   void blank() => rows.add('');
   void section(String title) {
@@ -55,18 +59,21 @@ String buildReportsCsv(ReportsSnapshotDto s, ReportRange range,
 
   // Staff.
   section('Kinerja Staf');
-  rows.add(csvRow(
-      ['Nama', 'Cover', 'Item', 'Rata tagihan', 'Void %', 'Net', 'Sesi']));
+  rows.add(
+    csvRow(['Nama', 'Cover', 'Item', 'Rata tagihan', 'Void %', 'Net', 'Sesi']),
+  );
   for (final r in s.staff.rows) {
-    rows.add(csvRow([
-      r.name,
-      r.covers,
-      r.items,
-      formatIDR(r.avgTicket),
-      _pct(r.voidPct),
-      formatIDR(r.net),
-      r.sessions,
-    ]));
+    rows.add(
+      csvRow([
+        r.name,
+        r.covers,
+        r.items,
+        formatIDR(r.avgTicket),
+        _pct(r.voidPct),
+        formatIDR(r.net),
+        r.sessions,
+      ]),
+    );
   }
 
   // Menu — top sellers.
@@ -103,8 +110,12 @@ String buildReportsCsv(ReportsSnapshotDto s, ReportRange range,
 // ─── PDF ────────────────────────────────────────────────────────────────────
 
 Future<Uint8List> buildReportsPdf(
-    ReportsSnapshotDto s, ReportRange range,
-    {DateTime? from, DateTime? to, PdfBranding? branding}) async {
+  ReportsSnapshotDto s,
+  ReportRange range, {
+  DateTime? from,
+  DateTime? to,
+  PdfBranding? branding,
+}) async {
   final theme = await pdfTheme();
   final doc = pw.Document(theme: theme.base);
 
@@ -113,7 +124,9 @@ Future<Uint8List> buildReportsPdf(
       pageTheme: pdfPageTheme(theme),
       header: (ctx) => ctx.pageNumber == 1
           ? pw.SizedBox()
-          : pdfRunningHeader('Laporan SatSet · ${rangeLabelId(range, from: from, to: to)}'),
+          : pdfRunningHeader(
+              'Laporan SatSet · ${rangeLabelId(range, from: from, to: to)}',
+            ),
       footer: pdfFooter,
       build: (ctx) => [
         pdfTitleBlock(
@@ -144,12 +157,12 @@ Future<Uint8List> buildReportsPdf(
               [
                 'Makan di tempat',
                 '${s.sales.takeaway!.dineInCount}',
-                formatIDR(s.sales.takeaway!.dineInNet)
+                formatIDR(s.sales.takeaway!.dineInNet),
               ],
               [
                 'Bawa pulang',
                 '${s.sales.takeaway!.count}',
-                formatIDR(s.sales.takeaway!.net)
+                formatIDR(s.sales.takeaway!.net),
               ],
             ],
             numericFrom: 1,
@@ -167,7 +180,7 @@ Future<Uint8List> buildReportsPdf(
             'Rata tagihan',
             'Void %',
             'Net',
-            'Sesi'
+            'Sesi',
           ],
           rows: [
             for (final r in s.staff.rows)
@@ -253,18 +266,25 @@ pw.Widget _kpiGrid(List<KpiTileDto> kpis) {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text(k.label.toUpperCase(),
-                  style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo)),
+              pw.Text(
+                k.label.toUpperCase(),
+                style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo),
+              ),
               pw.SizedBox(height: 3),
-              pw.Text(k.value,
-                  style: pw.TextStyle(
-                      fontSize: 15,
-                      fontWeight: pw.FontWeight.bold,
-                      color: kPdfInk)),
+              pw.Text(
+                k.value,
+                style: pw.TextStyle(
+                  fontSize: 15,
+                  fontWeight: pw.FontWeight.bold,
+                  color: kPdfInk,
+                ),
+              ),
               if (k.sub.isNotEmpty) ...[
                 pw.SizedBox(height: 2),
-                pw.Text(k.sub,
-                    style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo)),
+                pw.Text(
+                  k.sub,
+                  style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo),
+                ),
               ],
             ],
           ),
@@ -296,8 +316,10 @@ pw.Widget _hourlyBars(List<double> hourly) {
                 ),
                 pw.SizedBox(height: 2),
                 if (h % 3 == 0)
-                  pw.Text('$h',
-                      style: pw.TextStyle(fontSize: 6, color: kPdfInkLo)),
+                  pw.Text(
+                    '$h',
+                    style: pw.TextStyle(fontSize: 6, color: kPdfInkLo),
+                  ),
               ],
             ),
           ),

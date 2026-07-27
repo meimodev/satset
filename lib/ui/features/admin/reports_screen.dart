@@ -38,9 +38,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   /// Chip text: fixed presets read the static map; a committed custom window
   /// shows its span ("12 Jun – 15 Jun"), an uncommitted one stays "Custom".
   String _chipLabel(ReportRange r, ReportsQuery q) {
-    if (r == ReportRange.custom &&
-        q.customFrom != null &&
-        q.customTo != null) {
+    if (r == ReportRange.custom && q.customFrom != null && q.customTo != null) {
       return customRangeLabel(q.customFrom!, q.customTo!);
     }
     return _rangeLabel[r]!;
@@ -101,17 +99,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text('Laporan',
-                        style: SatType.sans(
-                          size: 30,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.6,
-                          color: sc.textHi,
-                        )),
+                    child: Text(
+                      'Laporan',
+                      style: SatType.sans(
+                        size: 30,
+                        weight: FontWeight.w600,
+                        letterSpacing: -0.6,
+                        color: sc.textHi,
+                      ),
+                    ),
                   ),
                   GestureDetector(
-                    onTap: () => showExportSheet(context, ref,
-                        snapshot: snapshot, query: query),
+                    onTap: () => showExportSheet(
+                      context,
+                      ref,
+                      snapshot: snapshot,
+                      query: query,
+                    ),
                     child: adminPill(context, 'Ekspor', on: false),
                   ),
                 ],
@@ -130,8 +134,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            onTap: () => showExportSheet(context, ref,
-                snapshot: snapshot, query: query),
+            onTap: () =>
+                showExportSheet(context, ref, snapshot: snapshot, query: query),
             child: adminPill(context, 'Ekspor', on: false),
           ),
           const SizedBox(width: 8),
@@ -163,7 +167,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   /// Icon-only manual resync. Swaps to a spinner while loading and is inert
   /// during the fetch.
-  Widget _refreshButton(BuildContext context, bool loading, VoidCallback onTap) {
+  Widget _refreshButton(
+    BuildContext context,
+    bool loading,
+    VoidCallback onTap,
+  ) {
     final sc = context.sat;
     return IconButton(
       onPressed: loading ? null : onTap,
@@ -195,7 +203,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   String _fmtRange(String fromIso, String toIso) {
     final from = DateTime.parse(fromIso).toLocal();
     final to = DateTime.parse(toIso).toLocal();
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
     String d(DateTime t) => '${t.day} ${months[t.month - 1]}';
     return '${d(from)} — ${d(to.subtract(const Duration(seconds: 1)))}';
   }
@@ -241,12 +262,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Icon(Icons.error_outline, color: sc.warn, size: 18),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('Gagal memuat laporan',
-                style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.textHi)),
+            child: Text(
+              'Gagal memuat laporan',
+              style: SatType.sans(
+                size: 13,
+                weight: FontWeight.w500,
+                color: sc.textHi,
+              ),
+            ),
           ),
           GestureDetector(
-            onTap: () =>
-                ref.read(reportsRepositoryProvider.notifier).refresh(),
+            onTap: () => ref.read(reportsRepositoryProvider.notifier).refresh(),
             child: adminPill(context, 'Coba lagi'),
           ),
         ],
@@ -264,8 +290,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               onTap: r == ReportRange.custom
                   ? _openCustomSheet
                   : () => _setRange(r),
-              child: adminPill(context, _chipLabel(r, query),
-                  on: query.range == r),
+              child: adminPill(
+                context,
+                _chipLabel(r, query),
+                on: query.range == r,
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -281,18 +310,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   ) {
     final servers = snapshot?.filterOptions.servers ?? const <NamedIdDto>[];
     final zones = snapshot?.filterOptions.zones ?? const <NamedIdDto>[];
-    final categories = snapshot?.filterOptions.categories ?? const <NamedIdDto>[];
-    final serverName =
-        servers.firstWhere((s) => s.id == query.serverId,
-                orElse: () => const NamedIdDto(id: '', name: 'Semua pelayan'))
-            .name;
-    final zoneName =
-        zones.firstWhere((z) => z.id == query.zoneId,
-                orElse: () => const NamedIdDto(id: '', name: 'Semua zona'))
-            .name;
+    final categories =
+        snapshot?.filterOptions.categories ?? const <NamedIdDto>[];
+    final serverName = servers
+        .firstWhere(
+          (s) => s.id == query.serverId,
+          orElse: () => const NamedIdDto(id: '', name: 'Semua pelayan'),
+        )
+        .name;
+    final zoneName = zones
+        .firstWhere(
+          (z) => z.id == query.zoneId,
+          orElse: () => const NamedIdDto(id: '', name: 'Semua zona'),
+        )
+        .name;
     final categoryName = categories
-        .firstWhere((c) => c.id == query.categoryId,
-            orElse: () => const NamedIdDto(id: '', name: 'Semua kategori'))
+        .firstWhere(
+          (c) => c.id == query.categoryId,
+          orElse: () => const NamedIdDto(id: '', name: 'Semua kategori'),
+        )
         .name;
 
     return Row(
@@ -308,13 +344,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _filterChip(
-            context,
-            'Zona',
-            zoneName,
-            [const NamedIdDto(id: '', name: 'Semua zona'), ...zones],
-            (n) => _setZone(n.id.isEmpty ? null : n.id),
-          ),
+          child: _filterChip(context, 'Zona', zoneName, [
+            const NamedIdDto(id: '', name: 'Semua zona'),
+            ...zones,
+          ], (n) => _setZone(n.id.isEmpty ? null : n.id)),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -353,18 +386,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(label.toUpperCase(),
-                        style: SatType.mono(
-                          size: 11,
-                          weight: FontWeight.w600,
-                          letterSpacing: 1.0,
-                          color: sc.textLo,
-                        )),
+                    child: Text(
+                      label.toUpperCase(),
+                      style: SatType.mono(
+                        size: 11,
+                        weight: FontWeight.w600,
+                        letterSpacing: 1.0,
+                        color: sc.textLo,
+                      ),
+                    ),
                   ),
                 ),
                 for (final o in options)
                   ListTile(
-                    title: Text(o.name, style: SatType.sans(size: 14, color: sc.textHi)),
+                    title: Text(
+                      o.name,
+                      style: SatType.sans(size: 14, color: sc.textHi),
+                    ),
                     trailing: o.name == value
                         ? Icon(Icons.check, color: sc.accentText, size: 18)
                         : null,
@@ -390,22 +428,26 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label.toUpperCase(),
-                      style: SatType.mono(
-                        size: 9,
-                        weight: FontWeight.w600,
-                        letterSpacing: 1.0,
-                        color: sc.textLo,
-                      )),
+                  Text(
+                    label.toUpperCase(),
+                    style: SatType.mono(
+                      size: 9,
+                      weight: FontWeight.w600,
+                      letterSpacing: 1.0,
+                      color: sc.textLo,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: SatType.sans(
-                        size: 13,
-                        weight: FontWeight.w500,
-                        color: active ? sc.accentText : sc.textHi,
-                      )),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SatType.sans(
+                      size: 13,
+                      weight: FontWeight.w500,
+                      color: active ? sc.accentText : sc.textHi,
+                    ),
+                  ),
                 ],
               ),
             ),

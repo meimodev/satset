@@ -35,7 +35,10 @@ void main() {
     });
 
     test('floating chrome stays translucent', () {
-      expect(SatShape.veil(const Color(0xFF1C1F23), 0.92).a, closeTo(0.92, 0.01));
+      expect(
+        SatShape.veil(const Color(0xFF1C1F23), 0.92).a,
+        closeTo(0.92, 0.01),
+      );
     });
   });
 
@@ -92,7 +95,10 @@ void main() {
       // Full-bleed chrome: a rule, no corner radius, so no shadow.
       expect(SatBox.d(color: white, border: SatB.all()).boxShadow, isNull);
       // Plain fill, no border.
-      expect(SatBox.d(color: white, borderRadius: SatR.a(14)).boxShadow, isNull);
+      expect(
+        SatBox.d(color: white, borderRadius: SatR.a(14)).boxShadow,
+        isNull,
+      );
       // An explicit shadow always wins.
       const own = [BoxShadow(color: Color(0xFFFF0000))];
       expect(
@@ -186,7 +192,11 @@ void main() {
     test('every soft palette stays lembut', () {
       for (final t in SatTheme.values) {
         final brutal = t == SatTheme.neoKertas || t == SatTheme.neoMidnight;
-        expect(t.skin, brutal ? SatSkin.brutal : SatSkin.lembut, reason: t.name);
+        expect(
+          t.skin,
+          brutal ? SatSkin.brutal : SatSkin.lembut,
+          reason: t.name,
+        );
       }
     });
   });

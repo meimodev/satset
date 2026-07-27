@@ -56,27 +56,27 @@ class SubmitOrderUseCase {
   }
 
   List<CartLineDto> _lines(List<CartItem> cart) => [
-        for (final c in cart)
-          CartLineDto(
-            itemId: c.itemId,
-            name: c.name,
-            variantId: c.variantId,
-            variantName: c.variantName,
-            modifiers: [
-              for (final m in c.selectedModifiers)
-                CartModifierDto(
-                  groupId: m.groupId,
-                  optionId: m.optionId,
-                  label: m.label,
-                  priceDelta: m.priceDelta,
-                ),
-            ],
-            note: c.note.isEmpty ? null : c.note,
-            course: _courseKey(c.course),
-            qty: c.qty,
-            unitPrice: c.unitPrice,
-          ),
-      ];
+    for (final c in cart)
+      CartLineDto(
+        itemId: c.itemId,
+        name: c.name,
+        variantId: c.variantId,
+        variantName: c.variantName,
+        modifiers: [
+          for (final m in c.selectedModifiers)
+            CartModifierDto(
+              groupId: m.groupId,
+              optionId: m.optionId,
+              label: m.label,
+              priceDelta: m.priceDelta,
+            ),
+        ],
+        note: c.note.isEmpty ? null : c.note,
+        course: _courseKey(c.course),
+        qty: c.qty,
+        unitPrice: c.unitPrice,
+      ),
+  ];
 }
 
 final submitOrderUseCaseProvider = Provider<SubmitOrderUseCase>((ref) {
@@ -86,11 +86,10 @@ final submitOrderUseCaseProvider = Provider<SubmitOrderUseCase>((ref) {
 /// Server contract is kebab-case. Cannot use enum `.name` because the
 /// built-in `name` field shadows extensions, and would emit `drinksNow`.
 String _courseKey(CourseId c) => switch (c) {
-      CourseId.drinksNow => 'drinks-now',
-      CourseId.starters => 'starters',
-      CourseId.mains => 'mains',
-      CourseId.sides => 'sides',
-      CourseId.desserts => 'desserts',
-      CourseId.fireNow => 'fire-now',
-    };
-
+  CourseId.drinksNow => 'drinks-now',
+  CourseId.starters => 'starters',
+  CourseId.mains => 'mains',
+  CourseId.sides => 'sides',
+  CourseId.desserts => 'desserts',
+  CourseId.fireNow => 'fire-now',
+};

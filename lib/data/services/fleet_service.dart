@@ -10,23 +10,23 @@ import 'package:satset/data/services/firebase_admin_service.dart';
 /// writes admins/venues directly. See ADR-0016.
 class FleetService {
   FleetService({FirebaseFirestore? firestore, FirebaseFunctions? functions})
-      : _fs = firestore ?? FirebaseFirestore.instance,
-        _fn = functions ?? FirebaseFunctions.instance;
+    : _fs = firestore ?? FirebaseFirestore.instance,
+      _fn = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _fs;
   final FirebaseFunctions _fn;
 
   // ── Reads (live) ───────────────────────────────────────────────────────────
 
-  Stream<List<Venue>> watchVenues() =>
-      _fs.collection('venues').snapshots().map((q) => [
-            for (final d in q.docs) _venue(d),
-          ]);
+  Stream<List<Venue>> watchVenues() => _fs
+      .collection('venues')
+      .snapshots()
+      .map((q) => [for (final d in q.docs) _venue(d)]);
 
-  Stream<List<AdminProfile>> watchAdmins() =>
-      _fs.collection('admins').snapshots().map((q) => [
-            for (final d in q.docs) _admin(d),
-          ]);
+  Stream<List<AdminProfile>> watchAdmins() => _fs
+      .collection('admins')
+      .snapshots()
+      .map((q) => [for (final d in q.docs) _admin(d)]);
 
   Venue _venue(QueryDocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data();
@@ -62,16 +62,24 @@ class FleetService {
   }
 
   static AdminStatus _status(String? raw) => switch (raw) {
-        'active' => AdminStatus.active,
-        'suspended' => AdminStatus.suspended,
-        'banned' => AdminStatus.banned,
-        _ => AdminStatus.unknown,
-      };
+    'active' => AdminStatus.active,
+    'suspended' => AdminStatus.suspended,
+    'banned' => AdminStatus.banned,
+    _ => AdminStatus.unknown,
+  };
 
   // ── Mutations (callables) ───────────────────────────────────────────────────
 
-  Future<String> createVenue({required String name, String address = '', String plan = 'free'}) async {
-    final r = await _call('createVenue', {'name': name, 'address': address, 'plan': plan});
+  Future<String> createVenue({
+    required String name,
+    String address = '',
+    String plan = 'free',
+  }) async {
+    final r = await _call('createVenue', {
+      'name': name,
+      'address': address,
+      'plan': plan,
+    });
     return (r['vid'] as String?) ?? '';
   }
 
@@ -88,16 +96,15 @@ class FleetService {
     String? billingStatus,
     DateTime? paidUntil,
     bool clearPaidUntil = false,
-  }) =>
-      _call('setVenueBilling', {
-        'vid': vid,
-        'plan': ?plan,
-        'billingStatus': ?billingStatus,
-        if (clearPaidUntil)
-          'paidUntil': null
-        else if (paidUntil != null)
-          'paidUntil': paidUntil.millisecondsSinceEpoch,
-      });
+  }) => _call('setVenueBilling', {
+    'vid': vid,
+    'plan': ?plan,
+    'billingStatus': ?billingStatus,
+    if (clearPaidUntil)
+      'paidUntil': null
+    else if (paidUntil != null)
+      'paidUntil': paidUntil.millisecondsSinceEpoch,
+  });
 
   Future<void> deleteVenue(String vid) => _call('deleteVenue', {'vid': vid});
 
@@ -130,26 +137,31 @@ class FleetService {
     return r['link'] as String?;
   }
 
-  Future<Map<String, dynamic>> _call(String name, Map<String, dynamic> args) async {
+  Future<Map<String, dynamic>> _call(
+    String name,
+    Map<String, dynamic> args,
+  ) async {
     final res = await _fn.httpsCallable(name).call<dynamic>(args);
     final data = res.data;
     return data is Map ? data.cast<String, dynamic>() : <String, dynamic>{};
   }
 
   static String _statusKey(AdminStatus s) => switch (s) {
-        AdminStatus.active => 'active',
-        AdminStatus.suspended => 'suspended',
-        AdminStatus.banned => 'banned',
-        AdminStatus.unknown => 'suspended',
-      };
+    AdminStatus.active => 'active',
+    AdminStatus.suspended => 'suspended',
+    AdminStatus.banned => 'banned',
+    AdminStatus.unknown => 'suspended',
+  };
 }
 
 final fleetServiceProvider = Provider<FleetService>((_) => FleetService());
 
 /// Live fleet venues for the console.
 final fleetVenuesProvider = StreamProvider<List<Venue>>(
-    (ref) => ref.watch(fleetServiceProvider).watchVenues());
+  (ref) => ref.watch(fleetServiceProvider).watchVenues(),
+);
 
 /// Live fleet admins for the console.
 final fleetAdminsProvider = StreamProvider<List<AdminProfile>>(
-    (ref) => ref.watch(fleetServiceProvider).watchAdmins());
+  (ref) => ref.watch(fleetServiceProvider).watchAdmins(),
+);

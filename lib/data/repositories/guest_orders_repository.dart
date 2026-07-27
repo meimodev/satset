@@ -70,17 +70,20 @@ class GuestOrdersRepository extends StateNotifier<List<GuestOrderBatch>> {
       final batches = <GuestOrderBatch>[];
       for (final b in (raw['batches'] as List? ?? const [])) {
         final m = (b as Map).cast<String, dynamic>();
-        batches.add(GuestOrderBatch(
-          visitId: m['visitId'] as String? ?? '',
-          tableId: m['tableId'] as String? ?? '',
-          tableLabel: m['tableLabel'] as String? ?? '',
-          submittedAt: DateTime.tryParse(m['submittedAt'] as String? ?? '') ??
-              DateTime.now(),
-          lines: [
-            for (final l in (m['lines'] as List? ?? const []))
-              _line((l as Map).cast<String, dynamic>()),
-          ],
-        ));
+        batches.add(
+          GuestOrderBatch(
+            visitId: m['visitId'] as String? ?? '',
+            tableId: m['tableId'] as String? ?? '',
+            tableLabel: m['tableLabel'] as String? ?? '',
+            submittedAt:
+                DateTime.tryParse(m['submittedAt'] as String? ?? '') ??
+                DateTime.now(),
+            lines: [
+              for (final l in (m['lines'] as List? ?? const []))
+                _line((l as Map).cast<String, dynamic>()),
+            ],
+          ),
+        );
       }
       state = batches;
       SatLog.repo('guestOrders.loaded batches=${batches.length}');
@@ -114,7 +117,10 @@ class GuestOrdersRepository extends StateNotifier<List<GuestOrderBatch>> {
 
   Future<bool> _act(String visitId, String verb) async {
     final prev = state;
-    state = [for (final b in state) if (b.visitId != visitId) b];
+    state = [
+      for (final b in state)
+        if (b.visitId != visitId) b,
+    ];
     try {
       await ref
           .read(apiClientProvider)
@@ -137,5 +143,5 @@ class GuestOrdersRepository extends StateNotifier<List<GuestOrderBatch>> {
 
 final guestOrdersProvider =
     StateNotifierProvider<GuestOrdersRepository, List<GuestOrderBatch>>(
-  (ref) => GuestOrdersRepository(ref: ref),
-);
+      (ref) => GuestOrdersRepository(ref: ref),
+    );

@@ -85,18 +85,17 @@ class AuthState {
     bool? isSuperAdmin,
     bool? isOwner,
     String? ownerVenueId,
-  }) =>
-      AuthState(
-        isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-        user: user ?? this.user,
-        error: error,
-        busy: busy ?? this.busy,
-        restoring: restoring ?? this.restoring,
-        capabilities: capabilities ?? this.capabilities,
-        isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
-        isOwner: isOwner ?? this.isOwner,
-        ownerVenueId: ownerVenueId ?? this.ownerVenueId,
-      );
+  }) => AuthState(
+    isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+    user: user ?? this.user,
+    error: error,
+    busy: busy ?? this.busy,
+    restoring: restoring ?? this.restoring,
+    capabilities: capabilities ?? this.capabilities,
+    isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
+    isOwner: isOwner ?? this.isOwner,
+    ownerVenueId: ownerVenueId ?? this.ownerVenueId,
+  );
 
   bool has(Capability c) => capabilities.contains(c);
 }
@@ -105,10 +104,8 @@ class AuthState {
 /// [ApiClient]; the router's pair-gate ensures an [ApiConfig] is always
 /// populated before this code runs.
 class AuthRepository extends StateNotifier<AuthState> {
-  AuthRepository({
-    required this.ref,
-    required this.storage,
-  }) : super(const AuthState());
+  AuthRepository({required this.ref, required this.storage})
+    : super(const AuthState());
 
   final Ref ref;
   final SecureStorageService storage;
@@ -134,20 +131,23 @@ class AuthRepository extends StateNotifier<AuthState> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       state = state.copyWith(
-          busy: false,
-          error: 'Server belum siap. Tunggu sebentar lalu coba lagi.');
+        busy: false,
+        error: 'Server belum siap. Tunggu sebentar lalu coba lagi.',
+      );
       return false;
     }
     try {
       final api = ref.read(apiClientProvider);
       final deviceId = await storage.readDeviceId() ?? '';
-      final raw = await api.postJson('/auth/login',
-          PinLoginRequestDto(pin: pin, deviceId: deviceId).toJson());
-      final session =
-          SessionDto.fromJson((raw as Map).cast<String, dynamic>());
+      final raw = await api.postJson(
+        '/auth/login',
+        PinLoginRequestDto(pin: pin, deviceId: deviceId).toJson(),
+      );
+      final session = SessionDto.fromJson((raw as Map).cast<String, dynamic>());
       await storage.writeToken(session.token);
-      final me =
-          MeDto.fromJson((await api.getJson('/auth/me') as Map).cast<String, dynamic>());
+      final me = MeDto.fromJson(
+        (await api.getJson('/auth/me') as Map).cast<String, dynamic>(),
+      );
       final caps = <Capability>{
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
@@ -173,7 +173,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       SatLog.repo('auth.signIn fail ${e.toString()}');
-      state = state.copyWith(busy: false, error: authErrorMessage(e, pin: true));
+      state = state.copyWith(
+        busy: false,
+        error: authErrorMessage(e, pin: true),
+      );
       return false;
     }
   }
@@ -221,10 +224,13 @@ class AuthRepository extends StateNotifier<AuthState> {
       if (profile.isOwner) {
         if (!profile.isActive) {
           SatLog.repo(
-              'auth.signInAsAdmin blocked owner uid=$uid status=${profile.status.name}');
+            'auth.signInAsAdmin blocked owner uid=$uid status=${profile.status.name}',
+          );
           await fb.signOut();
-          state =
-              state.copyWith(busy: false, error: _eligibilityMessage(profile));
+          state = state.copyWith(
+            busy: false,
+            error: _eligibilityMessage(profile),
+          );
           return false;
         }
         if (profile.venueId.isEmpty) {
@@ -234,16 +240,21 @@ class AuthRepository extends StateNotifier<AuthState> {
           return false;
         }
         _establishOwnerSession(profile, email);
-        SatLog.repo('auth.signInAsAdmin owner uid=$uid venue=${profile.venueId}');
+        SatLog.repo(
+          'auth.signInAsAdmin owner uid=$uid venue=${profile.venueId}',
+        );
         return true;
       }
 
       if (!profile.isActive) {
         SatLog.repo(
-            'auth.signInAsAdmin blocked uid=$uid status=${profile.status.name}');
+          'auth.signInAsAdmin blocked uid=$uid status=${profile.status.name}',
+        );
         await fb.signOut();
-        state =
-            state.copyWith(busy: false, error: _eligibilityMessage(profile));
+        state = state.copyWith(
+          busy: false,
+          error: _eligibilityMessage(profile),
+        );
         return false;
       }
 
@@ -258,7 +269,8 @@ class AuthRepository extends StateNotifier<AuthState> {
       final venue = await fb.fetchVenue(profile.venueId);
       if (venue == null || !venue.isActive) {
         SatLog.repo(
-            'auth.signInAsAdmin blocked venue=${profile.venueId} status=${venue?.status.name ?? "no-doc"}');
+          'auth.signInAsAdmin blocked venue=${profile.venueId} status=${venue?.status.name ?? "no-doc"}',
+        );
         await fb.signOut();
         state = state.copyWith(busy: false, error: _venueMessage(venue));
         return false;
@@ -274,16 +286,22 @@ class AuthRepository extends StateNotifier<AuthState> {
           .findVenueHost(profile.venueId);
       if (host != null) {
         final joined = await _establishAdminClientSession(
-            host: host, uid: uid, profile: profile);
+          host: host,
+          uid: uid,
+          profile: profile,
+        );
         if (!joined) {
           await fb.signOut();
           state = state.copyWith(
-              busy: false,
-              error: 'Gagal bergabung ke server venue. Coba lagi.');
+            busy: false,
+            error: 'Gagal bergabung ke server venue. Coba lagi.',
+          );
           return false;
         }
-        SatLog.repo('auth.signInAsAdmin joined-as-client host=${host.label} '
-            'venue=${profile.venueId}');
+        SatLog.repo(
+          'auth.signInAsAdmin joined-as-client host=${host.label} '
+          'venue=${profile.venueId}',
+        );
         return true;
       }
 
@@ -294,11 +312,15 @@ class AuthRepository extends StateNotifier<AuthState> {
       final ok = await _establishAdminSession(uid: uid, profile: profile);
       if (!ok) {
         state = state.copyWith(
-            busy: false, error: 'Server belum siap. Coba lagi.');
+          busy: false,
+          error: 'Server belum siap. Coba lagi.',
+        );
         return false;
       }
       _startEligibilityWatch(uid, profile.venueId);
-      SatLog.repo('auth.signInAsAdmin ok host uid=$uid venue=${profile.venueId}');
+      SatLog.repo(
+        'auth.signInAsAdmin ok host uid=$uid venue=${profile.venueId}',
+      );
       return true;
     } on fb_auth.FirebaseAuthException catch (e) {
       SatLog.repo('auth.signInAsAdmin fb-fail ${e.code}');
@@ -306,8 +328,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       SatLog.repo('auth.signInAsAdmin fail $e');
-      state =
-          state.copyWith(busy: false, error: authErrorMessage(e, pin: false));
+      state = state.copyWith(
+        busy: false,
+        error: authErrorMessage(e, pin: false),
+      );
       return false;
     }
   }
@@ -327,11 +351,14 @@ class AuthRepository extends StateNotifier<AuthState> {
       name: profile.name,
       avatarColorHex: profile.avatarColorHex,
     );
-    final session =
-        await rt.auth.mintSession(userId: userId, deviceId: deviceId);
+    final session = await rt.auth.mintSession(
+      userId: userId,
+      deviceId: deviceId,
+    );
     await storage.writeToken(session.token);
     final me = MeDto.fromJson(
-        (await api.getJson('/auth/me') as Map).cast<String, dynamic>());
+      (await api.getJson('/auth/me') as Map).cast<String, dynamic>(),
+    );
     final caps = <Capability>{
       for (final k in me.capabilities)
         if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
@@ -388,16 +415,19 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
     try {
       final api = ref.read(apiClientProvider);
-      final res = (await api.postJson('/auth/admin', {
-        'idToken': idToken,
-        'deviceId': deviceId,
-      }) as Map)
-          .cast<String, dynamic>();
+      final res =
+          (await api.postJson('/auth/admin', {
+                    'idToken': idToken,
+                    'deviceId': deviceId,
+                  })
+                  as Map)
+              .cast<String, dynamic>();
       final token = res['token'] as String?;
       if (token == null || token.isEmpty) return false;
       await storage.writeToken(token);
       final me = MeDto.fromJson(
-          (await api.getJson('/auth/me') as Map).cast<String, dynamic>());
+        (await api.getJson('/auth/me') as Map).cast<String, dynamic>(),
+      );
       final caps = <Capability>{
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
@@ -470,8 +500,11 @@ class AuthRepository extends StateNotifier<AuthState> {
   }
 
   static String _initials(String s) {
-    final parts =
-        s.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = s
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) {
       return parts.first.substring(0, 1).toUpperCase();
@@ -537,8 +570,10 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
 
     unawaited(beat()); // immediate, so the venue shows online without waiting
-    _heartbeat =
-        Timer.periodic(const Duration(seconds: 60), (_) => unawaited(beat()));
+    _heartbeat = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => unawaited(beat()),
+    );
 
     _startReportPublisher(venueId);
   }
@@ -558,8 +593,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       vid: venueId,
       fetchSnapshot: (range) async {
         try {
-          final raw = await api
-              .getJson('/reports/snapshot', query: {'range': range});
+          final raw = await api.getJson(
+            '/reports/snapshot',
+            query: {'range': range},
+          );
           return (raw as Map).cast<String, dynamic>();
         } catch (e) {
           SatLog.repo('ownerReport.fetch range=$range fail $e');
@@ -581,7 +618,9 @@ class AuthRepository extends StateNotifier<AuthState> {
     final needAddr = nextAddr.isNotEmpty && nextAddr != settings.address;
     if (!needName && !needAddr) return;
     try {
-      await ref.read(venueSettingsProvider.notifier).patch(
+      await ref
+          .read(venueSettingsProvider.notifier)
+          .patch(
             displayName: needName ? nextName : null,
             address: needAddr ? nextAddr : null,
           );
@@ -645,8 +684,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       'user-disabled' => 'Akun admin dinonaktifkan.',
       'user-not-found' ||
       'wrong-password' ||
-      'invalid-credential' =>
-        'Email atau password salah.',
+      'invalid-credential' => 'Email atau password salah.',
       'too-many-requests' => 'Terlalu banyak percobaan. Coba lagi nanti.',
       'network-request-failed' =>
         'Gagal terhubung. Login admin pertama butuh internet.',
@@ -669,7 +707,8 @@ class AuthRepository extends StateNotifier<AuthState> {
     try {
       final api = ref.read(apiClientProvider);
       final me = MeDto.fromJson(
-          (await api.getJson('/auth/me') as Map).cast<String, dynamic>());
+        (await api.getJson('/auth/me') as Map).cast<String, dynamic>(),
+      );
       final caps = <Capability>{
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
@@ -749,8 +788,9 @@ class AuthRepository extends StateNotifier<AuthState> {
   }
 }
 
-final authStateProvider =
-    StateNotifierProvider<AuthRepository, AuthState>((ref) => AuthRepository(
-          ref: ref,
-          storage: ref.watch(secureStorageServiceProvider),
-        ));
+final authStateProvider = StateNotifierProvider<AuthRepository, AuthState>(
+  (ref) => AuthRepository(
+    ref: ref,
+    storage: ref.watch(secureStorageServiceProvider),
+  ),
+);

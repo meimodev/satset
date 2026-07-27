@@ -20,8 +20,10 @@ class ModeSelectScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 24),
-              Text('Pilih mode',
-                  style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                'Pilih mode',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const SizedBox(height: 8),
               const Text('Tablet ini akan jadi server atau klien?'),
               const SizedBox(height: 24),
@@ -38,7 +40,8 @@ class ModeSelectScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               _ModeCard(
                 title: 'Klien',
-                subtitle: 'Tablet ini ambil order, terhubung ke server lewat LAN.',
+                subtitle:
+                    'Tablet ini ambil order, terhubung ke server lewat LAN.',
                 onTap: s.busy
                     ? null
                     : () async {
@@ -48,8 +51,10 @@ class ModeSelectScreen extends ConsumerWidget {
               ),
               if (s.error != null) ...[
                 const SizedBox(height: 16),
-                Text(s.error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  s.error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
             ],
           ),

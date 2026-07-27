@@ -64,7 +64,10 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               child: async.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => _message(
-                    context, 'Gagal memuat laporan.', Icons.error_outline),
+                  context,
+                  'Gagal memuat laporan.',
+                  Icons.error_outline,
+                ),
                 data: (report) => _content(context, report),
               ),
             ),
@@ -88,9 +91,14 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
           Row(
             children: [
               Expanded(
-                child: Text('Laporan Venue',
-                    style: SatType.sans(
-                        size: 22, weight: FontWeight.w600, color: sc.textHi)),
+                child: Text(
+                  'Laporan Venue',
+                  style: SatType.sans(
+                    size: 22,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                ),
               ),
               IconButton(
                 tooltip: 'Muat ulang',
@@ -99,8 +107,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               ),
               IconButton(
                 tooltip: 'Keluar',
-                onPressed: () =>
-                    ref.read(authStateProvider.notifier).signOut(),
+                onPressed: () => ref.read(authStateProvider.notifier).signOut(),
                 icon: Icon(Icons.logout, color: sc.textMd, size: 20),
               ),
             ],
@@ -118,9 +125,14 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               ),
               const SizedBox(width: 7),
               Flexible(
-                child: Text(_freshnessLine(report, pending),
-                    style: SatType.mono(
-                        size: 11, color: sc.textLo, letterSpacing: 0.5)),
+                child: Text(
+                  _freshnessLine(report, pending),
+                  style: SatType.mono(
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
             ],
           ),
@@ -155,11 +167,14 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                     color: _range == key ? sc.bg4 : Colors.transparent,
                     borderRadius: SatR.a(8),
                   ),
-                  child: Text(_rangeLabel[key] ?? key,
-                      style: SatType.sans(
-                          size: 12,
-                          weight: FontWeight.w500,
-                          color: _range == key ? sc.textHi : sc.textLo)),
+                  child: Text(
+                    _rangeLabel[key] ?? key,
+                    style: SatType.sans(
+                      size: 12,
+                      weight: FontWeight.w500,
+                      color: _range == key ? sc.textHi : sc.textLo,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -171,15 +186,21 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   Widget _content(BuildContext context, OwnerReport? report) {
     final raw = report?.range(_range);
     if (raw == null) {
-      return _message(context, 'Belum ada laporan dari venue ini.',
-          Icons.hourglass_empty_rounded);
+      return _message(
+        context,
+        'Belum ada laporan dari venue ini.',
+        Icons.hourglass_empty_rounded,
+      );
     }
     final ReportsSnapshotDto snap;
     try {
       snap = ReportsSnapshotDto.fromJson(raw);
     } catch (_) {
-      return _message(context, 'Format laporan tidak dikenal.',
-          Icons.error_outline);
+      return _message(
+        context,
+        'Format laporan tidak dikenal.',
+        Icons.error_outline,
+      );
     }
     // Full parity with the on-site Admin → Reports screen — same renderer,
     // sourced from the cloud snapshot. Proof photos are LAN-only (no server
@@ -205,9 +226,11 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
           children: [
             Icon(icon, color: sc.textLo, size: 36),
             const SizedBox(height: 12),
-            Text(text,
-                textAlign: TextAlign.center,
-                style: SatType.sans(size: 14, color: sc.textMd)),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: SatType.sans(size: 14, color: sc.textMd),
+            ),
           ],
         ),
       ),

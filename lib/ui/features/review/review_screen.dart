@@ -27,9 +27,11 @@ import 'package:satset/ui/features/tables/widgets/assign_table_sheet.dart';
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
+
   /// Table-less menu-first draft: [tableId] is a draft id and the destination
   /// is chosen here (dine-in table or Bawa pulang) before submit.
   final bool tableless;
+
   /// Set when reviewing items to APPEND to an existing takeaway visit:
   /// [tableId] is the takeaway visit id. See ADR-0026.
   final String? takeawayVisitId;
@@ -50,21 +52,23 @@ class ReviewScreen extends ConsumerWidget {
     final tables = ref.watch(tablesProvider);
     final table = tableless
         ? null
-        : tables.firstWhere((t) => t.id == tableId,
+        : tables.firstWhere(
+            (t) => t.id == tableId,
             orElse: () => tables.isEmpty
                 ? VenueTable(id: tableId, zoneId: '')
-                : tables.first);
+                : tables.first,
+          );
     final backFallback = _isTakeaway
         ? '/takeaway/$takeawayVisitId'
         : tableless
-            ? '/tables'
-            : '/table/$tableId';
+        ? '/tables'
+        : '/table/$tableId';
     final reviewState = ref.watch(reviewViewModelProvider);
     ref.listen<ReviewState>(reviewViewModelProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text('Gagal kirim: ${next.error}')),
-        );
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(SnackBar(content: Text('Gagal kirim: ${next.error}')));
       }
     });
 
@@ -108,12 +112,14 @@ class ReviewScreen extends ConsumerWidget {
               SatAppBar(
                 onBack: () => safePop(context, fallback: backFallback),
                 title: tableless
-                    ? (_isTakeaway ? 'Tinjau · Bawa pulang' : 'Tinjau · Pesanan baru')
+                    ? (_isTakeaway
+                          ? 'Tinjau · Bawa pulang'
+                          : 'Tinjau · Pesanan baru')
                     : 'Tinjau · Meja ${table!.displayName}',
                 crumbs: tableless
                     ? (_isTakeaway
-                        ? const ['Bawa pulang', 'Tinjau']
-                        : const ['Pesanan baru', 'Tinjau'])
+                          ? const ['Bawa pulang', 'Tinjau']
+                          : const ['Pesanan baru', 'Tinjau'])
                     : ['Meja', table!.displayName, 'Tinjau'],
               ),
               Padding(
@@ -121,23 +127,28 @@ class ReviewScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Tinjau pesanan',
-                        style: SatType.sans(
-                          size: 30,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.6,
-                          height: 1.05,
-                          color: sc.textHi,
-                        )),
+                    Text(
+                      'Tinjau pesanan',
+                      style: SatType.sans(
+                        size: 30,
+                        weight: FontWeight.w600,
+                        letterSpacing: -0.6,
+                        height: 1.05,
+                        color: sc.textHi,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       tableless
                           ? (_isTakeaway
-                              ? 'BAWA PULANG · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM'
-                              : 'TANPA MEJA · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM · PILIH MEJA SAAT KIRIM')
+                                ? 'BAWA PULANG · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM'
+                                : 'TANPA MEJA · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM · PILIH MEJA SAAT KIRIM')
                           : 'MEJA ${table!.displayName} · ${table.pax} TAMU · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM',
                       style: SatType.mono(
-                          size: 11, color: sc.textLo, letterSpacing: 0.44),
+                        size: 11,
+                        color: sc.textLo,
+                        letterSpacing: 0.44,
+                      ),
                     ),
                   ],
                 ),
@@ -172,76 +183,89 @@ class ReviewScreen extends ConsumerWidget {
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
                     child: ListView(
-                  padding: EdgeInsets.fromLTRB(0, 0, 0, l.bottomInset + 100),
-                  children: [
-                    for (final cid in [
-                      CourseId.drinksNow,
-                      CourseId.starters,
-                      CourseId.mains,
-                      CourseId.sides,
-                      CourseId.desserts,
-                      CourseId.fireNow,
-                    ])
-                      if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
-                        _CourseBlock(
-                          course: Courses.byId(cid),
-                          items: grouped[cid]!,
-                          onRemove: (id) =>
-                              ref.read(cartProvider(tableId).notifier).remove(id),
-                        ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                        decoration: SatBox.d(
-                          color: sc.bg2,
-                          borderRadius: SatR.a(18),
-                          border: SatB.all(color: sc.border0),
-                        ),
-                        child: Column(
-                          children: [
-                            _TotalsRow(label: 'Subtotal', value: formatIDR(subtotal)),
-                            if (venue.serviceEnabled)
-                              _TotalsRow(
-                                label: serviceLabel,
-                                value: formatIDR(serviceAmount),
-                              ),
-                            if (venue.taxEnabled)
-                              _TotalsRow(
-                                label: taxLabel,
-                                value: formatIDR(taxAmount),
-                              ),
-                            Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.only(top: 12),
-                              decoration: SatBox.d(
-                                border:
-                                    Border(top: SatB.side(color: sc.border0)),
-                              ),
-                              child: _TotalsRow(
-                                label: 'Total perkiraan',
-                                value: formatIDR(grandTotal),
-                                isTotal: true,
-                              ),
+                      padding: EdgeInsets.fromLTRB(
+                        0,
+                        0,
+                        0,
+                        l.bottomInset + 100,
+                      ),
+                      children: [
+                        for (final cid in [
+                          CourseId.drinksNow,
+                          CourseId.starters,
+                          CourseId.mains,
+                          CourseId.sides,
+                          CourseId.desserts,
+                          CourseId.fireNow,
+                        ])
+                          if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
+                            _CourseBlock(
+                              course: Courses.byId(cid),
+                              items: grouped[cid]!,
+                              onRemove: (id) => ref
+                                  .read(cartProvider(tableId).notifier)
+                                  .remove(id),
                             ),
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 16,
+                            ),
+                            decoration: SatBox.d(
+                              color: sc.bg2,
+                              borderRadius: SatR.a(18),
+                              border: SatB.all(color: sc.border0),
+                            ),
+                            child: Column(
+                              children: [
+                                _TotalsRow(
+                                  label: 'Subtotal',
+                                  value: formatIDR(subtotal),
+                                ),
+                                if (venue.serviceEnabled)
+                                  _TotalsRow(
+                                    label: serviceLabel,
+                                    value: formatIDR(serviceAmount),
+                                  ),
+                                if (venue.taxEnabled)
+                                  _TotalsRow(
+                                    label: taxLabel,
+                                    value: formatIDR(taxAmount),
+                                  ),
+                                Container(
+                                  margin: const EdgeInsets.only(top: 8),
+                                  padding: const EdgeInsets.only(top: 12),
+                                  decoration: SatBox.d(
+                                    border: Border(
+                                      top: SatB.side(color: sc.border0),
+                                    ),
+                                  ),
+                                  child: _TotalsRow(
+                                    label: 'Total perkiraan',
+                                    value: formatIDR(grandTotal),
+                                    isTotal: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-                      child: Text(
-                        'PEMBAYARAN DITANGANI DI LUAR SATSET · BILL DICETAK DARI POS SAAT DISAJIKAN',
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.textLo,
-                          letterSpacing: 0.44,
-                          height: 1.5,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                          child: Text(
+                            'PEMBAYARAN DITANGANI DI LUAR SATSET · BILL DICETAK DARI POS SAAT DISAJIKAN',
+                            style: SatType.mono(
+                              size: 11,
+                              color: sc.textLo,
+                              letterSpacing: 0.44,
+                              height: 1.5,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
                   ),
                 ),
               ),
@@ -250,7 +274,9 @@ class ReviewScreen extends ConsumerWidget {
           Positioned(
             left: 16 + l.padding.left,
             right: 16 + l.padding.right,
-            bottom: l.useSideRail ? 16 + l.padding.bottom : 92 + l.padding.bottom,
+            bottom: l.useSideRail
+                ? 16 + l.padding.bottom
+                : 92 + l.padding.bottom,
             child: SizedBox(
               height: 52,
               child: ElevatedButton(
@@ -300,11 +326,14 @@ class ReviewScreen extends ConsumerWidget {
                           }
                           // Dine-in: pick the destination table, seat it, then
                           // submit the draft cart against it.
-                          final pick =
-                              await showAssignTableSheet(context: context);
+                          final pick = await showAssignTableSheet(
+                            context: context,
+                          );
                           if (pick == null || !context.mounted) return;
                           try {
-                            await ref.read(tablesProvider.notifier).seat(
+                            await ref
+                                .read(tablesProvider.notifier)
+                                .seat(
                                   pick.tableId,
                                   pax: pick.pax,
                                   guestName: pick.guestName,
@@ -316,9 +345,11 @@ class ReviewScreen extends ConsumerWidget {
                             if (context.mounted) {
                               ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                                 SnackBar(
-                                  content: Text(e.code == 'already_seated'
-                                      ? 'Meja keburu terisi. Pilih meja lain.'
-                                      : 'Gagal menempati meja: ${e.code ?? e.statusCode}'),
+                                  content: Text(
+                                    e.code == 'already_seated'
+                                        ? 'Meja keburu terisi. Pilih meja lain.'
+                                        : 'Gagal menempati meja: ${e.code ?? e.statusCode}',
+                                  ),
                                 ),
                               );
                             }
@@ -338,7 +369,8 @@ class ReviewScreen extends ConsumerWidget {
                             // and lands on the freshly-seated table detail with
                             // the sent confirmation on top.
                             context.go(
-                                '/table/${pick.tableId}/sent?stations=$stations');
+                              '/table/${pick.tableId}/sent?stations=$stations',
+                            );
                           }
                           return;
                         }
@@ -353,7 +385,9 @@ class ReviewScreen extends ConsumerWidget {
                             .markPending(tableId, userId: actorId);
                         ref.read(cartProvider(tableId).notifier).clear();
                         if (context.mounted) {
-                          context.push('/table/$tableId/sent?stations=$stations');
+                          context.push(
+                            '/table/$tableId/sent?stations=$stations',
+                          );
                         }
                       },
                 style: ElevatedButton.styleFrom(
@@ -379,26 +413,29 @@ class ReviewScreen extends ConsumerWidget {
                       Icon(Icons.auto_awesome, size: 16, color: sc.accentInk),
                     const SizedBox(width: 10),
                     Text(
-                        reviewState.busy
-                            ? 'Mengirim…'
-                            : _isTakeaway
-                                ? 'Tambah ke pesanan'
-                                : tableless
-                                    ? 'Kirim pesanan'
-                                    : 'Kirim ke $sendTarget',
-                        style: SatType.sans(
-                          size: 15,
-                          weight: FontWeight.w600,
-                          color: sc.accentInk,
-                        )),
+                      reviewState.busy
+                          ? 'Mengirim…'
+                          : _isTakeaway
+                          ? 'Tambah ke pesanan'
+                          : tableless
+                          ? 'Kirim pesanan'
+                          : 'Kirim ke $sendTarget',
+                      style: SatType.sans(
+                        size: 15,
+                        weight: FontWeight.w600,
+                        color: sc.accentInk,
+                      ),
+                    ),
                     const SizedBox(width: 10),
-                    Text(formatIDR(subtotal),
-                        style: SatType.mono(
-                          size: 14,
-                          weight: FontWeight.w500,
-                          color: sc.accentInk.withValues(alpha: 0.7),
-                          letterSpacing: 0,
-                        )),
+                    Text(
+                      formatIDR(subtotal),
+                      style: SatType.mono(
+                        size: 14,
+                        weight: FontWeight.w500,
+                        color: sc.accentInk.withValues(alpha: 0.7),
+                        letterSpacing: 0,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -441,9 +478,14 @@ Future<_Commit?> _chooseCommit(BuildContext context) {
               ),
             ),
             const SizedBox(height: 18),
-            Text('Kirim pesanan ke',
-                style: SatType.sans(
-                    size: 18, weight: FontWeight.w600, color: sc.textHi)),
+            Text(
+              'Kirim pesanan ke',
+              style: SatType.sans(
+                size: 18,
+                weight: FontWeight.w600,
+                color: sc.textHi,
+              ),
+            ),
             const SizedBox(height: 16),
             _CommitTile(
               icon: Icons.table_restaurant_rounded,
@@ -470,11 +512,12 @@ class _CommitTile extends StatelessWidget {
   final String title;
   final String sub;
   final VoidCallback onTap;
-  const _CommitTile(
-      {required this.icon,
-      required this.title,
-      required this.sub,
-      required this.onTap});
+  const _CommitTile({
+    required this.icon,
+    required this.title,
+    required this.sub,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -499,14 +542,16 @@ class _CommitTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: SatType.sans(
-                            size: 15,
-                            weight: FontWeight.w600,
-                            color: sc.textHi)),
+                    Text(
+                      title,
+                      style: SatType.sans(
+                        size: 15,
+                        weight: FontWeight.w600,
+                        color: sc.textHi,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(sub,
-                        style: SatType.sans(size: 12, color: sc.textMd)),
+                    Text(sub, style: SatType.sans(size: 12, color: sc.textMd)),
                   ],
                 ),
               ),
@@ -561,7 +606,11 @@ class _Pill extends StatelessWidget {
   final IconData icon;
   final String label;
   final _Tone tone;
-  const _Pill({required this.icon, required this.label, this.tone = _Tone.normal});
+  const _Pill({
+    required this.icon,
+    required this.label,
+    this.tone = _Tone.normal,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -587,9 +636,11 @@ class _Pill extends StatelessWidget {
           Icon(icon, size: 11, color: fg),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(label,
-                overflow: TextOverflow.ellipsis,
-                style: SatType.sans(size: 11, weight: FontWeight.w500, color: fg)),
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: SatType.sans(size: 11, weight: FontWeight.w500, color: fg),
+            ),
           ),
         ],
       ),
@@ -610,7 +661,8 @@ class _CourseBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final auto = course.id == CourseId.fireNow || course.id == CourseId.drinksNow;
+    final auto =
+        course.id == CourseId.fireNow || course.id == CourseId.drinksNow;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Column(
@@ -623,21 +675,30 @@ class _CourseBlock extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration:
-                      SatBox.d(shape: BoxShape.circle, color: course.color(sc)),
+                  decoration: SatBox.d(
+                    shape: BoxShape.circle,
+                    color: course.color(sc),
+                  ),
                 ),
                 const SizedBox(width: 10),
-                Text(course.name.toUpperCase(),
-                    style: SatType.mono(
-                      size: 11,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.32,
-                      color: sc.textMd,
-                    )),
+                Text(
+                  course.name.toUpperCase(),
+                  style: SatType.mono(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.32,
+                    color: sc.textMd,
+                  ),
+                ),
                 const Spacer(),
-                Text(auto ? 'auto-bakar' : 'ditahan sampai dibakar',
-                    style: SatType.mono(
-                        size: 11, color: sc.textLo, letterSpacing: 0)),
+                Text(
+                  auto ? 'auto-bakar' : 'ditahan sampai dibakar',
+                  style: SatType.mono(
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0,
+                  ),
+                ),
               ],
             ),
           ),
@@ -656,13 +717,15 @@ class _CourseBlock extends StatelessWidget {
                   children: [
                     SizedBox(
                       width: 22,
-                      child: Text('×${c.qty}',
-                          style: SatType.mono(
-                            size: 13,
-                            weight: FontWeight.w600,
-                            color: sc.textMd,
-                            letterSpacing: 0,
-                          )),
+                      child: Text(
+                        '×${c.qty}',
+                        style: SatType.mono(
+                          size: 13,
+                          weight: FontWeight.w600,
+                          color: sc.textMd,
+                          letterSpacing: 0,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -670,7 +733,10 @@ class _CourseBlock extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            c.name + (c.variantName.isEmpty ? '' : ' · ${c.variantName}'),
+                            c.name +
+                                (c.variantName.isEmpty
+                                    ? ''
+                                    : ' · ${c.variantName}'),
                             style: SatType.sans(
                               size: 14,
                               weight: FontWeight.w500,
@@ -682,9 +748,14 @@ class _CourseBlock extends StatelessWidget {
                           if (c.modifiers.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 3),
-                              child: Text(c.modifiers.join(' · '),
-                                  style: SatType.sans(
-                                      size: 12, color: sc.textMd, height: 1.4)),
+                              child: Text(
+                                c.modifiers.join(' · '),
+                                style: SatType.sans(
+                                  size: 12,
+                                  color: sc.textMd,
+                                  height: 1.4,
+                                ),
+                              ),
                             ),
                           if (c.note.isNotEmpty)
                             Padding(
@@ -701,24 +772,32 @@ class _CourseBlock extends StatelessWidget {
                                 onTap: () => onRemove(c.id),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete_outline, size: 12, color: sc.urgent),
+                                    Icon(
+                                      Icons.delete_outline,
+                                      size: 12,
+                                      color: sc.urgent,
+                                    ),
                                     const SizedBox(width: 4),
-                                    Text('Hapus',
-                                        style: SatType.sans(
-                                          size: 12,
-                                          color: sc.urgent,
-                                        )),
+                                    Text(
+                                      'Hapus',
+                                      style: SatType.sans(
+                                        size: 12,
+                                        color: sc.urgent,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                               const Spacer(),
-                              Text(formatIDR(c.unitPrice * c.qty),
-                                  style: SatType.mono(
-                                    size: 12,
-                                    weight: FontWeight.w500,
-                                    color: sc.textMd,
-                                    letterSpacing: 0,
-                                  )),
+                              Text(
+                                formatIDR(c.unitPrice * c.qty),
+                                style: SatType.mono(
+                                  size: 12,
+                                  weight: FontWeight.w500,
+                                  color: sc.textMd,
+                                  letterSpacing: 0,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -752,20 +831,24 @@ class _TotalsRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label,
-                style: SatType.sans(
-                  size: isTotal ? 16 : 13,
-                  weight: isTotal ? FontWeight.w600 : FontWeight.w400,
-                  color: isTotal ? sc.textHi : sc.textMd,
-                )),
+            child: Text(
+              label,
+              style: SatType.sans(
+                size: isTotal ? 16 : 13,
+                weight: isTotal ? FontWeight.w600 : FontWeight.w400,
+                color: isTotal ? sc.textHi : sc.textMd,
+              ),
+            ),
           ),
-          Text(value,
-              style: SatType.mono(
-                size: isTotal ? 18 : 13,
-                weight: FontWeight.w500,
-                color: sc.textHi,
-                letterSpacing: 0,
-              )),
+          Text(
+            value,
+            style: SatType.mono(
+              size: isTotal ? 18 : 13,
+              weight: FontWeight.w500,
+              color: sc.textHi,
+              letterSpacing: 0,
+            ),
+          ),
         ],
       ),
     );

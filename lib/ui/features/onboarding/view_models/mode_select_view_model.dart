@@ -17,11 +17,7 @@ class ModeSelectState {
   final AppMode current;
   final bool busy;
   final String? error;
-  const ModeSelectState({
-    required this.current,
-    this.busy = false,
-    this.error,
-  });
+  const ModeSelectState({required this.current, this.busy = false, this.error});
 
   ModeSelectState copyWith({AppMode? current, bool? busy, String? error}) =>
       ModeSelectState(
@@ -33,7 +29,7 @@ class ModeSelectState {
 
 class ModeSelectViewModel extends StateNotifier<ModeSelectState> {
   ModeSelectViewModel(this._ref, this._prefs)
-      : super(ModeSelectState(current: _prefs.appMode()));
+    : super(ModeSelectState(current: _prefs.appMode()));
 
   final Ref _ref;
   final PrefsService _prefs;
@@ -68,6 +64,6 @@ class ModeSelectViewModel extends StateNotifier<ModeSelectState> {
 // risk being torn down mid-boot and dropping its error state.
 final modeSelectViewModelProvider =
     StateNotifierProvider<ModeSelectViewModel, ModeSelectState>((ref) {
-  final prefs = ref.watch(prefsServiceProvider).requireValue;
-  return ModeSelectViewModel(ref, prefs);
-});
+      final prefs = ref.watch(prefsServiceProvider).requireValue;
+      return ModeSelectViewModel(ref, prefs);
+    });

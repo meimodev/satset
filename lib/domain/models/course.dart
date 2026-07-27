@@ -18,28 +18,43 @@ class Course with _$Course {
   }) = _Course;
 
   String get serialId => switch (id) {
-        CourseId.drinksNow => 'drinks-now',
-        CourseId.starters => 'starters',
-        CourseId.mains => 'mains',
-        CourseId.sides => 'sides',
-        CourseId.desserts => 'desserts',
-        CourseId.fireNow => 'fire-now',
-      };
+    CourseId.drinksNow => 'drinks-now',
+    CourseId.starters => 'starters',
+    CourseId.mains => 'mains',
+    CourseId.sides => 'sides',
+    CourseId.desserts => 'desserts',
+    CourseId.fireNow => 'fire-now',
+  };
 }
 
 class Courses {
   Courses._();
-  static const drinksNow =
-      Course(id: CourseId.drinksNow, name: 'Minum dulu', short: 'Min');
-  static const starters =
-      Course(id: CourseId.starters, name: 'Pembuka', short: 'Pem');
+  static const drinksNow = Course(
+    id: CourseId.drinksNow,
+    name: 'Minum dulu',
+    short: 'Min',
+  );
+  static const starters = Course(
+    id: CourseId.starters,
+    name: 'Pembuka',
+    short: 'Pem',
+  );
   static const mains = Course(id: CourseId.mains, name: 'Utama', short: 'Ut');
-  static const sides =
-      Course(id: CourseId.sides, name: 'Bersama Utama', short: 'B/Ut');
-  static const desserts =
-      Course(id: CourseId.desserts, name: 'Penutup', short: 'Pnp');
-  static const fireNow =
-      Course(id: CourseId.fireNow, name: 'Langsung', short: 'Lgs');
+  static const sides = Course(
+    id: CourseId.sides,
+    name: 'Bersama Utama',
+    short: 'B/Ut',
+  );
+  static const desserts = Course(
+    id: CourseId.desserts,
+    name: 'Penutup',
+    short: 'Pnp',
+  );
+  static const fireNow = Course(
+    id: CourseId.fireNow,
+    name: 'Langsung',
+    short: 'Lgs',
+  );
 
   static const all = [drinksNow, starters, mains, sides, desserts, fireNow];
   static const stationOrder = [drinksNow, starters, mains, sides, desserts];

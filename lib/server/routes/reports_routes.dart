@@ -500,18 +500,20 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       final agg = prepByItem.putIfAbsent(t.itemId, () => _SpeedAgg());
       agg.totalSec += prep;
       agg.count += 1;
-      timedLines.add(TimedLine(
-        visitKey: t.sessionId,
-        course: t.course,
-        start: start,
-        readyAt: t.readyAt,
-        // Targets live-resolve against the current menu, like allergens
-        // (ADR-0012) — history is not re-priced, only re-judged.
-        targetMins: resolvePrepMins(
-          itemById[t.itemId]?.prepTime,
-          prepTargetMins,
+      timedLines.add(
+        TimedLine(
+          visitKey: t.sessionId,
+          course: t.course,
+          start: start,
+          readyAt: t.readyAt,
+          // Targets live-resolve against the current menu, like allergens
+          // (ADR-0012) — history is not re-priced, only re-judged.
+          targetMins: resolvePrepMins(
+            itemById[t.itemId]?.prepTime,
+            prepTargetMins,
+          ),
         ),
-      ));
+      );
       if (t.servedAt != null) {
         final lag = t.servedAt!.difference(t.readyAt!).inSeconds;
         if (lag >= 0) pickupSecs.add(lag.toDouble());
@@ -524,8 +526,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // SLA hit-rate is now "% of *courses* that hit their own target" — a
     // single honest percentage, even though the target it is measured
     // against is no longer a single number (ADR-0043).
-    final completedCourses =
-        rollUpCourses(timedLines).where((c) => c.isComplete).toList();
+    final completedCourses = rollUpCourses(
+      timedLines,
+    ).where((c) => c.isComplete).toList();
     final slaHits = completedCourses.where((c) => c.onTime).length;
     final slaPct = completedCourses.isEmpty
         ? 0.0
@@ -533,8 +536,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // Pickup SLA closes the loop on the new "Menunggu diantar" threshold.
     final pickupLimitSec = pickupTargetMins * 60;
     final pickupHits = pickupSecs.where((s) => s <= pickupLimitSec).length;
-    final pickupSlaPct =
-        pickupSecs.isEmpty ? 0.0 : (pickupHits / pickupSecs.length * 100);
+    final pickupSlaPct = pickupSecs.isEmpty
+        ? 0.0
+        : (pickupHits / pickupSecs.length * 100);
     // Slowest dishes by average prep time (min 1 sample shown, top 5).
     final slowItems =
         prepByItem.entries
@@ -665,8 +669,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       if (seatedAt == null) return false;
       return seatedAt.difference(r.expectedAt) > grace;
     }).length;
-    final noShowCount =
-        reservationRows.where((r) => r.status == 'noShow').length;
+    final noShowCount = reservationRows
+        .where((r) => r.status == 'noShow')
+        .length;
     final reservations = {
       'booked': reservationRows.length,
       'seated': reservationRows.where((r) => r.status == 'seated').length,
@@ -828,7 +833,10 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // count toward net; the split surfaces takeaway share without polluting
     // per-cover / turn-time metrics.
     final takeawayCount = takeawaySessions.length;
-    final takeawayNet = takeawaySessions.fold<int>(0, (a, s) => a + s.settledTotal);
+    final takeawayNet = takeawaySessions.fold<int>(
+      0,
+      (a, s) => a + s.settledTotal,
+    );
     final dineInCount = dineInSessions.length;
     final dineInNet = dineInSessions.fold<int>(0, (a, s) => a + s.settledTotal);
 

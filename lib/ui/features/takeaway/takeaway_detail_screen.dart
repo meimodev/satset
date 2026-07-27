@@ -44,13 +44,16 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
         .firstOrNull;
     final tickets = ref.watch(ticketsProvider)[widget.visitId] ?? const [];
     final live = tickets
-        .where((t) =>
-            t.status != TicketStatus.served && t.status != TicketStatus.voided)
+        .where(
+          (t) =>
+              t.status != TicketStatus.served &&
+              t.status != TicketStatus.voided,
+        )
         .toList();
-    final active =
-        tickets.where((t) => t.status != TicketStatus.voided).toList();
-    final total =
-        active.fold<int>(0, (s, t) => s + t.price * t.qty);
+    final active = tickets
+        .where((t) => t.status != TicketStatus.voided)
+        .toList();
+    final total = active.fold<int>(0, (s, t) => s + t.price * t.qty);
     final label = visit?.label ?? 'Bawa pulang';
     final guest = visit?.guestName;
     final handedOver = visit?.handedOver ?? false;
@@ -72,14 +75,16 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: SatType.sans(
-                      size: 30,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.6,
-                      height: 1.05,
-                      color: sc.textHi,
-                    )),
+                Text(
+                  label,
+                  style: SatType.sans(
+                    size: 30,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.6,
+                    height: 1.05,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   [
@@ -88,7 +93,10 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                     if (handedOver) 'SUDAH DISERAHKAN',
                   ].join(' · '),
                   style: SatType.mono(
-                      size: 11, color: sc.textLo, letterSpacing: 0.44),
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0.44,
+                  ),
                 ),
               ],
             ),
@@ -96,8 +104,10 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
           Expanded(
             child: tickets.isEmpty
                 ? Center(
-                    child: Text('Belum ada item.',
-                        style: SatType.sans(size: 13, color: sc.textLo)),
+                    child: Text(
+                      'Belum ada item.',
+                      style: SatType.sans(size: 13, color: sc.textLo),
+                    ),
                   )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -121,8 +131,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
             handedOver: handedOver,
             canHandover: canHandover,
             busy: _busy,
-            onAddItems: () =>
-                context.push('/takeaway/${widget.visitId}/menu'),
+            onAddItems: () => context.push('/takeaway/${widget.visitId}/menu'),
             onPrint: _busy ? null : _printBill,
             onHandover: canHandover ? _handover : null,
           ),
@@ -138,8 +147,9 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
           .call(widget.visitId, ticketId, TicketStatus.served);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal sajikan: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal sajikan: $e')));
     }
   }
 
@@ -161,8 +171,9 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
       await printBillStruk(context: context, ref: ref, bill: bill);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Gagal memuat tagihan: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat tagihan: $e')));
       }
     }
   }
@@ -181,13 +192,13 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
         'no_tickets' => 'Belum ada item untuk diserahkan.',
         _ => 'Gagal menyerahkan: ${e.code ?? e.statusCode}',
       };
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal menyerahkan: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyerahkan: $e')));
     }
   }
 }
@@ -216,7 +227,11 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          16, 12, 16, 16 + MediaQuery.of(context).padding.bottom),
+        16,
+        12,
+        16,
+        16 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: SatBox.d(
         color: sc.bg1,
         border: Border(top: SatB.side(color: sc.border0)),
@@ -228,9 +243,14 @@ class _Footer extends StatelessWidget {
             children: [
               Text('Total', style: SatType.sans(size: 13, color: sc.textMd)),
               const Spacer(),
-              Text(formatIDR(total),
-                  style: SatType.mono(
-                      size: 15, weight: FontWeight.w600, color: sc.textHi)),
+              Text(
+                formatIDR(total),
+                style: SatType.mono(
+                  size: 15,
+                  weight: FontWeight.w600,
+                  color: sc.textHi,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -246,8 +266,7 @@ class _Footer extends StatelessWidget {
                       foregroundColor: sc.textHi,
                       side: SatB.side(color: sc.border2),
                       minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: SatR.a(14)),
+                      shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
                     ),
                   ),
                 ),
@@ -261,8 +280,7 @@ class _Footer extends StatelessWidget {
                     foregroundColor: sc.textHi,
                     side: SatB.side(color: sc.border2),
                     minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: SatR.a(14)),
+                    shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
                   ),
                 ),
               ),
@@ -279,14 +297,14 @@ class _Footer extends StatelessWidget {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.shopping_bag_rounded, size: 18),
                 label: const Text('Serahkan'),
                 style: FilledButton.styleFrom(
                   backgroundColor: sc.accent,
                   foregroundColor: sc.accentInk,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: SatR.a(16)),
+                  shape: RoundedRectangleBorder(borderRadius: SatR.a(16)),
                 ),
               ),
             ),
@@ -297,14 +315,19 @@ class _Footer extends StatelessWidget {
                   'Bisa diserahkan setelah semua item siap/disajikan.',
                   textAlign: TextAlign.center,
                   style: SatType.mono(
-                      size: 11, color: sc.textLo, letterSpacing: 0.3),
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
           ] else
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('Sudah diserahkan ke tamu.',
-                  style: SatType.sans(size: 12, color: sc.textMd)),
+              child: Text(
+                'Sudah diserahkan ke tamu.',
+                style: SatType.sans(size: 12, color: sc.textMd),
+              ),
             ),
         ],
       ),

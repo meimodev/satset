@@ -65,20 +65,25 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
     final tables = ref.watch(tablesProvider);
     final zones = ref.watch(zonesProvider);
 
-    final targets = tables
-        .where((t) => t.active && t.status == TableStatus.available)
-        .toList()
-      ..sort((a, b) {
-        final za = zones.indexWhere((z) => z.id == a.zoneId);
-        final zb = zones.indexWhere((z) => z.id == b.zoneId);
-        if (za != zb) return za.compareTo(zb);
-        return a.displayName.compareTo(b.displayName);
-      });
+    final targets =
+        tables
+            .where((t) => t.active && t.status == TableStatus.available)
+            .toList()
+          ..sort((a, b) {
+            final za = zones.indexWhere((z) => z.id == a.zoneId);
+            final zb = zones.indexWhere((z) => z.id == b.zoneId);
+            if (za != zb) return za.compareTo(zb);
+            return a.displayName.compareTo(b.displayName);
+          });
 
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-            20, 16, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+          20,
+          16,
+          20,
+          20 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -106,14 +111,23 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
             const SizedBox(height: 4),
             Text(
               'Atur tamu lalu pilih meja kosong',
-              style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0.44),
+              style: SatType.mono(
+                size: 11,
+                color: sc.textLo,
+                letterSpacing: 0.44,
+              ),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                Text('Tamu',
-                    style: SatType.sans(
-                        size: 14, weight: FontWeight.w500, color: sc.textHi)),
+                Text(
+                  'Tamu',
+                  style: SatType.sans(
+                    size: 14,
+                    weight: FontWeight.w500,
+                    color: sc.textHi,
+                  ),
+                ),
                 const Spacer(),
                 GuestStepper(
                   pax: _pax,
@@ -134,8 +148,10 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 hintStyle: SatType.sans(size: 14, color: sc.textLo),
                 filled: true,
                 fillColor: sc.bg2,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: SatR.a(12),
                   borderSide: SatB.side(color: sc.border0),
@@ -160,8 +176,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                   : ListView(
                       shrinkWrap: true,
                       children: [
-                        for (final z in zones)
-                          ..._zoneSection(sc, z, targets),
+                        for (final z in zones) ..._zoneSection(sc, z, targets),
                       ],
                     ),
             ),
@@ -201,11 +216,13 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
         child: InkWell(
           onTap: () {
             final name = _guestCtrl.text.trim();
-            Navigator.of(context).pop(AssignTableResult(
-              tableId: target.id,
-              pax: _pax,
-              guestName: name.isEmpty ? null : name,
-            ));
+            Navigator.of(context).pop(
+              AssignTableResult(
+                tableId: target.id,
+                pax: _pax,
+                guestName: name.isEmpty ? null : name,
+              ),
+            );
           },
           borderRadius: SatR.a(12),
           child: Container(
@@ -233,8 +250,11 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 if (overCapacity)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Icon(Icons.warning_amber_rounded,
-                        size: 16, color: sc.warn),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: sc.warn,
+                    ),
                   ),
                 Icon(Icons.chevron_right, size: 18, color: sc.textLo),
               ],

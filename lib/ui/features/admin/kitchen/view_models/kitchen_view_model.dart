@@ -74,7 +74,8 @@ class KitchenViewModel extends StateNotifier<KitchenScreenState> {
 
 final kitchenViewModelProvider =
     StateNotifierProvider.autoDispose<KitchenViewModel, KitchenScreenState>(
-        (ref) => KitchenViewModel(ref));
+      (ref) => KitchenViewModel(ref),
+    );
 
 /// New-order count for the Antrian nav badge: number of `(table, sentAt)`
 /// batches that still hold at least one untouched (`sent`) item — the cook's

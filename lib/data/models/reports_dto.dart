@@ -36,10 +36,8 @@ class FilterOptionsDto with _$FilterOptionsDto {
 
 @freezed
 class NamedIdDto with _$NamedIdDto {
-  const factory NamedIdDto({
-    required String id,
-    required String name,
-  }) = _NamedIdDto;
+  const factory NamedIdDto({required String id, required String name}) =
+      _NamedIdDto;
 
   factory NamedIdDto.fromJson(Map<String, dynamic> json) =>
       _$NamedIdDtoFromJson(json);
@@ -247,6 +245,7 @@ class SpeedSectionDto with _$SpeedSectionDto {
     @Default(0) int prepMedianMin,
     @Default(0) int pickupMedianMin,
     @Default(0.0) double slaPct,
+
     /// The venue *default* target — no longer the only target in play.
     @Default(15) int prepTargetMins,
     @Default(0) int sampleSize,

@@ -55,17 +55,17 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
 
     final zone = zones.firstWhere(
       (z) => z.id == activeZoneId,
-      orElse: () => zones.isEmpty
-          ? const Zone(id: '', name: '', short: '')
-          : zones.first,
+      orElse: () =>
+          zones.isEmpty ? const Zone(id: '', name: '', short: '') : zones.first,
     );
 
-    final zoneTables =
-        activeTables.where((t) => t.zoneId == activeZoneId).toList();
-    final occupied =
-        zoneTables.where((t) => t.status != TableStatus.available).length;
-    final ready =
-        zoneTables.where((t) => t.status == TableStatus.ready).length;
+    final zoneTables = activeTables
+        .where((t) => t.zoneId == activeZoneId)
+        .toList();
+    final occupied = zoneTables
+        .where((t) => t.status != TableStatus.available)
+        .length;
+    final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
     final openTotal = zoneTables.fold<int>(0, (s, t) => s + t.openAmount);
     final subParts = <String>[
       '$occupied dari ${zoneTables.length} terisi',
@@ -119,8 +119,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                   padding: EdgeInsets.fromLTRB(16, 4, 16, l.bottomInset),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints:
-                          BoxConstraints(maxWidth: l.contentMaxWidth),
+                      constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
                       child: _FloorGrid(
                         tables: zoneTables,
                         zoneId: activeZoneId,
@@ -159,15 +158,24 @@ class _FloorHead extends ConsumerWidget {
     final grace = ref.watch(venueSettingsProvider).reservationGraceMins;
     final start = DateTime(now.year, now.month, now.day);
     final end = start.add(const Duration(days: 1));
-    final today = ref.watch(reservationsRepositoryProvider).where((r) =>
-        r.expectedAt.isAfter(start.subtract(const Duration(minutes: 1))) &&
-        r.expectedAt.isBefore(end));
-    final waiting =
-        today.where((r) => r.status == ReservationStatus.pending).length;
+    final today = ref
+        .watch(reservationsRepositoryProvider)
+        .where(
+          (r) =>
+              r.expectedAt.isAfter(
+                start.subtract(const Duration(minutes: 1)),
+              ) &&
+              r.expectedAt.isBefore(end),
+        );
+    final waiting = today
+        .where((r) => r.status == ReservationStatus.pending)
+        .length;
     final late = today
-        .where((r) =>
-            r.status == ReservationStatus.pending &&
-            now.difference(r.expectedAt) > Duration(minutes: grace))
+        .where(
+          (r) =>
+              r.status == ReservationStatus.pending &&
+              now.difference(r.expectedAt) > Duration(minutes: grace),
+        )
         .length;
     final takeaway = ref.watch(takeawayVisitsProvider).length;
 
@@ -183,7 +191,9 @@ class _FloorHead extends ConsumerWidget {
           icon: Icons.event_outlined,
           label: AppStrings.floorReservations,
           count: waiting,
-          alert: late > 0 ? '$late ${AppStrings.floorReservationsLateCount}' : null,
+          alert: late > 0
+              ? '$late ${AppStrings.floorReservationsLateCount}'
+              : null,
           compact: !tablet,
           onTap: () => openReservationsSurface(context, tablet: tablet),
         ),
@@ -204,11 +214,10 @@ class _FloorHead extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Expanded(child: TabletSectionHead(title: title, sub: sub)),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: actions,
+            Expanded(
+              child: TabletSectionHead(title: title, sub: sub),
             ),
+            Padding(padding: const EdgeInsets.only(bottom: 14), child: actions),
           ],
         ),
       );
@@ -219,14 +228,16 @@ class _FloorHead extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(SatShape.caps(title),
-              style: SatType.display(
-                size: 30,
-                weight: FontWeight.w600,
-                letterSpacing: -0.6,
-                height: 1.05,
-                color: context.sat.textHi,
-              )),
+          Text(
+            SatShape.caps(title),
+            style: SatType.display(
+              size: 30,
+              weight: FontWeight.w600,
+              letterSpacing: -0.6,
+              height: 1.05,
+              color: context.sat.textHi,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             SatShape.caps(sub),
@@ -271,7 +282,9 @@ class _FloorAction extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: EdgeInsets.symmetric(
-            horizontal: compact ? 10 : 14, vertical: compact ? 9 : 11),
+          horizontal: compact ? 10 : 14,
+          vertical: compact ? 9 : 11,
+        ),
         decoration: SatBox.d(
           color: sc.bg2,
           borderRadius: SatR.a(12),
@@ -283,21 +296,28 @@ class _FloorAction extends StatelessWidget {
             Icon(icon, size: 16, color: sc.textMd),
             if (!compact) ...[
               const SizedBox(width: 7),
-              Text(SatShape.caps(label),
-                  style: SatType.sans(
-                      size: 12,
-                      weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                      color: sc.textHi)),
+              Text(
+                SatShape.caps(label),
+                style: SatType.sans(
+                  size: 12,
+                  weight: brutal ? FontWeight.w700 : FontWeight.w500,
+                  color: sc.textHi,
+                ),
+              ),
             ],
             const SizedBox(width: 7),
-            Text('$count',
-                style: SatType.mono(
-                    size: 12, weight: FontWeight.w600, color: sc.textMd)),
+            Text(
+              '$count',
+              style: SatType.mono(
+                size: 12,
+                weight: FontWeight.w600,
+                color: sc.textMd,
+              ),
+            ),
             if (alert != null) ...[
               const SizedBox(width: 7),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: sc.urgent,
                   borderRadius: SatR.a(5),
@@ -305,13 +325,15 @@ class _FloorAction extends StatelessWidget {
                       ? Border.all(color: SatShape.ink, width: 2)
                       : null,
                 ),
-                child: Text(SatShape.caps(alert!),
-                    style: SatType.sans(
-                      size: 9,
-                      weight: FontWeight.w800,
-                      letterSpacing: 0.6,
-                      color: onFill(sc.urgent),
-                    )),
+                child: Text(
+                  SatShape.caps(alert!),
+                  style: SatType.sans(
+                    size: 9,
+                    weight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    color: onFill(sc.urgent),
+                  ),
+                ),
               ),
             ],
           ],
@@ -347,7 +369,9 @@ class _FloorGrid extends StatelessWidget {
     final rows = <Widget>[];
     for (var start = 0; start < tables.length; start += cols) {
       final slice = tables.sublist(
-          start, (start + cols).clamp(0, tables.length));
+        start,
+        (start + cols).clamp(0, tables.length),
+      );
       rows.add(
         IntrinsicHeight(
           child: Row(
@@ -402,13 +426,20 @@ class _NewOrderButton extends ConsumerWidget {
         foregroundColor: sc.accentInk,
         elevation: 0,
         padding: EdgeInsets.symmetric(
-            horizontal: tablet ? 18 : 14, vertical: tablet ? 14 : 11),
+          horizontal: tablet ? 18 : 14,
+          vertical: tablet ? 14 : 11,
+        ),
         shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
       ),
       icon: const Icon(Icons.add_rounded, size: 18),
-      label: Text(SatShape.caps('Pesanan baru'),
-          style: SatType.sans(
-              size: 13, weight: FontWeight.w600, color: sc.accentInk)),
+      label: Text(
+        SatShape.caps('Pesanan baru'),
+        style: SatType.sans(
+          size: 13,
+          weight: FontWeight.w600,
+          color: sc.accentInk,
+        ),
+      ),
     );
   }
 }
@@ -444,13 +475,13 @@ class _ZoneRow extends StatelessWidget {
           itemBuilder: (_, i) {
             final z = zones[i];
             final isActive = active == z.id;
-            final zoneTables =
-                tables.where((t) => t.zoneId == z.id).toList();
+            final zoneTables = tables.where((t) => t.zoneId == z.id).toList();
             final ready = zoneTables
                 .where((t) => t.status == TableStatus.ready)
                 .length;
-            final countLabel =
-                ready > 0 ? '$ready siap' : '${zoneTables.length}';
+            final countLabel = ready > 0
+                ? '$ready siap'
+                : '${zoneTables.length}';
             final dur = motionEnabled(context) ? _kChipMorph : Duration.zero;
             // Brutal fills the selected chip with the accent and keeps ink on
             // it; lembut inverts to the text ramp as before.
@@ -466,12 +497,15 @@ class _ZoneRow extends StatelessWidget {
                   duration: dur,
                   curve: _kEase,
                   padding: EdgeInsets.symmetric(
-                      horizontal: tablet ? 16 : 14, vertical: tablet ? 10 : 9),
+                    horizontal: tablet ? 16 : 14,
+                    vertical: tablet ? 10 : 9,
+                  ),
                   decoration: SatBox.d(
                     color: fill,
                     borderRadius: SatR.a(999),
                     border: SatB.all(
-                        color: isActive && !brutal ? sc.textHi : sc.border0),
+                      color: isActive && !brutal ? sc.textHi : sc.border0,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -480,8 +514,7 @@ class _ZoneRow extends StatelessWidget {
                         curve: _kEase,
                         style: SatType.sans(
                           size: 13,
-                          weight:
-                              brutal ? FontWeight.w700 : FontWeight.w500,
+                          weight: brutal ? FontWeight.w700 : FontWeight.w500,
                           color: fg,
                         ),
                         child: Text(SatShape.caps(z.name)),
@@ -616,8 +649,11 @@ class _EmptyZoneState extends State<_EmptyZone>
         border: SatB.all(color: sc.border0),
       ),
       alignment: Alignment.center,
-      child: Icon(Icons.grid_view_rounded,
-          size: tablet ? 32 : 26, color: sc.textLo),
+      child: Icon(
+        Icons.grid_view_rounded,
+        size: tablet ? 32 : 26,
+        color: sc.textLo,
+      ),
     );
     return Padding(
       padding: EdgeInsets.all(pad),

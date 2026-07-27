@@ -2,7 +2,11 @@ class ModifierOption {
   final String id;
   final String name;
   final int priceDelta;
-  const ModifierOption({required this.id, required this.name, this.priceDelta = 0});
+  const ModifierOption({
+    required this.id,
+    required this.name,
+    this.priceDelta = 0,
+  });
 
   ModifierOption copyWith({String? id, String? name, int? priceDelta}) =>
       ModifierOption(
@@ -32,12 +36,11 @@ class ModifierGroup {
     bool? required,
     bool? multi,
     List<ModifierOption>? options,
-  }) =>
-      ModifierGroup(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        required: required ?? this.required,
-        multi: multi ?? this.multi,
-        options: options ?? this.options,
-      );
+  }) => ModifierGroup(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    required: required ?? this.required,
+    multi: multi ?? this.multi,
+    options: options ?? this.options,
+  );
 }

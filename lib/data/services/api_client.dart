@@ -44,7 +44,8 @@ class ApiException implements Exception {
   const ApiException(this.statusCode, this.body, [this.code]);
 
   @override
-  String toString() => 'ApiException($statusCode${code != null ? ' $code' : ''}): $body';
+  String toString() =>
+      'ApiException($statusCode${code != null ? ' $code' : ''}): $body';
 }
 
 /// REST client with bearer auth, device ID header and TLS fingerprint
@@ -56,12 +57,10 @@ class ApiClient {
   /// re-pick a reachable server.
   static const Duration requestTimeout = Duration(seconds: 8);
 
-  ApiClient({
-    required ApiConfig config,
-    required SecureStorageService storage,
-  })  : _config = config,
-        _storage = storage,
-        _inner = _buildClient(config);
+  ApiClient({required ApiConfig config, required SecureStorageService storage})
+    : _config = config,
+      _storage = storage,
+      _inner = _buildClient(config);
 
   final ApiConfig _config;
   final SecureStorageService _storage;
@@ -73,7 +72,8 @@ class ApiClient {
     final loopback = isLoopbackHost(host);
     if (!loopback && pinned.isEmpty) {
       throw StateError(
-          'ApiConfig.trustedFingerprint required for non-loopback host');
+        'ApiConfig.trustedFingerprint required for non-loopback host',
+      );
     }
     final io = buildPinnedHttpClient(pinned, isLoopback: loopback);
     return http_io.IOClient(io);
@@ -95,15 +95,16 @@ class ApiClient {
   }) {
     final p = pinned.toLowerCase().replaceAll(':', '').replaceAll(' ', '');
     if (!isLoopback && p.isEmpty) {
-      throw StateError(
-          'trustedFingerprint required for non-loopback host');
+      throw StateError('trustedFingerprint required for non-loopback host');
     }
     return HttpClient()
       ..badCertificateCallback = (cert, h, port) {
         if (isLoopback) return true;
         final got = sha256.convert(cert.der).toString().toLowerCase();
         final match = got == p;
-        SatLog.http('TLS verify: got=$got expected=$p match=$match host=$h port=$port');
+        SatLog.http(
+          'TLS verify: got=$got expected=$p match=$match host=$h port=$port',
+        );
         return match;
       };
   }
@@ -178,13 +179,15 @@ class ApiClient {
         'PATCH' => _inner.patch(uri, headers: headers, body: encoded),
         'DELETE' => _inner.delete(uri, headers: headers),
         _ => throw StateError('Unsupported method $method'),
-      })
-          .timeout(requestTimeout);
-      SatLog.http('$method $path → ${r.statusCode} ${sw.elapsedMilliseconds}ms');
+      }).timeout(requestTimeout);
+      SatLog.http(
+        '$method $path → ${r.statusCode} ${sw.elapsedMilliseconds}ms',
+      );
       return _decode(r);
     } on ApiException catch (e) {
       SatLog.http(
-          '$method $path ✗ ${e.statusCode} ${e.code ?? "-"} ${sw.elapsedMilliseconds}ms');
+        '$method $path ✗ ${e.statusCode} ${e.code ?? "-"} ${sw.elapsedMilliseconds}ms',
+      );
       rethrow;
     } catch (e, st) {
       SatLog.err('http $method $path', e, st);
@@ -215,7 +218,8 @@ final apiConfigProvider = StateProvider<ApiConfig?>((ref) => null);
 /// and is the single signal repositories use to decide whether `_bootstrap`
 /// is allowed to hit the network.
 final pairedProvider = Provider<bool>(
-    (ref) => ref.watch(apiConfigProvider) != null);
+  (ref) => ref.watch(apiConfigProvider) != null,
+);
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final cfg = ref.watch(apiConfigProvider);

@@ -31,17 +31,21 @@ class GenericSeedState {
   /// Whether the Venue Hub should surface the prompt right now.
   bool get showPrompt => needsSeed && !dismissed && !loading;
 
-  GenericSeedState copyWith({bool? needsSeed, bool? dismissed, bool? loading}) =>
-      GenericSeedState(
-        needsSeed: needsSeed ?? this.needsSeed,
-        dismissed: dismissed ?? this.dismissed,
-        loading: loading ?? this.loading,
-      );
+  GenericSeedState copyWith({
+    bool? needsSeed,
+    bool? dismissed,
+    bool? loading,
+  }) => GenericSeedState(
+    needsSeed: needsSeed ?? this.needsSeed,
+    dismissed: dismissed ?? this.dismissed,
+    loading: loading ?? this.loading,
+  );
 }
 
 final genericSeedProvider =
     StateNotifierProvider<GenericSeedController, GenericSeedState>(
-        (ref) => GenericSeedController(ref));
+      (ref) => GenericSeedController(ref),
+    );
 
 class GenericSeedController extends StateNotifier<GenericSeedState> {
   GenericSeedController(this._ref) : super(const GenericSeedState()) {

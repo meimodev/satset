@@ -6,8 +6,11 @@ class Variant {
   final int price;
   const Variant({required this.id, required this.name, required this.price});
 
-  Variant copyWith({String? id, String? name, int? price}) =>
-      Variant(id: id ?? this.id, name: name ?? this.name, price: price ?? this.price);
+  Variant copyWith({String? id, String? name, int? price}) => Variant(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    price: price ?? this.price,
+  );
 }
 
 class MenuItem {
@@ -21,6 +24,7 @@ class MenuItem {
 
   /// Diet tag ids (resolve against the menu snapshot's [MenuTag] list).
   final List<String> dietary;
+
   /// Per-item ready target in minutes ("Waktu siap"). **Null = inherit** the
   /// venue default — resolve with `resolvedPrepMins`, never read raw.
   final int? prepTime;
@@ -29,6 +33,7 @@ class MenuItem {
   final List<Variant> variants;
   final List<ModifierGroup> modifierGroups;
   final bool unavailable;
+
   /// Photo revision. 0 = no photo (UI shows the initials avatar). >0 means a
   /// photo exists, fetched as bytes from `GET /menu/items/:id/photo` and
   /// cache-keyed by this rev. The bytes never ride the model — see
@@ -96,6 +101,7 @@ class MenuItem {
     bool? autoSoldOut,
     List<String>? soldOutVariantIds,
     List<String>? soldOutOptionIds,
+
     /// `prepTime` is nullable-meaningful (null = inherit the venue default),
     /// so passing null cannot express "clear it". Set this to drop the
     /// per-item override back to inherit. ADR-0043.

@@ -49,7 +49,8 @@ class _PairScreenState extends ConsumerState<PairScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                  'Scan QR dari server tablet, atau isi manual jika multicast diblokir di WiFi:'),
+                'Scan QR dari server tablet, atau isi manual jika multicast diblokir di WiFi:',
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _host,
@@ -62,12 +63,15 @@ class _PairScreenState extends ConsumerState<PairScreen> {
               ),
               TextField(
                 controller: _token,
-                decoration:
-                    const InputDecoration(labelText: 'Pair token (sekali pakai)'),
+                decoration: const InputDecoration(
+                  labelText: 'Pair token (sekali pakai)',
+                ),
               ),
               TextField(
                 controller: _fp,
-                decoration: const InputDecoration(labelText: 'Cert fingerprint (SHA-256)'),
+                decoration: const InputDecoration(
+                  labelText: 'Cert fingerprint (SHA-256)',
+                ),
               ),
               const SizedBox(height: 16),
               FilledButton(
@@ -86,8 +90,10 @@ class _PairScreenState extends ConsumerState<PairScreen> {
               ),
               if (s.error != null) ...[
                 const SizedBox(height: 12),
-                Text(s.error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  s.error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
             ],
           ),

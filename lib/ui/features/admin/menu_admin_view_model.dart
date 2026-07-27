@@ -21,8 +21,9 @@ final menuAdminSelectedItemIdProvider = StateProvider<String?>((_) => null);
 /// Top-level menu admin tab: items, categories, or tags (allergen/diet).
 enum MenuAdminTab { items, categories, tags }
 
-final menuAdminTabProvider =
-    StateProvider<MenuAdminTab>((_) => MenuAdminTab.items);
+final menuAdminTabProvider = StateProvider<MenuAdminTab>(
+  (_) => MenuAdminTab.items,
+);
 
 final menuPermissionProvider = Provider<MenuPermission>((ref) {
   final auth = ref.watch(authStateProvider);
@@ -56,16 +57,16 @@ final menuAdminCountsProvider = Provider<MenuAdminCounts>((ref) {
   final all = ref.watch(menuItemsProvider);
   final soldOut = all.where((i) => i.isSoldOut).length;
   // Excludes the synthetic "Semua" pseudo-category surfaced by the seed.
-  final cats = ref.watch(menuCategoriesProvider).where((c) => c.id != 'all').length;
+  final cats = ref
+      .watch(menuCategoriesProvider)
+      .where((c) => c.id != 'all')
+      .length;
   return MenuAdminCounts(all.length, soldOut, cats);
 });
 
 /// Real categories without the "all" pseudo-row, for the rail.
 final menuRealCategoriesProvider = Provider<List<MenuCategory>>((ref) {
-  return ref
-      .watch(menuCategoriesProvider)
-      .where((c) => c.id != 'all')
-      .toList();
+  return ref.watch(menuCategoriesProvider).where((c) => c.id != 'all').toList();
 });
 
 /// Item count per category id, for the categories panel.

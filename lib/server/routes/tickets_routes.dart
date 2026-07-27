@@ -13,19 +13,28 @@ import 'package:satset/server/routes/tables_routes.dart'
 import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
-import 'package:satset/domain/models/ticket.dart' show TicketStatus, ticketStatusFromKey;
+import 'package:satset/domain/models/ticket.dart'
+    show TicketStatus, ticketStatusFromKey;
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 
 /// Rupiah formatter for audit titles. Mirrors the client's `formatIDR`
 /// (`lib/ui/core/design/format.dart`) so void amounts read "Rp. 50.000".
-final _auditRupiah =
-    NumberFormat.currency(locale: 'id_ID', symbol: 'Rp. ', decimalDigits: 0);
+final _auditRupiah = NumberFormat.currency(
+  locale: 'id_ID',
+  symbol: 'Rp. ',
+  decimalDigits: 0,
+);
 
 const _allowedTransitions = <TicketStatus, Set<TicketStatus>>{
   TicketStatus.draft: {TicketStatus.sent, TicketStatus.voided},
   TicketStatus.acknowledged: {TicketStatus.prep, TicketStatus.voided},
-  TicketStatus.sent: {TicketStatus.prep, TicketStatus.cooked, TicketStatus.held, TicketStatus.voided},
+  TicketStatus.sent: {
+    TicketStatus.prep,
+    TicketStatus.cooked,
+    TicketStatus.held,
+    TicketStatus.voided,
+  },
   TicketStatus.held: {TicketStatus.sent, TicketStatus.voided},
   TicketStatus.prep: {TicketStatus.cooked, TicketStatus.voided},
   TicketStatus.cooked: {TicketStatus.ready, TicketStatus.voided},
@@ -76,22 +85,26 @@ Future<Response?> _requireCap(
 ) async {
   if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
-      RegExp(r'^[Bb]earer\s+'), '');
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (!caps.contains(needed.name)) {
-    return Response(403,
-        body: jsonEncode({
-          'code': 'forbidden',
-          'message': 'missing capability ${needed.name}',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      403,
+      body: jsonEncode({
+        'code': 'forbidden',
+        'message': 'missing capability ${needed.name}',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   }
   return null;
 }
@@ -110,24 +123,29 @@ Future<bool> _hasCap(
   // because it gates ordinary work; this one gates a safety bypass, and a
   // bypass that silently switches itself on is the wrong default.
   if (auth == null) return false;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return false;
-  final role = await (db.select(db.roles)..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   if (role == null) return false;
-  return (jsonDecode(role.capabilitiesJson) as List)
-      .cast<String>()
-      .contains(needed.name);
+  return (jsonDecode(role.capabilitiesJson) as List).cast<String>().contains(
+    needed.name,
+  );
 }
 
 /// Resolve the bearer-token user for void attribution. Null when no auth
 /// helper is configured (server-mode boot before secret loaded).
 Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   return auth.resolveBearer(token);
 }
 
@@ -153,7 +171,9 @@ Future<void> _emitVoidAudit(
       : (_voidReasonLabels[reasonCode] ?? reasonCode);
   final id = const Uuid().v4();
   final amount = _auditRupiah.format(ticket.price * ticket.qty);
-  await db.into(db.auditEntries).insertOnConflictUpdate(
+  await db
+      .into(db.auditEntries)
+      .insertOnConflictUpdate(
         AuditEntriesCompanion.insert(
           id: id,
           type: AuditType.voidItem.name,
@@ -164,8 +184,9 @@ Future<void> _emitVoidAudit(
           actorUserId: Value(actorUserId),
         ),
       );
-  final row = await (db.select(db.auditEntries)..where((a) => a.id.equals(id)))
-      .getSingleOrNull();
+  final row = await (db.select(
+    db.auditEntries,
+  )..where((a) => a.id.equals(id))).getSingleOrNull();
   if (row != null) {
     hub.broadcast(WsEventTypes.auditCreated, {
       'id': row.id,
@@ -181,21 +202,21 @@ Future<void> _emitVoidAudit(
 }
 
 Map<String, dynamic> _tableToJson(VenueTable t) => {
-      'id': t.id,
-      'zoneId': t.zoneId,
-      'label': t.label,
-      'pax': t.pax,
-      'active': t.active,
-      'status': t.status,
-      'openAmount': t.openAmount,
-      'readyCount': t.readyCount,
-      'lastActorId': t.lastActorId,
-      'lockedBy': t.lockedBy,
-      'lockedByName': t.lockedByName,
-      'lockedAt': t.lockedAt?.toIso8601String(),
-      'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
-      'openedAt': t.openedAt?.toIso8601String(),
-    };
+  'id': t.id,
+  'zoneId': t.zoneId,
+  'label': t.label,
+  'pax': t.pax,
+  'active': t.active,
+  'status': t.status,
+  'openAmount': t.openAmount,
+  'readyCount': t.readyCount,
+  'lastActorId': t.lastActorId,
+  'lockedBy': t.lockedBy,
+  'lockedByName': t.lockedByName,
+  'lockedAt': t.lockedAt?.toIso8601String(),
+  'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
+  'openedAt': t.openedAt?.toIso8601String(),
+};
 
 Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   final r = Router();
@@ -229,8 +250,12 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     // `overrideStock` is the pressure valve for the venue whose counts have
     // drifted: it sends anyway and still writes the movement, so the balance
     // goes negative as a visible "go do an opname" signal (ADR-0041).
-    final canOverrideStock =
-        await _hasCap(req, db, auth, Capability.overrideStock);
+    final canOverrideStock = await _hasCap(
+      req,
+      db,
+      auth,
+      Capability.overrideStock,
+    );
 
     final createdIds = <String>[];
     final createdRows = <Ticket>[];
@@ -241,9 +266,9 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await db.transaction(() async {
       // Claim the idempotency key atomically; primary-key conflict means
       // a concurrent request already took it.
-      final existing = await (db.select(db.idempotency)
-            ..where((k) => k.key.equals(idem)))
-          .getSingleOrNull();
+      final existing = await (db.select(
+        db.idempotency,
+      )..where((k) => k.key.equals(idem))).getSingleOrNull();
       if (existing != null) {
         storedResponse = existing.responseJson;
         return;
@@ -290,11 +315,12 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         final lineQty = (l['qty'] as num?)?.toInt() ?? 1;
         final lineVariant = (l['variantName'] as String?) ?? '';
         if (!variantNameMaps.containsKey(itemId)) {
-          final item = await (db.select(db.menuItems)
-                ..where((i) => i.id.equals(itemId)))
-              .getSingleOrNull();
-          variantNameMaps[itemId] =
-              item == null ? const {} : variantIdsByName(item.variantsJson);
+          final item = await (db.select(
+            db.menuItems,
+          )..where((i) => i.id.equals(itemId))).getSingleOrNull();
+          variantNameMaps[itemId] = item == null
+              ? const {}
+              : variantIdsByName(item.variantsJson);
         }
         final need = await needForLine(
           db,
@@ -362,12 +388,14 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           }
         }
         createdIds.add(id);
-        final full =
-            await (db.select(db.tickets)..where((t) => t.id.equals(id)))
-                .getSingle();
+        final full = await (db.select(
+          db.tickets,
+        )..where((t) => t.id.equals(id))).getSingle();
         createdRows.add(full);
       }
-      await db.into(db.idempotency).insert(
+      await db
+          .into(db.idempotency)
+          .insert(
             IdempotencyCompanion.insert(
               key: idem,
               responseJson: jsonEncode({
@@ -385,26 +413,31 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         // clients observe ticket-creation and table-state changes together
         // and never see one without the other. Set openedAt only on the
         // first order (when the table transitions from available to pending).
-        final tblCurrent = await (db.select(db.venueTables)
-              ..where((t) => t.id.equals(tableId)))
-            .getSingleOrNull();
-        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
-            .write(VenueTablesCompanion(
-          status: const Value('pending'),
-          lastActorId: Value(actorId),
-          openedAt: tblCurrent?.openedAt == null
-              ? Value(DateTime.now())
-              : const Value.absent(),
-        ));
-        tableRow = await (db.select(db.venueTables)
-              ..where((t) => t.id.equals(tableId)))
-            .getSingleOrNull();
+        final tblCurrent = await (db.select(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).getSingleOrNull();
+        await (db.update(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).write(
+          VenueTablesCompanion(
+            status: const Value('pending'),
+            lastActorId: Value(actorId),
+            openedAt: tblCurrent?.openedAt == null
+                ? Value(DateTime.now())
+                : const Value.absent(),
+          ),
+        );
+        tableRow = await (db.select(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).getSingleOrNull();
       }
     });
 
     if (storedResponse != null) {
-      return Response.ok(storedResponse,
-          headers: {'content-type': 'application/json'});
+      return Response.ok(
+        storedResponse,
+        headers: {'content-type': 'application/json'},
+      );
     }
     for (final t in createdRows) {
       hub.broadcast(WsEventTypes.ticketCreated, _toJson(t));
@@ -427,30 +460,34 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
     }
     return Response.ok(
-        jsonEncode({
-          'ticketIds': createdIds,
-          'visitId': orderVisitId,
-          if (rejected.isNotEmpty) 'rejected': rejected,
-        }),
-        headers: {'content-type': 'application/json'});
+      jsonEncode({
+        'ticketIds': createdIds,
+        'visitId': orderVisitId,
+        if (rejected.isNotEmpty) 'rejected': rejected,
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.post('/tickets/<id>/transition', (Request req, String id) async {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final statusRaw = body['status'] as String;
-    final current = await (db.select(db.tickets)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final current = await (db.select(
+      db.tickets,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (current == null) return Response.notFound('ticket not found');
     final from = ticketStatusFromKey(current.status);
     final to = ticketStatusFromKey(statusRaw);
     final allowed = _allowedTransitions[from] ?? const <TicketStatus>{};
     if (!allowed.contains(to)) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'illegal_transition',
-            'message': '${current.status} -> $statusRaw',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'illegal_transition',
+          'message': '${current.status} -> $statusRaw',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final needed = _requiredCap(from, to);
     if (needed != null) {
@@ -468,12 +505,14 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             voidReason.trim().isEmpty ||
             voidReasonCode == null ||
             voidReasonCode.trim().isEmpty)) {
-      return Response(400,
-          body: jsonEncode({
-            'code': 'reason_required',
-            'message': 'void requires voidReason and voidReasonCode',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({
+          'code': 'reason_required',
+          'message': 'void requires voidReason and voidReasonCode',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final actor = isVoid ? await _actor(req, db, auth) : null;
     // Speed-of-service stamps (ADR-0013). readyAt set-once on first entry into
@@ -484,8 +523,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final stampServed = to == TicketStatus.served;
     // ADR-0043: firing a held line hands it to the kitchen now — the prep
     // clock starts here, not at `sentAt` (when the guest ordered it).
-    final stampFired =
-        from == TicketStatus.held && to == TicketStatus.sent;
+    final stampFired = from == TicketStatus.held && to == TicketStatus.sent;
     Ticket? row;
     VenueTable? tableRow;
     await db.transaction(() async {
@@ -501,8 +539,9 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           voidedByUserId: Value(actor?.id),
         ),
       );
-      row = await (db.select(db.tickets)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+      row = await (db.select(
+        db.tickets,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
       if (row == null) return;
       if (isVoid) {
         // Restock only when the kitchen never started the line. The test is the
@@ -522,33 +561,37 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       // to `ready`; leaving `ready` (served / voided) decrements it and
       // falls back to `occupied` once the last ready item clears.
       final tableId = row!.tableId;
-      final tbl =
-          await (db.select(db.venueTables)..where((t) => t.id.equals(tableId)))
-              .getSingleOrNull();
+      final tbl = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals(tableId))).getSingleOrNull();
       if (tbl == null) return;
       final wasReady = from == TicketStatus.ready;
       final isReady = to == TicketStatus.ready;
       if (!wasReady && isReady) {
         final n = tbl.readyCount + 1;
-        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
-            .write(VenueTablesCompanion(
-          readyCount: Value(n),
-          status: const Value('ready'),
-        ));
+        await (db.update(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).write(
+          VenueTablesCompanion(
+            readyCount: Value(n),
+            status: const Value('ready'),
+          ),
+        );
       } else if (wasReady && !isReady) {
         final n = (tbl.readyCount - 1).clamp(0, 1 << 30);
-        final nextStatus =
-            (tbl.status == 'ready' && n == 0) ? 'occupied' : tbl.status;
-        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
-            .write(VenueTablesCompanion(
-          readyCount: Value(n),
-          status: Value(nextStatus),
-        ));
+        final nextStatus = (tbl.status == 'ready' && n == 0)
+            ? 'occupied'
+            : tbl.status;
+        await (db.update(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).write(
+          VenueTablesCompanion(readyCount: Value(n), status: Value(nextStatus)),
+        );
       }
 
-      tableRow =
-          await (db.select(db.venueTables)..where((t) => t.id.equals(tableId)))
-              .getSingleOrNull();
+      tableRow = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals(tableId))).getSingleOrNull();
     });
     if (row == null) return Response.notFound('ticket not found');
     if (isVoid) {
@@ -572,37 +615,47 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (isVoid && await stockFlags.refreshAndDetectFlip(db)) {
       hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
     }
-    return Response.ok(jsonEncode(_toJson(row!)),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(_toJson(row!)),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Table-scoped course fire. Only flips `held` rows for the given
   // (tableId, course) so firing one table's course never leaks across
   // tables. Returns the updated ticket rows so the caller can merge them
   // alongside the WS broadcast.
-  r.post('/tables/<tableId>/course/<course>/fire',
-      (Request req, String tableId, String course) async {
+  r.post('/tables/<tableId>/course/<course>/fire', (
+    Request req,
+    String tableId,
+    String course,
+  ) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final updated = <Ticket>[];
     await db.transaction(() async {
-      await (db.update(db.tickets)
-            ..where((t) =>
+      await (db.update(db.tickets)..where(
+            (t) =>
                 t.tableId.equals(tableId) &
                 t.course.equals(course) &
-                t.status.equals('held')))
+                t.status.equals('held'),
+          ))
           // One write ⇒ every line of the course shares an identical
           // `firedAt`, which is what groups them as one course (ADR-0043).
-          .write(TicketsCompanion(
-            status: const Value('sent'),
-            firedAt: Value(DateTime.now()),
-          ));
-      final rows = await (db.select(db.tickets)
-            ..where((t) =>
-                t.tableId.equals(tableId) &
-                t.course.equals(course) &
-                t.status.equals('sent')))
-          .get();
+          .write(
+            TicketsCompanion(
+              status: const Value('sent'),
+              firedAt: Value(DateTime.now()),
+            ),
+          );
+      final rows =
+          await (db.select(db.tickets)..where(
+                (t) =>
+                    t.tableId.equals(tableId) &
+                    t.course.equals(course) &
+                    t.status.equals('sent'),
+              ))
+              .get();
       updated.addAll(rows);
     });
     for (final t in updated) {
@@ -612,11 +665,12 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final fireVid = updated.isNotEmpty ? updated.first.visitId : null;
     if (fireVid != null) await syncVisitMoney(db, hub, fireVid);
     return Response.ok(
-        jsonEncode({
-          'fired': updated.length,
-          'tickets': [for (final t in updated) _toJson(t)],
-        }),
-        headers: {'content-type': 'application/json'});
+      jsonEncode({
+        'fired': updated.length,
+        'tickets': [for (final t in updated) _toJson(t)],
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // ── Guest self-order review queue (ADR-0028) ─────────────────────────────
@@ -626,15 +680,17 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.get('/guest-orders', (Request req) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
-    final pend = await (db.select(db.tickets)
-          ..where((t) => t.status.equals('pendingReview'))
-          ..orderBy([(t) => OrderingTerm(expression: t.sentAt)]))
-        .get();
+    final pend =
+        await (db.select(db.tickets)
+              ..where((t) => t.status.equals('pendingReview'))
+              ..orderBy([(t) => OrderingTerm(expression: t.sentAt)]))
+            .get();
     final tableIds = {for (final t in pend) t.tableId};
     final tables = <String, VenueTable>{};
     for (final id in tableIds) {
-      final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+      final row = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
       if (row != null) tables[id] = row;
     }
     final byVisit = <String, List<Ticket>>{};
@@ -642,59 +698,69 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       (byVisit[t.visitId ?? ''] ??= []).add(t);
     }
     return Response.ok(
-        jsonEncode({
-          'batches': [
-            for (final e in byVisit.entries)
-              {
-                'visitId': e.key,
-                'tableId': e.value.first.tableId,
-                'tableLabel': tables[e.value.first.tableId]?.label ?? '',
-                'submittedAt': e.value.first.sentAt.toIso8601String(),
-                'lines': [for (final t in e.value) _toJson(t)],
-              },
-          ],
-        }),
-        headers: {'content-type': 'application/json'});
+      jsonEncode({
+        'batches': [
+          for (final e in byVisit.entries)
+            {
+              'visitId': e.key,
+              'tableId': e.value.first.tableId,
+              'tableLabel': tables[e.value.first.tableId]?.label ?? '',
+              'submittedAt': e.value.first.sentAt.toIso8601String(),
+              'lines': [for (final t in e.value) _toJson(t)],
+            },
+        ],
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Approve every pending guest line for a visit → fire to the kitchen.
-  r.post('/guest-orders/<visitId>/approve', (Request req, String visitId) async {
+  r.post('/guest-orders/<visitId>/approve', (
+    Request req,
+    String visitId,
+  ) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final actor = await _actor(req, db, auth);
     final fired = <Ticket>[];
     VenueTable? tableRow;
     await db.transaction(() async {
-      final pend = await (db.select(db.tickets)
-            ..where((t) =>
-                t.visitId.equals(visitId) & t.status.equals('pendingReview')))
-          .get();
+      final pend =
+          await (db.select(db.tickets)..where(
+                (t) =>
+                    t.visitId.equals(visitId) &
+                    t.status.equals('pendingReview'),
+              ))
+              .get();
       if (pend.isEmpty) return;
       final now = DateTime.now();
       for (final t in pend) {
-        await (db.update(db.tickets)..where((r) => r.id.equals(t.id)))
-            .write(TicketsCompanion(
-          status: const Value('sent'),
-          sentAt: Value(now),
-        ));
-        fired.add(await (db.select(db.tickets)..where((r) => r.id.equals(t.id)))
-            .getSingle());
+        await (db.update(db.tickets)..where((r) => r.id.equals(t.id))).write(
+          TicketsCompanion(status: const Value('sent'), sentAt: Value(now)),
+        );
+        fired.add(
+          await (db.select(
+            db.tickets,
+          )..where((r) => r.id.equals(t.id))).getSingle(),
+        );
       }
       final tableId = pend.first.tableId;
-      final cur = await (db.select(db.venueTables)
-            ..where((t) => t.id.equals(tableId)))
-          .getSingleOrNull();
+      final cur = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals(tableId))).getSingleOrNull();
       if (cur != null) {
-        await (db.update(db.venueTables)..where((t) => t.id.equals(tableId)))
-            .write(VenueTablesCompanion(
-          status: const Value('pending'),
-          lastActorId: Value(actor?.id),
-          openedAt:
-              cur.openedAt == null ? Value(now) : const Value.absent(),
-        ));
-        tableRow = await (db.select(db.venueTables)
-              ..where((t) => t.id.equals(tableId)))
-            .getSingleOrNull();
+        await (db.update(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).write(
+          VenueTablesCompanion(
+            status: const Value('pending'),
+            lastActorId: Value(actor?.id),
+            openedAt: cur.openedAt == null ? Value(now) : const Value.absent(),
+          ),
+        );
+        tableRow = await (db.select(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).getSingleOrNull();
       }
     });
     if (fired.isEmpty) return Response.notFound('no pending order');
@@ -705,8 +771,10 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow!));
     }
     await syncVisitMoney(db, hub, visitId);
-    return Response.ok(jsonEncode({'fired': fired.length}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'fired': fired.length}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Reject every pending guest line for a visit → void.
@@ -716,58 +784,66 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final actor = await _actor(req, db, auth);
     var count = 0;
     await db.transaction(() async {
-      final pend = await (db.select(db.tickets)
-            ..where((t) =>
-                t.visitId.equals(visitId) & t.status.equals('pendingReview')))
-          .get();
+      final pend =
+          await (db.select(db.tickets)..where(
+                (t) =>
+                    t.visitId.equals(visitId) &
+                    t.status.equals('pendingReview'),
+              ))
+              .get();
       for (final t in pend) {
-        await (db.update(db.tickets)..where((r) => r.id.equals(t.id)))
-            .write(TicketsCompanion(
-          status: const Value('voided'),
-          voidReason: const Value('Ditolak (pesan mandiri)'),
-          voidReasonCode: const Value('other'),
-          voidedByUserId: Value(actor?.id),
-        ));
+        await (db.update(db.tickets)..where((r) => r.id.equals(t.id))).write(
+          TicketsCompanion(
+            status: const Value('voided'),
+            voidReason: const Value('Ditolak (pesan mandiri)'),
+            voidReasonCode: const Value('other'),
+            voidedByUserId: Value(actor?.id),
+          ),
+        );
         count++;
       }
     });
     if (count == 0) return Response.notFound('no pending order');
-    final voided = await (db.select(db.tickets)
-          ..where((t) => t.visitId.equals(visitId) & t.status.equals('voided')))
-        .get();
+    final voided =
+        await (db.select(db.tickets)..where(
+              (t) => t.visitId.equals(visitId) & t.status.equals('voided'),
+            ))
+            .get();
     for (final t in voided) {
       hub.broadcast(WsEventTypes.ticketUpdated, _toJson(t));
     }
-    return Response.ok(jsonEncode({'rejected': count}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'rejected': count}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   return r;
 }
 
 Map<String, dynamic> _toJson(Ticket t) => {
-      'id': t.id,
-      'tableId': t.tableId,
-      // The stable bill key, independent of tableId. Lets the client/KDS label
-      // table-less (takeaway) lines via the visit. See ADR-0024 / ADR-0026.
-      'visitId': t.visitId,
-      'itemId': t.itemId,
-      'name': t.name,
-      'variantName': t.variantName,
-      'course': t.course,
-      'station': 'kitchen',
-      'qty': t.qty,
-      'modifiers': jsonDecode(t.modifiersJson),
-      'note': t.note,
-      'price': t.price,
-      'status': t.status,
-      'sentAt': t.sentAt.toIso8601String(),
-      'firedAt': t.firedAt?.toIso8601String(),
-      'readyAt': t.readyAt?.toIso8601String(),
-      'servedAt': t.servedAt?.toIso8601String(),
-      'voidReason': t.voidReason,
-      'voidReasonCode': t.voidReasonCode,
-      'voidApprovedBy': t.voidApprovedBy,
-      'createdByUserId': t.createdByUserId,
-      'voidedByUserId': t.voidedByUserId,
-    };
+  'id': t.id,
+  'tableId': t.tableId,
+  // The stable bill key, independent of tableId. Lets the client/KDS label
+  // table-less (takeaway) lines via the visit. See ADR-0024 / ADR-0026.
+  'visitId': t.visitId,
+  'itemId': t.itemId,
+  'name': t.name,
+  'variantName': t.variantName,
+  'course': t.course,
+  'station': 'kitchen',
+  'qty': t.qty,
+  'modifiers': jsonDecode(t.modifiersJson),
+  'note': t.note,
+  'price': t.price,
+  'status': t.status,
+  'sentAt': t.sentAt.toIso8601String(),
+  'firedAt': t.firedAt?.toIso8601String(),
+  'readyAt': t.readyAt?.toIso8601String(),
+  'servedAt': t.servedAt?.toIso8601String(),
+  'voidReason': t.voidReason,
+  'voidReasonCode': t.voidReasonCode,
+  'voidApprovedBy': t.voidApprovedBy,
+  'createdByUserId': t.createdByUserId,
+  'voidedByUserId': t.voidedByUserId,
+};

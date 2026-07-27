@@ -27,65 +27,74 @@ void main() {
     await db.close();
   });
 
-  test('single-select add-on and variant survive /orders -> /tickets', () async {
-    final orderBody = jsonEncode({
-      'tableId': 't-test',
-      'idempotencyKey': 'idem-1',
-      'actorId': null,
-      'lines': [
-        {
-          'itemId': 'i1',
-          'name': 'Nasi Goreng',
-          'variantId': 'v1',
-          'variantName': 'Besar',
-          'course': 'mains',
-          'qty': 1,
-          'unitPrice': 25000,
-          'specialInstructions': null,
-          'modifiers': [
-            {
-              'groupId': 'spice',
-              'optionId': 'hot',
-              'label': 'Pedas',
-              'priceDelta': 0,
-            },
-            {
-              'groupId': 'extras',
-              'optionId': 'krupuk',
-              'label': 'Kerupuk',
-              'priceDelta': 3000,
-            },
-          ],
-        },
-      ],
-    });
+  test(
+    'single-select add-on and variant survive /orders -> /tickets',
+    () async {
+      final orderBody = jsonEncode({
+        'tableId': 't-test',
+        'idempotencyKey': 'idem-1',
+        'actorId': null,
+        'lines': [
+          {
+            'itemId': 'i1',
+            'name': 'Nasi Goreng',
+            'variantId': 'v1',
+            'variantName': 'Besar',
+            'course': 'mains',
+            'qty': 1,
+            'unitPrice': 25000,
+            'specialInstructions': null,
+            'modifiers': [
+              {
+                'groupId': 'spice',
+                'optionId': 'hot',
+                'label': 'Pedas',
+                'priceDelta': 0,
+              },
+              {
+                'groupId': 'extras',
+                'optionId': 'krupuk',
+                'label': 'Kerupuk',
+                'priceDelta': 3000,
+              },
+            ],
+          },
+        ],
+      });
 
-    final postRes = await router(Request(
-      'POST',
-      Uri.parse('http://localhost/orders'),
-      body: orderBody,
-      headers: {'content-type': 'application/json'},
-    ));
-    expect(postRes.statusCode, 200, reason: await postRes.readAsString());
+      final postRes = await router(
+        Request(
+          'POST',
+          Uri.parse('http://localhost/orders'),
+          body: orderBody,
+          headers: {'content-type': 'application/json'},
+        ),
+      );
+      expect(postRes.statusCode, 200, reason: await postRes.readAsString());
 
-    final getRes =
-        await router(Request('GET', Uri.parse('http://localhost/tickets')));
-    expect(getRes.statusCode, 200);
-    final tickets = jsonDecode(await getRes.readAsString()) as List;
+      final getRes = await router(
+        Request('GET', Uri.parse('http://localhost/tickets')),
+      );
+      expect(getRes.statusCode, 200);
+      final tickets = jsonDecode(await getRes.readAsString()) as List;
 
-    final t = tickets.firstWhere((e) => e['itemId'] == 'i1') as Map;
-    expect(t['variantName'], 'Besar', reason: 'variant must round-trip');
+      final t = tickets.firstWhere((e) => e['itemId'] == 'i1') as Map;
+      expect(t['variantName'], 'Besar', reason: 'variant must round-trip');
 
-    final mods = (t['modifiers'] as List).cast<Map>();
-    expect(mods.length, 2, reason: 'both add-ons must persist');
+      final mods = (t['modifiers'] as List).cast<Map>();
+      expect(mods.length, 2, reason: 'both add-ons must persist');
 
-    final spice = mods.firstWhere((m) => m['groupId'] == 'spice');
-    expect(spice['label'], 'Pedas',
-        reason: 'single-select add-on must survive (the original bug)');
-    expect(spice['optionId'], 'hot');
+      final spice = mods.firstWhere((m) => m['groupId'] == 'spice');
+      expect(
+        spice['label'],
+        'Pedas',
+        reason: 'single-select add-on must survive (the original bug)',
+      );
+      expect(spice['optionId'], 'hot');
 
-    final extras = mods.firstWhere((m) => m['groupId'] == 'extras');
-    expect(extras['label'], 'Kerupuk');
-    expect(extras['priceDelta'], 3000);
-  });
+      final extras = mods.firstWhere((m) => m['groupId'] == 'extras');
+      expect(extras['label'], 'Kerupuk');
+      expect(extras['priceDelta'], 3000);
+    },
+  );
 }

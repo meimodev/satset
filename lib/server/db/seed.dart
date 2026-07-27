@@ -33,8 +33,9 @@ Future<bool> needsGenericSeed(AppDatabase db) async {
   final items = await db.select(db.menuItems).get();
   if (items.isNotEmpty) return false;
   final users = await db.select(db.users).get();
-  final hasNonAdminUser =
-      users.any((u) => u.roleId != seed.DummyData.roleAdminId);
+  final hasNonAdminUser = users.any(
+    (u) => u.roleId != seed.DummyData.roleAdminId,
+  );
   return !hasNonAdminUser;
 }
 
@@ -53,31 +54,42 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
   await db.transaction(() async {
     // Roles (waiter + kitchen; admin handled by seedInfra).
     for (final r in seed.DummyData.genericRoles()) {
-      await db.into(db.roles).insertOnConflictUpdate(RolesCompanion.insert(
-            id: r.id,
-            name: r.name,
-            colorHex: Value(_hex(r.colorHex)),
-            capabilitiesJson:
-                Value(jsonEncode(r.capabilities.map((c) => c.name).toList())),
-          ));
+      await db
+          .into(db.roles)
+          .insertOnConflictUpdate(
+            RolesCompanion.insert(
+              id: r.id,
+              name: r.name,
+              colorHex: Value(_hex(r.colorHex)),
+              capabilitiesJson: Value(
+                jsonEncode(r.capabilities.map((c) => c.name).toList()),
+              ),
+            ),
+          );
     }
 
     // Zones.
     var zi = 0;
     for (final z in seed.DummyData.genericZones) {
-      await db.into(db.zones).insertOnConflictUpdate(ZonesCompanion.insert(
-            id: z.id,
-            name: z.name,
-            short: z.short,
-            colorHex: Value(_hex(z.colorHex)),
-            iconKey: Value(z.iconKey),
-            sortOrder: Value(zi++),
-          ));
+      await db
+          .into(db.zones)
+          .insertOnConflictUpdate(
+            ZonesCompanion.insert(
+              id: z.id,
+              name: z.name,
+              short: z.short,
+              colorHex: Value(_hex(z.colorHex)),
+              iconKey: Value(z.iconKey),
+              sortOrder: Value(zi++),
+            ),
+          );
     }
 
     // Tables (2 per zone).
     for (final t in seed.DummyData.genericTables) {
-      await db.into(db.venueTables).insertOnConflictUpdate(
+      await db
+          .into(db.venueTables)
+          .insertOnConflictUpdate(
             VenueTablesCompanion.insert(
               id: t.id,
               zoneId: t.zoneId,
@@ -91,22 +103,28 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
 
     // Staff (1 waiter + 1 kitchen, hashed PINs).
     for (final u in seed.DummyData.genericUsers) {
-      await db.into(db.users).insertOnConflictUpdate(UsersCompanion.insert(
-            id: u.id,
-            name: u.name,
-            initials: u.initials,
-            roleId: u.roleId ?? u.role.name,
-            zoneAssigned: Value(u.zoneAssigned),
-            pinHash: _hashPin(u.pin),
-            disabled: Value(u.disabled),
-            avatarColorHex: Value(u.avatarColorHex),
-          ));
+      await db
+          .into(db.users)
+          .insertOnConflictUpdate(
+            UsersCompanion.insert(
+              id: u.id,
+              name: u.name,
+              initials: u.initials,
+              roleId: u.roleId ?? u.role.name,
+              zoneAssigned: Value(u.zoneAssigned),
+              pinHash: _hashPin(u.pin),
+              disabled: Value(u.disabled),
+              avatarColorHex: Value(u.avatarColorHex),
+            ),
+          );
     }
 
     // Menu categories.
     var ci = 0;
     for (final c in seed.DummyData.categories) {
-      await db.into(db.menuCategories).insertOnConflictUpdate(
+      await db
+          .into(db.menuCategories)
+          .insertOnConflictUpdate(
             MenuCategoriesCompanion.insert(
               id: c.id,
               name: c.name,
@@ -117,7 +135,9 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
 
     // Menu items.
     for (final it in seed.DummyData.items) {
-      await db.into(db.menuItems).insertOnConflictUpdate(
+      await db
+          .into(db.menuItems)
+          .insertOnConflictUpdate(
             MenuItemsCompanion.insert(
               id: it.id,
               name: it.name,
@@ -128,24 +148,38 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
               // item in the editor; reports treat cost=0 as full margin.
               cost: Value((it.basePrice * 0.35).round()),
               prepTime: Value(it.prepTime),
-              variantsJson: Value(jsonEncode(it.variants
-                  .map((v) => {'id': v.id, 'name': v.name, 'price': v.price})
-                  .toList())),
-              modifierGroupsJson: Value(jsonEncode(it.modifierGroups
-                  .map((m) => {
-                        'id': m.id,
-                        'name': m.name,
-                        'required': m.required,
-                        'multi': m.multi,
-                        'options': m.options
-                            .map((o) => {
+              variantsJson: Value(
+                jsonEncode(
+                  it.variants
+                      .map(
+                        (v) => {'id': v.id, 'name': v.name, 'price': v.price},
+                      )
+                      .toList(),
+                ),
+              ),
+              modifierGroupsJson: Value(
+                jsonEncode(
+                  it.modifierGroups
+                      .map(
+                        (m) => {
+                          'id': m.id,
+                          'name': m.name,
+                          'required': m.required,
+                          'multi': m.multi,
+                          'options': m.options
+                              .map(
+                                (o) => {
                                   'id': o.id,
                                   'name': o.name,
                                   'priceDelta': o.priceDelta,
-                                })
-                            .toList(),
-                      })
-                  .toList())),
+                                },
+                              )
+                              .toList(),
+                        },
+                      )
+                      .toList(),
+                ),
+              ),
               allergensJson: Value(jsonEncode(it.allergens)),
               dietaryJson: Value(jsonEncode(it.dietary)),
               unavailable: Value(it.unavailable),
@@ -169,18 +203,22 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
 /// like the menu itself and are replaced wholesale.
 Future<void> _seedInventory(AppDatabase db) async {
   for (final b in seedIngredients) {
-    final existing = await (db.select(db.ingredients)
-          ..where((i) => i.id.equals(b.id)))
-        .getSingleOrNull();
+    final existing = await (db.select(
+      db.ingredients,
+    )..where((i) => i.id.equals(b.id))).getSingleOrNull();
     if (existing != null) continue;
 
-    await db.into(db.ingredients).insert(IngredientsCompanion.insert(
-          id: b.id,
-          name: b.name,
-          unit: b.unit.name,
-          lowStockAt: Value(b.lowAtBase),
-          batchYield: Value(b.batchYieldBase),
-        ));
+    await db
+        .into(db.ingredients)
+        .insert(
+          IngredientsCompanion.insert(
+            id: b.id,
+            name: b.name,
+            unit: b.unit.name,
+            lowStockAt: Value(b.lowAtBase),
+            batchYield: Value(b.batchYieldBase),
+          ),
+        );
     // Opening stock arrives the way real stock does — a `receive` movement
     // that also prices the moving average — so the ledger sums to the balance
     // from the first row (ADR-0041 §2). This is not fake report history: no
@@ -219,9 +257,9 @@ String _hashPin(String pin) {
 /// self-served voids (ADR-0006). Idempotent: no-op once present or if the
 /// waiter role does not exist yet.
 Future<void> _ensureWaiterCanVoid(AppDatabase db) async {
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(seed.DummyData.roleWaiterId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(seed.DummyData.roleWaiterId))).getSingleOrNull();
   if (role == null) return;
   final caps = (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (caps.contains('voidItem')) return;
@@ -235,19 +273,26 @@ Future<void> _ensureWaiterCanVoid(AppDatabase db) async {
 /// (`ServerAuth.provisionAdminUser`) and the `/auth/me` role join resolve,
 /// even on an install that predates a given role seed. See ADR-0015.
 Future<void> _ensureAdminRole(AppDatabase db) async {
-  final adminRole = await (db.select(db.roles)
-        ..where((r) => r.id.equals(seed.DummyData.roleAdminId)))
-      .getSingleOrNull();
+  final adminRole = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(seed.DummyData.roleAdminId))).getSingleOrNull();
   if (adminRole != null) return;
-  await db.into(db.roles).insertOnConflictUpdate(RolesCompanion.insert(
-        id: seed.DummyData.roleAdminId,
-        name: 'Admin',
-        colorHex: const Value('#C08AFF'),
-        capabilitiesJson: Value(jsonEncode([
-          for (final c in seed.DummyData.initialRoles()
-              .firstWhere((r) => r.id == seed.DummyData.roleAdminId)
-              .capabilities)
-            c.name,
-        ])),
-      ));
+  await db
+      .into(db.roles)
+      .insertOnConflictUpdate(
+        RolesCompanion.insert(
+          id: seed.DummyData.roleAdminId,
+          name: 'Admin',
+          colorHex: const Value('#C08AFF'),
+          capabilitiesJson: Value(
+            jsonEncode([
+              for (final c
+                  in seed.DummyData.initialRoles()
+                      .firstWhere((r) => r.id == seed.DummyData.roleAdminId)
+                      .capabilities)
+                c.name,
+            ]),
+          ),
+        ),
+      );
 }

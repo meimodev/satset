@@ -160,8 +160,10 @@ String buildAccountingCsv(AccountingReport s) {
 
 // ─── PDF ────────────────────────────────────────────────────────────────────
 
-Future<Uint8List> buildAccountingPdf(AccountingReport s,
-    {PdfBranding? branding}) async {
+Future<Uint8List> buildAccountingPdf(
+  AccountingReport s, {
+  PdfBranding? branding,
+}) async {
   final theme = await pdfTheme();
   final doc = pw.Document(theme: theme.base);
   final r = s.revenue;

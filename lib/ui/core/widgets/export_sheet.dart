@@ -124,8 +124,13 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
         case _ExportKind.laporan:
           final snap = widget.reportsSnapshot!;
           bytes = isPdf
-              ? await buildReportsPdf(snap, _range,
-                  from: _from, to: _to, branding: branding)
+              ? await buildReportsPdf(
+                  snap,
+                  _range,
+                  from: _from,
+                  to: _to,
+                  branding: branding,
+                )
               : _csvBytes(buildReportsCsv(snap, _range, from: _from, to: _to));
         case _ExportKind.pesanan:
           final history = await ref.read(orderHistoryFetcherProvider)(

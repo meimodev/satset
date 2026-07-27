@@ -81,13 +81,15 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
 
   Widget _venueList(SatColors sc, AsyncValue<List<Venue>> venues) {
     return venues.when(
-      loading: () => Center(child: CircularProgressIndicator(color: sc.accentText)),
+      loading: () =>
+          Center(child: CircularProgressIndicator(color: sc.accentText)),
       error: (e, _) => _errorBox(sc, e),
       data: (list) {
         // Surface venues nearing the offline-grace lockout first — the SA's job
         // is catching the few in trouble among many; most-urgent (smallest
         // remaining) on top, then the rest alphabetically.
-        final sorted = [...list]..sort((a, b) {
+        final sorted = [...list]
+          ..sort((a, b) {
             final ra = _lockoutRisk(a), rb = _lockoutRisk(b);
             if ((ra == null) != (rb == null)) return ra != null ? -1 : 1;
             if (ra != null && rb != null && ra != rb) return ra.compareTo(rb);
@@ -129,18 +131,19 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       tint: vis.tint,
       title: v.name.isEmpty ? '(tanpa nama)' : v.name,
       sub: v.address.isEmpty ? null : v.address,
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => VenueEditScreen(venue: v),
-      )),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => VenueEditScreen(venue: v)),
+      ),
       pills: [
         if (v.status != AdminStatus.active)
           fleetPill(sc, vis.label, vis.tint, vis.soft),
         fleetPill(sc, 'Paket: ${v.plan}', sc.info, sc.infoSoft),
         fleetPill(
-            sc,
-            'Tagihan: ${v.billingStatus}',
-            v.billingStatus == 'overdue' ? sc.urgent : sc.textMd,
-            v.billingStatus == 'overdue' ? sc.urgentSoft : sc.bg3),
+          sc,
+          'Tagihan: ${v.billingStatus}',
+          v.billingStatus == 'overdue' ? sc.urgent : sc.textMd,
+          v.billingStatus == 'overdue' ? sc.urgentSoft : sc.bg3,
+        ),
         fleetPill(sc, _offlineText(v), _offlineColor(sc, v), sc.bg3),
         if (_lockoutRisk(v) case final risk?)
           fleetPill(
@@ -167,17 +170,28 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   void _onVenueAction(Venue v, String k) {
     switch (k) {
       case 'activate':
-        _run(() => _svc.setVenueStatus(v.id, AdminStatus.active),
-            '${v.name} diaktifkan');
+        _run(
+          () => _svc.setVenueStatus(v.id, AdminStatus.active),
+          '${v.name} diaktifkan',
+        );
       case 'suspend':
-        _confirm('Tangguhkan ${v.name}?',
-            'Server venue mati & semua staf terputus.',
-            () => _run(() => _svc.setVenueStatus(v.id, AdminStatus.suspended),
-                '${v.name} ditangguhkan'));
+        _confirm(
+          'Tangguhkan ${v.name}?',
+          'Server venue mati & semua staf terputus.',
+          () => _run(
+            () => _svc.setVenueStatus(v.id, AdminStatus.suspended),
+            '${v.name} ditangguhkan',
+          ),
+        );
       case 'ban':
-        _confirm('Blokir ${v.name}?', 'Venue diblokir permanen sampai diubah.',
-            () => _run(() => _svc.setVenueStatus(v.id, AdminStatus.banned),
-                '${v.name} diblokir'));
+        _confirm(
+          'Blokir ${v.name}?',
+          'Venue diblokir permanen sampai diubah.',
+          () => _run(
+            () => _svc.setVenueStatus(v.id, AdminStatus.banned),
+            '${v.name} diblokir',
+          ),
+        );
     }
   }
 
@@ -191,34 +205,41 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text('Venue baru',
-            style: SatType.sans(size: 17, color: sc.textHi)),
+        title: Text(
+          'Venue baru',
+          style: SatType.sans(size: 17, color: sc.textHi),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                controller: name,
-                decoration: const InputDecoration(labelText: 'Nama venue')),
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Nama venue'),
+            ),
             const SizedBox(height: 12),
             TextField(
-                controller: addr,
-                decoration:
-                    const InputDecoration(labelText: 'Alamat (opsional)')),
+              controller: addr,
+              decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
+            ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Simpan')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Simpan'),
+          ),
         ],
       ),
     );
     if (ok != true || name.text.trim().isEmpty) return;
-    await _run(() => _svc.createVenue(name: name.text, address: addr.text),
-        'Venue dibuat');
+    await _run(
+      () => _svc.createVenue(name: name.text, address: addr.text),
+      'Venue dibuat',
+    );
   }
 
   void _confirm(String title, String body, VoidCallback onYes) {
@@ -231,8 +252,9 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         content: Text(body, style: SatType.sans(size: 14, color: sc.textMd)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: sc.urgent),
             onPressed: () {
@@ -249,20 +271,22 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   // ── Small pieces ───────────────────────────────────────────────────────────
 
   Widget _empty(SatColors sc, String msg) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: Text(msg, style: SatType.sans(size: 14, color: sc.textLo)),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 48),
+    child: Center(
+      child: Text(msg, style: SatType.sans(size: 14, color: sc.textLo)),
+    ),
+  );
 
   Widget _errorBox(SatColors sc, Object e) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text('Gagal memuat fleet:\n${fleetErrText(e)}',
-              textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: sc.urgent)),
-        ),
-      );
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        'Gagal memuat fleet:\n${fleetErrText(e)}',
+        textAlign: TextAlign.center,
+        style: SatType.sans(size: 13, color: sc.urgent),
+      ),
+    ),
+  );
 
   /// The fleet console only flags a venue once it nears the lockout, to avoid
   /// alarming on routine nightly closure.

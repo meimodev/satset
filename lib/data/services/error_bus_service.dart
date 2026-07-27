@@ -27,15 +27,15 @@ class ErrorBusService {
   final _c = StreamController<AppError>.broadcast();
   Stream<AppError> get stream => _c.stream;
 
-  void push(String message,
-      {AppErrorLevel level = AppErrorLevel.error, String? code}) {
+  void push(
+    String message, {
+    AppErrorLevel level = AppErrorLevel.error,
+    String? code,
+  }) {
     SatLog.err('bus ${level.name}${code != null ? " $code" : ""}: $message');
-    _c.add(AppError(
-      message: message,
-      level: level,
-      at: DateTime.now(),
-      code: code,
-    ));
+    _c.add(
+      AppError(message: message, level: level, at: DateTime.now(), code: code),
+    );
   }
 
   Future<void> dispose() => _c.close();

@@ -18,6 +18,7 @@ class MenuPhoto extends ConsumerWidget {
   final String itemId;
   final String name;
   final int photoRev;
+
   /// Null means the widget's own default, resolved at build so it can follow
   /// the active skin — a const default value cannot call SatR.
   final BorderRadius? borderRadius;
@@ -35,8 +36,9 @@ class MenuPhoto extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (photoRev <= 0) return _avatar(context);
-    final async =
-        ref.watch(menuPhotoBytesProvider((id: itemId, rev: photoRev)));
+    final async = ref.watch(
+      menuPhotoBytesProvider((id: itemId, rev: photoRev)),
+    );
     return ClipRRect(
       borderRadius: borderRadius ?? SatR.a(14),
       child: async.when(
@@ -61,11 +63,11 @@ class MenuPhoto extends ConsumerWidget {
     final initials = trimmed.isEmpty
         ? '?'
         : trimmed
-            .split(RegExp(r'\s+'))
-            .take(2)
-            .map((w) => w[0])
-            .join()
-            .toUpperCase();
+              .split(RegExp(r'\s+'))
+              .take(2)
+              .map((w) => w[0])
+              .join()
+              .toUpperCase();
     return Container(
       decoration: SatBox.d(
         borderRadius: borderRadius ?? SatR.a(14),

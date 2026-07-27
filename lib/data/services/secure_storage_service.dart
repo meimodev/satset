@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// device-cert material. Repositories must not touch these keys directly.
 class SecureStorageService {
   SecureStorageService([FlutterSecureStorage? backend])
-      : _s = backend ?? const FlutterSecureStorage();
+    : _s = backend ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _s;
 
@@ -46,8 +46,7 @@ class SecureStorageService {
   Future<String?> readDeviceId() => _s.read(key: _kDeviceId);
   Future<void> writeDeviceId(String v) => _s.write(key: _kDeviceId, value: v);
 
-  Future<String?> readServerFingerprint() =>
-      _s.read(key: _kServerFingerprint);
+  Future<String?> readServerFingerprint() => _s.read(key: _kServerFingerprint);
   Future<void> writeServerFingerprint(String? v) => v == null
       ? _s.delete(key: _kServerFingerprint)
       : _s.write(key: _kServerFingerprint, value: v);
@@ -81,5 +80,6 @@ class SecureStorageService {
   }
 }
 
-final secureStorageServiceProvider =
-    Provider<SecureStorageService>((ref) => SecureStorageService());
+final secureStorageServiceProvider = Provider<SecureStorageService>(
+  (ref) => SecureStorageService(),
+);

@@ -35,7 +35,9 @@ String zoneIconKeyFromIcon(IconData icon) {
 
 /// Convenience for admin pickers — same shape as the old
 /// `ZonePresets.colors` / `ZonePresets.icons` lists.
-List<Color> get zoneColorPresets =>
-    [for (final h in ZonePresets.colorHexes) Color(h)];
-List<IconData> get zoneIconPresets =>
-    [for (final k in ZonePresets.iconKeys) zoneIconFromKey(k)];
+List<Color> get zoneColorPresets => [
+  for (final h in ZonePresets.colorHexes) Color(h),
+];
+List<IconData> get zoneIconPresets => [
+  for (final k in ZonePresets.iconKeys) zoneIconFromKey(k),
+];

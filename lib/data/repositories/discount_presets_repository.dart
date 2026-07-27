@@ -14,12 +14,13 @@ import 'package:satset/data/services/ws_client.dart';
 /// Its own repository rather than riding the venue-settings payload (ADR-0037),
 /// so it gets the standard collection treatment: a dedicated endpoint, its own
 /// WS event, and a full resync on socket reconnect (ADR-0021).
-final discountPresetsStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final discountPresetsStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
   DiscountPresetsRepository({required this.ref})
-      : super(const <DiscountPresetDto>[]) {
+    : super(const <DiscountPresetDto>[]) {
     Future.microtask(_bootstrap);
   }
 
@@ -63,16 +64,18 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
     ref.read(discountPresetsStatusProvider.notifier).state =
         const AsyncValue.loading();
     try {
-      final raw = await ref
-          .read(apiClientProvider)
-          .getJson('/venue/discount-presets') as Map;
+      final raw =
+          await ref.read(apiClientProvider).getJson('/venue/discount-presets')
+              as Map;
       _adopt(raw['presets']);
       ref.read(discountPresetsStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
       SatLog.repo('discountPresets.refresh fail $e');
-      ref.read(discountPresetsStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(discountPresetsStatusProvider.notifier).state = AsyncValue.error(
+        e,
+        st,
+      );
     }
   }
 
@@ -89,17 +92,16 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
     bool active = true,
     int sortOrder = 0,
   }) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/venue/discount-presets',
-      {
-        'name': name,
-        'scope': scope,
-        'kind': kind,
-        'value': value,
-        'active': active,
-        'sortOrder': sortOrder,
-      },
-    );
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/venue/discount-presets', {
+          'name': name,
+          'scope': scope,
+          'kind': kind,
+          'value': value,
+          'active': active,
+          'sortOrder': sortOrder,
+        });
     if (raw is! Map) return null;
     return DiscountPresetDto.fromJson(raw.cast<String, dynamic>());
   }
@@ -113,17 +115,16 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
     bool? active,
     int? sortOrder,
   }) async {
-    final raw = await ref.read(apiClientProvider).patchJson(
-      '/venue/discount-presets/$id',
-      {
-        'name': ?name,
-        'scope': ?scope,
-        'kind': ?kind,
-        'value': ?value,
-        'active': ?active,
-        'sortOrder': ?sortOrder,
-      },
-    );
+    final raw = await ref
+        .read(apiClientProvider)
+        .patchJson('/venue/discount-presets/$id', {
+          'name': ?name,
+          'scope': ?scope,
+          'kind': ?kind,
+          'value': ?value,
+          'active': ?active,
+          'sortOrder': ?sortOrder,
+        });
     if (raw is! Map) return null;
     return DiscountPresetDto.fromJson(raw.cast<String, dynamic>());
   }
@@ -141,5 +142,5 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
 
 final discountPresetsRepositoryProvider =
     StateNotifierProvider<DiscountPresetsRepository, List<DiscountPresetDto>>(
-  (ref) => DiscountPresetsRepository(ref: ref),
-);
+      (ref) => DiscountPresetsRepository(ref: ref),
+    );

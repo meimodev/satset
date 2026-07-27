@@ -25,14 +25,15 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
 /// Cart is scoped per-table so two open tables do not bleed items.
 /// For a table-less draft (menu-first / takeaway) the family key is a
 /// transient [draftOrderIdProvider] uuid instead of a tableId.
-final cartProvider = StateNotifierProvider.family<CartViewModel, List<CartItem>,
-    String>((ref, tableId) => CartViewModel());
+final cartProvider =
+    StateNotifierProvider.family<CartViewModel, List<CartItem>, String>(
+      (ref, tableId) => CartViewModel(),
+    );
 
 /// Holds the id of the in-progress table-less draft order so the menu and
 /// review screens share one [cartProvider] key. Reset via [startNewDraft]
 /// each time the waiter taps "Pesanan baru" so a fresh cart is minted.
-final draftOrderIdProvider =
-    StateProvider<String>((ref) => const Uuid().v4());
+final draftOrderIdProvider = StateProvider<String>((ref) => const Uuid().v4());
 
 /// Mint a fresh draft id (drops any stale cart bound to the previous id)
 /// and return it. Call before pushing into the menu-first / takeaway flow.

@@ -25,9 +25,8 @@ class TicketModifier {
   });
 
   /// Label with a derived sign prefix for price-affecting options.
-  String get display => priceDelta > 0
-      ? '+ $label'
-      : (priceDelta < 0 ? '− $label' : label);
+  String get display =>
+      priceDelta > 0 ? '+ $label' : (priceDelta < 0 ? '− $label' : label);
 
   @override
   bool operator ==(Object other) =>

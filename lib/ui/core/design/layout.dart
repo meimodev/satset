@@ -16,8 +16,8 @@ class SatLayout {
     final br = w >= 1024
         ? SatBreak.tablet
         : (w < 600
-            ? SatBreak.compact
-            : (w < 905 ? SatBreak.medium : SatBreak.expanded));
+              ? SatBreak.compact
+              : (w < 905 ? SatBreak.medium : SatBreak.expanded));
     return SatLayout._(mq.size, mq.orientation, mq.padding, br);
   }
 
@@ -83,7 +83,11 @@ extension SatLayoutX on BuildContext {
 class SatPageScaffold extends StatelessWidget {
   final Widget child;
   final bool constrainWidth;
-  const SatPageScaffold({super.key, required this.child, this.constrainWidth = true});
+  const SatPageScaffold({
+    super.key,
+    required this.child,
+    this.constrainWidth = true,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -10,13 +10,13 @@ import 'package:satset/data/services/api_client.dart';
 enum ReportRange { today, yesterday, d7, d30, month, custom }
 
 String reportRangeKey(ReportRange r) => switch (r) {
-      ReportRange.today => 'today',
-      ReportRange.yesterday => 'yesterday',
-      ReportRange.d7 => 'd7',
-      ReportRange.d30 => 'd30',
-      ReportRange.month => 'month',
-      ReportRange.custom => 'custom',
-    };
+  ReportRange.today => 'today',
+  ReportRange.yesterday => 'yesterday',
+  ReportRange.d7 => 'd7',
+  ReportRange.d30 => 'd30',
+  ReportRange.month => 'month',
+  ReportRange.custom => 'custom',
+};
 
 /// Max span for a custom window (inclusive days). Guards a runaway LAN fetch /
 /// giant PDF; the server enforces the same cap defensively.
@@ -65,37 +65,39 @@ class ReportsQuery {
       range: range ?? this.range,
       serverId: serverId == _sentinel ? this.serverId : serverId as String?,
       zoneId: zoneId == _sentinel ? this.zoneId : zoneId as String?,
-      categoryId:
-          categoryId == _sentinel ? this.categoryId : categoryId as String?,
-      customFrom:
-          customFrom == _sentinel ? this.customFrom : customFrom as DateTime?,
+      categoryId: categoryId == _sentinel
+          ? this.categoryId
+          : categoryId as String?,
+      customFrom: customFrom == _sentinel
+          ? this.customFrom
+          : customFrom as DateTime?,
       customTo: customTo == _sentinel ? this.customTo : customTo as DateTime?,
     );
   }
 
   Map<String, String> toQueryParams() => {
-        'range': reportRangeKey(range),
-        if (range == ReportRange.custom && customFrom != null)
-          'from': _ymd(customFrom!),
-        if (range == ReportRange.custom && customTo != null)
-          'to': _ymd(customTo!),
-        if (serverId != null && serverId!.isNotEmpty) 'server': serverId!,
-        if (zoneId != null && zoneId!.isNotEmpty) 'zone': zoneId!,
-        if (categoryId != null && categoryId!.isNotEmpty)
-          'category': categoryId!,
-      };
+    'range': reportRangeKey(range),
+    if (range == ReportRange.custom && customFrom != null)
+      'from': _ymd(customFrom!),
+    if (range == ReportRange.custom && customTo != null) 'to': _ymd(customTo!),
+    if (serverId != null && serverId!.isNotEmpty) 'server': serverId!,
+    if (zoneId != null && zoneId!.isNotEmpty) 'zone': zoneId!,
+    if (categoryId != null && categoryId!.isNotEmpty) 'category': categoryId!,
+  };
 }
 
 const _sentinel = Object();
 
 /// Current report filter — separate from the snapshot so screens can update
 /// it cheaply and the repository auto-refetches via ref.listen.
-final reportsQueryProvider =
-    StateProvider<ReportsQuery>((_) => const ReportsQuery());
+final reportsQueryProvider = StateProvider<ReportsQuery>(
+  (_) => const ReportsQuery(),
+);
 
 /// Status of the latest fetch. UI uses this to pick skeleton/error states.
-final reportsStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.loading());
+final reportsStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.loading(),
+);
 
 class ReportsRepository extends StateNotifier<ReportsSnapshotDto?> {
   ReportsRepository({required this.ref}) : super(null) {
@@ -111,20 +113,21 @@ class ReportsRepository extends StateNotifier<ReportsSnapshotDto?> {
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(reportsStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(reportsStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     final query = ref.read(reportsQueryProvider);
     // Custom range picked but no dates committed yet — hold the current
     // snapshot, don't fire a half-formed window at the server.
     if (query.customIncomplete) {
-      ref.read(reportsStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(reportsStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
-    ref.read(reportsStatusProvider.notifier).state =
-        const AsyncValue.loading();
+    ref.read(reportsStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       final api = ref.read(apiClientProvider);
       final raw = await api.getJson(
@@ -132,16 +135,18 @@ class ReportsRepository extends StateNotifier<ReportsSnapshotDto?> {
         query: query.toQueryParams(),
       );
       final dto = ReportsSnapshotDto.fromJson(
-          (raw as Map).cast<String, dynamic>());
+        (raw as Map).cast<String, dynamic>(),
+      );
       state = dto;
-      ref.read(reportsStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(reportsStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       SatLog.repo(
-          'reports.loaded range=${query.range.name} items=${dto.menu.top.length}+${dto.menu.slow.length} staff=${dto.staff.rows.length}');
+        'reports.loaded range=${query.range.name} items=${dto.menu.top.length}+${dto.menu.slow.length} staff=${dto.staff.rows.length}',
+      );
     } catch (e, st) {
       SatLog.repo('reports.bootstrap fail $e');
-      ref.read(reportsStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(reportsStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
   }
 
@@ -150,5 +155,5 @@ class ReportsRepository extends StateNotifier<ReportsSnapshotDto?> {
 
 final reportsRepositoryProvider =
     StateNotifierProvider<ReportsRepository, ReportsSnapshotDto?>(
-  (ref) => ReportsRepository(ref: ref),
-);
+      (ref) => ReportsRepository(ref: ref),
+    );

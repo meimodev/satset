@@ -96,7 +96,8 @@ class BillStrukData {
   final String guestName; // '' when none
   final DateTime at;
   final BillDocKind kind;
-  final String docLabel; // receipt label ('Tamu 1' / 'Bagian 1/3'); '' for whole
+  final String
+  docLabel; // receipt label ('Tamu 1' / 'Bagian 1/3'); '' for whole
 
   // ── body ──
   final List<BillStrukLine> lines;

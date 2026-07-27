@@ -29,47 +29,63 @@ void main() {
 
     // Menu: Nasi Ayam, Reguler (1 portion of rice + 1 chicken) and Besar
     // (2 chicken — a variant recipe REPLACES the base, it does not scale it).
-    await db.into(db.menuItems).insert(MenuItemsCompanion.insert(
-          id: 'i1',
-          name: 'Nasi Ayam',
-          categoryId: 'c1',
-          basePrice: 25000,
-          variantsJson: Value(jsonEncode([
-            {'id': 'v-reg', 'name': 'Reguler', 'price': 25000},
-            {'id': 'v-besar', 'name': 'Besar', 'price': 35000},
-          ])),
-        ));
-    await db.into(db.ingredients).insert(IngredientsCompanion.insert(
-          id: 'beras',
-          name: 'Beras',
-          unit: 'kg',
-          // 10 kg, in milligrams.
-          stockOnHand: Value(StockUnit.kg.toBase(10)),
-          costMicro: Value(costMicroFromUnitPrice(12000, StockUnit.kg)),
-        ));
-    await db.into(db.ingredients).insert(IngredientsCompanion.insert(
-          id: 'ayam',
-          name: 'Ayam',
-          unit: 'pcs',
-          stockOnHand: Value(StockUnit.pcs.toBase(2)),
-        ));
-    await db.transaction(() => writeRecipes(db, 'i1', {
-          'base': [
-            {'ingredientId': 'beras', 'qty': StockUnit.g.toBase(200)},
-            {'ingredientId': 'ayam', 'qty': StockUnit.pcs.toBase(1)},
+    await db
+        .into(db.menuItems)
+        .insert(
+          MenuItemsCompanion.insert(
+            id: 'i1',
+            name: 'Nasi Ayam',
+            categoryId: 'c1',
+            basePrice: 25000,
+            variantsJson: Value(
+              jsonEncode([
+                {'id': 'v-reg', 'name': 'Reguler', 'price': 25000},
+                {'id': 'v-besar', 'name': 'Besar', 'price': 35000},
+              ]),
+            ),
+          ),
+        );
+    await db
+        .into(db.ingredients)
+        .insert(
+          IngredientsCompanion.insert(
+            id: 'beras',
+            name: 'Beras',
+            unit: 'kg',
+            // 10 kg, in milligrams.
+            stockOnHand: Value(StockUnit.kg.toBase(10)),
+            costMicro: Value(costMicroFromUnitPrice(12000, StockUnit.kg)),
+          ),
+        );
+    await db
+        .into(db.ingredients)
+        .insert(
+          IngredientsCompanion.insert(
+            id: 'ayam',
+            name: 'Ayam',
+            unit: 'pcs',
+            stockOnHand: Value(StockUnit.pcs.toBase(2)),
+          ),
+        );
+    await db.transaction(
+      () => writeRecipes(db, 'i1', {
+        'base': [
+          {'ingredientId': 'beras', 'qty': StockUnit.g.toBase(200)},
+          {'ingredientId': 'ayam', 'qty': StockUnit.pcs.toBase(1)},
+        ],
+        'byVariant': {
+          'v-besar': [
+            {'ingredientId': 'beras', 'qty': StockUnit.g.toBase(350)},
+            {'ingredientId': 'ayam', 'qty': StockUnit.pcs.toBase(2)},
           ],
-          'byVariant': {
-            'v-besar': [
-              {'ingredientId': 'beras', 'qty': StockUnit.g.toBase(350)},
-              {'ingredientId': 'ayam', 'qty': StockUnit.pcs.toBase(2)},
-            ],
-          },
-          'byOption': {
-            'opt-keju': [
-              {'ingredientId': 'beras', 'qty': StockUnit.g.toBase(30)},
-            ],
-          },
-        }));
+        },
+        'byOption': {
+          'opt-keju': [
+            {'ingredientId': 'beras', 'qty': StockUnit.g.toBase(30)},
+          ],
+        },
+      }),
+    );
   });
 
   tearDown(() async => db.close());
@@ -78,31 +94,27 @@ void main() {
     String idem,
     List<Map<String, dynamic>> lines,
   ) async {
-    final res = await router(Request(
-      'POST',
-      Uri.parse('http://x/orders'),
-      body: jsonEncode({
-        'tableId': 't1',
-        'idempotencyKey': idem,
-        'actorId': null,
-        'lines': [
-          for (final l in lines)
-            {
-              'course': 'main',
-              'unitPrice': 25000,
-              'name': 'Nasi Ayam',
-              ...l,
-            },
-        ],
-      }),
-    ));
+    final res = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/orders'),
+        body: jsonEncode({
+          'tableId': 't1',
+          'idempotencyKey': idem,
+          'actorId': null,
+          'lines': [
+            for (final l in lines)
+              {'course': 'main', 'unitPrice': 25000, 'name': 'Nasi Ayam', ...l},
+          ],
+        }),
+      ),
+    );
     return jsonDecode(await res.readAsString()) as Map<String, dynamic>;
   }
 
-  Future<int> onHand(String id) async => (await (db.select(db.ingredients)
-            ..where((i) => i.id.equals(id)))
-          .getSingle())
-      .stockOnHand;
+  Future<int> onHand(String id) async => (await (db.select(
+    db.ingredients,
+  )..where((i) => i.id.equals(id))).getSingle()).stockOnHand;
 
   test('milli-base units convert exactly and never drift', () {
     expect(StockUnit.kg.toBase(0.2), StockUnit.g.toBase(200));
@@ -156,27 +168,33 @@ void main() {
     expect(await onHand('ayam'), 0);
   });
 
-  test('only the offending line is rejected; the rest of the order lands',
-      () async {
-    await order('idem-5', [
-      {'itemId': 'i1', 'variantName': 'Reguler', 'qty': 2},
-    ]);
-    // Now: no chicken. `i-free` has no recipe at all, so it consumes nothing
-    // and must never be blocked — the default that lets a live venue migrate
-    // one dish at a time.
-    await db.into(db.menuItems).insert(MenuItemsCompanion.insert(
-          id: 'i-free',
-          name: 'Es Teh',
-          categoryId: 'c1',
-          basePrice: 5000,
-        ));
-    final res = await order('idem-6', [
-      {'itemId': 'i1', 'variantName': 'Reguler', 'qty': 1},
-      {'itemId': 'i-free', 'name': 'Es Teh', 'qty': 1},
-    ]);
-    expect((res['ticketIds'] as List).length, 1);
-    expect((res['rejected'] as List).length, 1);
-  });
+  test(
+    'only the offending line is rejected; the rest of the order lands',
+    () async {
+      await order('idem-5', [
+        {'itemId': 'i1', 'variantName': 'Reguler', 'qty': 2},
+      ]);
+      // Now: no chicken. `i-free` has no recipe at all, so it consumes nothing
+      // and must never be blocked — the default that lets a live venue migrate
+      // one dish at a time.
+      await db
+          .into(db.menuItems)
+          .insert(
+            MenuItemsCompanion.insert(
+              id: 'i-free',
+              name: 'Es Teh',
+              categoryId: 'c1',
+              basePrice: 5000,
+            ),
+          );
+      final res = await order('idem-6', [
+        {'itemId': 'i1', 'variantName': 'Reguler', 'qty': 1},
+        {'itemId': 'i-free', 'name': 'Es Teh', 'qty': 1},
+      ]);
+      expect((res['ticketIds'] as List).length, 1);
+      expect((res['rejected'] as List).length, 1);
+    },
+  );
 
   test('modifier option recipes add on top of the resolved recipe', () async {
     await order('idem-7', [
@@ -185,7 +203,12 @@ void main() {
         'variantName': 'Reguler',
         'qty': 1,
         'modifiers': [
-          {'groupId': 'g1', 'optionId': 'opt-keju', 'label': 'Keju', 'priceDelta': 5000},
+          {
+            'groupId': 'g1',
+            'optionId': 'opt-keju',
+            'label': 'Keju',
+            'priceDelta': 5000,
+          },
         ],
       },
     ]);
@@ -200,12 +223,17 @@ void main() {
     final id = (res['ticketIds'] as List).first as String;
     expect(await onHand('ayam'), StockUnit.pcs.toBase(1));
 
-    await router(Request('POST', Uri.parse('http://x/tickets/$id/transition'),
+    await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/tickets/$id/transition'),
         body: jsonEncode({
           'status': 'voided',
           'voidReason': 'Tamu berubah pikiran',
           'voidReasonCode': 'customerChange',
-        })));
+        }),
+      ),
+    );
 
     expect(await onHand('ayam'), StockUnit.pcs.toBase(2));
     final reasons = await _reasons(db, id);
@@ -218,16 +246,26 @@ void main() {
       {'itemId': 'i1', 'variantName': 'Reguler', 'qty': 1},
     ]);
     final id = (res['ticketIds'] as List).first as String;
-    await router(Request('POST', Uri.parse('http://x/tickets/$id/transition'),
-        body: jsonEncode({'status': 'prep'})));
-    await router(Request('POST', Uri.parse('http://x/tickets/$id/transition'),
+    await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/tickets/$id/transition'),
+        body: jsonEncode({'status': 'prep'}),
+      ),
+    );
+    await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/tickets/$id/transition'),
         body: jsonEncode({
           'status': 'voided',
           // A reason that WOULD have restocked under reason-code logic — the
           // point of testing status instead: the pan was already hit.
           'voidReason': 'Tamu berubah pikiran',
           'voidReasonCode': 'customerChange',
-        })));
+        }),
+      ),
+    );
 
     // Reversal + waste net to zero: the ingredients are genuinely gone.
     expect(await onHand('ayam'), StockUnit.pcs.toBase(1));
@@ -252,11 +290,10 @@ void main() {
     expect(flags['i1']!.autoSoldOut, isTrue);
 
     // Receiving un-habises with no flag to clear — availability is derived.
-    await db.transaction(() => receiveStock(
-          db,
-          ingredientId: 'ayam',
-          qty: StockUnit.pcs.toBase(5),
-        ));
+    await db.transaction(
+      () =>
+          receiveStock(db, ingredientId: 'ayam', qty: StockUnit.pcs.toBase(5)),
+    );
     flags = await deriveStockFlags(db);
     expect(flags['i1'], isNull);
   });
@@ -268,91 +305,109 @@ void main() {
 
     // 200 g off 10 kg of rice crosses no threshold — nobody can see it, so it
     // must not re-broadcast the menu to every device mid-service.
-    await db.transaction(() => writeMovement(
-          db,
-          ingredientId: 'beras',
-          delta: -StockUnit.g.toBase(200),
-          reason: StockReason.sale,
-        ));
+    await db.transaction(
+      () => writeMovement(
+        db,
+        ingredientId: 'beras',
+        delta: -StockUnit.g.toBase(200),
+        reason: StockReason.sale,
+      ),
+    );
     expect(await cache.refreshAndDetectFlip(db), isFalse);
 
     // Taking a chicken makes Besar unmakeable — that IS visible, so it flips.
-    await db.transaction(() => writeMovement(
-          db,
-          ingredientId: 'ayam',
-          delta: -StockUnit.pcs.toBase(1),
-          reason: StockReason.sale,
-        ));
+    await db.transaction(
+      () => writeMovement(
+        db,
+        ingredientId: 'ayam',
+        delta: -StockUnit.pcs.toBase(1),
+        reason: StockReason.sale,
+      ),
+    );
     expect(await cache.refreshAndDetectFlip(db), isTrue);
-    expect(await cache.refreshAndDetectFlip(db), isFalse,
-        reason: 'no further change, so no re-broadcast');
+    expect(
+      await cache.refreshAndDetectFlip(db),
+      isFalse,
+      reason: 'no further change, so no re-broadcast',
+    );
   });
 
-  test('receive blends the moving average; opname writes the variance',
-      () async {
-    // 10 kg @ 12000/kg, receiving 10 kg @ 16000/kg ⇒ 14000/kg.
-    await db.transaction(() => receiveStock(
+  test(
+    'receive blends the moving average; opname writes the variance',
+    () async {
+      // 10 kg @ 12000/kg, receiving 10 kg @ 16000/kg ⇒ 14000/kg.
+      await db.transaction(
+        () => receiveStock(
           db,
           ingredientId: 'beras',
           qty: StockUnit.kg.toBase(10),
           unitCostMicro: costMicroFromUnitPrice(16000, StockUnit.kg),
-        ));
-    final row = await (db.select(db.ingredients)
-          ..where((i) => i.id.equals('beras')))
-        .getSingle();
-    expect(unitPriceFromCostMicro(row.costMicro, StockUnit.kg), 14000);
+        ),
+      );
+      final row = await (db.select(
+        db.ingredients,
+      )..where((i) => i.id.equals('beras'))).getSingle();
+      expect(unitPriceFromCostMicro(row.costMicro, StockUnit.kg), 14000);
 
-    // Opname finds 19 kg where the app expected 20 — the adjust delta IS the
-    // variance.
-    final delta = await db.transaction(() => recordCount(
+      // Opname finds 19 kg where the app expected 20 — the adjust delta IS the
+      // variance.
+      final delta = await db.transaction(
+        () => recordCount(
           db,
           ingredientId: 'beras',
           counted: StockUnit.kg.toBase(19),
-        ));
-    expect(delta, StockUnit.kg.toBase(-1));
-    expect(await onHand('beras'), StockUnit.kg.toBase(19));
-  });
+        ),
+      );
+      expect(delta, StockUnit.kg.toBase(-1));
+      expect(await onHand('beras'), StockUnit.kg.toBase(19));
+    },
+  );
 
-  test('produce deducts inputs, credits the yield, and prices the output',
-      () async {
-    await db.into(db.ingredients).insert(IngredientsCompanion.insert(
-          id: 'sambal',
-          name: 'Sambal',
-          unit: 'kg',
-          batchYield: Value(StockUnit.kg.toBase(2)),
-        ));
-    await db.into(db.ingredients).insert(IngredientsCompanion.insert(
-          id: 'cabai',
-          name: 'Cabai',
-          unit: 'kg',
-          stockOnHand: Value(StockUnit.kg.toBase(5)),
-          costMicro: Value(costMicroFromUnitPrice(40000, StockUnit.kg)),
-        ));
-    await db.transaction(() => writeRecipes(
-          db,
-          'sambal',
-          {
-            'base': [
-              {'ingredientId': 'cabai', 'qty': StockUnit.kg.toBase(1)},
-            ],
-          },
-          ownerKind: 'ingredient',
-        ));
+  test(
+    'produce deducts inputs, credits the yield, and prices the output',
+    () async {
+      await db
+          .into(db.ingredients)
+          .insert(
+            IngredientsCompanion.insert(
+              id: 'sambal',
+              name: 'Sambal',
+              unit: 'kg',
+              batchYield: Value(StockUnit.kg.toBase(2)),
+            ),
+          );
+      await db
+          .into(db.ingredients)
+          .insert(
+            IngredientsCompanion.insert(
+              id: 'cabai',
+              name: 'Cabai',
+              unit: 'kg',
+              stockOnHand: Value(StockUnit.kg.toBase(5)),
+              costMicro: Value(costMicroFromUnitPrice(40000, StockUnit.kg)),
+            ),
+          );
+      await db.transaction(
+        () => writeRecipes(db, 'sambal', {
+          'base': [
+            {'ingredientId': 'cabai', 'qty': StockUnit.kg.toBase(1)},
+          ],
+        }, ownerKind: 'ingredient'),
+      );
 
-    await db.transaction(() => produceBatch(
-          db,
-          ingredientId: 'sambal',
-          batches: 1,
-        ));
+      await db.transaction(
+        () => produceBatch(db, ingredientId: 'sambal', batches: 1),
+      );
 
-    expect(await onHand('cabai'), StockUnit.kg.toBase(4));
-    expect(await onHand('sambal'), StockUnit.kg.toBase(2));
-    // 1 kg of chilli at 40000 yields 2 kg of sambal ⇒ 20000/kg.
-    final sambal = await (db.select(db.ingredients)
-          ..where((i) => i.id.equals('sambal')))
-        .getSingle();
-    expect(unitPriceFromCostMicro(sambal.costMicro, StockUnit.kg), 20000);
-  });
+      expect(await onHand('cabai'), StockUnit.kg.toBase(4));
+      expect(await onHand('sambal'), StockUnit.kg.toBase(2));
+      // 1 kg of chilli at 40000 yields 2 kg of sambal ⇒ 20000/kg.
+      final sambal = await (db.select(
+        db.ingredients,
+      )..where((i) => i.id.equals('sambal'))).getSingle();
+      expect(unitPriceFromCostMicro(sambal.costMicro, StockUnit.kg), 20000);
+    },
+  );
 
   test('a retried submit does not double-deduct', () async {
     await order('idem-same', [
@@ -367,9 +422,9 @@ void main() {
 }
 
 Future<Set<StockReason>> _reasons(AppDatabase db, String ticketId) async {
-  final rows = await (db.select(db.stockMovements)
-        ..where((m) => m.ticketId.equals(ticketId)))
-      .get();
+  final rows = await (db.select(
+    db.stockMovements,
+  )..where((m) => m.ticketId.equals(ticketId))).get();
   return {
     for (final r in rows)
       StockReason.values.firstWhere((v) => v.name == r.reason),

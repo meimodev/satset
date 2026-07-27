@@ -33,9 +33,7 @@ class BillStrukBuilder {
   }) {
     if (receipt == null) {
       // Whole-bill: every sent line, the grand total, aggregate payments.
-      final pays = [
-        for (final r in bill.receipts) ...r.payments,
-      ];
+      final pays = [for (final r in bill.receipts) ...r.payments];
       return BillStrukData(
         venueName: venue.displayName,
         header: venue.receiptHeader,
@@ -136,16 +134,18 @@ class BillStrukBuilder {
       final l = byTicket[rl.ticketId];
       if (l == null || rl.qtyUnits <= 0) continue;
       final ld = receipt.lineDiscount(rl.ticketId);
-      out.add(BillStrukLine(
-        qty: rl.qtyUnits,
-        name: l.name,
-        variant: l.variantName,
-        lineTotal: l.unitPrice * rl.qtyUnits,
-        modifiers: [for (final m in l.modifiers) m.display],
-        note: l.note ?? '',
-        discountLabel: ld?.label ?? '',
-        discountAmount: ld?.amount ?? 0,
-      ));
+      out.add(
+        BillStrukLine(
+          qty: rl.qtyUnits,
+          name: l.name,
+          variant: l.variantName,
+          lineTotal: l.unitPrice * rl.qtyUnits,
+          modifiers: [for (final m in l.modifiers) m.display],
+          note: l.note ?? '',
+          discountLabel: ld?.label ?? '',
+          discountAmount: ld?.amount ?? 0,
+        ),
+      );
     }
     return out;
   }
@@ -162,14 +162,14 @@ class BillStrukBuilder {
   }
 
   static List<BillStrukPayment> _payments(List<BillPayment> pays) => [
-        for (final p in pays)
-          BillStrukPayment(
-            methodLabel: _label(p.method),
-            amount: p.amount,
-            tendered: p.tendered,
-            isRefund: p.isRefund,
-          ),
-      ];
+    for (final p in pays)
+      BillStrukPayment(
+        methodLabel: _label(p.method),
+        amount: p.amount,
+        tendered: p.tendered,
+        isRefund: p.isRefund,
+      ),
+  ];
 
   static int? _tendered(List<BillPayment> pays) {
     var sum = 0;
@@ -217,20 +217,21 @@ class BillStrukBuilder {
     int n(Object? v) => (v as num?)?.toInt() ?? 0;
     final billLines = (bill['lines'] as List).cast<Map>();
     final receipts = (bill['receipts'] as List).cast<Map>();
-    final tableLabel = (bill['tableLabel'] as String?) ?? (bill['tableId'] as String);
+    final tableLabel =
+        (bill['tableLabel'] as String?) ?? (bill['tableId'] as String);
     final pax = n(bill['pax']);
     final guestName = (bill['guestName'] as String?) ?? '';
     final billTotal = n(bill['total']);
 
     List<BillStrukPayment> mapPays(List pays) => [
-          for (final p in pays.cast<Map>())
-            BillStrukPayment(
-              methodLabel: _label((p['method'] as String?) ?? 'tunai'),
-              amount: n(p['amount']),
-              tendered: (p['tendered'] as num?)?.toInt(),
-              isRefund: p['isRefund'] as bool? ?? false,
-            ),
-        ];
+      for (final p in pays.cast<Map>())
+        BillStrukPayment(
+          methodLabel: _label((p['method'] as String?) ?? 'tunai'),
+          amount: n(p['amount']),
+          tendered: (p['tendered'] as num?)?.toInt(),
+          isRefund: p['isRefund'] as bool? ?? false,
+        ),
+    ];
     int? mapTendered(List pays) {
       var sum = 0;
       for (final p in pays.cast<Map>()) {
@@ -321,8 +322,10 @@ class BillStrukBuilder {
       );
     }
 
-    final rec = receipts.firstWhere((r) => r['id'] == receiptId,
-        orElse: () => const {});
+    final rec = receipts.firstWhere(
+      (r) => r['id'] == receiptId,
+      orElse: () => const {},
+    );
     final even = (rec['mode'] as String?) == 'even';
     final byTicket = {for (final l in billLines) l['ticketId'] as String: l};
     final lines = even
@@ -330,10 +333,11 @@ class BillStrukBuilder {
             for (final l in billLines)
               if ((l['status'] as String?) != 'voided')
                 BillStrukLine(
-                    qty: n(l['qty']),
-                    name: (l['name'] as String?) ?? '',
-                    showPrice: false,
-                    modifiers: _modLabels(l['modifiersJson'])),
+                  qty: n(l['qty']),
+                  name: (l['name'] as String?) ?? '',
+                  showPrice: false,
+                  modifiers: _modLabels(l['modifiersJson']),
+                ),
           ]
         : [
             for (final rl in (rec['lines'] as List? ?? const []).cast<Map>())
@@ -342,17 +346,21 @@ class BillStrukBuilder {
                   qty: n(rl['qtyUnits']),
                   name: (byTicket[rl['ticketId']]!['name'] as String?) ?? '',
                   variant:
-                      (byTicket[rl['ticketId']]!['variantName'] as String?) ?? '',
-                  lineTotal: n(byTicket[rl['ticketId']]!['unitPrice']) *
+                      (byTicket[rl['ticketId']]!['variantName'] as String?) ??
+                      '',
+                  lineTotal:
+                      n(byTicket[rl['ticketId']]!['unitPrice']) *
                       n(rl['qtyUnits']),
-                  modifiers:
-                      _modLabels(byTicket[rl['ticketId']]!['modifiersJson']),
+                  modifiers: _modLabels(
+                    byTicket[rl['ticketId']]!['modifiersJson'],
+                  ),
                   note: (byTicket[rl['ticketId']]!['note'] as String?) ?? '',
                   discountLabel: lineDiscountOf(rec, rl['ticketId']) == null
                       ? ''
                       : discountLabel(lineDiscountOf(rec, rl['ticketId'])!),
-                  discountAmount:
-                      n(lineDiscountOf(rec, rl['ticketId'])?['amount']),
+                  discountAmount: n(
+                    lineDiscountOf(rec, rl['ticketId'])?['amount'],
+                  ),
                 ),
           ];
     final recTotal = n(rec['total']);

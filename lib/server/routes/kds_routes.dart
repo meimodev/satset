@@ -25,21 +25,25 @@ Router kdsRoutes(AppDatabase db, [ServerAuth? auth]) {
   /// signal: count of active sessions (any role).
   r.get('/kds/stations', (Request req) async {
     final now = DateTime.now();
-    final staffOnlineCount = await db.customSelect(
-      'SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?',
-      variables: [Variable.withDateTime(now)],
-    ).getSingle();
+    final staffOnlineCount = await db
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?',
+          variables: [Variable.withDateTime(now)],
+        )
+        .getSingle();
     final placeholders = List.filled(_pendingStatuses.length, '?').join(',');
-    final pending = await db.customSelect(
-      'SELECT COUNT(*) AS c FROM tickets WHERE status IN ($placeholders)',
-      variables: _pendingStatuses.map(Variable.withString).toList(),
-    ).getSingle();
+    final pending = await db
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM tickets WHERE status IN ($placeholders)',
+          variables: _pendingStatuses.map(Variable.withString).toList(),
+        )
+        .getSingle();
     final result = [
       {
         'station': 'kitchen',
         'pendingTickets': pending.read<int>('c'),
         'staffOnline': staffOnlineCount.read<int>('c'),
-      }
+      },
     ];
     return Response.ok(
       jsonEncode(result),
@@ -51,10 +55,12 @@ Router kdsRoutes(AppDatabase db, [ServerAuth? auth]) {
   /// breakdown. Drives the "Antrian" tile on the System screen.
   r.get('/queue/depth', (Request req) async {
     final placeholders = List.filled(_pendingStatuses.length, '?').join(',');
-    final total = await db.customSelect(
-      'SELECT COUNT(*) AS c FROM tickets WHERE status IN ($placeholders)',
-      variables: _pendingStatuses.map(Variable.withString).toList(),
-    ).getSingle();
+    final total = await db
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM tickets WHERE status IN ($placeholders)',
+          variables: _pendingStatuses.map(Variable.withString).toList(),
+        )
+        .getSingle();
     final totalVal = total.read<int>('c');
     return Response.ok(
       jsonEncode({

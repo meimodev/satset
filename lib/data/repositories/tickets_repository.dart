@@ -15,12 +15,13 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/ticket_modifier.dart';
 
 /// Surfaces bootstrap progress for the per-table ticket list.
-final ticketsStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final ticketsStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   TicketsRepository({required this.ref})
-      : super(const <String, List<Ticket>>{}) {
+    : super(const <String, List<Ticket>>{}) {
     Future.microtask(_bootstrap);
   }
 
@@ -39,13 +40,13 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(ticketsStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     state = const <String, List<Ticket>>{};
-    ref.read(ticketsStatusProvider.notifier).state =
-        const AsyncValue.loading();
+    ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       final api = ref.read(apiClientProvider);
       final raw = await api.getJson('/tickets') as List;
@@ -55,19 +56,23 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         grouped.putIfAbsent(_groupKey(dto), () => []).add(_toDomain(dto));
       }
       state = grouped;
-      SatLog.repo('tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}');
-      ref.read(ticketsStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      SatLog.repo(
+        'tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}',
+      );
+      ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
     } catch (e, st) {
       SatLog.repo('tickets.bootstrap fail $e');
-      ref.read(ticketsStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(ticketsStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type == WsEventTypes.ticketCreated ||
           ev.type == WsEventTypes.ticketUpdated) {
         final dto = TicketDto.fromJson(ev.payload);
-        SatLog.repo('tickets.ws ${ev.type} id=${dto.id.substring(0, dto.id.length.clamp(0, 6))} status=${dto.status}');
+        SatLog.repo(
+          'tickets.ws ${ev.type} id=${dto.id.substring(0, dto.id.length.clamp(0, 6))} status=${dto.status}',
+        );
         final key = _groupKey(dto);
         final next = Map<String, List<Ticket>>.from(state);
         final list = List<Ticket>.from(next[key] ?? const []);
@@ -140,14 +145,14 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }
 
   CourseId _courseFromKey(String k) => switch (k) {
-        'drinks-now' || 'drinksNow' => CourseId.drinksNow,
-        'starters' => CourseId.starters,
-        'mains' => CourseId.mains,
-        'sides' => CourseId.sides,
-        'desserts' => CourseId.desserts,
-        'fire-now' || 'fireNow' => CourseId.fireNow,
-        _ => CourseId.fireNow,
-      };
+    'drinks-now' || 'drinksNow' => CourseId.drinksNow,
+    'starters' => CourseId.starters,
+    'mains' => CourseId.mains,
+    'sides' => CourseId.sides,
+    'desserts' => CourseId.desserts,
+    'fire-now' || 'fireNow' => CourseId.fireNow,
+    _ => CourseId.fireNow,
+  };
 
   /// The map key a dine-in [tableId] resolves to: the table's current visit
   /// (groups are keyed by visitId, ADR-0034). Falls back to the tableId for the
@@ -188,7 +193,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     required List<CartLineDto> lines,
     String? actorId,
   }) async {
-    SatLog.repo('tickets.submit table=${tableId.substring(0, tableId.length.clamp(0, 6))} lines=${lines.length}');
+    SatLog.repo(
+      'tickets.submit table=${tableId.substring(0, tableId.length.clamp(0, 6))} lines=${lines.length}',
+    );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       final cart = [
@@ -213,9 +220,11 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             ],
           ),
       ];
-      return sendOrder(tableId, cart, actorId: actorId)
-          .map((t) => t.id)
-          .toList();
+      return sendOrder(
+        tableId,
+        cart,
+        actorId: actorId,
+      ).map((t) => t.id).toList();
     }
     final api = ref.read(apiClientProvider);
     final raw = await api.postJson(
@@ -228,7 +237,8 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       ).toJson(),
     );
     final res = SubmitOrderResponseDto.fromJson(
-        (raw as Map).cast<String, dynamic>());
+      (raw as Map).cast<String, dynamic>(),
+    );
     // Seed the table's currentVisitId so the just-sent lines resolve on this
     // device before the tableUpdated echo arrives (ADR-0034).
     ref.read(tablesProvider.notifier).seedCurrentVisit(tableId, res.visitId);
@@ -245,12 +255,18 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     if (rejected.isEmpty) return;
     final bus = ref.read(errorBusServiceProvider);
     for (final r in rejected) {
-      final what = [r.name, if (r.variantName.isNotEmpty) r.variantName].join(' ');
+      final what = [
+        r.name,
+        if (r.variantName.isNotEmpty) r.variantName,
+      ].join(' ');
       final why = r.ingredients.isEmpty
           ? 'bahan habis'
           : 'bahan habis: ${r.ingredients.join(", ")}';
-      bus.push('$what tidak dikirim — $why',
-          level: AppErrorLevel.warning, code: 'out_of_stock');
+      bus.push(
+        '$what tidak dikirim — $why',
+        level: AppErrorLevel.warning,
+        code: 'out_of_stock',
+      );
     }
   }
 
@@ -265,10 +281,13 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     String? existingVisitId,
     String? actorId,
   }) async {
-    SatLog.repo('tickets.submitTakeaway lines=${lines.length} append=${existingVisitId != null}');
+    SatLog.repo(
+      'tickets.submitTakeaway lines=${lines.length} append=${existingVisitId != null}',
+    );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      final vid = existingVisitId ?? 'T${DateTime.now().millisecondsSinceEpoch}';
+      final vid =
+          existingVisitId ?? 'T${DateTime.now().millisecondsSinceEpoch}';
       final cart = [
         for (final l in lines)
           CartItem(
@@ -325,7 +344,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     String? voidReasonCode,
     String? voidApprovedBy,
   }) async {
-    SatLog.repo('tickets.transition id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} → ${to.name}');
+    SatLog.repo(
+      'tickets.transition id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} → ${to.name}',
+    );
     final cfg = ref.read(apiConfigProvider);
     if (cfg != null) {
       final body = <String, dynamic>{
@@ -334,10 +355,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         'voidReasonCode': ?voidReasonCode,
         'voidApprovedBy': ?voidApprovedBy,
       };
-      await ref.read(apiClientProvider).postJson(
-            '/tickets/$ticketId/transition',
-            body,
-          );
+      await ref
+          .read(apiClientProvider)
+          .postJson('/tickets/$ticketId/transition', body);
     }
     final key = _keyOfTicket(ticketId);
     if (key == null) return;
@@ -364,7 +384,11 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     return '${pad(d.hour)}:${pad(d.minute)}';
   }
 
-  List<Ticket> sendOrder(String tableId, List<CartItem> cart, {String? actorId}) {
+  List<Ticket> sendOrder(
+    String tableId,
+    List<CartItem> cart, {
+    String? actorId,
+  }) {
     final now = DateTime.now();
     final stamp = _nowStamp(now);
     final newTickets = [
@@ -379,7 +403,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           modifiers: cart[i].selectedModifiers,
           note: cart[i].note.isEmpty ? null : cart[i].note,
           price: cart[i].unitPrice,
-          status: (cart[i].course == CourseId.fireNow || cart[i].course == CourseId.drinksNow)
+          status:
+              (cart[i].course == CourseId.fireNow ||
+                  cart[i].course == CourseId.drinksNow)
               ? TicketStatus.sent
               : TicketStatus.held,
           sentAt: stamp,
@@ -394,7 +420,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }
 
   Future<void> fireCourse(String tableId, CourseId courseId) async {
-    SatLog.repo('tickets.fireCourse table=${tableId.substring(0, tableId.length.clamp(0, 6))} course=${courseId.name}');
+    SatLog.repo(
+      'tickets.fireCourse table=${tableId.substring(0, tableId.length.clamp(0, 6))} course=${courseId.name}',
+    );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       _fireCourseLocal(tableId, courseId);
@@ -481,9 +509,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     }
 
     final batchKey = _keyOfTicket(ticketId);
-    final list = (batchKey == null ? null : state[batchKey]) ?? const <Ticket>[];
-    bool inBatch(Ticket t) =>
-        t.sentAt == target.sentAt;
+    final list =
+        (batchKey == null ? null : state[batchKey]) ?? const <Ticket>[];
+    bool inBatch(Ticket t) => t.sentAt == target.sentAt;
     bool active(Ticket t) =>
         t.status == TicketStatus.sent ||
         t.status == TicketStatus.prep ||
@@ -521,20 +549,24 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
 
 final ticketsProvider =
     StateNotifierProvider<TicketsRepository, Map<String, List<Ticket>>>((ref) {
-  ref.watch(apiConfigProvider);
-  return TicketsRepository(ref: ref);
-});
+      ref.watch(apiConfigProvider);
+      return TicketsRepository(ref: ref);
+    });
 
 /// Live dine-in lines for a table, resolved through the table's current visit.
 /// Groups are keyed by visitId (ADR-0034), and a tableId is reused across
 /// visits, so a dine-in screen must look up by the table's currentVisitId — not
 /// the tableId — to avoid re-absorbing a prior, settled visit's lines on a
 /// reseat. Returns `const []` when the table holds no live visit.
-final ticketsForTableProvider =
-    Provider.family<List<Ticket>, String>((ref, tableId) {
+final ticketsForTableProvider = Provider.family<List<Ticket>, String>((
+  ref,
+  tableId,
+) {
   final byVisit = ref.watch(ticketsProvider);
-  final table =
-      ref.watch(tablesProvider).where((t) => t.id == tableId).firstOrNull;
+  final table = ref
+      .watch(tablesProvider)
+      .where((t) => t.id == tableId)
+      .firstOrNull;
   final vid = table?.currentVisitId;
   if (vid != null && vid.isNotEmpty) return byVisit[vid] ?? const [];
   // Legacy pre-v29 rows (null visitId) key by tableId; honour that fallback.

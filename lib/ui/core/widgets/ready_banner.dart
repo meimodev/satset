@@ -24,7 +24,11 @@ class ReadyBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Item siap diambil di pass — tandai disajikan di bawah',
-              style: SatType.sans(size: 12, weight: FontWeight.w500, color: sc.success),
+              style: SatType.sans(
+                size: 12,
+                weight: FontWeight.w500,
+                color: sc.success,
+              ),
             ),
           ),
         ],

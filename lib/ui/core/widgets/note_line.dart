@@ -14,11 +14,7 @@ class NoteLine extends StatelessWidget {
   /// (item note).
   final String label;
 
-  const NoteLine({
-    super.key,
-    required this.text,
-    this.label = 'Catatan',
-  });
+  const NoteLine({super.key, required this.text, this.label = 'Catatan'});
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +34,7 @@ class NoteLine extends StatelessWidget {
           ),
           TextSpan(
             text: t,
-            style: SatType.sans(
-              size: 13,
-              color: sc.textMd,
-              height: 1.35,
-            ),
+            style: SatType.sans(size: 13, color: sc.textMd, height: 1.35),
           ),
         ],
       ),

@@ -6,8 +6,9 @@ enum PrinterTransport {
   /// Bluetooth Classic (RFCOMM/SPP). Address = a paired MAC.
   bluetooth;
 
-  static PrinterTransport fromKey(String? k) =>
-      k == 'bt' || k == 'bluetooth' ? PrinterTransport.bluetooth : PrinterTransport.wifi;
+  static PrinterTransport fromKey(String? k) => k == 'bt' || k == 'bluetooth'
+      ? PrinterTransport.bluetooth
+      : PrinterTransport.wifi;
 
   String get key => this == PrinterTransport.bluetooth ? 'bt' : 'wifi';
 }
@@ -48,21 +49,21 @@ class DevicePrinter {
   String get address => isBluetooth ? (mac ?? '') : '${host ?? ''}:$port';
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'label': label,
-        'transport': transport.key,
-        if (host != null) 'host': host,
-        'port': port,
-        if (mac != null) 'mac': mac,
-      };
+    'id': id,
+    'label': label,
+    'transport': transport.key,
+    if (host != null) 'host': host,
+    'port': port,
+    if (mac != null) 'mac': mac,
+  };
 
   /// Back-compat: entries saved before transport existed default to wifi.
   factory DevicePrinter.fromJson(Map<String, dynamic> j) => DevicePrinter(
-        id: j['id'] as String,
-        label: j['label'] as String,
-        transport: PrinterTransport.fromKey(j['transport'] as String?),
-        host: j['host'] as String?,
-        port: (j['port'] as num?)?.toInt() ?? 9100,
-        mac: j['mac'] as String?,
-      );
+    id: j['id'] as String,
+    label: j['label'] as String,
+    transport: PrinterTransport.fromKey(j['transport'] as String?),
+    host: j['host'] as String?,
+    port: (j['port'] as num?)?.toInt() ?? 9100,
+    mac: j['mac'] as String?,
+  );
 }

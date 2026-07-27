@@ -31,12 +31,15 @@ class VenueEditScreen extends ConsumerStatefulWidget {
 }
 
 class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.venue.name);
-  late final TextEditingController _address =
-      TextEditingController(text: widget.venue.address);
-  late final TextEditingController _plan =
-      TextEditingController(text: widget.venue.plan);
+  late final TextEditingController _name = TextEditingController(
+    text: widget.venue.name,
+  );
+  late final TextEditingController _address = TextEditingController(
+    text: widget.venue.address,
+  );
+  late final TextEditingController _plan = TextEditingController(
+    text: widget.venue.plan,
+  );
 
   late String _billingStatus = _normBilling(widget.venue.billingStatus);
   late DateTime? _paidUntil = widget.venue.paidUntil;
@@ -84,7 +87,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final nameChanged = newName != v.name;
     final addressChanged = newAddress != v.address;
     final planChanged = newPlan != v.plan;
-    final billingStatusChanged = _billingStatus != _normBilling(v.billingStatus);
+    final billingStatusChanged =
+        _billingStatus != _normBilling(v.billingStatus);
     final paidUntilChanged = _paidUntil != v.paidUntil;
 
     if (!nameChanged &&
@@ -144,16 +148,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final forVenue = (admins.valueOrNull ?? const <AdminProfile>[])
         .where((a) => a.venueId == v.id)
         .toList();
-    final venueAdmins = forVenue
-        .where((a) => a.role == AdminRole.admin)
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final venueAdmins =
+        forVenue.where((a) => a.role == AdminRole.admin).toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
     // Owners (read-only report viewers, ADR-0036) are listed separately and
     // also block venue delete — a venue with anyone attached can't be deleted.
-    final venueOwners = forVenue
-        .where((a) => a.role == AdminRole.owner)
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final venueOwners =
+        forVenue.where((a) => a.role == AdminRole.owner).toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(
       backgroundColor: sc.bg0,
@@ -161,23 +163,34 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         backgroundColor: sc.bg0,
         elevation: 0,
         iconTheme: IconThemeData(color: sc.textHi),
-        title: Text('Edit venue',
-            style: SatType.sans(
-                size: 18, weight: FontWeight.w600, color: sc.textHi)),
+        title: Text(
+          'Edit venue',
+          style: SatType.sans(
+            size: 18,
+            weight: FontWeight.w600,
+            color: sc.textHi,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: _busy || !_nameValid ? null : _save,
-            child: Text('Simpan',
-                style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w700,
-                    color: _busy || !_nameValid ? sc.textLo : sc.accentText)),
+            child: Text(
+              'Simpan',
+              style: SatType.sans(
+                size: 14,
+                weight: FontWeight.w700,
+                color: _busy || !_nameValid ? sc.textLo : sc.accentText,
+              ),
+            ),
           ),
         ],
         bottom: _busy
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(2),
-                child: LinearProgressIndicator(minHeight: 2, color: sc.accentText),
+                child: LinearProgressIndicator(
+                  minHeight: 2,
+                  color: sc.accentText,
+                ),
               )
             : null,
       ),
@@ -221,17 +234,25 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           const SizedBox(height: 14),
           _paidUntilRow(sc),
           const SizedBox(height: 28),
-          _principalSection(sc, admins, venueAdmins,
-              role: 'admin',
-              label: 'ADMIN',
-              addLabel: 'Tambah admin',
-              emptyMsg: 'Belum ada admin untuk venue ini.'),
+          _principalSection(
+            sc,
+            admins,
+            venueAdmins,
+            role: 'admin',
+            label: 'ADMIN',
+            addLabel: 'Tambah admin',
+            emptyMsg: 'Belum ada admin untuk venue ini.',
+          ),
           const SizedBox(height: 28),
-          _principalSection(sc, admins, venueOwners,
-              role: 'owner',
-              label: 'PEMILIK (LAPORAN)',
-              addLabel: 'Tambah pemilik',
-              emptyMsg: 'Belum ada pemilik untuk venue ini.'),
+          _principalSection(
+            sc,
+            admins,
+            venueOwners,
+            role: 'owner',
+            label: 'PEMILIK (LAPORAN)',
+            addLabel: 'Tambah pemilik',
+            emptyMsg: 'Belum ada pemilik untuk venue ini.',
+          ),
           const SizedBox(height: 32),
           _dangerZone(sc, [...venueAdmins, ...venueOwners]),
         ],
@@ -263,19 +284,24 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         ),
         const SizedBox(height: 12),
         if (all.hasError)
-          Text('Gagal memuat: ${fleetErrText(all.error!)}',
-              style: SatType.sans(size: 12, color: sc.urgent))
+          Text(
+            'Gagal memuat: ${fleetErrText(all.error!)}',
+            style: SatType.sans(size: 12, color: sc.urgent),
+          )
         else if (loading)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Center(
-                child: CircularProgressIndicator(color: sc.accentText)),
+              child: CircularProgressIndicator(color: sc.accentText),
+            ),
           )
         else if (rows.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Text(emptyMsg,
-                style: SatType.sans(size: 13, color: sc.textLo)),
+            child: Text(
+              emptyMsg,
+              style: SatType.sans(size: 13, color: sc.textLo),
+            ),
           )
         else
           for (var i = 0; i < rows.length; i++) ...[
@@ -318,20 +344,31 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   void _onAdminAction(AdminProfile a, String k) {
     switch (k) {
       case 'activate':
-        _run(() => _svc.setAdminStatus(a.uid, AdminStatus.active),
-            '${a.name} diaktifkan');
+        _run(
+          () => _svc.setAdminStatus(a.uid, AdminStatus.active),
+          '${a.name} diaktifkan',
+        );
       case 'suspend':
-        _run(() => _svc.setAdminStatus(a.uid, AdminStatus.suspended),
-            '${a.name} ditangguhkan');
+        _run(
+          () => _svc.setAdminStatus(a.uid, AdminStatus.suspended),
+          '${a.name} ditangguhkan',
+        );
       case 'ban':
-        _run(() => _svc.setAdminStatus(a.uid, AdminStatus.banned),
-            '${a.name} diblokir');
+        _run(
+          () => _svc.setAdminStatus(a.uid, AdminStatus.banned),
+          '${a.name} diblokir',
+        );
       case 'reset':
-        _run(() => _svc.resetAdminPassword(a.email!),
-            'Link reset dibuat untuk ${a.email}');
+        _run(
+          () => _svc.resetAdminPassword(a.email!),
+          'Link reset dibuat untuk ${a.email}',
+        );
       case 'delete':
-        _confirm('Hapus ${a.name}?', 'Akun login & datanya dihapus permanen.',
-            () => _run(() => _svc.deleteAdmin(a.uid), '${a.name} dihapus'));
+        _confirm(
+          'Hapus ${a.name}?',
+          'Akun login & datanya dihapus permanen.',
+          () => _run(() => _svc.deleteAdmin(a.uid), '${a.name} dihapus'),
+        );
     }
   }
 
@@ -345,32 +382,38 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text('Tambah $roleLabel · ${widget.venue.name}',
-            style: SatType.sans(size: 17, color: sc.textHi)),
+        title: Text(
+          'Tambah $roleLabel · ${widget.venue.name}',
+          style: SatType.sans(size: 17, color: sc.textHi),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                controller: name,
-                decoration: const InputDecoration(labelText: 'Nama')),
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Nama'),
+            ),
             const SizedBox(height: 12),
             TextField(
-                controller: email,
-                decoration: const InputDecoration(labelText: 'Email')),
+              controller: email,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
             const SizedBox(height: 12),
             TextField(
-                controller: pw,
-                decoration:
-                    const InputDecoration(labelText: 'Password awal')),
+              controller: pw,
+              decoration: const InputDecoration(labelText: 'Password awal'),
+            ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Simpan')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Simpan'),
+          ),
         ],
       ),
     );
@@ -381,13 +424,15 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       return;
     }
     await _run(
-        () => _svc.createAdmin(
-            email: email.text,
-            password: pw.text,
-            name: name.text,
-            venueId: widget.venue.id,
-            role: role),
-        '${role == 'owner' ? 'Pemilik' : 'Admin'} dibuat');
+      () => _svc.createAdmin(
+        email: email.text,
+        password: pw.text,
+        name: name.text,
+        venueId: widget.venue.id,
+        role: role,
+      ),
+      '${role == 'owner' ? 'Pemilik' : 'Admin'} dibuat',
+    );
   }
 
   // ── Danger zone ────────────────────────────────────────────────────────────
@@ -404,12 +449,15 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('ZONA BAHAYA',
-              style: SatType.mono(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: sc.urgent)),
+          Text(
+            'ZONA BAHAYA',
+            style: SatType.mono(
+              size: 11,
+              weight: FontWeight.w700,
+              letterSpacing: 2,
+              color: sc.urgent,
+            ),
+          ),
           const SizedBox(height: 10),
           Text(
             blocked
@@ -430,15 +478,20 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.delete_outline,
-                        size: 18,
-                        color: blocked || _busy ? sc.textLo : sc.bg0),
+                    Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: blocked || _busy ? sc.textLo : sc.bg0,
+                    ),
                     const SizedBox(width: 8),
-                    Text('Hapus venue',
-                        style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w700,
-                            color: blocked || _busy ? sc.textLo : sc.bg0)),
+                    Text(
+                      'Hapus venue',
+                      style: SatType.sans(
+                        size: 14,
+                        weight: FontWeight.w700,
+                        color: blocked || _busy ? sc.textLo : sc.bg0,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -469,8 +522,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         content: Text(body, style: SatType.sans(size: 14, color: sc.textMd)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: sc.urgent),
             onPressed: () {
@@ -484,9 +538,15 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     );
   }
 
-  Widget _sectionLabel(SatColors sc, String text) => Text(text,
-      style: SatType.mono(
-          size: 11, weight: FontWeight.w700, letterSpacing: 2, color: sc.accentText));
+  Widget _sectionLabel(SatColors sc, String text) => Text(
+    text,
+    style: SatType.mono(
+      size: 11,
+      weight: FontWeight.w700,
+      letterSpacing: 2,
+      color: sc.accentText,
+    ),
+  );
 
   Widget _paidUntilRow(SatColors sc) {
     final p = _paidUntil;
@@ -506,12 +566,19 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Berlaku sampai (paidUntil)',
-                    style: SatType.sans(size: 12, color: sc.textMd)),
+                Text(
+                  'Berlaku sampai (paidUntil)',
+                  style: SatType.sans(size: 12, color: sc.textMd),
+                ),
                 const SizedBox(height: 2),
-                Text(label,
-                    style: SatType.sans(
-                        size: 15, weight: FontWeight.w600, color: sc.textHi)),
+                Text(
+                  label,
+                  style: SatType.sans(
+                    size: 15,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                ),
               ],
             ),
           ),
@@ -523,9 +590,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             ),
           TextButton(
             onPressed: _pickPaidUntil,
-            child: Text('Pilih',
-                style: SatType.sans(
-                    size: 14, weight: FontWeight.w600, color: sc.accentText)),
+            child: Text(
+              'Pilih',
+              style: SatType.sans(
+                size: 14,
+                weight: FontWeight.w600,
+                color: sc.accentText,
+              ),
+            ),
           ),
         ],
       ),

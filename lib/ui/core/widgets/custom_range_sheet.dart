@@ -24,10 +24,8 @@ Future<(DateTime, DateTime)?> showCustomRangeSheet(
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: sc.bg1,
-    builder: (_) => _CustomRangeSheet(
-      initialFrom: initialFrom,
-      initialTo: initialTo,
-    ),
+    builder: (_) =>
+        _CustomRangeSheet(initialFrom: initialFrom, initialTo: initialTo),
   );
 }
 
@@ -117,9 +115,13 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _field(context, 'Mulai', _from, () => _pick(true))),
+                Expanded(
+                  child: _field(context, 'Mulai', _from, () => _pick(true)),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _field(context, 'Selesai', _to, () => _pick(false))),
+                Expanded(
+                  child: _field(context, 'Selesai', _to, () => _pick(false)),
+                ),
               ],
             ),
             if (err != null) ...[
@@ -127,10 +129,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
               Text(err, style: SatType.sans(size: 12, color: sc.urgent)),
             ],
             const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              child: _applyButton(context),
-            ),
+            SizedBox(width: double.infinity, child: _applyButton(context)),
           ],
         ),
       ),
@@ -138,7 +137,11 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
   }
 
   Widget _field(
-      BuildContext context, String label, DateTime? value, VoidCallback onTap) {
+    BuildContext context,
+    String label,
+    DateTime? value,
+    VoidCallback onTap,
+  ) {
     final sc = context.sat;
     final set = value != null;
     return GestureDetector(
@@ -153,20 +156,24 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label.toUpperCase(),
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.0,
-                  color: sc.textLo,
-                )),
+            Text(
+              label.toUpperCase(),
+              style: SatType.mono(
+                size: 9,
+                weight: FontWeight.w600,
+                letterSpacing: 1.0,
+                color: sc.textLo,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(set ? _fmt(value) : 'Pilih',
-                style: SatType.sans(
-                  size: 14,
-                  weight: FontWeight.w500,
-                  color: set ? sc.accentText : sc.textLo,
-                )),
+            Text(
+              set ? _fmt(value) : 'Pilih',
+              style: SatType.sans(
+                size: 14,
+                weight: FontWeight.w500,
+                color: set ? sc.accentText : sc.textLo,
+              ),
+            ),
           ],
         ),
       ),
@@ -184,19 +191,31 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
           color: _valid ? sc.accent : sc.bg3,
           borderRadius: SatR.a(14),
         ),
-        child: Text('Terapkan',
-            style: SatType.sans(
-              size: 15,
-              weight: FontWeight.w700,
-              color: _valid ? sc.accentInk : sc.textLo,
-            )),
+        child: Text(
+          'Terapkan',
+          style: SatType.sans(
+            size: 15,
+            weight: FontWeight.w700,
+            color: _valid ? sc.accentInk : sc.textLo,
+          ),
+        ),
       ),
     );
   }
 
   static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
   ];
 
   String _fmt(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';

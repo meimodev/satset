@@ -34,18 +34,17 @@ class TagBadgeRow extends StatelessWidget {
             Container(
               width: 14,
               height: 14,
-              decoration: SatBox.d(
-                color: bg,
-                borderRadius: SatR.a(4),
-              ),
+              decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
               alignment: Alignment.center,
-              child: Text(tagsById[id]?.code ?? '?',
-                  style: SatType.mono(
-                    size: 8,
-                    weight: FontWeight.w600,
-                    color: fg,
-                    letterSpacing: 0,
-                  )),
+              child: Text(
+                tagsById[id]?.code ?? '?',
+                style: SatType.mono(
+                  size: 8,
+                  weight: FontWeight.w600,
+                  color: fg,
+                  letterSpacing: 0,
+                ),
+              ),
             ),
         ],
       ),
@@ -84,25 +83,29 @@ class MenuTagBadges extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (allergens.isNotEmpty)
-            Row(children: [
-              TagBadgeRow(
-                ids: allergens,
-                tagsById: tagsById,
-                fg: sc.urgent,
-                bg: sc.urgentSoft,
-              ),
-            ]),
+            Row(
+              children: [
+                TagBadgeRow(
+                  ids: allergens,
+                  tagsById: tagsById,
+                  fg: sc.urgent,
+                  bg: sc.urgentSoft,
+                ),
+              ],
+            ),
           if (dietary.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(top: allergens.isNotEmpty ? 3 : 0),
-              child: Row(children: [
-                TagBadgeRow(
-                  ids: dietary,
-                  tagsById: tagsById,
-                  fg: sc.info,
-                  bg: sc.infoSoft,
-                ),
-              ]),
+              child: Row(
+                children: [
+                  TagBadgeRow(
+                    ids: dietary,
+                    tagsById: tagsById,
+                    fg: sc.info,
+                    bg: sc.infoSoft,
+                  ),
+                ],
+              ),
             ),
         ],
       ),

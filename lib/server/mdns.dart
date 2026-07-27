@@ -22,9 +22,7 @@ class SatSetAdvertiser {
     String version = 'unknown',
     String venueId = '',
   }) async {
-    final name = (label == null || label.isEmpty)
-        ? _defaultName()
-        : label;
+    final name = (label == null || label.isEmpty) ? _defaultName() : label;
     final service = BonsoirService(
       name: name,
       type: '_satset._tcp',

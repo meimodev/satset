@@ -11,22 +11,32 @@ enum ExportFormat { csv, pdf }
 
 extension ExportFormatX on ExportFormat {
   String get ext => switch (this) {
-        ExportFormat.csv => 'csv',
-        ExportFormat.pdf => 'pdf',
-      };
+    ExportFormat.csv => 'csv',
+    ExportFormat.pdf => 'pdf',
+  };
   String get mime => switch (this) {
-        ExportFormat.csv => 'text/csv',
-        ExportFormat.pdf => 'application/pdf',
-      };
+    ExportFormat.csv => 'text/csv',
+    ExportFormat.pdf => 'application/pdf',
+  };
   String get label => switch (this) {
-        ExportFormat.csv => 'CSV',
-        ExportFormat.pdf => 'PDF',
-      };
+    ExportFormat.csv => 'CSV',
+    ExportFormat.pdf => 'PDF',
+  };
 }
 
 const _idMonthsShort = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
 ];
 
 /// Short Indonesian span for a committed custom window, e.g. `12 Jun – 15 Jun`.
@@ -59,9 +69,10 @@ String _rangeSlug(ReportRange r, {DateTime? from, DateTime? to}) {
     ReportRange.d7 => '7-hari',
     ReportRange.d30 => '30-hari',
     ReportRange.month => 'bulan-ini',
-    ReportRange.custom => (from != null && to != null)
-        ? 'khusus-${stamp(from)}-${stamp(to)}'
-        : 'khusus',
+    ReportRange.custom =>
+      (from != null && to != null)
+          ? 'khusus-${stamp(from)}-${stamp(to)}'
+          : 'khusus',
   };
 }
 

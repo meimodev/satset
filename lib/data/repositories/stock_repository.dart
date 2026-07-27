@@ -43,7 +43,9 @@ class StockApi {
 
   Future<List<StockMovement>> movements(String id, {int limit = 100}) async {
     if (!_paired) return const [];
-    final raw = await _api.getJson('/stock/ingredients/$id/movements?limit=$limit');
+    final raw = await _api.getJson(
+      '/stock/ingredients/$id/movements?limit=$limit',
+    );
     return [
       for (final m in (raw as List))
         StockMovement.fromJson((m as Map).cast<String, dynamic>()),
@@ -130,12 +132,12 @@ final ingredientsProvider = FutureProvider.autoDispose<List<Ingredient>>(
 );
 
 /// One item's recipes, for the menu item editor.
-final itemRecipesProvider =
-    FutureProvider.autoDispose.family<ItemRecipes, String>(
-  (ref, itemId) => ref.read(stockApiProvider).recipes(itemId),
-);
+final itemRecipesProvider = FutureProvider.autoDispose
+    .family<ItemRecipes, String>(
+      (ref, itemId) => ref.read(stockApiProvider).recipes(itemId),
+    );
 
-final stockMovementsProvider =
-    FutureProvider.autoDispose.family<List<StockMovement>, String>(
-  (ref, id) => ref.read(stockApiProvider).movements(id),
-);
+final stockMovementsProvider = FutureProvider.autoDispose
+    .family<List<StockMovement>, String>(
+      (ref, id) => ref.read(stockApiProvider).movements(id),
+    );

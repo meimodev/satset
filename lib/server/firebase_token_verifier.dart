@@ -33,7 +33,7 @@ class VerifiedFirebaseAdmin {
 /// offline, so a brief outage doesn't lock out admin-clients.
 class FirebaseTokenVerifier {
   FirebaseTokenVerifier({required this.projectId, http.Client? client})
-      : _http = client ?? http.Client();
+    : _http = client ?? http.Client();
 
   /// Firebase project id (matches `android/app/google-services.json`). Both the
   /// `aud` and the `iss` suffix of a valid ID token must equal this.
@@ -78,9 +78,11 @@ class FirebaseTokenVerifier {
 
     final String? kid;
     try {
-      final header = (jsonDecode(
-              utf8.decode(base64Url.decode(base64Url.normalize(parts[0]))))
-          as Map);
+      final header =
+          (jsonDecode(
+                utf8.decode(base64Url.decode(base64Url.normalize(parts[0]))),
+              )
+              as Map);
       kid = header['kid'] as String?;
     } catch (_) {
       return null;

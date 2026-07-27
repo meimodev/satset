@@ -42,25 +42,25 @@ class OrderHistoryLine {
   bool get isVoided => status == 'voided';
 
   static OrderHistoryLine fromJson(Map<String, dynamic> j) => OrderHistoryLine(
-        sentAt: DateTime.parse(j['sentAt'] as String),
-        name: j['name'] as String? ?? '',
-        variantName: j['variantName'] as String? ?? '',
-        course: j['course'] as String? ?? '',
-        qty: (j['qty'] as num?)?.toInt() ?? 1,
-        price: (j['price'] as num?)?.toInt() ?? 0,
-        lineTotal: (j['lineTotal'] as num?)?.toInt() ?? 0,
-        status: j['status'] as String? ?? '',
-        modifiers: [
-          for (final m in (j['modifiers'] as List? ?? const [])) m as String,
-        ],
-        readyAt: j['readyAt'] == null
-            ? null
-            : DateTime.parse(j['readyAt'] as String),
-        servedAt: j['servedAt'] == null
-            ? null
-            : DateTime.parse(j['servedAt'] as String),
-        voidReasonLabel: j['voidReasonLabel'] as String?,
-      );
+    sentAt: DateTime.parse(j['sentAt'] as String),
+    name: j['name'] as String? ?? '',
+    variantName: j['variantName'] as String? ?? '',
+    course: j['course'] as String? ?? '',
+    qty: (j['qty'] as num?)?.toInt() ?? 1,
+    price: (j['price'] as num?)?.toInt() ?? 0,
+    lineTotal: (j['lineTotal'] as num?)?.toInt() ?? 0,
+    status: j['status'] as String? ?? '',
+    modifiers: [
+      for (final m in (j['modifiers'] as List? ?? const [])) m as String,
+    ],
+    readyAt: j['readyAt'] == null
+        ? null
+        : DateTime.parse(j['readyAt'] as String),
+    servedAt: j['servedAt'] == null
+        ? null
+        : DateTime.parse(j['servedAt'] as String),
+    voidReasonLabel: j['voidReasonLabel'] as String?,
+  );
 }
 
 /// One tender recorded against a receipt (ADR-0031). `cashierName` is resolved
@@ -104,6 +104,7 @@ class OrderHistoryReceipt {
   final String label;
   final String mode;
   final int subtotal;
+
   /// Total give-back on this receipt (line + whole-order). ADR-0037.
   final int discountAmount;
   final int serviceAmount;
@@ -176,7 +177,8 @@ class OrderHistoryVisit {
   Iterable<OrderHistoryPayment> get allPayments =>
       receipts.expand((r) => r.payments);
 
-  static OrderHistoryVisit fromJson(Map<String, dynamic> j) => OrderHistoryVisit(
+  static OrderHistoryVisit fromJson(Map<String, dynamic> j) =>
+      OrderHistoryVisit(
         sessionId: j['sessionId'] as String? ?? '',
         tableLabel: j['tableLabel'] as String? ?? '—',
         kind: j['kind'] as String? ?? 'dineIn',
@@ -242,21 +244,23 @@ class OrderHistory {
 /// caller can surface it; the order board stays oblivious either way.
 final orderHistoryFetcherProvider =
     Provider<Future<OrderHistory> Function(ReportsQuery)>(
-  (ref) => (ReportsQuery query) async {
-    final api = ref.read(apiClientProvider);
-    final raw = await api.getJson(
-      '/orders/history',
-      // Reuse the report query's range encoding (incl. custom from/to) so the
-      // order export always matches the active timeline chip (ADR-0031).
-      query: query.toQueryParams()
-        ..remove('server')
-        ..remove('zone')
-        ..remove('category'),
+      (ref) => (ReportsQuery query) async {
+        final api = ref.read(apiClientProvider);
+        final raw = await api.getJson(
+          '/orders/history',
+          // Reuse the report query's range encoding (incl. custom from/to) so the
+          // order export always matches the active timeline chip (ADR-0031).
+          query: query.toQueryParams()
+            ..remove('server')
+            ..remove('zone')
+            ..remove('category'),
+        );
+        return OrderHistory.fromJson(
+          (raw as Map).cast<String, dynamic>(),
+          query.range,
+        );
+      },
     );
-    return OrderHistory.fromJson(
-        (raw as Map).cast<String, dynamic>(), query.range);
-  },
-);
 
 /// Fetches proof-photo bytes for every non-cash payment in a history window,
 /// keyed by `paymentId` (ADR-0031). Used only by the PDF export. Bounded
@@ -265,29 +269,29 @@ final orderHistoryFetcherProvider =
 /// never carried in the history JSON (ADR-0025).
 final orderHistoryPhotosFetcherProvider =
     Provider<Future<Map<String, Uint8List>> Function(OrderHistory)>(
-  (ref) => (OrderHistory history) async {
-    final api = ref.read(apiClientProvider);
-    final ids = [
-      for (final v in history.visits)
-        for (final p in v.allPayments)
-          if (p.hasPhoto && p.paymentId.isNotEmpty) p.paymentId,
-    ];
-    final out = <String, Uint8List>{};
-    const concurrency = 4;
-    for (var i = 0; i < ids.length; i += concurrency) {
-      final batch = ids.skip(i).take(concurrency).toList();
-      final results = await Future.wait([
-        for (final id in batch)
-          api
-              .getBytes('/settlement/history/payments/$id/photo')
-              .then<Uint8List?>((b) => b)
-              .catchError((_) => null),
-      ]);
-      for (var k = 0; k < batch.length; k++) {
-        final b = results[k];
-        if (b != null) out[batch[k]] = b;
-      }
-    }
-    return out;
-  },
-);
+      (ref) => (OrderHistory history) async {
+        final api = ref.read(apiClientProvider);
+        final ids = [
+          for (final v in history.visits)
+            for (final p in v.allPayments)
+              if (p.hasPhoto && p.paymentId.isNotEmpty) p.paymentId,
+        ];
+        final out = <String, Uint8List>{};
+        const concurrency = 4;
+        for (var i = 0; i < ids.length; i += concurrency) {
+          final batch = ids.skip(i).take(concurrency).toList();
+          final results = await Future.wait([
+            for (final id in batch)
+              api
+                  .getBytes('/settlement/history/payments/$id/photo')
+                  .then<Uint8List?>((b) => b)
+                  .catchError((_) => null),
+          ]);
+          for (var k = 0; k < batch.length; k++) {
+            final b = results[k];
+            if (b != null) out[batch[k]] = b;
+          }
+        }
+        return out;
+      },
+    );

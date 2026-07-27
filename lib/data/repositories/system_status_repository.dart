@@ -8,8 +8,9 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 
-final systemStatusStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final systemStatusStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class SystemStatusRepository extends StateNotifier<SystemStatusDto?> {
   SystemStatusRepository({required this.ref}) : super(null) {
@@ -35,8 +36,10 @@ class SystemStatusRepository extends StateNotifier<SystemStatusDto?> {
       ref.read(systemStatusStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
-      ref.read(systemStatusStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(systemStatusStatusProvider.notifier).state = AsyncValue.error(
+        e,
+        st,
+      );
     }
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type == WsEventTypes.systemStatus) {
@@ -71,4 +74,5 @@ class SystemStatusRepository extends StateNotifier<SystemStatusDto?> {
 
 final systemStatusProvider =
     StateNotifierProvider<SystemStatusRepository, SystemStatusDto?>(
-        (ref) => SystemStatusRepository(ref: ref));
+      (ref) => SystemStatusRepository(ref: ref),
+    );

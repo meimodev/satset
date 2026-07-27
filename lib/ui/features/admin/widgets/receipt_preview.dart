@@ -54,7 +54,9 @@ class ReceiptPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = data;
-    final thanks = d.thankYou.trim().isEmpty ? 'Terima kasih' : d.thankYou.trim();
+    final thanks = d.thankYou.trim().isEmpty
+        ? 'Terima kasih'
+        : d.thankYou.trim();
     return Container(
       width: 300,
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
@@ -85,8 +87,11 @@ class ReceiptPreview extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
-          _center(d.venueName.isEmpty ? 'NAMA VENUE' : d.venueName,
-              size: 15, weight: FontWeight.w700),
+          _center(
+            d.venueName.isEmpty ? 'NAMA VENUE' : d.venueName,
+            size: 15,
+            weight: FontWeight.w700,
+          ),
           if (d.tagline.trim().isNotEmpty) ...[
             const SizedBox(height: 2),
             _center(d.tagline.trim(), size: 10.5, color: _inkLo, italic: true),
@@ -150,11 +155,13 @@ class ReceiptPreview extends StatelessWidget {
     );
   }
 
-  Widget _center(String text,
-      {double size = 11,
-      Color color = _ink,
-      FontWeight weight = FontWeight.w400,
-      bool italic = false}) {
+  Widget _center(
+    String text, {
+    double size = 11,
+    Color color = _ink,
+    FontWeight weight = FontWeight.w400,
+    bool italic = false,
+  }) {
     return Text(
       text,
       textAlign: TextAlign.center,
@@ -165,8 +172,12 @@ class ReceiptPreview extends StatelessWidget {
     );
   }
 
-  Widget _line(String left, String right,
-      {bool strong = false, bool muted = false}) {
+  Widget _line(
+    String left,
+    String right, {
+    bool strong = false,
+    bool muted = false,
+  }) {
     final color = muted ? _inkLo : _ink;
     final w = strong ? FontWeight.w700 : FontWeight.w400;
     return Padding(
@@ -175,24 +186,28 @@ class ReceiptPreview extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Text(left,
-                style: SatType.mono(size: 11, color: color, weight: w)),
+            child: Text(
+              left,
+              style: SatType.mono(size: 11, color: color, weight: w),
+            ),
           ),
           const SizedBox(width: 8),
-          Text(right,
-              style: SatType.mono(size: 11, color: color, weight: w)),
+          Text(
+            right,
+            style: SatType.mono(size: 11, color: color, weight: w),
+          ),
         ],
       ),
     );
   }
 
   Widget _dashes() => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          '------------------------------',
-          maxLines: 1,
-          overflow: TextOverflow.clip,
-          style: SatType.mono(size: 11, color: _inkLo),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Text(
+      '------------------------------',
+      maxLines: 1,
+      overflow: TextOverflow.clip,
+      style: SatType.mono(size: 11, color: _inkLo),
+    ),
+  );
 }

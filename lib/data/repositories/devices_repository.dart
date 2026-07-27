@@ -8,8 +8,9 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 
-final devicesStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final devicesStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class DevicesRepository extends StateNotifier<List<DeviceDto>> {
   DevicesRepository({required this.ref}) : super(const <DeviceDto>[]) {
@@ -22,12 +23,12 @@ class DevicesRepository extends StateNotifier<List<DeviceDto>> {
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(devicesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(devicesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
-    ref.read(devicesStatusProvider.notifier).state =
-        const AsyncValue.loading();
+    ref.read(devicesStatusProvider.notifier).state = const AsyncValue.loading();
     await _refetch();
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       // device.paired carries a partial row + sessionActive is missing, so
@@ -49,12 +50,12 @@ class DevicesRepository extends StateNotifier<List<DeviceDto>> {
         for (final e in raw)
           DeviceDto.fromJson((e as Map).cast<String, dynamic>()),
       ];
-      ref.read(devicesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(devicesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
     } catch (e, st) {
       SatLog.repo('devices.fetch fail $e');
-      ref.read(devicesStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(devicesStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
   }
 
@@ -79,4 +80,5 @@ class DevicesRepository extends StateNotifier<List<DeviceDto>> {
 
 final devicesRepositoryProvider =
     StateNotifierProvider<DevicesRepository, List<DeviceDto>>(
-        (ref) => DevicesRepository(ref: ref));
+      (ref) => DevicesRepository(ref: ref),
+    );

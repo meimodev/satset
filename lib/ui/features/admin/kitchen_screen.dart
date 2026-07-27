@@ -43,10 +43,7 @@ const _kitchenInProgress = {
 
 // Served items only show under the "show completed" filter — once handed to
 // the table they're done with the kitchen.
-const _kitchenCompleted = {
-  TicketStatus.ready,
-  TicketStatus.served,
-};
+const _kitchenCompleted = {TicketStatus.ready, TicketStatus.served};
 
 List<_KOrder> _buildOrders(
   Map<String, List<Ticket>> byTable, {
@@ -75,8 +72,9 @@ List<_KOrder> _buildOrders(
       // `byTable` is keyed by visitId (ADR-0034); use the ticket's real
       // tableId so the card resolves a table name, not the raw visit id.
       // Falls back to the key for takeaway (no table).
-      final resolvedId =
-          tickets.first.tableId.isNotEmpty ? tickets.first.tableId : tableId;
+      final resolvedId = tickets.first.tableId.isNotEmpty
+          ? tickets.first.tableId
+          : tableId;
       final order = _KOrder(resolvedId, sentAt, earliest, tickets);
       if (!showCompleted && order.done == order.total) return;
       out.add(order);
@@ -145,7 +143,10 @@ class _CardEntranceState extends State<_CardEntrance>
         final t = _kEaseOutQuart.transform(_c.value);
         return Opacity(
           opacity: t,
-          child: Transform.translate(offset: Offset(0, (1 - t) * 12), child: child),
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 12),
+            child: child,
+          ),
         );
       },
       child: widget.child,
@@ -193,7 +194,9 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
     // All status changes round-trip through the server via the KDS
     // view model + AdvanceTicketStatusUseCase so other clients see them.
     void toggle(String tableId, String ticketId) {
-      ref.read(kitchenViewModelProvider.notifier).toggleCooked(tableId, ticketId);
+      ref
+          .read(kitchenViewModelProvider.notifier)
+          .toggleCooked(tableId, ticketId);
     }
 
     final filter = _CompletedFilter(
@@ -208,20 +211,25 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-              child: Text('Antrian Persiapan',
-                  style: SatType.sans(
-                    size: 26,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.5,
-                    color: sc.textHi,
-                  )),
+              child: Text(
+                'Antrian Persiapan',
+                style: SatType.sans(
+                  size: 26,
+                  weight: FontWeight.w600,
+                  letterSpacing: -0.5,
+                  color: sc.textHi,
+                ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Text(
                 '${orders.length} ORDER · $itemCount ITEM DI ANTRIAN PERSIAPAN',
                 style: SatType.mono(
-                    size: 11, color: sc.textLo, letterSpacing: 0.66),
+                  size: 11,
+                  color: sc.textLo,
+                  letterSpacing: 0.66,
+                ),
               ),
             ),
             Padding(
@@ -236,7 +244,9 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
                       itemCount: orders.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) => _CardEntrance(
-                        key: ValueKey('${orders[i].tableId}|${orders[i].sentAt}'),
+                        key: ValueKey(
+                          '${orders[i].tableId}|${orders[i].sentAt}',
+                        ),
                         animate: !reduceMotion,
                         child: _OrderCard(order: orders[i], onToggle: toggle),
                       ),
@@ -249,7 +259,8 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
 
     return AdminPage(
       title: 'Antrian Persiapan',
-      sub: '${orders.length} order aktif · $itemCount item · tahan untuk tandai selesai',
+      sub:
+          '${orders.length} order aktif · $itemCount item · tahan untuk tandai selesai',
       topTrailing: filter,
       children: [
         if (orders.isEmpty)
@@ -342,7 +353,8 @@ class _OrderCard extends ConsumerWidget {
     final table = tables.where((t) => t.id == order.tableId).firstOrNull;
     // Resolve a table-less (takeaway) order's label via the visit instead of
     // showing the raw visit id. See ADR-0026.
-    final tableLabel = table?.displayName ??
+    final tableLabel =
+        table?.displayName ??
         ref
             .watch(takeawayVisitsProvider)
             .where((v) => v.id == order.tableId)
@@ -369,27 +381,30 @@ class _OrderCard extends ConsumerWidget {
             child: Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                  decoration: SatBox.d(
-                    color: sc.bg3,
-                    borderRadius: SatR.a(9),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 6,
                   ),
-                  child: Text(tableLabel,
-                      style: SatType.mono(
-                        size: 15,
-                        weight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                        color: sc.textHi,
-                      )),
+                  decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(9)),
+                  child: Text(
+                    tableLabel,
+                    style: SatType.mono(
+                      size: 15,
+                      weight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      color: sc.textHi,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 10),
-                Text('${order.done}/${order.total} selesai',
-                    style: SatType.sans(
-                      size: 12,
-                      weight: FontWeight.w500,
-                      color: sc.textMd,
-                    )),
+                Text(
+                  '${order.done}/${order.total} selesai',
+                  style: SatType.sans(
+                    size: 12,
+                    weight: FontWeight.w500,
+                    color: sc.textMd,
+                  ),
+                ),
                 const Spacer(),
                 _AgePill(age: ageDur, sentAt: order.sentAt, color: ageColor),
               ],
@@ -398,8 +413,9 @@ class _OrderCard extends ConsumerWidget {
           ClipRRect(
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: progress),
-              duration:
-                  reduceMotion ? Duration.zero : const Duration(milliseconds: 420),
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 420),
               curve: _kEaseOutQuart,
               builder: (_, v, _) => LinearProgressIndicator(
                 value: v,
@@ -434,8 +450,11 @@ class _AgePill extends StatelessWidget {
   final Duration age;
   final String sentAt;
   final Color color;
-  const _AgePill(
-      {required this.age, required this.sentAt, required this.color});
+  const _AgePill({
+    required this.age,
+    required this.sentAt,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -451,20 +470,20 @@ class _AgePill extends StatelessWidget {
         children: [
           _PulseDot(color: color, pulse: age.inMinutes >= 10),
           const SizedBox(width: 6),
-          Text(formatElapsedId(age),
-              style: SatType.mono(
-                size: 12,
-                weight: FontWeight.w700,
-                letterSpacing: 0,
-                color: color,
-              )),
+          Text(
+            formatElapsedId(age),
+            style: SatType.mono(
+              size: 12,
+              weight: FontWeight.w700,
+              letterSpacing: 0,
+              color: color,
+            ),
+          ),
           const SizedBox(width: 6),
-          Text(sentAt,
-              style: SatType.mono(
-                size: 10,
-                color: sc.textLo,
-                letterSpacing: 0.4,
-              )),
+          Text(
+            sentAt,
+            style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.4),
+          ),
         ],
       ),
     );
@@ -540,8 +559,11 @@ class _ItemRow extends StatefulWidget {
   final Ticket ticket;
   final bool last;
   final VoidCallback onTap;
-  const _ItemRow(
-      {required this.ticket, required this.last, required this.onTap});
+  const _ItemRow({
+    required this.ticket,
+    required this.last,
+    required this.onTap,
+  });
 
   @override
   State<_ItemRow> createState() => _ItemRowState();
@@ -561,9 +583,7 @@ class _ItemRowState extends State<_ItemRow>
     super.didUpdateWidget(old);
     final cooked = _isDone(widget.ticket.status);
     final wasCooked = _isDone(old.ticket.status);
-    if (cooked &&
-        !wasCooked &&
-        !MediaQuery.of(context).disableAnimations) {
+    if (cooked && !wasCooked && !MediaQuery.of(context).disableAnimations) {
       _flash.forward(from: 0);
     }
   }
@@ -616,28 +636,24 @@ class _ItemRowState extends State<_ItemRow>
           constraints: const BoxConstraints(minHeight: 60),
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           decoration: SatBox.d(
-            border: Border(
-              top: SatB.side(color: sc.border0),
-            ),
+            border: Border(top: SatB.side(color: sc.border0)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 margin: const EdgeInsets.only(top: 1),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: SatBox.d(
-                  color: sc.bg3,
-                  borderRadius: SatR.a(6),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(6)),
+                child: Text(
+                  '×${ticket.qty}',
+                  style: SatType.mono(
+                    size: 13,
+                    weight: FontWeight.w700,
+                    letterSpacing: 0,
+                    color: cooked ? sc.textLo : sc.textHi,
+                  ),
                 ),
-                child: Text('×${ticket.qty}',
-                    style: SatType.mono(
-                      size: 13,
-                      weight: FontWeight.w700,
-                      letterSpacing: 0,
-                      color: cooked ? sc.textLo : sc.textHi,
-                    )),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -652,28 +668,30 @@ class _ItemRowState extends State<_ItemRow>
                             (ticket.variantName.isEmpty
                                 ? ''
                                 : ' · ${ticket.variantName}'),
-                        style: SatType.sans(
-                          size: 16,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          height: 1.25,
-                          color: sc.textHi,
-                        ).copyWith(
-                          decoration: cooked
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
+                        style:
+                            SatType.sans(
+                              size: 16,
+                              weight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                              height: 1.25,
+                              color: sc.textHi,
+                            ).copyWith(
+                              decoration: cooked
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
                       ),
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 3),
                           child: Text(
-                              ticket.modifiers.map((m) => m.display).join(' · '),
-                              style: SatType.sans(
-                                size: 13,
-                                color: sc.textMd,
-                                height: 1.4,
-                              )),
+                            ticket.modifiers.map((m) => m.display).join(' · '),
+                            style: SatType.sans(
+                              size: 13,
+                              color: sc.textMd,
+                              height: 1.4,
+                            ),
+                          ),
                         ),
                       if (ticket.note != null && ticket.note!.trim().isNotEmpty)
                         Padding(
@@ -715,11 +733,17 @@ class _CheckButtonState extends State<_CheckButton>
   // A confident pop (no elastic overshoot) when the cook marks an item done.
   late final Animation<double> _scale = TweenSequence<double>([
     TweenSequenceItem(
-      tween: Tween(begin: 1.0, end: 1.18).chain(CurveTween(curve: Curves.easeOut)),
+      tween: Tween(
+        begin: 1.0,
+        end: 1.18,
+      ).chain(CurveTween(curve: Curves.easeOut)),
       weight: 45,
     ),
     TweenSequenceItem(
-      tween: Tween(begin: 1.18, end: 1.0).chain(CurveTween(curve: Curves.easeOut)),
+      tween: Tween(
+        begin: 1.18,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeOut)),
       weight: 55,
     ),
   ]).animate(_pop);
@@ -817,15 +841,19 @@ class _EmptyQueueState extends State<_EmptyQueue>
             child: Icon(Icons.restaurant_rounded, size: 40, color: sc.textDim),
           ),
           const SizedBox(height: 14),
-          Text('Antrian masak kosong',
-              style: SatType.sans(
-                size: 16,
-                weight: FontWeight.w600,
-                color: sc.textMd,
-              )),
+          Text(
+            'Antrian masak kosong',
+            style: SatType.sans(
+              size: 16,
+              weight: FontWeight.w600,
+              color: sc.textMd,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text('Semua pesanan dapur sudah selesai dimasak.',
-              style: SatType.sans(size: 13, color: sc.textLo)),
+          Text(
+            'Semua pesanan dapur sudah selesai dimasak.',
+            style: SatType.sans(size: 13, color: sc.textLo),
+          ),
         ],
       ),
     );

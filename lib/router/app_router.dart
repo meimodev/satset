@@ -54,9 +54,11 @@ Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/stock')) return Capability.manageIngredients;
   if (loc.startsWith('/reports')) return Capability.viewReports;
   if (loc.startsWith('/venue/diskon')) return Capability.editSettings;
-  if (loc.startsWith('/menuadm') || loc.startsWith('/staff') ||
+  if (loc.startsWith('/menuadm') ||
+      loc.startsWith('/staff') ||
       loc.startsWith('/system') ||
-      loc.startsWith('/zone-admin') || loc.startsWith('/venue')) {
+      loc.startsWith('/zone-admin') ||
+      loc.startsWith('/venue')) {
     return Capability.manageStaff;
   }
   return null;
@@ -153,16 +155,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/tables', builder: (_, _) => const TablesScreen()),
           GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
           GoRoute(
-              path: '/guestorders',
-              builder: (_, _) => const GuestOrdersScreen()),
+            path: '/guestorders',
+            builder: (_, _) => const GuestOrdersScreen(),
+          ),
           GoRoute(path: '/kitchen', builder: (_, _) => const KitchenScreen()),
           GoRoute(path: '/kasir', builder: (_, _) => const CashierScreen()),
           GoRoute(path: '/venue', builder: (_, _) => const VenueHubScreen()),
           GoRoute(
-              path: '/venue-settings',
-              builder: (_, _) => const VenueSettingsScreen()),
+            path: '/venue-settings',
+            builder: (_, _) => const VenueSettingsScreen(),
+          ),
           GoRoute(path: '/alerts', builder: (_, _) => const AlertsScreen()),
-          GoRoute(path: '/zone-admin', builder: (_, _) => const ZoneAdminScreen()),
+          GoRoute(
+            path: '/zone-admin',
+            builder: (_, _) => const ZoneAdminScreen(),
+          ),
           GoRoute(path: '/menuadm', builder: (_, _) => const MenuAdminScreen()),
           GoRoute(path: '/stock', builder: (_, _) => const StockScreen()),
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
@@ -177,27 +184,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the new loc and removes its Scaffold before the transition ends).
       GoRoute(
         path: '/table/:id',
-        builder: (_, s) =>
-            TableDetailScreen(tableId: s.pathParameters['id']!),
+        builder: (_, s) => TableDetailScreen(tableId: s.pathParameters['id']!),
         routes: [
           GoRoute(
             path: 'menu',
-            builder: (_, s) =>
-                MenuScreen(tableId: s.pathParameters['id']!),
+            builder: (_, s) => MenuScreen(tableId: s.pathParameters['id']!),
           ),
           GoRoute(
             path: 'review',
-            builder: (_, s) =>
-                ReviewScreen(tableId: s.pathParameters['id']!),
+            builder: (_, s) => ReviewScreen(tableId: s.pathParameters['id']!),
           ),
           GoRoute(
             path: 'sent',
             builder: (_, s) {
-              final stations =
-                  (s.uri.queryParameters['stations'] ?? 'Dapur')
-                      .split(',')
-                      .where((x) => x.isNotEmpty)
-                      .toList();
+              final stations = (s.uri.queryParameters['stations'] ?? 'Dapur')
+                  .split(',')
+                  .where((x) => x.isNotEmpty)
+                  .toList();
               return SentScreen(
                 tableId: s.pathParameters['id']!,
                 stations: stations.isEmpty ? const ['Dapur'] : stations,
@@ -258,8 +261,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/menuadm/:id',
-        builder: (_, s) =>
-            MenuAdminItemScreen(id: s.pathParameters['id']!),
+        builder: (_, s) => MenuAdminItemScreen(id: s.pathParameters['id']!),
       ),
       // Preset diskon catalogue (ADR-0037), pushed from Venue Settings.
       GoRoute(

@@ -20,8 +20,9 @@ class ServerTls {
     required this.fingerprint,
   });
 
-  late final X509CertificateData _parsed =
-      X509Utils.x509CertificateFromPem(certPem);
+  late final X509CertificateData _parsed = X509Utils.x509CertificateFromPem(
+    certPem,
+  );
 
   /// Cert NotBefore (issued at). UTC.
   DateTime get certIssuedAt =>
@@ -54,8 +55,9 @@ class ServerTls {
         csr,
         365 * 5,
       );
-      keyPem =
-          CryptoUtils.encodeRSAPrivateKeyToPem(pair.privateKey as RSAPrivateKey);
+      keyPem = CryptoUtils.encodeRSAPrivateKeyToPem(
+        pair.privateKey as RSAPrivateKey,
+      );
       await certFile.writeAsString(certPem);
       await keyFile.writeAsString(keyPem);
     }

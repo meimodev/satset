@@ -9,12 +9,13 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 
-final venueSettingsStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final venueSettingsStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
   VenueSettingsRepository({required this.ref})
-      : super(const VenueSettingsDto()) {
+    : super(const VenueSettingsDto()) {
     Future.microtask(_bootstrap);
   }
 
@@ -32,15 +33,18 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         const AsyncValue.loading();
     try {
       final raw = await ref.read(apiClientProvider).getJson('/venue/settings');
-      final dto =
-          VenueSettingsDto.fromJson((raw as Map).cast<String, dynamic>());
+      final dto = VenueSettingsDto.fromJson(
+        (raw as Map).cast<String, dynamic>(),
+      );
       state = dto;
       ref.read(venueSettingsStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
       SatLog.repo('venueSettings.bootstrap fail $e');
-      ref.read(venueSettingsStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(venueSettingsStatusProvider.notifier).state = AsyncValue.error(
+        e,
+        st,
+      );
     }
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type != WsEventTypes.venueSettingsUpdated) return;
@@ -117,8 +121,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       serviceRateBps: serviceRateBps ?? state.serviceRateBps,
       serviceFixedAmount: serviceFixedAmount ?? state.serviceFixedAmount,
       taxAfterDiscount: taxAfterDiscount ?? state.taxAfterDiscount,
-      businessDayStartHour:
-          businessDayStartHour ?? state.businessDayStartHour,
+      businessDayStartHour: businessDayStartHour ?? state.businessDayStartHour,
       prepTargetMins: prepTargetMins ?? state.prepTargetMins,
       pickupTargetMins: pickupTargetMins ?? state.pickupTargetMins,
       ungreetedMins: ungreetedMins ?? state.ungreetedMins,
@@ -126,14 +129,12 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
           ungreetedEscalateMins ?? state.ungreetedEscalateMins,
       longStayMins: longStayMins ?? state.longStayMins,
       idleTableMins: idleTableMins ?? state.idleTableMins,
-      reservationGraceMins:
-          reservationGraceMins ?? state.reservationGraceMins,
+      reservationGraceMins: reservationGraceMins ?? state.reservationGraceMins,
       pendingReviewMins: pendingReviewMins ?? state.pendingReviewMins,
       ungreetedAlertEnabled:
           ungreetedAlertEnabled ?? state.ungreetedAlertEnabled,
       pickupAlertEnabled: pickupAlertEnabled ?? state.pickupAlertEnabled,
-      guestOrderingEnabled:
-          guestOrderingEnabled ?? state.guestOrderingEnabled,
+      guestOrderingEnabled: guestOrderingEnabled ?? state.guestOrderingEnabled,
       soundNewOrder: soundNewOrder ?? state.soundNewOrder,
       soundReady: soundReady ?? state.soundReady,
       soundVoid: soundVoid ?? state.soundVoid,
@@ -185,8 +186,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       final raw = await ref
           .read(apiClientProvider)
           .patchJson('/venue/settings', body);
-      state =
-          VenueSettingsDto.fromJson((raw as Map).cast<String, dynamic>());
+      state = VenueSettingsDto.fromJson((raw as Map).cast<String, dynamic>());
     } catch (e) {
       SatLog.repo('venueSettings.patch fail $e');
       state = prev;
@@ -211,23 +211,24 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
 
 final venueSettingsProvider =
     StateNotifierProvider<VenueSettingsRepository, VenueSettingsDto>(
-        (ref) => VenueSettingsRepository(ref: ref));
+      (ref) => VenueSettingsRepository(ref: ref),
+    );
 
 /// The venue logo's JPEG bytes (ADR-0033), or null when there is none. Keyed by
 /// `logoRev` so a new logo (or a clear) cache-busts. Fetched over the pinned
 /// client (see ApiClient.getBytes) — mirrors `menuPhotoBytesProvider`.
 final venueLogoBytesProvider = FutureProvider.autoDispose
     .family<Uint8List?, int>((ref, rev) async {
-  if (rev <= 0) return null;
-  if (ref.watch(apiConfigProvider) == null) return null;
-  try {
-    final bytes = await ref.read(apiClientProvider).getBytes('/venue/logo');
-    ref.keepAlive();
-    return bytes;
-  } catch (_) {
-    return null;
-  }
-});
+      if (rev <= 0) return null;
+      if (ref.watch(apiConfigProvider) == null) return null;
+      try {
+        final bytes = await ref.read(apiClientProvider).getBytes('/venue/logo');
+        ref.keepAlive();
+        return bytes;
+      } catch (_) {
+        return null;
+      }
+    });
 
 /// The server's current LAN address for the guest plane: the base URL guests
 /// reach by scanning a table QR (`http://<lan-ip>:8080`), plus the raw IP for

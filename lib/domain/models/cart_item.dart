@@ -7,8 +7,10 @@ class CartItem {
   final String name;
   final String variantId;
   final String variantName;
+
   /// Display labels (with derived sign) for the cart/review screens.
   final List<String> modifiers;
+
   /// Structured snapshot of each chosen option — what rides the wire and
   /// freezes onto the sent line. See ADR-0011.
   final List<TicketModifier> selectedModifiers;
@@ -16,6 +18,7 @@ class CartItem {
   final CourseId course;
   final int qty;
   final int unitPrice;
+
   /// Allergen tag ids (resolve against the menu snapshot's tags).
   final List<String> allergens;
 

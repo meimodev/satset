@@ -30,13 +30,12 @@ class PingState {
     Duration? p50,
     bool? reachable,
     int? consecutiveFailures,
-  }) =>
-      PingState(
-        latest: latest ?? this.latest,
-        p50: p50 ?? this.p50,
-        reachable: reachable ?? this.reachable,
-        consecutiveFailures: consecutiveFailures ?? this.consecutiveFailures,
-      );
+  }) => PingState(
+    latest: latest ?? this.latest,
+    p50: p50 ?? this.p50,
+    reachable: reachable ?? this.reachable,
+    consecutiveFailures: consecutiveFailures ?? this.consecutiveFailures,
+  );
 }
 
 class PingRepository extends StateNotifier<PingState> {
@@ -70,10 +69,7 @@ class PingRepository extends StateNotifier<PingState> {
     }
     final sw = Stopwatch()..start();
     try {
-      await ref
-          .read(apiClientProvider)
-          .getJson('/healthz')
-          .timeout(_timeout);
+      await ref.read(apiClientProvider).getJson('/healthz').timeout(_timeout);
       if (!mounted) return;
       final ms = sw.elapsedMilliseconds;
       _samples.addLast(ms);
@@ -81,9 +77,8 @@ class PingRepository extends StateNotifier<PingState> {
         _samples.removeFirst();
       }
       final sorted = List<int>.from(_samples)..sort();
-      final p50ms = sorted[(sorted.length * 0.5)
-          .floor()
-          .clamp(0, sorted.length - 1)];
+      final p50ms =
+          sorted[(sorted.length * 0.5).floor().clamp(0, sorted.length - 1)];
       state = PingState(
         latest: Duration(milliseconds: ms),
         p50: Duration(milliseconds: p50ms),
@@ -108,21 +103,22 @@ class PingRepository extends StateNotifier<PingState> {
 
 final pingProvider =
     StateNotifierProvider.autoDispose<PingRepository, PingState>(
-        (ref) => PingRepository(ref: ref));
+      (ref) => PingRepository(ref: ref),
+    );
 
 /// One-shot derived providers used by the System screen tiles.
 final kdsStationsProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final cfg = ref.watch(apiConfigProvider);
-  if (cfg == null) return const [];
-  final raw = await ref.read(apiClientProvider).getJson('/kds/stations') as List;
-  return [
-    for (final e in raw) (e as Map).cast<String, dynamic>(),
-  ];
-});
+      final cfg = ref.watch(apiConfigProvider);
+      if (cfg == null) return const [];
+      final raw =
+          await ref.read(apiClientProvider).getJson('/kds/stations') as List;
+      return [for (final e in raw) (e as Map).cast<String, dynamic>()];
+    });
 
-final queueDepthProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+final queueDepthProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
+  ref,
+) async {
   final cfg = ref.watch(apiConfigProvider);
   if (cfg == null) return const {'total': 0, 'byStation': <String, int>{}};
   final raw = await ref.read(apiClientProvider).getJson('/queue/depth');

@@ -34,24 +34,24 @@ class TakeawayVisit {
 
   bool get handedOver => handedOverAt != null;
   bool get billClosed => billClosedAt != null;
-  String get label =>
-      (tableLabel != null && tableLabel!.trim().isNotEmpty)
-          ? tableLabel!
-          : 'Bawa pulang';
+  String get label => (tableLabel != null && tableLabel!.trim().isNotEmpty)
+      ? tableLabel!
+      : 'Bawa pulang';
 
   factory TakeawayVisit.fromJson(Map<String, dynamic> j) => TakeawayVisit(
-        id: j['id'] as String,
-        tableLabel: j['tableLabel'] as String?,
-        guestName: j['guestName'] as String?,
-        guestNotes: j['guestNotes'] as String?,
-        openedAt: DateTime.tryParse(j['openedAt'] as String? ?? ''),
-        handedOverAt: DateTime.tryParse(j['tableFreedAt'] as String? ?? ''),
-        billClosedAt: DateTime.tryParse(j['billClosedAt'] as String? ?? ''),
-      );
+    id: j['id'] as String,
+    tableLabel: j['tableLabel'] as String?,
+    guestName: j['guestName'] as String?,
+    guestNotes: j['guestNotes'] as String?,
+    openedAt: DateTime.tryParse(j['openedAt'] as String? ?? ''),
+    handedOverAt: DateTime.tryParse(j['tableFreedAt'] as String? ?? ''),
+    billClosedAt: DateTime.tryParse(j['billClosedAt'] as String? ?? ''),
+  );
 }
 
-final takeawayStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final takeawayStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 /// Live list of active takeaway visits. Cheap to re-fetch, so any ticket / bill
 /// / session-close event triggers a refetch (membership changes when a takeaway
@@ -68,19 +68,20 @@ class TakeawayRepository extends StateNotifier<List<TakeawayVisit>> {
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(takeawayStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(takeawayStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     ref.read(takeawayStatusProvider.notifier).state =
         const AsyncValue.loading();
     try {
       await _refetch();
-      ref.read(takeawayStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(takeawayStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
     } catch (e, st) {
-      ref.read(takeawayStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(takeawayStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       switch (ev.type) {
@@ -108,12 +109,11 @@ class TakeawayRepository extends StateNotifier<List<TakeawayVisit>> {
     try {
       final cfg = ref.read(apiConfigProvider);
       if (cfg == null) return;
-      final raw = await ref
-          .read(apiClientProvider)
-          .getJson('/takeaway/visits') as List;
+      final raw =
+          await ref.read(apiClientProvider).getJson('/takeaway/visits') as List;
       state = [
         for (final e in raw)
-          TakeawayVisit.fromJson((e as Map).cast<String, dynamic>())
+          TakeawayVisit.fromJson((e as Map).cast<String, dynamic>()),
       ];
       SatLog.repo('takeaway.visits n=${state.length}');
     } catch (e) {
@@ -127,6 +127,6 @@ class TakeawayRepository extends StateNotifier<List<TakeawayVisit>> {
 
 final takeawayVisitsProvider =
     StateNotifierProvider<TakeawayRepository, List<TakeawayVisit>>((ref) {
-  ref.watch(apiConfigProvider);
-  return TakeawayRepository(ref: ref);
-});
+      ref.watch(apiConfigProvider);
+      return TakeawayRepository(ref: ref);
+    });

@@ -7,14 +7,13 @@ TimedLine _line({
   required DateTime start,
   DateTime? readyAt,
   required int targetMins,
-}) =>
-    TimedLine(
-      visitKey: visit,
-      course: course,
-      start: start,
-      readyAt: readyAt,
-      targetMins: targetMins,
-    );
+}) => TimedLine(
+  visitKey: visit,
+  course: course,
+  start: start,
+  readyAt: readyAt,
+  targetMins: targetMins,
+);
 
 void main() {
   final t1900 = DateTime(2026, 7, 26, 19);
@@ -114,10 +113,7 @@ void main() {
         _line(course: 'mains', start: t1900, targetMins: 25),
       ]);
       expect(courses.length, 2);
-      expect(
-        courses.map((c) => c.targetMins).toSet(),
-        {2, 25},
-      );
+      expect(courses.map((c) => c.targetMins).toSet(), {2, 25});
     });
 
     test('lines ordered apart but fired together group as one course', () {
@@ -146,15 +142,14 @@ void main() {
       String? seater = 'maya',
       String? me = 'budi',
       Set<String>? online = const {'maya', 'budi'},
-    }) =>
-        ungreetedCueFor(
-          age: Duration(minutes: ageMins),
-          ungreetedMins: 7,
-          escalateMins: 5,
-          seaterId: seater,
-          myUserId: me,
-          onlineUserIds: online,
-        );
+    }) => ungreetedCueFor(
+      age: Duration(minutes: ageMins),
+      ungreetedMins: 7,
+      escalateMins: 5,
+      seaterId: seater,
+      myUserId: me,
+      onlineUserIds: online,
+    );
 
     test('silent before the first threshold', () {
       expect(cue(ageMins: 6), UngreetedCue.none);
@@ -184,14 +179,14 @@ void main() {
       // Null is "cannot tell", NOT "everyone is signed out" — otherwise one
       // failed fetch cues the whole floor for every seated table.
       expect(cue(ageMins: 8, me: 'budi', online: null), UngreetedCue.none);
-      expect(cue(ageMins: 13, me: 'budi', online: null), UngreetedCue.floorWide);
+      expect(
+        cue(ageMins: 13, me: 'budi', online: null),
+        UngreetedCue.floorWide,
+      );
     });
 
     test('a table with no recorded seater goes wide at stage one', () {
-      expect(
-        cue(ageMins: 8, seater: null, me: 'budi'),
-        UngreetedCue.floorWide,
-      );
+      expect(cue(ageMins: 8, seater: null, me: 'budi'), UngreetedCue.floorWide);
     });
 
     test('an unauthenticated device never takes the targeted stage', () {

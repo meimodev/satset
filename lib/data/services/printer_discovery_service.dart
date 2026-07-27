@@ -10,8 +10,11 @@ class DiscoveredPrinter {
   final String name;
   final String host;
   final int port;
-  const DiscoveredPrinter(
-      {required this.name, required this.host, required this.port});
+  const DiscoveredPrinter({
+    required this.name,
+    required this.host,
+    required this.port,
+  });
 
   String get key => '$host:$port';
 }
@@ -67,32 +70,36 @@ class PrinterDiscoveryService {
           final d = BonsoirDiscovery(type: type);
           await d.ready;
           discoveries.add(d);
-          final sub = d.eventStream?.listen((ev) {
-            final svc = ev.service;
-            switch (ev.type) {
-              case BonsoirDiscoveryEventType.discoveryServiceFound:
-                if (svc != null) {
-                  unawaited(svc.resolve(d.serviceResolver));
-                }
-              case BonsoirDiscoveryEventType.discoveryServiceResolved:
-                if (svc is ResolvedBonsoirService) {
-                  final host = svc.host;
-                  if (host == null || host.isEmpty) return;
-                  final port = svc.port == 0 ? 9100 : svc.port;
-                  final p = DiscoveredPrinter(
+          final sub = d.eventStream?.listen(
+            (ev) {
+              final svc = ev.service;
+              switch (ev.type) {
+                case BonsoirDiscoveryEventType.discoveryServiceFound:
+                  if (svc != null) {
+                    unawaited(svc.resolve(d.serviceResolver));
+                  }
+                case BonsoirDiscoveryEventType.discoveryServiceResolved:
+                  if (svc is ResolvedBonsoirService) {
+                    final host = svc.host;
+                    if (host == null || host.isEmpty) return;
+                    final port = svc.port == 0 ? 9100 : svc.port;
+                    final p = DiscoveredPrinter(
                       name: svc.name.trim().isEmpty ? host : svc.name.trim(),
                       host: host,
-                      port: port);
-                  if (seen.add(p.key) && !controller.isClosed) {
-                    controller.add(p);
+                      port: port,
+                    );
+                    if (seen.add(p.key) && !controller.isClosed) {
+                      controller.add(p);
+                    }
                   }
-                }
-              default:
-                break;
-            }
-          }, onError: (Object e, StackTrace st) {
-            SatLog.err('printer discovery stream', e, st);
-          });
+                default:
+                  break;
+              }
+            },
+            onError: (Object e, StackTrace st) {
+              SatLog.err('printer discovery stream', e, st);
+            },
+          );
           if (sub != null) subs.add(sub);
           await d.start();
         }
@@ -109,5 +116,6 @@ class PrinterDiscoveryService {
   }
 }
 
-final printerDiscoveryServiceProvider =
-    Provider<PrinterDiscoveryService>((_) => PrinterDiscoveryService());
+final printerDiscoveryServiceProvider = Provider<PrinterDiscoveryService>(
+  (_) => PrinterDiscoveryService(),
+);

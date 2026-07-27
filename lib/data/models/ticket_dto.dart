@@ -23,6 +23,7 @@ class TicketDto with _$TicketDto {
   const factory TicketDto({
     required String id,
     required String tableId,
+
     /// Stable bill key (ADR-0024). Lets the KDS/board label table-less
     /// (takeaway) lines via the visit. Nullable for pre-v29 rows.
     String? visitId,
@@ -36,6 +37,7 @@ class TicketDto with _$TicketDto {
     required int price,
     required String status,
     required DateTime sentAt,
+
     /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
     DateTime? firedAt,
     DateTime? readyAt,

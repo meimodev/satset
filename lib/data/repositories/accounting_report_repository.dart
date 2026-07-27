@@ -13,6 +13,7 @@ class AccountingRevenue {
   final int voidAmount;
   final int service;
   final int tax;
+
   /// Deliberate revenue give-back — kept beside gross/void rather than folded
   /// into gross, so the cost of promos stays visible (ADR-0039).
   final int discount;

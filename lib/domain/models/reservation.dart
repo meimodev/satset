@@ -1,25 +1,25 @@
 enum ReservationStatus { pending, seated, noShow, cancelled }
 
 String reservationStatusKey(ReservationStatus s) => switch (s) {
-      ReservationStatus.pending => 'pending',
-      ReservationStatus.seated => 'seated',
-      ReservationStatus.noShow => 'noShow',
-      ReservationStatus.cancelled => 'cancelled',
-    };
+  ReservationStatus.pending => 'pending',
+  ReservationStatus.seated => 'seated',
+  ReservationStatus.noShow => 'noShow',
+  ReservationStatus.cancelled => 'cancelled',
+};
 
 ReservationStatus reservationStatusFromKey(String key) => switch (key) {
-      'seated' => ReservationStatus.seated,
-      'noShow' => ReservationStatus.noShow,
-      'cancelled' => ReservationStatus.cancelled,
-      _ => ReservationStatus.pending,
-    };
+  'seated' => ReservationStatus.seated,
+  'noShow' => ReservationStatus.noShow,
+  'cancelled' => ReservationStatus.cancelled,
+  _ => ReservationStatus.pending,
+};
 
 String reservationStatusLabel(ReservationStatus s) => switch (s) {
-      ReservationStatus.pending => 'Menunggu',
-      ReservationStatus.seated => 'Duduk',
-      ReservationStatus.noShow => 'No-show',
-      ReservationStatus.cancelled => 'Batal',
-    };
+  ReservationStatus.pending => 'Menunggu',
+  ReservationStatus.seated => 'Duduk',
+  ReservationStatus.noShow => 'No-show',
+  ReservationStatus.cancelled => 'Batal',
+};
 
 class Reservation {
   final String id;
@@ -60,22 +60,21 @@ class Reservation {
     Object? notes = _unset,
     DateTime? createdAt,
     Object? updatedAt = _unset,
-  }) =>
-      Reservation(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        phone: identical(phone, _unset) ? this.phone : phone as String?,
-        partySize: partySize ?? this.partySize,
-        expectedAt: expectedAt ?? this.expectedAt,
-        status: status ?? this.status,
-        zoneId: identical(zoneId, _unset) ? this.zoneId : zoneId as String?,
-        tableId: identical(tableId, _unset) ? this.tableId : tableId as String?,
-        notes: identical(notes, _unset) ? this.notes : notes as String?,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: identical(updatedAt, _unset)
-            ? this.updatedAt
-            : updatedAt as DateTime?,
-      );
+  }) => Reservation(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    phone: identical(phone, _unset) ? this.phone : phone as String?,
+    partySize: partySize ?? this.partySize,
+    expectedAt: expectedAt ?? this.expectedAt,
+    status: status ?? this.status,
+    zoneId: identical(zoneId, _unset) ? this.zoneId : zoneId as String?,
+    tableId: identical(tableId, _unset) ? this.tableId : tableId as String?,
+    notes: identical(notes, _unset) ? this.notes : notes as String?,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: identical(updatedAt, _unset)
+        ? this.updatedAt
+        : updatedAt as DateTime?,
+  );
 }
 
 const Object _unset = Object();

@@ -85,68 +85,59 @@ class DummyData {
   static const users = <AppUser>[maya, budi, rina, koki, bos];
 
   static List<Role> initialRoles() => <Role>[
-        Role(
-          id: roleAdminId,
-          name: 'Admin',
-          colorHex: 0xFFC08AFF,
-          capabilities: Capability.values.toSet(),
-        ),
-        Role(
-          id: roleManagerId,
-          name: 'Manager',
-          colorHex: 0xFF6DB5FF,
-          capabilities: const {
-            Capability.takeOrder,
-            Capability.modifyOrder,
-            Capability.voidItem,
-            Capability.compItem,
-            Capability.viewKds,
-            Capability.openDrawer,
-            Capability.applyDiscount,
-            Capability.settleBill,
-            Capability.refund,
-            Capability.closeShift,
-            Capability.editMenu,
-            Capability.markSoldOut,
-            Capability.adjustStock,
-            Capability.manageStaff,
-            Capability.viewReports,
-            Capability.editSettings,
-          },
-        ),
-        // The cashier role CONTEXT.md described but the seed never created —
-        // without it no seeded non-Admin user could reach the money screen.
-        // Deliberately WITHOUT applyDiscount (ADR-0037): a cashier reaches a
-        // discount through manager step-up unless the owner grants it. refund
-        // likewise stays manager-approved and is not auto-granted.
-        Role(
-          id: roleKasirId,
-          name: 'Kasir',
-          colorHex: 0xFF4DD487,
-          capabilities: const {
-            Capability.settleBill,
-            Capability.openDrawer,
-          },
-        ),
-        Role(
-          id: roleWaiterId,
-          name: 'Waiter',
-          colorHex: 0xFFFF9233,
-          capabilities: const {
-            Capability.takeOrder,
-            Capability.modifyOrder,
-          },
-        ),
-        Role(
-          id: roleKitchenId,
-          name: 'Kitchen',
-          colorHex: 0xFFFF5C5C,
-          capabilities: const {
-            Capability.viewKds,
-            Capability.markSoldOut,
-          },
-        ),
-      ];
+    Role(
+      id: roleAdminId,
+      name: 'Admin',
+      colorHex: 0xFFC08AFF,
+      capabilities: Capability.values.toSet(),
+    ),
+    Role(
+      id: roleManagerId,
+      name: 'Manager',
+      colorHex: 0xFF6DB5FF,
+      capabilities: const {
+        Capability.takeOrder,
+        Capability.modifyOrder,
+        Capability.voidItem,
+        Capability.compItem,
+        Capability.viewKds,
+        Capability.openDrawer,
+        Capability.applyDiscount,
+        Capability.settleBill,
+        Capability.refund,
+        Capability.closeShift,
+        Capability.editMenu,
+        Capability.markSoldOut,
+        Capability.adjustStock,
+        Capability.manageStaff,
+        Capability.viewReports,
+        Capability.editSettings,
+      },
+    ),
+    // The cashier role CONTEXT.md described but the seed never created —
+    // without it no seeded non-Admin user could reach the money screen.
+    // Deliberately WITHOUT applyDiscount (ADR-0037): a cashier reaches a
+    // discount through manager step-up unless the owner grants it. refund
+    // likewise stays manager-approved and is not auto-granted.
+    Role(
+      id: roleKasirId,
+      name: 'Kasir',
+      colorHex: 0xFF4DD487,
+      capabilities: const {Capability.settleBill, Capability.openDrawer},
+    ),
+    Role(
+      id: roleWaiterId,
+      name: 'Waiter',
+      colorHex: 0xFFFF9233,
+      capabilities: const {Capability.takeOrder, Capability.modifyOrder},
+    ),
+    Role(
+      id: roleKitchenId,
+      name: 'Kitchen',
+      colorHex: 0xFFFF5C5C,
+      capabilities: const {Capability.viewKds, Capability.markSoldOut},
+    ),
+  ];
 
   static AppUser? userById(String? id) {
     if (id == null) return null;
@@ -188,26 +179,158 @@ class DummyData {
   ];
 
   static const tables = <VenueTable>[
-    VenueTable(id: 'T1', zoneId: 'terrace', pax: 2, status: TableStatus.occupied, elapsed: '0:18', mine: true, openAmount: 245000, lastActorId: 'maya'),
-    VenueTable(id: 'T2', zoneId: 'terrace', pax: 4, status: TableStatus.ready, elapsed: '0:42', mine: true, openAmount: 612000, readyCount: 2, lastActorId: 'maya'),
-    VenueTable(id: 'T3', zoneId: 'terrace', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'T4', zoneId: 'terrace', pax: 6, status: TableStatus.pending, elapsed: '0:08', mine: true, lastActorId: 'maya'),
-    VenueTable(id: 'T5', zoneId: 'terrace', pax: 3, status: TableStatus.occupied, elapsed: '1:14', openAmount: 880000, lastActorId: 'rina'),
-    VenueTable(id: 'T6', zoneId: 'terrace', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'G1', zoneId: 'garden', pax: 4, status: TableStatus.occupied, elapsed: '0:32', openAmount: 425000, lastActorId: 'budi'),
-    VenueTable(id: 'G2', zoneId: 'garden', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'G3', zoneId: 'garden', pax: 5, status: TableStatus.occupied, elapsed: '0:54', openAmount: 690000, lastActorId: 'budi'),
-    VenueTable(id: 'G4', zoneId: 'garden', pax: 2, status: TableStatus.ready, elapsed: '0:21', openAmount: 180000, readyCount: 1, lastActorId: 'budi'),
-    VenueTable(id: 'I1', zoneId: 'indoor', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'I2', zoneId: 'indoor', pax: 4, status: TableStatus.occupied, elapsed: '0:46', openAmount: 535000, lastActorId: 'rina'),
-    VenueTable(id: 'I3', zoneId: 'indoor', pax: 2, status: TableStatus.pending, elapsed: '0:03', lastActorId: 'rina'),
-    VenueTable(id: 'I4', zoneId: 'indoor', pax: 4, status: TableStatus.occupied, elapsed: '1:32', openAmount: 1120000, lastActorId: 'rina'),
-    VenueTable(id: 'I5', zoneId: 'indoor', pax: 6, status: TableStatus.available),
-    VenueTable(id: 'I6', zoneId: 'indoor', pax: 2, status: TableStatus.occupied, elapsed: '0:12', openAmount: 95000, lastActorId: 'budi'),
-    VenueTable(id: 'B1', zoneId: 'bar', pax: 2, status: TableStatus.occupied, elapsed: '0:24', openAmount: 145000, lastActorId: 'maya'),
+    VenueTable(
+      id: 'T1',
+      zoneId: 'terrace',
+      pax: 2,
+      status: TableStatus.occupied,
+      elapsed: '0:18',
+      mine: true,
+      openAmount: 245000,
+      lastActorId: 'maya',
+    ),
+    VenueTable(
+      id: 'T2',
+      zoneId: 'terrace',
+      pax: 4,
+      status: TableStatus.ready,
+      elapsed: '0:42',
+      mine: true,
+      openAmount: 612000,
+      readyCount: 2,
+      lastActorId: 'maya',
+    ),
+    VenueTable(
+      id: 'T3',
+      zoneId: 'terrace',
+      pax: 2,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'T4',
+      zoneId: 'terrace',
+      pax: 6,
+      status: TableStatus.pending,
+      elapsed: '0:08',
+      mine: true,
+      lastActorId: 'maya',
+    ),
+    VenueTable(
+      id: 'T5',
+      zoneId: 'terrace',
+      pax: 3,
+      status: TableStatus.occupied,
+      elapsed: '1:14',
+      openAmount: 880000,
+      lastActorId: 'rina',
+    ),
+    VenueTable(
+      id: 'T6',
+      zoneId: 'terrace',
+      pax: 2,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'G1',
+      zoneId: 'garden',
+      pax: 4,
+      status: TableStatus.occupied,
+      elapsed: '0:32',
+      openAmount: 425000,
+      lastActorId: 'budi',
+    ),
+    VenueTable(
+      id: 'G2',
+      zoneId: 'garden',
+      pax: 2,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'G3',
+      zoneId: 'garden',
+      pax: 5,
+      status: TableStatus.occupied,
+      elapsed: '0:54',
+      openAmount: 690000,
+      lastActorId: 'budi',
+    ),
+    VenueTable(
+      id: 'G4',
+      zoneId: 'garden',
+      pax: 2,
+      status: TableStatus.ready,
+      elapsed: '0:21',
+      openAmount: 180000,
+      readyCount: 1,
+      lastActorId: 'budi',
+    ),
+    VenueTable(
+      id: 'I1',
+      zoneId: 'indoor',
+      pax: 2,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'I2',
+      zoneId: 'indoor',
+      pax: 4,
+      status: TableStatus.occupied,
+      elapsed: '0:46',
+      openAmount: 535000,
+      lastActorId: 'rina',
+    ),
+    VenueTable(
+      id: 'I3',
+      zoneId: 'indoor',
+      pax: 2,
+      status: TableStatus.pending,
+      elapsed: '0:03',
+      lastActorId: 'rina',
+    ),
+    VenueTable(
+      id: 'I4',
+      zoneId: 'indoor',
+      pax: 4,
+      status: TableStatus.occupied,
+      elapsed: '1:32',
+      openAmount: 1120000,
+      lastActorId: 'rina',
+    ),
+    VenueTable(
+      id: 'I5',
+      zoneId: 'indoor',
+      pax: 6,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'I6',
+      zoneId: 'indoor',
+      pax: 2,
+      status: TableStatus.occupied,
+      elapsed: '0:12',
+      openAmount: 95000,
+      lastActorId: 'budi',
+    ),
+    VenueTable(
+      id: 'B1',
+      zoneId: 'bar',
+      pax: 2,
+      status: TableStatus.occupied,
+      elapsed: '0:24',
+      openAmount: 145000,
+      lastActorId: 'maya',
+    ),
     VenueTable(id: 'B2', zoneId: 'bar', pax: 1, status: TableStatus.available),
     VenueTable(id: 'B3', zoneId: 'bar', pax: 3, status: TableStatus.available),
-    VenueTable(id: 'B4', zoneId: 'bar', pax: 2, status: TableStatus.occupied, elapsed: '0:38', openAmount: 270000, lastActorId: 'rina'),
+    VenueTable(
+      id: 'B4',
+      zoneId: 'bar',
+      pax: 2,
+      status: TableStatus.occupied,
+      elapsed: '0:38',
+      openAmount: 270000,
+      lastActorId: 'rina',
+    ),
   ];
 
   static const categories = <MenuCategory>[
@@ -288,7 +411,11 @@ class DummyData {
             ModifierOption(id: 'beef', name: 'Sapi', priceDelta: 15000),
             ModifierOption(id: 'prawn', name: 'Udang', priceDelta: 20000),
             ModifierOption(id: 'tofu', name: 'Tahu', priceDelta: -5000),
-            ModifierOption(id: 'none', name: 'Tanpa protein', priceDelta: -10000),
+            ModifierOption(
+              id: 'none',
+              name: 'Tanpa protein',
+              priceDelta: -10000,
+            ),
           ],
         ),
         ModifierGroup(
@@ -308,10 +435,26 @@ class DummyData {
           name: 'Tambahan',
           multi: true,
           options: [
-            ModifierOption(id: 'krupuk', name: 'Krupuk ekstra', priceDelta: 8000),
-            ModifierOption(id: 'satay', name: 'Sate Ayam (2 tusuk)', priceDelta: 25000),
-            ModifierOption(id: 'egg', name: 'Telur ceplok ekstra', priceDelta: 10000),
-            ModifierOption(id: 'sambal', name: 'Sambal di pinggir', priceDelta: 5000),
+            ModifierOption(
+              id: 'krupuk',
+              name: 'Krupuk ekstra',
+              priceDelta: 8000,
+            ),
+            ModifierOption(
+              id: 'satay',
+              name: 'Sate Ayam (2 tusuk)',
+              priceDelta: 25000,
+            ),
+            ModifierOption(
+              id: 'egg',
+              name: 'Telur ceplok ekstra',
+              priceDelta: 10000,
+            ),
+            ModifierOption(
+              id: 'sambal',
+              name: 'Sambal di pinggir',
+              priceDelta: 5000,
+            ),
           ],
         ),
       ],
@@ -320,7 +463,8 @@ class DummyData {
       id: 'rendang',
       name: 'Rendang Sapi',
       categoryId: 'mains',
-      description: 'Sapi rendang Padang, santan, serai, cabai. Dengan nasi uduk.',
+      description:
+          'Sapi rendang Padang, santan, serai, cabai. Dengan nasi uduk.',
       allergens: const ['nut'],
       prepTime: 14,
       basePrice: 145000,
@@ -333,7 +477,11 @@ class DummyData {
           options: [
             ModifierOption(id: 'coconut', name: 'Nasi uduk'),
             ModifierOption(id: 'steamed', name: 'Nasi putih'),
-            ModifierOption(id: 'no-rice', name: 'Tanpa nasi', priceDelta: -10000),
+            ModifierOption(
+              id: 'no-rice',
+              name: 'Tanpa nasi',
+              priceDelta: -10000,
+            ),
           ],
         ),
       ],
@@ -352,7 +500,8 @@ class DummyData {
       id: 'burger',
       name: 'Burger Wagyu',
       categoryId: 'mains',
-      description: 'Daging wagyu, keju, roti brioche, acar rumahan, kentang goreng',
+      description:
+          'Daging wagyu, keju, roti brioche, acar rumahan, kentang goreng',
       allergens: const ['gluten', 'dairy', 'egg'],
       prepTime: 13,
       basePrice: 165000,
@@ -396,7 +545,11 @@ class DummyData {
           options: [
             ModifierOption(id: 'vanilla', name: 'Vanila'),
             ModifierOption(id: 'coconut', name: 'Kelapa'),
-            ModifierOption(id: 'none', name: 'Tanpa es krim', priceDelta: -10000),
+            ModifierOption(
+              id: 'none',
+              name: 'Tanpa es krim',
+              priceDelta: -10000,
+            ),
           ],
         ),
       ],
@@ -487,32 +640,32 @@ class DummyData {
   /// omitted — it carries `manageStaff`, which the staff screen forbids
   /// assigning now that admin is Firebase-only.
   static List<Role> genericRoles() => <Role>[
-        Role(
-          id: roleWaiterId,
-          name: 'Waiter',
-          colorHex: 0xFFFF9233,
-          capabilities: const {
-            Capability.takeOrder,
-            Capability.modifyOrder,
-            Capability.voidItem,
-            Capability.settleBill,
-          },
-        ),
-        Role(
-          id: roleKitchenId,
-          name: 'Kitchen',
-          colorHex: 0xFFFF5C5C,
-          capabilities: const {
-            Capability.viewKds,
-            Capability.markSoldOut,
-            // The people who physically receive and count stock are the ones
-            // who record it (ADR-0042). `overrideStock` stays a deliberate
-            // grant — no seeded role sells past zero by default.
-            Capability.adjustStock,
-            Capability.manageIngredients,
-          },
-        ),
-      ];
+    Role(
+      id: roleWaiterId,
+      name: 'Waiter',
+      colorHex: 0xFFFF9233,
+      capabilities: const {
+        Capability.takeOrder,
+        Capability.modifyOrder,
+        Capability.voidItem,
+        Capability.settleBill,
+      },
+    ),
+    Role(
+      id: roleKitchenId,
+      name: 'Kitchen',
+      colorHex: 0xFFFF5C5C,
+      capabilities: const {
+        Capability.viewKds,
+        Capability.markSoldOut,
+        // The people who physically receive and count stock are the ones
+        // who record it (ADR-0042). `overrideStock` stays a deliberate
+        // grant — no seeded role sells past zero by default.
+        Capability.adjustStock,
+        Capability.manageIngredients,
+      },
+    ),
+  ];
 
   static const genericWaiter = AppUser(
     id: 'seed-waiter',
@@ -558,13 +711,39 @@ class DummyData {
   ];
 
   static const genericTables = <VenueTable>[
-    VenueTable(id: 'D1', zoneId: 'indoor', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'D2', zoneId: 'indoor', pax: 4, status: TableStatus.available),
-    VenueTable(id: 'L1', zoneId: 'outdoor', pax: 2, status: TableStatus.available),
-    VenueTable(id: 'L2', zoneId: 'outdoor', pax: 4, status: TableStatus.available),
+    VenueTable(
+      id: 'D1',
+      zoneId: 'indoor',
+      pax: 2,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'D2',
+      zoneId: 'indoor',
+      pax: 4,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'L1',
+      zoneId: 'outdoor',
+      pax: 2,
+      status: TableStatus.available,
+    ),
+    VenueTable(
+      id: 'L2',
+      zoneId: 'outdoor',
+      pax: 4,
+      status: TableStatus.available,
+    ),
   ];
 
   static List<AuditEntry> initialAudit() => const [
-        AuditEntry(id: 'A0', type: AuditType.fire, title: 'Course Utama dibakar untuk Meja T1', tableId: 'T1', when: '17:46'),
-      ];
+    AuditEntry(
+      id: 'A0',
+      type: AuditType.fire,
+      title: 'Course Utama dibakar untuk Meja T1',
+      tableId: 'T1',
+      when: '17:46',
+    ),
+  ];
 }

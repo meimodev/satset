@@ -9,8 +9,9 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 
-final printersStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final printersStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class PrintersRepository extends StateNotifier<List<PrinterDto>> {
   PrintersRepository({required this.ref}) : super(const <PrinterDto>[]) {
@@ -23,23 +24,25 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(printersStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(printersStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     ref.read(printersStatusProvider.notifier).state =
         const AsyncValue.loading();
     try {
-      final raw = await ref.read(apiClientProvider).getJson('/printers') as List;
+      final raw =
+          await ref.read(apiClientProvider).getJson('/printers') as List;
       state = [
         for (final e in raw)
           PrinterDto.fromJson((e as Map).cast<String, dynamic>()),
       ];
-      ref.read(printersStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(printersStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
     } catch (e, st) {
-      ref.read(printersStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(printersStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type == WsEventTypes.printerCreated ||
@@ -47,7 +50,10 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
         final p = PrinterDto.fromJson(ev.payload);
         final exists = state.any((x) => x.id == p.id);
         state = exists
-            ? [for (final x in state) if (x.id == p.id) p else x]
+            ? [
+                for (final x in state)
+                  if (x.id == p.id) p else x,
+              ]
             : [...state, p];
       } else if (ev.type == WsEventTypes.printerDeleted) {
         final id = ev.payload['id'] as String?;
@@ -109,10 +115,9 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
   /// human message on failure.
   Future<String?> testPrint(String id) async {
     try {
-      await ref.read(apiClientProvider).postJson(
-        '/printers/$id/test',
-        const <String, dynamic>{},
-      );
+      await ref
+          .read(apiClientProvider)
+          .postJson('/printers/$id/test', const <String, dynamic>{});
       return null;
     } on ApiException catch (e) {
       SatLog.repo('printers.test fail $e');
@@ -127,10 +132,9 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
   /// Returns null on success or a human message on failure.
   Future<String?> printTable(String tableId, String printerId) async {
     try {
-      await ref.read(apiClientProvider).postJson(
-        '/tables/$tableId/print',
-        {'printerId': printerId},
-      );
+      await ref.read(apiClientProvider).postJson('/tables/$tableId/print', {
+        'printerId': printerId,
+      });
       return null;
     } on ApiException catch (e) {
       SatLog.repo('printers.printTable fail $e');
@@ -162,4 +166,5 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
 
 final printersRepositoryProvider =
     StateNotifierProvider<PrintersRepository, List<PrinterDto>>(
-        (ref) => PrintersRepository(ref: ref));
+      (ref) => PrintersRepository(ref: ref),
+    );

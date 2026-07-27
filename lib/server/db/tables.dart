@@ -111,6 +111,7 @@ class Visits extends Table {
   TextColumn get guestNotes => text().nullable()();
   TextColumn get reservationId => text().nullable()();
   TextColumn get lastActorId => text().nullable()();
+
   /// Set when the waiter frees the table (table-close / detach). Non-null ⇒
   /// the visit is detached: floor shows the table kosong, the cashier still
   /// lists this bill, flagged.
@@ -123,6 +124,7 @@ class Visits extends Table {
   /// timestamp and keeps the visit live. See ADR-0024.
   DateTimeColumn get billClosedAt => dateTime().nullable()();
   TextColumn get billClosedBy => text().nullable()();
+
   /// Outstanding written off at a "tak tertagih" bill-close (walkout). 0 for a
   /// normal Lunas close.
   IntColumn get lossAmount => integer().withDefault(const Constant(0))();
@@ -161,9 +163,11 @@ class MenuItems extends Table {
   TextColumn get categoryId => text()();
   TextColumn get description => text().withDefault(const Constant(''))();
   IntColumn get basePrice => integer()();
+
   /// Cost of goods (same int-cents unit as `basePrice`). Used for margin
   /// reports + menu-engineering matrix. 0 = unknown (treated as full margin).
   IntColumn get cost => integer().withDefault(const Constant(0))();
+
   /// Per-item ready target in minutes ("Waktu siap"). **Null = inherit** the
   /// venue default (`VenueSettings.prepTargetMins`) live — so moving the venue
   /// default shifts every non-overridden item. A value is a deliberate
@@ -171,6 +175,7 @@ class MenuItems extends Table {
   /// unit of "late"). See docs/adr/0043-per-item-ready-target-and-course-lateness.md.
   IntColumn get prepTime => integer().nullable()();
   TextColumn get variantsJson => text().withDefault(const Constant('[]'))();
+
   /// Full modifier groups embedded per-item (private, not a shared library).
   /// JSON: [{id,name,required,multi,options:[{id,name,priceDelta}]}]. See
   /// docs/adr/0009-per-item-embedded-modifiers.md.
@@ -178,15 +183,18 @@ class MenuItems extends Table {
       text().withDefault(const Constant('[]'))();
   TextColumn get allergensJson => text().withDefault(const Constant('[]'))();
   TextColumn get dietaryJson => text().withDefault(const Constant('[]'))();
+
   /// Manual "ditandai habis" toggle. Auto sold-out is **derived** from
   /// ingredient stock at read time and is never stored — v36 dropped the old
   /// `stock_count` / `auto_sold_out_at_zero` columns (ADR-0040).
   BoolColumn get unavailable => boolean().withDefault(const Constant(false))();
+
   /// Optional photo as a JPEG blob. Null = no photo (UI falls back to the
   /// initials avatar). Read ONLY by the photo route — never select this in
   /// the `/menu` snapshot or item upsert path; use `selectOnly` excluding it.
   /// See docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
   BlobColumn get photo => blob().nullable()();
+
   /// Monotonic revision bumped on every photo write/clear. Rides the snapshot
   /// (the bytes do not) so clients cache-bust by `(itemId, photoRev)`.
   IntColumn get photoRev => integer().withDefault(const Constant(0))();
@@ -209,6 +217,7 @@ class MenuTags extends Table {
 class Tickets extends Table {
   TextColumn get id => text()();
   TextColumn get tableId => text()();
+
   /// The [[Visit]] this line belongs to — the stable key the bill hangs off,
   /// independent of `tableId` (which is the visit's *current* table and is
   /// reused across visits). Stamped at create from the table's
@@ -224,24 +233,29 @@ class Tickets extends Table {
   IntColumn get price => integer()();
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
+
   /// When the kitchen actually started owning this line. Null on a normal
   /// send (the clock starts at `sentAt`); stamped on the `held → sent` fire
   /// so a course held 40 minutes is not born overdue. `sentAt` keeps meaning
   /// "guest ordered". Prep clock = `readyAt − (firedAt ?? sentAt)`.
   /// See docs/adr/0043-per-item-ready-target-and-course-lateness.md.
   DateTimeColumn get firedAt => dateTime().nullable()();
+
   /// Set once, on first entry into `ready`
   /// (prep time = readyAt − (firedAt ?? sentAt)).
   /// See docs/adr/0013-ticket-lifecycle-timestamps-and-service-target.md.
   DateTimeColumn get readyAt => dateTime().nullable()();
+
   /// Last-write, most recent `served` (pickup lag = servedAt − readyAt).
   DateTimeColumn get servedAt => dateTime().nullable()();
   TextColumn get voidReason => text().nullable()();
+
   /// Canonical enum slug for void/comp analytics. One of:
   /// outOfStock | wrongOrder | customerChange | kitchenError | comp | other.
   TextColumn get voidReasonCode => text().nullable()();
   TextColumn get voidApprovedBy => text().nullable()();
   TextColumn get createdByUserId => text().nullable()();
+
   /// User who voided this ticket. Server-stamped from the JWT on the
   /// void transition — never client-supplied. See ADR-0006.
   TextColumn get voidedByUserId => text().nullable()();
@@ -300,21 +314,26 @@ class VenueSettings extends Table {
   TextColumn get phone => text().withDefault(const Constant(''))();
   TextColumn get receiptHeader => text().withDefault(const Constant(''))();
   TextColumn get receiptFooter => text().withDefault(const Constant(''))();
+
   /// Receipt branding block (ADR-0033) — one shared block stamped on every
   /// document. Short slogan under the venue name, plus a website/social handle
   /// line in the header.
   TextColumn get receiptTagline => text().withDefault(const Constant(''))();
   TextColumn get receiptSocial => text().withDefault(const Constant(''))();
+
   /// Closing sign-off (was a hardcoded "Terima kasih"). Empty ⇒ renderers fall
   /// back to "Terima kasih".
   TextColumn get receiptThankYou => text().withDefault(const Constant(''))();
+
   /// Footer QR (money docs only): a free-form URL + a short caption.
   TextColumn get receiptQrUrl => text().withDefault(const Constant(''))();
   TextColumn get receiptQrCaption => text().withDefault(const Constant(''))();
+
   /// Optional logo as a JPEG blob. Null = no logo (header is text-only). Read
   /// ONLY by the logo route — never selected into the settings JSON snapshot.
   /// Mirrors the menu-photo pattern (ADR-0014 / ADR-0033).
   BlobColumn get logo => blob().nullable()();
+
   /// Monotonic revision bumped on every logo write/clear. Rides the settings
   /// JSON (the bytes do not) so clients cache-bust by `logoRev`.
   IntColumn get logoRev => integer().withDefault(const Constant(0))();
@@ -322,8 +341,7 @@ class VenueSettings extends Table {
   IntColumn get taxRateBps => integer().withDefault(const Constant(1100))();
   BoolColumn get serviceEnabled =>
       boolean().withDefault(const Constant(false))();
-  TextColumn get serviceMode =>
-      text().withDefault(const Constant('percent'))();
+  TextColumn get serviceMode => text().withDefault(const Constant('percent'))();
   IntColumn get serviceRateBps => integer().withDefault(const Constant(500))();
   IntColumn get serviceFixedAmount =>
       integer().withDefault(const Constant(0))();
@@ -335,6 +353,7 @@ class VenueSettings extends Table {
   /// pre-tax and ignore this flag.
   BoolColumn get taxAfterDiscount =>
       boolean().withDefault(const Constant(true))();
+
   /// Business-day rollover hour (0..23). Reports bucket "today" as
   /// [hour, hour+24h). Default 4 covers late-night service.
   IntColumn get businessDayStartHour =>
@@ -344,8 +363,7 @@ class VenueSettings extends Table {
   /// semua menu)". Every menu item with a null `prepTime` inherits this live,
   /// so changing it shifts the whole floor. Still drives the report SLA, now
   /// measured per course. See ADR-0013 (amended by ADR-0043).
-  IntColumn get prepTargetMins =>
-      integer().withDefault(const Constant(15))();
+  IntColumn get prepTargetMins => integer().withDefault(const Constant(15))();
 
   /// "Menunggu diantar" — how long food may sit at the pass (`readyAt →
   /// servedAt`) before the waiters are cued. See ADR-0044.
@@ -397,6 +415,7 @@ class VenueSettings extends Table {
   TextColumn get soundReady => text().withDefault(const Constant('chime'))();
   TextColumn get soundVoid => text().withDefault(const Constant('alert'))();
   TextColumn get soundOverdue => text().withDefault(const Constant('alert'))();
+
   /// Presets for the two table cues added by ADR-0044.
   TextColumn get soundUngreeted =>
       text().withDefault(const Constant('chime'))();
@@ -452,10 +471,12 @@ class TableSessions extends Table {
   TextColumn get actorUserId => text().nullable()();
   IntColumn get subtotal => integer().withDefault(const Constant(0))();
   IntColumn get voidAmount => integer().withDefault(const Constant(0))();
+
   /// Service charge + tax applied at settlement (ADR-0023). Pre-v28 sessions
   /// carry 0 (tax/service were never applied before settlement existed).
   IntColumn get serviceAmount => integer().withDefault(const Constant(0))();
   IntColumn get taxAmount => integer().withDefault(const Constant(0))();
+
   /// REDEFINED in ADR-0023: the total net of voids plus service and tax
   /// (`subtotal − void + service + tax`), not the old `netTotal == subtotal`.
   /// Historical pre-v28 rows still equal their subtotal.
@@ -474,10 +495,12 @@ class TableSessions extends Table {
   /// pre-v35 rows, which carried no discounts.
   IntColumn get settledTotal => integer().withDefault(const Constant(0))();
   IntColumn get ticketCount => integer().withDefault(const Constant(0))();
+
   /// Outstanding written off at bill-close as a recorded loss — a walkout /
   /// "tak tertagih" close. 0 for a normal (Lunas) close. Distinct from a comp
   /// (which zeroes a line); this is the unpaid remainder. See ADR-0024.
   IntColumn get lossAmount => integer().withDefault(const Constant(0))();
+
   /// Cashier (userId) who performed the bill-close. ADR-0024.
   TextColumn get billClosedBy => text().nullable()();
 
@@ -504,18 +527,22 @@ class TableSessionTickets extends Table {
   IntColumn get price => integer()();
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
+
   /// Mirrors Tickets.firedAt — the kitchen-ownership clock, so a held course
   /// is not reported as slow for the time it sat unfired. ADR-0043.
   DateTimeColumn get firedAt => dateTime().nullable()();
+
   /// Mirrors Tickets.readyAt / Tickets.servedAt at session close, so speed-of-
   /// service survives the live-ticket delete. See ADR-0013.
   DateTimeColumn get readyAt => dateTime().nullable()();
   DateTimeColumn get servedAt => dateTime().nullable()();
   TextColumn get voidReason => text().nullable()();
+
   /// Canonical enum slug — mirrors Tickets.voidReasonCode at session close.
   TextColumn get voidReasonCode => text().nullable()();
   TextColumn get voidApprovedBy => text().nullable()();
   TextColumn get createdByUserId => text().nullable()();
+
   /// Mirrors Tickets.voidedByUserId at session close.
   TextColumn get voidedByUserId => text().nullable()();
   @override
@@ -532,14 +559,17 @@ class TableSessionTickets extends Table {
 class Receipts extends Table {
   TextColumn get id => text()();
   TextColumn get tableId => text()();
+
   /// The [[Visit]] this receipt settles — see Tickets.visitId. Nullable only
   /// for pre-v29 rows. ADR-0024.
   TextColumn get visitId => text().nullable()();
   TextColumn get mode => text().withDefault(const Constant('itemized'))();
   TextColumn get label => text().withDefault(const Constant(''))();
+
   /// Line subtotal **net of line discounts** (ADR-0038) — what the Subtotal row
   /// prints.
   IntColumn get subtotal => integer().withDefault(const Constant(0))();
+
   /// Total [[Diskon (discount)]] on this receipt: line discounts (already
   /// inside [subtotal]) plus the whole-order one. Reporting figure; the math
   /// reads the `discounts` rows. ADR-0037.
@@ -586,17 +616,21 @@ class DiscountPresets extends Table {
 class Discounts extends Table {
   TextColumn get id => text()();
   TextColumn get receiptId => text()();
+
   /// Null ⇒ whole-order discount. Set ⇒ line discount on this ticket's units.
   TextColumn get ticketId => text().nullable()();
+
   /// Weak reference — the preset may be edited or deleted afterwards. Never
   /// read it to render or report a settled bill; use the snapshot below.
   TextColumn get presetId => text().nullable()();
   TextColumn get name => text()();
   TextColumn get kind => text()();
   IntColumn get value => integer().withDefault(const Constant(0))();
+
   /// Resolved rupiah amount at apply time (clamped so it can never exceed its
   /// base). Persisted so history never re-derives from a rate.
   IntColumn get amount => integer().withDefault(const Constant(0))();
+
   /// Who applied it, and — when the applier lacked `applyDiscount` and used
   /// manager step-up — who authorised it. ADR-0037.
   TextColumn get byUserId => text().nullable()();
@@ -632,6 +666,7 @@ class Payments extends Table {
   TextColumn get cashierUserId => text().nullable()();
   TextColumn get note => text().nullable()();
   DateTimeColumn get at => dateTime()();
+
   /// Mandatory proof photo (JPEG blob) for a non-cash payment — null for cash
   /// and pre-feature rows. Camera-shot at the till. Read ONLY by the photo
   /// route — never select in the bill/list path; use `selectOnly` excluding it.
@@ -666,6 +701,7 @@ class TableSessionDiscounts extends Table {
   TextColumn get id => text()();
   TextColumn get sessionId => text()();
   TextColumn get receiptId => text()();
+
   /// Null ⇒ whole-order discount; set ⇒ line discount.
   TextColumn get ticketId => text().nullable()();
   TextColumn get presetId => text().nullable()();
@@ -691,6 +727,7 @@ class TableSessionPayments extends Table {
   BoolColumn get isRefund => boolean().withDefault(const Constant(false))();
   TextColumn get cashierUserId => text().nullable()();
   DateTimeColumn get at => dateTime()();
+
   /// Frozen copy of the live payment's proof photo (JPEG blob), carried across
   /// at bill close so immutable history is self-contained. Read ONLY by the
   /// photo route. See docs/adr/0025-mandatory-non-cash-payment-proof-photo.md.
@@ -714,6 +751,7 @@ class Reservations extends Table {
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
+
   /// Stamped when the reservation is actually seated. Distinct from
   /// [updatedAt], which any later edit moves — lateness (`seatedAt −
   /// expectedAt` past the venue grace) needs a stamp that only the seat sets.

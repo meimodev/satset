@@ -22,23 +22,27 @@ Future<Response?> _requireCap(
   Capability needed,
 ) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (!caps.contains(needed.name)) {
-    return Response(403,
-        body: jsonEncode({
-          'code': 'forbidden',
-          'message': 'missing capability ${needed.name}',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      403,
+      body: jsonEncode({
+        'code': 'forbidden',
+        'message': 'missing capability ${needed.name}',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   }
   return null;
 }
@@ -67,8 +71,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final out = await _readItem(db, id);
     if (out == null) return Response.internalServerError();
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
-    return Response.ok(jsonEncode(out),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(out),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.patch('/menu/items/<id>', (Request req, String id) async {
@@ -79,8 +85,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final out = await _readItem(db, id);
     if (out == null) return Response.notFound('item not found');
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
-    return Response.ok(jsonEncode(out),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(out),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.delete('/menu/items/<id>', (Request req, String id) async {
@@ -88,8 +96,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     await (db.delete(db.menuItems)..where((i) => i.id.equals(id))).go();
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'delete', 'id': id});
-    return Response.ok(jsonEncode({'id': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Sold-out toggle. Body: { "unavailable": bool }. Permission: markSoldOut
@@ -100,25 +110,30 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final value = body['unavailable'] as bool?;
     if (value == null) return Response(400, body: 'unavailable required');
-    await (db.update(db.menuItems)..where((i) => i.id.equals(id)))
-        .write(MenuItemsCompanion(unavailable: Value(value)));
+    await (db.update(db.menuItems)..where((i) => i.id.equals(id))).write(
+      MenuItemsCompanion(unavailable: Value(value)),
+    );
     final out = await _readItem(db, id);
     if (out == null) return Response.notFound('item not found');
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
-    return Response.ok(jsonEncode(out),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(out),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Item-level stock is gone (ADR-0040): stock lives on ingredients, and an
   // item's auto-habis is derived from its recipe. Kept as an explicit 410 so an
   // un-upgraded client gets a diagnosable answer instead of a bare 404.
   r.post('/menu/items/<id>/stock', (Request req, String id) async {
-    return Response(410,
-        body: jsonEncode({
-          'code': 'stock_moved_to_ingredients',
-          'message': 'Stok kini per bahan — lihat /stock/ingredients',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      410,
+      body: jsonEncode({
+        'code': 'stock_moved_to_ingredients',
+        'message': 'Stok kini per bahan — lihat /stock/ingredients',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // ---------- photo (binary side-endpoints) ----------
@@ -127,25 +142,28 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 
   // Stream the JPEG bytes. Ungated, matching the open GET /menu snapshot.
   r.get('/menu/items/<id>/photo', (Request req, String id) async {
-    final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.menuItems,
+    )..where((i) => i.id.equals(id))).getSingleOrNull();
     if (row == null || row.photo == null) return Response.notFound('no photo');
-    return Response.ok(row.photo, headers: {
-      'content-type': 'image/jpeg',
-      'cache-control': 'no-cache',
-    });
+    return Response.ok(
+      row.photo,
+      headers: {'content-type': 'image/jpeg', 'cache-control': 'no-cache'},
+    );
   });
 
   // Replace the photo. Body = raw JPEG bytes. Bumps photoRev, broadcasts.
   r.put('/menu/items/<id>/photo', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.editMenu);
     if (denied != null) return denied;
-    final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.menuItems,
+    )..where((i) => i.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('item not found');
-    final builder = await req
-        .read()
-        .fold<BytesBuilder>(BytesBuilder(), (b, chunk) => b..add(chunk));
+    final builder = await req.read().fold<BytesBuilder>(
+      BytesBuilder(),
+      (b, chunk) => b..add(chunk),
+    );
     final bytes = builder.takeBytes();
     if (bytes.isEmpty) return Response(400, body: 'empty body');
     await (db.update(db.menuItems)..where((i) => i.id.equals(id))).write(
@@ -156,16 +174,19 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     );
     final out = await _readItem(db, id);
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
-    return Response.ok(jsonEncode(out),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(out),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Clear the photo (back to the avatar fallback). Bumps photoRev, broadcasts.
   r.delete('/menu/items/<id>/photo', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.editMenu);
     if (denied != null) return denied;
-    final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.menuItems,
+    )..where((i) => i.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('item not found');
     await (db.update(db.menuItems)..where((i) => i.id.equals(id))).write(
       MenuItemsCompanion(
@@ -175,8 +196,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     );
     final out = await _readItem(db, id);
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
-    return Response.ok(jsonEncode(out),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(out),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // ---------- categories ----------
@@ -193,12 +216,14 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final id = (body['id'] as String?)?.trim().isNotEmpty == true
         ? body['id'] as String
         : _uuid.v4().substring(0, 8);
-    final maxRow = await (db.selectOnly(db.menuCategories)
-          ..addColumns([db.menuCategories.sortOrder.max()]))
-        .getSingleOrNull();
+    final maxRow = await (db.selectOnly(
+      db.menuCategories,
+    )..addColumns([db.menuCategories.sortOrder.max()])).getSingleOrNull();
     final nextSort =
         (maxRow?.read(db.menuCategories.sortOrder.max()) ?? -1) + 1;
-    await db.into(db.menuCategories).insertOnConflictUpdate(
+    await db
+        .into(db.menuCategories)
+        .insertOnConflictUpdate(
           MenuCategoriesCompanion.insert(
             id: id,
             name: name,
@@ -206,8 +231,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           ),
         );
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'id': id});
-    return Response.ok(jsonEncode({'id': id, 'name': name}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id, 'name': name}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Rename a category. Body: { "name": str }.
@@ -219,31 +246,39 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (name == null || name.isEmpty) {
       return Response(400, body: 'name required');
     }
-    await (db.update(db.menuCategories)..where((c) => c.id.equals(id)))
-        .write(MenuCategoriesCompanion(name: Value(name)));
+    await (db.update(db.menuCategories)..where((c) => c.id.equals(id))).write(
+      MenuCategoriesCompanion(name: Value(name)),
+    );
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'id': id});
-    return Response.ok(jsonEncode({'id': id, 'name': name}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id, 'name': name}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Delete a category. Rejected with 409 when any item still references it.
   r.delete('/menu/categories/<id>', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.editMenu);
     if (denied != null) return denied;
-    final count = await (db.selectOnly(db.menuItems)
-          ..addColumns([db.menuItems.id.count()])
-          ..where(db.menuItems.categoryId.equals(id)))
-        .getSingle();
+    final count =
+        await (db.selectOnly(db.menuItems)
+              ..addColumns([db.menuItems.id.count()])
+              ..where(db.menuItems.categoryId.equals(id)))
+            .getSingle();
     final n = count.read(db.menuItems.id.count()) ?? 0;
     if (n > 0) {
-      return Response(409,
-          body: jsonEncode({'code': 'category_not_empty', 'count': n}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({'code': 'category_not_empty', 'count': n}),
+        headers: {'content-type': 'application/json'},
+      );
     }
     await (db.delete(db.menuCategories)..where((c) => c.id.equals(id))).go();
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'id': id});
-    return Response.ok(jsonEncode({'id': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Reorder categories. Body: { "ids": [str, ...] } — sortOrder set by index.
@@ -257,9 +292,14 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       await (db.update(db.menuCategories)..where((c) => c.id.equals(ids[i])))
           .write(MenuCategoriesCompanion(sortOrder: Value(i)));
     }
-    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'category', 'reorder': true});
-    return Response.ok(jsonEncode({'ok': true}),
-        headers: {'content-type': 'application/json'});
+    hub.broadcast(WsEventTypes.menuUpdated, {
+      'kind': 'category',
+      'reorder': true,
+    });
+    return Response.ok(
+      jsonEncode({'ok': true}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // ---------- tags (allergen / diet) ----------
@@ -275,16 +315,21 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (kind != 'allergen' && kind != 'diet') {
       return Response(400, body: 'kind must be allergen or diet');
     }
-    if (name == null || name.isEmpty) return Response(400, body: 'name required');
+    if (name == null || name.isEmpty) {
+      return Response(400, body: 'name required');
+    }
     final id = (body['id'] as String?)?.trim().isNotEmpty == true
         ? body['id'] as String
         : _uuid.v4().substring(0, 8);
-    final maxRow = await (db.selectOnly(db.menuTags)
-          ..addColumns([db.menuTags.sortOrder.max()])
-          ..where(db.menuTags.kind.equals(kind!)))
-        .getSingleOrNull();
+    final maxRow =
+        await (db.selectOnly(db.menuTags)
+              ..addColumns([db.menuTags.sortOrder.max()])
+              ..where(db.menuTags.kind.equals(kind!)))
+            .getSingleOrNull();
     final nextSort = (maxRow?.read(db.menuTags.sortOrder.max()) ?? -1) + 1;
-    await db.into(db.menuTags).insertOnConflictUpdate(
+    await db
+        .into(db.menuTags)
+        .insertOnConflictUpdate(
           MenuTagsCompanion.insert(
             id: id,
             kind: kind,
@@ -294,8 +339,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           ),
         );
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'id': id});
-    return Response.ok(jsonEncode({'id': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Update a tag. Body: any subset of { name, code }.
@@ -314,8 +361,10 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       ),
     );
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'id': id});
-    return Response.ok(jsonEncode({'id': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Delete a tag. Cascade-strips its id from every item's allergens/dietary.
@@ -325,22 +374,25 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await (db.delete(db.menuTags)..where((t) => t.id.equals(id))).go();
     final items = await db.select(db.menuItems).get();
     for (final it in items) {
-      final allergens =
-          (jsonDecode(it.allergensJson) as List).cast<String>();
+      final allergens = (jsonDecode(it.allergensJson) as List).cast<String>();
       final dietary = (jsonDecode(it.dietaryJson) as List).cast<String>();
       if (!allergens.contains(id) && !dietary.contains(id)) continue;
       await (db.update(db.menuItems)..where((i) => i.id.equals(it.id))).write(
         MenuItemsCompanion(
-          allergensJson:
-              Value(jsonEncode(allergens.where((t) => t != id).toList())),
-          dietaryJson:
-              Value(jsonEncode(dietary.where((t) => t != id).toList())),
+          allergensJson: Value(
+            jsonEncode(allergens.where((t) => t != id).toList()),
+          ),
+          dietaryJson: Value(
+            jsonEncode(dietary.where((t) => t != id).toList()),
+          ),
         ),
       );
     }
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'id': id});
-    return Response.ok(jsonEncode({'id': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Reorder tags within a kind. Body: { "ids": [str, ...] } — sortOrder = index.
@@ -351,12 +403,15 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final ids = (body['ids'] as List?)?.cast<String>();
     if (ids == null) return Response(400, body: 'ids required');
     for (var i = 0; i < ids.length; i++) {
-      await (db.update(db.menuTags)..where((t) => t.id.equals(ids[i])))
-          .write(MenuTagsCompanion(sortOrder: Value(i)));
+      await (db.update(db.menuTags)..where((t) => t.id.equals(ids[i]))).write(
+        MenuTagsCompanion(sortOrder: Value(i)),
+      );
     }
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'tag', 'reorder': true});
-    return Response.ok(jsonEncode({'ok': true}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'ok': true}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   return r;
@@ -365,14 +420,14 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 // ---------- helpers ----------
 
 Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
-  final cats = await (db.select(db.menuCategories)
-        ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
-      .get();
+  final cats = await (db.select(
+    db.menuCategories,
+  )..orderBy([(c) => OrderingTerm(expression: c.sortOrder)])).get();
   final items = await _selectItemsNoBlob(db);
   final flags = await deriveStockFlags(db);
-  final tags = await (db.select(db.menuTags)
-        ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
-      .get();
+  final tags = await (db.select(
+    db.menuTags,
+  )..orderBy([(t) => OrderingTerm(expression: t.sortOrder)])).get();
   return {
     'version': 1,
     'categories': [
@@ -394,9 +449,9 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
 /// Self-order menu). Photos are NOT inlined — the SPA lazy-loads them from the
 /// guest photo route.
 Future<Map<String, dynamic>> guestMenuSnapshot(AppDatabase db) async {
-  final cats = await (db.select(db.menuCategories)
-        ..orderBy([(c) => OrderingTerm(expression: c.sortOrder)]))
-      .get();
+  final cats = await (db.select(
+    db.menuCategories,
+  )..orderBy([(c) => OrderingTerm(expression: c.sortOrder)])).get();
   final rows = await _selectItemsNoBlob(db);
   final flags = await deriveStockFlags(db);
   final visible = <Map<String, dynamic>>[];
@@ -410,9 +465,9 @@ Future<Map<String, dynamic>> guestMenuSnapshot(AppDatabase db) async {
     visible.add(_itemResultToJson(db, r, flags: flags[id]));
   }
   final usedCats = {for (final i in visible) i['categoryId'] as String};
-  final tags = await (db.select(db.menuTags)
-        ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
-      .get();
+  final tags = await (db.select(
+    db.menuTags,
+  )..orderBy([(t) => OrderingTerm(expression: t.sortOrder)])).get();
   return {
     'version': 1,
     'categories': [
@@ -427,8 +482,9 @@ Future<Map<String, dynamic>> guestMenuSnapshot(AppDatabase db) async {
 /// The raw JPEG bytes for one menu item, or null when the item has no photo.
 /// Used by the guest photo route (the staff photo route reads the blob inline).
 Future<Uint8List?> menuItemPhotoBytes(AppDatabase db, String id) async {
-  final row = await (db.select(db.menuItems)..where((i) => i.id.equals(id)))
-      .getSingleOrNull();
+  final row = await (db.select(
+    db.menuItems,
+  )..where((i) => i.id.equals(id))).getSingleOrNull();
   final photo = row?.photo;
   return photo == null ? null : Uint8List.fromList(photo);
 }
@@ -437,20 +493,20 @@ Future<Uint8List?> menuItemPhotoBytes(AppDatabase db, String id) async {
 /// photo route — keeping it out of the hot snapshot/read path is mandatory
 /// (see docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md).
 List<Expression> _itemCols(AppDatabase db) => [
-      db.menuItems.id,
-      db.menuItems.name,
-      db.menuItems.categoryId,
-      db.menuItems.description,
-      db.menuItems.basePrice,
-      db.menuItems.cost,
-      db.menuItems.prepTime,
-      db.menuItems.variantsJson,
-      db.menuItems.modifierGroupsJson,
-      db.menuItems.allergensJson,
-      db.menuItems.dietaryJson,
-      db.menuItems.unavailable,
-      db.menuItems.photoRev,
-    ];
+  db.menuItems.id,
+  db.menuItems.name,
+  db.menuItems.categoryId,
+  db.menuItems.description,
+  db.menuItems.basePrice,
+  db.menuItems.cost,
+  db.menuItems.prepTime,
+  db.menuItems.variantsJson,
+  db.menuItems.modifierGroupsJson,
+  db.menuItems.allergensJson,
+  db.menuItems.dietaryJson,
+  db.menuItems.unavailable,
+  db.menuItems.photoRev,
+];
 
 Future<List<TypedResult>> _selectItemsNoBlob(AppDatabase db, {String? id}) {
   final q = db.selectOnly(db.menuItems)..addColumns(_itemCols(db));
@@ -465,35 +521,34 @@ Map<String, dynamic> _itemResultToJson(
   AppDatabase db,
   TypedResult r, {
   ItemStockFlags? flags,
-}) =>
-    {
-      'id': r.read(db.menuItems.id)!,
-      'name': r.read(db.menuItems.name)!,
-      'categoryId': r.read(db.menuItems.categoryId)!,
-      'description': r.read(db.menuItems.description)!,
-      'basePrice': r.read(db.menuItems.basePrice)!,
-      'cost': r.read(db.menuItems.cost)!,
-      // Null rides the wire as null — the client resolves it against the
-      // venue default so the inherit stays live (ADR-0043).
-      'prepTime': r.read(db.menuItems.prepTime),
-      'variants': jsonDecode(r.read(db.menuItems.variantsJson)!),
-      'modifierGroups': jsonDecode(r.read(db.menuItems.modifierGroupsJson)!),
-      'allergens': jsonDecode(r.read(db.menuItems.allergensJson)!),
-      'dietary': jsonDecode(r.read(db.menuItems.dietaryJson)!),
-      'unavailable': r.read(db.menuItems.unavailable)!,
-      'autoSoldOut': flags?.autoSoldOut ?? false,
-      'soldOutVariantIds': flags?.soldOutVariantIds.toList() ?? const <String>[],
-      'soldOutOptionIds': flags?.soldOutOptionIds.toList() ?? const <String>[],
-      'photoRev': r.read(db.menuItems.photoRev)!,
-    };
+}) => {
+  'id': r.read(db.menuItems.id)!,
+  'name': r.read(db.menuItems.name)!,
+  'categoryId': r.read(db.menuItems.categoryId)!,
+  'description': r.read(db.menuItems.description)!,
+  'basePrice': r.read(db.menuItems.basePrice)!,
+  'cost': r.read(db.menuItems.cost)!,
+  // Null rides the wire as null — the client resolves it against the
+  // venue default so the inherit stays live (ADR-0043).
+  'prepTime': r.read(db.menuItems.prepTime),
+  'variants': jsonDecode(r.read(db.menuItems.variantsJson)!),
+  'modifierGroups': jsonDecode(r.read(db.menuItems.modifierGroupsJson)!),
+  'allergens': jsonDecode(r.read(db.menuItems.allergensJson)!),
+  'dietary': jsonDecode(r.read(db.menuItems.dietaryJson)!),
+  'unavailable': r.read(db.menuItems.unavailable)!,
+  'autoSoldOut': flags?.autoSoldOut ?? false,
+  'soldOutVariantIds': flags?.soldOutVariantIds.toList() ?? const <String>[],
+  'soldOutOptionIds': flags?.soldOutOptionIds.toList() ?? const <String>[],
+  'photoRev': r.read(db.menuItems.photoRev)!,
+};
 
 Map<String, dynamic> _tagRowToJson(MenuTag t) => {
-      'id': t.id,
-      'kind': t.kind,
-      'name': t.name,
-      'code': t.code,
-      'sortOrder': t.sortOrder,
-    };
+  'id': t.id,
+  'kind': t.kind,
+  'name': t.name,
+  'code': t.code,
+  'sortOrder': t.sortOrder,
+};
 
 Future<Map<String, dynamic>?> _readItem(AppDatabase db, String id) async {
   final rows = await _selectItemsNoBlob(db, id: id);
@@ -514,7 +569,9 @@ Future<void> _writeItem(
   required bool isInsert,
 }) async {
   if (isInsert) {
-    await db.into(db.menuItems).insertOnConflictUpdate(
+    await db
+        .into(db.menuItems)
+        .insertOnConflictUpdate(
           MenuItemsCompanion.insert(
             id: id,
             name: (body['name'] as String?) ?? '',
@@ -525,8 +582,9 @@ Future<void> _writeItem(
             // Absent ⇒ null ⇒ inherits the venue default (ADR-0043).
             prepTime: Value((body['prepTime'] as num?)?.toInt()),
             variantsJson: Value(jsonEncode(body['variants'] ?? const [])),
-            modifierGroupsJson:
-                Value(jsonEncode(body['modifierGroups'] ?? const [])),
+            modifierGroupsJson: Value(
+              jsonEncode(body['modifierGroups'] ?? const []),
+            ),
             allergensJson: Value(jsonEncode(body['allergens'] ?? const [])),
             dietaryJson: Value(jsonEncode(body['dietary'] ?? const [])),
             unavailable: Value((body['unavailable'] as bool?) ?? false),

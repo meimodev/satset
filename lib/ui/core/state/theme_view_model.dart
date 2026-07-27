@@ -11,8 +11,7 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 /// on disk — a device that has chosen a theme swaps to it as soon as prefs
 /// resolve, which is a one-frame flicker at worst on cold start.
 class SatThemeNotifier extends StateNotifier<SatTheme> {
-  SatThemeNotifier(this._prefs)
-      : super(SatTheme.fromKey(_prefs?.themeKey()));
+  SatThemeNotifier(this._prefs) : super(SatTheme.fromKey(_prefs?.themeKey()));
 
   final PrefsService? _prefs;
 
@@ -24,8 +23,9 @@ class SatThemeNotifier extends StateNotifier<SatTheme> {
   }
 }
 
-final satThemeProvider =
-    StateNotifierProvider<SatThemeNotifier, SatTheme>((ref) {
+final satThemeProvider = StateNotifierProvider<SatThemeNotifier, SatTheme>((
+  ref,
+) {
   final prefs = ref.watch(prefsServiceProvider).valueOrNull;
   return SatThemeNotifier(prefs);
 });

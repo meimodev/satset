@@ -30,9 +30,13 @@ void main() {
     final lines = await db.select(db.recipeLines).get();
     expect(lines, isNotEmpty);
     for (final l in lines) {
-      expect(ids, contains(l.ingredientId),
-          reason: '${l.ownerKind}/${l.ownerId} references unknown bahan '
-              '"${l.ingredientId}"');
+      expect(
+        ids,
+        contains(l.ingredientId),
+        reason:
+            '${l.ownerKind}/${l.ownerId} references unknown bahan '
+            '"${l.ingredientId}"',
+      );
     }
   });
 
@@ -49,10 +53,18 @@ void main() {
     for (final q in all) {
       final unit = unitOf[q.ingredientId];
       expect(unit, isNotNull, reason: 'unknown bahan "${q.ingredientId}"');
-      expect(unit!.acceptsEntryIn(q.unit), isTrue,
-          reason: '${q.ingredientId} is held in ${unit.label} but the recipe '
-              'is written in ${q.unit.label}');
-      expect(q.base, greaterThan(0), reason: '${q.ingredientId} qty rounds to 0');
+      expect(
+        unit!.acceptsEntryIn(q.unit),
+        isTrue,
+        reason:
+            '${q.ingredientId} is held in ${unit.label} but the recipe '
+            'is written in ${q.unit.label}',
+      );
+      expect(
+        q.base,
+        greaterThan(0),
+        reason: '${q.ingredientId} qty rounds to 0',
+      );
     }
   });
 
@@ -61,16 +73,16 @@ void main() {
       for (final i in await db.select(db.menuItems).get()) i.id: i,
     };
     List<String> idsIn(String json, String key) => [
-          for (final e in (jsonDecode(json) as List).cast<Map<String, dynamic>>())
-            if (key == 'variant')
-              e['id'] as String
-            else
-              ...[
-                for (final o in (e['options'] as List? ?? const [])
-                    .cast<Map<String, dynamic>>())
-                  o['id'] as String,
-              ],
-        ];
+      for (final e in (jsonDecode(json) as List).cast<Map<String, dynamic>>())
+        if (key == 'variant')
+          e['id'] as String
+        else ...[
+          for (final o
+              in (e['options'] as List? ?? const [])
+                  .cast<Map<String, dynamic>>())
+            o['id'] as String,
+        ],
+    ];
 
     for (final entry in seedItemRecipes.entries) {
       final item = items[entry.key];
@@ -78,12 +90,18 @@ void main() {
       final variantIds = idsIn(item!.variantsJson, 'variant').toSet();
       final optionIds = idsIn(item.modifierGroupsJson, 'option').toSet();
       for (final v in entry.value.byVariant.keys) {
-        expect(variantIds, contains(v),
-            reason: '${entry.key} has no variant "$v"');
+        expect(
+          variantIds,
+          contains(v),
+          reason: '${entry.key} has no variant "$v"',
+        );
       }
       for (final o in entry.value.byOption.keys) {
-        expect(optionIds, contains(o),
-            reason: '${entry.key} has no modifier option "$o"');
+        expect(
+          optionIds,
+          contains(o),
+          reason: '${entry.key} has no modifier option "$o"',
+        );
       }
     }
   });
@@ -95,11 +113,17 @@ void main() {
     };
     expect(produced, isNotEmpty);
     for (final e in seedIngredientRecipes.entries) {
-      expect(produced, contains(e.key),
-          reason: '${e.key} has a batch recipe but no batchYield');
+      expect(
+        produced,
+        contains(e.key),
+        reason: '${e.key} has a batch recipe but no batchYield',
+      );
       for (final q in e.value) {
-        expect(produced, isNot(contains(q.ingredientId)),
-            reason: '${e.key} nests produced bahan "${q.ingredientId}"');
+        expect(
+          produced,
+          isNot(contains(q.ingredientId)),
+          reason: '${e.key} nests produced bahan "${q.ingredientId}"',
+        );
       }
     }
   });
@@ -111,19 +135,24 @@ void main() {
       summed[m.ingredientId] = (summed[m.ingredientId] ?? 0) + m.delta;
     }
     for (final b in await db.select(db.ingredients).get()) {
-      expect(summed[b.id] ?? 0, b.stockOnHand,
-          reason: 'ledger and balance disagree for ${b.id}');
+      expect(
+        summed[b.id] ?? 0,
+        b.stockOnHand,
+        reason: 'ledger and balance disagree for ${b.id}',
+      );
     }
   });
 
-  test('the cocktails are deliberately recipe-less and never auto-habis',
-      () async {
-    final flags = await deriveStockFlags(db);
-    for (final id in ['margarita', 'negroni', 'rose']) {
-      expect(seedItemRecipes.containsKey(id), isFalse);
-      expect(flags[id]?.autoSoldOut ?? false, isFalse);
-    }
-  });
+  test(
+    'the cocktails are deliberately recipe-less and never auto-habis',
+    () async {
+      final flags = await deriveStockFlags(db);
+      for (final id in ['margarita', 'negroni', 'rose']) {
+        expect(seedItemRecipes.containsKey(id), isFalse);
+        expect(flags[id]?.autoSoldOut ?? false, isFalse);
+      }
+    },
+  );
 
   test('one bahan opens below its reorder threshold, none at zero', () async {
     final rows = await db.select(db.ingredients).get();
@@ -136,25 +165,29 @@ void main() {
   });
 
   test('re-seeding never rewrites stock a venue has moved', () async {
-    await db.transaction(() => writeMovement(
-          db,
-          ingredientId: 'beras',
-          delta: -StockUnit.kg.toBase(5),
-          reason: StockReason.waste,
-        ));
+    await db.transaction(
+      () => writeMovement(
+        db,
+        ingredientId: 'beras',
+        delta: -StockUnit.kg.toBase(5),
+        reason: StockReason.waste,
+      ),
+    );
     final after = await _onHand(db, 'beras');
 
     await seedGenericRestaurant(db);
 
     expect(await _onHand(db, 'beras'), after);
-    final receives = (await db.select(db.stockMovements).get())
-        .where((m) => m.ingredientId == 'beras' && m.reason == 'receive');
+    final receives = (await db.select(db.stockMovements).get()).where(
+      (m) => m.ingredientId == 'beras' && m.reason == 'receive',
+    );
     expect(receives.length, 1, reason: 'opening stock received twice');
   });
 }
 
 Future<int> _onHand(AppDatabase db, String id) async {
-  final row = await (db.select(db.ingredients)..where((i) => i.id.equals(id)))
-      .getSingleOrNull();
+  final row = await (db.select(
+    db.ingredients,
+  )..where((i) => i.id.equals(id))).getSingleOrNull();
   return row!.stockOnHand;
 }

@@ -31,44 +31,44 @@ enum TicketStatus {
 }
 
 String ticketStatusLabel(TicketStatus s) => switch (s) {
-      TicketStatus.draft => 'Draf',
-      TicketStatus.acknowledged => 'Diterima',
-      TicketStatus.pendingReview => 'Menunggu konfirmasi',
-      TicketStatus.sent => 'Terkirim',
-      TicketStatus.prep => 'Disiapkan',
-      TicketStatus.cooked => 'Selesai dimasak',
-      TicketStatus.ready => 'Siap diambil',
-      TicketStatus.served => 'Disajikan',
-      TicketStatus.held => 'Ditahan',
-      TicketStatus.voided => 'Dibatalkan',
-    };
+  TicketStatus.draft => 'Draf',
+  TicketStatus.acknowledged => 'Diterima',
+  TicketStatus.pendingReview => 'Menunggu konfirmasi',
+  TicketStatus.sent => 'Terkirim',
+  TicketStatus.prep => 'Disiapkan',
+  TicketStatus.cooked => 'Selesai dimasak',
+  TicketStatus.ready => 'Siap diambil',
+  TicketStatus.served => 'Disajikan',
+  TicketStatus.held => 'Ditahan',
+  TicketStatus.voided => 'Dibatalkan',
+};
 
 String ticketStatusKey(TicketStatus s) => switch (s) {
-      TicketStatus.draft => 'draft',
-      TicketStatus.acknowledged => 'acknowledged',
-      TicketStatus.pendingReview => 'pendingReview',
-      TicketStatus.sent => 'sent',
-      TicketStatus.prep => 'prep',
-      TicketStatus.cooked => 'cooked',
-      TicketStatus.ready => 'ready',
-      TicketStatus.served => 'served',
-      TicketStatus.held => 'held',
-      TicketStatus.voided => 'voided',
-    };
+  TicketStatus.draft => 'draft',
+  TicketStatus.acknowledged => 'acknowledged',
+  TicketStatus.pendingReview => 'pendingReview',
+  TicketStatus.sent => 'sent',
+  TicketStatus.prep => 'prep',
+  TicketStatus.cooked => 'cooked',
+  TicketStatus.ready => 'ready',
+  TicketStatus.served => 'served',
+  TicketStatus.held => 'held',
+  TicketStatus.voided => 'voided',
+};
 
 TicketStatus ticketStatusFromKey(String? raw) => switch (raw) {
-      'draft' => TicketStatus.draft,
-      'acknowledged' => TicketStatus.acknowledged,
-      'pendingReview' => TicketStatus.pendingReview,
-      'sent' => TicketStatus.sent,
-      'prep' => TicketStatus.prep,
-      'cooked' => TicketStatus.cooked,
-      'ready' => TicketStatus.ready,
-      'served' => TicketStatus.served,
-      'held' => TicketStatus.held,
-      'voided' => TicketStatus.voided,
-      _ => TicketStatus.sent,
-    };
+  'draft' => TicketStatus.draft,
+  'acknowledged' => TicketStatus.acknowledged,
+  'pendingReview' => TicketStatus.pendingReview,
+  'sent' => TicketStatus.sent,
+  'prep' => TicketStatus.prep,
+  'cooked' => TicketStatus.cooked,
+  'ready' => TicketStatus.ready,
+  'served' => TicketStatus.served,
+  'held' => TicketStatus.held,
+  'voided' => TicketStatus.voided,
+  _ => TicketStatus.sent,
+};
 
 /// Immutable ticket aggregate. `copyWith`, equality, and `hashCode` come
 /// from Freezed.
@@ -83,9 +83,11 @@ class Ticket with _$Ticket {
 
   const factory Ticket({
     required String id,
+
     /// The [[Visit]] this line belongs to — used to resolve a table-less
     /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
     String? visitId,
+
     /// The table this line was fired from (empty for takeaway). The live-ticket
     /// cache keys groups by [[visitId]], so map-flattening consumers read the
     /// table id here rather than from the (now visit-keyed) map key. ADR-0034.
@@ -101,13 +103,16 @@ class Ticket with _$Ticket {
     required TicketStatus status,
     required String sentAt,
     required DateTime sentAtTime,
+
     /// When the kitchen started owning this line — stamped on the `held → sent`
     /// fire, null on a normal send. The prep clock runs from
     /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.
     /// See [kitchenClockStart]. ADR-0043.
     DateTime? firedAtTime,
+
     /// First entry into `ready` — the pass clock starts here (ADR-0013).
     DateTime? readyAtTime,
+
     /// Most recent entry into `served`.
     DateTime? servedAtTime,
     String? voidReason,

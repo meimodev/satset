@@ -19,9 +19,9 @@ class PairingService {
       expiresAt: now.add(tokenTtl),
     );
     await db.into(db.pairTokens).insert(row);
-    return (db.select(db.pairTokens)
-          ..where((t) => t.token.equals(row.token.value)))
-        .getSingle();
+    return (db.select(
+      db.pairTokens,
+    )..where((t) => t.token.equals(row.token.value))).getSingle();
   }
 
   /// Returns the device row on success or null when the token is missing,
@@ -32,27 +32,35 @@ class PairingService {
     required String deviceLabel,
     required String publicKeyPem,
   }) async {
-    final row = await (db.select(db.pairTokens)
-          ..where((t) => t.token.equals(token)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.pairTokens,
+    )..where((t) => t.token.equals(token))).getSingleOrNull();
     if (row == null) return null;
     if (row.used) return null;
     if (row.expiresAt.isBefore(DateTime.now())) return null;
 
     await db.transaction(() async {
-      await (db.update(db.pairTokens)..where((t) => t.token.equals(token)))
-          .write(PairTokensCompanion(
-        used: const Value(true),
-        claimedByDeviceId: Value(deviceId),
-      ));
-      await db.into(db.devices).insertOnConflictUpdate(DevicesCompanion.insert(
-            id: deviceId,
-            label: deviceLabel,
-            publicKeyPem: publicKeyPem,
-            pairedAt: DateTime.now(),
-          ));
+      await (db.update(
+        db.pairTokens,
+      )..where((t) => t.token.equals(token))).write(
+        PairTokensCompanion(
+          used: const Value(true),
+          claimedByDeviceId: Value(deviceId),
+        ),
+      );
+      await db
+          .into(db.devices)
+          .insertOnConflictUpdate(
+            DevicesCompanion.insert(
+              id: deviceId,
+              label: deviceLabel,
+              publicKeyPem: publicKeyPem,
+              pairedAt: DateTime.now(),
+            ),
+          );
     });
-    return (db.select(db.devices)..where((d) => d.id.equals(deviceId)))
-        .getSingleOrNull();
+    return (db.select(
+      db.devices,
+    )..where((d) => d.id.equals(deviceId))).getSingleOrNull();
   }
 }

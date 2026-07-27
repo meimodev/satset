@@ -126,21 +126,27 @@ pw.Widget pdfTitleBlock({
                       child: pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          if (venueName != null &&
-                              venueName.trim().isNotEmpty)
-                            pw.Text(venueName.trim(),
-                                style: pw.TextStyle(
-                                  fontSize: 12,
-                                  color: kPdfInk,
-                                  fontWeight: pw.FontWeight.bold,
-                                )),
+                          if (venueName != null && venueName.trim().isNotEmpty)
+                            pw.Text(
+                              venueName.trim(),
+                              style: pw.TextStyle(
+                                fontSize: 12,
+                                color: kPdfInk,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
                           for (final line in identity.skip(
-                              venueName != null && venueName.trim().isNotEmpty
-                                  ? 1
-                                  : 0))
-                            pw.Text(line,
-                                style: pw.TextStyle(
-                                    fontSize: 8, color: kPdfInkMd)),
+                            venueName != null && venueName.trim().isNotEmpty
+                                ? 1
+                                : 0,
+                          ))
+                            pw.Text(
+                              line,
+                              style: pw.TextStyle(
+                                fontSize: 8,
+                                color: kPdfInkMd,
+                              ),
+                            ),
                         ],
                       ),
                     ),

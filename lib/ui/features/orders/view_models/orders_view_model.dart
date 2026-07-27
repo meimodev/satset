@@ -23,7 +23,7 @@ class OrdersScreenState {
 /// Groups tickets across all tables for the waiter Orders screen.
 class OrdersViewModel extends StateNotifier<OrdersScreenState> {
   OrdersViewModel(this.ref)
-      : super(const OrdersScreenState(ready: [], active: [], done: [])) {
+    : super(const OrdersScreenState(ready: [], active: [], done: [])) {
     _recompute(ref.read(ticketsProvider));
     ref.listen(ticketsProvider, (_, next) => _recompute(next));
   }
@@ -41,18 +41,22 @@ class OrdersViewModel extends StateNotifier<OrdersScreenState> {
     state = OrdersScreenState(
       ready: all.where((r) => r.ticket.status == TicketStatus.ready).toList(),
       active: all
-          .where((r) =>
-              r.ticket.status == TicketStatus.draft ||
-              r.ticket.status == TicketStatus.acknowledged ||
-              r.ticket.status == TicketStatus.sent ||
-              r.ticket.status == TicketStatus.prep ||
-              r.ticket.status == TicketStatus.cooked ||
-              r.ticket.status == TicketStatus.held)
+          .where(
+            (r) =>
+                r.ticket.status == TicketStatus.draft ||
+                r.ticket.status == TicketStatus.acknowledged ||
+                r.ticket.status == TicketStatus.sent ||
+                r.ticket.status == TicketStatus.prep ||
+                r.ticket.status == TicketStatus.cooked ||
+                r.ticket.status == TicketStatus.held,
+          )
           .toList(),
       done: all
-          .where((r) =>
-              r.ticket.status == TicketStatus.served ||
-              r.ticket.status == TicketStatus.voided)
+          .where(
+            (r) =>
+                r.ticket.status == TicketStatus.served ||
+                r.ticket.status == TicketStatus.voided,
+          )
           .toList(),
     );
   }
@@ -60,4 +64,5 @@ class OrdersViewModel extends StateNotifier<OrdersScreenState> {
 
 final ordersViewModelProvider =
     StateNotifierProvider.autoDispose<OrdersViewModel, OrdersScreenState>(
-        (ref) => OrdersViewModel(ref));
+      (ref) => OrdersViewModel(ref),
+    );

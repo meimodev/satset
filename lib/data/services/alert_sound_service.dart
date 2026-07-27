@@ -44,7 +44,9 @@ class AlertSoundService {
     // sweep, waiters own the table cues.
     if (_mode == AppMode.server) {
       _overdueTimer = Timer.periodic(
-          const Duration(seconds: 20), (_) => _scanCourseOverdue());
+        const Duration(seconds: 20),
+        (_) => _scanCourseOverdue(),
+      );
     }
     if (_mode == AppMode.client) {
       _tableTimer = Timer.periodic(const Duration(seconds: 20), (_) {
@@ -88,6 +90,7 @@ class AlertSoundService {
   }
 
   final Map<String, TicketStatus> _lastStatus = {};
+
   /// One-shot ledgers. Cues never loop or demand acknowledgement — the
   /// escalation *is* the second chance (ADR-0044).
   final Set<String> _overdueAlerted = {};
@@ -110,6 +113,7 @@ class AlertSoundService {
       SatLog.vm('alert.online refresh failed $e');
     }
   }
+
   final Set<AlertEvent> _cooling = {};
 
   AppMode get _mode =>
@@ -161,7 +165,9 @@ class AlertSoundService {
         if (mode == AppMode.server) {
           _play(AlertEvent.voided); // Kitchen recall.
         } else if (mode == AppMode.client && _isMyTable(dto.tableId)) {
-          _play(AlertEvent.voided); // Targeted void/comp for responsible waiter.
+          _play(
+            AlertEvent.voided,
+          ); // Targeted void/comp for responsible waiter.
         }
       default:
         break;
@@ -206,11 +212,11 @@ class AlertSoundService {
     final zone = table == null
         ? ''
         : (ref
-                .read(zonesProvider)
-                .where((z) => z.id == table.zoneId)
-                .firstOrNull
-                ?.name ??
-            '');
+                  .read(zonesProvider)
+                  .where((z) => z.id == table.zoneId)
+                  .firstOrNull
+                  ?.name ??
+              '');
     ref.read(readyAlertProvider.notifier).state = ReadyAlert(
       tableId: dto.tableId,
       tableLabel: table?.displayName ?? dto.tableId,
@@ -236,21 +242,24 @@ class AlertSoundService {
       for (final t in entry.value) {
         if (t.status == TicketStatus.voided) continue;
         if (t.status == TicketStatus.held) continue; // Not the kitchen's yet.
-        lines.add(TimedLine(
-          visitKey: entry.key,
-          course: t.course.name,
-          start: t.kitchenClockStart,
-          readyAt: t.readyAtTime,
-          targetMins: resolvePrepMins(
-            prepByItem[t.itemId],
-            settings.prepTargetMins,
+        lines.add(
+          TimedLine(
+            visitKey: entry.key,
+            course: t.course.name,
+            start: t.kitchenClockStart,
+            readyAt: t.readyAtTime,
+            targetMins: resolvePrepMins(
+              prepByItem[t.itemId],
+              settings.prepTargetMins,
+            ),
           ),
-        ));
+        );
       }
     }
 
     for (final c in rollUpCourses(lines)) {
-      final key = '${c.visitKey}:${c.course}:'
+      final key =
+          '${c.visitKey}:${c.course}:'
           '${c.firedAt.millisecondsSinceEpoch}';
       if (_overdueAlerted.contains(key)) continue;
       if (c.isOverdueAt(now)) {
@@ -298,8 +307,8 @@ class AlertSoundService {
       if (openedAt == null) continue;
       // Any line at all — held included — means someone took the order.
       final visitId = t.currentVisitId;
-      final ordered = visitId != null &&
-          (byVisit[visitId]?.isNotEmpty ?? false);
+      final ordered =
+          visitId != null && (byVisit[visitId]?.isNotEmpty ?? false);
       if (ordered) continue;
 
       final cue = ungreetedCueFor(
@@ -340,7 +349,9 @@ class AlertSoundService {
       SatLog.vm('alert.skip ${event.name} (none)');
       return;
     }
-    if (_cooling.contains(event)) return; // Leading-edge throttle: collapse bursts.
+    if (_cooling.contains(event)) {
+      return; // Leading-edge throttle: collapse bursts.
+    }
     _cooling.add(event);
     Timer(_debounce, () => _cooling.remove(event));
     if (_mode == AppMode.client) {

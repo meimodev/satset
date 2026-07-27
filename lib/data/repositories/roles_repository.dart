@@ -13,8 +13,9 @@ import 'package:satset/domain/models/role.dart';
 const _uuid = Uuid();
 
 /// Surfaces bootstrap progress for the roles list.
-final rolesStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final rolesStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class RolesRepository extends StateNotifier<List<Role>> {
   RolesRepository({required this.ref}) : super(const <Role>[]) {
@@ -42,20 +43,21 @@ class RolesRepository extends StateNotifier<List<Role>> {
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(rolesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(rolesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     ref.read(rolesStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
-      ref.read(rolesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(rolesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       _wireWs();
     } catch (e, st) {
       SatLog.repo('roles.bootstrap fail $e');
-      ref.read(rolesStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(rolesStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
   }
 
@@ -133,21 +135,22 @@ class RolesRepository extends StateNotifier<List<Role>> {
 
   void rename(String id, String name) {
     SatLog.repo(
-        'roles.rename id=${id.substring(0, id.length.clamp(0, 6))} → $name');
+      'roles.rename id=${id.substring(0, id.length.clamp(0, 6))} → $name',
+    );
     _mutate(id, (r) => r.copyWith(name: name));
     _patch(id, {'name': name});
   }
 
   void setColor(String id, int colorHex) {
-    SatLog.repo(
-        'roles.setColor id=${id.substring(0, id.length.clamp(0, 6))}');
+    SatLog.repo('roles.setColor id=${id.substring(0, id.length.clamp(0, 6))}');
     _mutate(id, (r) => r.copyWith(colorHex: colorHex));
     _patch(id, {'colorHex': _hexString(colorHex)});
   }
 
   void setCapability(String roleId, Capability c, bool on) {
     SatLog.repo(
-        'roles.setCap role=${roleId.substring(0, roleId.length.clamp(0, 6))} cap=${c.name} on=$on');
+      'roles.setCap role=${roleId.substring(0, roleId.length.clamp(0, 6))} cap=${c.name} on=$on',
+    );
     Role? snapshot;
     _mutate(roleId, (r) {
       snapshot = r;
@@ -157,15 +160,18 @@ class RolesRepository extends StateNotifier<List<Role>> {
     });
     final after = byId(roleId);
     if (after == null) return;
-    _patch(roleId,
-        {'capabilities': [for (final cap in after.capabilities) cap.name]},
-        onFail: snapshot == null ? null : (prev) => snapshot);
+    _patch(roleId, {
+      'capabilities': [for (final cap in after.capabilities) cap.name],
+    }, onFail: snapshot == null ? null : (prev) => snapshot);
   }
 
   void delete(String id) {
     SatLog.repo('roles.delete id=${id.substring(0, id.length.clamp(0, 6))}');
     final prev = state;
-    state = [for (final r in state) if (r.id != id) r];
+    state = [
+      for (final r in state)
+        if (r.id != id) r,
+    ];
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     unawaited(() async {
@@ -179,23 +185,20 @@ class RolesRepository extends StateNotifier<List<Role>> {
   }
 
   /// Count roles holding [c]. Used by last-admin guard.
-  int capabilityHolders(Capability c) =>
-      state.where((r) => r.has(c)).length;
+  int capabilityHolders(Capability c) => state.where((r) => r.has(c)).length;
 
   // ---- helpers ----
 
   void _mutate(String id, Role Function(Role) f) {
-    state = [
-      for (final r in state) r.id == id ? f(r) : r,
-    ];
+    state = [for (final r in state) r.id == id ? f(r) : r];
   }
 
   Map<String, dynamic> _toBody(Role r) => {
-        'id': r.id,
-        'name': r.name,
-        'colorHex': _hexString(r.colorHex),
-        'capabilities': [for (final c in r.capabilities) c.name],
-      };
+    'id': r.id,
+    'name': r.name,
+    'colorHex': _hexString(r.colorHex),
+    'capabilities': [for (final c in r.capabilities) c.name],
+  };
 
   void _patch(
     String id,
@@ -212,8 +215,7 @@ class RolesRepository extends StateNotifier<List<Role>> {
         SatLog.repo('roles.patch fail $e');
         if (prev != null) {
           state = [
-            for (final r in state)
-              r.id == id ? (onFail?.call(r) ?? prev) : r,
+            for (final r in state) r.id == id ? (onFail?.call(r) ?? prev) : r,
           ];
         }
       }
@@ -223,6 +225,6 @@ class RolesRepository extends StateNotifier<List<Role>> {
 
 final rolesRepositoryProvider =
     StateNotifierProvider<RolesRepository, List<Role>>((ref) {
-  ref.watch(apiConfigProvider);
-  return RolesRepository(ref: ref);
-});
+      ref.watch(apiConfigProvider);
+      return RolesRepository(ref: ref);
+    });

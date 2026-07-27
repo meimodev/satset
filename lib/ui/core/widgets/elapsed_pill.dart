@@ -86,10 +86,7 @@ class ElapsedPill extends ConsumerWidget {
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: SatBox.d(
-        color: bg,
-        borderRadius: SatR.a(6),
-      ),
+      decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -136,13 +136,17 @@ class _NetworkPill extends ConsumerWidget {
       WsConnState.connecting => (sc.warn, sc.warnSoft, 'MENGHUBUNGKAN…'),
       _ => (sc.urgent, sc.urgentSoft, 'OFFLINE'),
     };
-    final fg = SatShape.brutal && SatShape.brutalPaper ? SatShape.ink : sc.textHi;
+    final fg = SatShape.brutal && SatShape.brutalPaper
+        ? SatShape.ink
+        : sc.textHi;
 
     return Container(
       height: 30,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: SatBox.d(
-        color: SatShape.brutal ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2) : sc.bg2,
+        color: SatShape.brutal
+            ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2)
+            : sc.bg2,
         border: SatB.all(color: SatShape.brutal ? SatShape.ink : sc.border1),
         borderRadius: SatR.a(999),
       ),
@@ -175,8 +179,6 @@ class _NetworkPill extends ConsumerWidget {
     );
   }
 }
-
-
 
 /// Compact pill shown as a trailing slot in [SatAppBar]. Used for things like
 /// "T+0:45" on the table detail screen.

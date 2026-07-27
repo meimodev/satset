@@ -83,7 +83,9 @@ class OwnerReportPublisher {
       if (payload.isEmpty) return; // all ranges failed — keep the last good doc
       payload['generatedAt'] = FieldValue.serverTimestamp();
       await _reportDoc.set(payload);
-      SatLog.repo('ownerReport.published vid=$vid ranges=${payload.keys.length - 1}');
+      SatLog.repo(
+        'ownerReport.published vid=$vid ranges=${payload.keys.length - 1}',
+      );
     } catch (e) {
       SatLog.repo('ownerReport.publish fail $e');
     } finally {
@@ -132,14 +134,15 @@ class OwnerReport {
 /// Owner-side reader: streams the published report and sends refresh commands.
 class OwnerReportService {
   OwnerReportService({FirebaseFirestore? firestore})
-      : _fs = firestore ?? FirebaseFirestore.instance;
+    : _fs = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _fs;
 
-  Stream<OwnerReport?> watch(String vid) =>
-      _fs.collection('reports').doc(vid).snapshots().map(
-            (s) => s.exists ? OwnerReport.fromDoc(s) : null,
-          );
+  Stream<OwnerReport?> watch(String vid) => _fs
+      .collection('reports')
+      .doc(vid)
+      .snapshots()
+      .map((s) => s.exists ? OwnerReport.fromDoc(s) : null);
 
   /// Stamp the refresh command. The host (if online) republishes; the owner's
   /// [watch] stream then surfaces a newer `generatedAt`.
@@ -149,12 +152,15 @@ class OwnerReportService {
       .set({'requestedAt': FieldValue.serverTimestamp()});
 }
 
-final ownerReportServiceProvider =
-    Provider<OwnerReportService>((_) => OwnerReportService());
+final ownerReportServiceProvider = Provider<OwnerReportService>(
+  (_) => OwnerReportService(),
+);
 
 /// Live published report for the signed-in owner's venue. The owner screen
 /// reads its venueId from the auth session and passes it here.
-final ownerReportProvider =
-    StreamProvider.family<OwnerReport?, String>((ref, vid) {
+final ownerReportProvider = StreamProvider.family<OwnerReport?, String>((
+  ref,
+  vid,
+) {
   return ref.watch(ownerReportServiceProvider).watch(vid);
 });

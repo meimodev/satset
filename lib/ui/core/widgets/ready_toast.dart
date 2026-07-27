@@ -39,9 +39,10 @@ class ReadyToast extends StatelessWidget {
           border: SatB.all(color: sc.success.withValues(alpha: 0.45)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.55),
-                blurRadius: 36,
-                offset: const Offset(0, 12)),
+              color: Colors.black.withValues(alpha: 0.55),
+              blurRadius: 36,
+              offset: const Offset(0, 12),
+            ),
           ],
         ),
         child: Row(
@@ -49,26 +50,28 @@ class ReadyToast extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
-              decoration: SatBox.d(
-                color: sc.success,
-                borderRadius: SatR.a(12),
-              ),
+              decoration: SatBox.d(color: sc.success, borderRadius: SatR.a(12)),
               alignment: Alignment.center,
-              child: Icon(Icons.notifications_active,
-                  size: 18, color: sc.successInk),
+              child: Icon(
+                Icons.notifications_active,
+                size: 18,
+                color: sc.successInk,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Siap di pass · ${alert.what}',
-                      style: SatType.sans(
-                        size: 13,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.13,
-                        color: Colors.white,
-                      )),
+                  Text(
+                    'Siap di pass · ${alert.what}',
+                    style: SatType.sans(
+                      size: 13,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.13,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     alert.isTakeaway
@@ -92,15 +95,20 @@ class ReadyToast extends StatelessWidget {
               style: TextButton.styleFrom(
                 backgroundColor: Colors.white.withValues(alpha: 0.18),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
               ),
-              child: Text('Ambil',
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w600,
-                    color: Colors.white,
-                  )),
+              child: Text(
+                'Ambil',
+                style: SatType.sans(
+                  size: 12,
+                  weight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         ),

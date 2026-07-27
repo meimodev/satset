@@ -49,18 +49,16 @@ class _ThemeSheet extends ConsumerWidget {
             const SizedBox(height: 18),
             Text(
               AppStrings.themeSheetTitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: sc.textHi),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: sc.textHi),
             ),
             const SizedBox(height: 4),
             Text(
               AppStrings.themeSheetSubtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: sc.textLo),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: sc.textLo),
             ),
             const SizedBox(height: 14),
             for (final t in SatTheme.values)
@@ -106,9 +104,7 @@ class _ThemeRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: SatBox.d(
               borderRadius: SatR.a(14),
-              border: SatB.all(
-                color: selected ? sc.accentBorder : sc.border1,
-              ),
+              border: SatB.all(color: selected ? sc.accentBorder : sc.border1),
             ),
             child: Row(
               children: [
@@ -117,10 +113,9 @@ class _ThemeRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     theme.label,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: sc.textHi),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: sc.textHi),
                   ),
                 ),
                 // Selection is stated by the check, not by the tint alone —
@@ -173,10 +168,7 @@ class _Swatch extends StatelessWidget {
           Container(
             width: 12,
             height: 3,
-            decoration: SatBox.d(
-              color: text,
-              borderRadius: SatR.a(2),
-            ),
+            decoration: SatBox.d(color: text, borderRadius: SatR.a(2)),
           ),
         ],
       ),

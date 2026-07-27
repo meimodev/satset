@@ -27,12 +27,12 @@ enum Capability {
 }
 
 String capabilityGroupLabel(CapabilityGroup g) => switch (g) {
-      CapabilityGroup.orders => 'Orders',
-      CapabilityGroup.money => 'Money',
-      CapabilityGroup.inventory => 'Inventory',
-      CapabilityGroup.admin => 'Admin',
-      CapabilityGroup.kitchen => 'Kitchen',
-    };
+  CapabilityGroup.orders => 'Orders',
+  CapabilityGroup.money => 'Money',
+  CapabilityGroup.inventory => 'Inventory',
+  CapabilityGroup.admin => 'Admin',
+  CapabilityGroup.kitchen => 'Kitchen',
+};
 
 Capability? capabilityFromKey(String key) {
   for (final c in Capability.values) {

@@ -21,7 +21,7 @@ class TableDetailState {
 
 class TableDetailViewModel extends StateNotifier<TableDetailState> {
   TableDetailViewModel(this.ref, this.tableId)
-      : super(const TableDetailState(table: null, tickets: [], readyCount: 0)) {
+    : super(const TableDetailState(table: null, tickets: [], readyCount: 0)) {
     _recompute();
     ref.listen(tablesProvider, (_, next) => _recompute(tables: next));
     ref.listen(ticketsProvider, (_, next) => _recompute(byTable: next));
@@ -64,4 +64,5 @@ extension<E> on Iterable<E> {
 
 final tableDetailViewModelProvider = StateNotifierProvider.autoDispose
     .family<TableDetailViewModel, TableDetailState, String>(
-        (ref, id) => TableDetailViewModel(ref, id));
+      (ref, id) => TableDetailViewModel(ref, id),
+    );

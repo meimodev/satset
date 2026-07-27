@@ -33,16 +33,15 @@ class AppShell extends ConsumerWidget {
     final l = context.layout;
 
     final activeTab = _activeFor(loc);
-    final showKasir =
-        ref.watch(authStateProvider).has(Capability.settleBill);
-    final showGuest =
-        ref.watch(authStateProvider).has(Capability.takeOrder);
+    final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
+    final showGuest = ref.watch(authStateProvider).has(Capability.takeOrder);
     final guestCount = ref.watch(guestOrdersProvider).length;
     final forcePhone = ref.watch(forcePhoneViewProvider);
     final zones = ref.watch(zonesProvider);
     final zoneName = zones.isEmpty ? '—' : zones.first.name;
     final venueName = ref.watch(
-        venueSettingsProvider.select((s) => s.displayName));
+      venueSettingsProvider.select((s) => s.displayName),
+    );
 
     if (l.useTabletShell && !forcePhone) {
       return ExitGuard(
@@ -80,11 +79,12 @@ class AppShell extends ConsumerWidget {
                     right: 8,
                     bottom: 12,
                     child: _FloatingTabBar(
-                        active: activeTab,
-                        readyCount: ready,
-                        showKasir: showKasir,
-                        showGuest: showGuest,
-                        guestCount: guestCount),
+                      active: activeTab,
+                      readyCount: ready,
+                      showKasir: showKasir,
+                      showGuest: showGuest,
+                      guestCount: guestCount,
+                    ),
                   ),
                 ],
               ),
@@ -111,7 +111,11 @@ class AppShell extends ConsumerWidget {
   }
 
   List<String> _crumbsFor(
-      String loc, String activeTab, String zoneName, String venueName) {
+    String loc,
+    String activeTab,
+    String zoneName,
+    String venueName,
+  ) {
     final venue = venueName.isEmpty ? AppStrings.venueHubTitle : venueName;
     switch (activeTab) {
       case 'orders':
@@ -123,11 +127,21 @@ class AppShell extends ConsumerWidget {
       case 'kitchen':
         return ['Stasiun', AppStrings.crumbAntrianPersiapan];
       case 'venue':
-        if (loc.startsWith('/zone-admin')) return [AppStrings.venueHubTitle, AppStrings.zoneAdminTitle];
-        if (loc.startsWith('/menuadm')) return [AppStrings.venueHubTitle, AppStrings.crumbMenuAdmin];
-        if (loc.startsWith('/system')) return [AppStrings.venueHubTitle, AppStrings.venueHubSectionSystem];
-        if (loc.startsWith('/staff')) return [AppStrings.venueHubTitle, AppStrings.crumbStafAkun];
-        if (loc.startsWith('/reports')) return [AppStrings.venueHubTitle, AppStrings.crumbLaporanShift];
+        if (loc.startsWith('/zone-admin')) {
+          return [AppStrings.venueHubTitle, AppStrings.zoneAdminTitle];
+        }
+        if (loc.startsWith('/menuadm')) {
+          return [AppStrings.venueHubTitle, AppStrings.crumbMenuAdmin];
+        }
+        if (loc.startsWith('/system')) {
+          return [AppStrings.venueHubTitle, AppStrings.venueHubSectionSystem];
+        }
+        if (loc.startsWith('/staff')) {
+          return [AppStrings.venueHubTitle, AppStrings.crumbStafAkun];
+        }
+        if (loc.startsWith('/reports')) {
+          return [AppStrings.venueHubTitle, AppStrings.crumbLaporanShift];
+        }
         return [AppStrings.venueHubTitle, AppStrings.crumbKonfigurasi];
       default:
         return [venue, zoneName];
@@ -141,12 +155,13 @@ class _FloatingTabBar extends StatelessWidget {
   final bool showKasir;
   final bool showGuest;
   final int guestCount;
-  const _FloatingTabBar(
-      {required this.active,
-      required this.readyCount,
-      this.showKasir = false,
-      this.showGuest = false,
-      this.guestCount = 0});
+  const _FloatingTabBar({
+    required this.active,
+    required this.readyCount,
+    this.showKasir = false,
+    this.showGuest = false,
+    this.guestCount = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +298,10 @@ class _Tab extends StatelessWidget {
                 top: 8,
                 right: 22,
                 child: Container(
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: SatBox.d(
                     color: badgeAlert ? sc.success : sc.accent,

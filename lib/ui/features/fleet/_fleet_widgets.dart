@@ -14,11 +14,25 @@ import 'package:satset/ui/core/widgets/anim.dart';
 /// Status → (tint, soft bg, label). One source of truth for both venue tiles
 /// (kill switch) and admin rows (per-operator ban).
 ({Color tint, Color soft, String label}) fleetStatusVisual(
-    SatColors sc, AdminStatus s) {
+  SatColors sc,
+  AdminStatus s,
+) {
   return switch (s) {
-    AdminStatus.active => (tint: sc.success, soft: sc.successSoft, label: 'AKTIF'),
-    AdminStatus.suspended => (tint: sc.warn, soft: sc.warnSoft, label: 'TANGGUH'),
-    AdminStatus.banned => (tint: sc.urgent, soft: sc.urgentSoft, label: 'BLOKIR'),
+    AdminStatus.active => (
+      tint: sc.success,
+      soft: sc.successSoft,
+      label: 'AKTIF',
+    ),
+    AdminStatus.suspended => (
+      tint: sc.warn,
+      soft: sc.warnSoft,
+      label: 'TANGGUH',
+    ),
+    AdminStatus.banned => (
+      tint: sc.urgent,
+      soft: sc.urgentSoft,
+      label: 'BLOKIR',
+    ),
     AdminStatus.unknown => (tint: sc.textLo, soft: sc.bg3, label: '?'),
   };
 }
@@ -26,12 +40,13 @@ import 'package:satset/ui/core/widgets/anim.dart';
 /// A pill carrying one fleet signal (billing, offline, lockout-risk). Status is
 /// deliberately *not* a pill — it lives in the tile's leading tint.
 Widget fleetPill(SatColors sc, String text, Color fg, Color bg) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration:
-          SatBox.d(color: bg, borderRadius: SatR.a(8)),
-      child: Text(text,
-          style: SatType.mono(size: 10, weight: FontWeight.w700, color: fg)),
-    );
+  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+  decoration: SatBox.d(color: bg, borderRadius: SatR.a(8)),
+  child: Text(
+    text,
+    style: SatType.mono(size: 10, weight: FontWeight.w700, color: fg),
+  ),
+);
 
 /// The shared tile: leading status-tint icon box, title + sub, an optional pill
 /// wrap, and a trailing action (the `⋮` quick-action menu). Whole tile is
@@ -69,7 +84,12 @@ class FleetTile extends StatelessWidget {
     final titleSize = big ? 16.0 : 15.0;
 
     final body = Container(
-      padding: EdgeInsets.fromLTRB(big ? 16 : 14, 14, trailing == null ? 16 : 6, 14),
+      padding: EdgeInsets.fromLTRB(
+        big ? 16 : 14,
+        14,
+        trailing == null ? 16 : 6,
+        14,
+      ),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -96,22 +116,26 @@ class FleetTile extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(title,
-                      style: SatType.sans(
-                          size: titleSize,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          color: sc.textHi)),
+                  child: Text(
+                    title,
+                    style: SatType.sans(
+                      size: titleSize,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                      color: sc.textHi,
+                    ),
+                  ),
                 ),
                 if (sub != null) ...[
                   const SizedBox(height: 3),
-                  Text(sub!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: subMono
-                          ? SatType.mono(size: 11, color: sc.textLo)
-                          : SatType.sans(
-                              size: 12, color: sc.textLo, height: 1.3)),
+                  Text(
+                    sub!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: subMono
+                        ? SatType.mono(size: 11, color: sc.textLo)
+                        : SatType.sans(size: 12, color: sc.textLo, height: 1.3),
+                  ),
                 ],
                 if (pills.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -120,10 +144,7 @@ class FleetTile extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 4),
-            trailing!,
-          ],
+          if (trailing != null) ...[const SizedBox(width: 4), trailing!],
         ],
       ),
     );
@@ -133,11 +154,7 @@ class FleetTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         borderRadius: SatR.a(radius),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: SatR.a(radius),
-          child: body,
-        ),
+        child: InkWell(onTap: onTap, borderRadius: SatR.a(radius), child: body),
       ),
     );
   }
@@ -151,33 +168,37 @@ Widget fleetMenu(
   required Map<String, String> items,
   required Set<String> dangerKeys,
   required ValueChanged<String> onSelected,
-}) =>
-    PopupMenuButton<String>(
-      enabled: enabled,
-      icon: Icon(Icons.more_vert, color: sc.textLo),
-      color: sc.bg2,
-      onSelected: onSelected,
-      itemBuilder: (_) => [
-        for (final e in items.entries)
-          PopupMenuItem(
-            value: e.key,
-            child: Text(e.value,
-                style: SatType.sans(
-                    size: 13,
-                    color: dangerKeys.contains(e.key) ? sc.urgent : sc.textHi)),
+}) => PopupMenuButton<String>(
+  enabled: enabled,
+  icon: Icon(Icons.more_vert, color: sc.textLo),
+  color: sc.bg2,
+  onSelected: onSelected,
+  itemBuilder: (_) => [
+    for (final e in items.entries)
+      PopupMenuItem(
+        value: e.key,
+        child: Text(
+          e.value,
+          style: SatType.sans(
+            size: 13,
+            color: dangerKeys.contains(e.key) ? sc.urgent : sc.textHi,
           ),
-      ],
-    );
+        ),
+      ),
+  ],
+);
 
 /// Themed snackbar used across both fleet screens.
 void fleetToast(BuildContext context, String msg, {bool error = false}) {
   final sc = context.sat;
   ScaffoldMessenger.of(context)
     ..clearSnackBars()
-    ..showSnackBar(SnackBar(
-      content: Text(msg, style: SatType.sans(size: 13, color: sc.textHi)),
-      backgroundColor: error ? sc.urgentSoft : sc.bg3,
-    ));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(msg, style: SatType.sans(size: 13, color: sc.textHi)),
+        backgroundColor: error ? sc.urgentSoft : sc.bg3,
+      ),
+    );
 }
 
 /// Strips the `[code]` prefix Cloud Functions errors carry.
@@ -212,24 +233,30 @@ class FleetHeader extends StatelessWidget {
             Icon(icon, size: 14, color: sc.accentText),
             const SizedBox(width: 6),
             Expanded(
-              child: Text(kicker,
-                  style: SatType.mono(
-                      size: 11,
-                      weight: FontWeight.w700,
-                      letterSpacing: 2,
-                      color: sc.accentText)),
+              child: Text(
+                kicker,
+                style: SatType.mono(
+                  size: 11,
+                  weight: FontWeight.w700,
+                  letterSpacing: 2,
+                  color: sc.accentText,
+                ),
+              ),
             ),
             ?trailing,
           ],
         ),
         const SizedBox(height: 4),
-        Text(title,
-            style: SatType.sans(
-                size: 22,
-                weight: FontWeight.w600,
-                letterSpacing: -0.44,
-                height: 1.05,
-                color: sc.textHi)),
+        Text(
+          title,
+          style: SatType.sans(
+            size: 22,
+            weight: FontWeight.w600,
+            letterSpacing: -0.44,
+            height: 1.05,
+            color: sc.textHi,
+          ),
+        ),
       ],
     );
   }
@@ -269,16 +296,22 @@ class FleetPrimaryButton extends StatelessWidget {
                 SizedBox(
                   width: 15,
                   height: 15,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: sc.bg0),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: sc.bg0,
+                  ),
                 )
               else
                 Icon(icon, size: 18, color: onTap == null ? sc.textLo : sc.bg0),
               const SizedBox(width: 8),
-              Text(label,
-                  style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w700,
-                      color: onTap == null ? sc.textLo : sc.bg0)),
+              Text(
+                label,
+                style: SatType.sans(
+                  size: 14,
+                  weight: FontWeight.w700,
+                  color: onTap == null ? sc.textLo : sc.bg0,
+                ),
+              ),
             ],
           ),
         ),

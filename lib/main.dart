@@ -96,16 +96,16 @@ Future<void> main() async {
 
     final deviceId = (await storage.readDeviceId()) ?? '';
     SatLog.boot(
-        'mode=${mode.name} device=${deviceId.isEmpty ? "?" : deviceId.substring(0, deviceId.length.clamp(0, 8))} '
-        'api=${apiConfig?.baseUri ?? "none"}');
+      'mode=${mode.name} device=${deviceId.isEmpty ? "?" : deviceId.substring(0, deviceId.length.clamp(0, 8))} '
+      'api=${apiConfig?.baseUri ?? "none"}',
+    );
 
     final container = ProviderContainer(
       overrides: [
         prefsServiceProvider.overrideWith((_) async => prefs),
         secureStorageServiceProvider.overrideWithValue(storage),
         if (apiConfig != null) apiConfigProvider.overrideWith((_) => apiConfig),
-        if (server != null)
-          serverRuntimeProvider.overrideWith((_) => server),
+        if (server != null) serverRuntimeProvider.overrideWith((_) => server),
         if (adminBootBlock != null)
           adminBootBlockProvider.overrideWith((_) => adminBootBlock),
       ],
@@ -116,10 +116,12 @@ Future<void> main() async {
       container.read(authStateProvider.notifier).restoreFromStoredToken();
     }
 
-    runApp(UncontrolledProviderScope(
-      container: container,
-      child: _ServerLifecycle(server: server, child: const SatSetApp()),
-    ));
+    runApp(
+      UncontrolledProviderScope(
+        container: container,
+        child: _ServerLifecycle(server: server, child: const SatSetApp()),
+      ),
+    );
   }, (e, st) => SatLog.err('zoned', e, st));
 }
 

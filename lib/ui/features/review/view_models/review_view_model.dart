@@ -20,7 +20,9 @@ class ReviewViewModel extends StateNotifier<ReviewState> {
     List<CartItem> cart, {
     String? actorId,
   }) async {
-    SatLog.vm('ReviewVM submit table=${tableId.substring(0, tableId.length.clamp(0, 6))} items=${cart.length}');
+    SatLog.vm(
+      'ReviewVM submit table=${tableId.substring(0, tableId.length.clamp(0, 6))} items=${cart.length}',
+    );
     state = const ReviewState(busy: true);
     try {
       final res = await ref
@@ -43,10 +45,14 @@ class ReviewViewModel extends StateNotifier<ReviewState> {
     String? existingVisitId,
     String? actorId,
   }) async {
-    SatLog.vm('ReviewVM submitTakeaway items=${cart.length} append=${existingVisitId != null}');
+    SatLog.vm(
+      'ReviewVM submitTakeaway items=${cart.length} append=${existingVisitId != null}',
+    );
     state = const ReviewState(busy: true);
     try {
-      final res = await ref.read(submitOrderUseCaseProvider).takeaway(
+      final res = await ref
+          .read(submitOrderUseCaseProvider)
+          .takeaway(
             cart: cart,
             guestName: guestName,
             existingVisitId: existingVisitId,
@@ -64,4 +70,5 @@ class ReviewViewModel extends StateNotifier<ReviewState> {
 
 final reviewViewModelProvider =
     StateNotifierProvider.autoDispose<ReviewViewModel, ReviewState>(
-        (ref) => ReviewViewModel(ref));
+      (ref) => ReviewViewModel(ref),
+    );

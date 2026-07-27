@@ -152,7 +152,11 @@ class VenueHubScreen extends ConsumerWidget {
             const Reveal(index: 1, child: SeedDataBanner()),
             const SizedBox(height: 16),
           ],
-          _HubGrid(sections: _sections, seedOffset: showSeed ? 2 : 1, big: true),
+          _HubGrid(
+            sections: _sections,
+            seedOffset: showSeed ? 2 : 1,
+            big: true,
+          ),
         ],
       );
     }
@@ -198,7 +202,11 @@ class _VenueHeroStrip extends ConsumerWidget {
                   border: SatB.all(color: sc.accent.withValues(alpha: 0.25)),
                 ),
                 alignment: Alignment.center,
-                child: Icon(Icons.storefront_rounded, size: 22, color: sc.accentText),
+                child: Icon(
+                  Icons.storefront_rounded,
+                  size: 22,
+                  color: sc.accentText,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -222,11 +230,16 @@ class _VenueHeroStrip extends ConsumerWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2.5,
+                          ),
                           decoration: SatBox.d(
                             color: sc.successSoft,
                             borderRadius: SatR.a(20),
-                            border: SatB.all(color: sc.success.withValues(alpha: 0.3)),
+                            border: SatB.all(
+                              color: sc.success.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -271,7 +284,10 @@ class _VenueHeroStrip extends ConsumerWidget {
                 onTap: () => context.push('/venue-settings'),
                 borderRadius: SatR.a(10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: SatBox.d(
                     borderRadius: SatR.a(10),
                     border: SatB.all(color: sc.border1),
@@ -281,7 +297,14 @@ class _VenueHeroStrip extends ConsumerWidget {
                     children: [
                       Icon(Icons.tune_rounded, size: 14, color: sc.textHi),
                       const SizedBox(width: 6),
-                      Text('Pengaturan', style: SatType.sans(size: 12, weight: FontWeight.w600, color: sc.textHi)),
+                      Text(
+                        'Pengaturan',
+                        style: SatType.sans(
+                          size: 12,
+                          weight: FontWeight.w600,
+                          color: sc.textHi,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -293,14 +316,28 @@ class _VenueHeroStrip extends ConsumerWidget {
             spacing: 12,
             runSpacing: 6,
             children: [
-              _StatBadge(icon: Icons.place_outlined, text: '${tables.length} meja (${zones.length} zona)', color: sc.accentText),
-              _StatBadge(icon: Icons.restaurant_menu_rounded, text: '${menuItems.length} item menu', color: sc.warn),
+              _StatBadge(
+                icon: Icons.place_outlined,
+                text: '${tables.length} meja (${zones.length} zona)',
+                color: sc.accentText,
+              ),
+              _StatBadge(
+                icon: Icons.restaurant_menu_rounded,
+                text: '${menuItems.length} item menu',
+                color: sc.warn,
+              ),
               _StatBadge(
                 icon: Icons.inventory_2_outlined,
-                text: lowStock > 0 ? '${stockItems.length} bahan ($lowStock low)' : '${stockItems.length} bahan',
+                text: lowStock > 0
+                    ? '${stockItems.length} bahan ($lowStock low)'
+                    : '${stockItems.length} bahan',
                 color: lowStock > 0 ? sc.warn : sc.success,
               ),
-              _StatBadge(icon: Icons.badge_outlined, text: '${staffList.length} staf', color: sc.info),
+              _StatBadge(
+                icon: Icons.badge_outlined,
+                text: '${staffList.length} staf',
+                color: sc.info,
+              ),
             ],
           ),
         ],
@@ -330,7 +367,11 @@ class _StatBadge extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           text,
-          style: SatType.sans(size: 11.5, weight: FontWeight.w500, color: sc.textLo),
+          style: SatType.sans(
+            size: 11.5,
+            weight: FontWeight.w500,
+            color: sc.textLo,
+          ),
         ),
       ],
     );
@@ -360,11 +401,14 @@ class SeedDataBanner extends ConsumerWidget {
               Icon(Icons.auto_fix_high_rounded, size: 18, color: sc.accentText),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(AppStrings.venueHubSeedTitle,
-                    style: SatType.sans(
-                        size: 15,
-                        weight: FontWeight.w700,
-                        color: sc.textHi)),
+                child: Text(
+                  AppStrings.venueHubSeedTitle,
+                  style: SatType.sans(
+                    size: 15,
+                    weight: FontWeight.w700,
+                    color: sc.textHi,
+                  ),
+                ),
               ),
             ],
           ),
@@ -378,7 +422,9 @@ class SeedDataBanner extends ConsumerWidget {
             children: [
               Expanded(
                 child: _BannerBtn(
-                  label: st.loading ? AppStrings.loading : AppStrings.venueHubSeedBtnLoad,
+                  label: st.loading
+                      ? AppStrings.loading
+                      : AppStrings.venueHubSeedBtnLoad,
                   filled: true,
                   busy: st.loading,
                   onTap: st.loading
@@ -390,8 +436,8 @@ class SeedDataBanner extends ConsumerWidget {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content:
-                                        Text(AppStrings.venueHubSeedError)),
+                                  content: Text(AppStrings.venueHubSeedError),
+                                ),
                               );
                             }
                           }
@@ -448,16 +494,20 @@ class _BannerBtn extends StatelessWidget {
                   width: 13,
                   height: 13,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: sc.bg0),
+                    strokeWidth: 2,
+                    color: sc.bg0,
+                  ),
                 ),
                 const SizedBox(width: 8),
               ],
-              Text(label,
-                  style: SatType.sans(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: filled ? sc.bg0 : sc.textHi,
-                  )),
+              Text(
+                label,
+                style: SatType.sans(
+                  size: 13,
+                  weight: FontWeight.w600,
+                  color: filled ? sc.bg0 : sc.textHi,
+                ),
+              ),
             ],
           ),
         ),
@@ -525,11 +575,14 @@ class _PhoneHub extends StatelessWidget {
               children: [
                 Icon(Icons.storefront_outlined, size: 14, color: sc.textHi),
                 const SizedBox(width: 6),
-                Text(AppStrings.venueHubTitle,
-                    style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w500,
-                        color: sc.textHi)),
+                Text(
+                  AppStrings.venueHubTitle,
+                  style: SatType.sans(
+                    size: 14,
+                    weight: FontWeight.w500,
+                    color: sc.textHi,
+                  ),
+                ),
               ],
             ),
           ),
@@ -557,10 +610,7 @@ class _PhoneHub extends StatelessWidget {
           const Reveal(index: 3, child: SeedDataBanner()),
           const SizedBox(height: 12),
         ],
-        _HubGrid(
-          sections: sections,
-          seedOffset: showSeed ? 4 : 3,
-        ),
+        _HubGrid(sections: sections, seedOffset: showSeed ? 4 : 3),
       ],
     );
   }
@@ -620,7 +670,10 @@ class _HubCard extends ConsumerWidget {
                       Flexible(
                         child: Container(
                           margin: const EdgeInsets.only(left: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: SatBox.d(
                             color: hasAlert ? sc.warnSoft : sc.bg1,
                             borderRadius: SatR.a(10),
@@ -643,21 +696,26 @@ class _HubCard extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Text(section.label,
-                    style: SatType.sans(
-                      size: labelSize,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                      color: sc.textHi,
-                    )),
+                Text(
+                  section.label,
+                  style: SatType.sans(
+                    size: labelSize,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(section.sub,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: SatType.sans(
-                        size: subSize,
-                        color: sc.textLo,
-                        height: 1.3)),
+                Text(
+                  section.sub,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: SatType.sans(
+                    size: subSize,
+                    color: sc.textLo,
+                    height: 1.3,
+                  ),
+                ),
               ],
             ),
           ),

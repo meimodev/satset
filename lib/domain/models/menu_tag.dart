@@ -33,12 +33,11 @@ class MenuTag {
     String? name,
     String? code,
     int? sortOrder,
-  }) =>
-      MenuTag(
-        id: id ?? this.id,
-        kind: kind ?? this.kind,
-        name: name ?? this.name,
-        code: code ?? this.code,
-        sortOrder: sortOrder ?? this.sortOrder,
-      );
+  }) => MenuTag(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    name: name ?? this.name,
+    code: code ?? this.code,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
 }

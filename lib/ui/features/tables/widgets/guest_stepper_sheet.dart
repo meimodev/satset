@@ -42,8 +42,8 @@ class _GuestStepperSheet extends ConsumerWidget {
     final auth = ref.watch(authStateProvider);
     final user = auth.user;
     final canEdit = user?.role == UserRole.waiter;
-    final canMove = table.status != TableStatus.available &&
-        auth.has(Capability.takeOrder);
+    final canMove =
+        table.status != TableStatus.available && auth.has(Capability.takeOrder);
     final actorId = user?.id;
 
     return SafeArea(
@@ -128,9 +128,7 @@ class _GuestStepperSheet extends ConsumerWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: sc.bg3,
                     foregroundColor: sc.textHi,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: SatR.a(14),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
                   ),
                   icon: const Icon(Icons.swap_horiz_rounded, size: 18),
                   label: Text(
@@ -152,9 +150,7 @@ class _GuestStepperSheet extends ConsumerWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: sc.textHi,
                   side: SatB.side(color: sc.border2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: SatR.a(14),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
                 ),
                 child: Text(
                   'Tutup',

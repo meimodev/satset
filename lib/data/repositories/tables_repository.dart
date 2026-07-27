@@ -28,8 +28,9 @@ const _uuid = Uuid();
 
 /// Surfaces bootstrap progress for the tables list. UIs can show a spinner
 /// while [AsyncValue.isLoading], or an inline retry banner on [hasError].
-final tablesStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final tablesStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class TablesRepository extends StateNotifier<List<VenueTable>> {
   TablesRepository({required this.ref}) : super(const <VenueTable>[]) {
@@ -46,24 +47,24 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       // Pre-pairing / dev fallback. Seed already loaded; mark ready.
-      ref.read(tablesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(tablesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     // Clear stale dummy rows when bootstrapping a real LAN session.
     state = const <VenueTable>[];
-    ref.read(tablesStatusProvider.notifier).state =
-        const AsyncValue.loading();
+    ref.read(tablesStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
-      ref.read(tablesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(tablesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
     } catch (e, st) {
       // Surface — do NOT fall back to dummy data when the LAN is supposed
       // to be authoritative. The WS-reconnect resync (below) recovers when
       // the socket next reaches `open` (e.g. once the admin token lands).
-      ref.read(tablesStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(tablesStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
     // Wire WS even if the bootstrap GET failed: the `connected` resync is the
     // recovery path for an empty/401 bootstrap. See ADR-0021.
@@ -72,21 +73,33 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
         unawaited(_resync());
       } else if (ev.type == WsEventTypes.tableUpdated) {
         final d = TableDto.fromJson(ev.payload);
-        SatLog.repo('tables.ws update id=${d.id.substring(0, d.id.length.clamp(0, 6))} status=${d.status}');
+        SatLog.repo(
+          'tables.ws update id=${d.id.substring(0, d.id.length.clamp(0, 6))} status=${d.status}',
+        );
         final exists = state.any((t) => t.id == d.id);
         state = exists
-            ? [for (final t in state) if (t.id == d.id) _toDomain(d) else t]
+            ? [
+                for (final t in state)
+                  if (t.id == d.id) _toDomain(d) else t,
+              ]
             : [...state, _toDomain(d)];
       } else if (ev.type == WsEventTypes.tableCreated) {
         final d = TableDto.fromJson(ev.payload);
         if (state.any((t) => t.id == d.id)) return;
-        SatLog.repo('tables.ws create id=${d.id.substring(0, d.id.length.clamp(0, 6))}');
+        SatLog.repo(
+          'tables.ws create id=${d.id.substring(0, d.id.length.clamp(0, 6))}',
+        );
         state = [...state, _toDomain(d)];
       } else if (ev.type == WsEventTypes.tableDeleted) {
         final id = ev.payload['id'] as String?;
         if (id == null) return;
-        SatLog.repo('tables.ws delete id=${id.substring(0, id.length.clamp(0, 6))}');
-        state = [for (final t in state) if (t.id != id) t];
+        SatLog.repo(
+          'tables.ws delete id=${id.substring(0, id.length.clamp(0, 6))}',
+        );
+        state = [
+          for (final t in state)
+            if (t.id != id) t,
+        ];
       }
     });
   }
@@ -218,9 +231,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     bool acquireLock = false,
   }) async {
     SatLog.repo(
-        'tables.seat id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax acquireLock=$acquireLock');
-    final prev =
-        state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      'tables.seat id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax acquireLock=$acquireLock',
+    );
+    final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       final now = DateTime.now();
       _replace(
@@ -236,8 +249,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
           guestNotes: guestNotes,
           reservationId: reservationId,
           lockedBy: acquireLock && userId != null ? userId : prev.lockedBy,
-          lockedByName:
-              acquireLock && userId != null ? userName : prev.lockedByName,
+          lockedByName: acquireLock && userId != null
+              ? userName
+              : prev.lockedByName,
           lockedAt: acquireLock && userId != null ? now : prev.lockedAt,
           lockExpiresAt: acquireLock && userId != null
               ? now.add(const Duration(seconds: 7))
@@ -248,18 +262,17 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     try {
-      final raw = await ref.read(apiClientProvider).postJson(
-        '/tables/$id/seat',
-        {
-          'pax': pax,
-          'actorId': ?userId,
-          'actorName': ?userName,
-          'guestName': ?guestName,
-          'guestNotes': ?guestNotes,
-          'reservationId': ?reservationId,
-          if (acquireLock) 'acquireLock': true,
-        },
-      );
+      final raw = await ref
+          .read(apiClientProvider)
+          .postJson('/tables/$id/seat', {
+            'pax': pax,
+            'actorId': ?userId,
+            'actorName': ?userName,
+            'guestName': ?guestName,
+            'guestNotes': ?guestNotes,
+            'reservationId': ?reservationId,
+            if (acquireLock) 'acquireLock': true,
+          });
       _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
     } on ApiException catch (e) {
       // Rollback optimistic mutation. On a 409 the server payload carries the
@@ -283,7 +296,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> markPending(String id, {String? userId}) async {
-    SatLog.repo('tables.markPending id=${id.substring(0, id.length.clamp(0, 6))}');
+    SatLog.repo(
+      'tables.markPending id=${id.substring(0, id.length.clamp(0, 6))}',
+    );
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       final now = DateTime.now();
@@ -345,7 +360,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> setPax(String id, int pax, {String? userId}) async {
-    SatLog.repo('tables.setPax id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax');
+    SatLog.repo(
+      'tables.setPax id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax',
+    );
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(
@@ -371,7 +388,8 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   /// rolls back on failure. Goes through the generic `PATCH /tables/<id>`.
   Future<void> setGuestOrdering(String id, bool enabled) async {
     SatLog.repo(
-        'tables.setGuestOrdering id=${id.substring(0, id.length.clamp(0, 6))} on=$enabled');
+      'tables.setGuestOrdering id=${id.substring(0, id.length.clamp(0, 6))} on=$enabled',
+    );
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(id, prev.copyWith(guestOrderingEnabled: enabled));
@@ -379,10 +397,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     try {
-      final raw = await ref.read(apiClientProvider).patchJson(
-        '/tables/$id',
-        {'guestOrderingEnabled': enabled},
-      );
+      final raw = await ref.read(apiClientProvider).patchJson('/tables/$id', {
+        'guestOrderingEnabled': enabled,
+      });
       _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
     } catch (_) {
       if (prev != null) _replace(id, prev);
@@ -391,7 +408,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> setHandler(String id, String userId) async {
-    SatLog.repo('tables.setHandler id=${id.substring(0, id.length.clamp(0, 6))} user=${userId.substring(0, userId.length.clamp(0, 6))}');
+    SatLog.repo(
+      'tables.setHandler id=${id.substring(0, id.length.clamp(0, 6))} user=${userId.substring(0, userId.length.clamp(0, 6))}',
+    );
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(id, prev.copyWith(lastActorId: userId));
@@ -434,7 +453,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     required String label,
     int capacity = 2,
   }) {
-    SatLog.repo('tables.add zone=${zoneId.substring(0, zoneId.length.clamp(0, 6))} label=$label');
+    SatLog.repo(
+      'tables.add zone=${zoneId.substring(0, zoneId.length.clamp(0, 6))} label=$label',
+    );
     final id = _uuid.v4();
     final cap = capacity < 1 ? 1 : capacity;
     final next = VenueTable(
@@ -506,21 +527,22 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     required String userName,
     int ttlSeconds = 7,
   }) async {
-    SatLog.repo('tables.lock.acquire id=${id.substring(0, id.length.clamp(0, 6))} user=${userId.substring(0, userId.length.clamp(0, 6))}');
+    SatLog.repo(
+      'tables.lock.acquire id=${id.substring(0, id.length.clamp(0, 6))} user=${userId.substring(0, userId.length.clamp(0, 6))}',
+    );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      final cur = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      final cur = state
+          .where((t) => t.id == id)
+          .cast<VenueTable?>()
+          .firstOrNull;
       if (cur == null) throw StateError('table not found: $id');
       return TableLockResult.acquired(cur);
     }
     try {
       final raw = await ref.read(apiClientProvider).postJson(
         '/tables/$id/lock',
-        {
-          'userId': userId,
-          'userName': userName,
-          'ttlSeconds': ttlSeconds,
-        },
+        {'userId': userId, 'userName': userName, 'ttlSeconds': ttlSeconds},
       );
       final dto = TableDto.fromJson((raw as Map).cast<String, dynamic>());
       _mergeDto(dto);
@@ -529,8 +551,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       if (e.statusCode == 409 && e.code == 'table_locked') {
         try {
           final body = jsonDecode(e.body) as Map<String, dynamic>;
-          final tableJson =
-              (body['table'] as Map).cast<String, dynamic>();
+          final tableJson = (body['table'] as Map).cast<String, dynamic>();
           final dto = TableDto.fromJson(tableJson);
           _mergeDto(dto);
           return TableLockResult.conflict(_toDomain(dto));
@@ -579,8 +600,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     try {
-      final raw =
-          await ref.read(apiClientProvider).deleteJson('/tables/$id/lock');
+      final raw = await ref
+          .read(apiClientProvider)
+          .deleteJson('/tables/$id/lock');
       if (raw is Map) {
         _mergeDto(TableDto.fromJson(raw.cast<String, dynamic>()));
       }
@@ -596,7 +618,10 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     SatLog.repo('tables.close id=${id.substring(0, id.length.clamp(0, 6))}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      final prev = state
+          .where((t) => t.id == id)
+          .cast<VenueTable?>()
+          .firstOrNull;
       if (prev != null) {
         _replace(
           id,
@@ -623,7 +648,10 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     SatLog.repo('tables.release id=${id.substring(0, id.length.clamp(0, 6))}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
+      final prev = state
+          .where((t) => t.id == id)
+          .cast<VenueTable?>()
+          .firstOrNull;
       if (prev != null) {
         _replace(
           id,
@@ -657,13 +685,19 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     String? actorName,
   }) async {
     SatLog.repo(
-        'tables.move src=${id.substring(0, id.length.clamp(0, 6))} dst=${targetId.substring(0, targetId.length.clamp(0, 6))}');
+      'tables.move src=${id.substring(0, id.length.clamp(0, 6))} dst=${targetId.substring(0, targetId.length.clamp(0, 6))}',
+    );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       // Dev / no-LAN fallback: emulate the transfer locally so the UI flows.
-      final src = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
-      final tgt =
-          state.where((t) => t.id == targetId).cast<VenueTable?>().firstOrNull;
+      final src = state
+          .where((t) => t.id == id)
+          .cast<VenueTable?>()
+          .firstOrNull;
+      final tgt = state
+          .where((t) => t.id == targetId)
+          .cast<VenueTable?>()
+          .firstOrNull;
       if (src == null || tgt == null) return;
       _replace(
         targetId,
@@ -690,14 +724,11 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       );
       return;
     }
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/tables/$id/move',
-      {
-        'targetId': targetId,
-        'actorId': ?actorId,
-        'actorName': ?actorName,
-      },
-    );
+    final raw = await ref.read(apiClientProvider).postJson('/tables/$id/move', {
+      'targetId': targetId,
+      'actorId': ?actorId,
+      'actorName': ?actorName,
+    });
     _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
   }
 
@@ -740,10 +771,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
           'zoneId': ?zoneId,
           'active': ?active,
         };
-        final raw = await ref.read(apiClientProvider).patchJson(
-              '/tables/$id',
-              body,
-            );
+        final raw = await ref
+            .read(apiClientProvider)
+            .patchJson('/tables/$id', body);
         _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
       } catch (e) {
         SatLog.repo('tables.configure fail $e');
@@ -755,14 +785,18 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
 
 final tablesProvider =
     StateNotifierProvider<TablesRepository, List<VenueTable>>((ref) {
-  ref.watch(apiConfigProvider);
-  return TablesRepository(ref: ref);
-});
+      ref.watch(apiConfigProvider);
+      return TablesRepository(ref: ref);
+    });
 
 final totalReadyCountProvider = Provider<int>((ref) {
   final tables = ref.watch(tablesProvider);
   return tables.fold<int>(
     0,
-    (s, t) => s + (t.status == TableStatus.ready ? (t.readyCount > 0 ? t.readyCount : 1) : 0),
+    (s, t) =>
+        s +
+        (t.status == TableStatus.ready
+            ? (t.readyCount > 0 ? t.readyCount : 1)
+            : 0),
   );
 });

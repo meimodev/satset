@@ -56,13 +56,9 @@ class BtPrinterService {
     }
     try {
       final list = await PrintBluetoothThermal.pairedBluetooths;
-      return BtPairedResult(
-        [
-          for (final b in list)
-            PairedBtPrinter(name: b.name, mac: b.macAdress),
-        ],
-        BtUnavailableReason.none,
-      );
+      return BtPairedResult([
+        for (final b in list) PairedBtPrinter(name: b.name, mac: b.macAdress),
+      ], BtUnavailableReason.none);
     } catch (e) {
       SatLog.repo('bt paired $e');
       return const BtPairedResult([], BtUnavailableReason.none);
@@ -96,5 +92,6 @@ class BtPrinterService {
   }
 }
 
-final btPrinterServiceProvider =
-    Provider<BtPrinterService>((_) => BtPrinterService());
+final btPrinterServiceProvider = Provider<BtPrinterService>(
+  (_) => BtPrinterService(),
+);

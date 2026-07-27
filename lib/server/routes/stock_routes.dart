@@ -24,25 +24,34 @@ Future<(String?, Set<String>)?> _actor(
   ServerAuth? auth,
 ) async {
   if (auth == null) return (null, Capability.values.map((c) => c.name).toSet());
-  final token =
-      req.headers['authorization']?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return null;
-  final role = await (db.select(db.roles)..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? <String>{}
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>().toSet();
   return (user.id, caps);
 }
 
-Response _forbidden(Capability c) => Response(403,
-    body: jsonEncode(
-        {'code': 'forbidden', 'message': 'missing capability ${c.name}'}),
-    headers: {'content-type': 'application/json'});
+Response _forbidden(Capability c) => Response(
+  403,
+  body: jsonEncode({
+    'code': 'forbidden',
+    'message': 'missing capability ${c.name}',
+  }),
+  headers: {'content-type': 'application/json'},
+);
 
-Response _json(Object body) => Response.ok(jsonEncode(body),
-    headers: {'content-type': 'application/json'});
+Response _json(Object body) => Response.ok(
+  jsonEncode(body),
+  headers: {'content-type': 'application/json'},
+);
 
 /// Ingredient CRUD, the movement ledger, and the stock report.
 ///
@@ -72,10 +81,11 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         !actor.$2.contains(Capability.editMenu.name)) {
       return _forbidden(Capability.manageIngredients);
     }
-    final rows = await (db.select(db.ingredients)
-          ..where((i) => i.archivedAt.isNull())
-          ..orderBy([(i) => OrderingTerm(expression: i.name)]))
-        .get();
+    final rows =
+        await (db.select(db.ingredients)
+              ..where((i) => i.archivedAt.isNull())
+              ..orderBy([(i) => OrderingTerm(expression: i.name)]))
+            .get();
     // Recipe links + last receive ride along so the stock card can show what
     // an ingredient feeds without a fetch per row.
     final links = await loadRecipeLinks(db);
@@ -101,9 +111,9 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final id = (body['id'] as String?) ?? _uuid.v4();
     final name = (body['name'] as String?)?.trim() ?? '';
     if (name.isEmpty) return Response(400, body: 'name required');
-    final existing =
-        await (db.select(db.ingredients)..where((i) => i.id.equals(id)))
-            .getSingleOrNull();
+    final existing = await (db.select(
+      db.ingredients,
+    )..where((i) => i.id.equals(id))).getSingleOrNull();
     final companion = IngredientsCompanion(
       id: Value(id),
       name: Value(name),
@@ -133,12 +143,14 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         }
       });
     } else {
-      await (db.update(db.ingredients)..where((i) => i.id.equals(id)))
-          .write(companion);
+      await (db.update(
+        db.ingredients,
+      )..where((i) => i.id.equals(id))).write(companion);
     }
     await broadcastIfFlipped();
-    final out = await (db.select(db.ingredients)..where((i) => i.id.equals(id)))
-        .getSingle();
+    final out = await (db.select(
+      db.ingredients,
+    )..where((i) => i.id.equals(id))).getSingle();
     return _json(ingredientRowToJson(out));
   });
 
@@ -151,11 +163,12 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       return _forbidden(Capability.manageIngredients);
     }
     await db.transaction(() async {
-      await (db.update(db.ingredients)..where((i) => i.id.equals(id)))
-          .write(IngredientsCompanion(archivedAt: Value(DateTime.now())));
-      await (db.delete(db.recipeLines)
-            ..where((l) => l.ingredientId.equals(id)))
-          .go();
+      await (db.update(db.ingredients)..where((i) => i.id.equals(id))).write(
+        IngredientsCompanion(archivedAt: Value(DateTime.now())),
+      );
+      await (db.delete(
+        db.recipeLines,
+      )..where((l) => l.ingredientId.equals(id))).go();
     });
     await broadcastIfFlipped();
     return _json({'ok': true});
@@ -169,15 +182,15 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (!actor.$2.contains(Capability.manageIngredients.name)) {
       return _forbidden(Capability.manageIngredients);
     }
-    final limit =
-        int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 100;
-    final rows = await (db.select(db.stockMovements)
-          ..where((m) => m.ingredientId.equals(id))
-          ..orderBy([
-            (m) => OrderingTerm(expression: m.at, mode: OrderingMode.desc),
-          ])
-          ..limit(limit))
-        .get();
+    final limit = int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 100;
+    final rows =
+        await (db.select(db.stockMovements)
+              ..where((m) => m.ingredientId.equals(id))
+              ..orderBy([
+                (m) => OrderingTerm(expression: m.at, mode: OrderingMode.desc),
+              ])
+              ..limit(limit))
+            .get();
     return _json([for (final m in rows) movementRowToJson(m)]);
   });
 
@@ -193,9 +206,9 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final ingredientId = body['ingredientId'] as String;
     final qty = (body['qty'] as num?)?.toInt() ?? 0;
     if (qty <= 0) return Response(400, body: 'qty must be positive');
-    final row = await (db.select(db.ingredients)
-          ..where((i) => i.id.equals(ingredientId)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.ingredients,
+    )..where((i) => i.id.equals(ingredientId))).getSingleOrNull();
     if (row == null) return Response.notFound('ingredient not found');
     final unitPrice = (body['unitPrice'] as num?)?.toInt();
     await db.transaction(() async {
@@ -262,12 +275,14 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     });
     if (batchId == null) {
-      return Response(400,
-          body: jsonEncode({
-            'code': 'not_produced',
-            'message': 'ingredient has no batch yield',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({
+          'code': 'not_produced',
+          'message': 'ingredient has no batch yield',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     await broadcastIfFlipped();
     return _json({'batchId': batchId});
@@ -293,7 +308,9 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         : Capability.manageIngredients;
     if (!actor.$2.contains(needed.name)) return _forbidden(needed);
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    await db.transaction(() => writeRecipes(db, ownerId, body, ownerKind: kind));
+    await db.transaction(
+      () => writeRecipes(db, ownerId, body, ownerKind: kind),
+    );
     // Which recipes exist just changed, so cached signatures no longer describe
     // the same menu — force the next check to re-broadcast.
     stockFlags.invalidate();
@@ -311,7 +328,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       return _forbidden(Capability.viewReports);
     }
     final q = req.url.queryParameters;
-    final from = DateTime.tryParse(q['from'] ?? '') ??
+    final from =
+        DateTime.tryParse(q['from'] ?? '') ??
         DateTime.now().subtract(const Duration(days: 7));
     final to = DateTime.tryParse(q['to'] ?? '') ?? DateTime.now();
     return _json(await stockReport(db, from: from, to: to));
@@ -332,9 +350,12 @@ Future<Map<String, dynamic>> stockReport(
 }) async {
   final ingredients = await db.select(db.ingredients).get();
   final byId = {for (final i in ingredients) i.id: i};
-  final rows = await (db.select(db.stockMovements)
-        ..where((m) => m.at.isBiggerOrEqualValue(from) & m.at.isSmallerThanValue(to)))
-      .get();
+  final rows =
+      await (db.select(db.stockMovements)..where(
+            (m) =>
+                m.at.isBiggerOrEqualValue(from) & m.at.isSmallerThanValue(to),
+          ))
+          .get();
 
   final usedQty = <String, int>{};
   final wasteQty = <String, int>{};
@@ -348,13 +369,17 @@ Future<Map<String, dynamic>> stockReport(
       case StockReason.voidReturn:
         usedQty[m.ingredientId] = (usedQty[m.ingredientId] ?? 0) - m.delta;
       case StockReason.waste:
-        wasteQty[m.ingredientId] = (wasteQty[m.ingredientId] ?? 0) + m.delta.abs();
+        wasteQty[m.ingredientId] =
+            (wasteQty[m.ingredientId] ?? 0) + m.delta.abs();
         wasteValue[m.ingredientId] =
-            (wasteValue[m.ingredientId] ?? 0) + valueOf(m.delta.abs(), m.costMicro);
+            (wasteValue[m.ingredientId] ?? 0) +
+            valueOf(m.delta.abs(), m.costMicro);
       case StockReason.adjust:
-        varianceQty[m.ingredientId] = (varianceQty[m.ingredientId] ?? 0) + m.delta;
+        varianceQty[m.ingredientId] =
+            (varianceQty[m.ingredientId] ?? 0) + m.delta;
         varianceValue[m.ingredientId] =
-            (varianceValue[m.ingredientId] ?? 0) + valueOf(m.delta, m.costMicro);
+            (varianceValue[m.ingredientId] ?? 0) +
+            valueOf(m.delta, m.costMicro);
       case StockReason.receive:
       case StockReason.produce:
         break;
@@ -374,7 +399,8 @@ Future<Map<String, dynamic>> stockReport(
             'name': byId[e.key]!.name,
             'unit': byId[e.key]!.unit,
             'qty': e.value,
-            'value': value?[e.key] ?? valueOf(e.value.abs(), byId[e.key]!.costMicro),
+            'value':
+                value?[e.key] ?? valueOf(e.value.abs(), byId[e.key]!.costMicro),
           },
     ];
     out.sort((a, b) {
@@ -405,13 +431,16 @@ Future<Map<String, dynamic>> stockReport(
     'waste': rank(wasteQty, value: wasteValue),
     'variance': rank(varianceQty, value: varianceValue, byAbs: true),
     'valuation': valuation,
-    'totalWasteValue':
-        wasteValue.values.fold<int>(0, (a, b) => a + b),
-    'totalStockValue': valuation.fold<int>(0, (a, m) => a + (m['value'] as int)),
-    'totalVarianceValue':
-        varianceValue.values.fold<int>(0, (a, b) => a + b),
+    'totalWasteValue': wasteValue.values.fold<int>(0, (a, b) => a + b),
+    'totalStockValue': valuation.fold<int>(
+      0,
+      (a, m) => a + (m['value'] as int),
+    ),
+    'totalVarianceValue': varianceValue.values.fold<int>(0, (a, b) => a + b),
   };
 }
 
-StockReason stockReasonFrom(String key) => StockReason.values
-    .firstWhere((r) => r.name == key, orElse: () => StockReason.adjust);
+StockReason stockReasonFrom(String key) => StockReason.values.firstWhere(
+  (r) => r.name == key,
+  orElse: () => StockReason.adjust,
+);

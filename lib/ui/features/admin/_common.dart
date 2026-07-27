@@ -3,7 +3,8 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
-export 'package:satset/ui/core/widgets/tablet_chrome.dart' show TabletCard, TabletStatTile;
+export 'package:satset/ui/core/widgets/tablet_chrome.dart'
+    show TabletCard, TabletStatTile;
 
 class AdminEmbeddedStrip extends StatelessWidget {
   final String title;
@@ -12,12 +13,13 @@ class AdminEmbeddedStrip extends StatelessWidget {
 
   /// Optional indicator rendered before the [sub] line (e.g. a freshness dot).
   final Widget? subLeading;
-  const AdminEmbeddedStrip(
-      {super.key,
-      required this.title,
-      required this.sub,
-      this.trailing,
-      this.subLeading});
+  const AdminEmbeddedStrip({
+    super.key,
+    required this.title,
+    required this.sub,
+    this.trailing,
+    this.subLeading,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +35,15 @@ class AdminEmbeddedStrip extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: SatType.sans(
-                      size: 20,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                      color: sc.textHi,
-                    )),
+                Text(
+                  title,
+                  style: SatType.sans(
+                    size: 20,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -48,12 +52,14 @@ class AdminEmbeddedStrip extends StatelessWidget {
                       const SizedBox(width: 6),
                     ],
                     Flexible(
-                      child: Text(sub.toUpperCase(),
-                          style: SatType.mono(
-                            size: 11,
-                            color: sc.textLo,
-                            letterSpacing: 0.66,
-                          )),
+                      child: Text(
+                        sub.toUpperCase(),
+                        style: SatType.mono(
+                          size: 11,
+                          color: sc.textLo,
+                          letterSpacing: 0.66,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -92,7 +98,11 @@ class AdminPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AdminEmbeddedStrip(
-            title: title, sub: sub, trailing: topTrailing, subLeading: subLeading),
+          title: title,
+          sub: sub,
+          trailing: topTrailing,
+          subLeading: subLeading,
+        ),
         Expanded(
           child: SingleChildScrollView(
             padding: padding,
@@ -111,7 +121,12 @@ class SetTile extends StatelessWidget {
   final String label;
   final String value;
   final String? sub;
-  const SetTile({super.key, required this.label, required this.value, this.sub});
+  const SetTile({
+    super.key,
+    required this.label,
+    required this.value,
+    this.sub,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,30 +141,32 @@ class SetTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(),
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo,
-              )),
+          Text(
+            label.toUpperCase(),
+            style: SatType.mono(
+              size: 10,
+              weight: FontWeight.w600,
+              letterSpacing: 1.0,
+              color: sc.textLo,
+            ),
+          ),
           const SizedBox(height: 10),
-          Text(value,
-              style: SatType.mono(
-                size: 24,
-                weight: FontWeight.w600,
-                letterSpacing: -0.48,
-                height: 1,
-                color: sc.textHi,
-              )),
+          Text(
+            value,
+            style: SatType.mono(
+              size: 24,
+              weight: FontWeight.w600,
+              letterSpacing: -0.48,
+              height: 1,
+              color: sc.textHi,
+            ),
+          ),
           if (sub != null) ...[
             const SizedBox(height: 6),
-            Text(sub!,
-                style: SatType.sans(
-                  size: 11,
-                  color: sc.textMd,
-                  height: 1.4,
-                )),
+            Text(
+              sub!,
+              style: SatType.sans(size: 11, color: sc.textMd, height: 1.4),
+            ),
           ],
         ],
       ),
@@ -163,7 +180,14 @@ class SetHero extends StatelessWidget {
   final String desc;
   final bool warn;
   final List<bool> meter;
-  const SetHero({super.key, required this.label, required this.value, required this.desc, this.warn = false, this.meter = const []});
+  const SetHero({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.desc,
+    this.warn = false,
+    this.meter = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -180,29 +204,31 @@ class SetHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(),
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w600,
-                letterSpacing: 1.2,
-                color: accent,
-              )),
+          Text(
+            label.toUpperCase(),
+            style: SatType.mono(
+              size: 10,
+              weight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: accent,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value,
-              style: SatType.sans(
-                size: 36,
-                weight: FontWeight.w600,
-                letterSpacing: -0.9,
-                height: 1.05,
-                color: accent,
-              )),
+          Text(
+            value,
+            style: SatType.sans(
+              size: 36,
+              weight: FontWeight.w600,
+              letterSpacing: -0.9,
+              height: 1.05,
+              color: accent,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(desc,
-              style: SatType.sans(
-                size: 13,
-                color: sc.textMd,
-                height: 1.5,
-              )),
+          Text(
+            desc,
+            style: SatType.sans(size: 13, color: sc.textMd, height: 1.5),
+          ),
           if (meter.isNotEmpty) ...[
             const SizedBox(height: 16),
             Row(
@@ -222,12 +248,14 @@ class SetHero extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text('STATIONS · LIVE',
-                style: SatType.mono(
-                  size: 10,
-                  color: sc.textLo,
-                  letterSpacing: 1.0,
-                )),
+            Text(
+              'STATIONS · LIVE',
+              style: SatType.mono(
+                size: 10,
+                color: sc.textLo,
+                letterSpacing: 1.0,
+              ),
+            ),
           ],
         ],
       ),
@@ -239,7 +267,12 @@ class AdminRow extends StatelessWidget {
   final String label;
   final Widget value;
   final bool last;
-  const AdminRow({super.key, required this.label, required this.value, this.last = false});
+  const AdminRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.last = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -255,11 +288,7 @@ class AdminRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 150,
-            child: Text(label,
-                style: SatType.sans(
-                  size: 13,
-                  color: sc.textMd,
-                )),
+            child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
           ),
           Expanded(child: value),
         ],
@@ -268,7 +297,12 @@ class AdminRow extends StatelessWidget {
   }
 }
 
-Widget adminPill(BuildContext context, String text, {bool on = false, bool danger = false}) {
+Widget adminPill(
+  BuildContext context,
+  String text, {
+  bool on = false,
+  bool danger = false,
+}) {
   final sc = context.sat;
   Color bg = sc.bg3;
   Color border = sc.border1;
@@ -292,12 +326,10 @@ Widget adminPill(BuildContext context, String text, {bool on = false, bool dange
       border: SatB.all(color: border),
       borderRadius: SatR.a(999),
     ),
-    child: Text(text,
-        style: SatType.sans(
-          size: 11,
-          weight: FontWeight.w500,
-          color: fg,
-        )),
+    child: Text(
+      text,
+      style: SatType.sans(size: 11, weight: FontWeight.w500, color: fg),
+    ),
   );
 }
 

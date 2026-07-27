@@ -26,23 +26,27 @@ Future<Response?> _requireCap(
   Capability needed,
 ) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (!caps.contains(needed.name)) {
-    return Response(403,
-        body: jsonEncode({
-          'code': 'forbidden',
-          'message': 'missing capability ${needed.name}',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      403,
+      body: jsonEncode({
+        'code': 'forbidden',
+        'message': 'missing capability ${needed.name}',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   }
   return null;
 }
@@ -51,36 +55,46 @@ Future<Response?> _requireCap(
 /// whichever of seat / first-order lands first (the order flow can occupy a
 /// table without an explicit seat). Idempotent: returns the existing current
 /// visit when one is still live. See ADR-0024.
-Future<String> ensureVisit(AppDatabase db, String tableId,
-    {String? actorId}) async {
-  final t = await (db.select(db.venueTables)..where((x) => x.id.equals(tableId)))
-      .getSingleOrNull();
+Future<String> ensureVisit(
+  AppDatabase db,
+  String tableId, {
+  String? actorId,
+}) async {
+  final t = await (db.select(
+    db.venueTables,
+  )..where((x) => x.id.equals(tableId))).getSingleOrNull();
   final cur = t?.currentVisitId;
   if (cur != null && cur.isNotEmpty) {
-    final v =
-        await (db.select(db.visits)..where((x) => x.id.equals(cur))).getSingleOrNull();
+    final v = await (db.select(
+      db.visits,
+    )..where((x) => x.id.equals(cur))).getSingleOrNull();
     if (v != null) return v.id;
   }
   final id = _uuid.v4();
   final now = DateTime.now().toUtc();
   // Tolerant of a missing table row (synthetic/test order paths) — fall back
   // to a bare visit so order submission never fails on table lookup.
-  await db.into(db.visits).insert(VisitsCompanion.insert(
-        id: id,
-        tableId: tableId,
-        tableLabel: Value(t?.label),
-        zoneId: Value(t?.zoneId ?? ''),
-        pax: Value(t?.pax ?? 0),
-        openedAt: Value(t?.openedAt ?? now),
-        guestName: Value(t?.guestName),
-        guestNotes: Value(t?.guestNotes),
-        reservationId: Value(t?.reservationId),
-        lastActorId: Value(actorId ?? t?.lastActorId),
-        createdAt: now,
-      ));
+  await db
+      .into(db.visits)
+      .insert(
+        VisitsCompanion.insert(
+          id: id,
+          tableId: tableId,
+          tableLabel: Value(t?.label),
+          zoneId: Value(t?.zoneId ?? ''),
+          pax: Value(t?.pax ?? 0),
+          openedAt: Value(t?.openedAt ?? now),
+          guestName: Value(t?.guestName),
+          guestNotes: Value(t?.guestNotes),
+          reservationId: Value(t?.reservationId),
+          lastActorId: Value(actorId ?? t?.lastActorId),
+          createdAt: now,
+        ),
+      );
   if (t != null) {
-    await (db.update(db.venueTables)..where((x) => x.id.equals(tableId)))
-        .write(VenueTablesCompanion(currentVisitId: Value(id)));
+    await (db.update(db.venueTables)..where((x) => x.id.equals(tableId))).write(
+      VenueTablesCompanion(currentVisitId: Value(id)),
+    );
   }
   return id;
 }
@@ -98,45 +112,54 @@ Future<Visit> createTakeawayVisit(
 }) async {
   final now = DateTime.now();
   final nowUtc = now.toUtc();
-  final s = await (db.select(db.venueSettings)
-        ..where((x) => x.id.equals('default')))
-      .getSingleOrNull();
+  final s = await (db.select(
+    db.venueSettings,
+  )..where((x) => x.id.equals('default'))).getSingleOrNull();
   final hour = s?.businessDayStartHour ?? 4;
   // Anchor to the business day so the running number resets at the configured
   // rollover hour, matching how reports bucket "today".
   final bod = DateTime(now.year, now.month, now.day, hour);
-  final anchor = now.isBefore(bod) ? now.subtract(const Duration(days: 1)) : now;
+  final anchor = now.isBefore(bod)
+      ? now.subtract(const Duration(days: 1))
+      : now;
   String two(int n) => n.toString().padLeft(2, '0');
   final dateStr = '${anchor.year}-${two(anchor.month)}-${two(anchor.day)}';
   final id = _uuid.v4();
   var n = 1;
   await db.transaction(() async {
-    final c = await (db.select(db.dailyCounters)
-          ..where((x) => x.dateStr.equals(dateStr)))
-        .getSingleOrNull();
+    final c = await (db.select(
+      db.dailyCounters,
+    )..where((x) => x.dateStr.equals(dateStr))).getSingleOrNull();
     n = c?.takeawayNext ?? 1;
-    await db.into(db.dailyCounters).insertOnConflictUpdate(
+    await db
+        .into(db.dailyCounters)
+        .insertOnConflictUpdate(
           DailyCountersCompanion.insert(
             dateStr: dateStr,
             takeawayNext: Value(n + 1),
           ),
         );
-    await db.into(db.visits).insert(VisitsCompanion.insert(
-          id: id,
-          tableId: '',
-          tableLabel: Value('Bawa pulang #$n'),
-          zoneId: const Value(''),
-          pax: const Value(0),
-          openedAt: Value(nowUtc),
-          guestName: Value(guestName),
-          guestNotes: Value(guestNotes),
-          lastActorId: Value(actorId),
-          createdAt: nowUtc,
-          kind: const Value('takeaway'),
-        ));
+    await db
+        .into(db.visits)
+        .insert(
+          VisitsCompanion.insert(
+            id: id,
+            tableId: '',
+            tableLabel: Value('Bawa pulang #$n'),
+            zoneId: const Value(''),
+            pax: const Value(0),
+            openedAt: Value(nowUtc),
+            guestName: Value(guestName),
+            guestNotes: Value(guestNotes),
+            lastActorId: Value(actorId),
+            createdAt: nowUtc,
+            kind: const Value('takeaway'),
+          ),
+        );
   });
-  final v = await (db.select(db.visits)..where((x) => x.id.equals(id)))
-      .getSingleOrNull();
+  final v = await (db.select(
+    db.visits,
+  )..where((x) => x.id.equals(id))).getSingleOrNull();
   return v!;
 }
 
@@ -146,12 +169,17 @@ Future<Visit> createTakeawayVisit(
 /// table row is already freed by the detach path before this runs. Broadcasts
 /// `tableSession.closed`. See ADR-0024. `lossAmount` records a walkout
 /// write-off (tak tertagih); 0 for a normal Lunas close.
-Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
-    {String? billClosedBy, int lossAmount = 0}) async {
+Future<void> snapshotVisitAndDelete(
+  AppDatabase db,
+  WsHub hub,
+  Visit visit, {
+  String? billClosedBy,
+  int lossAmount = 0,
+}) async {
   await db.transaction(() async {
-    final tickets = await (db.select(db.tickets)
-          ..where((t) => t.visitId.equals(visit.id)))
-        .get();
+    final tickets = await (db.select(
+      db.tickets,
+    )..where((t) => t.visitId.equals(visit.id))).get();
     final now = DateTime.now().toUtc();
     final openedAt = visit.openedAt;
     final durationSec = openedAt == null
@@ -167,9 +195,9 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
         subtotal += line;
       }
     }
-    final s = await (db.select(db.venueSettings)
-          ..where((t) => t.id.equals('default')))
-        .getSingleOrNull();
+    final s = await (db.select(
+      db.venueSettings,
+    )..where((t) => t.id.equals('default'))).getSingleOrNull();
     final cfg = TaxServiceConfig(
       taxEnabled: s?.taxEnabled ?? false,
       taxRateBps: s?.taxRateBps ?? 1100,
@@ -184,14 +212,15 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
     // again (ADR-0039). Money actually collected goes to settledTotal below.
     final breakdown = computeBreakdown(subtotal, cfg);
 
-    final visitReceipts = await (db.select(db.receipts)
-          ..where((rc) => rc.visitId.equals(visit.id)))
-        .get();
+    final visitReceipts = await (db.select(
+      db.receipts,
+    )..where((rc) => rc.visitId.equals(visit.id))).get();
     final discountRows = visitReceipts.isEmpty
         ? <Discount>[]
-        : await (db.select(db.discounts)
-              ..where((x) => x.receiptId.isIn(visitReceipts.map((r) => r.id))))
-            .get();
+        : await (db.select(
+                db.discounts,
+              )..where((x) => x.receiptId.isIn(visitReceipts.map((r) => r.id))))
+              .get();
     final lineDiscount = discountRows
         .where((d) => d.ticketId != null)
         .fold<int>(0, (a, d) => a + d.amount);
@@ -204,36 +233,44 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
     // default taxAfterDiscount=true the discount also shrinks service and tax,
     // so `netTotal − discount` would overstate what was taken. The plain
     // subtraction holds only in the taxAfterDiscount=false case.
-    final settled = computeBreakdown(subtotal - lineDiscount, cfg,
-            discount: orderDiscount)
-        .total;
+    final settled = computeBreakdown(
+      subtotal - lineDiscount,
+      cfg,
+      discount: orderDiscount,
+    ).total;
     final sessionId = _uuid.v4();
-    await db.into(db.tableSessions).insert(TableSessionsCompanion.insert(
-          id: sessionId,
-          tableId: visit.tableId,
-          tableLabel: Value(visit.tableLabel),
-          zoneId: visit.zoneId,
-          pax: Value(visit.pax),
-          openedAt: Value(openedAt),
-          closedAt: now,
-          durationSec: Value(durationSec),
-          actorUserId: Value(visit.lastActorId),
-          subtotal: Value(subtotal),
-          voidAmount: Value(voidAmount),
-          serviceAmount: Value(breakdown.serviceAmount),
-          taxAmount: Value(breakdown.taxAmount),
-          netTotal: Value(breakdown.total),
-          discountAmount: Value(discountTotal),
-          settledTotal: Value(settled),
-          ticketCount: Value(tickets.length),
-          lossAmount: Value(lossAmount),
-          billClosedBy: Value(billClosedBy),
-          // Freeze the visit kind so reports can split takeaway out of
-          // per-cover / turn-time / occupancy metrics. See ADR-0026.
-          kind: Value(visit.kind),
-        ));
+    await db
+        .into(db.tableSessions)
+        .insert(
+          TableSessionsCompanion.insert(
+            id: sessionId,
+            tableId: visit.tableId,
+            tableLabel: Value(visit.tableLabel),
+            zoneId: visit.zoneId,
+            pax: Value(visit.pax),
+            openedAt: Value(openedAt),
+            closedAt: now,
+            durationSec: Value(durationSec),
+            actorUserId: Value(visit.lastActorId),
+            subtotal: Value(subtotal),
+            voidAmount: Value(voidAmount),
+            serviceAmount: Value(breakdown.serviceAmount),
+            taxAmount: Value(breakdown.taxAmount),
+            netTotal: Value(breakdown.total),
+            discountAmount: Value(discountTotal),
+            settledTotal: Value(settled),
+            ticketCount: Value(tickets.length),
+            lossAmount: Value(lossAmount),
+            billClosedBy: Value(billClosedBy),
+            // Freeze the visit kind so reports can split takeaway out of
+            // per-cover / turn-time / occupancy metrics. See ADR-0026.
+            kind: Value(visit.kind),
+          ),
+        );
     for (final t in tickets) {
-      await db.into(db.tableSessionTickets).insert(
+      await db
+          .into(db.tableSessionTickets)
+          .insert(
             TableSessionTicketsCompanion.insert(
               id: _uuid.v4(),
               sessionId: sessionId,
@@ -270,10 +307,14 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
       for (final t in courseTickets) {
         if (firedAt == null || t.sentAt.isBefore(firedAt)) firedAt = t.sentAt;
         if (t.status == 'served') {
-          if (servedAt == null || t.sentAt.isAfter(servedAt)) servedAt = t.sentAt;
+          if (servedAt == null || t.sentAt.isAfter(servedAt)) {
+            servedAt = t.sentAt;
+          }
         }
       }
-      await db.into(db.tableSessionCourses).insert(
+      await db
+          .into(db.tableSessionCourses)
+          .insert(
             TableSessionCoursesCompanion.insert(
               id: _uuid.v4(),
               sessionId: sessionId,
@@ -289,7 +330,9 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
     // the accounting export's per-preset rollup and a reprinted money doc's
     // named "Diskon <preset>" rows both need them after the live rows go.
     for (final d in discountRows) {
-      await db.into(db.tableSessionDiscounts).insert(
+      await db
+          .into(db.tableSessionDiscounts)
+          .insert(
             TableSessionDiscountsCompanion.insert(
               id: _uuid.v4(),
               sessionId: sessionId,
@@ -307,7 +350,9 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
           );
     }
     for (final rec in recs) {
-      await db.into(db.tableSessionReceipts).insert(
+      await db
+          .into(db.tableSessionReceipts)
+          .insert(
             TableSessionReceiptsCompanion.insert(
               id: _uuid.v4(),
               sessionId: sessionId,
@@ -322,13 +367,16 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
               status: Value(rec.status),
             ),
           );
-      await (db.delete(db.discounts)..where((x) => x.receiptId.equals(rec.id)))
-          .go();
-      final pays = await (db.select(db.payments)
-            ..where((p) => p.receiptId.equals(rec.id)))
-          .get();
+      await (db.delete(
+        db.discounts,
+      )..where((x) => x.receiptId.equals(rec.id))).go();
+      final pays = await (db.select(
+        db.payments,
+      )..where((p) => p.receiptId.equals(rec.id))).get();
       for (final p in pays) {
-        await db.into(db.tableSessionPayments).insert(
+        await db
+            .into(db.tableSessionPayments)
+            .insert(
               TableSessionPaymentsCompanion.insert(
                 id: _uuid.v4(),
                 sessionId: sessionId,
@@ -343,13 +391,19 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
               ),
             );
       }
-      await (db.delete(db.receiptLines)..where((x) => x.receiptId.equals(rec.id)))
-          .go();
-      await (db.delete(db.payments)..where((x) => x.receiptId.equals(rec.id)))
-          .go();
+      await (db.delete(
+        db.receiptLines,
+      )..where((x) => x.receiptId.equals(rec.id))).go();
+      await (db.delete(
+        db.payments,
+      )..where((x) => x.receiptId.equals(rec.id))).go();
     }
-    await (db.delete(db.receipts)..where((rc) => rc.visitId.equals(visit.id))).go();
-    await (db.delete(db.tickets)..where((t) => t.visitId.equals(visit.id))).go();
+    await (db.delete(
+      db.receipts,
+    )..where((rc) => rc.visitId.equals(visit.id))).go();
+    await (db.delete(
+      db.tickets,
+    )..where((t) => t.visitId.equals(visit.id))).go();
     await (db.delete(db.visits)..where((v) => v.id.equals(visit.id))).go();
   });
   hub.broadcast(WsEventTypes.tableSessionClosed, {
@@ -363,27 +417,29 @@ Future<void> snapshotVisitAndDelete(AppDatabase db, WsHub hub, Visit visit,
 /// Sebagian/outstanding without subscribing to bills. No-op for a detached or
 /// gone visit (its money shows only on the cashier). See ADR-0024.
 Future<void> syncVisitMoney(AppDatabase db, WsHub hub, String visitId) async {
-  final table = await (db.select(db.venueTables)
-        ..where((t) => t.currentVisitId.equals(visitId)))
-      .getSingleOrNull();
+  final table = await (db.select(
+    db.venueTables,
+  )..where((t) => t.currentVisitId.equals(visitId))).getSingleOrNull();
   if (table == null) return;
-  final tickets = await (db.select(db.tickets)
-        ..where((t) => t.visitId.equals(visitId)))
-      .get();
+  final tickets = await (db.select(
+    db.tickets,
+  )..where((t) => t.visitId.equals(visitId))).get();
   // `pendingReview` is an un-approved guest self-order (ADR-0028): it is not
   // yet kitchen-bound and must not count toward the bill until a waiter
   // approves it (→ `sent`), at which point money re-syncs.
-  final sent = tickets.where((t) =>
-      t.status != 'voided' &&
-      t.status != 'draft' &&
-      t.status != 'pendingReview');
+  final sent = tickets.where(
+    (t) =>
+        t.status != 'voided' &&
+        t.status != 'draft' &&
+        t.status != 'pendingReview',
+  );
   final subtotal = sent.fold<int>(0, (a, t) => a + t.price * t.qty);
   int outstanding = 0;
   String? state;
   if (subtotal > 0) {
-    final s = await (db.select(db.venueSettings)
-          ..where((x) => x.id.equals('default')))
-        .getSingleOrNull();
+    final s = await (db.select(
+      db.venueSettings,
+    )..where((x) => x.id.equals('default'))).getSingleOrNull();
     final cfg = TaxServiceConfig(
       taxEnabled: s?.taxEnabled ?? false,
       taxRateBps: s?.taxRateBps ?? 1100,
@@ -393,14 +449,14 @@ Future<void> syncVisitMoney(AppDatabase db, WsHub hub, String visitId) async {
       serviceFixedAmount: s?.serviceFixedAmount ?? 0,
     );
     final total = computeBreakdown(subtotal, cfg).total;
-    final recs = await (db.select(db.receipts)
-          ..where((rc) => rc.visitId.equals(visitId)))
-        .get();
+    final recs = await (db.select(
+      db.receipts,
+    )..where((rc) => rc.visitId.equals(visitId))).get();
     var paid = 0;
     for (final rec in recs) {
-      final pays = await (db.select(db.payments)
-            ..where((p) => p.receiptId.equals(rec.id)))
-          .get();
+      final pays = await (db.select(
+        db.payments,
+      )..where((p) => p.receiptId.equals(rec.id))).get();
       paid += pays.fold<int>(0, (a, p) => a + p.amount);
     }
     outstanding = (total - paid).clamp(0, 1 << 31);
@@ -412,8 +468,9 @@ Future<void> syncVisitMoney(AppDatabase db, WsHub hub, String visitId) async {
       moneyState: Value(state),
     ),
   );
-  final fresh = await (db.select(db.venueTables)..where((t) => t.id.equals(table.id)))
-      .getSingleOrNull();
+  final fresh = await (db.select(
+    db.venueTables,
+  )..where((t) => t.id.equals(table.id))).getSingleOrNull();
   if (fresh != null) hub.broadcast(WsEventTypes.tableUpdated, _toJson(fresh));
 }
 
@@ -434,10 +491,11 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   // Read-only like `/tables` — any authenticated client (waiter or kitchen)
   // needs it to resolve table-less labels. ADR-0026.
   r.get('/takeaway/visits', (Request req) async {
-    final rows = await (db.select(db.visits)
-          ..where((v) => v.kind.equals('takeaway'))
-          ..orderBy([(v) => OrderingTerm.asc(v.createdAt)]))
-        .get();
+    final rows =
+        await (db.select(db.visits)
+              ..where((v) => v.kind.equals('takeaway'))
+              ..orderBy([(v) => OrderingTerm.asc(v.createdAt)]))
+            .get();
     return Response.ok(
       jsonEncode([for (final v in rows) _visitToJson(v)]),
       headers: {'content-type': 'application/json'},
@@ -453,7 +511,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final id = (body['id'] as String?) ?? _uuid.v4();
     final capacity = (body['capacity'] as num?)?.toInt() ?? 2;
     final paxIn = (body['pax'] as num?)?.toInt() ?? 0;
-    await db.into(db.venueTables).insertOnConflictUpdate(
+    await db
+        .into(db.venueTables)
+        .insertOnConflictUpdate(
           VenueTablesCompanion.insert(
             id: id,
             zoneId: body['zoneId'] as String,
@@ -463,13 +523,15 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             active: Value((body['active'] as bool?) ?? true),
           ),
         );
-    final row =
-        await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-            .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.internalServerError();
     hub.broadcast(WsEventTypes.tableCreated, _toJson(row));
-    return Response.ok(jsonEncode(_toJson(row)),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(_toJson(row)),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.patch('/tables/<id>', (Request req, String id) async {
@@ -478,8 +540,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     // Capacity changes can shrink below the current pax; clamp pax down
     // in the same write so we never leave pax > capacity.
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     int? nextCap;
     if (body.containsKey('capacity')) {
@@ -502,8 +565,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             ? Value(body['label'] as String?)
             : const Value.absent(),
         pax: nextPax == null ? const Value.absent() : Value(nextPax),
-        capacity:
-            nextCap == null ? const Value.absent() : Value(nextCap),
+        capacity: nextCap == null ? const Value.absent() : Value(nextCap),
         zoneId: body.containsKey('zoneId')
             ? Value(body['zoneId'] as String)
             : const Value.absent(),
@@ -523,8 +585,10 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     await (db.delete(db.venueTables)..where((t) => t.id.equals(id))).go();
     hub.broadcast(WsEventTypes.tableDeleted, {'id': id});
-    return Response.ok(jsonEncode({'id': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'id': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.patch('/tables/<id>/pax', (Request req, String id) async {
@@ -535,8 +599,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final actorId = body['actorId'] as String?;
     // Clamp to [1, capacity] server-side; the UI gates this too but never
     // trust client clamping for a multi-device flow.
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     final clamped = pax.clamp(0, row.capacity < 1 ? 1 : row.capacity);
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
@@ -553,8 +618,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final userId = body['userId'] as String?;
-    await (db.update(db.venueTables)..where((t) => t.id.equals(id)))
-        .write(VenueTablesCompanion(lastActorId: Value(userId)));
+    await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
+      VenueTablesCompanion(lastActorId: Value(userId)),
+    );
     return _broadcast(db, hub, id);
   });
 
@@ -562,17 +628,20 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     if (row.status != 'available') {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'already_seated',
-            'message': 'table is already in use',
-            'table': _toJson(row),
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'already_seated',
+          'message': 'table is already in use',
+          'table': _toJson(row),
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final paxIn = (body['pax'] as num?)?.toInt();
     final pax = paxIn == null
@@ -637,28 +706,34 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final userId = body['userId'] as String?;
     final userName = body['userName'] as String?;
     if (userId == null || userId.isEmpty) {
-      return Response(400,
-          body: jsonEncode({'code': 'bad_request', 'message': 'userId required'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({'code': 'bad_request', 'message': 'userId required'}),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final ttl = (body['ttlSeconds'] as num?)?.toInt() ?? 7;
     final now = DateTime.now();
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
-    final held = row.lockedBy != null &&
+    final held =
+        row.lockedBy != null &&
         row.lockedBy!.isNotEmpty &&
         row.lockedBy != userId &&
         row.lockExpiresAt != null &&
         row.lockExpiresAt!.isAfter(now);
     if (held) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'table_locked',
-            'message': 'table is locked by another user',
-            'table': _toJson(row),
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'table_locked',
+          'message': 'table is locked by another user',
+          'table': _toJson(row),
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
       VenueTablesCompanion(
@@ -679,23 +754,28 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final userId = body['userId'] as String?;
     if (userId == null || userId.isEmpty) {
-      return Response(400,
-          body: jsonEncode({'code': 'bad_request', 'message': 'userId required'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({'code': 'bad_request', 'message': 'userId required'}),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final ttl = (body['ttlSeconds'] as num?)?.toInt() ?? 7;
     final now = DateTime.now();
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     if (row.lockedBy != userId) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'lock_lost',
-            'message': 'caller is not the current lock holder',
-            'table': _toJson(row),
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'lock_lost',
+          'message': 'caller is not the current lock holder',
+          'table': _toJson(row),
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
       VenueTablesCompanion(
@@ -713,19 +793,24 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     String? userId;
     if (auth != null) {
-      final token = req.headers['authorization']
-          ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+      final token = req.headers['authorization']?.replaceFirst(
+        RegExp(r'^[Bb]earer\s+'),
+        '',
+      );
       final user = await auth.resolveBearer(token);
       userId = user?.id;
     }
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     if (userId != null && row.lockedBy != null && row.lockedBy != userId) {
       // Different user holds it — nothing to release on our side. Echo the
       // current row so the caller can sync its view.
-      return Response.ok(jsonEncode(_toJson(row)),
-          headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(_toJson(row)),
+        headers: {'content-type': 'application/json'},
+      );
     }
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
       const VenueTablesCompanion(
@@ -748,44 +833,52 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.post('/tables/<id>/close', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
-    final tableRow = await (db.select(db.venueTables)
-          ..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final tableRow = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (tableRow == null) return Response.notFound('table not found');
     final visitId = tableRow.currentVisitId;
     if (visitId == null || visitId.isEmpty) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'no_tickets',
-            'message': 'nothing to close: table has no live visit',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'no_tickets',
+          'message': 'nothing to close: table has no live visit',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    final tickets = await (db.select(db.tickets)
-          ..where((t) => t.visitId.equals(visitId)))
-        .get();
+    final tickets = await (db.select(
+      db.tickets,
+    )..where((t) => t.visitId.equals(visitId))).get();
     if (tickets.isEmpty) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'no_tickets',
-            'message': 'nothing to settle: table has no tickets',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'no_tickets',
+          'message': 'nothing to settle: table has no tickets',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    final hasLive =
-        tickets.any((t) => t.status != 'served' && t.status != 'voided');
+    final hasLive = tickets.any(
+      (t) => t.status != 'served' && t.status != 'voided',
+    );
     if (hasLive) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'tickets_not_terminal',
-            'message': 'all tickets must be served or voided before close',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'tickets_not_terminal',
+          'message': 'all tickets must be served or voided before close',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     // Free the table + mark the visit detached. Keep the bill alive.
     await db.transaction(() async {
-      await (db.update(db.visits)..where((v) => v.id.equals(visitId)))
-          .write(VisitsCompanion(tableFreedAt: Value(DateTime.now().toUtc())));
+      await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+        VisitsCompanion(tableFreedAt: Value(DateTime.now().toUtc())),
+      );
       await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
         const VenueTablesCompanion(
           status: Value('available'),
@@ -808,11 +901,17 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     });
     // If the bill was already closed, detach is the second axis — snapshot now.
-    final visit = await (db.select(db.visits)..where((v) => v.id.equals(visitId)))
-        .getSingleOrNull();
+    final visit = await (db.select(
+      db.visits,
+    )..where((v) => v.id.equals(visitId))).getSingleOrNull();
     if (visit != null && visit.billClosedAt != null) {
-      await snapshotVisitAndDelete(db, hub, visit,
-          billClosedBy: visit.billClosedBy, lossAmount: visit.lossAmount);
+      await snapshotVisitAndDelete(
+        db,
+        hub,
+        visit,
+        billClosedBy: visit.billClosedBy,
+        lossAmount: visit.lossAmount,
+      );
     } else if (visit != null) {
       // Still-open detached bill — tell the cashier to refresh its flag.
       hub.broadcast(WsEventTypes.billUpdated, {'visitId': visit.id});
@@ -827,22 +926,25 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.post('/tables/<id>/release', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     final visitId = row.currentVisitId;
     final ticketCount = visitId == null
         ? 0
         : await (db.select(db.tickets)..where((t) => t.visitId.equals(visitId)))
-            .get()
-            .then((rows) => rows.length);
+              .get()
+              .then((rows) => rows.length);
     if (ticketCount > 0) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'has_tickets',
-            'message': 'table has tickets; use /close to settle',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'has_tickets',
+          'message': 'table has tickets; use /close to settle',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     await db.transaction(() async {
       // No tickets ⇒ no bill: drop the empty visit outright (nothing to keep
@@ -884,66 +986,83 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final targetId = body['targetId'] as String?;
     if (targetId == null || targetId.isEmpty) {
-      return Response(400,
-          body: jsonEncode(
-              {'code': 'bad_request', 'message': 'targetId required'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({
+          'code': 'bad_request',
+          'message': 'targetId required',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     if (targetId == id) {
-      return Response(400,
-          body: jsonEncode(
-              {'code': 'same_table', 'message': 'source and target are equal'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({
+          'code': 'same_table',
+          'message': 'source and target are equal',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     // Resolve the mover from the bearer when auth is on; fall back to the
     // body actorId (dev / no-auth) so the lock check + audit stay accurate.
     String? moverId = body['actorId'] as String?;
     final moverName = body['actorName'] as String?;
     if (auth != null) {
-      final token = req.headers['authorization']
-          ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+      final token = req.headers['authorization']?.replaceFirst(
+        RegExp(r'^[Bb]earer\s+'),
+        '',
+      );
       final u = await auth.resolveBearer(token);
       moverId = u?.id ?? moverId;
     }
-    final source = await (db.select(db.venueTables)
-          ..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final source = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (source == null) return Response.notFound('source table not found');
     if (source.status == 'available') {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'source_not_occupied',
-            'message': 'source table is empty',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'source_not_occupied',
+          'message': 'source table is empty',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final now = DateTime.now();
-    final srcLockedByOther = source.lockedBy != null &&
+    final srcLockedByOther =
+        source.lockedBy != null &&
         source.lockedBy!.isNotEmpty &&
         source.lockedBy != moverId &&
         source.lockExpiresAt != null &&
         source.lockExpiresAt!.isAfter(now);
     if (srcLockedByOther) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'table_locked',
-            'message': 'source table is locked by another user',
-            'table': _toJson(source),
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'table_locked',
+          'message': 'source table is locked by another user',
+          'table': _toJson(source),
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    final target = await (db.select(db.venueTables)
-          ..where((t) => t.id.equals(targetId)))
-        .getSingleOrNull();
+    final target = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(targetId))).getSingleOrNull();
     if (target == null) return Response.notFound('target table not found');
     if (target.status != 'available' || !target.active) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'target_unavailable',
-            'message': 'target table is not an empty, active table',
-            'table': _toJson(target),
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'target_unavailable',
+          'message': 'target table is not an empty, active table',
+          'table': _toJson(target),
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     String? auditId;
     final movingVisitId = source.currentVisitId;
@@ -951,39 +1070,47 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       // Re-point the live visit + its tickets/receipts from source → target.
       // The visit is the bill key; tableId/tableLabel are kept current for
       // display. KDS/reports resolve by tableId live, so nothing else changes.
-      await (db.update(db.tickets)..where((t) => t.tableId.equals(id)))
-          .write(TicketsCompanion(tableId: Value(targetId)));
+      await (db.update(db.tickets)..where((t) => t.tableId.equals(id))).write(
+        TicketsCompanion(tableId: Value(targetId)),
+      );
       if (movingVisitId != null) {
-        await (db.update(db.visits)..where((v) => v.id.equals(movingVisitId)))
-            .write(VisitsCompanion(
-          tableId: Value(targetId),
-          tableLabel: Value(target.label),
-        ));
-        await (db.update(db.receipts)..where((rc) => rc.visitId.equals(movingVisitId)))
+        await (db.update(
+          db.visits,
+        )..where((v) => v.id.equals(movingVisitId))).write(
+          VisitsCompanion(
+            tableId: Value(targetId),
+            tableLabel: Value(target.label),
+          ),
+        );
+        await (db.update(db.receipts)
+              ..where((rc) => rc.visitId.equals(movingVisitId)))
             .write(ReceiptsCompanion(tableId: Value(targetId)));
       }
       // Copy the session onto the target + hand the lock to the mover.
-      await (db.update(db.venueTables)..where((t) => t.id.equals(targetId)))
-          .write(VenueTablesCompanion(
-        status: Value(source.status),
-        pax: Value(source.pax),
-        openAmount: Value(source.openAmount),
-        readyCount: Value(source.readyCount),
-        openedAt: Value(source.openedAt),
-        lastActorId: Value(source.lastActorId),
-        guestName: Value(source.guestName),
-        guestNotes: Value(source.guestNotes),
-        reservationId: Value(source.reservationId),
-        currentVisitId: Value(movingVisitId),
-        billClosedAt: Value(source.billClosedAt),
-        moneyState: Value(source.moneyState),
-        lockedBy: moverId == null ? const Value(null) : Value(moverId),
-        lockedByName: Value(moverName),
-        lockedAt: moverId == null ? const Value(null) : Value(now),
-        lockExpiresAt: moverId == null
-            ? const Value(null)
-            : Value(now.add(const Duration(seconds: 7))),
-      ));
+      await (db.update(
+        db.venueTables,
+      )..where((t) => t.id.equals(targetId))).write(
+        VenueTablesCompanion(
+          status: Value(source.status),
+          pax: Value(source.pax),
+          openAmount: Value(source.openAmount),
+          readyCount: Value(source.readyCount),
+          openedAt: Value(source.openedAt),
+          lastActorId: Value(source.lastActorId),
+          guestName: Value(source.guestName),
+          guestNotes: Value(source.guestNotes),
+          reservationId: Value(source.reservationId),
+          currentVisitId: Value(movingVisitId),
+          billClosedAt: Value(source.billClosedAt),
+          moneyState: Value(source.moneyState),
+          lockedBy: moverId == null ? const Value(null) : Value(moverId),
+          lockedByName: Value(moverName),
+          lockedAt: moverId == null ? const Value(null) : Value(now),
+          lockExpiresAt: moverId == null
+              ? const Value(null)
+              : Value(now.add(const Duration(seconds: 7))),
+        ),
+      );
       // Wipe the source back to kosong.
       await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
         const VenueTablesCompanion(
@@ -1008,27 +1135,36 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       auditId = _uuid.v4();
       final srcLabel = source.label ?? source.id;
       final tgtLabel = target.label ?? target.id;
-      await db.into(db.auditEntries).insert(AuditEntriesCompanion.insert(
-            id: auditId!,
-            type: AuditType.tableMoved.name,
-            title: 'Pindah meja $srcLabel → $tgtLabel',
-            tableId: Value(targetId),
-            at: now,
-            actorUserId: Value(moverId),
-          ));
+      await db
+          .into(db.auditEntries)
+          .insert(
+            AuditEntriesCompanion.insert(
+              id: auditId!,
+              type: AuditType.tableMoved.name,
+              title: 'Pindah meja $srcLabel → $tgtLabel',
+              tableId: Value(targetId),
+              at: now,
+              actorUserId: Value(moverId),
+            ),
+          );
     });
     // Broadcast both table rows + the audit row.
-    final srcRow = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
-    final tgtRow = await (db.select(db.venueTables)
-          ..where((t) => t.id.equals(targetId)))
-        .getSingleOrNull();
-    if (srcRow != null) hub.broadcast(WsEventTypes.tableUpdated, _toJson(srcRow));
-    if (tgtRow != null) hub.broadcast(WsEventTypes.tableUpdated, _toJson(tgtRow));
+    final srcRow = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    final tgtRow = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(targetId))).getSingleOrNull();
+    if (srcRow != null) {
+      hub.broadcast(WsEventTypes.tableUpdated, _toJson(srcRow));
+    }
+    if (tgtRow != null) {
+      hub.broadcast(WsEventTypes.tableUpdated, _toJson(tgtRow));
+    }
     if (auditId != null) {
-      final a = await (db.select(db.auditEntries)
-            ..where((e) => e.id.equals(auditId!)))
-          .getSingleOrNull();
+      final a = await (db.select(
+        db.auditEntries,
+      )..where((e) => e.id.equals(auditId!))).getSingleOrNull();
       if (a != null) {
         hub.broadcast(WsEventTypes.auditCreated, {
           'id': a.id,
@@ -1043,8 +1179,10 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       }
     }
     if (tgtRow == null) return Response.notFound('target table not found');
-    return Response.ok(jsonEncode(_toJson(tgtRow)),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(_toJson(tgtRow)),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.post('/tables/<id>/ready/decrement', (Request req, String id) async {
@@ -1052,14 +1190,16 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>?;
     final actorId = body == null ? null : body['actorId'] as String?;
-    final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     final n = (row.readyCount - 1).clamp(0, 1 << 30);
     // When the last `ready` item is cleared the table moves back to
     // `occupied` so the floor view does not strand a stale ready badge.
-    final nextStatus =
-        (row.status == 'ready' && n == 0) ? 'occupied' : row.status;
+    final nextStatus = (row.status == 'ready' && n == 0)
+        ? 'occupied'
+        : row.status;
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
       VenueTablesCompanion(
         readyCount: Value(n),
@@ -1074,34 +1214,41 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   // Server renders + sends (ADR-0020); any authenticated staff may trigger it.
   r.post('/tables/<id>/print', (Request req, String id) async {
     if (auth != null) {
-      final token = req.headers['authorization']
-          ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+      final token = req.headers['authorization']?.replaceFirst(
+        RegExp(r'^[Bb]earer\s+'),
+        '',
+      );
       final user = await auth.resolveBearer(token);
       if (user == null) return Response(401);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final printerId = body['printerId'] as String?;
     if (printerId == null || printerId.isEmpty) {
-      return Response(400,
-          body: jsonEncode(
-              {'code': 'bad_request', 'message': 'printerId required'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({
+          'code': 'bad_request',
+          'message': 'printerId required',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    final printer =
-        await (db.select(db.printers)..where((p) => p.id.equals(printerId)))
-            .getSingleOrNull();
+    final printer = await (db.select(
+      db.printers,
+    )..where((p) => p.id.equals(printerId))).getSingleOrNull();
     if (printer == null) return Response.notFound('printer not found');
-    final table =
-        await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-            .getSingleOrNull();
+    final table = await (db.select(
+      db.venueTables,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (table == null) return Response.notFound('table not found');
     // Scope to the table's CURRENT visit so a reseated table never prints a
     // prior detached visit's lines (which keep this tableId). See ADR-0024.
     final curVisit = table.currentVisitId;
     final tickets = curVisit == null
         ? <Ticket>[]
-        : await (db.select(db.tickets)..where((t) => t.visitId.equals(curVisit)))
-            .get();
+        : await (db.select(
+            db.tickets,
+          )..where((t) => t.visitId.equals(curVisit))).get();
     final venueRows = await db.select(db.venueSettings).get();
     final v = venueRows.isEmpty ? null : venueRows.first;
 
@@ -1115,21 +1262,25 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           if (lbl is String && lbl.trim().isNotEmpty) mods.add(lbl.trim());
         }
       } catch (_) {}
-      lines.add(StrukLine(
-        qty: t.qty,
-        name: t.name,
-        variant: t.variantName,
-        modifiers: mods,
-        note: (t.note ?? '').trim(),
-      ));
+      lines.add(
+        StrukLine(
+          qty: t.qty,
+          name: t.name,
+          variant: t.variantName,
+          modifiers: mods,
+          note: (t.note ?? '').trim(),
+        ),
+      );
     }
     if (lines.isEmpty) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'no_lines',
-            'message': 'tidak ada pesanan untuk dicetak',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'no_lines',
+          'message': 'tidak ada pesanan untuk dicetak',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
 
     final data = StrukData(
@@ -1154,21 +1305,26 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       final bytes = await StrukRenderer.render(data);
       await StrukSocket.send(printer.host, printer.port, bytes);
     } catch (e) {
-      SatLog.srv('print fail printer=$printerId ${printer.host}:${printer.port} $e');
-      return Response(502,
-          body: jsonEncode({
-            'code': 'print_failed',
-            'message': 'printer tak terhubung',
-          }),
-          headers: {'content-type': 'application/json'});
+      SatLog.srv(
+        'print fail printer=$printerId ${printer.host}:${printer.port} $e',
+      );
+      return Response(
+        502,
+        body: jsonEncode({
+          'code': 'print_failed',
+          'message': 'printer tak terhubung',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
 
     final now = DateTime.now();
-    await (db.update(db.printers)..where((p) => p.id.equals(printerId)))
-        .write(PrintersCompanion(lastSeenAt: Value(now)));
-    final updated =
-        await (db.select(db.printers)..where((p) => p.id.equals(printerId)))
-            .getSingleOrNull();
+    await (db.update(db.printers)..where((p) => p.id.equals(printerId))).write(
+      PrintersCompanion(lastSeenAt: Value(now)),
+    );
+    final updated = await (db.select(
+      db.printers,
+    )..where((p) => p.id.equals(printerId))).getSingleOrNull();
     if (updated != null) {
       hub.broadcast(WsEventTypes.printerUpdated, {
         'id': updated.id,
@@ -1181,8 +1337,10 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         'createdAt': updated.createdAt.toIso8601String(),
       });
     }
-    return Response.ok(jsonEncode({'status': 'printed'}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'status': 'printed'}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Takeaway handover ("Serahkan"): the first axis for a Bawa pulang visit,
@@ -1194,47 +1352,63 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.post('/visits/<id>/handover', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
-    final visit = await (db.select(db.visits)..where((v) => v.id.equals(id)))
-        .getSingleOrNull();
+    final visit = await (db.select(
+      db.visits,
+    )..where((v) => v.id.equals(id))).getSingleOrNull();
     if (visit == null) return Response.notFound('visit not found');
     if (visit.tableFreedAt != null) {
       return Response.ok(
-          jsonEncode({'status': 'already_handed_over', 'visitId': id}),
-          headers: {'content-type': 'application/json'});
+        jsonEncode({'status': 'already_handed_over', 'visitId': id}),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    final tickets = await (db.select(db.tickets)
-          ..where((t) => t.visitId.equals(id)))
-        .get();
+    final tickets = await (db.select(
+      db.tickets,
+    )..where((t) => t.visitId.equals(id))).get();
     if (tickets.isEmpty) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'no_tickets',
-            'message': 'nothing to hand over',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'no_tickets',
+          'message': 'nothing to hand over',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    final hasLive =
-        tickets.any((t) => t.status != 'served' && t.status != 'voided');
+    final hasLive = tickets.any(
+      (t) => t.status != 'served' && t.status != 'voided',
+    );
     if (hasLive) {
-      return Response(409,
-          body: jsonEncode({
-            'code': 'tickets_not_terminal',
-            'message': 'all tickets must be served or voided before handover',
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'tickets_not_terminal',
+          'message': 'all tickets must be served or voided before handover',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    await (db.update(db.visits)..where((v) => v.id.equals(id)))
-        .write(VisitsCompanion(tableFreedAt: Value(DateTime.now().toUtc())));
-    final fresh = await (db.select(db.visits)..where((v) => v.id.equals(id)))
-        .getSingleOrNull();
+    await (db.update(db.visits)..where((v) => v.id.equals(id))).write(
+      VisitsCompanion(tableFreedAt: Value(DateTime.now().toUtc())),
+    );
+    final fresh = await (db.select(
+      db.visits,
+    )..where((v) => v.id.equals(id))).getSingleOrNull();
     if (fresh != null && fresh.billClosedAt != null) {
-      await snapshotVisitAndDelete(db, hub, fresh,
-          billClosedBy: fresh.billClosedBy, lossAmount: fresh.lossAmount);
+      await snapshotVisitAndDelete(
+        db,
+        hub,
+        fresh,
+        billClosedBy: fresh.billClosedBy,
+        lossAmount: fresh.lossAmount,
+      );
     } else {
       hub.broadcast(WsEventTypes.billUpdated, {'visitId': id});
     }
-    return Response.ok(jsonEncode({'status': 'handed_over', 'visitId': id}),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode({'status': 'handed_over', 'visitId': id}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   return r;
@@ -1245,47 +1419,50 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 Map<String, dynamic> tableJson(VenueTable t) => _toJson(t);
 
 Future<Response> _broadcast(AppDatabase db, WsHub hub, String id) async {
-  final row = await (db.select(db.venueTables)..where((t) => t.id.equals(id)))
-      .getSingleOrNull();
+  final row = await (db.select(
+    db.venueTables,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
   if (row == null) return Response.notFound('table not found');
   hub.broadcast(WsEventTypes.tableUpdated, _toJson(row));
-  return Response.ok(jsonEncode(_toJson(row)),
-      headers: {'content-type': 'application/json'});
+  return Response.ok(
+    jsonEncode(_toJson(row)),
+    headers: {'content-type': 'application/json'},
+  );
 }
 
 /// Active takeaway visit → JSON for the Floor strip + detail. Lean: status is
 /// derived client-side from the visit's tickets. See ADR-0026.
 Map<String, dynamic> _visitToJson(Visit v) => {
-      'id': v.id,
-      'tableLabel': v.tableLabel,
-      'guestName': v.guestName,
-      'guestNotes': v.guestNotes,
-      'openedAt': v.openedAt?.toIso8601String(),
-      'tableFreedAt': v.tableFreedAt?.toIso8601String(),
-      'billClosedAt': v.billClosedAt?.toIso8601String(),
-    };
+  'id': v.id,
+  'tableLabel': v.tableLabel,
+  'guestName': v.guestName,
+  'guestNotes': v.guestNotes,
+  'openedAt': v.openedAt?.toIso8601String(),
+  'tableFreedAt': v.tableFreedAt?.toIso8601String(),
+  'billClosedAt': v.billClosedAt?.toIso8601String(),
+};
 
 Map<String, dynamic> _toJson(VenueTable t) => {
-      'id': t.id,
-      'zoneId': t.zoneId,
-      'label': t.label,
-      'pax': t.pax,
-      'capacity': t.capacity,
-      'active': t.active,
-      'status': t.status,
-      'openAmount': t.openAmount,
-      'readyCount': t.readyCount,
-      'lastActorId': t.lastActorId,
-      'lockedBy': t.lockedBy,
-      'lockedByName': t.lockedByName,
-      'lockedAt': t.lockedAt?.toIso8601String(),
-      'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
-      'openedAt': t.openedAt?.toIso8601String(),
-      'guestName': t.guestName,
-      'guestNotes': t.guestNotes,
-      'reservationId': t.reservationId,
-      'currentVisitId': t.currentVisitId,
-      'billClosedAt': t.billClosedAt?.toIso8601String(),
-      'moneyState': t.moneyState,
-      'guestOrderingEnabled': t.guestOrderingEnabled,
-    };
+  'id': t.id,
+  'zoneId': t.zoneId,
+  'label': t.label,
+  'pax': t.pax,
+  'capacity': t.capacity,
+  'active': t.active,
+  'status': t.status,
+  'openAmount': t.openAmount,
+  'readyCount': t.readyCount,
+  'lastActorId': t.lastActorId,
+  'lockedBy': t.lockedBy,
+  'lockedByName': t.lockedByName,
+  'lockedAt': t.lockedAt?.toIso8601String(),
+  'lockExpiresAt': t.lockExpiresAt?.toIso8601String(),
+  'openedAt': t.openedAt?.toIso8601String(),
+  'guestName': t.guestName,
+  'guestNotes': t.guestNotes,
+  'reservationId': t.reservationId,
+  'currentVisitId': t.currentVisitId,
+  'billClosedAt': t.billClosedAt?.toIso8601String(),
+  'moneyState': t.moneyState,
+  'guestOrderingEnabled': t.guestOrderingEnabled,
+};

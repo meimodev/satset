@@ -10,10 +10,10 @@ extension CourseVisuals on Course {
 }
 
 Color courseColor(CourseId id, SatColors sc) => switch (id) {
-      CourseId.drinksNow => sc.cDrinks,
-      CourseId.starters => sc.cStarters,
-      CourseId.mains => sc.cMains,
-      CourseId.sides => sc.cMains,
-      CourseId.desserts => sc.cDesserts,
-      CourseId.fireNow => sc.cFire,
-    };
+  CourseId.drinksNow => sc.cDrinks,
+  CourseId.starters => sc.cStarters,
+  CourseId.mains => sc.cMains,
+  CourseId.sides => sc.cMains,
+  CourseId.desserts => sc.cDesserts,
+  CourseId.fireNow => sc.cFire,
+};

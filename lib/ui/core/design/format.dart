@@ -1,7 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-final _idr = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp. ', decimalDigits: 0);
+final _idr = NumberFormat.currency(
+  locale: 'id_ID',
+  symbol: 'Rp. ',
+  decimalDigits: 0,
+);
 
 String formatIDR(num value) => _idr.format(value);
 
@@ -19,7 +23,9 @@ class RupiahInputFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     final raw = newValue.text;
     final neg = allowNegative && raw.trimLeft().startsWith('-');
     final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');

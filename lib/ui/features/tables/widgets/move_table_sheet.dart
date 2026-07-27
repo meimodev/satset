@@ -52,18 +52,21 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
       orElse: () => VenueTable(id: widget.sourceId, zoneId: ''),
     );
 
-    final targets = tables
-        .where((t) =>
-            t.id != widget.sourceId &&
-            t.active &&
-            t.status == TableStatus.available)
-        .toList()
-      ..sort((a, b) {
-        final za = zones.indexWhere((z) => z.id == a.zoneId);
-        final zb = zones.indexWhere((z) => z.id == b.zoneId);
-        if (za != zb) return za.compareTo(zb);
-        return a.displayName.compareTo(b.displayName);
-      });
+    final targets =
+        tables
+            .where(
+              (t) =>
+                  t.id != widget.sourceId &&
+                  t.active &&
+                  t.status == TableStatus.available,
+            )
+            .toList()
+          ..sort((a, b) {
+            final za = zones.indexWhere((z) => z.id == a.zoneId);
+            final zb = zones.indexWhere((z) => z.id == b.zoneId);
+            if (za != zb) return za.compareTo(zb);
+            return a.displayName.compareTo(b.displayName);
+          });
 
     return SafeArea(
       child: Padding(
@@ -186,8 +189,11 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                 if (overCapacity)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Icon(Icons.warning_amber_rounded,
-                        size: 16, color: sc.warn),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: sc.warn,
+                    ),
                   ),
                 Icon(Icons.chevron_right, size: 18, color: sc.textLo),
               ],
@@ -208,7 +214,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
         content: Text(
           overCapacity
               ? 'Tujuan: meja ${target.displayName} (kapasitas ${target.capacity}). '
-                  '${source.pax} tamu melebihi kapasitas — lanjutkan?'
+                    '${source.pax} tamu melebihi kapasitas — lanjutkan?'
               : 'Seluruh pesanan dan tamu pindah ke meja ${target.displayName}.',
         ),
         actions: [
@@ -227,7 +233,9 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
     setState(() => _moving = true);
     final user = ref.read(authStateProvider).user;
     try {
-      await ref.read(tablesProvider.notifier).moveTable(
+      await ref
+          .read(tablesProvider.notifier)
+          .moveTable(
             source.id,
             targetId: target.id,
             actorId: user?.id,
@@ -243,14 +251,17 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
         'source_not_occupied' => 'Meja asal sudah kosong.',
         _ => 'Gagal memindahkan meja: ${e.code ?? e.statusCode}',
       };
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg, style: SatType.sans(color: sc.textHi))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg, style: SatType.sans(color: sc.textHi)),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _moving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memindahkan meja: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memindahkan meja: $e')));
     }
   }
 }

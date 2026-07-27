@@ -12,8 +12,7 @@ class Shimmer extends StatefulWidget {
   State<Shimmer> createState() => _ShimmerState();
 }
 
-class _ShimmerState extends State<Shimmer>
-    with SingleTickerProviderStateMixin {
+class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1500),
@@ -62,8 +61,12 @@ class SkeletonBox extends StatelessWidget {
   final double? width;
   final double height;
   final double radius;
-  const SkeletonBox(
-      {super.key, this.width, required this.height, this.radius = 6});
+  const SkeletonBox({
+    super.key,
+    this.width,
+    required this.height,
+    this.radius = 6,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +74,7 @@ class SkeletonBox extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: SatBox.d(
-        color: sc.bg3,
-        borderRadius: SatR.a(radius),
-      ),
+      decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(radius)),
     );
   }
 }
@@ -135,69 +135,68 @@ class ReportsSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     Widget tile() => Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: SatBox.d(
-              color: sc.bg2,
-              border: SatB.all(color: sc.border0),
-              borderRadius: SatR.a(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                SkeletonBox(width: 44, height: 9),
-                SizedBox(height: 12),
-                SkeletonBox(width: 70, height: 20),
-                SizedBox(height: 8),
-                SkeletonBox(width: 54, height: 9),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: SatBox.d(
+          color: sc.bg2,
+          border: SatB.all(color: sc.border0),
+          borderRadius: SatR.a(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            SkeletonBox(width: 44, height: 9),
+            SizedBox(height: 12),
+            SkeletonBox(width: 70, height: 20),
+            SizedBox(height: 8),
+            SkeletonBox(width: 54, height: 9),
+          ],
+        ),
+      ),
+    );
+
+    Widget chart() => _card(
+      context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SkeletonBox(width: 160, height: 14),
+          const SizedBox(height: 8),
+          const SkeletonBox(width: 100, height: 10),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 110,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var i = 0; i < 9; i++) ...[
+                  Expanded(
+                    child: SkeletonBox(height: 30.0 + (i % 4) * 22, radius: 3),
+                  ),
+                  if (i != 8) const SizedBox(width: 6),
+                ],
               ],
             ),
           ),
-        );
-
-    Widget chart() => _card(
-          context,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SkeletonBox(width: 160, height: 14),
-              const SizedBox(height: 8),
-              const SkeletonBox(width: 100, height: 10),
-              const SizedBox(height: 18),
-              SizedBox(
-                height: 110,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    for (var i = 0; i < 9; i++) ...[
-                      Expanded(
-                        child: SkeletonBox(
-                          height: 30.0 + (i % 4) * 22,
-                          radius: 3,
-                        ),
-                      ),
-                      if (i != 8) const SizedBox(width: 6),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
+        ],
+      ),
+    );
 
     return Shimmer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(children: [
-            tile(),
-            const SizedBox(width: 12),
-            tile(),
-            const SizedBox(width: 12),
-            tile(),
-            const SizedBox(width: 12),
-            tile(),
-          ]),
+          Row(
+            children: [
+              tile(),
+              const SizedBox(width: 12),
+              tile(),
+              const SizedBox(width: 12),
+              tile(),
+              const SizedBox(width: 12),
+              tile(),
+            ],
+          ),
           const SizedBox(height: 14),
           chart(),
           const SizedBox(height: 14),

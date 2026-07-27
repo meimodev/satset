@@ -30,8 +30,11 @@ Router authRoutes(
       return _err(400, 'bad_request', 'idToken+deviceId required');
     }
     if (venueId.isEmpty || verifier == null) {
-      return _err(409, 'no_venue_scope',
-          'This server is not venue-scoped and cannot admit admins');
+      return _err(
+        409,
+        'no_venue_scope',
+        'This server is not venue-scoped and cannot admit admins',
+      );
     }
     final v = await verifier.verify(idToken);
     if (v == null) {
@@ -52,9 +55,9 @@ Router authRoutes(
     final me = await auth.resolveBearer(session.token);
     final role = me == null
         ? null
-        : await (auth.db.select(auth.db.roles)
-              ..where((rr) => rr.id.equals(me.roleId)))
-            .getSingleOrNull();
+        : await (auth.db.select(
+            auth.db.roles,
+          )..where((rr) => rr.id.equals(me.roleId))).getSingleOrNull();
     final caps = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
@@ -76,22 +79,29 @@ Router authRoutes(
     final pin = (body['pin'] as String?) ?? '';
     final deviceId = (body['deviceId'] as String?) ?? '';
     if (pin.isEmpty || deviceId.isEmpty) {
-      return Response(400,
-          body: jsonEncode({'code': 'bad_request', 'message': 'pin+deviceId required'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        400,
+        body: jsonEncode({
+          'code': 'bad_request',
+          'message': 'pin+deviceId required',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final session = await auth.signInWithPin(pin: pin, deviceId: deviceId);
     if (session == null) {
-      return Response(401,
-          body: jsonEncode({'code': 'invalid_pin', 'message': 'PIN salah'}),
-          headers: {'content-type': 'application/json'});
+      return Response(
+        401,
+        body: jsonEncode({'code': 'invalid_pin', 'message': 'PIN salah'}),
+        headers: {'content-type': 'application/json'},
+      );
     }
     final me = await auth.resolveBearer(session.token);
     final role = me == null
         ? null
-        : await (auth.db.select(auth.db.roles)
-              ..where((r) => r.id.equals(me.roleId)))
-            .getSingleOrNull();
+        : await (auth.db.select(
+            auth.db.roles,
+          )..where((r) => r.id.equals(me.roleId))).getSingleOrNull();
     final caps = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
@@ -144,9 +154,9 @@ Router authRoutes(
     if (user == null) {
       return Response(401);
     }
-    final role = await (auth.db.select(auth.db.roles)
-          ..where((rr) => rr.id.equals(user.roleId)))
-        .getSingleOrNull();
+    final role = await (auth.db.select(
+      auth.db.roles,
+    )..where((rr) => rr.id.equals(user.roleId))).getSingleOrNull();
     final caps = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
@@ -174,6 +184,8 @@ String? _bearer(Request req) {
   return h.substring(7).trim();
 }
 
-Response _err(int status, String code, String message) => Response(status,
-    body: jsonEncode({'code': code, 'message': message}),
-    headers: {'content-type': 'application/json'});
+Response _err(int status, String code, String message) => Response(
+  status,
+  body: jsonEncode({'code': code, 'message': message}),
+  headers: {'content-type': 'application/json'},
+);

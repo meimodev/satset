@@ -12,8 +12,9 @@ const _uuid = Uuid();
 
 /// Surfaces bootstrap progress for the zones list. Symmetric with
 /// `tablesStatusProvider` so the UI can render the same banners.
-final zonesStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final zonesStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class ZonesRepository extends StateNotifier<List<Zone>> {
   ZonesRepository({required this.ref}) : super(const <Zone>[]) {
@@ -47,11 +48,17 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
           state = [...state, z];
         case WsEventTypes.zoneUpdated:
           final z = _fromJson(ev.payload);
-          state = [for (final x in state) if (x.id == z.id) z else x];
+          state = [
+            for (final x in state)
+              if (x.id == z.id) z else x,
+          ];
         case WsEventTypes.zoneDeleted:
           final id = ev.payload['id'] as String?;
           if (id == null) return;
-          state = [for (final x in state) if (x.id != id) x];
+          state = [
+            for (final x in state)
+              if (x.id != id) x,
+          ];
       }
     });
   }
@@ -59,21 +66,21 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
-      ref.read(zonesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(zonesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     state = const <Zone>[];
-    ref.read(zonesStatusProvider.notifier).state =
-        const AsyncValue.loading();
+    ref.read(zonesStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
-      ref.read(zonesStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      ref.read(zonesStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
     } catch (e, st) {
       SatLog.repo('zones.bootstrap fail $e');
-      ref.read(zonesStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      ref.read(zonesStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
     // Wire WS even if the bootstrap GET failed: the `connected` resync is the
     // recovery path for an empty/401 bootstrap. See ADR-0021.
@@ -172,16 +179,10 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
     ];
   }
 
-  void update(
-    String id, {
-    String? name,
-    int? colorHex,
-    String? iconKey,
-  }) {
+  void update(String id, {String? name, int? colorHex, String? iconKey}) {
     final trimmed = name?.trim();
     final hasName = trimmed != null && trimmed.isNotEmpty;
-    final prev =
-        state.where((z) => z.id == id).cast<Zone?>().firstOrNull;
+    final prev = state.where((z) => z.id == id).cast<Zone?>().firstOrNull;
     state = [
       for (final z in state)
         if (z.id == id)
@@ -208,7 +209,10 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
       } catch (e) {
         SatLog.repo('zones.update fail $e');
         if (prev != null) {
-          state = [for (final z in state) if (z.id == id) prev else z];
+          state = [
+            for (final z in state)
+              if (z.id == id) prev else z,
+          ];
         }
       }
     }());

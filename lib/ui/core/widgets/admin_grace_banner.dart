@@ -35,8 +35,11 @@ class AdminGraceBanner extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(critical ? Icons.lock_clock_rounded : Icons.wifi_off_rounded,
-              size: 16, color: fg),
+          Icon(
+            critical ? Icons.lock_clock_rounded : Icons.wifi_off_rounded,
+            size: 16,
+            color: fg,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

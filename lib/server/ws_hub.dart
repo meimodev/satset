@@ -21,7 +21,9 @@ class WsHub {
   void register(WebSocketChannel ch, String userId, String deviceId) {
     final c = _WsConn(ch, userId, deviceId);
     _conns.add(c);
-    SatLog.srv('ws connect user=$userId dev=${deviceId.length > 6 ? deviceId.substring(0, 6) : deviceId} clients=${_conns.length}');
+    SatLog.srv(
+      'ws connect user=$userId dev=${deviceId.length > 6 ? deviceId.substring(0, 6) : deviceId} clients=${_conns.length}',
+    );
     ch.stream.listen(
       (_) {},
       onDone: () {

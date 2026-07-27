@@ -8,7 +8,8 @@ import 'package:satset/core/log/sat_log.dart';
 
 /// A SatSet server seen on the LAN via mDNS.
 class DiscoveredServer {
-  final String name; // mDNS service name (unique per LAN after bonsoir suffixing)
+  final String
+  name; // mDNS service name (unique per LAN after bonsoir suffixing)
   final String host;
   final int port;
   final String fingerprint;
@@ -33,7 +34,9 @@ class DiscoveredServer {
 
   @override
   bool operator ==(Object other) =>
-      other is DiscoveredServer && other.key == key && other.fingerprint == fingerprint;
+      other is DiscoveredServer &&
+      other.key == key &&
+      other.fingerprint == fingerprint;
 
   @override
   int get hashCode => key.hashCode ^ fingerprint.hashCode;
@@ -71,9 +74,12 @@ class MdnsBrowserService {
     final d = BonsoirDiscovery(type: serviceType);
     await d.ready;
     _discovery = d;
-    _sub = d.eventStream?.listen(_onEvent, onError: (Object e, StackTrace st) {
-      SatLog.err('mdns discovery stream', e, st);
-    });
+    _sub = d.eventStream?.listen(
+      _onEvent,
+      onError: (Object e, StackTrace st) {
+        SatLog.err('mdns discovery stream', e, st);
+      },
+    );
     await d.start();
     SatLog.vm('MdnsBrowser start $serviceType');
   }
@@ -170,7 +176,9 @@ class MdnsBrowserService {
     // whose TXT carries an explicit `label` (= our current broadcast).
     final hpKey = '$host:${svc.port}';
     final existingByName = _byName[svc.name];
-    if (existingByName != null && existingByName.host == host && existingByName.port == svc.port) {
+    if (existingByName != null &&
+        existingByName.host == host &&
+        existingByName.port == svc.port) {
       _byName[svc.name] = entry;
     } else {
       // Drop any prior entries pointing at the same host:port that lack an
@@ -185,7 +193,9 @@ class MdnsBrowserService {
   }
 
   bool _isLocalHost(String host) {
-    if (host == '127.0.0.1' || host == '::1' || host == 'localhost') return true;
+    if (host == '127.0.0.1' || host == '::1' || host == 'localhost') {
+      return true;
+    }
     if (_localAddrs.contains(host)) return true;
     // Bonsoir on Android sometimes returns `.local` mDNS names; treat the
     // device's own hostname.local as local too.

@@ -71,16 +71,23 @@ class _SentScreenState extends ConsumerState<SentScreen>
                   color: sc.successSoft,
                 ),
                 alignment: Alignment.center,
-                child: Icon(Icons.check, size: 46, color: sc.success, weight: 800),
+                child: Icon(
+                  Icons.check,
+                  size: 46,
+                  color: sc.success,
+                  weight: 800,
+                ),
               ),
               const SizedBox(height: 24),
-              Text('Terkirim',
-                  style: SatType.sans(
-                    size: 30,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                    color: sc.textHi,
-                  )),
+              Text(
+                'Terkirim',
+                style: SatType.sans(
+                  size: 30,
+                  weight: FontWeight.w600,
+                  letterSpacing: -0.6,
+                  color: sc.textHi,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 'Pesanan Meja $name sudah live di display dapur dan bar.',
@@ -98,12 +105,14 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 ],
               ),
               const SizedBox(height: 16),
-              Text('LAN P50 ${_latency}MS · CLOUD QUEUED',
-                  style: SatType.mono(
-                    size: 10,
-                    color: sc.textLo,
-                    letterSpacing: 1.0,
-                  )),
+              Text(
+                'LAN P50 ${_latency}MS · CLOUD QUEUED',
+                style: SatType.mono(
+                  size: 10,
+                  color: sc.textLo,
+                  letterSpacing: 1.0,
+                ),
+              ),
               if (table != null) ...[
                 const SizedBox(height: 24),
                 OutlinedButton.icon(
@@ -115,7 +124,9 @@ class _SentScreenState extends ConsumerState<SentScreen>
                       context: context,
                       ref: ref,
                       table: table,
-                      tickets: ref.read(ticketsForTableProvider(widget.tableId)),
+                      tickets: ref.read(
+                        ticketsForTableProvider(widget.tableId),
+                      ),
                     );
                   },
                 ),
@@ -167,8 +178,14 @@ class _StationChip extends StatelessWidget {
                   ),
                 ),
           const SizedBox(width: 8),
-          Text(name,
-              style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.textHi)),
+          Text(
+            name,
+            style: SatType.sans(
+              size: 13,
+              weight: FontWeight.w500,
+              color: sc.textHi,
+            ),
+          ),
         ],
       ),
     );

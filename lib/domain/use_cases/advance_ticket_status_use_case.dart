@@ -67,7 +67,8 @@ class AdvanceTicketStatusUseCase {
   }
 }
 
-final advanceTicketStatusUseCaseProvider =
-    Provider<AdvanceTicketStatusUseCase>((ref) {
-  return AdvanceTicketStatusUseCase(ref.watch(ticketsProvider.notifier));
-});
+final advanceTicketStatusUseCaseProvider = Provider<AdvanceTicketStatusUseCase>(
+  (ref) {
+    return AdvanceTicketStatusUseCase(ref.watch(ticketsProvider.notifier));
+  },
+);

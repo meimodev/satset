@@ -272,11 +272,7 @@ class _PinHelper extends StatelessWidget {
   final int pinLength;
   final bool busy;
   final String? error;
-  const _PinHelper({
-    required this.pinLength,
-    required this.busy,
-    this.error,
-  });
+  const _PinHelper({required this.pinLength, required this.busy, this.error});
 
   @override
   Widget build(BuildContext context) {
@@ -299,7 +295,9 @@ class _PinHelper extends StatelessWidget {
     if (empty && !busy && !complete) {
       return const SizedBox(height: 14);
     }
-    final text = busy || complete ? 'Memverifikasi...' : '$pinLength / $kPinLength digit';
+    final text = busy || complete
+        ? 'Memverifikasi...'
+        : '$pinLength / $kPinLength digit';
     final color = (busy || complete) ? sc.accentText : sc.textLo;
     return Center(
       child: Text(
@@ -330,10 +328,7 @@ class _Pad extends StatelessWidget {
           if (k == '')
             const SizedBox.shrink()
           else
-            _PinKey(
-              label: k,
-              onTap: enabled ? () => onPress(k) : null,
-            ),
+            _PinKey(label: k, onTap: enabled ? () => onPress(k) : null),
       ],
     );
   }
@@ -373,21 +368,26 @@ class _PinKeyState extends State<_PinKey> {
             color: muted
                 ? Colors.transparent
                 : (disabled
-                    ? sc.bg2.withValues(alpha: 0.6)
-                    : (_pressed ? sc.accentSoft : sc.bg2)),
+                      ? sc.bg2.withValues(alpha: 0.6)
+                      : (_pressed ? sc.accentSoft : sc.bg2)),
             borderRadius: SatR.a(22),
           ),
           alignment: Alignment.center,
           child: muted
-              ? Icon(Icons.backspace_outlined,
-                  color: disabled ? sc.textLo : sc.textMd, size: 26)
-              : Text(widget.label,
+              ? Icon(
+                  Icons.backspace_outlined,
+                  color: disabled ? sc.textLo : sc.textMd,
+                  size: 26,
+                )
+              : Text(
+                  widget.label,
                   style: SatType.mono(
                     size: 32,
                     weight: FontWeight.w500,
                     letterSpacing: 0,
                     color: disabled ? sc.textLo : sc.textHi,
-                  )),
+                  ),
+                ),
         ),
       ),
     );
@@ -415,13 +415,15 @@ class _DebugCredsHint extends StatelessWidget {
             children: [
               Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
               const SizedBox(width: 6),
-              Text('DEBUG · SEEDED PINS',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: sc.warn,
-                  )),
+              Text(
+                'DEBUG · SEEDED PINS',
+                style: SatType.mono(
+                  size: 10,
+                  weight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                  color: sc.warn,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -463,16 +465,20 @@ class _DebugCredRow extends StatelessWidget {
           children: [
             SizedBox(
               width: 76,
-              child: Text(label,
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w700,
-                    color: sc.textHi,
-                  )),
+              child: Text(
+                label,
+                style: SatType.mono(
+                  size: 11,
+                  weight: FontWeight.w700,
+                  color: sc.textHi,
+                ),
+              ),
             ),
             Expanded(
-              child: Text(value,
-                  style: SatType.sans(size: 11, color: sc.textMd)),
+              child: Text(
+                value,
+                style: SatType.sans(size: 11, color: sc.textMd),
+              ),
             ),
             Icon(Icons.copy_rounded, size: 12, color: sc.textLo),
           ],

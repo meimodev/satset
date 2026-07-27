@@ -21,8 +21,9 @@ class StaffException implements Exception {
 
 /// Surfaces bootstrap progress for the staff list. Symmetric with
 /// `tablesStatusProvider`.
-final staffStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final staffStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class StaffRepository extends StateNotifier<List<AppUser>> {
   StaffRepository(this._ref) : super(const <AppUser>[]) {
@@ -33,8 +34,7 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
   final _rng = Random();
   StreamSubscription? _wsSub;
 
-  RolesRepository get _roles =>
-      _ref.read(rolesRepositoryProvider.notifier);
+  RolesRepository get _roles => _ref.read(rolesRepositoryProvider.notifier);
 
   @override
   void dispose() {
@@ -45,26 +45,26 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
   Future<void> _bootstrap() async {
     final cfg = _ref.read(apiConfigProvider);
     if (cfg == null) {
-      _ref.read(staffStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      _ref.read(staffStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
     state = const <AppUser>[];
-    _ref.read(staffStatusProvider.notifier).state =
-        const AsyncValue.loading();
+    _ref.read(staffStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       final raw = await _ref.read(apiClientProvider).getJson('/staff') as List;
       state = [
         for (final e in raw) _fromJson((e as Map).cast<String, dynamic>()),
       ];
       SatLog.repo('staff.loaded n=${state.length}');
-      _ref.read(staffStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      _ref.read(staffStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       _wireWs();
     } catch (e, st) {
       SatLog.repo('staff.bootstrap fail $e');
-      _ref.read(staffStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      _ref.read(staffStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
   }
 
@@ -85,7 +85,10 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
         case WsEventTypes.staffDeleted:
           final id = ev.payload['id'] as String?;
           if (id == null) return;
-          state = [for (final x in state) if (x.id != id) x];
+          state = [
+            for (final x in state)
+              if (x.id != id) x,
+          ];
       }
     });
   }
@@ -110,12 +113,12 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
 
   UserRole _legacyRoleFor(String? roleId) {
     final id = (roleId ?? '').toLowerCase();
-    if (id.contains('admin') || id.contains('manager') || id.contains('owner')) {
+    if (id.contains('admin') ||
+        id.contains('manager') ||
+        id.contains('owner')) {
       return UserRole.admin;
     }
-    if (id.contains('kitchen') ||
-        id.contains('dapur') ||
-        id.contains('cook')) {
+    if (id.contains('kitchen') || id.contains('dapur') || id.contains('cook')) {
       return UserRole.kitchen;
     }
     return UserRole.waiter;
@@ -198,8 +201,7 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
         'name': user.name,
         'initials': user.initials,
         'roleId': user.roleId,
-        'zoneAssigned':
-            user.zoneAssigned == '—' ? null : user.zoneAssigned,
+        'zoneAssigned': user.zoneAssigned == '—' ? null : user.zoneAssigned,
         'pin': pin,
         'disabled': user.disabled,
         'avatarColorHex': user.avatarColorHex,
@@ -239,8 +241,9 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
     state = [
       for (final u in state) u.id == id ? u.copyWith(zoneAssigned: zone) : u,
     ];
-    _patchUser(id, {'zoneAssigned': zone == '—' ? null : zone})
-        .catchError((Object _) {
+    _patchUser(id, {'zoneAssigned': zone == '—' ? null : zone}).catchError((
+      Object _,
+    ) {
       if (prev != null) {
         state = [for (final u in state) u.id == id ? prev : u];
       }
@@ -266,9 +269,7 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
   Future<String> resetPin(String id) async {
     final pin = _generateUniquePin();
     final prev = byId(id);
-    state = [
-      for (final u in state) u.id == id ? u.copyWith(pin: pin) : u,
-    ];
+    state = [for (final u in state) u.id == id ? u.copyWith(pin: pin) : u];
     try {
       // {reset: true} marker lets the server emit staffPinReset instead of
       // staffPinSet so audit trail distinguishes admin-reset from owner-set.
@@ -294,9 +295,7 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
       throw StaffException('PIN already in use');
     }
     final prev = byId(id);
-    state = [
-      for (final u in state) u.id == id ? u.copyWith(pin: pin) : u,
-    ];
+    state = [for (final u in state) u.id == id ? u.copyWith(pin: pin) : u];
     try {
       await _patchUser(id, {'pin': pin});
     } catch (e) {
@@ -355,11 +354,13 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
       for (final r in _ref.read(rolesRepositoryProvider))
         if (r.has(Capability.manageStaff)) r.id,
     };
-    final hasAdmin = next.any((u) =>
-        !u.disabled && u.roleId != null && adminRoleIds.contains(u.roleId));
+    final hasAdmin = next.any(
+      (u) => !u.disabled && u.roleId != null && adminRoleIds.contains(u.roleId),
+    );
     if (!hasAdmin) {
       throw StaffException(
-          'Must keep at least one active user with “Manage staff” capability');
+        'Must keep at least one active user with “Manage staff” capability',
+      );
     }
   }
 
@@ -373,6 +374,6 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
 
 final staffRepositoryProvider =
     StateNotifierProvider<StaffRepository, List<AppUser>>((ref) {
-  ref.watch(apiConfigProvider);
-  return StaffRepository(ref);
-});
+      ref.watch(apiConfigProvider);
+      return StaffRepository(ref);
+    });

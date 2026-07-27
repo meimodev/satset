@@ -53,8 +53,8 @@ class SatShape {
   /// Hard offset shadow. No blur, no spread — a solid ink slab shifted down
   /// and right, which is the whole trick.
   static List<BoxShadow> hardShadow([double offset = 3]) => [
-        BoxShadow(color: ink, offset: Offset(offset, offset), blurRadius: 0),
-      ];
+    BoxShadow(color: ink, offset: Offset(offset, offset), blurRadius: 0),
+  ];
 
   /// Tint for floating chrome that sits over scrolling content — the tab bar,
   /// the cart footer. The soft skin lets the content ghost through; the brutal
@@ -148,7 +148,8 @@ class SatBox {
     // its surface from an ancestor Material (border and radius only, no colour)
     // would render as a solid ink slab with the real content nowhere in sight.
     // Those cards stay flat; wrong beats invisible.
-    final lift = SatShape.brutal &&
+    final lift =
+        SatShape.brutal &&
         boxShadow == null &&
         (color != null || gradient != null) &&
         border != null &&

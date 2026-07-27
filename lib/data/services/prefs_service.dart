@@ -92,7 +92,9 @@ class PrefsService {
 
   Future<void> setDevicePrinters(List<DevicePrinter> printers) async {
     await _p.setString(
-        _kDevicePrinters, jsonEncode([for (final p in printers) p.toJson()]));
+      _kDevicePrinters,
+      jsonEncode([for (final p in printers) p.toJson()]),
+    );
   }
 
   /// Device-local look (ADR-0045). Deliberately not per-user and not per-venue:
@@ -127,7 +129,8 @@ final prefsServiceProvider = FutureProvider<PrefsService>((ref) async {
 
 /// Live list of this device's local printers, backed by [PrefsService].
 class DevicePrintersNotifier extends StateNotifier<List<DevicePrinter>> {
-  DevicePrintersNotifier(this._prefs) : super(_prefs?.devicePrinters() ?? const []);
+  DevicePrintersNotifier(this._prefs)
+    : super(_prefs?.devicePrinters() ?? const []);
   final PrefsService? _prefs;
 
   Future<void> add(DevicePrinter p) async {
@@ -145,6 +148,6 @@ class DevicePrintersNotifier extends StateNotifier<List<DevicePrinter>> {
 
 final devicePrintersProvider =
     StateNotifierProvider<DevicePrintersNotifier, List<DevicePrinter>>((ref) {
-  final prefs = ref.watch(prefsServiceProvider).valueOrNull;
-  return DevicePrintersNotifier(prefs);
-});
+      final prefs = ref.watch(prefsServiceProvider).valueOrNull;
+      return DevicePrintersNotifier(prefs);
+    });

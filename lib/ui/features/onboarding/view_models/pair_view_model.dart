@@ -19,10 +19,10 @@ class PairState {
   const PairState({this.busy = false, this.error, this.paired = false});
 
   PairState copyWith({bool? busy, String? error, bool? paired}) => PairState(
-        busy: busy ?? this.busy,
-        error: error,
-        paired: paired ?? this.paired,
-      );
+    busy: busy ?? this.busy,
+    error: error,
+    paired: paired ?? this.paired,
+  );
 }
 
 class PairViewModel extends StateNotifier<PairState> {
@@ -30,9 +30,9 @@ class PairViewModel extends StateNotifier<PairState> {
     required this.ref,
     required SecureStorageService storage,
     required PrefsService prefs,
-  })  : _storage = storage,
-        _prefs = prefs,
-        super(const PairState());
+  }) : _storage = storage,
+       _prefs = prefs,
+       super(const PairState());
 
   final Ref ref;
   final SecureStorageService _storage;
@@ -50,8 +50,9 @@ class PairViewModel extends StateNotifier<PairState> {
     SatLog.vm('PairVM claim');
     state = state.copyWith(busy: true, error: null);
     try {
-      final payload =
-          PairQrPayloadDto.fromJson(jsonDecode(qrJson) as Map<String, dynamic>);
+      final payload = PairQrPayloadDto.fromJson(
+        jsonDecode(qrJson) as Map<String, dynamic>,
+      );
       final expectedFp = payload.fingerprint.trim().toLowerCase();
       if (expectedFp.isEmpty) {
         throw StateError('fingerprint required for pairing');
@@ -72,15 +73,18 @@ class PairViewModel extends StateNotifier<PairState> {
         path: '/pair/claim',
       );
       final client = _pinnedClient(expectedFp, payload.host);
-      final r = await client.post(uri,
-          headers: {'content-type': 'application/json'},
-          body: jsonEncode(req.toJson()));
+      final r = await client.post(
+        uri,
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode(req.toJson()),
+      );
       client.close();
       if (r.statusCode >= 400) {
         throw StateError('pair failed ${r.statusCode}');
       }
       final res = PairClaimResponseDto.fromJson(
-          jsonDecode(r.body) as Map<String, dynamic>);
+        jsonDecode(r.body) as Map<String, dynamic>,
+      );
 
       // Server-returned fingerprint must match what was scanned/typed.
       if (res.fingerprint.toLowerCase() != expectedFp) {
@@ -124,8 +128,9 @@ class PairViewModel extends StateNotifier<PairState> {
 // NOTE: not autoDispose — PinViewModel reads this notifier without watching
 // and awaits long pinned-HTTPS pairing. An autoDispose provider could be torn
 // down mid-claim and lose pairing error state.
-final pairViewModelProvider =
-    StateNotifierProvider<PairViewModel, PairState>((ref) {
+final pairViewModelProvider = StateNotifierProvider<PairViewModel, PairState>((
+  ref,
+) {
   final storage = ref.watch(secureStorageServiceProvider);
   final prefs = ref.watch(prefsServiceProvider).requireValue;
   return PairViewModel(ref: ref, storage: storage, prefs: prefs);

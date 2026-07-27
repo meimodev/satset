@@ -92,23 +92,28 @@ Future<void> writeRecipes(
   Map<String, dynamic> payload, {
   String ownerKind = 'item',
 }) async {
-  await (db.delete(db.recipeLines)
-        ..where((l) => l.ownerKind.equals(ownerKind) & l.ownerId.equals(ownerId)))
+  await (db.delete(db.recipeLines)..where(
+        (l) => l.ownerKind.equals(ownerKind) & l.ownerId.equals(ownerId),
+      ))
       .go();
   Future<void> insert(String variantId, String optionId, List lines) async {
     for (final raw in lines) {
       final l = raw as Map<String, dynamic>;
       final qty = (l['qty'] as num).toInt();
       if (qty <= 0) continue;
-      await db.into(db.recipeLines).insert(RecipeLinesCompanion.insert(
-            id: _uuid.v4(),
-            ownerKind: ownerKind,
-            ownerId: ownerId,
-            variantId: Value(variantId),
-            optionId: Value(optionId),
-            ingredientId: l['ingredientId'] as String,
-            qty: qty,
-          ));
+      await db
+          .into(db.recipeLines)
+          .insert(
+            RecipeLinesCompanion.insert(
+              id: _uuid.v4(),
+              ownerKind: ownerKind,
+              ownerId: ownerId,
+              variantId: Value(variantId),
+              optionId: Value(optionId),
+              ingredientId: l['ingredientId'] as String,
+              qty: qty,
+            ),
+          );
     }
   }
 
@@ -128,13 +133,15 @@ Future<Map<String, dynamic>> recipesJson(
   String ownerId, {
   String ownerKind = 'item',
 }) async {
-  final rows = await (db.select(db.recipeLines)
-        ..where((l) => l.ownerKind.equals(ownerKind) & l.ownerId.equals(ownerId)))
-      .get();
+  final rows =
+      await (db.select(db.recipeLines)..where(
+            (l) => l.ownerKind.equals(ownerKind) & l.ownerId.equals(ownerId),
+          ))
+          .get();
   List<Map<String, dynamic>> lines(Iterable<RecipeLineRow> rs) => [
-        for (final l in rs)
-          {'id': l.id, 'ingredientId': l.ingredientId, 'qty': l.qty},
-      ];
+    for (final l in rs)
+      {'id': l.id, 'ingredientId': l.ingredientId, 'qty': l.qty},
+  ];
   final byVariant = <String, List<RecipeLineRow>>{};
   final byOption = <String, List<RecipeLineRow>>{};
   final base = <RecipeLineRow>[];
@@ -175,15 +182,16 @@ class ItemStockFlags {
 
   /// Compact identity used to detect a **flip**. Stock ticking down inside a
   /// bucket must not change this — only crossing a threshold may.
-  String get signature => '$autoSoldOut|'
+  String get signature =>
+      '$autoSoldOut|'
       '${(soldOutVariantIds.toList()..sort()).join(",")}|'
       '${(soldOutOptionIds.toList()..sort()).join(",")}';
 
   Map<String, dynamic> toJson() => {
-        'autoSoldOut': autoSoldOut,
-        'soldOutVariantIds': soldOutVariantIds.toList(),
-        'soldOutOptionIds': soldOutOptionIds.toList(),
-      };
+    'autoSoldOut': autoSoldOut,
+    'soldOutVariantIds': soldOutVariantIds.toList(),
+    'soldOutOptionIds': soldOutOptionIds.toList(),
+  };
 }
 
 bool _covers(Map<String, int> need, Map<String, int> onHand) {
@@ -200,9 +208,9 @@ Future<Map<String, ItemStockFlags>> deriveStockFlags(AppDatabase db) async {
   final onHand = {
     for (final i in await db.select(db.ingredients).get()) i.id: i.stockOnHand,
   };
-  final items = await (db.selectOnly(db.menuItems)
-        ..addColumns([db.menuItems.id, db.menuItems.variantsJson]))
-      .get();
+  final items = await (db.selectOnly(
+    db.menuItems,
+  )..addColumns([db.menuItems.id, db.menuItems.variantsJson])).get();
 
   final out = <String, ItemStockFlags>{};
   for (final row in items) {
@@ -257,7 +265,8 @@ class StockFlagCache {
   Future<bool> refreshAndDetectFlip(AppDatabase db) async {
     final flags = await deriveStockFlags(db);
     final next = {for (final e in flags.entries) e.key: e.value.signature};
-    final flipped = next.length != _signatures.length ||
+    final flipped =
+        next.length != _signatures.length ||
         next.entries.any((e) => _signatures[e.key] != e.value);
     _signatures = next;
     return flipped;
@@ -288,23 +297,27 @@ Future<void> writeMovement(
   String? batchId,
   int? costMicro,
 }) async {
-  final ing = await (db.select(db.ingredients)
-        ..where((i) => i.id.equals(ingredientId)))
-      .getSingleOrNull();
+  final ing = await (db.select(
+    db.ingredients,
+  )..where((i) => i.id.equals(ingredientId))).getSingleOrNull();
   if (ing == null) return;
-  await db.into(db.stockMovements).insert(StockMovementsCompanion.insert(
-        id: _uuid.v4(),
-        ingredientId: ingredientId,
-        delta: delta,
-        reason: reason.name,
-        ticketId: Value(ticketId),
-        sourceLabel: Value(sourceLabel),
-        userId: Value(userId),
-        note: Value(note),
-        batchId: Value(batchId),
-        costMicro: Value(costMicro ?? ing.costMicro),
-        at: DateTime.now(),
-      ));
+  await db
+      .into(db.stockMovements)
+      .insert(
+        StockMovementsCompanion.insert(
+          id: _uuid.v4(),
+          ingredientId: ingredientId,
+          delta: delta,
+          reason: reason.name,
+          ticketId: Value(ticketId),
+          sourceLabel: Value(sourceLabel),
+          userId: Value(userId),
+          note: Value(note),
+          batchId: Value(batchId),
+          costMicro: Value(costMicro ?? ing.costMicro),
+          at: DateTime.now(),
+        ),
+      );
   // Deliberately NOT clamped at zero: a negative balance is the `overrideStock`
   // signal that the venue's counts are wrong (ADR-0041).
   await (db.update(db.ingredients)..where((i) => i.id.equals(ingredientId)))
@@ -321,9 +334,9 @@ Future<void> receiveStock(
   String sourceLabel = '',
   String? note,
 }) async {
-  final ing = await (db.select(db.ingredients)
-        ..where((i) => i.id.equals(ingredientId)))
-      .getSingleOrNull();
+  final ing = await (db.select(
+    db.ingredients,
+  )..where((i) => i.id.equals(ingredientId))).getSingleOrNull();
   if (ing == null || qty <= 0) return;
   if (unitCostMicro != null) {
     // Moving average. A price spike smears across subsequent sales rather than
@@ -359,9 +372,9 @@ Future<int> recordCount(
   String? userId,
   String? note,
 }) async {
-  final ing = await (db.select(db.ingredients)
-        ..where((i) => i.id.equals(ingredientId)))
-      .getSingleOrNull();
+  final ing = await (db.select(
+    db.ingredients,
+  )..where((i) => i.id.equals(ingredientId))).getSingleOrNull();
   if (ing == null) return 0;
   final delta = counted - ing.stockOnHand;
   if (delta == 0) return 0;
@@ -387,23 +400,27 @@ Future<String?> produceBatch(
   String? userId,
   String? note,
 }) async {
-  final ing = await (db.select(db.ingredients)
-        ..where((i) => i.id.equals(ingredientId)))
-      .getSingleOrNull();
+  final ing = await (db.select(
+    db.ingredients,
+  )..where((i) => i.id.equals(ingredientId))).getSingleOrNull();
   final yieldQty = ing?.batchYield;
   if (ing == null || yieldQty == null || yieldQty <= 0 || batches <= 0) {
     return null;
   }
-  final recipe = (await loadRecipes(db,
-          ownerKind: 'ingredient', ownerId: ingredientId))[ingredientId] ??
+  final recipe =
+      (await loadRecipes(
+        db,
+        ownerKind: 'ingredient',
+        ownerId: ingredientId,
+      ))[ingredientId] ??
       const ResolvedRecipes();
   final batchId = _uuid.v4();
   var inputValue = 0;
   for (final e in recipe.base.entries) {
     final qty = e.value * batches;
-    final src = await (db.select(db.ingredients)
-          ..where((i) => i.id.equals(e.key)))
-        .getSingleOrNull();
+    final src = await (db.select(
+      db.ingredients,
+    )..where((i) => i.id.equals(e.key))).getSingleOrNull();
     inputValue += valueOf(qty, src?.costMicro ?? 0);
     await writeMovement(
       db,
@@ -417,8 +434,9 @@ Future<String?> produceBatch(
     );
   }
   final produced = yieldQty * batches;
-  final outCostMicro =
-      produced > 0 ? (inputValue * costMicroScale) ~/ produced : ing.costMicro;
+  final outCostMicro = produced > 0
+      ? (inputValue * costMicroScale) ~/ produced
+      : ing.costMicro;
   await (db.update(db.ingredients)..where((i) => i.id.equals(ingredientId)))
       .write(IngredientsCompanion(costMicro: Value(outCostMicro)));
   await writeMovement(
@@ -483,18 +501,17 @@ Future<LineStockNeed> needForLine(
 /// Variant **name** → id for one item. Tickets carry the name, not the id, so
 /// the id is resolved at send against the menu as it reads right then.
 Map<String, String> variantIdsByName(String variantsJson) => {
-      for (final v in jsonDecode(variantsJson) as List)
-        (v as Map<String, dynamic>)['name'] as String:
-            v['id'] as String,
-    };
+  for (final v in jsonDecode(variantsJson) as List)
+    (v as Map<String, dynamic>)['name'] as String: v['id'] as String,
+};
 
 /// Option ids out of a ticket's frozen modifier snapshot
 /// (`{groupId, optionId, label, priceDelta}` — ADR-0011).
 List<String> optionIdsOf(String modifiersJson) => [
-      for (final m in jsonDecode(modifiersJson) as List)
-        if (m is Map && (m['optionId'] as String?)?.isNotEmpty == true)
-          m['optionId'] as String,
-    ];
+  for (final m in jsonDecode(modifiersJson) as List)
+    if (m is Map && (m['optionId'] as String?)?.isNotEmpty == true)
+      m['optionId'] as String,
+];
 
 /// Deduct one accepted line and record it against the ticket.
 Future<void> consumeForTicket(
@@ -530,18 +547,23 @@ Future<void> reverseTicketStock(
   String? userId,
   String? note,
 }) async {
-  final sales = await (db.select(db.stockMovements)
-        ..where((m) =>
-            m.ticketId.equals(ticketId) & m.reason.equals(StockReason.sale.name)))
-      .get();
+  final sales =
+      await (db.select(db.stockMovements)..where(
+            (m) =>
+                m.ticketId.equals(ticketId) &
+                m.reason.equals(StockReason.sale.name),
+          ))
+          .get();
   if (sales.isEmpty) return;
   // Already reversed (double-void, retry) — the ledger is append-only, so guard
   // on the reversal existing rather than on ticket status alone.
-  final reversed = await (db.select(db.stockMovements)
-        ..where((m) =>
-            m.ticketId.equals(ticketId) &
-            m.reason.equals(StockReason.voidReturn.name)))
-      .get();
+  final reversed =
+      await (db.select(db.stockMovements)..where(
+            (m) =>
+                m.ticketId.equals(ticketId) &
+                m.reason.equals(StockReason.voidReturn.name),
+          ))
+          .get();
   if (reversed.isNotEmpty) return;
 
   for (final s in sales) {
@@ -635,32 +657,33 @@ Future<Map<String, DateTime>> loadLastReceived(AppDatabase db) async {
     ..groupBy([db.stockMovements.ingredientId]);
   return {
     for (final r in await q.get())
-      if (r.read(at) != null) r.read(db.stockMovements.ingredientId)!: r.read(at)!,
+      if (r.read(at) != null)
+        r.read(db.stockMovements.ingredientId)!: r.read(at)!,
   };
 }
 
 // ------------------------------------------------------------------- JSON
 
 Map<String, dynamic> ingredientRowToJson(IngredientRow i) => {
-      'id': i.id,
-      'name': i.name,
-      'unit': i.unit,
-      'stockOnHand': i.stockOnHand,
-      'lowStockAt': i.lowStockAt,
-      'costMicro': i.costMicro,
-      'batchYield': i.batchYield,
-    };
+  'id': i.id,
+  'name': i.name,
+  'unit': i.unit,
+  'stockOnHand': i.stockOnHand,
+  'lowStockAt': i.lowStockAt,
+  'costMicro': i.costMicro,
+  'batchYield': i.batchYield,
+};
 
 Map<String, dynamic> movementRowToJson(StockMovementRow m) => {
-      'id': m.id,
-      'ingredientId': m.ingredientId,
-      'delta': m.delta,
-      'reason': m.reason,
-      'ticketId': m.ticketId,
-      'sourceLabel': m.sourceLabel,
-      'userId': m.userId,
-      'note': m.note,
-      'costMicro': m.costMicro,
-      'batchId': m.batchId,
-      'at': m.at.toIso8601String(),
-    };
+  'id': m.id,
+  'ingredientId': m.ingredientId,
+  'delta': m.delta,
+  'reason': m.reason,
+  'ticketId': m.ticketId,
+  'sourceLabel': m.sourceLabel,
+  'userId': m.userId,
+  'note': m.note,
+  'costMicro': m.costMicro,
+  'batchId': m.batchId,
+  'at': m.at.toIso8601String(),
+};

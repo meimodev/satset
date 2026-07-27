@@ -62,11 +62,15 @@ ThemeData _build(SatColors sc, Brightness brightness) {
     // "Batal" is siren yellow on a white sheet.
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-          foregroundColor: sc.accentText, shape: _buttonShape),
+        foregroundColor: sc.accentText,
+        shape: _buttonShape,
+      ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-          foregroundColor: sc.accentText, shape: _buttonShape),
+        foregroundColor: sc.accentText,
+        shape: _buttonShape,
+      ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(shape: _buttonShape),

@@ -78,7 +78,8 @@ class VenueTable {
     return exp.isAfter(now ?? DateTime.now());
   }
 
-  String get displayName => (label != null && label!.trim().isNotEmpty) ? label! : id;
+  String get displayName =>
+      (label != null && label!.trim().isNotEmpty) ? label! : id;
 
   VenueTable copyWith({
     String? zoneId,
@@ -125,8 +126,7 @@ class VenueTable {
       guestNotes: guestNotes ?? this.guestNotes,
       reservationId: reservationId ?? this.reservationId,
       currentVisitId: currentVisitId ?? this.currentVisitId,
-      guestOrderingEnabled:
-          guestOrderingEnabled ?? this.guestOrderingEnabled,
+      guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
     );
   }
 }

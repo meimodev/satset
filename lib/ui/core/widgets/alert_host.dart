@@ -100,8 +100,9 @@ class _AlertHostState extends ConsumerState<AlertHost>
   @override
   Widget build(BuildContext context) {
     final paired = ref.watch(apiConfigProvider) != null;
-    final authed =
-        ref.watch(authStateProvider.select((s) => s.isAuthenticated));
+    final authed = ref.watch(
+      authStateProvider.select((s) => s.isAuthenticated),
+    );
     // Only spin up the service (and its WS subscription) post-login.
     if (paired && authed) ref.watch(alertSoundServiceProvider);
 

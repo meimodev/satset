@@ -12,13 +12,13 @@ enum AppMode {
 }
 
 String appModeKey(AppMode m) => switch (m) {
-      AppMode.unset => 'unset',
-      AppMode.server => 'server',
-      AppMode.client => 'client',
-    };
+  AppMode.unset => 'unset',
+  AppMode.server => 'server',
+  AppMode.client => 'client',
+};
 
 AppMode appModeFromKey(String? raw) => switch (raw) {
-      'server' => AppMode.server,
-      'client' => AppMode.client,
-      _ => AppMode.unset,
-    };
+  'server' => AppMode.server,
+  'client' => AppMode.client,
+  _ => AppMode.unset,
+};

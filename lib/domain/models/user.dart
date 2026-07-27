@@ -39,19 +39,18 @@ class AppUser {
     String? pin,
     bool? disabled,
     int? avatarColorHex,
-  }) =>
-      AppUser(
-        id: id,
-        name: name ?? this.name,
-        initials: initials ?? this.initials,
-        role: role ?? this.role,
-        shiftStartedAt: shiftStartedAt ?? this.shiftStartedAt,
-        zoneAssigned: zoneAssigned ?? this.zoneAssigned,
-        roleId: roleId ?? this.roleId,
-        pin: pin ?? this.pin,
-        disabled: disabled ?? this.disabled,
-        avatarColorHex: avatarColorHex ?? this.avatarColorHex,
-      );
+  }) => AppUser(
+    id: id,
+    name: name ?? this.name,
+    initials: initials ?? this.initials,
+    role: role ?? this.role,
+    shiftStartedAt: shiftStartedAt ?? this.shiftStartedAt,
+    zoneAssigned: zoneAssigned ?? this.zoneAssigned,
+    roleId: roleId ?? this.roleId,
+    pin: pin ?? this.pin,
+    disabled: disabled ?? this.disabled,
+    avatarColorHex: avatarColorHex ?? this.avatarColorHex,
+  );
 }
 
 /// Fixed 12-swatch palette for per-account avatar background colors.
@@ -74,7 +73,7 @@ const List<int> avatarColorPalette = <int>[
 ];
 
 String userRoleLabel(UserRole r) => switch (r) {
-      UserRole.waiter => 'Pelayan',
-      UserRole.kitchen => 'Dapur',
-      UserRole.admin => 'Admin',
-    };
+  UserRole.waiter => 'Pelayan',
+  UserRole.kitchen => 'Dapur',
+  UserRole.admin => 'Admin',
+};

@@ -18,10 +18,8 @@ class MenuSnapshotDto with _$MenuSnapshotDto {
 
 @freezed
 class MenuCategoryDto with _$MenuCategoryDto {
-  const factory MenuCategoryDto({
-    required String id,
-    required String name,
-  }) = _MenuCategoryDto;
+  const factory MenuCategoryDto({required String id, required String name}) =
+      _MenuCategoryDto;
 
   factory MenuCategoryDto.fromJson(Map<String, dynamic> json) =>
       _$MenuCategoryDtoFromJson(json);
@@ -48,6 +46,7 @@ class MenuItemDto with _$MenuItemDto {
     @Default('') String description,
     required int basePrice,
     @Default(0) int cost,
+
     /// Null = inherit the venue default (`prepTargetMins`). ADR-0043.
     int? prepTime,
     @Default(<VariantDto>[]) List<VariantDto> variants,

@@ -21,23 +21,27 @@ Future<Response?> _requireCap(
   Capability needed,
 ) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
   if (!caps.contains(needed.name)) {
-    return Response(403,
-        body: jsonEncode({
-          'code': 'forbidden',
-          'message': 'missing capability ${needed.name}',
-        }),
-        headers: {'content-type': 'application/json'});
+    return Response(
+      403,
+      body: jsonEncode({
+        'code': 'forbidden',
+        'message': 'missing capability ${needed.name}',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   }
   return null;
 }
@@ -47,8 +51,10 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 
   r.get('/venue/settings', (Request req) async {
     final row = await _readOrSeed(db);
-    return Response.ok(jsonEncode(_toJson(row)),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(_toJson(row)),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   r.patch('/venue/settings', (Request req) async {
@@ -56,9 +62,9 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     await _readOrSeed(db);
-    await (db.update(db.venueSettings)
-          ..where((t) => t.id.equals(_singletonId)))
-        .write(
+    await (db.update(
+      db.venueSettings,
+    )..where((t) => t.id.equals(_singletonId))).write(
       VenueSettingsCompanion(
         displayName: body.containsKey('displayName')
             ? Value((body['displayName'] as String).trim())
@@ -117,7 +123,9 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             ? Value(body['taxAfterDiscount'] as bool)
             : const Value.absent(),
         businessDayStartHour: body.containsKey('businessDayStartHour')
-            ? Value(((body['businessDayStartHour'] as num).toInt()).clamp(0, 23))
+            ? Value(
+                ((body['businessDayStartHour'] as num).toInt()).clamp(0, 23),
+              )
             : const Value.absent(),
         prepTargetMins: body.containsKey('prepTargetMins')
             ? Value(((body['prepTargetMins'] as num).toInt()).clamp(1, 120))
@@ -133,7 +141,8 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             : const Value.absent(),
         ungreetedEscalateMins: body.containsKey('ungreetedEscalateMins')
             ? Value(
-                ((body['ungreetedEscalateMins'] as num).toInt()).clamp(1, 60))
+                ((body['ungreetedEscalateMins'] as num).toInt()).clamp(1, 60),
+              )
             : const Value.absent(),
         longStayMins: body.containsKey('longStayMins')
             ? Value(((body['longStayMins'] as num).toInt()).clamp(15, 480))
@@ -143,7 +152,8 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             : const Value.absent(),
         reservationGraceMins: body.containsKey('reservationGraceMins')
             ? Value(
-                ((body['reservationGraceMins'] as num).toInt()).clamp(0, 240))
+                ((body['reservationGraceMins'] as num).toInt()).clamp(0, 240),
+              )
             : const Value.absent(),
         pendingReviewMins: body.containsKey('pendingReviewMins')
             ? Value(((body['pendingReviewMins'] as num).toInt()).clamp(1, 120))
@@ -180,8 +190,10 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final row = await _readOrSeed(db);
     final payload = _toJson(row);
     hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
-    return Response.ok(jsonEncode(payload),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(payload),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // ---------- logo (binary side-endpoints, ADR-0033 / mirrors ADR-0014) ----------
@@ -191,10 +203,10 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.get('/venue/logo', (Request req) async {
     final row = await _readOrSeed(db);
     if (row.logo == null) return Response.notFound('no logo');
-    return Response.ok(row.logo, headers: {
-      'content-type': 'image/jpeg',
-      'cache-control': 'no-cache',
-    });
+    return Response.ok(
+      row.logo,
+      headers: {'content-type': 'image/jpeg', 'cache-control': 'no-cache'},
+    );
   });
 
   // Replace the logo. Body = raw JPEG bytes. Bumps logoRev, broadcasts.
@@ -202,21 +214,27 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final denied = await _requireCap(req, db, auth, Capability.editSettings);
     if (denied != null) return denied;
     final row = await _readOrSeed(db);
-    final builder = await req
-        .read()
-        .fold<BytesBuilder>(BytesBuilder(), (b, chunk) => b..add(chunk));
+    final builder = await req.read().fold<BytesBuilder>(
+      BytesBuilder(),
+      (b, chunk) => b..add(chunk),
+    );
     final bytes = builder.takeBytes();
     if (bytes.isEmpty) return Response(400, body: 'empty body');
-    await (db.update(db.venueSettings)..where((t) => t.id.equals(_singletonId)))
-        .write(VenueSettingsCompanion(
-      logo: Value(bytes),
-      logoRev: Value(row.logoRev + 1),
-    ));
+    await (db.update(
+      db.venueSettings,
+    )..where((t) => t.id.equals(_singletonId))).write(
+      VenueSettingsCompanion(
+        logo: Value(bytes),
+        logoRev: Value(row.logoRev + 1),
+      ),
+    );
     final updated = await _readOrSeed(db);
     final payload = _toJson(updated);
     hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
-    return Response.ok(jsonEncode(payload),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(payload),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Clear the logo (back to a text-only header). Bumps logoRev, broadcasts.
@@ -224,16 +242,21 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final denied = await _requireCap(req, db, auth, Capability.editSettings);
     if (denied != null) return denied;
     final row = await _readOrSeed(db);
-    await (db.update(db.venueSettings)..where((t) => t.id.equals(_singletonId)))
-        .write(VenueSettingsCompanion(
-      logo: const Value(null),
-      logoRev: Value(row.logoRev + 1),
-    ));
+    await (db.update(
+      db.venueSettings,
+    )..where((t) => t.id.equals(_singletonId))).write(
+      VenueSettingsCompanion(
+        logo: const Value(null),
+        logoRev: Value(row.logoRev + 1),
+      ),
+    );
     final updated = await _readOrSeed(db);
     final payload = _toJson(updated);
     hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
-    return Response.ok(jsonEncode(payload),
-        headers: {'content-type': 'application/json'});
+    return Response.ok(
+      jsonEncode(payload),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   // Guest plane network info — the LAN IPv4 the server is reachable at, the
@@ -244,75 +267,76 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final denied = await _requireCap(req, db, auth, Capability.editSettings);
     if (denied != null) return denied;
     final ip = await _lanIpv4();
-    const port = 8080; // SatServer.guestPort — kept literal to avoid an import cycle.
+    const port =
+        8080; // SatServer.guestPort — kept literal to avoid an import cycle.
     return Response.ok(
-        jsonEncode({
-          'lanIp': ip,
-          'guestPort': port,
-          'guestBaseUrl': ip == null ? null : 'http://$ip:$port',
-        }),
-        headers: {'content-type': 'application/json'});
+      jsonEncode({
+        'lanIp': ip,
+        'guestPort': port,
+        'guestBaseUrl': ip == null ? null : 'http://$ip:$port',
+      }),
+      headers: {'content-type': 'application/json'},
+    );
   });
 
   return r;
 }
 
-String _validMode(String m) =>
-    (m == 'fixed') ? 'fixed' : 'percent';
+String _validMode(String m) => (m == 'fixed') ? 'fixed' : 'percent';
 
 Future<VenueSetting> _readOrSeed(AppDatabase db) async {
-  final existing = await (db.select(db.venueSettings)
-        ..where((t) => t.id.equals(_singletonId)))
-      .getSingleOrNull();
+  final existing = await (db.select(
+    db.venueSettings,
+  )..where((t) => t.id.equals(_singletonId))).getSingleOrNull();
   if (existing != null) return existing;
-  await db.into(db.venueSettings).insertOnConflictUpdate(
-        VenueSettingsCompanion.insert(id: _singletonId),
-      );
-  return (db.select(db.venueSettings)
-        ..where((t) => t.id.equals(_singletonId)))
-      .getSingle();
+  await db
+      .into(db.venueSettings)
+      .insertOnConflictUpdate(VenueSettingsCompanion.insert(id: _singletonId));
+  return (db.select(
+    db.venueSettings,
+  )..where((t) => t.id.equals(_singletonId))).getSingle();
 }
 
 Map<String, dynamic> _toJson(VenueSetting s) => {
-      'id': s.id,
-      'displayName': s.displayName,
-      'legalName': s.legalName,
-      'address': s.address,
-      'phone': s.phone,
-      'receiptHeader': s.receiptHeader,
-      'receiptFooter': s.receiptFooter,
-      'receiptTagline': s.receiptTagline,
-      'receiptSocial': s.receiptSocial,
-      'receiptThankYou': s.receiptThankYou,
-      'receiptQrUrl': s.receiptQrUrl,
-      'receiptQrCaption': s.receiptQrCaption,
-      'logoRev': s.logoRev,
-      'taxEnabled': s.taxEnabled,
-      'taxRateBps': s.taxRateBps,
-      'serviceEnabled': s.serviceEnabled,
-      'serviceMode': s.serviceMode,
-      'serviceRateBps': s.serviceRateBps,
-      'serviceFixedAmount': s.serviceFixedAmount,
-      'taxAfterDiscount': s.taxAfterDiscount,
-      'businessDayStartHour': s.businessDayStartHour,
-      'prepTargetMins': s.prepTargetMins,
-      'pickupTargetMins': s.pickupTargetMins,
-      'ungreetedMins': s.ungreetedMins,
-      'ungreetedEscalateMins': s.ungreetedEscalateMins,
-      'longStayMins': s.longStayMins,
-      'idleTableMins': s.idleTableMins,
-      'reservationGraceMins': s.reservationGraceMins,
-      'pendingReviewMins': s.pendingReviewMins,
-      'ungreetedAlertEnabled': s.ungreetedAlertEnabled,
-      'pickupAlertEnabled': s.pickupAlertEnabled,
-      'guestOrderingEnabled': s.guestOrderingEnabled,
-      'soundNewOrder': s.soundNewOrder,
-      'soundReady': s.soundReady,
-      'soundVoid': s.soundVoid,
-      'soundOverdue': s.soundOverdue,
-      'soundUngreeted': s.soundUngreeted,
-      'soundPickup': s.soundPickup,
-    };
+  'id': s.id,
+  'displayName': s.displayName,
+  'legalName': s.legalName,
+  'address': s.address,
+  'phone': s.phone,
+  'receiptHeader': s.receiptHeader,
+  'receiptFooter': s.receiptFooter,
+  'receiptTagline': s.receiptTagline,
+  'receiptSocial': s.receiptSocial,
+  'receiptThankYou': s.receiptThankYou,
+  'receiptQrUrl': s.receiptQrUrl,
+  'receiptQrCaption': s.receiptQrCaption,
+  'logoRev': s.logoRev,
+  'taxEnabled': s.taxEnabled,
+  'taxRateBps': s.taxRateBps,
+  'serviceEnabled': s.serviceEnabled,
+  'serviceMode': s.serviceMode,
+  'serviceRateBps': s.serviceRateBps,
+  'serviceFixedAmount': s.serviceFixedAmount,
+  'taxAfterDiscount': s.taxAfterDiscount,
+  'businessDayStartHour': s.businessDayStartHour,
+  'prepTargetMins': s.prepTargetMins,
+  'pickupTargetMins': s.pickupTargetMins,
+  'ungreetedMins': s.ungreetedMins,
+  'ungreetedEscalateMins': s.ungreetedEscalateMins,
+  'longStayMins': s.longStayMins,
+  'idleTableMins': s.idleTableMins,
+  'reservationGraceMins': s.reservationGraceMins,
+  'pendingReviewMins': s.pendingReviewMins,
+  'ungreetedAlertEnabled': s.ungreetedAlertEnabled,
+  'pickupAlertEnabled': s.pickupAlertEnabled,
+  'guestOrderingEnabled': s.guestOrderingEnabled,
+  'soundNewOrder': s.soundNewOrder,
+  'soundReady': s.soundReady,
+  'soundVoid': s.soundVoid,
+  'soundOverdue': s.soundOverdue,
+  'soundUngreeted': s.soundUngreeted,
+  'soundPickup': s.soundPickup,
+};
 
 /// Best-effort private LAN IPv4 the server is reachable at, for building guest
 /// QR URLs. Prefers a 192.168/10/172.16-31 address on a non-loopback interface;

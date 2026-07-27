@@ -26,28 +26,32 @@ const _scopes = {'order', 'line'};
 const _kinds = {'percent', 'fixed'};
 
 Map<String, dynamic> discountPresetJson(DiscountPreset p) => {
-      'id': p.id,
-      'name': p.name,
-      'scope': p.scope,
-      'kind': p.kind,
-      'value': p.value,
-      'active': p.active,
-      'sortOrder': p.sortOrder,
-    };
+  'id': p.id,
+  'name': p.name,
+  'scope': p.scope,
+  'kind': p.kind,
+  'value': p.value,
+  'active': p.active,
+  'sortOrder': p.sortOrder,
+};
 
-Future<List<DiscountPreset>> _all(AppDatabase db) => (db.select(db.discountPresets)
-      ..orderBy([
-        (t) => OrderingTerm(expression: t.sortOrder),
-        (t) => OrderingTerm(expression: t.name),
-      ]))
-    .get();
+Future<List<DiscountPreset>> _all(AppDatabase db) =>
+    (db.select(db.discountPresets)..orderBy([
+          (t) => OrderingTerm(expression: t.sortOrder),
+          (t) => OrderingTerm(expression: t.name),
+        ]))
+        .get();
 
-Response _err(int code, String slug, String message) => Response(code,
-    body: jsonEncode({'code': slug, 'message': message}),
-    headers: {'content-type': 'application/json'});
+Response _err(int code, String slug, String message) => Response(
+  code,
+  body: jsonEncode({'code': slug, 'message': message}),
+  headers: {'content-type': 'application/json'},
+);
 
-Response _ok(Object? body) => Response.ok(jsonEncode(body),
-    headers: {'content-type': 'application/json'});
+Response _ok(Object? body) => Response.ok(
+  jsonEncode(body),
+  headers: {'content-type': 'application/json'},
+);
 
 Future<Response?> _requireCap(
   Request req,
@@ -56,13 +60,15 @@ Future<Response?> _requireCap(
   Capability needed,
 ) async {
   if (auth == null) return null;
-  final token = req.headers['authorization']
-      ?.replaceFirst(RegExp(r'^[Bb]earer\s+'), '');
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
   final user = await auth.resolveBearer(token);
   if (user == null) return Response(401);
-  final role = await (db.select(db.roles)
-        ..where((r) => r.id.equals(user.roleId)))
-      .getSingleOrNull();
+  final role = await (db.select(
+    db.roles,
+  )..where((r) => r.id.equals(user.roleId))).getSingleOrNull();
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
@@ -88,12 +94,15 @@ Router discountPresetRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   final r = Router();
 
   Future<void> broadcast() async {
-    hub.broadcast(WsEventTypes.discountPresetsUpdated,
-        {'presets': [for (final p in await _all(db)) discountPresetJson(p)]});
+    hub.broadcast(WsEventTypes.discountPresetsUpdated, {
+      'presets': [for (final p in await _all(db)) discountPresetJson(p)],
+    });
   }
 
   r.get('/venue/discount-presets', (Request req) async {
-    return _ok({'presets': [for (final p in await _all(db)) discountPresetJson(p)]});
+    return _ok({
+      'presets': [for (final p in await _all(db)) discountPresetJson(p)],
+    });
   });
 
   r.post('/venue/discount-presets', (Request req) async {
@@ -107,28 +116,32 @@ Router discountPresetRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final bad = _validate(name, scope, kind, value);
     if (bad != null) return _err(400, 'invalid', bad);
     final id = _uuid.v4();
-    await db.into(db.discountPresets).insert(DiscountPresetsCompanion.insert(
-          id: id,
-          name: name,
-          scope: Value(scope),
-          kind: Value(kind),
-          value: Value(value),
-          active: Value(body['active'] as bool? ?? true),
-          sortOrder: Value((body['sortOrder'] as num?)?.toInt() ?? 0),
-        ));
+    await db
+        .into(db.discountPresets)
+        .insert(
+          DiscountPresetsCompanion.insert(
+            id: id,
+            name: name,
+            scope: Value(scope),
+            kind: Value(kind),
+            value: Value(value),
+            active: Value(body['active'] as bool? ?? true),
+            sortOrder: Value((body['sortOrder'] as num?)?.toInt() ?? 0),
+          ),
+        );
     await broadcast();
-    final row = await (db.select(db.discountPresets)
-          ..where((x) => x.id.equals(id)))
-        .getSingle();
+    final row = await (db.select(
+      db.discountPresets,
+    )..where((x) => x.id.equals(id))).getSingle();
     return _ok(discountPresetJson(row));
   });
 
   r.patch('/venue/discount-presets/<id>', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.editSettings);
     if (denied != null) return denied;
-    final existing = await (db.select(db.discountPresets)
-          ..where((x) => x.id.equals(id)))
-        .getSingleOrNull();
+    final existing = await (db.select(
+      db.discountPresets,
+    )..where((x) => x.id.equals(id))).getSingleOrNull();
     if (existing == null) return _err(404, 'not_found', 'preset not found');
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final name = ((body['name'] as String?) ?? existing.name).trim();
@@ -155,9 +168,9 @@ Router discountPresetRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       ),
     );
     await broadcast();
-    final row = await (db.select(db.discountPresets)
-          ..where((x) => x.id.equals(id)))
-        .getSingle();
+    final row = await (db.select(
+      db.discountPresets,
+    )..where((x) => x.id.equals(id))).getSingle();
     return _ok(discountPresetJson(row));
   });
 
@@ -168,9 +181,9 @@ Router discountPresetRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.delete('/venue/discount-presets/<id>', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.editSettings);
     if (denied != null) return denied;
-    final n = await (db.delete(db.discountPresets)
-          ..where((x) => x.id.equals(id)))
-        .go();
+    final n = await (db.delete(
+      db.discountPresets,
+    )..where((x) => x.id.equals(id))).go();
     if (n == 0) return _err(404, 'not_found', 'preset not found');
     await broadcast();
     return _ok({'ok': true});

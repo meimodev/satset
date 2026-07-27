@@ -190,9 +190,12 @@ List<MoneyBreakdown> splitItemized(
       : null;
   final out = <MoneyBreakdown>[
     for (var i = 0; i < n; i++)
-      computeBreakdown(subtotals[i], cfg,
-          serviceOverride: fixedShares?[i],
-          discount: discounts == null ? 0 : discounts[i]),
+      computeBreakdown(
+        subtotals[i],
+        cfg,
+        serviceOverride: fixedShares?[i],
+        discount: discounts == null ? 0 : discounts[i],
+      ),
   ];
   if (billTotalTarget != null) {
     final sum = out.fold<int>(0, (a, b) => a + b.total);

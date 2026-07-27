@@ -21,7 +21,7 @@ enum WsConnState { connecting, open, closed }
 /// Repositories subscribe to [events] for server-pushed updates.
 class WsClient {
   WsClient({required this.config, required SecureStorageService storage})
-      : _storage = storage;
+    : _storage = storage;
 
   final ApiConfig config;
   final SecureStorageService _storage;
@@ -33,8 +33,9 @@ class WsClient {
 
   /// Surfaces the connection lifecycle to the UI. ValueNotifier (not Stream)
   /// so widgets can read the current value synchronously on first build.
-  final ValueNotifier<WsConnState> connState =
-      ValueNotifier(WsConnState.connecting);
+  final ValueNotifier<WsConnState> connState = ValueNotifier(
+    WsConnState.connecting,
+  );
 
   final _controller = StreamController<WsEventDto>.broadcast();
   Stream<WsEventDto> get events => _controller.stream;
@@ -80,10 +81,9 @@ class WsClient {
       // Tell repositories the socket is live. They full-resync on this so a
       // lossy gap (empty/401 bootstrap, or events missed while down) heals on
       // every (re)connect. See ADR-0021.
-      _controller.add(WsEventDto(
-        type: WsEventTypes.connected,
-        ts: DateTime.now(),
-      ));
+      _controller.add(
+        WsEventDto(type: WsEventTypes.connected, ts: DateTime.now()),
+      );
     } catch (e, st) {
       SatLog.err('ws start', e, st);
       _handleDrop();
@@ -106,10 +106,13 @@ class WsClient {
     final loopback = ApiClient.isLoopbackHost(uri.host);
     if (!loopback && pinned.isEmpty) {
       throw StateError(
-          'wss requires trustedFingerprint on non-loopback host ${uri.host}');
+        'wss requires trustedFingerprint on non-loopback host ${uri.host}',
+      );
     }
-    final httpClient =
-        ApiClient.buildPinnedHttpClient(pinned, isLoopback: loopback);
+    final httpClient = ApiClient.buildPinnedHttpClient(
+      pinned,
+      isLoopback: loopback,
+    );
     return IOWebSocketChannel.connect(uri, customClient: httpClient);
   }
 
@@ -129,7 +132,8 @@ class WsClient {
     _sub?.cancel();
     _channel?.sink.close();
     final delay = Duration(
-        milliseconds: (200 * (1 << _attempt.clamp(0, 6))).clamp(200, 10000));
+      milliseconds: (200 * (1 << _attempt.clamp(0, 6))).clamp(200, 10000),
+    );
     SatLog.ws('reconnect in ${delay.inMilliseconds}ms attempt=$_attempt');
     _reconnect?.cancel();
     _reconnect = Timer(delay, start);
@@ -165,8 +169,7 @@ final wsClientProvider = Provider<WsClient>((ref) {
 /// `open` and `closed`.
 final wsConnStateProvider = Provider<WsConnState>((ref) {
   final cfg = ref.watch(apiConfigProvider);
-  final authed =
-      ref.watch(authStateProvider.select((s) => s.isAuthenticated));
+  final authed = ref.watch(authStateProvider.select((s) => s.isAuthenticated));
   if (cfg == null || !authed) return WsConnState.closed;
   // Mirror WsClient's connState WITHOUT owning it — a ChangeNotifierProvider
   // would dispose this borrowed notifier on recompute (logout/re-login),

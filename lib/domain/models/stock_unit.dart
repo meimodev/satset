@@ -15,10 +15,10 @@ library;
 enum StockDimension { mass, volume, count }
 
 String stockDimensionLabel(StockDimension d) => switch (d) {
-      StockDimension.mass => 'Berat',
-      StockDimension.volume => 'Volume',
-      StockDimension.count => 'Jumlah',
-    };
+  StockDimension.mass => 'Berat',
+  StockDimension.volume => 'Volume',
+  StockDimension.count => 'Jumlah',
+};
 
 /// A unit the admin can pick for an ingredient.
 ///
@@ -56,16 +56,16 @@ enum StockUnit {
 }
 
 StockUnit stockUnitFromKey(String key) => StockUnit.values.firstWhere(
-      (u) => u.name == key,
-      orElse: () => StockUnit.pcs,
-    );
+  (u) => u.name == key,
+  orElse: () => StockUnit.pcs,
+);
 
 /// Units offered when entering a quantity against an ingredient measured in
 /// [unit] — its whole dimension for mass/volume, itself alone for count.
 List<StockUnit> entryUnitsFor(StockUnit unit) =>
     unit.dimension == StockDimension.count
-        ? [unit]
-        : StockUnit.values.where((u) => u.dimension == unit.dimension).toList();
+    ? [unit]
+    : StockUnit.values.where((u) => u.dimension == unit.dimension).toList();
 
 /// Format [base] milli-base units for display against [unit], auto-scaling
 /// mass and volume up so a 12 kg sack never reads as `12000000 mg`.
@@ -88,7 +88,9 @@ String formatQty(int base, StockUnit unit) {
   final v = abs / display.perUnit;
   // Up to 3 decimals, trailing zeros stripped: 7.4 not 7.400.
   var s = v.toStringAsFixed(3);
-  if (s.contains('.')) s = s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  if (s.contains('.')) {
+    s = s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
   return '${neg ? '-' : ''}$s ${display.label}';
 }
 

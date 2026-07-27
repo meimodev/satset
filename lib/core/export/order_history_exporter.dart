@@ -54,8 +54,12 @@ String _windowLine(OrderHistory h) =>
 
 // ─── CSV ────────────────────────────────────────────────────────────────────
 
-String buildOrderHistoryCsv(OrderHistory h, ReportRange range,
-    {DateTime? from, DateTime? to}) {
+String buildOrderHistoryCsv(
+  OrderHistory h,
+  ReportRange range, {
+  DateTime? from,
+  DateTime? to,
+}) {
   final rows = <String>[];
   rows.add(csvRow(['Riwayat Pesanan SatSet']));
   rows.add(csvRow(['Periode', rangeLabelId(range, from: from, to: to)]));
@@ -67,75 +71,86 @@ String buildOrderHistoryCsv(OrderHistory h, ReportRange range,
 
   for (final v in h.visits) {
     rows.add('');
-    rows.add(csvRow([
-      'KUNJUNGAN',
-      _visitTitle(v),
-      'Pax',
-      v.pax,
-      'Pelayan',
-      v.waiterName ?? '—',
-      'Tutup',
-      _dateFull.format(v.closedAt.toLocal()),
-      'Net',
-      formatIDR(v.net),
-    ]));
-    rows.add(csvRow([
-      'Jam',
-      'Item',
-      'Varian',
-      'Modifier',
-      'Course',
-      'Qty',
-      'Harga',
-      'Total',
-      'Status',
-      'Alasan void',
-    ]));
+    rows.add(
+      csvRow([
+        'KUNJUNGAN',
+        _visitTitle(v),
+        'Pax',
+        v.pax,
+        'Pelayan',
+        v.waiterName ?? '—',
+        'Tutup',
+        _dateFull.format(v.closedAt.toLocal()),
+        'Net',
+        formatIDR(v.net),
+      ]),
+    );
+    rows.add(
+      csvRow([
+        'Jam',
+        'Item',
+        'Varian',
+        'Modifier',
+        'Course',
+        'Qty',
+        'Harga',
+        'Total',
+        'Status',
+        'Alasan void',
+      ]),
+    );
     for (final l in v.lines) {
-      rows.add(csvRow([
-        _clock.format(l.sentAt.toLocal()),
-        l.name,
-        l.variantName,
-        _mods(l),
-        l.course,
-        l.qty,
-        formatIDR(l.price),
-        formatIDR(l.lineTotal),
-        _statusId(l),
-        l.voidReasonLabel ?? '',
-      ]));
+      rows.add(
+        csvRow([
+          _clock.format(l.sentAt.toLocal()),
+          l.name,
+          l.variantName,
+          _mods(l),
+          l.course,
+          l.qty,
+          formatIDR(l.price),
+          formatIDR(l.lineTotal),
+          _statusId(l),
+          l.voidReasonLabel ?? '',
+        ]),
+      );
     }
 
     // Bill settlement: per-receipt totals + payments (ADR-0031).
     for (final r in v.receipts) {
-      rows.add(csvRow([
-        'TAGIHAN',
-        r.label.isEmpty ? '—' : r.label,
-        'Subtotal',
-        formatIDR(r.subtotal),
-        'Diskon',
-        formatIDR(r.discountAmount),
-        'Service',
-        formatIDR(r.serviceAmount),
-        'Pajak',
-        formatIDR(r.taxAmount),
-        'Total',
-        formatIDR(r.total),
-        'Status',
-        r.status,
-      ]));
+      rows.add(
+        csvRow([
+          'TAGIHAN',
+          r.label.isEmpty ? '—' : r.label,
+          'Subtotal',
+          formatIDR(r.subtotal),
+          'Diskon',
+          formatIDR(r.discountAmount),
+          'Service',
+          formatIDR(r.serviceAmount),
+          'Pajak',
+          formatIDR(r.taxAmount),
+          'Total',
+          formatIDR(r.total),
+          'Status',
+          r.status,
+        ]),
+      );
       if (r.payments.isNotEmpty) {
-        rows.add(csvRow(
-            ['Jam', 'Metode', 'Kasir', 'Jumlah', 'Refund', 'Bukti foto']));
+        rows.add(
+          csvRow(['Jam', 'Metode', 'Kasir', 'Jumlah', 'Refund', 'Bukti foto']),
+        );
         for (final p in r.payments) {
-          rows.add(csvRow([
-            _clock.format(p.at.toLocal()),
-            _method(p.method),
-            p.cashierName ?? '—',
-            _payAmount(p),
-            p.isRefund ? 'Ya' : '',
-            p.hasPhoto ? 'Ada' : '—',
-          ]));
+          rows.add(
+            csvRow([
+              _clock.format(p.at.toLocal()),
+              _method(p.method),
+              p.cashierName ?? '—',
+              _payAmount(p),
+              p.isRefund ? 'Ya' : '',
+              p.hasPhoto ? 'Ada' : '—',
+            ]),
+          );
         }
       }
     }
@@ -162,7 +177,9 @@ Future<Uint8List> buildOrderHistoryPdf(
       pageTheme: pdfPageTheme(theme),
       header: (ctx) => ctx.pageNumber == 1
           ? pw.SizedBox()
-          : pdfRunningHeader('Riwayat Pesanan · ${rangeLabelId(range, from: from, to: to)}'),
+          : pdfRunningHeader(
+              'Riwayat Pesanan · ${rangeLabelId(range, from: from, to: to)}',
+            ),
       footer: pdfFooter,
       build: (ctx) => [
         pdfTitleBlock(
@@ -180,11 +197,14 @@ Future<Uint8List> buildOrderHistoryPdf(
         ),
         pw.SizedBox(height: 16),
         if (h.isEmpty)
-          pw.Text('Tidak ada kunjungan pada rentang ini.',
-              style: pw.TextStyle(
-                  fontSize: 9,
-                  color: kPdfInkLo,
-                  fontStyle: pw.FontStyle.italic))
+          pw.Text(
+            'Tidak ada kunjungan pada rentang ini.',
+            style: pw.TextStyle(
+              fontSize: 9,
+              color: kPdfInkLo,
+              fontStyle: pw.FontStyle.italic,
+            ),
+          )
         else
           for (final v in h.visits) ..._visitBlock(v, photos),
       ],
@@ -195,78 +215,82 @@ Future<Uint8List> buildOrderHistoryPdf(
 }
 
 List<pw.Widget> _visitBlock(
-        OrderHistoryVisit v, Map<String, Uint8List> photos) =>
-    [
-      pw.SizedBox(height: 12),
-      _visitHeader(v),
-      pdfTable(
-        headers: const [
-          'Jam',
-          'Item',
-          'Modifier',
-          'Course',
-          'Qty',
-          'Harga',
-          'Total',
-          'Status',
+  OrderHistoryVisit v,
+  Map<String, Uint8List> photos,
+) => [
+  pw.SizedBox(height: 12),
+  _visitHeader(v),
+  pdfTable(
+    headers: const [
+      'Jam',
+      'Item',
+      'Modifier',
+      'Course',
+      'Qty',
+      'Harga',
+      'Total',
+      'Status',
+    ],
+    rows: [
+      for (final l in v.lines)
+        [
+          _clock.format(l.sentAt.toLocal()),
+          l.variantName.isEmpty ? l.name : '${l.name} (${l.variantName})',
+          _mods(l),
+          l.course,
+          '${l.qty}',
+          formatIDR(l.price),
+          formatIDR(l.lineTotal),
+          l.isVoided
+              ? 'Batal · ${l.voidReasonLabel ?? ''}'.trim()
+              : _statusId(l),
         ],
-        rows: [
-          for (final l in v.lines)
-            [
-              _clock.format(l.sentAt.toLocal()),
-              l.variantName.isEmpty ? l.name : '${l.name} (${l.variantName})',
-              _mods(l),
-              l.course,
-              '${l.qty}',
-              formatIDR(l.price),
-              formatIDR(l.lineTotal),
-              l.isVoided
-                  ? 'Batal · ${l.voidReasonLabel ?? ''}'.trim()
-                  : _statusId(l),
-            ],
-        ],
-        numericFrom: 4,
-      ),
-      for (final r in v.receipts) ..._receiptBlock(r, photos),
-    ];
+    ],
+    numericFrom: 4,
+  ),
+  for (final r in v.receipts) ..._receiptBlock(r, photos),
+];
 
 pw.Widget _visitHeader(OrderHistoryVisit v) => pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: const pw.BoxDecoration(color: kPdfInk),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.center,
-        children: [
-          pw.Expanded(
-            child: pw.Text(
-              _visitTitle(v),
-              style: pw.TextStyle(
-                font: pw.Font.timesBold(),
-                fontSize: 11,
-                color: kPdfCream,
-              ),
-            ),
+  padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+  decoration: const pw.BoxDecoration(color: kPdfInk),
+  child: pw.Row(
+    crossAxisAlignment: pw.CrossAxisAlignment.center,
+    children: [
+      pw.Expanded(
+        child: pw.Text(
+          _visitTitle(v),
+          style: pw.TextStyle(
+            font: pw.Font.timesBold(),
+            fontSize: 11,
+            color: kPdfCream,
           ),
-          pw.Text(
-            'Pax ${v.pax}  ·  ${v.waiterName ?? '—'}  ·  ${_dateFull.format(v.closedAt.toLocal())}',
-            style: const pw.TextStyle(fontSize: 7.5, color: kPdfHeadFill),
-          ),
-          pw.SizedBox(width: 10),
-          pw.Text(
-            formatIDR(v.net),
-            style: pw.TextStyle(
-                fontSize: 10,
-                fontWeight: pw.FontWeight.bold,
-                color: kPdfCream),
-          ),
-        ],
+        ),
       ),
-    );
+      pw.Text(
+        'Pax ${v.pax}  ·  ${v.waiterName ?? '—'}  ·  ${_dateFull.format(v.closedAt.toLocal())}',
+        style: const pw.TextStyle(fontSize: 7.5, color: kPdfHeadFill),
+      ),
+      pw.SizedBox(width: 10),
+      pw.Text(
+        formatIDR(v.net),
+        style: pw.TextStyle(
+          fontSize: 10,
+          fontWeight: pw.FontWeight.bold,
+          color: kPdfCream,
+        ),
+      ),
+    ],
+  ),
+);
 
 // One receipt's settlement block: totals strip + payment rows. Each non-cash
 // payment renders its proof as an enlarged card under the row (ADR-0031
 // amendment) so the amount on the capture is legible for audit.
 List<pw.Widget> _receiptBlock(
-    OrderHistoryReceipt r, Map<String, Uint8List> photos) {
+  OrderHistoryReceipt r,
+  Map<String, Uint8List> photos,
+) {
   return [
     pw.SizedBox(height: 4),
     pw.Container(
@@ -279,9 +303,10 @@ List<pw.Widget> _receiptBlock(
             child: pw.Text(
               r.label.isEmpty ? 'Tagihan' : r.label,
               style: pw.TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: pw.FontWeight.bold,
-                  color: kPdfInk),
+                fontSize: 8.5,
+                fontWeight: pw.FontWeight.bold,
+                color: kPdfInk,
+              ),
             ),
           ),
           pw.Text(
@@ -296,11 +321,14 @@ List<pw.Widget> _receiptBlock(
     if (r.payments.isEmpty)
       pw.Container(
         padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        child: pw.Text('Belum ada pembayaran tercatat.',
-            style: pw.TextStyle(
-                fontSize: 7.5,
-                color: kPdfInkLo,
-                fontStyle: pw.FontStyle.italic)),
+        child: pw.Text(
+          'Belum ada pembayaran tercatat.',
+          style: pw.TextStyle(
+            fontSize: 7.5,
+            color: kPdfInkLo,
+            fontStyle: pw.FontStyle.italic,
+          ),
+        ),
       )
     else
       for (final p in r.payments) _paymentRow(p, photos[p.paymentId]),
@@ -330,27 +358,28 @@ pw.Widget _paymentRow(OrderHistoryPayment p, Uint8List? photo) {
                 '${_method(p.method)}  ·  ${p.cashierName ?? '—'}'
                 '${p.isRefund ? '  ·  Refund' : ''}',
                 style: pw.TextStyle(
-                    fontSize: 8,
-                    fontWeight: pw.FontWeight.bold,
-                    color: kPdfInk),
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: kPdfInk,
+                ),
               ),
             ),
-            pw.Text(_clock.format(p.at.toLocal()),
-                style: const pw.TextStyle(fontSize: 7.5, color: kPdfInkLo)),
+            pw.Text(
+              _clock.format(p.at.toLocal()),
+              style: const pw.TextStyle(fontSize: 7.5, color: kPdfInkLo),
+            ),
             pw.SizedBox(width: 10),
             pw.Text(
               _payAmount(p),
               style: pw.TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: pw.FontWeight.bold,
-                  color: p.isRefund ? kPdfAccent : kPdfInk),
+                fontSize: 8.5,
+                fontWeight: pw.FontWeight.bold,
+                color: p.isRefund ? kPdfAccent : kPdfInk,
+              ),
             ),
           ],
         ),
-        if (isNonCash) ...[
-          pw.SizedBox(height: 5),
-          _proofCard(p, photo),
-        ],
+        if (isNonCash) ...[pw.SizedBox(height: 5), _proofCard(p, photo)],
       ],
     ),
   );
@@ -360,50 +389,52 @@ pw.Widget _paymentRow(OrderHistoryPayment p, Uint8List? photo) {
 // BoxFit.contain (never cover — cropping can chop the amount being verified),
 // height-capped so a multi-tender visit can't explode the page.
 pw.Widget _proofCard(OrderHistoryPayment p, Uint8List? photo) => pw.Container(
-      margin: const pw.EdgeInsets.only(top: 1),
-      padding: const pw.EdgeInsets.all(6),
-      decoration: pw.BoxDecoration(
-        color: kPdfCard,
-        border: pw.Border.all(color: kPdfBorder, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(4),
+  margin: const pw.EdgeInsets.only(top: 1),
+  padding: const pw.EdgeInsets.all(6),
+  decoration: pw.BoxDecoration(
+    color: kPdfCard,
+    border: pw.Border.all(color: kPdfBorder, width: 0.5),
+    borderRadius: pw.BorderRadius.circular(4),
+  ),
+  child: pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: [
+      pw.Text(
+        'Bukti · ${_method(p.method)}  ·  ${_payAmount(p)}',
+        style: pw.TextStyle(fontSize: 7, color: kPdfInkLo),
       ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-        children: [
-          pw.Text(
-            'Bukti · ${_method(p.method)}  ·  ${_payAmount(p)}',
-            style: pw.TextStyle(fontSize: 7, color: kPdfInkLo),
+      pw.SizedBox(height: 4),
+      if (photo != null)
+        pw.SizedBox(
+          height: 140,
+          child: pw.Align(
+            alignment: pw.Alignment.centerLeft,
+            child: pw.ClipRRect(
+              horizontalRadius: 3,
+              verticalRadius: 3,
+              child: pw.Image(pw.MemoryImage(photo), fit: pw.BoxFit.contain),
+            ),
           ),
-          pw.SizedBox(height: 4),
-          if (photo != null)
-            pw.SizedBox(
-              height: 140,
-              child: pw.Align(
-                alignment: pw.Alignment.centerLeft,
-                child: pw.ClipRRect(
-                  horizontalRadius: 3,
-                  verticalRadius: 3,
-                  child: pw.Image(pw.MemoryImage(photo),
-                      fit: pw.BoxFit.contain),
-                ),
-              ),
-            )
-          else
-            _proofMissing(),
-        ],
-      ),
-    );
+        )
+      else
+        _proofMissing(),
+    ],
+  ),
+);
 
 pw.Widget _proofMissing() => pw.Container(
-      height: 36,
-      alignment: pw.Alignment.center,
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: kPdfAccent, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(3),
-      ),
-      child: pw.Text('Bukti tidak termuat',
-          style: pw.TextStyle(
-              fontSize: 8,
-              color: kPdfAccent,
-              fontStyle: pw.FontStyle.italic)),
-    );
+  height: 36,
+  alignment: pw.Alignment.center,
+  decoration: pw.BoxDecoration(
+    border: pw.Border.all(color: kPdfAccent, width: 0.5),
+    borderRadius: pw.BorderRadius.circular(3),
+  ),
+  child: pw.Text(
+    'Bukti tidak termuat',
+    style: pw.TextStyle(
+      fontSize: 8,
+      color: kPdfAccent,
+      fontStyle: pw.FontStyle.italic,
+    ),
+  ),
+);

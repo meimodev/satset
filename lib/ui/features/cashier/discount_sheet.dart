@@ -53,8 +53,9 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
   DiscountTarget target,
 ) async {
   final sc = context.sat;
-  final presets =
-      ref.read(discountPresetsRepositoryProvider.notifier).forScope(target.scope);
+  final presets = ref
+      .read(discountPresetsRepositoryProvider.notifier)
+      .forScope(target.scope);
   final canApply = ref.read(authStateProvider).has(Capability.applyDiscount);
 
   if (presets.isEmpty) {
@@ -65,13 +66,15 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
         content: Text(
           target.isLine
               ? 'Belum ada preset diskon per item. Tambahkan di '
-                  'Pengaturan venue › Diskon.'
+                    'Pengaturan venue › Diskon.'
               : 'Belum ada preset diskon per pesanan. Tambahkan di '
-                  'Pengaturan venue › Diskon.',
+                    'Pengaturan venue › Diskon.',
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(c), child: const Text('Tutup')),
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Tutup'),
+          ),
         ],
       ),
     );
@@ -91,12 +94,19 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Diskon · ${target.title}',
-                style: SatType.sans(
-                    size: 15, weight: FontWeight.w700, color: sc.textHi)),
+            Text(
+              'Diskon · ${target.title}',
+              style: SatType.sans(
+                size: 15,
+                weight: FontWeight.w700,
+                color: sc.textHi,
+              ),
+            ),
             const SizedBox(height: 2),
             Text(
-              target.isLine ? 'Berlaku untuk item ini' : 'Berlaku seluruh struk',
+              target.isLine
+                  ? 'Berlaku untuk item ini'
+                  : 'Berlaku seluruh struk',
               style: SatType.sans(size: 12, color: sc.textLo),
             ),
             const SizedBox(height: 12),
@@ -104,30 +114,40 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: presets.length,
-                separatorBuilder: (_, _) => Divider(color: sc.border0, height: 1),
+                separatorBuilder: (_, _) =>
+                    Divider(color: sc.border0, height: 1),
                 itemBuilder: (_, i) {
                   final p = presets[i];
                   // Preview only — the server re-resolves against the live base.
                   final preview = resolveDiscountAmount(
-                      kind: p.kind, value: p.value, base: target.base);
+                    kind: p.kind,
+                    value: p.value,
+                    base: target.base,
+                  );
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(p.name,
-                        style: SatType.sans(
-                            size: 13.5,
-                            weight: FontWeight.w600,
-                            color: sc.textHi)),
+                    title: Text(
+                      p.name,
+                      style: SatType.sans(
+                        size: 13.5,
+                        weight: FontWeight.w600,
+                        color: sc.textHi,
+                      ),
+                    ),
                     subtitle: Text(
                       p.isPercent
                           ? '${(p.value / 100).toStringAsFixed(0)}%'
                           : formatIDR(p.value),
                       style: SatType.sans(size: 11.5, color: sc.textLo),
                     ),
-                    trailing: Text('-${formatIDR(preview)}',
-                        style: SatType.mono(
-                            size: 13,
-                            weight: FontWeight.w600,
-                            color: sc.warn)),
+                    trailing: Text(
+                      '-${formatIDR(preview)}',
+                      style: SatType.mono(
+                        size: 13,
+                        weight: FontWeight.w600,
+                        color: sc.warn,
+                      ),
+                    ),
                     onTap: () => Navigator.pop(c, p),
                   );
                 },
@@ -182,7 +202,9 @@ Future<String?> _askApproverPin(BuildContext context) async {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(c), child: const Text('Batal')),
+          onPressed: () => Navigator.pop(c),
+          child: const Text('Batal'),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(c, ctrl.text.trim()),
           child: const Text('Setujui'),

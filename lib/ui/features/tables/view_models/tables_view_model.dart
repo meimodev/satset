@@ -15,10 +15,12 @@ class TablesScreenState {
 /// providers from the view.
 class TablesViewModel extends StateNotifier<TablesScreenState> {
   TablesViewModel(this.ref)
-      : super(TablesScreenState(
+    : super(
+        TablesScreenState(
           zones: ref.read(zonesProvider),
           tables: ref.read(tablesProvider),
-        )) {
+        ),
+      ) {
     ref.listen(zonesProvider, (_, next) {
       state = TablesScreenState(zones: next, tables: state.tables);
     });
@@ -36,5 +38,7 @@ class TablesViewModel extends StateNotifier<TablesScreenState> {
       ref.read(tablesProvider.notifier).setHandler(tableId, userId);
 }
 
-final tablesViewModelProvider = StateNotifierProvider.autoDispose<
-    TablesViewModel, TablesScreenState>((ref) => TablesViewModel(ref));
+final tablesViewModelProvider =
+    StateNotifierProvider.autoDispose<TablesViewModel, TablesScreenState>(
+      (ref) => TablesViewModel(ref),
+    );

@@ -72,21 +72,72 @@ class SatType {
 
   static TextTheme _lembut(Color textHi, Color textMd) {
     return TextTheme(
-      displayLarge: sans(size: 38, weight: FontWeight.w600, letterSpacing: -0.76, height: 1.05, color: textHi),
-      displayMedium: sans(size: 30, weight: FontWeight.w600, letterSpacing: -0.6, height: 1.05, color: textHi),
-      displaySmall: sans(size: 22, weight: FontWeight.w600, letterSpacing: -0.22, color: textHi),
-      headlineLarge: sans(size: 30, weight: FontWeight.w600, letterSpacing: -0.6, color: textHi),
-      headlineMedium: sans(size: 22, weight: FontWeight.w600, letterSpacing: -0.22, color: textHi),
-      headlineSmall: sans(size: 19, weight: FontWeight.w600, letterSpacing: -0.19, color: textHi),
-      titleLarge: sans(size: 17, weight: FontWeight.w600, letterSpacing: -0.17, color: textHi),
-      titleMedium: sans(size: 15, weight: FontWeight.w600, letterSpacing: -0.15, color: textHi),
-      titleSmall: sans(size: 14, weight: FontWeight.w600, letterSpacing: -0.14, color: textHi),
+      displayLarge: sans(
+        size: 38,
+        weight: FontWeight.w600,
+        letterSpacing: -0.76,
+        height: 1.05,
+        color: textHi,
+      ),
+      displayMedium: sans(
+        size: 30,
+        weight: FontWeight.w600,
+        letterSpacing: -0.6,
+        height: 1.05,
+        color: textHi,
+      ),
+      displaySmall: sans(
+        size: 22,
+        weight: FontWeight.w600,
+        letterSpacing: -0.22,
+        color: textHi,
+      ),
+      headlineLarge: sans(
+        size: 30,
+        weight: FontWeight.w600,
+        letterSpacing: -0.6,
+        color: textHi,
+      ),
+      headlineMedium: sans(
+        size: 22,
+        weight: FontWeight.w600,
+        letterSpacing: -0.22,
+        color: textHi,
+      ),
+      headlineSmall: sans(
+        size: 19,
+        weight: FontWeight.w600,
+        letterSpacing: -0.19,
+        color: textHi,
+      ),
+      titleLarge: sans(
+        size: 17,
+        weight: FontWeight.w600,
+        letterSpacing: -0.17,
+        color: textHi,
+      ),
+      titleMedium: sans(
+        size: 15,
+        weight: FontWeight.w600,
+        letterSpacing: -0.15,
+        color: textHi,
+      ),
+      titleSmall: sans(
+        size: 14,
+        weight: FontWeight.w600,
+        letterSpacing: -0.14,
+        color: textHi,
+      ),
       bodyLarge: sans(size: 15, weight: FontWeight.w400, color: textHi),
       bodyMedium: sans(size: 14, weight: FontWeight.w400, color: textHi),
       bodySmall: sans(size: 12, weight: FontWeight.w400, color: textMd),
       labelLarge: sans(size: 14, weight: FontWeight.w500, color: textHi),
       labelMedium: sans(size: 12, weight: FontWeight.w500, color: textMd),
-      labelSmall: sans(size: 11, weight: FontWeight.w500, color: textLow(textMd)),
+      labelSmall: sans(
+        size: 11,
+        weight: FontWeight.w500,
+        color: textLow(textMd),
+      ),
     );
   }
 
@@ -97,21 +148,81 @@ class SatType {
   /// item names, they do not scan them as headings.
   static TextTheme _brutal(Color textHi, Color textMd) {
     return TextTheme(
-      displayLarge: display(size: 38, letterSpacing: -0.38, height: 0.95, color: textHi),
-      displayMedium: display(size: 30, letterSpacing: -0.30, height: 0.95, color: textHi),
-      displaySmall: display(size: 22, letterSpacing: -0.22, height: 0.95, color: textHi),
-      headlineLarge: display(size: 30, letterSpacing: -0.30, height: 0.95, color: textHi),
-      headlineMedium: display(size: 22, letterSpacing: -0.22, height: 0.95, color: textHi),
-      headlineSmall: display(size: 19, letterSpacing: -0.19, height: 0.98, color: textHi),
-      titleLarge: sans(size: 17, weight: FontWeight.w800, letterSpacing: -0.09, color: textHi),
-      titleMedium: sans(size: 15, weight: FontWeight.w800, letterSpacing: -0.08, color: textHi),
-      titleSmall: sans(size: 14, weight: FontWeight.w700, letterSpacing: -0.07, color: textHi),
+      displayLarge: display(
+        size: 38,
+        letterSpacing: -0.38,
+        height: 0.95,
+        color: textHi,
+      ),
+      displayMedium: display(
+        size: 30,
+        letterSpacing: -0.30,
+        height: 0.95,
+        color: textHi,
+      ),
+      displaySmall: display(
+        size: 22,
+        letterSpacing: -0.22,
+        height: 0.95,
+        color: textHi,
+      ),
+      headlineLarge: display(
+        size: 30,
+        letterSpacing: -0.30,
+        height: 0.95,
+        color: textHi,
+      ),
+      headlineMedium: display(
+        size: 22,
+        letterSpacing: -0.22,
+        height: 0.95,
+        color: textHi,
+      ),
+      headlineSmall: display(
+        size: 19,
+        letterSpacing: -0.19,
+        height: 0.98,
+        color: textHi,
+      ),
+      titleLarge: sans(
+        size: 17,
+        weight: FontWeight.w800,
+        letterSpacing: -0.09,
+        color: textHi,
+      ),
+      titleMedium: sans(
+        size: 15,
+        weight: FontWeight.w800,
+        letterSpacing: -0.08,
+        color: textHi,
+      ),
+      titleSmall: sans(
+        size: 14,
+        weight: FontWeight.w700,
+        letterSpacing: -0.07,
+        color: textHi,
+      ),
       bodyLarge: sans(size: 15, weight: FontWeight.w500, color: textHi),
       bodyMedium: sans(size: 14, weight: FontWeight.w500, color: textHi),
       bodySmall: sans(size: 12, weight: FontWeight.w500, color: textMd),
-      labelLarge: sans(size: 14, weight: FontWeight.w700, letterSpacing: 0.28, color: textHi),
-      labelMedium: sans(size: 12, weight: FontWeight.w700, letterSpacing: 1.20, color: textMd),
-      labelSmall: sans(size: 11, weight: FontWeight.w700, letterSpacing: 1.54, color: textLow(textMd)),
+      labelLarge: sans(
+        size: 14,
+        weight: FontWeight.w700,
+        letterSpacing: 0.28,
+        color: textHi,
+      ),
+      labelMedium: sans(
+        size: 12,
+        weight: FontWeight.w700,
+        letterSpacing: 1.20,
+        color: textMd,
+      ),
+      labelSmall: sans(
+        size: 11,
+        weight: FontWeight.w700,
+        letterSpacing: 1.54,
+        color: textLow(textMd),
+      ),
     );
   }
 

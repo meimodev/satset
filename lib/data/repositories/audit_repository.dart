@@ -8,8 +8,9 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/audit_entry.dart';
 
-final auditStatusProvider =
-    StateProvider<AsyncValue<void>>((_) => const AsyncValue.data(null));
+final auditStatusProvider = StateProvider<AsyncValue<void>>(
+  (_) => const AsyncValue.data(null),
+);
 
 class AuditRepository extends StateNotifier<List<AuditEntry>> {
   AuditRepository(this._ref) : super(const <AuditEntry>[]) {
@@ -28,25 +29,25 @@ class AuditRepository extends StateNotifier<List<AuditEntry>> {
   Future<void> _bootstrap() async {
     final cfg = _ref.read(apiConfigProvider);
     if (cfg == null) {
-      _ref.read(auditStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      _ref.read(auditStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       return;
     }
-    _ref.read(auditStatusProvider.notifier).state =
-        const AsyncValue.loading();
+    _ref.read(auditStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       final raw = await _ref.read(apiClientProvider).getJson('/audit') as List;
       state = [
         for (final e in raw) _fromJson((e as Map).cast<String, dynamic>()),
       ];
       SatLog.repo('audit.loaded n=${state.length}');
-      _ref.read(auditStatusProvider.notifier).state =
-          const AsyncValue.data(null);
+      _ref.read(auditStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
       _wireWs();
     } catch (e, st) {
       SatLog.repo('audit.bootstrap fail $e');
-      _ref.read(auditStatusProvider.notifier).state =
-          AsyncValue.error(e, st);
+      _ref.read(auditStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
   }
 
@@ -101,4 +102,5 @@ class AuditRepository extends StateNotifier<List<AuditEntry>> {
 }
 
 final auditProvider = StateNotifierProvider<AuditRepository, List<AuditEntry>>(
-    (ref) => AuditRepository(ref));
+  (ref) => AuditRepository(ref),
+);

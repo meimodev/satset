@@ -102,8 +102,10 @@ class ServerRuntime {
     if (samples.isEmpty) {
       return LatencyStats(p50: 0, p95: 0, requestCountRecent: count);
     }
-    final p50 = samples[(samples.length * 0.5).floor().clamp(0, samples.length - 1)];
-    final p95 = samples[(samples.length * 0.95).floor().clamp(0, samples.length - 1)];
+    final p50 =
+        samples[(samples.length * 0.5).floor().clamp(0, samples.length - 1)];
+    final p95 =
+        samples[(samples.length * 0.95).floor().clamp(0, samples.length - 1)];
     return LatencyStats(p50: p50, p95: p95, requestCountRecent: count);
   }
 
@@ -133,8 +135,9 @@ class ServerRuntime {
 
   /// Offline verifier for admin-client Firebase ID tokens. Lazily built; only
   /// exercised when this host is venue-scoped (`venueId` non-empty).
-  late final FirebaseTokenVerifier _tokenVerifier =
-      FirebaseTokenVerifier(projectId: firebaseProjectId);
+  late final FirebaseTokenVerifier _tokenVerifier = FirebaseTokenVerifier(
+    projectId: firebaseProjectId,
+  );
 
   static Future<ServerRuntime> boot({
     int port = defaultPort,
@@ -202,21 +205,23 @@ class ServerRuntime {
     _printerHeartbeat?.cancel();
     _printerHeartbeat = Timer.periodic(const Duration(seconds: 15), (_) async {
       try {
-        final rows = await (db.select(db.printers)
-              ..where((p) => p.enabled.equals(true)))
-            .get();
+        final rows = await (db.select(
+          db.printers,
+        )..where((p) => p.enabled.equals(true))).get();
         if (rows.isEmpty) return;
-        await Future.wait(rows.map((p) async {
-          if (!await StrukSocket.probe(p.host, p.port)) return;
-          await (db.update(db.printers)..where((x) => x.id.equals(p.id)))
-              .write(PrintersCompanion(lastSeenAt: Value(DateTime.now())));
-          final updated = await (db.select(db.printers)
-                ..where((x) => x.id.equals(p.id)))
-              .getSingleOrNull();
-          if (updated != null) {
-            hub.broadcast(WsEventTypes.printerUpdated, printerJson(updated));
-          }
-        }));
+        await Future.wait(
+          rows.map((p) async {
+            if (!await StrukSocket.probe(p.host, p.port)) return;
+            await (db.update(db.printers)..where((x) => x.id.equals(p.id)))
+                .write(PrintersCompanion(lastSeenAt: Value(DateTime.now())));
+            final updated = await (db.select(
+              db.printers,
+            )..where((x) => x.id.equals(p.id))).getSingleOrNull();
+            if (updated != null) {
+              hub.broadcast(WsEventTypes.printerUpdated, printerJson(updated));
+            }
+          }),
+        );
       } catch (e) {
         SatLog.srv('printer heartbeat $e');
       }
@@ -233,9 +238,9 @@ class ServerRuntime {
       final expired = all.where((s) => s.expiresAt.isBefore(now)).toList();
       if (expired.isNotEmpty) {
         for (final s in expired) {
-          await (db.delete(db.sessions)
-                ..where((row) => row.token.equals(s.token)))
-              .go();
+          await (db.delete(
+            db.sessions,
+          )..where((row) => row.token.equals(s.token))).go();
           hub.broadcast(WsEventTypes.sessionExpired, {
             'userId': s.userId,
             'deviceId': s.deviceId,
@@ -264,7 +269,10 @@ class ServerRuntime {
   /// was rotated out-of-band) fingerprint.
   Future<RestartResult> restart() async {
     if (_restarting) {
-      return RestartResult(fingerprint: tls.fingerprint, alreadyInProgress: true);
+      return RestartResult(
+        fingerprint: tls.fingerprint,
+        alreadyInProgress: true,
+      );
     }
     _restarting = true;
     SatLog.srv('restart begin');
@@ -322,11 +330,13 @@ class ServerRuntime {
     final r = Router();
     r.mount('/', healthRoutes().call);
     r.mount(
-        '/',
-        authRoutes(auth,
-                venueId: venueId,
-                verifier: venueId.isEmpty ? null : _tokenVerifier)
-            .call);
+      '/',
+      authRoutes(
+        auth,
+        venueId: venueId,
+        verifier: venueId.isEmpty ? null : _tokenVerifier,
+      ).call,
+    );
     r.mount('/', menuRoutes(db, hub, auth).call);
     r.mount('/', stockRoutes(db, hub, auth).call);
     r.mount('/', tablesRoutes(db, hub, auth).call);
@@ -418,8 +428,11 @@ class ServerRuntime {
     final handler = const Pipeline()
         .addMiddleware(_corsMiddleware())
         .addHandler(_buildGuestHandler());
-    _guestHttp =
-        await shelf_io.serve(handler, InternetAddress.anyIPv4, guestPort);
+    _guestHttp = await shelf_io.serve(
+      handler,
+      InternetAddress.anyIPv4,
+      guestPort,
+    );
     SatLog.srv('guest plane port=$guestPort');
   }
 
@@ -441,8 +454,10 @@ class ServerRuntime {
         headers: {'content-type': 'application/json'},
       );
     }
-    return Response.ok(guestAppHtml,
-        headers: {'content-type': 'text/html; charset=utf-8'});
+    return Response.ok(
+      guestAppHtml,
+      headers: {'content-type': 'text/html; charset=utf-8'},
+    );
   }
 
   Future<void> shutdown() async {
@@ -478,9 +493,7 @@ extension on ServerRuntime {
         if (path != '/ws' && path != '/healthz') {
           _recordLatency(ms);
         }
-        SatLog.srv(
-          '${req.method} $path → ${res.statusCode} ${ms}ms',
-        );
+        SatLog.srv('${req.method} $path → ${res.statusCode} ${ms}ms');
         return res;
       };
     };
