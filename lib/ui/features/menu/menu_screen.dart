@@ -15,6 +15,7 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
@@ -439,24 +440,38 @@ class _CatTabs extends ConsumerWidget {
         itemBuilder: (_, i) {
           final c = cats[i];
           final isActive = active == c.id;
-          return GestureDetector(
-            onTap: () => onChange(c.id),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Sp.s3h,
-                vertical: Sp.s2,
-              ),
-              decoration: SatBox.d(
-                color: isActive ? sc.accentSoft : Colors.transparent,
-                borderRadius: SatR.a(999),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                c.name,
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w500,
-                  color: isActive ? sc.accentText : sc.textMd,
+          // Glow's active category is a solid slab, not a tint: it sits in a
+          // row of transparent siblings on a bone ground, where a 34% wash of
+          // fluorescent lime reads as a highlighter smear rather than a state.
+          // On the dark palette the slab *is* the lime, per the source's
+          // `glowNoir` override.
+          final glow = SatShape.glow;
+          final activeFill = glow
+              ? (SatShape.glowNoir ? sc.accent : sc.slab.bg0)
+              : sc.accentSoft;
+          final activeInk = glow
+              ? (SatShape.glowNoir ? sc.accentInk : sc.slab.textHi)
+              : sc.accentText;
+          return PressScale(
+            child: GestureDetector(
+              onTap: () => onChange(c.id),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s3h,
+                  vertical: Sp.s2,
+                ),
+                decoration: SatBox.d(
+                  color: isActive ? activeFill : Colors.transparent,
+                  borderRadius: SatR.a(999),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  c.name,
+                  style: SatType.sans(
+                    size: 13,
+                    weight: glow ? FontWeight.w600 : FontWeight.w500,
+                    color: isActive ? activeInk : sc.textMd,
+                  ),
                 ),
               ),
             ),
@@ -485,8 +500,18 @@ class _ItemCard extends ConsumerWidget {
     return Opacity(
       opacity: disabled ? 0.4 : 1,
       child: Material(
-        color: inCart > 0 ? sc.bg3 : sc.bg2,
+        // Glow tints a card that already has something in the cart with the
+        // accent itself rather than stepping up the neutral ramp — on a bone
+        // ground a `bg3` step is nearly invisible, and "is this already
+        // ordered" is the question a waiter scans this grid for.
+        color: inCart > 0 ? (SatShape.glow ? sc.accentSoft : sc.bg3) : sc.bg2,
         borderRadius: SatR.a(22),
+        // The card paints its surface here, not in `SatBox.d` below, so the
+        // lift heuristic cannot see a fill and leaves it flat (ADR-0047 — a
+        // hard shadow under a borrowed surface would paint it out). Glow's
+        // shadow is blurred and has no such problem, so it comes off Material.
+        elevation: SatShape.glow ? 3 : 0,
+        shadowColor: SatShape.glow ? SatShape.lift.first.color : null,
         child: InkWell(
           onTap: disabled ? null : onTap,
           borderRadius: SatR.a(22),
@@ -647,14 +672,16 @@ class _CartFooter extends StatelessWidget {
         color: SatShape.veil(sc.scrim, 0.94),
         borderRadius: SatR.a(22),
         border: SatB.all(color: sc.border1),
-        boxShadow: SatShape.brutal
-            ? SatShape.hardShadow(5)
-            : [
-                BoxShadow(
-                  color: satShadowInk.withValues(alpha: 0.4),
-                  blurRadius: 32,
-                ),
-              ],
+        boxShadow: switch (SatShape.skin) {
+          SatSkin.brutal => SatShape.hardShadow(5),
+          SatSkin.glow => SatShape.liftLg,
+          SatSkin.lembut => [
+            BoxShadow(
+              color: satShadowInk.withValues(alpha: 0.4),
+              blurRadius: 32,
+            ),
+          ],
+        },
       ),
       child: Row(
         children: [
@@ -688,7 +715,11 @@ class _CartFooter extends StatelessWidget {
               elevation: 0,
               minimumSize: const Size(0, 44),
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4h),
-              shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
+              // Glow sets every control as a pill — the send button most of
+              // all, since it is the one action on the screen.
+              shape: RoundedRectangleBorder(
+                borderRadius: SatR.a(SatShape.glow ? 999 : 14),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

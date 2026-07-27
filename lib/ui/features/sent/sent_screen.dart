@@ -56,8 +56,14 @@ class _SentScreenState extends ConsumerState<SentScreen>
     final tables = ref.watch(tablesProvider);
     final table = tables.where((x) => x.id == widget.tableId).firstOrNull;
     final name = table?.displayName ?? widget.tableId;
+    // Glow's send confirmation is a full-bleed lime slab — the design's rule 1
+    // is slab stacking, and this is the one screen that is nothing but its own
+    // confirmation. Ink goes obsidian against it. The other skins keep the
+    // page ground and let the green check carry the message.
+    final glow = SatShape.glow;
+    final ink = glow ? sc.accentInk : sc.textHi;
     return Scaffold(
-      backgroundColor: sc.bg0,
+      backgroundColor: glow ? sc.accent : sc.bg0,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sp.s8),
@@ -69,13 +75,13 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 height: 96,
                 decoration: SatBox.d(
                   shape: BoxShape.circle,
-                  color: sc.successSoft,
+                  color: glow ? sc.accentInk : sc.successSoft,
                 ),
                 alignment: Alignment.center,
                 child: Icon(
                   Icons.check,
                   size: 46,
-                  color: sc.success,
+                  color: glow ? sc.accent : sc.success,
                   weight: 800,
                 ),
               ),
@@ -84,16 +90,19 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 'Terkirim',
                 style: SatType.sans(
                   size: 30,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.6,
-                  color: sc.textHi,
+                  weight: glow ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: glow ? -0.9 : -0.6,
+                  color: ink,
                 ),
               ),
               const SizedBox(height: Sp.s2),
               Text(
                 'Pesanan Meja $name sudah live di display dapur dan bar.',
                 textAlign: TextAlign.center,
-                style: SatType.sans(size: 14, color: sc.textMd),
+                style: SatType.sans(
+                  size: 14,
+                  color: glow ? ink.withValues(alpha: 0.7) : sc.textMd,
+                ),
               ),
               const SizedBox(height: Sp.s6),
               Wrap(
@@ -110,7 +119,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 'LAN P50 ${_latency}MS · CLOUD QUEUED',
                 style: SatType.mono(
                   size: 10,
-                  color: sc.textLo,
+                  color: glow ? ink.withValues(alpha: 0.55) : sc.textLo,
                   letterSpacing: 1.0,
                 ),
               ),

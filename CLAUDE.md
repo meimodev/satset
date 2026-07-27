@@ -54,6 +54,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
   - Onboarding: `onboarding/views/` (`mode_select_screen`, `pair_screen`, `forbidden_screen`).
   - Auth: `auth/views/pin_screen.dart`.
   - Other: `me/`, `void_flow/`, `shell/app_shell.dart`, `_stub/`.
+  - Debug: `_book/` — widget book (`book_screen`, `book_entries`, `book_stubs`), debug builds only. ADR-0049.
 
 **`lib/domain/`** — business logic, no Flutter imports.
 - `models/` — `venue_table`, `zone`, `menu_item`, `menu_category`, `modifier_group`, `ticket` (freezed), `course` (freezed), `cart_item`, `role` (freezed), `user`, `capability`, `app_mode`, `audit_entry`.
@@ -80,6 +81,7 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 - `/pair` — `PairScreen` (mDNS browse + QR scan).
 - `/pin` — `PinScreen` (carries inline mode-select + pair flow if unpaired).
 - `/forbidden` — capability-denied landing.
+- `/book` — **debug builds only** (`if (kDebugMode)`). Widget book: every `core/widgets/` widget in all its states against stub data, with theme/skin, text-scale, reduced-motion and phone/tablet toggles. In the pair-gate bypass set, so it works unpaired. Two entries: a debug button on `PinScreen` (pre-pairing) and a "Book" item at the foot of `TabletSideRail` (pushed, not `go`ne — back returns to your tab). Lives in `lib/ui/features/_book/`. See ADR-0049 — add an entry there in the same commit as a new shared widget.
 - `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
   - `/alerts` = alert config (thresholds + sounds + this-device mute), reached from the Venue hub. Gated `editSettings`.
 - **Outside the shell** (root-navigator pushes, full-page transitions):

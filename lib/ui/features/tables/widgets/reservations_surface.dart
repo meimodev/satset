@@ -370,11 +370,18 @@ class _ReservationRow extends ConsumerWidget {
                   children: [
                     Text(
                       _hhmm(r.expectedAt),
-                      style: SatShape.brutal
-                          ? SatType.display(size: 16, color: sc.textHi)
-                          : SatType.mono(
+                      // Both poster skins set the booking hour as display type
+                      // — Glow's reservation rows lead on a heavy numeral, and
+                      // `display` ignores the weight under brutal anyway.
+                      style: SatShape.lembut
+                          ? SatType.mono(
                               size: 15,
                               weight: FontWeight.w600,
+                              color: sc.textHi,
+                            )
+                          : SatType.display(
+                              size: 16,
+                              weight: FontWeight.w800,
                               color: sc.textHi,
                             ),
                     ),
@@ -580,7 +587,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                     padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
                     decoration: SatBox.d(
                       color: isActive
-                          ? (SatShape.brutal ? sc.accent : sc.textHi)
+                          ? (SatShape.lembut ? sc.textHi : sc.accent)
                           : sc.bg3,
                       border: SatB.all(color: sc.border0),
                       borderRadius: SatR.a(999),
@@ -591,7 +598,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                         size: 11,
                         weight: FontWeight.w600,
                         color: isActive
-                            ? (SatShape.brutal ? sc.accentInk : sc.bg0)
+                            ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
                             : sc.textMd,
                       ),
                     ),
@@ -959,7 +966,7 @@ class _TablePicker extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
             decoration: SatBox.d(
               color: active
-                  ? (SatShape.brutal ? sc.accent : sc.textHi)
+                  ? (SatShape.lembut ? sc.textHi : sc.accent)
                   : sc.bg2,
               border: SatB.all(color: sc.border0),
               borderRadius: SatR.a(999),
@@ -970,7 +977,7 @@ class _TablePicker extends StatelessWidget {
                 size: 11.5,
                 weight: FontWeight.w600,
                 color: active
-                    ? (SatShape.brutal ? sc.accentInk : sc.bg0)
+                    ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
                     : sc.textMd,
               ),
             ),

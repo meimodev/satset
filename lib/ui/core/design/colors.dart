@@ -36,7 +36,9 @@ class SatColors extends ThemeExtension<SatColors> {
     required this.cMains,
     required this.cDesserts,
     required this.cFire,
-  });
+    this.onHue,
+    SatColors? slab,
+  }) : _slab = slab;
 
   final Color bg0;
   final Color bg1;
@@ -66,7 +68,7 @@ class SatColors extends ThemeExtension<SatColors> {
 
   /// Ink for text/icons sitting *on* a filled [success] surface (badges,
   /// toggles, check pips). Declared per palette because a theme is free to
-  /// darken [success] — see `neonHijau`, where the accent owns bright green.
+  /// darken [success] — see `glow`, whose forest green takes white.
   final Color successInk;
   final Color warn;
   final Color warnSoft;
@@ -87,6 +89,37 @@ class SatColors extends ThemeExtension<SatColors> {
   final Color cDesserts;
   final Color cFire;
 
+  /// Fixed ink for text/icons on *any* solid semantic fill in this palette —
+  /// a status pill, a role avatar, a badge. Null means "work it out from the
+  /// fill's luminance", which is what [onFill] does and what every palette
+  /// shipped before Glow: it is right whenever a palette's hues span both ends
+  /// of the luminance range, as the Neo palettes' do.
+  ///
+  /// Glow declares it because its hues are deliberately uniform — all dark on
+  /// the light palette, all bright on the dark one — and two of Glow Noir's
+  /// (`urgent` #FF7A68, `info` #8E86FF) land just under the luminance cut and
+  /// would take white ink against the design's obsidian. Read through [inkOn],
+  /// never directly.
+  final Color? onHue;
+
+  /// The palette that content sitting on an obsidian/ink *slab* is drawn with.
+  ///
+  /// Glow's first grammar rule is slab stacking — a KDS ticket head, the ready
+  /// toast, the sent overlay and the active category tab are full-bleed dark
+  /// blocks on a light screen. CSS re-declares the hues inside that block with
+  /// one scoped rule; Flutter has no cascade, so the inverted palette is named
+  /// here instead. Every dark palette is its own slab palette, so call sites
+  /// can read [slab] unconditionally.
+  final SatColors? _slab;
+
+  /// See [_slab]. Returns `this` unless the palette named an inverse.
+  SatColors get slab => _slab ?? this;
+
+  /// Ink for text or an icon sitting on a solid [fill] from this palette.
+  /// Honours [onHue] when the palette declares one, else falls back to the
+  /// luminance rule in [onFill].
+  Color inkOn(Color fill) => onHue ?? onFill(fill);
+
   static const _accent = Color(0xFFFF9233);
   static const _accentInk = Color(0xFF160D04);
 
@@ -100,10 +133,10 @@ class SatColors extends ThemeExtension<SatColors> {
   static const _info = Color(0xFF6DB5FF);
   static const _violet = Color(0xFFC08AFF);
 
-  /// Every shipped palette's `success` is light enough to take near-black ink
-  /// (the darkest, `neonHijau`'s emerald, still clears 6:1). Kept as a token so
-  /// a future palette with a dark `success` declares white here instead of
-  /// silently shipping unreadable badges.
+  /// Near-black ink for palettes whose `success` is light enough to carry it.
+  /// Not universal: `glow`'s forest green is dark and declares white instead,
+  /// which is exactly why this is a per-palette token rather than a constant —
+  /// the alternative is silently shipping unreadable badges.
   static const _onSuccessInk = Color(0xFF0A0A0A);
 
   static const dark = SatColors(
@@ -178,51 +211,6 @@ class SatColors extends ThemeExtension<SatColors> {
     cMains: _success,
     cDesserts: _violet,
     cFire: _accent,
-  );
-
-  // ── Neon Hijau ────────────────────────────────────────────────────────────
-  // Pure black ground, hue-neutral grey ramp so the neon stays the only
-  // saturated thing on screen. `success` is retuned to a deep emerald (ADR-0045)
-  // because the accent owns "bright green" here — two greens on a KDS card read
-  // at 1–2 m is exactly the collision the palette must not ship.
-  static const _neonAccent = Color(0xFFB6FF3D);
-  static const _neonSuccess = Color(0xFF2FA35F);
-
-  static const neonHijau = SatColors(
-    bg0: Color(0xFF000000),
-    bg1: Color(0xFF0B0B0B),
-    bg2: Color(0xFF131313),
-    bg3: Color(0xFF1C1C1C),
-    bg4: Color(0xFF262626),
-    border0: Color(0x0FFFFFFF),
-    border1: Color(0x1AFFFFFF),
-    border2: Color(0x29FFFFFF),
-    textHi: Color(0xFFF2F2F0),
-    textMd: Color(0xFFADADA8),
-    textLo: Color(0xFF78786F),
-    textDim: Color(0xFF4F4F4A),
-    accent: _neonAccent,
-    accentText: _neonAccent,
-    accentSoft: Color(0x24B6FF3D),
-    accentBorder: Color(0x59B6FF3D),
-    accentInk: Color(0xFF0A1400),
-    success: _neonSuccess,
-    successSoft: Color(0x242FA35F),
-    successInk: _onSuccessInk,
-    warn: _warn,
-    warnSoft: Color(0x24FFC04D),
-    urgent: _urgent,
-    urgentSoft: Color(0x24FF5C5C),
-    info: _info,
-    infoSoft: Color(0x246DB5FF),
-    violet: _violet,
-    violetSoft: Color(0x24C08AFF),
-    scrim: Color(0xFF131313),
-    cDrinks: _info,
-    cStarters: _warn,
-    cMains: _neonSuccess,
-    cDesserts: _violet,
-    cFire: _neonAccent,
   );
 
   // ── Indigo Terang ─────────────────────────────────────────────────────────
@@ -371,6 +359,109 @@ class SatColors extends ThemeExtension<SatColors> {
     cFire: Color(0xFFFF3B29),
   );
 
+  // ── Neon Gelap ────────────────────────────────────────────────────────────
+  // The Glow skin after dark, and the palette Neon Hijau became: obsidian
+  // ground, fluorescent lime, lavender secondary. Declared *before* `glow`
+  // because the light palette points at this one as its slab palette, and a
+  // `const` may only reference a `const` already in scope.
+  //
+  // Every hue here is bright — that uniformity is the point, and it is why the
+  // palette can name a single `onHue` where the Neo palettes cannot. Two of
+  // them (`urgent`, `info`) sit just under `onFill`'s luminance cut and would
+  // otherwise take white ink where the design asks for obsidian.
+  static const _glowLime = Color(0xFFE1FF0F);
+  static const _glowObsidian = Color(0xFF08080A);
+  static const _glowLavender = Color(0xFFCEC7FE);
+
+  static const glowNoir = SatColors(
+    bg0: _glowObsidian,
+    bg1: Color(0xFF101013),
+    bg2: Color(0xFF17171A),
+    bg3: Color(0xFF202024),
+    bg4: Color(0xFF2A2A2F),
+    border0: Color(0x0FFFFFFF),
+    border1: Color(0x1AFFFFFF),
+    border2: Color(0x29FFFFFF),
+    textHi: Color(0xFFFFFFFF),
+    textMd: Color(0xFFB0B0AC),
+    textLo: Color(0xFF9A9A93),
+    textDim: Color(0xFF82827B),
+    accent: _glowLime,
+    accentText: _glowLime,
+    accentSoft: Color(0x21E1FF0F),
+    accentBorder: Color(0x59E1FF0F),
+    accentInk: Color(0xFF0F1400),
+    success: Color(0xFF3FD07C),
+    successSoft: Color(0x293FD07C),
+    successInk: _glowObsidian,
+    warn: Color(0xFFF0A317),
+    warnSoft: Color(0x29F0A317),
+    urgent: Color(0xFFFF7A68),
+    urgentSoft: Color(0x29FF7A68),
+    info: Color(0xFF8E86FF),
+    infoSoft: Color(0x29CEC7FE),
+    violet: _glowLavender,
+    violetSoft: Color(0x2ECEC7FE),
+    scrim: Color(0xFF17171A),
+    cDrinks: Color(0xFF8E86FF),
+    cStarters: Color(0xFFF0A317),
+    cMains: Color(0xFF3FD07C),
+    cDesserts: _glowLavender,
+    cFire: Color(0xFFFF7A68),
+    onHue: _glowObsidian,
+  );
+
+  // ── Neon Terang ───────────────────────────────────────────────────────────
+  // Glow on a light ground: bone-white base, the same fluorescent lime, and
+  // hues tuned as *ink on white* rather than as glowing foregrounds. That
+  // retune is why the palette needs `slab` — inside an obsidian block those
+  // dark hues go muddy, so slab content re-reads them from `glowNoir`.
+  //
+  // The border ramp is deliberately near-invisible (α 0.05/0.09/0.14). The skin
+  // separates with slab colour and a soft ambient lift, not with rules, so the
+  // palette carries "no borders" rather than every call site asking for it.
+  //
+  // Lime is a fill colour only — 1.1:1 on white. `accentText` is the same hue
+  // dragged to a dark olive that clears AA on bg0/bg1/bg2.
+  static const glow = SatColors(
+    bg0: Color(0xFFEEEFE0),
+    bg1: Color(0xFFFFFFFF),
+    bg2: Color(0xFFFFFFFF),
+    bg3: Color(0xFFF3F4EA),
+    bg4: Color(0xFFE7E8DA),
+    border0: Color(0x0D08080A),
+    border1: Color(0x1708080A),
+    border2: Color(0x2408080A),
+    textHi: _glowObsidian,
+    textMd: Color(0xFF56565E),
+    textLo: Color(0xFF5F5F67),
+    textDim: Color(0xFF74747C),
+    accent: _glowLime,
+    accentText: Color(0xFF4E5C00),
+    accentSoft: Color(0x57E1FF0F),
+    accentBorder: Color(0x1F08080A),
+    accentInk: _glowObsidian,
+    success: Color(0xFF146B33),
+    successSoft: Color(0x1F146B33),
+    successInk: Color(0xFFFFFFFF),
+    warn: Color(0xFF8A5A00),
+    warnSoft: Color(0x218A5A00),
+    urgent: Color(0xFFA31D0C),
+    urgentSoft: Color(0x1CA31D0C),
+    info: Color(0xFF4F46E5),
+    infoSoft: Color(0x1F4F46E5),
+    violet: Color(0xFF5B45C7),
+    violetSoft: Color(0x1F5B45C7),
+    scrim: Color(0xFFFFFFFF),
+    cDrinks: Color(0xFF4F46E5),
+    cStarters: Color(0xFF8A5A00),
+    cMains: Color(0xFF146B33),
+    cDesserts: Color(0xFF5B45C7),
+    cFire: Color(0xFFA31D0C),
+    onHue: Color(0xFFFFFFFF),
+    slab: glowNoir,
+  );
+
   @override
   SatColors copyWith({
     Color? bg0,
@@ -407,6 +498,8 @@ class SatColors extends ThemeExtension<SatColors> {
     Color? cMains,
     Color? cDesserts,
     Color? cFire,
+    Color? onHue,
+    SatColors? slab,
   }) {
     return SatColors(
       bg0: bg0 ?? this.bg0,
@@ -443,6 +536,8 @@ class SatColors extends ThemeExtension<SatColors> {
       cMains: cMains ?? this.cMains,
       cDesserts: cDesserts ?? this.cDesserts,
       cFire: cFire ?? this.cFire,
+      onHue: onHue ?? this.onHue,
+      slab: slab ?? _slab,
     );
   }
 
@@ -484,6 +579,12 @@ class SatColors extends ThemeExtension<SatColors> {
       cMains: Color.lerp(cMains, other.cMains, t)!,
       cDesserts: Color.lerp(cDesserts, other.cDesserts, t)!,
       cFire: Color.lerp(cFire, other.cFire, t)!,
+      // Neither of these interpolates. `onHue` is a binary choice of ink and a
+      // half-blended grey is unreadable on both ends; `slab` is a whole palette.
+      // Both snap at the midpoint, which is what `SatTheme` already does with
+      // brightness for the same reason.
+      onHue: t < 0.5 ? onHue : other.onHue,
+      slab: t < 0.5 ? _slab : other._slab,
     );
   }
 }

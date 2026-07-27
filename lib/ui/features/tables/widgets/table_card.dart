@@ -361,10 +361,11 @@ class _TableCardState extends ConsumerState<TableCard> {
       color: bg,
       borderRadius: SatR.a(radius),
       border: SatB.all(color: border),
-      boxShadow: brutal ? _brutalShadow(stale, sc) : null,
+      boxShadow: _cardShadow(stale, sc),
     );
 
-    // Brutal presses the card into its own shadow; lembut scales it down.
+    // Brutal presses the card into its own shadow; the other two scale it down
+    // — 0.97 is also exactly what Glow specifies for a press.
     final pressOffset = brutal && _pressed ? 3.0 : 0.0;
     final card = AnimatedScale(
       scale: !brutal && _pressed ? 0.97 : 1.0,
@@ -404,21 +405,36 @@ class _TableCardState extends ConsumerState<TableCard> {
     return MergeSemantics(child: Semantics(button: true, child: card));
   }
 
-  /// Crit cards sit on a doubled shadow — a red slab behind the ink one — so a
-  /// screen of black-edged cards still has one that reads as lifted further.
-  List<BoxShadow> _brutalShadow(TableStale? stale, SatColors sc) {
-    if (stale?.severity == StaleSeverity.crit) {
-      return [
-        BoxShadow(color: sc.urgent, offset: const Offset(5, 5)),
-        BoxShadow(
-          color: SatShape.ink,
-          offset: const Offset(5, 5),
-          spreadRadius: 3,
-          blurRadius: 0,
-        ),
-      ].reversed.toList();
+  /// Crit cards sit on a doubled shadow so a screen of lifted cards still has
+  /// one that reads as lifted further.
+  ///
+  /// Brutal stacks a red slab behind the ink one. Glow does the same job with
+  /// a hard 2px `urgent` ring under its ordinary lift, which is what the source
+  /// design specifies for `.sev-crit` — a blurred red glow would read as
+  /// decoration, and `urgent` is too scarce a colour to spend on that.
+  List<BoxShadow>? _cardShadow(TableStale? stale, SatColors sc) {
+    final crit = stale?.severity == StaleSeverity.crit;
+    switch (SatShape.skin) {
+      case SatSkin.lembut:
+        return null;
+      case SatSkin.brutal:
+        if (!crit) return SatShape.hardShadow(5);
+        return [
+          BoxShadow(color: sc.urgent, offset: const Offset(5, 5)),
+          BoxShadow(
+            color: SatShape.ink,
+            offset: const Offset(5, 5),
+            spreadRadius: 3,
+            blurRadius: 0,
+          ),
+        ].reversed.toList();
+      case SatSkin.glow:
+        if (!crit) return SatShape.lift;
+        return [
+          BoxShadow(color: sc.urgent, spreadRadius: 2, blurRadius: 0),
+          ...SatShape.lift,
+        ];
     }
-    return SatShape.hardShadow(5);
   }
 
   List<Widget> _pills(VenueTable t, ServiceState service, SatColors sc) {
@@ -538,11 +554,20 @@ class _StaleBanner extends StatelessWidget {
     final sc = context.sat;
     final brutal = SatShape.brutal;
     final crit = stale.severity == StaleSeverity.crit;
-    final fill = crit ? sc.urgent : sc.warn;
-    // Both skins pick the foreground by luminance. White on `warn` amber is
-    // ~2:1 and fails AA — and this banner is the one thing on the card a waiter
-    // has to read at a glance.
-    final fg = onFill(fill);
+    // Glow spends `urgent` on crit only and puts everything else on an obsidian
+    // slab — its grammar separates with slab colour, and a whole card foot in
+    // amber is the "if everything is urgent, nothing is" failure one step early.
+    // The other skins keep amber for the warn tier.
+    final glow = SatShape.glow;
+    final fill = crit
+        ? sc.urgent
+        : glow
+        ? sc.slab.bg0
+        : sc.warn;
+    // Both other skins pick the foreground by luminance. White on `warn` amber
+    // is ~2:1 and fails AA — and this banner is the one thing on the card a
+    // waiter has to read at a glance. On the slab the palette names it.
+    final fg = glow && !crit ? sc.slab.textHi : onFill(fill);
     return Container(
       padding: EdgeInsets.fromLTRB(tablet ? 18 : 14, 7, tablet ? 18 : 14, 7),
       decoration: BoxDecoration(
@@ -557,10 +582,17 @@ class _StaleBanner extends StatelessWidget {
             width: 15,
             height: 15,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: SatR.a(4),
-              border: Border.all(color: fg, width: brutal ? 2 : 1),
-            ),
+            // Glow's bang is a filled disc, not an outlined box — it draws no
+            // rules, so a hairline square would be the one border on the card.
+            decoration: glow
+                ? BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: fg.withValues(alpha: 0.2),
+                  )
+                : BoxDecoration(
+                    borderRadius: SatR.a(4),
+                    border: Border.all(color: fg, width: brutal ? 2 : 1),
+                  ),
             child: Text(
               '!',
               style: brutal

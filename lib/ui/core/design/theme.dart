@@ -6,10 +6,18 @@ import 'typography.dart';
 
 /// M3 defaults every button to a stadium pill. Under `lembut` that is the
 /// shipped look, so this stays null and Flutter's default wins; under `brutal`
-/// a pill in a square-corner skin is the one shape the eye catches first.
+/// a pill in a square-corner skin is the one shape the eye catches first. Glow
+/// wants the pill and gets it from the same default.
 /// Only bare Material buttons see this — the app's own buttons are hand-built.
-OutlinedBorder? get _buttonShape =>
-    SatShape.brutal ? const RoundedRectangleBorder() : null;
+OutlinedBorder? get _buttonShape => switch (SatShape.skin) {
+  SatSkin.brutal => const RoundedRectangleBorder(),
+  SatSkin.lembut || SatSkin.glow => null,
+};
+
+/// Material spreads one `elevation` number over three shadow layers, so it can
+/// only approximate Glow's single `0 20px 50px`. 12 is the step whose combined
+/// spread reads closest; the exact colour still comes from [SatShape.liftLg].
+const double _glowSheetElevation = 12;
 
 ThemeData _build(SatColors sc, Brightness brightness) {
   final scheme = ColorScheme(
@@ -52,6 +60,11 @@ ThemeData _build(SatColors sc, Brightness brightness) {
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: sc.bg1,
       surfaceTintColor: Colors.transparent,
+      // Glow floats sheets and dialogs clear of the page on its large ambient
+      // shadow. Material's `elevation` is the only way in — `SatBox.d` never
+      // sees these, their decoration comes from the theme (ADR-0047).
+      elevation: SatShape.glow ? _glowSheetElevation : null,
+      shadowColor: SatShape.glow ? SatShape.liftLg.first.color : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: SatR.c(28)),
       ),
@@ -81,10 +94,12 @@ ThemeData _build(SatColors sc, Brightness brightness) {
     dialogTheme: DialogThemeData(
       backgroundColor: sc.bg2,
       surfaceTintColor: Colors.transparent,
+      elevation: SatShape.glow ? _glowSheetElevation : null,
+      shadowColor: SatShape.glow ? SatShape.liftLg.first.color : null,
       shape: RoundedRectangleBorder(
         borderRadius: SatR.a(28),
         // SatBox.d never sees a dialog — the shape comes from the theme, so the
-        // brutal rule is drawn here instead.
+        // brutal rule is drawn here instead. Glow draws no rule at all.
         side: SatShape.brutal
             ? BorderSide(color: sc.border0, width: SatShape.brutalBorder)
             : BorderSide.none,

@@ -490,10 +490,15 @@ class _ZoneRow extends StatelessWidget {
                 ? '$ready siap'
                 : '${zoneTables.length}';
             final dur = motionEnabled(context) ? _kChipMorph : Duration.zero;
-            // Brutal fills the selected chip with the accent and keeps ink on
-            // it; lembut inverts to the text ramp as before.
-            final fill = isActive ? (brutal ? sc.accent : sc.textHi) : sc.bg2;
-            final fg = isActive ? (brutal ? sc.accentInk : sc.bg0) : sc.textMd;
+            // Both poster skins fill the selected chip with the accent and keep
+            // ink on it — Glow's zone tabs are solid lime pills. Lembut inverts
+            // to the text ramp as before.
+            final fill = isActive
+                ? (SatShape.lembut ? sc.textHi : sc.accent)
+                : sc.bg2;
+            final fg = isActive
+                ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
+                : sc.textMd;
             return GestureDetector(
               onTap: () => onChange(z.id),
               child: AnimatedScale(

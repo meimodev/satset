@@ -38,6 +38,7 @@ import 'package:satset/ui/features/admin/venue_settings_screen.dart';
 import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
 import 'package:satset/ui/features/cashier/cashier_screen.dart';
+import 'package:satset/ui/features/_book/book_screen.dart';
 
 Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/kitchen')) return Capability.viewKds;
@@ -92,7 +93,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loggedIn = auth.isAuthenticated;
       String? decision;
 
-      const onboardingRoutes = {'/pin', '/onboarding', '/pair', '/forbidden'};
+      // `/book` rides in the bypass set so the gallery renders on a device
+      // that has never been paired — which is most of the time you want it.
+      const onboardingRoutes = {
+        '/pin',
+        '/onboarding',
+        '/pair',
+        '/forbidden',
+        if (kDebugMode) '/book',
+      };
 
       // Fleet super admin: a cloud-only session with no local server and no
       // pairing. It bypasses the hard pair gate entirely and owns `/fleet`.
@@ -147,6 +156,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/pair', builder: (_, _) => const PairScreen()),
       GoRoute(path: '/forbidden', builder: (_, _) => const ForbiddenScreen()),
       GoRoute(path: '/pin', builder: (_, _) => const PinScreen()),
+      // Debug-only widget gallery. `kDebugMode` is a const, so in a release
+      // build this route and the PinScreen button that reaches it are both
+      // tree-shaken away.
+      if (kDebugMode)
+        GoRoute(path: '/book', builder: (_, _) => const BookScreen()),
       GoRoute(path: '/fleet', builder: (_, _) => const FleetConsoleScreen()),
       GoRoute(path: '/owner', builder: (_, _) => const OwnerReportScreen()),
       ShellRoute(

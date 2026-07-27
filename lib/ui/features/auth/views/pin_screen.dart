@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
@@ -148,6 +149,31 @@ class _PinScreenState extends ConsumerState<PinScreen>
 
   @override
   Widget build(BuildContext context) {
+    final body = _buildPin(context);
+    if (!kDebugMode) return body;
+    // Debug-only door into the widget book. PinScreen is the one surface
+    // reachable before pairing, which is where the gallery is most useful.
+    return Stack(
+      children: [
+        body,
+        Positioned(
+          left: Sp.s2,
+          bottom: Sp.s2,
+          child: SafeArea(
+            child: TextButton(
+              onPressed: () => context.push('/book'),
+              child: Text(
+                'Widget book',
+                style: SatType.mono(size: 11, color: context.sat.textDim),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPin(BuildContext context) {
     final sc = context.sat;
     final l = context.layout;
     final prefs = ref.watch(prefsServiceProvider);
