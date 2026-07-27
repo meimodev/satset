@@ -282,7 +282,7 @@ void main() {
   // earlier regex version did not draw that line and rewrote layout dimensions
   // (a 560px panel width became 48) — hence the argument parser.
   test('no new: raw spacing literal', () {
-    const baseline = 171;
+    const baseline = 170;
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();

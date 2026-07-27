@@ -725,7 +725,11 @@ class _Header extends ConsumerWidget {
                     ),
                     if (elapsedStr != null) ...[
                       const SizedBox(width: Sp.s2),
-                      _SeatedDurationChip(label: elapsedStr),
+                      SatChip.tag(
+                        icon: Icons.access_time,
+                        label: elapsedStr,
+                        size: SatChipSize.sm,
+                      ),
                     ],
                   ],
                 ),
@@ -760,79 +764,23 @@ class _Header extends ConsumerWidget {
   }
 }
 
+/// How long the table has been seated, ticking. The chip itself is a plain
+/// [SatChip.tag] — what earns a widget here is the per-second rebuild, which
+/// a const chip cannot do.
 class _LiveSeatedChip extends ConsumerWidget {
   final DateTime openedAt;
-  final double height;
-  const _LiveSeatedChip({required this.openedAt, this.height = 32});
+  const _LiveSeatedChip({required this.openedAt});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
     ref.watch(_detailElapsedTickerProvider);
-    final label = formatElapsedId(SatClock.now().difference(openedAt));
-    return Container(
-      height: height,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
-      decoration: SatBox.d(
-        color: sc.bg3,
-        borderRadius: SatR.a(height / 2),
-        border: SatB.all(color: sc.border0),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.access_time, size: height * 0.42, color: sc.textMd),
-          const SizedBox(width: Sp.s1h),
-          Text(
-            label,
-            style: SatType.mono(
-              size: height * 0.36,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
+    return SatChip.tag(
+      icon: Icons.access_time,
+      label: formatElapsedId(SatClock.now().difference(openedAt)),
+      size: SatChipSize.sm,
     );
   }
 }
-
-class _SeatedDurationChip extends StatelessWidget {
-  final String label;
-  const _SeatedDurationChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
-      decoration: SatBox.d(
-        color: sc.bg3,
-        borderRadius: SatR.a(16),
-        border: SatB.all(color: sc.border0),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.access_time, size: 13, color: sc.textMd),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: SatType.mono(
-              size: 12,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ContextTriggerBtn extends StatelessWidget {
   final int alertCount;
   final VoidCallback onTap;
@@ -1548,7 +1496,6 @@ class _TabletSplit extends StatelessWidget {
                                             const SizedBox(width: Sp.s2h),
                                             _LiveSeatedChip(
                                               openedAt: table.openedAt!,
-                                              height: 36,
                                             ),
                                           ],
                                         ],
