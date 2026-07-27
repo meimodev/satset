@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -170,30 +171,21 @@ class _BatchCard extends ConsumerWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => ref
+                  child: SatButton.danger(
+                    label: 'Tolak',
+                    onTap: () => ref
                         .read(guestOrdersProvider.notifier)
                         .reject(batch.visitId),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: sc.urgent,
-                      side: SatB.side(color: sc.urgent),
-                      padding: const EdgeInsets.symmetric(vertical: Sp.s3),
-                    ),
-                    child: const Text('Tolak'),
                   ),
                 ),
                 const SizedBox(width: Sp.s2h),
                 Expanded(
                   flex: 2,
-                  child: FilledButton(
-                    onPressed: () => ref
+                  child: SatButton.success(
+                    label: 'Setujui & Kirim ke Dapur',
+                    onTap: () => ref
                         .read(guestOrdersProvider.notifier)
                         .approve(batch.visitId),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: sc.success,
-                      padding: const EdgeInsets.symmetric(vertical: Sp.s3),
-                    ),
-                    child: const Text('Setujui & Kirim ke Dapur'),
                   ),
                 ),
               ],

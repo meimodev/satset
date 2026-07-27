@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -222,13 +223,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         'sampai admin masuk lagi.',
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Batal'),
+              SatButton.ghost(
+                label: AppStrings.cancel,
+                onTap: () => Navigator.pop(ctx, false),
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Keluar & matikan'),
+              SatButton.danger(
+                label: 'Keluar & matikan',
+                onTap: () => Navigator.pop(ctx, true),
               ),
             ],
           ),
@@ -983,26 +984,13 @@ class _EndShiftButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return SizedBox(
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(Icons.logout_rounded, size: 18, color: sc.textHi),
-        label: Text(
-          'Akhiri shift & keluar',
-          style: SatType.sans(
-            size: 15,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: sc.textHi,
-          side: SatB.side(color: sc.border2),
-          shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
-          minimumSize: const Size.fromHeight(52),
-        ),
+      width: double.infinity,
+      child: SatButton.outline(
+        label: 'Akhiri shift & keluar',
+        icon: Icons.logout_rounded,
+        size: SatButtonSize.lg,
+        onTap: onPressed,
       ),
     );
   }

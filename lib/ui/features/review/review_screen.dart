@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -588,16 +590,16 @@ Future<String?> _askGuestName(BuildContext context) {
         },
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.of(ctx).pop(),
         ),
-        FilledButton(
-          onPressed: () {
+        SatButton.primary(
+          label: 'Lanjut',
+          onTap: () {
             final v = ctrl.text.trim();
             if (v.isNotEmpty) Navigator.of(ctx).pop(v);
           },
-          child: const Text('Lanjut'),
         ),
       ],
     ),
