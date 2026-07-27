@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/data/repositories/reports_repository.dart'
@@ -69,7 +70,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
   }
 
   Future<void> _pick(bool isStart) async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final today = _dateOnly(now);
     final first = DateTime(now.year - 3);
     final initial = (isStart ? _from : _to) ?? today;

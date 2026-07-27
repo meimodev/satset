@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:satset/server/demo_clock.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -135,7 +137,7 @@ Router authRoutes(
   r.get('/auth/online', (Request req) async {
     final user = await auth.resolveBearer(_bearer(req));
     if (user == null) return Response(401);
-    final now = DateTime.now();
+    final now = SatClock.now();
     final rows = await auth.db.select(auth.db.sessions).get();
     final live = rows
         .where((s) => s.expiresAt.isAfter(now))
@@ -169,6 +171,10 @@ Router authRoutes(
         'zoneAssigned': user.zoneAssigned,
         'capabilities': caps,
         'avatarColorHex': user.avatarColorHex,
+        // Demo clock offset (ADR-0053 §2). Rides the bootstrap as well as the
+        // WS broadcast so a device that missed the event — or reconnected
+        // after one — recovers the right clock on its own (ADR-0021).
+        'demoClockOffsetSeconds': DemoClock.offsetSeconds(),
       }),
       headers: {'content-type': 'application/json'},
     );

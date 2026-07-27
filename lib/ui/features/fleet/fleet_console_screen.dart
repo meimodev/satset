@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -304,7 +305,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     final last = v.lastSeenAt;
     if (last == null) return null;
     final remaining =
-        FirebaseAdminService.staleAfter - DateTime.now().difference(last);
+        FirebaseAdminService.staleAfter - SatClock.now().difference(last);
     return remaining <= _fleetLockoutWarn ? remaining : null;
   }
 
@@ -318,7 +319,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   String _offlineText(Venue v) {
     final last = v.lastSeenAt;
     if (last == null) return 'Belum online';
-    final d = DateTime.now().difference(last);
+    final d = SatClock.now().difference(last);
     if (d.inSeconds < 90) return 'Online';
     if (d.inMinutes < 60) return 'Offline ${d.inMinutes}m';
     if (d.inHours < 24) return 'Offline ${d.inHours}j';
@@ -328,7 +329,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   Color _offlineColor(SatColors sc, Venue v) {
     final last = v.lastSeenAt;
     if (last == null) return sc.textLo;
-    return DateTime.now().difference(last).inSeconds < 90
+    return SatClock.now().difference(last).inSeconds < 90
         ? sc.success
         : sc.warn;
   }

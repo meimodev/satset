@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -107,7 +108,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final zoneFilter = qp['zone'];
     final categoryFilter = qp['category'];
 
-    final now = DateTime.now();
+    final now = SatClock.now();
     final settings = await (db.select(
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();
@@ -899,7 +900,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final qp = req.url.queryParameters;
     final range = qp['range'] ?? 'today';
 
-    final now = DateTime.now();
+    final now = SatClock.now();
     final settings = await (db.select(
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();
@@ -1115,7 +1116,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final qp = req.url.queryParameters;
     final range = qp['range'] ?? 'today';
 
-    final now = DateTime.now();
+    final now = SatClock.now();
     final settings = await (db.select(
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();
@@ -1264,7 +1265,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final qp = req.url.queryParameters;
     final range = qp['range'] ?? 'today';
 
-    final now = DateTime.now();
+    final now = SatClock.now();
     final settings = await (db.select(
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();

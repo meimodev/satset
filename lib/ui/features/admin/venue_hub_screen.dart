@@ -140,29 +140,36 @@ class VenueHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.layout;
-    final showSeed = ref.watch(genericSeedProvider).showPrompt;
+    final seed = ref.watch(genericSeedProvider);
+    final showSeed = seed.showPrompt;
+    final showDemo = seed.canSeedDemo || seed.hasDemo;
 
     if (l.useTabletShell) {
+      var idx = 0;
       return AdminPage(
         title: AppStrings.venueHubTitle,
         sub: AppStrings.venueHubSubtitle,
         children: [
-          const Reveal(index: 0, child: _VenueHeroStrip()),
+          Reveal(index: idx++, child: const _VenueHeroStrip()),
           const SizedBox(height: Sp.s4),
           if (showSeed) ...[
-            const Reveal(index: 1, child: SeedDataBanner()),
+            Reveal(index: idx++, child: const SeedDataBanner()),
             const SizedBox(height: Sp.s4),
           ],
-          _HubGrid(
-            sections: _sections,
-            seedOffset: showSeed ? 2 : 1,
-            big: true,
-          ),
+          if (showDemo) ...[
+            Reveal(index: idx++, child: const DemoDataBanner()),
+            const SizedBox(height: Sp.s4),
+          ],
+          _HubGrid(sections: _sections, seedOffset: idx, big: true),
         ],
       );
     }
 
-    return _PhoneHub(sections: _sections, showSeed: showSeed);
+    return _PhoneHub(
+      sections: _sections,
+      showSeed: showSeed,
+      showDemo: showDemo,
+    );
   }
 }
 
@@ -379,6 +386,122 @@ class _StatBadge extends StatelessWidget {
   }
 }
 
+/// Demo-dataset controls (ADR-0052). Offers the load action while the venue
+/// has not traded, and refresh/reset once demo data is present — the live half
+/// decays within minutes, so refresh is the common action, not an edge case.
+class DemoDataBanner extends ConsumerWidget {
+  const DemoDataBanner({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final st = ref.watch(genericSeedProvider);
+    final ctrl = ref.read(genericSeedProvider.notifier);
+
+    Future<void> run(Future<void> Function() action) async {
+      try {
+        await action();
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              st.canSeedDemo
+                  ? AppStrings.venueHubDemoError
+                  : AppStrings.venueHubDemoRefused,
+            ),
+          ),
+        );
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(Sp.s4),
+      decoration: SatBox.d(
+        color: sc.info.withValues(alpha: 0.10),
+        borderRadius: SatR.a(16),
+        border: SatB.all(color: sc.info.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.science_rounded, size: 18, color: sc.info),
+              const SizedBox(width: Sp.s2),
+              Expanded(
+                child: Text(
+                  AppStrings.venueHubDemoTitle,
+                  style: SatType.sans(
+                    size: 15,
+                    weight: FontWeight.w700,
+                    color: sc.textHi,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.s1h),
+          Text(
+            st.demoSeeding
+                ? AppStrings.venueHubDemoBodyRunning
+                : st.demoIncomplete
+                ? AppStrings.venueHubDemoBodyIncomplete
+                : st.hasDemo
+                ? AppStrings.venueHubDemoBodyLoaded
+                : AppStrings.venueHubDemoBody,
+            style: SatType.sans(size: 12.5, color: sc.textLo, height: 1.35),
+          ),
+          const SizedBox(height: Sp.s3h),
+          if (st.demoSeeding) ...[
+            // A month through the production order path takes minutes; a bare
+            // spinner cannot be told from a hang (ADR-0053 §8).
+            ClipRRect(
+              borderRadius: SatR.a(999),
+              child: LinearProgressIndicator(
+                value: st.demoDaysDone / st.demoDaysTotal,
+                minHeight: 6,
+                backgroundColor: sc.bg3,
+                valueColor: AlwaysStoppedAnimation(sc.info),
+              ),
+            ),
+            const SizedBox(height: Sp.s2),
+            Text(
+              '${AppStrings.venueHubDemoProgress} · '
+              '${st.demoDaysDone}/${st.demoDaysTotal}',
+              style: SatType.mono(size: 11.5, color: sc.textLo),
+            ),
+          ] else
+            Row(
+              children: [
+                if (st.hasDemo || st.demoIncomplete)
+                  Expanded(
+                    child: _BannerBtn(
+                      label: AppStrings.venueHubDemoBtnReset,
+                      filled: true,
+                      busy: st.loading,
+                      onTap: st.loading ? null : () => run(ctrl.resetDemo),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: _BannerBtn(
+                      label: st.loading
+                          ? AppStrings.loading
+                          : AppStrings.venueHubDemoBtnLoad,
+                      filled: true,
+                      busy: st.loading,
+                      onTap: st.loading ? null : () => run(ctrl.seedDemo),
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class SeedDataBanner extends ConsumerWidget {
   const SeedDataBanner({super.key});
 
@@ -559,7 +682,12 @@ class _HubGrid extends StatelessWidget {
 class _PhoneHub extends StatelessWidget {
   final List<_Section> sections;
   final bool showSeed;
-  const _PhoneHub({required this.sections, this.showSeed = false});
+  final bool showDemo;
+  const _PhoneHub({
+    required this.sections,
+    this.showSeed = false,
+    this.showDemo = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -611,7 +739,14 @@ class _PhoneHub extends StatelessWidget {
           const Reveal(index: 3, child: SeedDataBanner()),
           const SizedBox(height: Sp.s3),
         ],
-        _HubGrid(sections: sections, seedOffset: showSeed ? 4 : 3),
+        if (showDemo) ...[
+          Reveal(index: showSeed ? 4 : 3, child: const DemoDataBanner()),
+          const SizedBox(height: Sp.s3),
+        ],
+        _HubGrid(
+          sections: sections,
+          seedOffset: 3 + (showSeed ? 1 : 0) + (showDemo ? 1 : 0),
+        ),
       ],
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -38,7 +39,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   static const _rangeLabel = {'today': 'Hari ini', 'd7': '7 hari'};
 
   Future<void> _refresh(String vid) async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final last = _refreshTappedAt;
     if (last != null && now.difference(last) < _refreshCooldown) return;
     setState(() => _refreshTappedAt = now);
@@ -247,7 +248,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   bool _isPending(OwnerReport? report) {
     final tapped = _refreshTappedAt;
     if (tapped == null) return false;
-    if (DateTime.now().difference(tapped) > const Duration(minutes: 2)) {
+    if (SatClock.now().difference(tapped) > const Duration(minutes: 2)) {
       return false; // give up the hint after a while
     }
     final gen = report?.generatedAt;
@@ -265,7 +266,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   }
 
   String _ago(DateTime t) {
-    final d = DateTime.now().difference(t);
+    final d = SatClock.now().difference(t);
     if (d.inMinutes < 1) return 'baru saja';
     if (d.inMinutes < 60) return '${d.inMinutes} menit lalu';
     if (d.inHours < 24) return '${d.inHours} jam lalu';

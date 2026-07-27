@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -288,7 +289,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
   bool _venueOnline(PrinterDto p) {
     final last = p.lastSeenAt;
     if (last == null) return false;
-    return DateTime.now().difference(last) < _venueOnlineWindow;
+    return SatClock.now().difference(last) < _venueOnlineWindow;
   }
 
   // --- merge + dedup ---

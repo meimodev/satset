@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'dart:math' as math;
@@ -176,7 +177,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final shiftStartedDt = DateTime.tryParse(shiftIso);
     var elapsed = shiftStartedDt == null
         ? Duration.zero
-        : DateTime.now().difference(shiftStartedDt);
+        : SatClock.now().difference(shiftStartedDt);
     if (elapsed.isNegative) elapsed = Duration.zero;
     final shiftStart = shiftIso.isEmpty ? '—' : formatClockId(shiftIso);
 

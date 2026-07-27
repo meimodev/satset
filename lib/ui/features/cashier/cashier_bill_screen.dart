@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -1830,7 +1831,7 @@ String _dayKey(DateTime d) {
 
 String _dayLabel(DateTime d) {
   final l = d.toLocal();
-  final now = DateTime.now();
+  final now = SatClock.now();
   final diff = DateTime(
     now.year,
     now.month,

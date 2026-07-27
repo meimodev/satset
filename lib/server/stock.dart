@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
@@ -296,6 +297,12 @@ Future<void> writeMovement(
   String? note,
   String? batchId,
   int? costMicro,
+  // Backdating + id injection exist for the demo seed (ADR-0052), which
+  // replays a month of service through this path: `at` places the row in the
+  // past, `id` carries the `demo-` tag its reset deletes by. Production
+  // callers pass neither.
+  DateTime? at,
+  String? id,
 }) async {
   final ing = await (db.select(
     db.ingredients,
@@ -305,7 +312,7 @@ Future<void> writeMovement(
       .into(db.stockMovements)
       .insert(
         StockMovementsCompanion.insert(
-          id: _uuid.v4(),
+          id: id ?? _uuid.v4(),
           ingredientId: ingredientId,
           delta: delta,
           reason: reason.name,
@@ -315,7 +322,7 @@ Future<void> writeMovement(
           note: Value(note),
           batchId: Value(batchId),
           costMicro: Value(costMicro ?? ing.costMicro),
-          at: DateTime.now(),
+          at: at ?? SatClock.now(),
         ),
       );
   // Deliberately NOT clamped at zero: a negative balance is the `overrideStock`
@@ -333,6 +340,8 @@ Future<void> receiveStock(
   String? userId,
   String sourceLabel = '',
   String? note,
+  DateTime? at,
+  String? id,
 }) async {
   final ing = await (db.select(
     db.ingredients,
@@ -359,6 +368,8 @@ Future<void> receiveStock(
     sourceLabel: sourceLabel,
     note: note,
     costMicro: unitCostMicro,
+    at: at,
+    id: id,
   );
 }
 
@@ -520,6 +531,11 @@ Future<void> consumeForTicket(
   required Map<String, int> need,
   required String sourceLabel,
   String? userId,
+  DateTime? at,
+  /// Prefix for the movement ids. The demo seed replays through this path and
+  /// its rows must carry the demo tag, or reset deletes the purchases and
+  /// leaves the sales behind — driving every balance deeply negative.
+  String? idPrefix,
 }) async {
   for (final e in need.entries) {
     await writeMovement(
@@ -530,6 +546,8 @@ Future<void> consumeForTicket(
       ticketId: ticketId,
       sourceLabel: sourceLabel,
       userId: userId,
+      at: at,
+      id: idPrefix == null ? null : '$idPrefix${_uuid.v4()}',
     );
   }
 }

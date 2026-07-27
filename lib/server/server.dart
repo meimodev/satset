@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:satset/server/demo_clock.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
@@ -86,14 +88,14 @@ class ServerRuntime {
   bool _restarting = false;
 
   /// Reset on every successful bind. Restart() updates this.
-  DateTime startedAt = DateTime.now();
+  DateTime startedAt = SatClock.now();
 
   /// Rolling window of last 100 request durations in ms. Used for p50/p95.
   final Queue<int> _latencySamples = Queue<int>();
   static const _latencyWindow = 100;
   int _requestCountSinceLastRead = 0;
 
-  Duration get uptime => DateTime.now().difference(startedAt);
+  Duration get uptime => SatClock.now().difference(startedAt);
 
   LatencyStats get latencyStats {
     final samples = List<int>.from(_latencySamples)..sort();
@@ -147,6 +149,9 @@ class ServerRuntime {
   }) async {
     final db = await AppDatabase.open();
     await seedInfra(db);
+    // Re-anchor the demo clock before any route can answer: a venue holding
+    // demo data must serve demo time from its first request (ADR-0053 §1).
+    await DemoClock.reanchor(db);
     final tls = await ServerTls.loadOrCreate();
     final hub = WsHub();
     final auth = ServerAuth(db, secret: await ServerAuth.loadOrCreateSecret());
@@ -213,7 +218,7 @@ class ServerRuntime {
           rows.map((p) async {
             if (!await StrukSocket.probe(p.host, p.port)) return;
             await (db.update(db.printers)..where((x) => x.id.equals(p.id)))
-                .write(PrintersCompanion(lastSeenAt: Value(DateTime.now())));
+                .write(PrintersCompanion(lastSeenAt: Value(SatClock.now())));
             final updated = await (db.select(
               db.printers,
             )..where((x) => x.id.equals(p.id))).getSingleOrNull();
@@ -233,7 +238,7 @@ class ServerRuntime {
     _statusTicker = Timer.periodic(const Duration(seconds: 10), (_) async {
       // Sweep expired sessions; emit session.expired for each one so clients
       // can flush their device-online state without a refetch.
-      final now = DateTime.now();
+      final now = SatClock.now();
       final all = await db.select(db.sessions).get();
       final expired = all.where((s) => s.expiresAt.isBefore(now)).toList();
       if (expired.isNotEmpty) {
@@ -312,7 +317,7 @@ class ServerRuntime {
         version: version,
         venueId: venueId,
       );
-      startedAt = DateTime.now();
+      startedAt = SatClock.now();
       _resetLatency();
       _startStatusTicker();
       _startPrinterHeartbeat();

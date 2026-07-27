@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -292,7 +293,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
   }) {
     final online =
         p.lastSeenAt != null &&
-        DateTime.now().difference(p.lastSeenAt!).inMinutes < 5;
+        SatClock.now().difference(p.lastSeenAt!).inMinutes < 5;
     return AdminRow(
       label: p.label,
       value: Row(
@@ -1022,7 +1023,7 @@ String _humanDuration(Duration d) {
 }
 
 String _relTime(DateTime t) {
-  final now = DateTime.now();
+  final now = SatClock.now();
   final diff = t.isAfter(now) ? t.difference(now) : now.difference(t);
   final suffix = t.isAfter(now) ? ' lagi' : ' lalu';
   if (diff.inDays > 365) return '${diff.inDays ~/ 365}thn$suffix';

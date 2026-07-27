@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
@@ -730,7 +731,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     i.lastReceivedAt == null
                                         ? '—'
                                         : formatElapsedId(
-                                            DateTime.now().difference(
+                                            SatClock.now().difference(
                                               i.lastReceivedAt!,
                                             ),
                                           ),

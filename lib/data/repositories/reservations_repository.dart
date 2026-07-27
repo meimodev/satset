@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +34,7 @@ class ReservationsRepository extends StateNotifier<List<Reservation>> {
     try {
       // Window: yesterday → +14 days; covers the reservation card on tables
       // screen which only shows today + near future.
-      final now = DateTime.now();
+      final now = SatClock.now();
       final from = DateTime(now.year, now.month, now.day - 1);
       final to = DateTime(now.year, now.month, now.day + 14);
       final raw = await ref

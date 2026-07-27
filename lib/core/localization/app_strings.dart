@@ -51,6 +51,28 @@ class AppStrings {
   static const String venueHubSeedBtnLater = 'Nanti';
   static const String venueHubSeedError = 'Gagal memuat contoh data';
 
+  // Demo seed — a venue mid-service (ADR-0052).
+  static const String venueHubDemoTitle = 'Data demo';
+  static const String venueHubDemoBody =
+      'Muat satu bulan riwayat penjualan dan satu potret layanan berjalan — '
+      'meja terisi, pesanan di dapur, tagihan terbayar. Untuk demo dan '
+      'peninjauan tampilan, bukan untuk venue yang sudah berjalan.';
+  static const String venueHubDemoBodyLoaded =
+      'Venue berjalan pada waktu demo, jadi potret layanan tetap terbaca wajar '
+      'setiap kali dibuka. Data bertahan sampai dihapus.';
+  static const String venueHubDemoBodyRunning =
+      'Menyusun sebulan riwayat lewat jalur pesanan sungguhan. Biarkan '
+      'aplikasi terbuka sampai selesai.';
+  static const String venueHubDemoBodyIncomplete =
+      'Pemuatan data demo terhenti sebelum selesai. Data yang ada tidak utuh — '
+      'hapus dulu sebelum memuat ulang.';
+  static const String venueHubDemoBtnLoad = 'Muat data demo';
+  static const String venueHubDemoBtnReset = 'Hapus';
+  static const String venueHubDemoError = 'Gagal memuat data demo';
+  static const String venueHubDemoRefused =
+      'Venue sudah punya riwayat pesanan. Data demo tidak dimuat.';
+  static const String venueHubDemoProgress = 'Menyusun data demo';
+
   // Venue Settings Screen (formerly Venue Identity Screen)
   static const String venueSettingsTitle = 'Pengaturan Venue';
   static const String venueSettingsSubtitle = 'Profil, lokal, pajak, struk';

@@ -1,4 +1,9 @@
 import 'dart:convert';
+import 'package:satset/server/routes/tables_routes.dart' show tableRowToJson;
+import 'package:satset/server/demo_clock.dart';
+import 'package:satset/core/log/sat_log.dart';
+import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
@@ -12,6 +17,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/db/seed.dart';
+import 'package:satset/server/db/seed_demo.dart';
 import 'package:satset/server/ws_hub.dart';
 
 String _hashPin(String pin) =>
@@ -73,7 +79,7 @@ Future<void> _emitAudit(
   String? actorUserId,
 }) async {
   final id = _uuid.v4();
-  final at = DateTime.now();
+  final at = SatClock.now();
   await db
       .into(db.auditEntries)
       .insertOnConflictUpdate(
@@ -634,8 +640,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final id = (body['id'] as String?) ?? _uuid.v4();
     final at = body['at'] != null
-        ? DateTime.tryParse(body['at'] as String) ?? DateTime.now()
-        : DateTime.now();
+        ? DateTime.tryParse(body['at'] as String) ?? SatClock.now()
+        : SatClock.now();
     await db
         .into(db.auditEntries)
         .insertOnConflictUpdate(
@@ -736,7 +742,17 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
   r.get('/seed/state', (Request req) async {
     final denied = await _requireCap(req, db, auth, Capability.manageStaff);
     if (denied != null) return denied;
-    return _ok({'needsGenericSeed': await needsGenericSeed(db)});
+    return _ok({
+      'needsGenericSeed': await needsGenericSeed(db),
+      // Demo-seed availability (ADR-0052): `canSeedDemo` is the has-not-traded
+      // guard, `hasDemo` drives the refresh/reset actions.
+      'canSeedDemo': await canSeedDemo(db),
+      'hasDemo': await hasDemoData(db),
+      // A job that started and never finished: the hub must offer only Hapus,
+      // because partial history reports a loaded venue that is quietly short
+      // (ADR-0053 §9).
+      'demoIncomplete': await DemoClock.isIncomplete(db),
+    });
   });
 
   /// Load the generic restaurant dataset (2 zones x 2 tables, generic menu,
@@ -787,7 +803,84 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     return _ok({'needsGenericSeed': await needsGenericSeed(db)});
   });
 
+  // ---------- demo seed: a venue mid-service (ADR-0052) ----------
+
+  /// Load the demo dataset — a month of settled history plus a live
+  /// mid-service snapshot. Refuses on a venue that has already traded; the
+  /// guard is the whole safety story, since this ships in release builds.
+  r.post('/seed/demo', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.manageStaff);
+    if (denied != null) return denied;
+    if (!await canSeedDemo(db)) {
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'demoRefused',
+          'message': 'Venue sudah punya riwayat pesanan. Demo tidak dimuat.',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    // 202 and run in the background: a month through the production order
+    // path takes minutes, and a blocked call gives no way to tell slow from
+    // wedged (ADR-0053 §8). Progress arrives on `demo.progress`.
+    unawaited(
+      Future(() async {
+        try {
+          await seedDemoVenue(db, hub: hub);
+          await _broadcastSeeded(db, hub);
+          hub?.broadcast(WsEventTypes.demoProgress, const {'done': true});
+        } catch (e, st) {
+          SatLog.err('demo seed', e, st);
+          // The incomplete marker stays set, so the hub offers only Hapus.
+          hub?.broadcast(WsEventTypes.demoProgress, const {'failed': true});
+        }
+      }),
+    );
+    final actor = await _actor(req, db, auth);
+    await _emitAudit(
+      db,
+      hub,
+      type: AuditType.staffCreated.name,
+      title: 'Memuat data demo',
+      actorUserId: actor?.id,
+    );
+    return Response(
+      202,
+      body: jsonEncode({'started': true}),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
+  /// Remove every demo row, returning the venue to its generically-seeded
+  /// state. Deletes by tag only.
+  r.post('/seed/demo/reset', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.manageStaff);
+    if (denied != null) return denied;
+    await resetDemoVenue(db, hub: hub);
+    await _broadcastSeeded(db, hub);
+    return _ok({'ok': true});
+  });
+
   return r;
+}
+
+/// Nudge every paired device to re-pull after a bulk seed/reset — the rows go
+/// in under the repositories, so without this they keep showing stale caches.
+Future<void> _broadcastSeeded(AppDatabase db, WsHub? hub) async {
+  if (hub == null) return;
+  hub.broadcast(WsEventTypes.menuUpdated, {'seeded': true});
+  hub.broadcast(WsEventTypes.rolesUpdated, {'seeded': true});
+  final zones = await (db.select(
+    db.zones,
+  )..orderBy([(z) => OrderingTerm.asc(z.sortOrder)])).get();
+  for (final z in zones) {
+    hub.broadcast(WsEventTypes.zoneCreated, _zoneJson(z));
+  }
+  final tables = await db.select(db.venueTables).get();
+  for (final t in tables) {
+    hub.broadcast(WsEventTypes.tableCreated, tableRowToJson(t));
+  }
 }
 
 Map<String, dynamic> _roleJson(Role r) => {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,7 +14,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 final elapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   (ref) => Stream<DateTime>.periodic(
     const Duration(seconds: 30),
-    (_) => DateTime.now(),
+    (_) => SatClock.now(),
   ),
 );
 
@@ -67,7 +68,7 @@ class ElapsedPill extends ConsumerWidget {
     ref.watch(elapsedTickerProvider);
     // Overdue line = the venue's configurable service target (ADR-0013).
     final overdueMinutes = ref.watch(venueSettingsProvider).prepTargetMins;
-    final d = DateTime.now().difference(sentAtTime);
+    final d = SatClock.now().difference(sentAtTime);
     final overdue = d.inMinutes >= overdueMinutes;
     return _pill(
       context,

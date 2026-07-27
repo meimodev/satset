@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -71,7 +72,7 @@ Future<String> ensureVisit(
     if (v != null) return v.id;
   }
   final id = _uuid.v4();
-  final now = DateTime.now().toUtc();
+  final now = SatClock.now().toUtc();
   // Tolerant of a missing table row (synthetic/test order paths) — fall back
   // to a bare visit so order submission never fails on table lookup.
   await db
@@ -110,7 +111,7 @@ Future<Visit> createTakeawayVisit(
   String? guestNotes,
   String? actorId,
 }) async {
-  final now = DateTime.now();
+  final now = SatClock.now();
   final nowUtc = now.toUtc();
   final s = await (db.select(
     db.venueSettings,
@@ -175,12 +176,18 @@ Future<void> snapshotVisitAndDelete(
   Visit visit, {
   String? billClosedBy,
   int lossAmount = 0,
+  // Backdating + id injection exist for the demo seed (ADR-0052), which
+  // archives a month of visits through this path: `closedAt` places the
+  // session in the past, `sessionId` carries the `demo-` tag its reset deletes
+  // by (child rows key off it). Production callers pass neither.
+  DateTime? closedAt,
+  String? sessionId,
 }) async {
   await db.transaction(() async {
     final tickets = await (db.select(
       db.tickets,
     )..where((t) => t.visitId.equals(visit.id))).get();
-    final now = DateTime.now().toUtc();
+    final now = closedAt?.toUtc() ?? SatClock.now().toUtc();
     final openedAt = visit.openedAt;
     final durationSec = openedAt == null
         ? 0
@@ -238,12 +245,12 @@ Future<void> snapshotVisitAndDelete(
       cfg,
       discount: orderDiscount,
     ).total;
-    final sessionId = _uuid.v4();
+    final sid = sessionId ?? _uuid.v4();
     await db
         .into(db.tableSessions)
         .insert(
           TableSessionsCompanion.insert(
-            id: sessionId,
+            id: sid,
             tableId: visit.tableId,
             tableLabel: Value(visit.tableLabel),
             zoneId: visit.zoneId,
@@ -273,7 +280,7 @@ Future<void> snapshotVisitAndDelete(
           .insert(
             TableSessionTicketsCompanion.insert(
               id: _uuid.v4(),
-              sessionId: sessionId,
+              sessionId: sid,
               ticketId: t.id,
               itemId: t.itemId,
               name: t.name,
@@ -317,7 +324,7 @@ Future<void> snapshotVisitAndDelete(
           .insert(
             TableSessionCoursesCompanion.insert(
               id: _uuid.v4(),
-              sessionId: sessionId,
+              sessionId: sid,
               courseId: entry.key,
               firedAt: Value(firedAt),
               servedAt: Value(servedAt),
@@ -335,7 +342,7 @@ Future<void> snapshotVisitAndDelete(
           .insert(
             TableSessionDiscountsCompanion.insert(
               id: _uuid.v4(),
-              sessionId: sessionId,
+              sessionId: sid,
               receiptId: d.receiptId,
               ticketId: Value(d.ticketId),
               presetId: Value(d.presetId),
@@ -355,7 +362,7 @@ Future<void> snapshotVisitAndDelete(
           .insert(
             TableSessionReceiptsCompanion.insert(
               id: _uuid.v4(),
-              sessionId: sessionId,
+              sessionId: sid,
               receiptId: rec.id,
               mode: Value(rec.mode),
               label: Value(rec.label),
@@ -379,7 +386,7 @@ Future<void> snapshotVisitAndDelete(
             .insert(
               TableSessionPaymentsCompanion.insert(
                 id: _uuid.v4(),
-                sessionId: sessionId,
+                sessionId: sid,
                 receiptId: rec.id,
                 method: p.method,
                 amount: p.amount,
@@ -653,7 +660,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final guestNotes = body['guestNotes'] as String?;
     final reservationId = body['reservationId'] as String?;
     final acquireLock = body['acquireLock'] == true;
-    final now = DateTime.now();
+    final now = SatClock.now();
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
       VenueTablesCompanion(
         status: const Value('occupied'),
@@ -713,7 +720,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     }
     final ttl = (body['ttlSeconds'] as num?)?.toInt() ?? 7;
-    final now = DateTime.now();
+    final now = SatClock.now();
     final row = await (db.select(
       db.venueTables,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -761,7 +768,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     }
     final ttl = (body['ttlSeconds'] as num?)?.toInt() ?? 7;
-    final now = DateTime.now();
+    final now = SatClock.now();
     final row = await (db.select(
       db.venueTables,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -877,7 +884,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     // Free the table + mark the visit detached. Keep the bill alive.
     await db.transaction(() async {
       await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
-        VisitsCompanion(tableFreedAt: Value(DateTime.now().toUtc())),
+        VisitsCompanion(tableFreedAt: Value(SatClock.now().toUtc())),
       );
       await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
         const VenueTablesCompanion(
@@ -1031,7 +1038,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'},
       );
     }
-    final now = DateTime.now();
+    final now = SatClock.now();
     final srcLockedByOther =
         source.lockedBy != null &&
         source.lockedBy!.isNotEmpty &&
@@ -1297,7 +1304,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       pax: table.pax,
       guestName: table.guestName ?? '',
       guestNote: table.guestNotes ?? '',
-      at: DateTime.now(),
+      at: SatClock.now(),
       lines: lines,
     );
 
@@ -1318,7 +1325,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     }
 
-    final now = DateTime.now();
+    final now = SatClock.now();
     await (db.update(db.printers)..where((p) => p.id.equals(printerId))).write(
       PrintersCompanion(lastSeenAt: Value(now)),
     );
@@ -1389,7 +1396,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     }
     await (db.update(db.visits)..where((v) => v.id.equals(id))).write(
-      VisitsCompanion(tableFreedAt: Value(DateTime.now().toUtc())),
+      VisitsCompanion(tableFreedAt: Value(SatClock.now().toUtc())),
     );
     final fresh = await (db.select(
       db.visits,
@@ -1441,6 +1448,13 @@ Map<String, dynamic> _visitToJson(Visit v) => {
   'tableFreedAt': v.tableFreedAt?.toIso8601String(),
   'billClosedAt': v.billClosedAt?.toIso8601String(),
 };
+
+/// The canonical wire shape for a table row.
+///
+/// Public because every broadcaster must use it: a hand-rolled subset silently
+/// drops `capacity`, `openedAt`, locks and money state, and the client renders
+/// defaults for whatever is missing. That bug shipped once already.
+Map<String, dynamic> tableRowToJson(VenueTable t) => _toJson(t);
 
 Map<String, dynamic> _toJson(VenueTable t) => {
   'id': t.id,

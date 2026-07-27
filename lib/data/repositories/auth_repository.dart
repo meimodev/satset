@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
@@ -152,7 +153,11 @@ class AuthRepository extends StateNotifier<AuthState> {
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
       };
-      final loginAt = DateTime.now();
+      // Adopt the host's demo clock BEFORE stamping anything: on a demo venue
+      // the shift can be days, and a login stamped in real time would sort
+      // outside the timeline every other row lives in (ADR-0053 §2).
+      SatClock.adopt(Duration(seconds: me.demoClockOffsetSeconds));
+      final loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
       state = AuthState(
         isAuthenticated: true,
@@ -276,7 +281,7 @@ class AuthRepository extends StateNotifier<AuthState> {
         return false;
       }
 
-      await storage.writeAdminConfirmedAt(DateTime.now());
+      await storage.writeAdminConfirmedAt(SatClock.now());
 
       // Main-Device model (ADR-0017): if another device already hosts this
       // venue on the LAN, join it as an admin-client instead of booting a
@@ -363,7 +368,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       for (final k in me.capabilities)
         if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
     };
-    final loginAt = DateTime.now();
+    final loginAt = SatClock.now();
     await storage.writeLoginAt(loginAt);
     state = AuthState(
       isAuthenticated: true,
@@ -432,7 +437,11 @@ class AuthRepository extends StateNotifier<AuthState> {
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
       };
-      final loginAt = DateTime.now();
+      // Adopt the host's demo clock BEFORE stamping anything: on a demo venue
+      // the shift can be days, and a login stamped in real time would sort
+      // outside the timeline every other row lives in (ADR-0053 §2).
+      SatClock.adopt(Duration(seconds: me.demoClockOffsetSeconds));
+      final loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
       state = AuthState(
         isAuthenticated: true,
@@ -468,7 +477,7 @@ class AuthRepository extends StateNotifier<AuthState> {
         name: profile.name.isEmpty ? email : profile.name,
         initials: _initials(profile.name.isEmpty ? email : profile.name),
         role: UserRole.admin,
-        shiftStartedAt: DateTime.now().toIso8601String(),
+        shiftStartedAt: SatClock.now().toIso8601String(),
         zoneAssigned: '',
         roleId: 'super',
         avatarColorHex: profile.avatarColorHex,
@@ -490,7 +499,7 @@ class AuthRepository extends StateNotifier<AuthState> {
         name: profile.name.isEmpty ? email : profile.name,
         initials: _initials(profile.name.isEmpty ? email : profile.name),
         role: UserRole.admin,
-        shiftStartedAt: DateTime.now().toIso8601String(),
+        shiftStartedAt: SatClock.now().toIso8601String(),
         zoneAssigned: '',
         roleId: 'owner',
         avatarColorHex: profile.avatarColorHex,
@@ -533,7 +542,7 @@ class AuthRepository extends StateNotifier<AuthState> {
         SatLog.repo('auth.eligibility revoked (admin) → kill server');
         await _killAdminSession();
       } else if (!profile.fromCache) {
-        await storage.writeAdminConfirmedAt(DateTime.now());
+        await storage.writeAdminConfirmedAt(SatClock.now());
       }
     });
 
@@ -562,7 +571,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       try {
         final p = await fb.fetch(uid, serverOnly: true);
         if (p != null && p.isActive) {
-          await storage.writeAdminConfirmedAt(DateTime.now());
+          await storage.writeAdminConfirmedAt(SatClock.now());
         }
       } catch (_) {
         // Offline — let the grace clock tick; the boot gate enforces the limit.
@@ -715,7 +724,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       };
       var loginAt = await storage.readLoginAt();
       if (loginAt == null) {
-        loginAt = DateTime.now();
+        loginAt = SatClock.now();
         await storage.writeLoginAt(loginAt);
       }
       state = AuthState(

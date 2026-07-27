@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'dart:io';
 
 import 'package:bonsoir/bonsoir.dart';
@@ -94,8 +95,8 @@ class MdnsBrowserService {
     if (venueId.isEmpty) return null;
     await start();
     try {
-      final deadline = DateTime.now().add(window);
-      while (DateTime.now().isBefore(deadline)) {
+      final deadline = SatClock.now().add(window);
+      while (SatClock.now().isBefore(deadline)) {
         for (final s in current) {
           if (s.venueId == venueId) return s;
         }
