@@ -794,47 +794,12 @@ class _Foot extends StatelessWidget {
           ),
           const SizedBox(width: Sp.s3),
           Expanded(
-            child: Opacity(
-              opacity: valid ? 1 : 0.4,
-              child: ElevatedButton(
-                onPressed: valid ? onAdd : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  disabledBackgroundColor: sc.accent,
-                  foregroundColor: sc.accentInk,
-                  elevation: 0,
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (valid)
-                      Icon(Icons.add, size: 22, color: sc.accentInk)
-                    else
-                      Text(
-                        'Pilih wajib',
-                        style: SatType.sans(
-                          size: 15,
-                          weight: FontWeight.w600,
-                          color: sc.accentInk,
-                        ),
-                      ),
-                    if (valid) ...[
-                      const SizedBox(width: Sp.s2h),
-                      Text(
-                        totalLabel,
-                        style: SatType.mono(
-                          size: 14,
-                          weight: FontWeight.w500,
-                          color: sc.accentInk.withValues(alpha: 0.7),
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+            child: SatButton.primary(
+              label: valid ? AppStrings.add : 'Pilih wajib',
+              icon: valid ? Icons.add : null,
+              size: SatButtonSize.lg,
+              trailingValue: valid ? totalLabel : null,
+              onTap: valid ? onAdd : null,
             ),
           ),
         ],

@@ -80,28 +80,23 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 const SizedBox(width: Sp.s2),
               ],
               PressScale(
-                child: OutlinedButton.icon(
-                  onPressed: () => setState(() {
-                    _opname = !_opname;
-                    _counts.clear();
-                  }),
-                  icon: Icon(
-                    _opname ? Icons.close : Icons.inventory_2_outlined,
-                    size: 16,
-                  ),
-                  label: Text(_opname ? 'Batal' : 'Opname'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _opname ? sc.urgent : sc.accentText,
-                    side: SatB.side(
-                      color: _opname ? sc.urgent : sc.accentBorder,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Sp.s3h,
-                      vertical: Sp.s2,
-                    ),
-                    shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-                  ),
-                ),
+                child: _opname
+                    ? SatButton.danger(
+                        label: AppStrings.cancel,
+                        icon: Icons.close,
+                        onTap: () => setState(() {
+                          _opname = false;
+                          _counts.clear();
+                        }),
+                      )
+                    : SatButton.outline(
+                        label: 'Opname',
+                        icon: Icons.inventory_2_outlined,
+                        onTap: () => setState(() {
+                          _opname = true;
+                          _counts.clear();
+                        }),
+                      ),
               ),
               if (_opname) ...[
                 const SizedBox(width: Sp.s2),

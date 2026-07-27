@@ -281,21 +281,12 @@ class _Footer extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: FilledButton.icon(
-                onPressed: onHandover,
-                icon: busy
-                    ? const SizedBox(
-                        width: Sp.s4,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.shopping_bag_rounded, size: 18),
-                label: const Text('Serahkan'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  foregroundColor: sc.accentInk,
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(16)),
-                ),
+              child: SatButton.primary(
+                label: 'Serahkan',
+                icon: Icons.shopping_bag_rounded,
+                busy: busy,
+                size: SatButtonSize.lg,
+                onTap: onHandover,
               ),
             ),
             if (onHandover == null && !busy)

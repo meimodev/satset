@@ -1857,33 +1857,6 @@ class _FooterState extends State<_Footer> {
     final saving = _state == _SaveState.saving;
     final done = _state == _SaveState.done;
 
-    Widget label;
-    if (saving) {
-      label = SizedBox(
-        key: const ValueKey('saving'),
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(strokeWidth: 2, color: sc.accentInk),
-      );
-    } else if (done) {
-      label = Icon(
-        Icons.check_rounded,
-        key: const ValueKey('done'),
-        size: 18,
-        color: sc.accentInk,
-      );
-    } else {
-      label = Text(
-        'Simpan',
-        key: const ValueKey('idle'),
-        style: SatType.sans(
-          size: 13,
-          weight: FontWeight.w600,
-          color: sc.accentInk,
-        ),
-      );
-    }
-
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: SatBox.d(
@@ -1904,31 +1877,20 @@ class _FooterState extends State<_Footer> {
           const Spacer(),
           PressScale(
             pressedScale: 0.96,
-            child: ElevatedButton(
-              onPressed: _state == _SaveState.idle ? _run : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: done ? sc.success : sc.accent,
-                foregroundColor: sc.accentInk,
-                disabledBackgroundColor: done ? sc.success : sc.accent,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: Sp.s3,
-                ),
-                shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-              ),
-              child: AnimatedSwitcher(
-                duration: satMotion(context, 200),
-                switchInCurve: satEaseOut,
-                transitionBuilder: (child, anim) => FadeTransition(
-                  opacity: anim,
-                  child: ScaleTransition(
-                    scale: Tween(begin: 0.85, end: 1.0).animate(anim),
-                    child: child,
+            // Done flips the variant rather than swapping a tick glyph in:
+            // the whole control turning green is the confirmation, and it
+            // survives a glance from arm's length that a 18px check does not.
+            child: done
+                ? SatButton.success(
+                    label: AppStrings.saved,
+                    icon: Icons.check_rounded,
+                    onTap: null,
+                  )
+                : SatButton.primary(
+                    label: AppStrings.save,
+                    busy: saving,
+                    onTap: _state == _SaveState.idle ? _run : null,
                   ),
-                ),
-                child: label,
-              ),
-            ),
           ),
         ],
       ),

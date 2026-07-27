@@ -3,6 +3,7 @@ class AppStrings {
   static const String appName = 'SatSet';
   static const String cancel = 'Batal';
   static const String save = 'Simpan';
+  static const String saved = 'Tersimpan';
   static const String delete = 'Hapus';
   static const String add = 'Tambah';
   static const String back = 'Kembali';

@@ -61,6 +61,38 @@ void main() {
     expect(files, isNotEmpty, reason: 'run from the repo root');
   });
 
+  // A ban from the day it landed (ADR-0055). Every raw Material button in a
+  // feature screen was converted in the same pass, so there is no debt to
+  // ratchet down — the count starts at zero and stays there.
+  //
+  // `core/widgets/` builds SatButton out of these and `core/design/theme.dart`
+  // themes them for the stock widgets that still reach for them; both are
+  // outside the scan. `_book` renders raw states on purpose, so it is exempt
+  // by name below.
+  test('no raw Material buttons outside core/widgets', () {
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      if (file.path.contains('/core/widgets/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'\b(FilledButton|OutlinedButton|TextButton|ElevatedButton)\s*[.(]',
+      ).allMatches(src)) {
+        hits.add('${file.path}:${_lineOf(src, m.start)} ${m.group(1)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use SatButton — core/widgets/sat_button.dart. Named constructors '
+          '(.primary/.neutral/.outline/.ghost/.success/.danger) carry the '
+          'intent; size/icon/busy/trailingValue are the only open axes. An '
+          'icon-only target is SatIconButton, which requires a tooltip.\n'
+          '${hits.join('\n')}',
+    );
+  });
+
   // Accessibility rules need the whole constructor call, not one line: the
   // `tooltip:` that names a button sits several lines below `IconButton(`.
   // Balanced-paren scan instead of a line regex.
@@ -250,7 +282,7 @@ void main() {
   // earlier regex version did not draw that line and rewrote layout dimensions
   // (a 560px panel width became 48) — hence the argument parser.
   test('no new: raw spacing literal', () {
-    const baseline = 180;
+    const baseline = 177;
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();

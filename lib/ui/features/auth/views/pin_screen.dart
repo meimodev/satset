@@ -570,54 +570,21 @@ class _AdminAuthForm extends StatelessWidget {
         const SizedBox(height: Sp.s2),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: onForgotPassword,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
-            ),
-            child: Text(
-              'Lupa password?',
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w500,
-                color: sc.textMd,
-              ),
-            ),
+          child: SatButton.ghost(
+            label: 'Lupa password?',
+            size: SatButtonSize.sm,
+            onTap: onForgotPassword,
           ),
         ),
         const SizedBox(height: Sp.s2),
         SizedBox(
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: busy ? null : onSubmit,
-            icon: busy
-                ? SizedBox(
-                    width: Sp.s4,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: sc.accentInk,
-                    ),
-                  )
-                : Icon(
-                    Icons.shield_moon_outlined,
-                    size: 18,
-                    color: sc.accentInk,
-                  ),
-            label: Text(
-              busy ? 'Memuat...' : 'Masuk sebagai admin',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w600,
-                color: sc.accentInk,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: sc.accent,
-              foregroundColor: sc.accentInk,
-              disabledBackgroundColor: sc.accent.withValues(alpha: 0.7),
-              shape: RoundedRectangleBorder(borderRadius: SatR.a(16)),
-            ),
+          width: double.infinity,
+          child: SatButton.primary(
+            label: busy ? AppStrings.loading : 'Masuk sebagai admin',
+            icon: Icons.shield_moon_outlined,
+            busy: busy,
+            size: SatButtonSize.lg,
+            onTap: busy ? null : onSubmit,
           ),
         ),
         if (serverError != null) ...[

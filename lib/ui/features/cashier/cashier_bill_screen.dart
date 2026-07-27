@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -1484,7 +1485,6 @@ class _TopActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     final paid = bill.paidAmount > 0;
     final canWriteOff = !bill.fullySettled && canRefund;
     return Row(
@@ -1497,24 +1497,11 @@ class _TopActions extends StatelessWidget {
           ),
         ),
         const SizedBox(width: Sp.s2),
-        SizedBox(
-          height: 46,
-          width: 46,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: sc.urgent,
-              side: SatB.side(
-                color: sc.urgent.withValues(alpha: canWriteOff ? 0.5 : 0.15),
-              ),
-              padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-            ),
-            onPressed: canWriteOff ? onWriteOff : null,
-            child: Tooltip(
-              message: 'Tutup tagihan — tak tertagih',
-              child: const Icon(Icons.report_gmailerrorred_outlined, size: 20),
-            ),
-          ),
+        SatIconButton.danger(
+          icon: Icons.report_gmailerrorred_outlined,
+          tooltip: 'Tutup tagihan — tak tertagih',
+          size: 46,
+          onTap: canWriteOff ? onWriteOff : null,
         ),
       ],
     );
