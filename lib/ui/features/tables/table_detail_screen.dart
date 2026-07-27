@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -739,9 +740,10 @@ class _Header extends ConsumerWidget {
                     children: [
                       if (table.guestName != null &&
                           table.guestName!.trim().isNotEmpty)
-                        _HPill(
+                        SatChip.tag(
                           icon: Icons.person_outline,
                           label: table.guestName!,
+                          size: SatChipSize.sm,
                         ),
                       if (table.guestNotes != null &&
                           table.guestNotes!.trim().isNotEmpty)
@@ -823,38 +825,6 @@ class _SeatedDurationChip extends StatelessWidget {
               weight: FontWeight.w600,
               color: sc.textMd,
               letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HPill extends StatelessWidget {
-  final IconData? icon;
-  final String label;
-  const _HPill({this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
-      decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(999)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: sc.textMd),
-            const SizedBox(width: Sp.s1h),
-          ],
-          Text(
-            label,
-            style: SatType.sans(
-              size: 11,
-              weight: FontWeight.w500,
-              color: sc.textMd,
             ),
           ),
         ],

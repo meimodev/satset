@@ -221,40 +221,10 @@ class _Header extends StatelessWidget {
               onTap: onManageZones,
             )
           else
-            _LockedPill(label: AppStrings.zoneAdminZonePill),
-        ],
-      ),
-    );
-  }
-}
-
-class _LockedPill extends StatelessWidget {
-  final String label;
-  const _LockedPill({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(999),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.lock_outline, size: 14, color: sc.textDim),
-          const SizedBox(width: Sp.s1h),
-          Text(
-            label,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w600,
-              color: sc.textDim,
+            SatChip.tag(
+              label: AppStrings.zoneAdminZonePill,
+              icon: Icons.lock_outline,
             ),
-          ),
         ],
       ),
     );
@@ -294,8 +264,10 @@ class _ZoneBar extends StatelessWidget {
               itemBuilder: (ctx, i) {
                 final z = zones[i];
                 final count = tables.where((t) => t.zoneId == z.id).length;
-                return _ZoneChip(
-                  zone: z,
+                return SatChip.select(
+                  label: z.name,
+                  icon: z.icon,
+                  dot: z.color,
                   count: count,
                   selected: z.id == selectedId,
                   onTap: () => onSelect(z.id),
@@ -312,66 +284,6 @@ class _ZoneBar extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ZoneChip extends StatelessWidget {
-  final Zone zone;
-  final int count;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ZoneChip({
-    required this.zone,
-    required this.count,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final fg = selected ? zone.color : sc.textMd;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: satMotion(context, 140),
-        padding: const EdgeInsets.fromLTRB(8, 0, 14, 0),
-        decoration: SatBox.d(
-          color: selected ? zone.color.withValues(alpha: 0.14) : sc.bg2,
-          border: SatB.all(
-            color: selected ? zone.color.withValues(alpha: 0.55) : sc.border1,
-          ),
-          borderRadius: SatR.a(999),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 26,
-              height: 26,
-              decoration: SatBox.d(
-                color: zone.color.withValues(alpha: selected ? 0.22 : 0.16),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(zone.icon, size: 15, color: zone.color),
-            ),
-            const SizedBox(width: Sp.s2),
-            Text(
-              zone.name,
-              style: SatType.sans(size: 13, weight: FontWeight.w600, color: fg),
-            ),
-            const SizedBox(width: 7),
-            Text(
-              '$count',
-              style: SatType.mono(
-                size: 11,
-                weight: FontWeight.w600,
-                color: selected ? zone.color : sc.textLo,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

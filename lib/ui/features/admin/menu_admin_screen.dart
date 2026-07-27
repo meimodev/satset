@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -74,7 +75,7 @@ class _TabletLayout extends ConsumerWidget {
                 const _TabSwitcher(),
                 const SizedBox(width: Sp.s2h),
               ],
-              _RoleBadge(perm: perm),
+              _MenuRoleChip(perm: perm),
             ],
           ),
         ),
@@ -291,7 +292,7 @@ class _PhoneLayout extends ConsumerWidget {
                     ],
                   ),
                 ),
-                _RoleBadge(perm: perm),
+                _MenuRoleChip(perm: perm),
               ],
             ),
           ),
@@ -1334,30 +1335,19 @@ class _TagsPanel extends ConsumerWidget {
   }
 }
 
-class _RoleBadge extends StatelessWidget {
+/// Which of the two menu permissions the signed-in staffer holds. A hue choice
+/// over [SatChip], not a chip of its own.
+class _MenuRoleChip extends StatelessWidget {
   final MenuPermission perm;
-  const _RoleBadge({required this.perm});
+  const _MenuRoleChip({required this.perm});
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     final isAdmin = perm == MenuPermission.admin;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
-      decoration: SatBox.d(
-        color: isAdmin ? sc.accentSoft : sc.bg3,
-        border: SatB.all(color: isAdmin ? sc.accentBorder : sc.border1),
-        borderRadius: SatR.a(999),
-      ),
-      child: Text(
-        isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
-        style: SatType.mono(
-          size: 10,
-          weight: FontWeight.w600,
-          letterSpacing: 0.8,
-          color: isAdmin ? sc.accentText : sc.textMd,
-        ),
-      ),
+    return SatChip.tag(
+      label: isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
+      hue: isAdmin ? SatChipHue.accent : SatChipHue.neutral,
+      size: SatChipSize.sm,
     );
   }
 }

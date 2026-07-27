@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
-import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
@@ -672,6 +672,9 @@ class _ModOpt extends StatelessWidget {
   }
 }
 
+/// A course as a filter chip. Delegates to [SatChip.select] — the only thing
+/// it adds is reading the course hue off the inverted palette when Glow paints
+/// the selection as a slab (ADR-0051), which is a course fact, not a chip one.
 class _CourseChip extends StatelessWidget {
   final Course course;
   final bool selected;
@@ -685,53 +688,15 @@ class _CourseChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    // Glow marks the chosen course with a solid slab rather than one step up
-    // the neutral ramp. Which course a line fires on is not a soft preference
-    // — it is the thing the kitchen reads off the ticket — and `bg4` on a bone
-    // ground is a difference you have to look for.
-    final glow = SatShape.glow;
-    final on = glow ? sc.slab : sc;
-    return PressScale(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 9),
-          decoration: SatBox.d(
-            color: selected ? (glow ? on.bg0 : sc.bg4) : sc.bg2,
-            borderRadius: SatR.a(999),
-            border: SatB.all(color: selected ? sc.border2 : sc.border0),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: SatBox.d(
-                  shape: BoxShape.circle,
-                  // The course hues are tuned as ink on the page. On the slab
-                  // they are read from the inverted palette instead, which is
-                  // the whole reason `slab` is a palette and not a colour.
-                  color: selected ? course.color(on) : course.color(sc),
-                ),
-              ),
-              const SizedBox(width: Sp.s2),
-              Text(
-                course.name,
-                style: SatType.sans(
-                  size: 13,
-                  weight: glow && selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? on.textHi : sc.textMd,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final on = SatShape.glow && selected ? sc.slab : sc;
+    return SatChip.select(
+      label: course.name,
+      dot: course.color(on),
+      selected: selected,
+      onTap: onTap,
     );
   }
 }
-
 class _Foot extends StatelessWidget {
   final int qty;
   final bool valid;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -163,20 +164,26 @@ class ReviewScreen extends ConsumerWidget {
                   runSpacing: 6,
                   children: [
                     if (kitchenCt > 0)
-                      _Pill(
+                      SatChip.tag(
                         icon: Icons.local_fire_department,
                         label: 'Dapur × $kitchenCt',
+                        size: SatChipSize.sm,
                       ),
                     if (barCt > 0)
-                      _Pill(icon: Icons.local_bar, label: 'Bar × $barCt'),
+                      SatChip.tag(
+                        icon: Icons.local_bar,
+                        label: 'Bar × $barCt',
+                        size: SatChipSize.sm,
+                      ),
                     if (allergens.isNotEmpty)
-                      _Pill(
+                      SatChip.tag(
                         icon: Icons.warning_amber_rounded,
                         label: allergens
                             .map((a) => tagsById[a]?.name ?? '')
                             .where((s) => s.isNotEmpty)
                             .join(' · '),
-                        tone: _Tone.urgent,
+                        hue: SatChipHue.urgent,
+                        size: SatChipSize.sm,
                       ),
                   ],
                 ),
@@ -567,54 +574,6 @@ Future<String?> _askGuestName(BuildContext context) {
       ],
     ),
   );
-}
-
-enum _Tone { normal, urgent }
-
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final _Tone tone;
-  const _Pill({
-    required this.icon,
-    required this.label,
-    this.tone = _Tone.normal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    Color bg;
-    Color fg;
-    switch (tone) {
-      case _Tone.urgent:
-        bg = sc.urgentSoft;
-        fg = sc.urgent;
-        break;
-      case _Tone.normal:
-        bg = sc.bg3;
-        fg = sc.textMd;
-        break;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
-      decoration: SatBox.d(color: bg, borderRadius: SatR.a(999)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: fg),
-          const SizedBox(width: Sp.s1h),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: SatType.sans(size: 11, weight: FontWeight.w500, color: fg),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _CourseBlock extends StatelessWidget {
