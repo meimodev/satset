@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -724,19 +725,13 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: labelCtl,
-                  decoration: const InputDecoration(labelText: 'Label'),
-                ),
-                TextField(
+                SatField.text(controller: labelCtl, label: 'Label', hint: ''),
+                SatField.text(
                   controller: hostCtl,
-                  decoration: const InputDecoration(labelText: 'Host (IP)'),
+                  label: 'Host (IP)',
+                  hint: '',
                 ),
-                TextField(
-                  controller: portCtl,
-                  decoration: const InputDecoration(labelText: 'Port'),
-                  keyboardType: TextInputType.number,
-                ),
+                SatField.number(controller: portCtl, label: 'Port', hint: ''),
                 const SizedBox(height: Sp.s3),
                 SegmentedButton<String>(
                   segments: const [

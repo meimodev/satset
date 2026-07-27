@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -549,12 +550,11 @@ Future<String?> _askGuestName(BuildContext context) {
     builder: (ctx) => AlertDialog(
       backgroundColor: sc.bg1,
       title: Text('Nama tamu', style: SatType.sans(color: sc.textHi)),
-      content: TextField(
+      content: SatField.text(
         controller: ctrl,
+        hint: 'mis. Budi',
         autofocus: true,
-        textCapitalization: TextCapitalization.words,
-        style: SatType.sans(size: 14, color: sc.textHi),
-        decoration: const InputDecoration(hintText: 'mis. Budi'),
+        capitalization: TextCapitalization.words,
         onSubmitted: (v) {
           if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim());
         },

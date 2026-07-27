@@ -77,10 +77,10 @@ abstract final class BookStubs {
     capabilities: caps ?? Capability.values.toSet(),
   );
 
-  static final waiterAuth = authAs(waiter, caps: {
-    Capability.takeOrder,
-    Capability.modifyOrder,
-  });
+  static final waiterAuth = authAs(
+    waiter,
+    caps: {Capability.takeOrder, Capability.modifyOrder},
+  );
   static final adminAuth = authAs(admin);
 
   // ── Menu tags ─────────────────────────────────────────────────────────────

@@ -196,8 +196,11 @@ class _Mark extends StatelessWidget {
     // in both palettes, so the mark inverts across *brightness* instead: an
     // obsidian slab carrying lime on the light one, a lime slab carrying
     // obsidian on the dark (glow.css `.tab-mark` + its `glowNoir` override).
-    final onDarkSlab = SatShape.brutalPaper || SatShape.glow && !SatShape.glowNoir;
-    final fill = SatShape.glow && !SatShape.glowNoir ? sc.slab.bg0 : SatShape.ink;
+    final onDarkSlab =
+        SatShape.brutalPaper || SatShape.glow && !SatShape.glowNoir;
+    final fill = SatShape.glow && !SatShape.glowNoir
+        ? sc.slab.bg0
+        : SatShape.ink;
     return Container(
       width: 40,
       height: 40,

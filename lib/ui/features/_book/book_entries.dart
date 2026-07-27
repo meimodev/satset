@@ -97,16 +97,20 @@ final _menu = <Override>[
 /// share sheet — that is the point, not a leak.
 final _exportFetchers = <Override>[
   orderHistoryFetcherProvider.overrideWith(
-    (ref) => (ReportsQuery q) async => BookStubs.orderHistory(q),
+    (ref) =>
+        (ReportsQuery q) async => BookStubs.orderHistory(q),
   ),
   orderHistoryPhotosFetcherProvider.overrideWith(
-    (ref) => (OrderHistory h) async => BookStubs.historyPhotos(h),
+    (ref) =>
+        (OrderHistory h) async => BookStubs.historyPhotos(h),
   ),
   staffReportFetcherProvider.overrideWith(
-    (ref) => (ReportsQuery q) async => BookStubs.staffReport(q),
+    (ref) =>
+        (ReportsQuery q) async => BookStubs.staffReport(q),
   ),
   accountingReportFetcherProvider.overrideWith(
-    (ref) => (ReportsQuery q) async => BookStubs.accountingReport(q),
+    (ref) =>
+        (ReportsQuery q) async => BookStubs.accountingReport(q),
   ),
 ];
 
@@ -134,8 +138,7 @@ class _BookCycleState<T> extends State<_BookCycle<T>> {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: () =>
-          setState(() => _i = (_i + 1) % widget.values.length),
+      onPressed: () => setState(() => _i = (_i + 1) % widget.values.length),
       child: widget.builder(context, widget.values[_i]),
     );
   }
@@ -151,19 +154,13 @@ class _BookSwatch extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Sp.s3,
-        vertical: Sp.s2h,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: sc.bg2,
         borderRadius: SatR.a(10),
         border: SatB.all(color: sc.border1),
       ),
-      child: Text(
-        text,
-        style: SatType.sans(size: 13, color: sc.textMd),
-      ),
+      child: Text(text, style: SatType.sans(size: 13, color: sc.textMd)),
     );
   }
 }
@@ -360,11 +357,8 @@ List<BookEntry> bookEntries() => [
       ),
       BookState(
         'over 1.0 — clamped',
-        (c, r) => AnimatedBarFill(
-          factor: 1.8,
-          color: c.sat.urgent,
-          track: c.sat.bg3,
-        ),
+        (c, r) =>
+            AnimatedBarFill(factor: 1.8, color: c.sat.urgent, track: c.sat.bg3),
       ),
     ],
   ),
@@ -448,31 +442,31 @@ List<BookEntry> bookEntries() => [
     states: [
       BookState(
         'title, waiter, connected',
-        (c, r) => _scope(
-          [_auth(BookStubs.waiterAuth), _ws(WsConnState.open)],
-          const SatAppBar(title: 'Meja'),
-        ),
+        (c, r) => _scope([
+          _auth(BookStubs.waiterAuth),
+          _ws(WsConnState.open),
+        ], const SatAppBar(title: 'Meja')),
       ),
       BookState(
         'connecting',
-        (c, r) => _scope(
-          [_auth(BookStubs.waiterAuth), _ws(WsConnState.connecting)],
-          const SatAppBar(title: 'Meja'),
-        ),
+        (c, r) => _scope([
+          _auth(BookStubs.waiterAuth),
+          _ws(WsConnState.connecting),
+        ], const SatAppBar(title: 'Meja')),
       ),
       BookState(
         'closed',
-        (c, r) => _scope(
-          [_auth(BookStubs.waiterAuth), _ws(WsConnState.closed)],
-          const SatAppBar(title: 'Meja'),
-        ),
+        (c, r) => _scope([
+          _auth(BookStubs.waiterAuth),
+          _ws(WsConnState.closed),
+        ], const SatAppBar(title: 'Meja')),
       ),
       BookState(
         'admin — network pill visible',
-        (c, r) => _scope(
-          [_auth(BookStubs.adminAuth), _ws(WsConnState.closed)],
-          const SatAppBar(title: 'Venue'),
-        ),
+        (c, r) => _scope([
+          _auth(BookStubs.adminAuth),
+          _ws(WsConnState.closed),
+        ], const SatAppBar(title: 'Venue')),
         note:
             'The pill only renders for an admin; a waiter gets the dot alone.',
       ),
@@ -501,17 +495,17 @@ List<BookEntry> bookEntries() => [
       ),
       BookState(
         'no avatar',
-        (c, r) => _scope(
-          [_auth(BookStubs.waiterAuth), _ws(WsConnState.open)],
-          const SatAppBar(title: 'Meja', showAvatar: false),
-        ),
+        (c, r) => _scope([
+          _auth(BookStubs.waiterAuth),
+          _ws(WsConnState.open),
+        ], const SatAppBar(title: 'Meja', showAvatar: false)),
       ),
       BookState(
         'signed out',
-        (c, r) => _scope(
-          [_auth(BookStubs.signedOut), _ws(WsConnState.closed)],
-          const SatAppBar(title: 'Masuk'),
-        ),
+        (c, r) => _scope([
+          _auth(BookStubs.signedOut),
+          _ws(WsConnState.closed),
+        ], const SatAppBar(title: 'Masuk')),
       ),
       BookState(
         'stress — long title, deep crumbs, three pills',
@@ -562,10 +556,7 @@ List<BookEntry> bookEntries() => [
     group: _gChrome,
     states: [
       BookState('default', (c, r) => const LoginClock()),
-      BookState(
-        'tinted',
-        (c, r) => LoginClock(textColor: c.sat.accentText),
-      ),
+      BookState('tinted', (c, r) => LoginClock(textColor: c.sat.accentText)),
     ],
   ),
   BookEntry(
@@ -827,7 +818,9 @@ List<BookEntry> bookEntries() => [
               ticket: BookStubs.ticket(
                 status: s,
                 ageMinutes: s == TicketStatus.prep ? 22 : 3,
-                voidReason: s == TicketStatus.voided ? 'Tamu berubah pikiran' : null,
+                voidReason: s == TicketStatus.voided
+                    ? 'Tamu berubah pikiran'
+                    : null,
               ),
               onTap: () {},
               onMarkServed: (_) {},
@@ -962,8 +955,7 @@ List<BookEntry> bookEntries() => [
       BookState('short', (c, r) => const NoteLine(text: 'Tanpa sambal.')),
       BookState(
         'custom label',
-        (c, r) =>
-            const NoteLine(text: 'Alergi kacang.', label: 'Catatan tamu'),
+        (c, r) => const NoteLine(text: 'Alergi kacang.', label: 'Catatan tamu'),
       ),
       BookState(
         'empty — renders nothing',
@@ -1055,10 +1047,8 @@ List<BookEntry> bookEntries() => [
     states: [
       BookState(
         'allergens + diet, resolved live',
-        (c, r) => _scope(
-          _menu,
-          const MenuTagBadges(itemId: BookStubs.taggedItemId),
-        ),
+        (c, r) =>
+            _scope(_menu, const MenuTagBadges(itemId: BookStubs.taggedItemId)),
       ),
       BookState(
         'item with no tags',
@@ -1163,8 +1153,7 @@ List<BookEntry> bookEntries() => [
       ),
       BookState(
         'squareUnderBrutal',
-        (c, r) =>
-            StaffAvatar(actor: BookStubs.admin, squareUnderBrutal: true),
+        (c, r) => StaffAvatar(actor: BookStubs.admin, squareUnderBrutal: true),
         note: 'Only differs under the two neo (brutal) themes.',
       ),
       BookState(
@@ -1246,11 +1235,8 @@ List<BookEntry> bookEntries() => [
       ),
       BookState(
         'square, sharp corners',
-        (c, r) => const SkeletonBox(
-          width: _photoSize,
-          height: _photoSize,
-          radius: 0,
-        ),
+        (c, r) =>
+            const SkeletonBox(width: _photoSize, height: _photoSize, radius: 0),
       ),
     ],
   ),
@@ -1278,7 +1264,9 @@ List<BookEntry> bookEntries() => [
   BookEntry(
     name: 'ReportsSkeleton',
     group: _gLoading,
-    states: [BookState('KPI row + two charts', (c, r) => const ReportsSkeleton())],
+    states: [
+      BookState('KPI row + two charts', (c, r) => const ReportsSkeleton()),
+    ],
   ),
 
   // ── Sheets ────────────────────────────────────────────────────────────────

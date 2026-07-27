@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/data/models/bill_dto.dart';
@@ -191,15 +192,11 @@ Future<String?> _askApproverPin(BuildContext context) async {
             style: SatType.sans(size: 12.5, color: sc.textLo),
           ),
           const SizedBox(height: Sp.s3),
-          TextField(
+          SatField.pin(
             controller: ctrl,
+            label: 'PIN manajer',
+            hint: '',
             autofocus: true,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'PIN manajer',
-              border: OutlineInputBorder(),
-            ),
           ),
         ],
       ),

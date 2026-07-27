@@ -55,7 +55,11 @@ class SatTabs extends StatelessWidget {
             ),
           )
         else
-          _SatTabItem(tab: tabs[i], on: i == selected, onTap: () => onSelected(i)),
+          _SatTabItem(
+            tab: tabs[i],
+            on: i == selected,
+            onTap: () => onSelected(i),
+          ),
     ];
 
     return Container(

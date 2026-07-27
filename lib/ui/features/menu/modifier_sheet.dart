@@ -697,6 +697,7 @@ class _CourseChip extends StatelessWidget {
     );
   }
 }
+
 class _Foot extends StatelessWidget {
   final int qty;
   final bool valid;

@@ -9,10 +9,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/discount_dto.dart';
@@ -255,13 +255,10 @@ Future<void> _edit(
                 ),
               ),
               const SizedBox(height: Sp.s3),
-              TextField(
+              SatField.text(
                 controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Nama (tampil di struk)',
-                  hintText: 'Diskon Member',
-                  border: OutlineInputBorder(),
-                ),
+                label: 'Nama (tampil di struk)',
+                hint: 'Diskon Member',
               ),
               const SizedBox(height: Sp.s3),
               // Scope is what stops a fixed whole-bill amount landing on one
@@ -284,15 +281,11 @@ Future<void> _edit(
                 onSelectionChanged: (v) => setState(() => kind = v.first),
               ),
               const SizedBox(height: Sp.s3),
-              TextField(
+              SatField.number(
                 controller: valueCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  labelText: kind == 'percent' ? 'Persen (%)' : 'Nominal (Rp)',
-                  border: const OutlineInputBorder(),
-                  errorText: error,
-                ),
+                label: kind == 'percent' ? 'Persen (%)' : 'Nominal (Rp)',
+                hint: '',
+                errorText: error,
               ),
               const SizedBox(height: Sp.s2),
               SwitchListTile(

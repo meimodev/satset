@@ -247,10 +247,7 @@ class _BookStageState extends ConsumerState<_BookStage> {
     final theme = ref.watch(satThemeProvider);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: Sp.s4,
-        vertical: Sp.s2,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s2),
       decoration: BoxDecoration(
         color: sc.bg1,
         border: Border(bottom: BorderSide(color: sc.border0)),

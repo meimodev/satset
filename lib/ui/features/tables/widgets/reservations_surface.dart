@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -703,17 +704,16 @@ Future<void> openCreateReservationSheet(
                     ),
                   ),
                   const SizedBox(height: Sp.s4),
-                  TextField(
+                  SatField.text(
                     controller: nameCtl,
-                    decoration: const InputDecoration(labelText: 'Nama tamu'),
+                    label: 'Nama tamu',
+                    hint: '',
                   ),
                   const SizedBox(height: Sp.s2h),
-                  TextField(
+                  SatField.number(
                     controller: phoneCtl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'No. HP (opsional)',
-                    ),
+                    label: 'No. HP',
+                    hint: 'opsional',
                   ),
                   const SizedBox(height: Sp.s2h),
                   Row(
@@ -822,12 +822,11 @@ Future<void> openCreateReservationSheet(
                     }),
                   ),
                   const SizedBox(height: Sp.s2h),
-                  TextField(
+                  SatField.text(
                     controller: notesCtl,
+                    label: 'Catatan',
+                    hint: 'opsional',
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Catatan (opsional)',
-                    ),
                   ),
                   const SizedBox(height: Sp.s4h),
                   SatButton.primary(

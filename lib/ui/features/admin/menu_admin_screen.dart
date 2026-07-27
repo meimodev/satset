@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -359,35 +360,11 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
+            child: SatField.search(
               controller: _ctrl,
+              hint: 'Cari item, deskripsi…',
               onChanged: (t) =>
                   ref.read(menuAdminSearchProvider.notifier).state = t,
-              style: SatType.sans(size: 13, color: sc.textHi),
-              decoration: InputDecoration(
-                hintText: 'Cari item, deskripsi…',
-                hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                prefixIcon: Icon(Icons.search, size: 18, color: sc.textLo),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s1,
-                  vertical: Sp.s2h,
-                ),
-                filled: true,
-                fillColor: sc.bg2,
-                border: OutlineInputBorder(
-                  borderRadius: SatR.a(999),
-                  borderSide: SatB.side(color: sc.border1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(999),
-                  borderSide: SatB.side(color: sc.border1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(999),
-                  borderSide: SatB.side(color: sc.accent),
-                ),
-              ),
             ),
           ),
           if (!isTab && perm == MenuPermission.admin) ...[
@@ -1087,11 +1064,10 @@ class _CategoriesPanel extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(title, style: SatType.sans(size: 16, color: sc.textHi)),
-        content: TextField(
+        content: SatField.text(
           controller: ctrl,
+          hint: 'Nama kategori',
           autofocus: true,
-          style: SatType.sans(size: 14, color: sc.textHi),
-          decoration: const InputDecoration(hintText: 'Nama kategori'),
           onSubmitted: (t) => Navigator.pop(ctx, t),
         ),
         actions: [
@@ -1296,22 +1272,19 @@ class _TagsPanel extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
+              SatField.text(
                 controller: nameCtrl,
+                label: 'Nama',
+                hint: '',
                 autofocus: true,
-                style: SatType.sans(size: 14, color: sc.textHi),
-                decoration: const InputDecoration(labelText: 'Nama'),
               ),
               const SizedBox(height: Sp.s2),
-              TextField(
+              SatField.text(
                 controller: codeCtrl,
+                label: 'Kode badge',
+                hint: 'GL',
                 maxLength: 3,
-                textCapitalization: TextCapitalization.characters,
-                style: SatType.sans(size: 14, color: sc.textHi),
-                decoration: const InputDecoration(
-                  labelText: 'Kode badge',
-                  hintText: 'GL',
-                ),
+                capitalization: TextCapitalization.characters,
               ),
             ],
           ),

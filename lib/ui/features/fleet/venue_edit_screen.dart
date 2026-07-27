@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -196,26 +197,23 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         children: [
           _sectionLabel(sc, 'IDENTITAS'),
           const SizedBox(height: Sp.s2h),
-          TextField(
+          SatField.text(
             controller: _name,
+            label: 'Nama venue',
+            hint: '',
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              labelText: 'Nama venue',
-              errorText: _nameValid ? null : 'Nama wajib diisi',
-            ),
+            errorText: _nameValid ? null : 'Nama wajib diisi',
           ),
           const SizedBox(height: Sp.s3h),
-          TextField(
+          SatField.text(
             controller: _address,
-            decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
+            label: 'Alamat',
+            hint: 'opsional',
           ),
           const SizedBox(height: 28),
           _sectionLabel(sc, 'TAGIHAN'),
           const SizedBox(height: Sp.s2h),
-          TextField(
-            controller: _plan,
-            decoration: const InputDecoration(labelText: 'Paket'),
-          ),
+          SatField.text(controller: _plan, label: 'Paket', hint: ''),
           const SizedBox(height: Sp.s3h),
           DropdownButtonFormField<String>(
             initialValue: _billingStatus,
@@ -386,20 +384,11 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Nama'),
-            ),
+            SatField.text(controller: name, label: 'Nama', hint: ''),
             const SizedBox(height: Sp.s3),
-            TextField(
-              controller: email,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
+            SatField.text(controller: email, label: 'Email', hint: ''),
             const SizedBox(height: Sp.s3),
-            TextField(
-              controller: pw,
-              decoration: const InputDecoration(labelText: 'Password awal'),
-            ),
+            SatField.text(controller: pw, label: 'Password awal', hint: ''),
           ],
         ),
         actions: [

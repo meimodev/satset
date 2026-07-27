@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -809,19 +810,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: labelCtl,
-                decoration: const InputDecoration(labelText: 'Label'),
-              ),
-              TextField(
-                controller: hostCtl,
-                decoration: const InputDecoration(labelText: 'Host (IP)'),
-              ),
-              TextField(
-                controller: portCtl,
-                decoration: const InputDecoration(labelText: 'Port'),
-                keyboardType: TextInputType.number,
-              ),
+              SatField.text(controller: labelCtl, label: 'Label', hint: ''),
+              SatField.text(controller: hostCtl, label: 'Host (IP)', hint: ''),
+              SatField.number(controller: portCtl, label: 'Port', hint: ''),
               const SizedBox(height: Sp.s2),
               DropdownButton<String>(
                 value: kind,
@@ -922,12 +913,11 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
             'WS clients akan disconnect ~1-3 detik. Masukkan PIN untuk konfirmasi.',
           ),
           const SizedBox(height: Sp.s2h),
-          TextField(
+          SatField.pin(
             controller: _ctl,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            maxLength: 6,
-            decoration: InputDecoration(labelText: 'PIN', errorText: _err),
+            label: 'PIN',
+            hint: '',
+            errorText: _err,
           ),
         ],
       ),

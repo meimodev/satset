@@ -781,6 +781,7 @@ class _LiveSeatedChip extends ConsumerWidget {
     );
   }
 }
+
 class _ContextTriggerBtn extends StatelessWidget {
   final int alertCount;
   final VoidCallback onTap;

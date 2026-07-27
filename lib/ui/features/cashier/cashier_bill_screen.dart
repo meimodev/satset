@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -195,13 +196,11 @@ class CashierBillScreen extends ConsumerWidget {
               'kerugian (tak tertagih). Perlu persetujuan manajer.',
             ),
             const SizedBox(height: Sp.s3),
-            TextField(
+            SatField.text(
               controller: ctrl,
+              label: 'Alasan (wajib)',
+              hint: 'mis. tamu pergi tanpa bayar',
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Alasan (wajib)',
-                hintText: 'mis. tamu pergi tanpa bayar',
-              ),
             ),
           ],
         ),
@@ -1120,27 +1119,19 @@ class _ReceiptCard extends ConsumerWidget {
                       .toList(),
                 ),
                 const SizedBox(height: Sp.s3),
-                TextField(
+                SatField.money(
                   controller: amountCtl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: const [RupiahInputFormatter()],
+                  label: 'Jumlah',
+                  hint: '',
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    prefixText: 'Rp ',
-                    labelText: 'Jumlah',
-                  ),
                 ),
                 if (!refund && method == 'tunai') ...[
                   const SizedBox(height: Sp.s2),
-                  TextField(
+                  SatField.money(
                     controller: tenderedCtl,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: const [RupiahInputFormatter()],
+                    label: 'Uang diterima',
+                    hint: '',
                     onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      prefixText: 'Rp ',
-                      labelText: 'Uang diterima',
-                    ),
                   ),
                   AnimatedSwitcher(
                     duration: satMotion(context, 200),
@@ -1662,12 +1653,7 @@ Future<int?> _askInt(BuildContext context, String title, {int initial = 2}) {
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
-      content: TextField(
-        controller: ctl,
-        keyboardType: TextInputType.number,
-        autofocus: true,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      ),
+      content: SatField.number(controller: ctl, hint: '', autofocus: true),
       actions: [
         SatButton.ghost(
           label: AppStrings.cancel,

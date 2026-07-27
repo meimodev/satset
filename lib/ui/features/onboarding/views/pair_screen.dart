@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/data/models/pair_dto.dart';
 import 'package:satset/ui/features/onboarding/view_models/pair_view_model.dart';
@@ -54,26 +55,17 @@ class _PairScreenState extends ConsumerState<PairScreen> {
                 'Scan QR dari server tablet, atau isi manual jika multicast diblokir di WiFi:',
               ),
               const SizedBox(height: Sp.s4),
-              TextField(
-                controller: _host,
-                decoration: const InputDecoration(labelText: 'Host (IP)'),
-              ),
-              TextField(
-                controller: _port,
-                decoration: const InputDecoration(labelText: 'Port'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
+              SatField.text(controller: _host, label: 'Host (IP)', hint: ''),
+              SatField.number(controller: _port, label: 'Port', hint: ''),
+              SatField.text(
                 controller: _token,
-                decoration: const InputDecoration(
-                  labelText: 'Pair token (sekali pakai)',
-                ),
+                label: 'Pair token',
+                hint: 'sekali pakai',
               ),
-              TextField(
+              SatField.text(
                 controller: _fp,
-                decoration: const InputDecoration(
-                  labelText: 'Cert fingerprint (SHA-256)',
-                ),
+                label: 'Cert fingerprint (SHA-256)',
+                hint: '',
               ),
               const SizedBox(height: Sp.s4),
               SatButton.primary(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -141,28 +142,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               ],
             ),
             const SizedBox(height: Sp.s3h),
-            TextField(
-              controller: _guestCtrl,
-              style: SatType.sans(size: 14, color: sc.textHi),
-              decoration: InputDecoration(
-                hintText: 'Nama tamu (opsional)',
-                hintStyle: SatType.sans(size: 14, color: sc.textLo),
-                filled: true,
-                fillColor: sc.bg2,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s3h,
-                  vertical: Sp.s3,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: sc.border0),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: sc.border0),
-                ),
-              ),
-            ),
+            SatField.text(controller: _guestCtrl, hint: 'Nama tamu (opsional)'),
             const SizedBox(height: Sp.s4),
             Flexible(
               child: targets.isEmpty

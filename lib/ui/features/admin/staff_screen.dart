@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/roles_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
@@ -156,13 +156,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     Icon(Icons.search, size: 16, color: sc.textLo),
                     const SizedBox(width: Sp.s2),
                     Expanded(
-                      child: TextField(
+                      child: SatField.search(
+                        hint: AppStrings.staffSearchHint,
                         onChanged: (v) => setState(() => _query = v),
-                        style: SatType.sans(size: 13, color: sc.textHi),
-                        decoration: InputDecoration.collapsed(
-                          hintText: AppStrings.staffSearchHint,
-                          hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                        ),
                       ),
                     ),
                   ],
@@ -804,13 +800,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     ),
                   ),
                   const SizedBox(height: Sp.s3h),
-                  TextField(
-                    controller: ctl,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+                  SatField.text(controller: ctl, hint: '', autofocus: true),
                   const SizedBox(height: Sp.s4),
                   Row(
                     children: [
@@ -1190,13 +1180,11 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
                 ),
               ),
               const SizedBox(height: Sp.s4),
-              TextField(
+              SatField.text(
                 controller: _nameCtl,
+                label: AppStrings.staffFullName,
+                hint: '',
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: AppStrings.staffFullName,
-                  border: OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: Sp.s3),
               DropdownButtonFormField<String>(
@@ -1363,11 +1351,9 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   children: [
                     _label(AppStrings.staffName),
-                    TextField(
+                    SatField.text(
                       controller: _nameCtl,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
+                      hint: '',
                       onSubmitted: (_) => _saveName(user),
                     ),
                     const SizedBox(height: Sp.s4),
@@ -1409,16 +1395,10 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextField(
+                          child: SatField.number(
                             controller: _pinCtl,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(6),
-                            ],
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                            ),
+                            hint: '',
+                            maxLength: 6,
                             onSubmitted: (_) => _savePin(user),
                           ),
                         ),

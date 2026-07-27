@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -216,15 +217,9 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Nama venue'),
-            ),
+            SatField.text(controller: name, label: 'Nama venue', hint: ''),
             const SizedBox(height: Sp.s3),
-            TextField(
-              controller: addr,
-              decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
-            ),
+            SatField.text(controller: addr, label: 'Alamat', hint: 'opsional'),
           ],
         ),
         actions: [
