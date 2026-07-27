@@ -879,3 +879,29 @@ class StockMovements extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Single-row state for the [[Demo seed (venue mid-service)]] (ADR-0053).
+///
+/// Exists only while the venue holds demo data; [[Demo reset]] deletes it.
+class DemoStates extends Table {
+  TextColumn get id => text().withDefault(const Constant('default'))();
+
+  /// The instant the demo snapshot was authored to be read at. The host
+  /// re-anchors [[Demo clock]] to this on every boot, so the seeded states
+  /// read at the age they were written for however long ago that was.
+  DateTimeColumn get anchorAt => dateTime()();
+
+  /// False while a seed job is still running. A job that is interrupted —
+  /// host backgrounded, process reclaimed, app force-quit — leaves this false
+  /// forever, and the Venue Hub then offers only Hapus: partial history would
+  /// otherwise trip the seed guard while reporting a loaded venue, so the
+  /// reports look real and are quietly short (ADR-0053 §9).
+  BoolColumn get complete => boolean().withDefault(const Constant(false))();
+
+  /// Progress for the async seed job's WS broadcasts.
+  IntColumn get daysDone => integer().withDefault(const Constant(0))();
+  IntColumn get daysTotal => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

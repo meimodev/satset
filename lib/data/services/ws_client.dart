@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -82,7 +83,7 @@ class WsClient {
       // lossy gap (empty/401 bootstrap, or events missed while down) heals on
       // every (re)connect. See ADR-0021.
       _controller.add(
-        WsEventDto(type: WsEventTypes.connected, ts: DateTime.now()),
+        WsEventDto(type: WsEventTypes.connected, ts: SatClock.now()),
       );
     } catch (e, st) {
       SatLog.err('ws start', e, st);
@@ -121,6 +122,15 @@ class WsClient {
       final j = jsonDecode(raw as String) as Map<String, dynamic>;
       final ev = WsEventDto.fromJson(j);
       SatLog.wsLazy(() => 'rx ${j['type'] ?? "?"}');
+      // Adopt the demo clock here rather than in a repository: it must be in
+      // effect before any listener reacts to this or any later event, or a
+      // screen renders elapsed times against the clock it is replacing
+      // (ADR-0053 §2).
+      if (ev.type == WsEventTypes.demoClock) {
+        final secs = (ev.payload['offsetSeconds'] as num?)?.toInt() ?? 0;
+        SatClock.adopt(Duration(seconds: secs));
+        SatLog.ws('demo clock offset=${secs}s');
+      }
       _controller.add(ev);
     } catch (e, st) {
       SatLog.err('ws decode', e, st);
