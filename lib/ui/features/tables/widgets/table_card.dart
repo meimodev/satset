@@ -553,11 +553,20 @@ class _StaleBanner extends StatelessWidget {
     final sc = context.sat;
     final brutal = SatShape.brutal;
     final crit = stale.severity == StaleSeverity.crit;
-    final fill = crit ? sc.urgent : sc.warn;
-    // Both skins pick the foreground by luminance. White on `warn` amber is
-    // ~2:1 and fails AA — and this banner is the one thing on the card a waiter
-    // has to read at a glance.
-    final fg = onFill(fill);
+    // Glow spends `urgent` on crit only and puts everything else on an obsidian
+    // slab — its grammar separates with slab colour, and a whole card foot in
+    // amber is the "if everything is urgent, nothing is" failure one step early.
+    // The other skins keep amber for the warn tier.
+    final glow = SatShape.glow;
+    final fill = crit
+        ? sc.urgent
+        : glow
+        ? sc.slab.bg0
+        : sc.warn;
+    // Both other skins pick the foreground by luminance. White on `warn` amber
+    // is ~2:1 and fails AA — and this banner is the one thing on the card a
+    // waiter has to read at a glance. On the slab the palette names it.
+    final fg = glow && !crit ? sc.slab.textHi : onFill(fill);
     return Container(
       padding: EdgeInsets.fromLTRB(tablet ? 18 : 14, 7, tablet ? 18 : 14, 7),
       decoration: BoxDecoration(
@@ -572,10 +581,17 @@ class _StaleBanner extends StatelessWidget {
             width: 15,
             height: 15,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: SatR.a(4),
-              border: Border.all(color: fg, width: brutal ? 2 : 1),
-            ),
+            // Glow's bang is a filled disc, not an outlined box — it draws no
+            // rules, so a hairline square would be the one border on the card.
+            decoration: glow
+                ? BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: fg.withValues(alpha: 0.2),
+                  )
+                : BoxDecoration(
+                    borderRadius: SatR.a(4),
+                    border: Border.all(color: fg, width: brutal ? 2 : 1),
+                  ),
             child: Text(
               '!',
               style: brutal
