@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1440,13 +1441,11 @@ class _GuestOrderingCard extends ConsumerWidget {
             const SizedBox(height: Sp.s1h),
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => ref.invalidate(guestNetInfoProvider),
-                icon: Icon(Icons.refresh, size: 16, color: sc.accentText),
-                label: Text(
-                  'Cek ulang alamat',
-                  style: SatType.sans(size: 12, color: sc.accentText),
-                ),
+              child: SatButton.ghost(
+                icon: Icons.refresh,
+                label: 'Cek ulang alamat',
+                size: SatButtonSize.sm,
+                onTap: () => ref.invalidate(guestNetInfoProvider),
               ),
             ),
             Text(

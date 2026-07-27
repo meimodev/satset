@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,10 +126,10 @@ class _SentScreenState extends ConsumerState<SentScreen>
               ),
               if (table != null) ...[
                 const SizedBox(height: Sp.s6),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                  label: const Text('Cetak struk'),
-                  onPressed: () {
+                SatButton.outline(
+                  icon: Icons.receipt_long_rounded,
+                  label: 'Cetak struk',
+                  onTap: () {
                     setState(() => _engaged = true);
                     printTableStruk(
                       context: context,

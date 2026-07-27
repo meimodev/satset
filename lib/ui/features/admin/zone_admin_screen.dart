@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -878,12 +879,9 @@ class _QrDialog extends ConsumerWidget {
             const SizedBox(height: Sp.s4),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  AppStrings.close,
-                  style: SatType.sans(size: 14, color: sc.accentText),
-                ),
+              child: SatButton.ghost(
+                label: AppStrings.close,
+                onTap: () => Navigator.of(context).pop(),
               ),
             ),
           ],

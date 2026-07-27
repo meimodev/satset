@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/data/models/pair_dto.dart';
 import 'package:satset/ui/features/onboarding/view_models/pair_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -75,19 +76,18 @@ class _PairScreenState extends ConsumerState<PairScreen> {
                 ),
               ),
               const SizedBox(height: Sp.s4),
-              FilledButton(
-                onPressed: s.busy
-                    ? null
-                    : () {
-                        final qr = PairQrPayloadDto(
-                          host: _host.text.trim(),
-                          port: int.tryParse(_port.text.trim()) ?? 7443,
-                          fingerprint: _fp.text.trim(),
-                          token: _token.text.trim(),
-                        );
-                        vm.claim(jsonEncode(qr.toJson()));
-                      },
-                child: Text(s.busy ? 'Memasangkan…' : 'Pasangkan'),
+              SatButton.primary(
+                label: s.busy ? 'Memasangkan…' : 'Pasangkan',
+                busy: s.busy,
+                onTap: () {
+                  final qr = PairQrPayloadDto(
+                    host: _host.text.trim(),
+                    port: int.tryParse(_port.text.trim()) ?? 7443,
+                    fingerprint: _fp.text.trim(),
+                    token: _token.text.trim(),
+                  );
+                  vm.claim(jsonEncode(qr.toJson()));
+                },
               ),
               if (s.error != null) ...[
                 const SizedBox(height: Sp.s3),

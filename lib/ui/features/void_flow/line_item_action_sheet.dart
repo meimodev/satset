@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -610,9 +611,12 @@ class _VoidReasonListState extends State<_VoidReasonList> {
             ),
           const SizedBox(height: Sp.s4),
           SizedBox(
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _canContinue
+            width: double.infinity,
+            child: SatButton.primary(
+              label: 'Batalkan item',
+              icon: Icons.delete_outline,
+              size: SatButtonSize.lg,
+              onTap: _canContinue
                   ? () {
                       final r = _voidReasons.firstWhere(
                         (x) => x['id'] == _pickedId,
@@ -623,29 +627,6 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                       );
                     }
                   : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: sc.accent,
-                disabledBackgroundColor: sc.accent.withValues(alpha: 0.45),
-                foregroundColor: sc.accentInk,
-                elevation: 0,
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Batalkan item',
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.accentInk,
-                    ),
-                  ),
-                  const SizedBox(width: Sp.s1h),
-                  Icon(Icons.delete_outline, size: 14, color: sc.accentInk),
-                ],
-              ),
             ),
           ),
         ],

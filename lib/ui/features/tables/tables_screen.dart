@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -422,31 +423,14 @@ class _NewOrderButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    return FilledButton.icon(
-      onPressed: () {
+    return SatButton.primary(
+      label: 'Pesanan baru',
+      icon: Icons.add_rounded,
+      size: tablet ? SatButtonSize.lg : SatButtonSize.md,
+      onTap: () {
         startNewDraft(ref);
         context.push('/order/new');
       },
-      style: FilledButton.styleFrom(
-        backgroundColor: sc.accent,
-        foregroundColor: sc.accentInk,
-        elevation: 0,
-        padding: EdgeInsets.symmetric(
-          horizontal: tablet ? 18 : 14,
-          vertical: tablet ? 14 : 11,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-      ),
-      icon: const Icon(Icons.add_rounded, size: 18),
-      label: Text(
-        SatShape.caps('Pesanan baru'),
-        style: SatType.sans(
-          size: 13,
-          weight: FontWeight.w600,
-          color: sc.accentInk,
-        ),
-      ),
     );
   }
 }

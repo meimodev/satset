@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -747,13 +749,13 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Batal'),
+              SatButton.ghost(
+                label: AppStrings.cancel,
+                onTap: () => Navigator.of(ctx).pop(false),
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Tambah'),
+              SatButton.primary(
+                label: AppStrings.add,
+                onTap: () => Navigator.of(ctx).pop(true),
               ),
             ],
           );
