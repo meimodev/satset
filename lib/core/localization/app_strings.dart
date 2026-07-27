@@ -17,6 +17,11 @@ class AppStrings {
   static const String yes = 'Ya';
   static const String no = 'Tidak';
 
+  // Screen-reader names for the quantity stepper's two taps. Icon-only
+  // targets, so nothing else names them.
+  static const String stepperIncrease = 'Tambah satu';
+  static const String stepperDecrease = 'Kurangi satu';
+
   // Venue Hub Screen
   static const String venueHubTitle = 'Venue';
   static const String venueHubSubtitle =

@@ -152,6 +152,41 @@ class SatR {
   static BorderRadius a(double r) => BorderRadius.circular(_r(r));
 
   static Radius c(double r) => Radius.circular(_r(r));
+
+  // -------------------------------------------------------------------------
+  // The corner scale (ADR-0055).
+  //
+  // Six steps, closed. Before this the app passed 18 distinct numbers through
+  // `a()` — 14, 12, 10, 16, 18, 22, 20, 9, 3, 5, 28, 36, 24 and the sub-8 set —
+  // which the Glow map then collapsed to five anyway. These are the survivors,
+  // named.
+  //
+  // `a(n)` stays public for the sub-8 cases the map deliberately passes
+  // through: status pips, check marks, meter bars. Those are shapes, not
+  // corners, and rounding them up rounds them away. A literal `>= 8` passed to
+  // `a()` outside this file is banned by `test/design_tokens_test.dart`.
+  // -------------------------------------------------------------------------
+
+  /// Chips, small buttons, inline pills that are not fully round.
+  static BorderRadius get sm => a(10);
+
+  /// Inputs, list rows, secondary surfaces.
+  static BorderRadius get md => a(12);
+
+  /// The default. Cards, sheets' inner surfaces, primary buttons.
+  static BorderRadius get lg => a(14);
+
+  /// Large CTAs and prominent tiles.
+  static BorderRadius get xl => a(16);
+
+  /// Page-level cards and bottom sheets.
+  static BorderRadius get card => a(18);
+
+  /// Fully round — status pills, avatars, badges.
+  static BorderRadius get pill => a(999);
+
+  /// Single-corner form of [pill], for sheet tops and rail edges.
+  static Radius get pillC => c(999);
 }
 
 /// Skin-aware borders. Under [SatSkin.brutal] every side snaps to

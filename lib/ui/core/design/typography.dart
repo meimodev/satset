@@ -90,6 +90,135 @@ class SatType {
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Named roles (ADR-0055).
+  //
+  // The closed set every screen writes against. Sizes and tracking come from
+  // the design source's type sheet — Display 54 / H1 32 / H2 22 / H3 18,
+  // Body L 15 / M 13 / S 12, Mono Display 36 / L 22 / M 13, Caption 10 — and
+  // the per-skin adjustments below mirror what `_lembut` / `_brutal` / `_glow`
+  // already do to the Material ramp: brutal shouts (Archivo Black titles,
+  // letterspaced small copy), glow tightens and leans on weight.
+  //
+  // `color` stays a parameter on every role. Color is signal and varies per
+  // call site; size and weight do not. A literal `size:` outside this file is
+  // banned by `test/design_tokens_test.dart`.
+  // ---------------------------------------------------------------------
+
+  /// Title weight for the current skin. Brutal sets titles as slabs, glow
+  /// carries its contrast on weight alone, lembut sits between.
+  static FontWeight get _titleWeight => switch (SatShape.skin) {
+    SatSkin.brutal => FontWeight.w800,
+    SatSkin.glow => FontWeight.w700,
+    SatSkin.lembut => FontWeight.w600,
+  };
+
+  /// Tracking multiplier for titles. Glow's grotesk needs roughly double the
+  /// negative tracking of IBM Plex to read at the same density (ADR-0050).
+  static double get _titleTrack => SatShape.glow ? 2.0 : 1.0;
+
+  /// Poster numerals and the one-per-screen title. 54 · 600 · −0.025em.
+  static TextStyle display54({Color? color}) => display(
+    size: 54,
+    weight: _titleWeight,
+    letterSpacing: -1.35 * _titleTrack,
+    height: 1.05,
+    color: color,
+  );
+
+  /// Screen title. 32 · 600 · −0.025em.
+  static TextStyle h1({Color? color}) => display(
+    size: 32,
+    weight: _titleWeight,
+    letterSpacing: -0.8 * _titleTrack,
+    height: 1.05,
+    color: color,
+  );
+
+  /// Section heading inside a screen. 22 · 600 · −0.02em.
+  static TextStyle h2({Color? color}) => display(
+    size: 22,
+    weight: _titleWeight,
+    letterSpacing: -0.44 * _titleTrack,
+    height: 1.1,
+    color: color,
+  );
+
+  /// Card title, sheet header, primary action label. 18 · 600 · −0.01em.
+  static TextStyle h3({Color? color}) => sans(
+    size: 18,
+    weight: _titleWeight,
+    letterSpacing: -0.18 * _titleTrack,
+    color: color,
+  );
+
+  /// Lead body — item descriptions, sheet copy. 15 · 500.
+  static TextStyle bodyL({Color? color}) =>
+      sans(size: 15, weight: FontWeight.w500, color: color);
+
+  /// Default body — row labels, item names, meta lines. 13 · 500.
+  static TextStyle bodyM({Color? color}) =>
+      sans(size: 13, weight: FontWeight.w500, color: color);
+
+  /// Fine print — disclaimers, secondary meta. 12 · 400.
+  static TextStyle bodyS({Color? color}) => sans(
+    size: 12,
+    weight: SatShape.brutal ? FontWeight.w500 : FontWeight.w400,
+    color: color,
+  );
+
+  // The design sheet specs its buttons and chips at w600 on the body sizes,
+  // which `bodyL`/`bodyM`/`bodyS` (w500/w500/w400) cannot express. Three label
+  // roles rather than a `weight:` escape hatch on the body roles — an open
+  // weight parameter is how 5 weights across 827 sites happened (ADR-0055).
+
+  /// Large CTA and sheet-action label. 15 · 600.
+  static TextStyle labelL({Color? color}) => sans(
+    size: 15,
+    weight: SatShape.brutal ? FontWeight.w700 : FontWeight.w600,
+    color: color,
+  );
+
+  /// Default control label — buttons, tabs, chips. 13 · 600.
+  static TextStyle labelM({Color? color}) => sans(
+    size: 13,
+    weight: SatShape.brutal ? FontWeight.w700 : FontWeight.w600,
+    color: color,
+  );
+
+  /// Compact control label — small buttons, dense chips. 12 · 600.
+  static TextStyle labelS({Color? color}) => sans(
+    size: 12,
+    weight: SatShape.brutal ? FontWeight.w700 : FontWeight.w600,
+    color: color,
+  );
+
+  /// The money number. Mono 36 · 600 · −0.025em.
+  static TextStyle monoDisplay({Color? color}) => mono(
+    size: 36,
+    weight: FontWeight.w600,
+    letterSpacing: -0.9,
+    height: 1.05,
+    color: color,
+  );
+
+  /// KDS timers, table numbers — read at 1–2 m. Mono 22 · 500.
+  static TextStyle monoL({Color? color}) =>
+      mono(size: 22, weight: FontWeight.w500, color: color);
+
+  /// Inline numerics, codes, technical strings. Mono 13 · 0.04em.
+  static TextStyle monoM({Color? color}) =>
+      mono(size: 13, weight: FontWeight.w500, color: color);
+
+  /// Section caps and audit labels. Mono 10 · 600 · 0.12em. Uppercase the
+  /// string at the call site — Flutter has no text-transform.
+  static TextStyle caption({Color? color}) => mono(
+    size: 10,
+    weight: FontWeight.w600,
+    letterSpacing: SatShape.glow ? 0.4 : 1.2,
+    color: color,
+  );
+
   static TextTheme buildTextTheme(Color textHi, Color textMd) =>
       switch (SatShape.skin) {
         SatSkin.brutal => _brutal(textHi, textMd),
