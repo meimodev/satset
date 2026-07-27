@@ -228,13 +228,13 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx, false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => Navigator.pop(ctx, true),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
@@ -319,9 +320,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Batal'),
+                      child: SatButton.outline(
+                        label: AppStrings.cancel,
+                        onTap: () => Navigator.pop(ctx, false),
                       ),
                     ),
                     const SizedBox(width: Sp.s2h),
@@ -1203,8 +1204,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(height: Sp.s1h),
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () => _setLines(_recipeScope, [
+            child: SatButton.ghost(
+              label: 'Tambah bahan',
+              icon: Icons.add,
+              onTap: () => _setLines(_recipeScope, [
                 ...lines,
                 RecipeLine(
                   id: '',
@@ -1212,8 +1215,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   qty: pantry.first.unit.perUnit,
                 ),
               ]),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Tambah bahan'),
             ),
           ),
         ],
@@ -1401,14 +1402,12 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           adminToggle(context, on: !_draft.isSoldOut),
           const SizedBox(width: Sp.s1h),
-          TextButton(
-            onPressed: auto
+          SatButton.ghost(
+            label: _draft.unavailable ? 'Aktifkan' : 'Tandai tidak tersedia',
+            onTap: auto
                 ? null
                 : () =>
                       _patch(_draft.copyWith(unavailable: !_draft.unavailable)),
-            child: Text(
-              _draft.unavailable ? 'Aktifkan' : 'Tandai tidak tersedia',
-            ),
           ),
         ],
       ),
@@ -1917,17 +1916,10 @@ class _FooterState extends State<_Footer> {
           if (widget.onDelete != null)
             PressScale(
               pressedScale: 0.96,
-              child: TextButton.icon(
-                onPressed: widget.onDelete,
-                icon: Icon(Icons.delete_outline, color: sc.urgent, size: 18),
-                label: Text(
-                  'Hapus',
-                  style: SatType.sans(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: sc.urgent,
-                  ),
-                ),
+              child: SatButton.ghost(
+                label: AppStrings.delete,
+                icon: Icons.delete_outline,
+                onTap: widget.onDelete,
               ),
             ),
           const Spacer(),

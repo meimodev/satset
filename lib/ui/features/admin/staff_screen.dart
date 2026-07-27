@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
@@ -814,16 +815,16 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text(AppStrings.cancel),
+                        child: SatButton.outline(
+                          label: AppStrings.cancel,
+                          onTap: () => Navigator.pop(ctx),
                         ),
                       ),
                       const SizedBox(width: Sp.s2h),
                       Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.pop(ctx, ctl.text),
-                          child: const Text(AppStrings.save),
+                        child: SatButton.primary(
+                          label: AppStrings.save,
+                          onTap: () => Navigator.pop(ctx, ctl.text),
                         ),
                       ),
                     ],
@@ -895,9 +896,9 @@ Future<bool?> _confirmSheet(
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text(AppStrings.cancel),
+                    child: SatButton.outline(
+                      label: AppStrings.cancel,
+                      onTap: () => Navigator.pop(ctx, false),
                     ),
                   ),
                   const SizedBox(width: Sp.s2h),
@@ -1237,16 +1238,16 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(AppStrings.cancel),
+                    child: SatButton.outline(
+                      label: AppStrings.cancel,
+                      onTap: () => Navigator.pop(context),
                     ),
                   ),
                   const SizedBox(width: Sp.s2h),
                   Expanded(
-                    child: FilledButton(
-                      onPressed: _avatarHex == null ? null : _submit,
-                      child: const Text(AppStrings.add),
+                    child: SatButton.primary(
+                      label: AppStrings.add,
+                      onTap: _avatarHex == null ? null : _submit,
                     ),
                   ),
                 ],
@@ -1425,9 +1426,9 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                           ),
                         ),
                         const SizedBox(width: Sp.s2),
-                        FilledButton(
-                          onPressed: () => _resetPin(user),
-                          child: const Text(AppStrings.staffPinReset),
+                        SatButton.primary(
+                          label: AppStrings.staffPinReset,
+                          onTap: () => _resetPin(user),
                         ),
                       ],
                     ),
@@ -1469,8 +1470,9 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                     ),
                     const SizedBox(width: Sp.s2h),
                     Expanded(
-                      child: FilledButton(
-                        onPressed: () async {
+                      child: SatButton.primary(
+                        label: AppStrings.staffSaveChanges,
+                        onTap: () async {
                           final results = await Future.wait([
                             _saveName(user),
                             _savePin(user),
@@ -1479,7 +1481,6 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                             Navigator.pop(context);
                           }
                         },
-                        child: const Text(AppStrings.staffSaveChanges),
                       ),
                     ),
                   ],

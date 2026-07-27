@@ -151,13 +151,13 @@ class CashierBillScreen extends ConsumerWidget {
             'Tindakan ini mengakhiri tagihan.',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Batal'),
+            SatButton.ghost(
+              label: AppStrings.cancel,
+              onTap: () => Navigator.pop(c, false),
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Tutup tagihan'),
+            SatButton.primary(
+              label: 'Tutup tagihan',
+              onTap: () => Navigator.pop(c, true),
             ),
           ],
         ),
@@ -636,9 +636,9 @@ class _LinesSection extends StatelessWidget {
         ],
       ),
       trailing: assignable
-          ? TextButton(
-              onPressed: () => _assignSheet(context, l),
-              child: Text(assigned >= l.qty ? 'Ubah' : 'Atur'),
+          ? SatButton.ghost(
+              label: assigned >= l.qty ? 'Ubah' : 'Atur',
+              onTap: () => _assignSheet(context, l),
             )
           : Text(
               formatIDR(l.lineTotal),
@@ -1198,15 +1198,12 @@ class _ReceiptCard extends ConsumerWidget {
                         ),
                       if (photoBytes != null) const SizedBox(width: Sp.s3),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: shootPhoto,
-                          icon: const Icon(
-                            Icons.photo_camera_rounded,
-                            size: 18,
-                          ),
-                          label: Text(
-                            photoBytes == null ? 'Ambil foto' : 'Ambil ulang',
-                          ),
+                        child: SatButton.outline(
+                          label: photoBytes == null
+                              ? 'Ambil foto'
+                              : 'Ambil ulang',
+                          icon: Icons.photo_camera_rounded,
+                          onTap: shootPhoto,
                         ),
                       ),
                     ],
@@ -1215,8 +1212,9 @@ class _ReceiptCard extends ConsumerWidget {
                 const SizedBox(height: Sp.s4),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
-                    onPressed: amount <= 0 || photoMissing
+                  child: SatButton.primary(
+                    label: refund ? 'Catat refund' : 'Catat pembayaran',
+                    onTap: amount <= 0 || photoMissing
                         ? null
                         : () async {
                             Navigator.of(ctx).pop();
@@ -1244,7 +1242,6 @@ class _ReceiptCard extends ConsumerWidget {
                               );
                             }
                           },
-                    child: Text(refund ? 'Catat refund' : 'Catat pembayaran'),
                   ),
                 ),
               ],
@@ -1385,16 +1382,16 @@ class _AddReceiptButton extends StatelessWidget {
     if (bill.mode == 'even') return const SizedBox.shrink();
     return Align(
       alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: () => run(
+      child: SatButton.ghost(
+        label: 'Tambah struk',
+        icon: Icons.add_rounded,
+        onTap: () => run(
           () => repo.createReceipt(
             bill.visitId,
             mode: 'itemized',
             label: 'Tamu ${bill.receipts.length + 1}',
           ),
         ),
-        icon: const Icon(Icons.add_rounded, size: 18),
-        label: const Text('Tambah struk'),
       ),
     );
   }
@@ -1462,10 +1459,10 @@ class _CloseBar extends StatelessWidget {
       ),
       child: SizedBox(
         width: double.infinity,
-        child: FilledButton.icon(
-          icon: const Icon(Icons.check_circle_outline),
-          label: const Text('Tutup tagihan'),
-          onPressed: onClose,
+        child: SatButton.primary(
+          label: 'Tutup tagihan',
+          icon: Icons.check_circle_outline,
+          onTap: onClose,
         ),
       ),
     );
@@ -1670,9 +1667,9 @@ Future<bool> _confirm(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(c, false),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(c, false),
         ),
         FilledButton(
           style: destructive
@@ -1706,10 +1703,9 @@ Future<int?> _askInt(BuildContext context, String title, {int initial = 2}) {
           label: AppStrings.cancel,
           onTap: () => Navigator.pop(ctx),
         ),
-        FilledButton(
-          onPressed: () =>
-              Navigator.pop(ctx, int.tryParse(ctl.text).let((v) => v)),
-          child: const Text('Bagi'),
+        SatButton.primary(
+          label: 'Bagi',
+          onTap: () => Navigator.pop(ctx, int.tryParse(ctl.text).let((v) => v)),
         ),
       ],
     ),

@@ -311,8 +311,9 @@ Future<void> _edit(
               const SizedBox(height: Sp.s2),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
+                child: SatButton.primary(
+                  label: AppStrings.save,
+                  onTap: () async {
                     final name = nameCtrl.text.trim();
                     final raw = int.tryParse(valueCtrl.text.trim()) ?? 0;
                     // Percent is authored in whole %, stored in bps.
@@ -349,7 +350,6 @@ Future<void> _edit(
                     }
                     if (c.mounted) Navigator.pop(c);
                   },
-                  child: const Text('Simpan'),
                 ),
               ),
             ],

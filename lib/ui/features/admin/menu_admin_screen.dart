@@ -1098,9 +1098,9 @@ class _CategoriesPanel extends ConsumerWidget {
             label: AppStrings.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => Navigator.pop(ctx, ctrl.text),
           ),
         ],
       ),
@@ -1261,13 +1261,13 @@ class _TagsPanel extends ConsumerWidget {
           style: SatType.sans(size: 13, color: context.sat.textMd),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx, false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus'),
+          SatButton.primary(
+            label: AppStrings.delete,
+            onTap: () => Navigator.pop(ctx, true),
           ),
         ],
       ),
@@ -1320,13 +1320,13 @@ class _TagsPanel extends ConsumerWidget {
             label: AppStrings.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            onPressed: () {
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () {
               final n = nameCtrl.text.trim();
               if (n.isEmpty) return;
               Navigator.pop(ctx, (n, codeCtrl.text.trim().toUpperCase()));
             },
-            child: const Text('Simpan'),
           ),
         ],
       ),

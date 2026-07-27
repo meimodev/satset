@@ -932,12 +932,13 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: _busy ? null : () => Navigator.of(context).pop(false),
         ),
-        FilledButton(
-          onPressed: _busy
+        SatButton.primary(
+          label: 'Konfirmasi',
+          onTap: _busy
               ? null
               : () async {
                   final nav = Navigator.of(context);
@@ -955,7 +956,6 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
                     });
                   }
                 },
-          child: const Text('Konfirmasi'),
         ),
       ],
     );

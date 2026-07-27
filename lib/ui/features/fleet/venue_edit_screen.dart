@@ -176,16 +176,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: _busy || !_nameValid ? null : _save,
-            child: Text(
-              'Simpan',
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w700,
-                color: _busy || !_nameValid ? sc.textLo : sc.accentText,
-              ),
-            ),
+          SatButton.ghost(
+            label: AppStrings.save,
+            onTap: _busy || !_nameValid ? null : _save,
           ),
         ],
         bottom: _busy
@@ -410,13 +403,13 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx, false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => Navigator.pop(ctx, true),
           ),
         ],
       ),
@@ -592,17 +585,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               icon: Icon(Icons.clear, color: sc.textLo, size: 20),
               onPressed: () => setState(() => _paidUntil = null),
             ),
-          TextButton(
-            onPressed: _pickPaidUntil,
-            child: Text(
-              'Pilih',
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w600,
-                color: sc.accentText,
-              ),
-            ),
-          ),
+          SatButton.ghost(label: 'Pilih', onTap: _pickPaidUntil),
         ],
       ),
     );

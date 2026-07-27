@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -160,12 +161,9 @@ class _PinScreenState extends ConsumerState<PinScreen>
           left: Sp.s2,
           bottom: Sp.s2,
           child: SafeArea(
-            child: TextButton(
-              onPressed: () => context.push('/book'),
-              child: Text(
-                'Widget book',
-                style: SatType.mono(size: 11, color: context.sat.textDim),
-              ),
+            child: SatButton.ghost(
+              label: 'Widget book',
+              onTap: () => context.push('/book'),
             ),
           ),
         ),

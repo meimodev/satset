@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -249,10 +250,10 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: FilledButton.icon(
-            onPressed: () => openCreateReservationSheet(context, ref),
-            icon: const Icon(Icons.add, size: 18),
-            label: Text(SatShape.caps('Reservasi baru')),
+          child: SatButton.primary(
+            label: 'Reservasi baru',
+            icon: Icons.add,
+            onTap: () => openCreateReservationSheet(context, ref),
           ),
         ),
       ],
@@ -450,31 +451,31 @@ class _ReservationRow extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () async {
+                  child: SatButton.outline(
+                    label: AppStrings.reservationActionNoShow,
+                    onTap: () async {
                       await n.updateStatus(r.id, ReservationStatus.noShow);
                     },
-                    child: Text(AppStrings.reservationActionNoShow),
                   ),
                 ),
                 const SizedBox(width: Sp.s2),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () async {
+                  child: SatButton.outline(
+                    label: AppStrings.cancel,
+                    onTap: () async {
                       await n.updateStatus(r.id, ReservationStatus.cancelled);
                     },
-                    child: const Text(AppStrings.cancel),
                   ),
                 ),
               ],
             ),
           ] else if (r.status != ReservationStatus.seated) ...[
             const SizedBox(height: Sp.s2h),
-            OutlinedButton(
-              onPressed: () async {
+            SatButton.outline(
+              label: AppStrings.reservationActionRestore,
+              onTap: () async {
                 await n.updateStatus(r.id, ReservationStatus.pending);
               },
-              child: Text(AppStrings.reservationActionRestore),
             ),
           ],
         ],
@@ -809,10 +810,10 @@ Future<void> openCreateReservationSheet(
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.calendar_today, size: 16),
-                          label: Text(_fmtDate(expected)),
-                          onPressed: () async {
+                        child: SatButton.outline(
+                          label: _fmtDate(expected),
+                          icon: Icons.calendar_today,
+                          onTap: () async {
                             final picked = await showDatePicker(
                               context: ctx,
                               initialDate: expected,
@@ -835,10 +836,10 @@ Future<void> openCreateReservationSheet(
                       ),
                       const SizedBox(width: Sp.s2),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.schedule, size: 16),
-                          label: Text(_hhmm(expected)),
-                          onPressed: () async {
+                        child: SatButton.outline(
+                          label: _hhmm(expected),
+                          icon: Icons.schedule,
+                          onTap: () async {
                             final picked = await showTimePicker(
                               context: ctx,
                               initialTime: TimeOfDay(
@@ -885,8 +886,9 @@ Future<void> openCreateReservationSheet(
                     ),
                   ),
                   const SizedBox(height: Sp.s4h),
-                  FilledButton(
-                    onPressed: () async {
+                  SatButton.primary(
+                    label: 'Simpan reservasi',
+                    onTap: () async {
                       final name = nameCtl.text.trim();
                       if (name.isEmpty) return;
                       try {
@@ -914,7 +916,6 @@ Future<void> openCreateReservationSheet(
                         }
                       }
                     },
-                    child: const Text('Simpan reservasi'),
                   ),
                 ],
               ),

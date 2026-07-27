@@ -440,9 +440,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 label: 'Cetak struk',
                 onTap: () => Navigator.of(ctx).pop('print'),
               ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop('close'),
-              child: Text(closeLabel),
+            SatButton.primary(
+              label: closeLabel,
+              onTap: () => Navigator.of(ctx).pop('close'),
             ),
           ],
         ),
