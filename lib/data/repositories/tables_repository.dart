@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -172,7 +173,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   static String _elapsedStr(DateTime openedAt) {
-    final d = DateTime.now().difference(openedAt).abs();
+    final d = SatClock.now().difference(openedAt).abs();
     final h = d.inHours;
     final m = d.inMinutes % 60;
     return h > 0
@@ -235,7 +236,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     );
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
-      final now = DateTime.now();
+      final now = SatClock.now();
       _replace(
         id,
         prev.copyWith(
@@ -301,7 +302,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     );
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
-      final now = DateTime.now();
+      final now = SatClock.now();
       _replace(
         id,
         prev.copyWith(

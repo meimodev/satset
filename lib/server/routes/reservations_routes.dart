@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -105,7 +106,7 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     }
     final id = uuid.v4();
-    final now = DateTime.now();
+    final now = SatClock.now();
     await db
         .into(db.reservations)
         .insert(
@@ -167,7 +168,7 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         // Set-once on the first flip into `seated` — a later edit must not
         // move it, or lateness stops being measurable (ADR-0044).
         seatedAt: statusRaw == 'seated' && existing.seatedAt == null
-            ? Value(DateTime.now())
+            ? Value(SatClock.now())
             : const Value.absent(),
         zoneId: body.containsKey('zoneId')
             ? Value((body['zoneId'] as String?)?.trim())
@@ -178,7 +179,7 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         notes: body.containsKey('notes')
             ? Value((body['notes'] as String?)?.trim())
             : const Value.absent(),
-        updatedAt: Value(DateTime.now()),
+        updatedAt: Value(SatClock.now()),
       ),
     );
     final row = await (db.select(

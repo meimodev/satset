@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
@@ -235,7 +236,7 @@ class AlertSoundService {
     final prepByItem = {
       for (final i in ref.read(menuItemsProvider)) i.id: i.prepTime,
     };
-    final now = DateTime.now();
+    final now = SatClock.now();
 
     final lines = <TimedLine>[];
     for (final entry in byVisit.entries) {
@@ -275,7 +276,7 @@ class AlertSoundService {
     final settings = ref.read(venueSettingsProvider);
     if (!settings.pickupAlertEnabled) return;
     final limit = Duration(minutes: settings.pickupTargetMins);
-    final now = DateTime.now();
+    final now = SatClock.now();
     for (final list in ref.read(ticketsProvider).values) {
       for (final t in list) {
         if (t.status != TicketStatus.ready) continue;
@@ -299,7 +300,7 @@ class AlertSoundService {
     final tables = ref.read(tablesProvider);
     final byVisit = ref.read(ticketsProvider);
     final me = ref.read(authStateProvider).user?.id;
-    final now = DateTime.now();
+    final now = SatClock.now();
 
     for (final t in tables) {
       if (t.status == TableStatus.available) continue;

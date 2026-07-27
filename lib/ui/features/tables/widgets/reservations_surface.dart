@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/app_strings.dart';
@@ -116,7 +117,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final now = DateTime.now();
+    final now = SatClock.now();
     final grace = ref.watch(venueSettingsProvider).reservationGraceMins;
     final start = DateTime(now.year, now.month, now.day);
     final end = start.add(const Duration(days: 1));
@@ -476,7 +477,7 @@ class _ReservationRow extends ConsumerWidget {
 
   String _relative(Reservation r, bool late) {
     if (r.status == ReservationStatus.seated) return 'duduk';
-    final diff = r.expectedAt.difference(DateTime.now());
+    final diff = r.expectedAt.difference(SatClock.now());
     if (late) return '+${-diff.inMinutes} mnt';
     if (r.status == ReservationStatus.pending && diff.inMinutes <= 20) {
       return 'dalam ${diff.inMinutes} mnt';
@@ -702,7 +703,7 @@ Future<void> openCreateReservationSheet(
   final phoneCtl = TextEditingController();
   final notesCtl = TextEditingController();
   var party = 2;
-  final now = DateTime.now();
+  final now = SatClock.now();
   var expected = DateTime(now.year, now.month, now.day, 19, 0);
   String? zoneId;
   String? tableId;

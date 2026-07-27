@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -253,7 +254,7 @@ class FirebaseAdminService {
       if (venue == null || !venue.isActive) {
         return AdminBootDecision(AdminBootGate.ineligible, server);
       }
-      await storage.writeAdminConfirmedAt(DateTime.now());
+      await storage.writeAdminConfirmedAt(SatClock.now());
       return AdminBootDecision(AdminBootGate.ok, server);
     }
 
@@ -261,7 +262,7 @@ class FirebaseAdminService {
     final confirmedAt = await storage.readAdminConfirmedAt();
     final fresh =
         confirmedAt != null &&
-        DateTime.now().difference(confirmedAt) <= staleAfter;
+        SatClock.now().difference(confirmedAt) <= staleAfter;
     if (!fresh) {
       SatLog.repo('admin.boot stale/offline → block');
       return const AdminBootDecision(AdminBootGate.staleOffline);

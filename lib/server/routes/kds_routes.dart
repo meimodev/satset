@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -24,7 +25,7 @@ Router kdsRoutes(AppDatabase db, [ServerAuth? auth]) {
   /// held, acknowledged) routed to that station. `staffOnline` is a rough
   /// signal: count of active sessions (any role).
   r.get('/kds/stations', (Request req) async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final staffOnlineCount = await db
         .customSelect(
           'SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?',

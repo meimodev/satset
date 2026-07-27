@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
@@ -46,7 +47,7 @@ final adminOfflineGraceProvider = StreamProvider<AdminGrace?>((ref) async* {
     if (fb.currentUser == null) return null;
     final at = await storage.readAdminConfirmedAt();
     if (at == null) return null; // never confirmed → the boot gate handles it
-    final offlineFor = DateTime.now().difference(at);
+    final offlineFor = SatClock.now().difference(at);
     if (offlineFor <= _graceFloor) return null; // online / transient blip
     return AdminGrace(FirebaseAdminService.staleAfter - offlineFor);
   }

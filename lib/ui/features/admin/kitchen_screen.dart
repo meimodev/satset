@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -93,7 +94,7 @@ bool _isDone(TicketStatus s) =>
     s == TicketStatus.served;
 
 Duration _age(DateTime sentAtTime) {
-  final d = DateTime.now().difference(sentAtTime);
+  final d = SatClock.now().difference(sentAtTime);
   return d.isNegative ? Duration.zero : d;
 }
 

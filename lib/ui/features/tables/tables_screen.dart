@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -154,7 +155,7 @@ class _FloorHead extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final grace = ref.watch(venueSettingsProvider).reservationGraceMins;
     final start = DateTime(now.year, now.month, now.day);
     final end = start.add(const Duration(days: 1));

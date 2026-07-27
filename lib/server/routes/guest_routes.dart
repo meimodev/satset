@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -162,7 +163,7 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                     note: Value(pl.note),
                     price: pl.unitPrice,
                     status: 'pendingReview',
-                    sentAt: DateTime.now(),
+                    sentAt: SatClock.now(),
                   ),
                 );
             createdIds.add(id);
@@ -177,7 +178,7 @@ Router guestRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                 IdempotencyCompanion.insert(
                   key: idem,
                   responseJson: jsonEncode({'ticketIds': createdIds}),
-                  createdAt: DateTime.now(),
+                  createdAt: SatClock.now(),
                 ),
               );
         })

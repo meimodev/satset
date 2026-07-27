@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -204,7 +205,7 @@ class _BatchCard extends ConsumerWidget {
   }
 
   String _ago(DateTime t) {
-    final d = DateTime.now().difference(t);
+    final d = SatClock.now().difference(t);
     if (d.inMinutes < 1) return 'baru saja';
     if (d.inMinutes < 60) return '${d.inMinutes} mnt lalu';
     return '${d.inHours} jam lalu';

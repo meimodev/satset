@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/app_strings.dart';
@@ -23,7 +24,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 final tableElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   (ref) => Stream<DateTime>.periodic(
     const Duration(seconds: 1),
-    (_) => DateTime.now(),
+    (_) => SatClock.now(),
   ),
 );
 
@@ -74,7 +75,7 @@ class _TableCardState extends ConsumerState<TableCard> {
     final brutal = SatShape.brutal;
 
     ref.watch(tableElapsedTickerProvider);
-    final now = DateTime.now();
+    final now = SatClock.now();
     final settings = ref.watch(venueSettingsProvider);
     final visitId = table.currentVisitId;
     final lines = visitId == null

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -30,14 +31,14 @@ class LoginClock extends ConsumerStatefulWidget {
 
 class _LoginClockState extends ConsumerState<LoginClock> {
   Timer? _timer;
-  DateTime _now = DateTime.now();
+  DateTime _now = SatClock.now();
 
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() => _now = DateTime.now());
+      setState(() => _now = SatClock.now());
     });
   }
 

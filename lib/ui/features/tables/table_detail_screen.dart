@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -636,7 +637,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
 final _detailElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   (ref) => Stream<DateTime>.periodic(
     const Duration(seconds: 1),
-    (_) => DateTime.now(),
+    (_) => SatClock.now(),
   ),
 );
 
@@ -666,7 +667,7 @@ class _Header extends ConsumerWidget {
     ref.watch(_detailElapsedTickerProvider);
     final elapsedStr = table.openedAt == null
         ? null
-        : formatElapsedId(DateTime.now().difference(table.openedAt!));
+        : formatElapsedId(SatClock.now().difference(table.openedAt!));
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Row(
@@ -765,7 +766,7 @@ class _LiveSeatedChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     ref.watch(_detailElapsedTickerProvider);
-    final label = formatElapsedId(DateTime.now().difference(openedAt));
+    final label = formatElapsedId(SatClock.now().difference(openedAt));
     return Container(
       height: height,
       padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
@@ -996,7 +997,7 @@ class _ContextSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: Sp.s1),
                   Text(
-                    'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                    'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
                     style: SatType.mono(
                       size: 11,
                       color: sc.textLo,
@@ -2012,7 +2013,7 @@ class _ContextPane extends ConsumerWidget {
               ),
               const SizedBox(height: Sp.s1),
               Text(
-                'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
                 style: SatType.mono(
                   size: 11,
                   color: sc.textLo,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -129,7 +130,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   }
 
   Future<void> _pickPaidUntil() async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _paidUntil ?? now,
