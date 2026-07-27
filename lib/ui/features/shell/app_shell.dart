@@ -13,7 +13,6 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
-import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
 import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
@@ -37,14 +36,13 @@ class AppShell extends ConsumerWidget {
     final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
     final showGuest = ref.watch(authStateProvider).has(Capability.takeOrder);
     final guestCount = ref.watch(guestOrdersProvider).length;
-    final forcePhone = ref.watch(forcePhoneViewProvider);
     final zones = ref.watch(zonesProvider);
     final zoneName = zones.isEmpty ? '—' : zones.first.name;
     final venueName = ref.watch(
       venueSettingsProvider.select((s) => s.displayName),
     );
 
-    if (l.useTabletShell && !forcePhone) {
+    if (l.useTabletShell) {
       return ExitGuard(
         child: TabletShell(
           activeTab: activeTab,

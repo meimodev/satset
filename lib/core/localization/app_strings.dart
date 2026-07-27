@@ -250,7 +250,6 @@ class AppStrings {
   static const String a11ySoundPreview = 'Dengar nada';
   static const String a11ySoundSilent = 'Tanpa nada';
   static const String a11yPickTheme = 'Pilih tema';
-  static const String a11yToggleLayout = 'Ganti tata letak';
   static const String a11yViewPhoto = 'Lihat foto bukti bayar';
   static const String a11yPickColor = 'Pilih warna';
   static const String a11yAddItem = 'Tambah item';

@@ -96,7 +96,9 @@ Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageS
 
 ### Shell
 
-`AppShell` (`lib/ui/features/shell/app_shell.dart`) picks tablet (`TabletShell`) vs phone (custom `Scaffold` with `SatAppBar` + floating tab bar) based on `context.layout.useTabletShell` and the `forcePhoneViewProvider`. Table flow no longer lives under the shell, so AppShell no longer needs special-case bare-child branches.
+`AppShell` (`lib/ui/features/shell/app_shell.dart`) picks tablet (`TabletShell`) vs phone (custom `Scaffold` with `SatAppBar` + floating tab bar) based on `context.layout.useTabletShell` — hardware decides, there is no runtime override (ADR-0049 removed `forcePhoneViewProvider`). Table flow no longer lives under the shell, so AppShell no longer needs special-case bare-child branches.
+
+`MainActivity.onCreate` keeps the screen awake (`FLAG_KEEP_SCREEN_ON`, unconditional) and pins orientation from `smallestScreenWidthDp >= 600` — tablet landscape, phone portrait. Orientation is not reachable from Dart; changing it means editing Kotlin. See ADR-0049.
 
 ## Gotchas
 

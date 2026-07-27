@@ -87,7 +87,7 @@ void main() {
     // Baseline, not a ban. The scan cannot see through a child widget's own
     // build, so a tap target wrapping `adminPill(context, '+ Add staff')`
     // counts here even though it announces that text fine — what those are
-    // missing is the button *role*, not a name. The remaining 30 are all admin
+    // missing is the button *role*, not a name. The remaining 29 are all admin
     // surfaces in that shape; the icon-only ones, which announced nothing at
     // all, are fixed. Wrapping `adminPill`/`adminToggle` in `_common.dart`
     // would clear most of the rest in one change.
@@ -95,7 +95,7 @@ void main() {
     // It also cannot see a `Semantics` applied at `return` to a widget built
     // into a local (table_card, me_screen, table_detail do this), so a handful
     // of counted sites are already correct.
-    const baseline = 30;
+    const baseline = 29;
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();

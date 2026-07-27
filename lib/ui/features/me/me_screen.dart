@@ -24,7 +24,6 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
-import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
@@ -198,16 +197,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     void pickTheme() => showThemeSheet(context, ref);
 
-    // Phone/tablet layout toggle — only on the Server-mode host AND only on a
-    // tablet device (forcing phone-layout on a real phone is a no-op, so staff
-    // client phones never see it). `forcePhone` makes this tablet render the
-    // phone layout; the icon flips to offer the way back.
     final l = context.layout;
-    final forcePhone = ref.watch(forcePhoneViewProvider);
-    final isServerHost = ref.watch(serverRuntimeProvider) != null;
-    final showLayoutToggle = isServerHost && l.isTablet;
-    void toggleLayout() =>
-        ref.read(forcePhoneViewProvider.notifier).state = !forcePhone;
 
     Future<void> endShift() async {
       // Admin (Server mode): logout kills the embedded server — every staff
@@ -248,7 +238,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       if (context.mounted) context.go('/pin');
     }
 
-    if (l.useTabletShell && !forcePhone) {
+    if (l.useTabletShell) {
       return _MeTablet(
         m: m,
         audit: audit,
@@ -256,9 +246,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         theme: theme,
         onPickTheme: pickTheme,
         onEndShift: endShift,
-        showLayoutToggle: showLayoutToggle,
-        forcePhone: forcePhone,
-        onToggleLayout: toggleLayout,
       );
     }
     return _MePhone(
@@ -268,9 +255,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       theme: theme,
       onPickTheme: pickTheme,
       onEndShift: endShift,
-      showLayoutToggle: showLayoutToggle,
-      forcePhone: forcePhone,
-      onToggleLayout: toggleLayout,
     );
   }
 }
@@ -284,9 +268,6 @@ class _MePhone extends StatelessWidget {
   final SatTheme theme;
   final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
-  final bool showLayoutToggle;
-  final bool forcePhone;
-  final VoidCallback onToggleLayout;
 
   const _MePhone({
     required this.m,
@@ -295,9 +276,6 @@ class _MePhone extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
-    required this.showLayoutToggle,
-    required this.forcePhone,
-    required this.onToggleLayout,
   });
 
   @override
@@ -310,13 +288,7 @@ class _MePhone extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.fromLTRB(0, l.topInset, 0, l.bottomInset + 40),
           children: [
-            _TopBar(
-              theme: theme,
-              onPickTheme: onPickTheme,
-              showLayoutToggle: showLayoutToggle,
-              forcePhone: forcePhone,
-              onToggleLayout: onToggleLayout,
-            ),
+            _TopBar(theme: theme, onPickTheme: onPickTheme),
             const SizedBox(height: Sp.s2),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
@@ -361,9 +333,6 @@ class _MeTablet extends StatelessWidget {
   final SatTheme theme;
   final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
-  final bool showLayoutToggle;
-  final bool forcePhone;
-  final VoidCallback onToggleLayout;
 
   const _MeTablet({
     required this.m,
@@ -372,9 +341,6 @@ class _MeTablet extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
-    required this.showLayoutToggle,
-    required this.forcePhone,
-    required this.onToggleLayout,
   });
 
   @override
@@ -399,13 +365,6 @@ class _MeTablet extends StatelessWidget {
                   ),
                 ),
               ),
-              if (showLayoutToggle) ...[
-                _LayoutToggleButton(
-                  forcePhone: forcePhone,
-                  onTap: onToggleLayout,
-                ),
-                const SizedBox(width: Sp.s2),
-              ],
               _ThemeIconButton(theme: theme, onTap: onPickTheme),
             ],
           ),
@@ -455,16 +414,7 @@ class _MeTablet extends StatelessWidget {
 class _TopBar extends StatelessWidget {
   final SatTheme theme;
   final VoidCallback onPickTheme;
-  final bool showLayoutToggle;
-  final bool forcePhone;
-  final VoidCallback onToggleLayout;
-  const _TopBar({
-    required this.theme,
-    required this.onPickTheme,
-    required this.showLayoutToggle,
-    required this.forcePhone,
-    required this.onToggleLayout,
-  });
+  const _TopBar({required this.theme, required this.onPickTheme});
 
   @override
   Widget build(BuildContext context) {
@@ -473,55 +423,9 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           const Spacer(),
-          if (showLayoutToggle) ...[
-            _LayoutToggleButton(forcePhone: forcePhone, onTap: onToggleLayout),
-            const SizedBox(width: Sp.s2),
-          ],
           _ThemeIconButton(theme: theme, onTap: onPickTheme),
         ],
       ),
-    );
-  }
-}
-
-/// Phone/tablet layout toggle, styled to match [_ThemeIconButton]. Shown only
-/// on the Server-mode host tablet (see `MeScreen.build`). When [forcePhone] is
-/// active the tablet is rendering the phone layout, so the icon offers the way
-/// back to the tablet layout.
-class _LayoutToggleButton extends StatelessWidget {
-  final bool forcePhone;
-  final VoidCallback onTap;
-  const _LayoutToggleButton({required this.forcePhone, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final inner = Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: SatBox.d(
-            shape: BoxShape.circle,
-            border: SatB.all(color: sc.border1),
-          ),
-          alignment: Alignment.center,
-          child: Icon(
-            forcePhone ? Icons.tablet_mac_outlined : Icons.smartphone_outlined,
-            size: 16,
-            color: sc.textMd,
-          ),
-        ),
-      ),
-    );
-    return Semantics(
-      button: true,
-      label: AppStrings.a11yToggleLayout,
-      child: inner,
     );
   }
 }
