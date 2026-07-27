@@ -373,11 +373,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                         const SizedBox(height: Sp.s1),
                         Text(
                           '${_special.length} / 80 · tampil ke dapur',
-                          style: SatType.mono(
-                            size: 10,
-                            color: sc.textLo,
-                            letterSpacing: 0.4,
-                          ),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
                     ),
@@ -535,15 +531,7 @@ class _ModGroup extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
-                  tag,
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                    color: tagColor,
-                  ),
-                ),
+                Text(tag, style: SatType.caption(color: tagColor)),
               ],
             ),
           ),
@@ -628,11 +616,8 @@ class _ModOpt extends StatelessWidget {
                   if (delta != null && !soldOut)
                     Text(
                       delta!,
-                      style: SatType.mono(
-                        size: 12,
-                        weight: FontWeight.w500,
+                      style: SatType.monoM(
                         color: selected ? sc.accentText : sc.textMd,
-                        letterSpacing: 0,
                       ),
                     ),
                 ],
@@ -719,12 +704,7 @@ class _Foot extends StatelessWidget {
                   child: Text(
                     '$qty',
                     textAlign: TextAlign.center,
-                    style: SatType.mono(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                      letterSpacing: 0,
-                    ),
+                    style: SatType.monoM(color: sc.textHi),
                   ),
                 ),
                 _StepperBtn(label: '+', onTap: onInc, disabled: false),

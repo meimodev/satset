@@ -377,11 +377,9 @@ class _TotalsCard extends StatelessWidget {
           AnimatedDefaultTextStyle(
             duration: satMotion(context, 260),
             curve: satEaseOut,
-            style: SatType.mono(
-              size: strong ? 15 : 12.5,
-              weight: strong ? FontWeight.w700 : FontWeight.w500,
-              color: color ?? sc.textHi,
-            ),
+            // Both lines are monoM. The closed set has no weight step inside
+            // the money ramp, so the grand total is marked by ink, not weight.
+            style: SatType.monoM(color: color ?? sc.textHi),
             child: Text(formatIDR(v)),
           ),
         ],
@@ -640,7 +638,7 @@ class _LinesSection extends StatelessWidget {
             )
           : Text(
               formatIDR(l.lineTotal),
-              style: SatType.mono(size: 12.5, color: sc.textHi),
+              style: SatType.monoM(color: sc.textHi),
             ),
     );
   }
@@ -742,11 +740,7 @@ class _AssignRowState extends State<_AssignRow> {
             child: Text(
               '$v',
               key: ValueKey(v),
-              style: SatType.mono(
-                size: 15,
-                weight: FontWeight.w700,
-                color: sc.textHi,
-              ),
+              style: SatType.monoM(color: sc.textHi),
             ),
           ),
           IconButton(
@@ -868,14 +862,7 @@ class _ReceiptCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total', style: SatType.sans(size: 12.5, color: sc.textLo)),
-              Text(
-                formatIDR(r.total),
-                style: SatType.mono(
-                  size: 15,
-                  weight: FontWeight.w700,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(formatIDR(r.total), style: SatType.monoM(color: sc.textHi)),
             ],
           ),
           if (r.paidNet != 0)
@@ -890,7 +877,7 @@ class _ReceiptCard extends ConsumerWidget {
                   ),
                   Text(
                     formatIDR(r.paidNet),
-                    style: SatType.mono(size: 12, color: sc.success),
+                    style: SatType.monoM(color: sc.success),
                   ),
                 ],
               ),
@@ -921,8 +908,7 @@ class _ReceiptCard extends ConsumerWidget {
                   const Spacer(),
                   Text(
                     formatIDR(p.amount),
-                    style: SatType.mono(
-                      size: 11,
+                    style: SatType.monoS(
                       color: p.isRefund ? sc.warn : sc.textLo,
                     ),
                   ),
@@ -1346,7 +1332,7 @@ class _ReceiptItemRow extends ConsumerWidget {
                     ),
                     Text(
                       '-${formatIDR(existing.amount)}',
-                      style: SatType.mono(size: 11, color: sc.warn),
+                      style: SatType.monoS(color: sc.warn),
                     ),
                   ],
                 ),
@@ -1734,10 +1720,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
             children: [
               Row(
                 children: [
-                  Text(
-                    '${l.qty}×',
-                    style: SatType.mono(size: 13, color: sc.textLo),
-                  ),
+                  Text('${l.qty}×', style: SatType.monoM(color: sc.textLo)),
                   const SizedBox(width: Sp.s2),
                   Expanded(
                     child: Text(
@@ -1747,7 +1730,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                   ),
                   Text(
                     formatIDR(l.lineTotal),
-                    style: SatType.mono(size: 13, color: sc.textHi),
+                    style: SatType.monoM(color: sc.textHi),
                   ),
                 ],
               ),
@@ -1998,14 +1981,7 @@ class _TableChip extends StatelessWidget {
       height: 44,
       decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(12)),
       alignment: Alignment.center,
-      child: Text(
-        label ?? '—',
-        style: SatType.mono(
-          size: 14,
-          weight: FontWeight.w700,
-          color: sc.textHi,
-        ),
-      ),
+      child: Text(label ?? '—', style: SatType.monoM(color: sc.textHi)),
     );
   }
 }
@@ -2148,11 +2124,7 @@ class _PastBillTile extends StatelessWidget {
                   children: [
                     Text(
                       formatIDR(b.netTotal),
-                      style: SatType.mono(
-                        size: 15,
-                        weight: FontWeight.w700,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.monoM(color: sc.textHi),
                     ),
                     if (b.isWriteOff) ...[
                       const SizedBox(height: Sp.s1),
@@ -2258,7 +2230,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                             ),
                             Text(
                               formatIDR(p.amount),
-                              style: SatType.mono(size: 12, color: sc.textHi),
+                              style: SatType.monoM(color: sc.textHi),
                             ),
                           ],
                         ),

@@ -215,12 +215,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
           children: [
             Text(
               _kind.title.toUpperCase(),
-              style: SatType.mono(
-                size: 11,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo,
-              ),
+              style: SatType.caption(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
             _label(context, 'Jenis'),

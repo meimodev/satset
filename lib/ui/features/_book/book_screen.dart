@@ -49,12 +49,7 @@ class _BookScreenState extends ConsumerState<BookScreen> {
           padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s5, Sp.s4, Sp.s2),
           child: Text(
             group.toUpperCase(),
-            style: SatType.mono(
-              size: 11,
-              weight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: sc.textDim,
-            ),
+            style: SatType.caption(color: sc.textDim),
           ),
         ),
       );
@@ -183,11 +178,7 @@ class _BookStageState extends ConsumerState<_BookStage> {
               padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s5, Sp.s4, Sp.s2),
               child: Text(
                 s.label,
-                style: SatType.mono(
-                  size: 11,
-                  weight: FontWeight.w600,
-                  color: sc.accentText,
-                ),
+                style: SatType.caption(color: sc.accentText),
               ),
             ),
             if (s.note != null) _BookNote(s.note!),
@@ -357,10 +348,7 @@ class _BookBar extends StatelessWidget {
                     color: sc.textHi,
                   ),
                 ),
-                Text(
-                  subtitle,
-                  style: SatType.mono(size: 11, color: sc.textDim),
-                ),
+                Text(subtitle, style: SatType.monoS(color: sc.textDim)),
               ],
             ),
           ),
@@ -393,7 +381,7 @@ class _BookPill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: fg),
           const SizedBox(width: Sp.s1),
-          Text(label, style: SatType.mono(size: 11, color: fg)),
+          Text(label, style: SatType.monoS(color: fg)),
         ],
       ),
     );

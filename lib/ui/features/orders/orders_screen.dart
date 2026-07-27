@@ -235,11 +235,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 const SizedBox(height: Sp.s1h),
                 Text(
                   '${active.length} BERJALAN · ${ready.length} SIAP DIAMBIL',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.66,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ),
@@ -301,11 +297,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               const SizedBox(height: Sp.s1),
               Text(
                 '${active.length} aktif · ${ready.length} siap diambil',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.44,
-                ),
+                style: SatType.monoS(color: sc.textLo),
               ),
             ],
           ),
@@ -370,20 +362,9 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(left: Sp.sHair, bottom: Sp.sHair),
       child: Row(
         children: [
-          Text(
-            title.toUpperCase(),
-            style: SatType.mono(
-              size: 11,
-              weight: FontWeight.w600,
-              letterSpacing: 1.0,
-              color: sc.textMd,
-            ),
-          ),
+          Text(title.toUpperCase(), style: SatType.caption(color: sc.textMd)),
           const SizedBox(width: Sp.s2),
-          Text(
-            '$count',
-            style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0),
-          ),
+          Text('$count', style: SatType.monoS(color: sc.textLo)),
         ],
       ),
     );
@@ -476,10 +457,8 @@ class _SegBtn extends StatelessWidget {
             const SizedBox(width: Sp.s2),
             Text(
               '$count',
-              style: SatType.mono(
-                size: 11,
+              style: SatType.monoS(
                 color: active ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
-                letterSpacing: 0,
               ),
             ),
           ],
@@ -560,10 +539,7 @@ class _OrderRow extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: SatType.mono(
-                              size: 16,
-                              weight: FontWeight.w600,
-                              letterSpacing: -0.16,
+                            style: SatType.monoM(
                               color: isReady ? sc.success : sc.textHi,
                             ),
                           ),
@@ -582,11 +558,7 @@ class _OrderRow extends StatelessWidget {
                               if (t.qty > 1)
                                 TextSpan(
                                   text: '×${t.qty} ',
-                                  style: SatType.mono(
-                                    size: 12,
-                                    color: sc.textMd,
-                                    letterSpacing: 0,
-                                  ),
+                                  style: SatType.monoM(color: sc.textMd),
                                 ),
                               TextSpan(
                                 text: t.name,
@@ -737,8 +709,7 @@ class _TabletSeg extends StatelessWidget {
             const SizedBox(width: Sp.s2h),
             Text(
               '$count',
-              style: SatType.mono(
-                size: 11,
+              style: SatType.monoS(
                 color: active ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
               ),
             ),

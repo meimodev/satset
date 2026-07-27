@@ -263,12 +263,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                               const SizedBox(width: Sp.s1),
                               Text(
                                 apiConfig != null ? 'LAN AKTIF' : 'LOKAL',
-                                style: SatType.mono(
-                                  size: 9.5,
-                                  weight: FontWeight.w700,
-                                  color: sc.success,
-                                  letterSpacing: 0.5,
-                                ),
+                                style: SatType.caption(color: sc.success),
                               ),
                             ],
                           ),
@@ -469,7 +464,7 @@ class DemoDataBanner extends ConsumerWidget {
             Text(
               '${AppStrings.venueHubDemoProgress} · '
               '${st.demoDaysDone}/${st.demoDaysTotal}',
-              style: SatType.mono(size: 11.5, color: sc.textLo),
+              style: SatType.monoS(color: sc.textLo),
             ),
           ] else
             Row(
@@ -821,9 +816,7 @@ class _HubCard extends ConsumerWidget {
                             badgeText,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: SatType.mono(
-                              size: 9.5,
-                              weight: FontWeight.w600,
+                            style: SatType.caption(
                               color: hasAlert ? sc.warn : sc.textLo,
                             ),
                           ),

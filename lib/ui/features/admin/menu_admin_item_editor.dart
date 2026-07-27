@@ -536,12 +536,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 ),
                 child: Text(
                   _hasPhotoNow ? 'UBAH' : 'FOTO',
-                  style: SatType.mono(
-                    size: 8,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.0,
-                    color: onFill(satMediaScrim),
-                  ),
+                  style: SatType.caption(color: onFill(satMediaScrim)),
                 ),
               ),
             ),
@@ -1499,15 +1494,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'MARGIN',
-            style: SatType.mono(
-              size: 9,
-              weight: FontWeight.w600,
-              letterSpacing: 1.0,
-              color: sc.textLo,
-            ),
-          ),
+          Text('MARGIN', style: SatType.caption(color: sc.textLo)),
           const SizedBox(height: Sp.s1),
           AnimatedDefaultTextStyle(
             duration: satMotion(context, 240),
@@ -1532,15 +1519,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _label(String t) {
     final sc = context.sat;
-    return Text(
-      t.toUpperCase(),
-      style: SatType.mono(
-        size: 10,
-        weight: FontWeight.w600,
-        letterSpacing: 1.0,
-        color: sc.textLo,
-      ),
-    );
+    return Text(t.toUpperCase(), style: SatType.caption(color: sc.textLo));
   }
 
   Widget _subhead(String t, {Widget? trailing}) {
@@ -1666,12 +1645,7 @@ class _Section extends StatelessWidget {
               Expanded(
                 child: Text(
                   title.toUpperCase(),
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: sc.textLo,
-                  ),
+                  style: SatType.caption(color: sc.textLo),
                 ),
               ),
               ?trailing,
@@ -1732,11 +1706,7 @@ class _Header extends StatelessWidget {
                           sub!.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: SatType.mono(
-                            size: 11,
-                            color: sc.textLo,
-                            letterSpacing: 0.66,
-                          ),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
                       ),
                   ],

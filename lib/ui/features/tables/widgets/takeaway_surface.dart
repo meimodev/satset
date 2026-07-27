@@ -129,15 +129,7 @@ class _TakeawayRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    visit.label,
-                    style: SatType.mono(
-                      size: 13,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
+                  Text(visit.label, style: SatType.monoM(color: sc.textHi)),
                   const SizedBox(height: 3),
                   Text(
                     [

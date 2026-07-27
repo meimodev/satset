@@ -204,14 +204,7 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  sub.toUpperCase(),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.6,
-                  ),
-                ),
+                Text(sub.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
               ],
             ),
           ),
@@ -350,11 +343,7 @@ class _TableRow extends StatelessWidget {
                     const SizedBox(height: Sp.sHair),
                     Text(
                       '${table.capacity} kursi',
-                      style: SatType.mono(
-                        size: 10,
-                        letterSpacing: 0.4,
-                        color: sc.textLo,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -563,15 +552,8 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     );
   }
 
-  Widget _label(SatColors sc, String text) => Text(
-    text.toUpperCase(),
-    style: SatType.mono(
-      size: 10,
-      weight: FontWeight.w600,
-      letterSpacing: 1.0,
-      color: sc.textLo,
-    ),
-  );
+  Widget _label(SatColors sc, String text) =>
+      Text(text.toUpperCase(), style: SatType.caption(color: sc.textLo));
 }
 
 class _ActiveRow extends StatelessWidget {
@@ -777,7 +759,7 @@ class _QrDialog extends ConsumerWidget {
                     SelectableText(
                       url,
                       textAlign: TextAlign.center,
-                      style: SatType.mono(size: 12, color: sc.textMd),
+                      style: SatType.monoM(color: sc.textMd),
                     ),
                     const SizedBox(height: Sp.s3),
                     _warn(
@@ -969,11 +951,7 @@ class _ZoneRow extends StatelessWidget {
                   const SizedBox(height: Sp.sHair),
                   Text(
                     '$tableCount meja',
-                    style: SatType.mono(
-                      size: 10,
-                      letterSpacing: 0.4,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
               ),
@@ -1139,15 +1117,8 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
     );
   }
 
-  Widget _fieldLabel(SatColors sc, String text) => Text(
-    text.toUpperCase(),
-    style: SatType.mono(
-      size: 10,
-      weight: FontWeight.w600,
-      letterSpacing: 1.0,
-      color: sc.textLo,
-    ),
-  );
+  Widget _fieldLabel(SatColors sc, String text) =>
+      Text(text.toUpperCase(), style: SatType.caption(color: sc.textLo));
 }
 
 class _ZonePreview extends StatelessWidget {
@@ -1198,14 +1169,7 @@ class _ZonePreview extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: Sp.sHair),
-                Text(
-                  'PRATINJAU',
-                  style: SatType.mono(
-                    size: 10,
-                    letterSpacing: 1.2,
-                    color: color,
-                  ),
-                ),
+                Text('PRATINJAU', style: SatType.monoS(color: color)),
               ],
             ),
           ),
@@ -1374,11 +1338,7 @@ class _SheetShell extends StatelessWidget {
                         const SizedBox(height: Sp.sHair),
                         Text(
                           subtitle!.toUpperCase(),
-                          style: SatType.mono(
-                            size: 10,
-                            letterSpacing: 0.8,
-                            color: sc.textLo,
-                          ),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
                     ],
@@ -1543,11 +1503,7 @@ class _Stepper extends StatelessWidget {
             child: Text(
               '$value',
               textAlign: TextAlign.center,
-              style: SatType.mono(
-                size: 18,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
+              style: SatType.monoL(color: sc.textHi),
             ),
           ),
           _stepBtn(

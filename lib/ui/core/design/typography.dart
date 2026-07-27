@@ -202,6 +202,20 @@ class SatType {
     color: color,
   );
 
+  /// The one poster numeral on a screen — the table number on its own detail
+  /// page. Mono 54 · 500 · −0.03em, the tabular twin of [display54].
+  ///
+  /// Both call sites sit inside a `FittedBox(scaleDown)`, so this is a ceiling
+  /// rather than a chosen size: the phone's 96px slot scales it down, the
+  /// tablet's lets it run.
+  static TextStyle monoDisplay54({Color? color}) => mono(
+    size: 54,
+    weight: FontWeight.w500,
+    letterSpacing: -1.62,
+    height: 1.0,
+    color: color,
+  );
+
   /// KDS timers, table numbers — read at 1–2 m. Mono 22 · 500.
   static TextStyle monoL({Color? color}) =>
       mono(size: 22, weight: FontWeight.w500, color: color);
@@ -209,6 +223,16 @@ class SatType {
   /// Inline numerics, codes, technical strings. Mono 13 · 0.04em.
   static TextStyle monoM({Color? color}) =>
       mono(size: 13, weight: FontWeight.w500, color: color);
+
+  /// The quiet numeric line — timestamps, order codes, unit counts, the
+  /// "12 item · 3 kursi" strip under a title. Mono 11 · 400.
+  ///
+  /// Not in the design source's eleven, which jumps straight from Mono M to
+  /// Caption. A hundred call sites were setting small mono at a regular
+  /// weight, and folding them all into a w600 [caption] would have shouted
+  /// every timestamp in the app. The gap was real (ADR-0055).
+  static TextStyle monoS({Color? color}) =>
+      mono(size: 11, weight: FontWeight.w400, color: color);
 
   /// Section caps and audit labels. Mono 10 · 600 · 0.12em. Uppercase the
   /// string at the call site — Flutter has no text-transform.

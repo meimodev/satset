@@ -436,15 +436,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ZONA BAHAYA',
-            style: SatType.mono(
-              size: 11,
-              weight: FontWeight.w700,
-              letterSpacing: 2,
-              color: sc.urgent,
-            ),
-          ),
+          Text('ZONA BAHAYA', style: SatType.caption(color: sc.urgent)),
           const SizedBox(height: Sp.s2h),
           Text(
             blocked
@@ -524,15 +516,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     );
   }
 
-  Widget _sectionLabel(SatColors sc, String text) => Text(
-    text,
-    style: SatType.mono(
-      size: 11,
-      weight: FontWeight.w700,
-      letterSpacing: 2,
-      color: sc.accentText,
-    ),
-  );
+  Widget _sectionLabel(SatColors sc, String text) =>
+      Text(text, style: SatType.caption(color: sc.accentText));
 
   Widget _paidUntilRow(SatColors sc) {
     final p = _paidUntil;

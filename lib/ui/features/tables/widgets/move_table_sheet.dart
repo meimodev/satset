@@ -101,11 +101,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
             const SizedBox(height: Sp.s1),
             Text(
               'Pilih meja kosong tujuan · ${source.pax} tamu',
-              style: SatType.mono(
-                size: 11,
-                color: sc.textLo,
-                letterSpacing: 0.44,
-              ),
+              style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
             Flexible(
@@ -145,12 +141,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
         padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
         child: Text(
           zone.name.toUpperCase(),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.2,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
       ),
       for (final t in inZone) _targetTile(sc, t, source),
@@ -180,11 +171,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
               children: [
                 Text(
                   target.displayName,
-                  style: SatType.mono(
-                    size: 18,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoL(color: sc.textHi),
                 ),
                 const SizedBox(width: Sp.s3),
                 Text(

@@ -130,11 +130,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               Flexible(
                 child: Text(
                   _freshnessLine(report, pending),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.5,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
             ],

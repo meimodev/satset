@@ -231,11 +231,7 @@ class _Head extends StatelessWidget {
                     Flexible(
                       child: Text(
                         'MEJA $tableName · ${ticket.sentAt}',
-                        style: SatType.mono(
-                          size: 10,
-                          color: sc.textLo,
-                          letterSpacing: 0.6,
-                        ),
+                        style: SatType.monoS(color: sc.textLo),
                       ),
                     ),
                   ],

@@ -187,11 +187,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                     const SizedBox(height: Sp.s1),
                     Text(
                       '${today.length} booking · $covers tamu',
-                      style: SatType.mono(
-                        size: 11,
-                        color: sc.textLo,
-                        letterSpacing: 0.66,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -320,11 +316,7 @@ class _ReservationRow extends ConsumerWidget {
                       // — Glow's reservation rows lead on a heavy numeral, and
                       // `display` ignores the weight under brutal anyway.
                       style: SatShape.lembut
-                          ? SatType.mono(
-                              size: 15,
-                              weight: FontWeight.w600,
-                              color: sc.textHi,
-                            )
+                          ? SatType.monoM(color: sc.textHi)
                           : SatType.display(
                               size: 16,
                               weight: FontWeight.w800,
@@ -334,11 +326,7 @@ class _ReservationRow extends ConsumerWidget {
                     const SizedBox(height: Sp.sHair),
                     Text(
                       _relative(r, late),
-                      style: SatType.mono(
-                        size: 10,
-                        color: late ? sc.urgent : sc.textLo,
-                        letterSpacing: 0.4,
-                      ),
+                      style: SatType.monoS(color: late ? sc.urgent : sc.textLo),
                     ),
                   ],
                 ),
@@ -367,11 +355,7 @@ class _ReservationRow extends ConsumerWidget {
                         if (r.phone != null && r.phone!.trim().isNotEmpty)
                           r.phone!.trim(),
                       ].join(' · '),
-                      style: SatType.mono(
-                        size: 10,
-                        color: sc.textLo,
-                        letterSpacing: 0.4,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                     if (r.notes != null && r.notes!.trim().isNotEmpty) ...[
                       const SizedBox(height: Sp.s1),
@@ -508,12 +492,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
       children: [
         Text(
           SatShape.caps('${AppStrings.reservationActionSeat} ke meja:'),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2),
         if (zones.length > 1)
@@ -583,17 +562,13 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                       children: [
                         Text(
                           t.displayName,
-                          style: SatType.mono(
-                            size: 12,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.monoM(color: sc.textHi),
                         ),
                         const SizedBox(width: Sp.s1h),
                         Icon(Icons.person_outline, size: 11, color: sc.textLo),
                         Text(
                           '${t.capacity}',
-                          style: SatType.mono(size: 10, color: sc.textLo),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
                     ),
@@ -933,12 +908,7 @@ class _TablePicker extends StatelessWidget {
       children: [
         Text(
           SatShape.caps('Zona & meja (opsional)'),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2),
         if (zones.length > 1)

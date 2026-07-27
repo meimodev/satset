@@ -444,12 +444,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               children: [
                 Text(
                   'IDENTITAS RESTORAN',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.0,
-                    color: sc.textLo,
-                  ),
+                  style: SatType.caption(color: sc.textLo),
                 ),
                 const SizedBox(height: Sp.s2),
                 Text(
@@ -840,15 +835,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                   ),
                 ),
               ),
-              Text(
-                tag,
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
+              Text(tag, style: SatType.caption(color: sc.textLo)),
             ],
           ),
           const SizedBox(height: Sp.s2h),
@@ -980,15 +967,7 @@ class _PajakLayananCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              Text(
-                'BIAYA',
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
+              Text('BIAYA', style: SatType.caption(color: sc.textLo)),
             ],
           ),
           const SizedBox(height: Sp.s3h),
@@ -1226,11 +1205,7 @@ class _PajakLayananCard extends ConsumerWidget {
                 ),
                 child: Text(
                   _fmtPct(valueBps),
-                  style: SatType.mono(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoM(color: sc.textHi),
                 ),
               ),
               const SizedBox(width: Sp.s2h),
@@ -1289,11 +1264,7 @@ class _PajakLayananCard extends ConsumerWidget {
                 ),
                 child: Text(
                   formatIDR(amount),
-                  style: SatType.mono(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoM(color: sc.textHi),
                 ),
               ),
               const SizedBox(width: Sp.s2h),
@@ -1359,15 +1330,7 @@ class _GuestOrderingCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              Text(
-                'QR TAMU',
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
+              Text('QR TAMU', style: SatType.caption(color: sc.textLo)),
             ],
           ),
           const SizedBox(height: Sp.s1h),
@@ -1451,7 +1414,7 @@ class _GuestOrderingCard extends ConsumerWidget {
         Icon(Icons.link, size: 15, color: sc.textLo),
         const SizedBox(width: Sp.s2),
         Expanded(
-          child: Text(text, style: SatType.mono(size: 12.5, color: color)),
+          child: Text(text, style: SatType.monoM(color: color)),
         ),
       ],
     ),
@@ -1516,15 +1479,7 @@ class _ReportsHourCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              Text(
-                'LAPORAN',
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
+              Text('LAPORAN', style: SatType.caption(color: sc.textLo)),
             ],
           ),
           const SizedBox(height: Sp.s3h),
@@ -1570,11 +1525,7 @@ class _ReportsHourCard extends ConsumerWidget {
                       ),
                       child: Text(
                         '${hour.toString().padLeft(2, '0')}:00',
-                        style: SatType.mono(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.monoM(color: sc.textHi),
                       ),
                     ),
                     const SizedBox(width: Sp.s2h),

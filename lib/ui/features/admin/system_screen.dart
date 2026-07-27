@@ -169,7 +169,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       rows: [
         AdminRow(
           label: 'Alamat',
-          value: Text(addr, style: SatType.mono(size: 12, color: sc.textHi)),
+          value: Text(addr, style: SatType.monoM(color: sc.textHi)),
         ),
         AdminRow(
           label: 'Uptime',
@@ -177,7 +177,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             status == null
                 ? '—'
                 : _humanDuration(Duration(milliseconds: status.uptimeMs)),
-            style: SatType.mono(size: 12, color: sc.textHi),
+            style: SatType.monoM(color: sc.textHi),
           ),
         ),
         AdminRow(
@@ -186,10 +186,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         ),
         AdminRow(
           label: 'Ping LAN',
-          value: Text(
-            pingText,
-            style: SatType.mono(size: 12, color: sc.textHi),
-          ),
+          value: Text(pingText, style: SatType.monoM(color: sc.textHi)),
         ),
         AdminRow(
           label: 'p95 latensi',
@@ -197,7 +194,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             status == null
                 ? '—'
                 : '${status.p95LatencyMs} ms · ${status.requestCountRecent} req',
-            style: SatType.mono(size: 12, color: sc.textHi),
+            style: SatType.monoM(color: sc.textHi),
           ),
         ),
         AdminRow(
@@ -205,10 +202,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           value: Row(
             children: [
               Expanded(
-                child: Text(
-                  fpShort,
-                  style: SatType.mono(size: 12, color: sc.textHi),
-                ),
+                child: Text(fpShort, style: SatType.monoM(color: sc.textHi)),
               ),
               GestureDetector(
                 onTap: fp.isEmpty
@@ -304,7 +298,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           Expanded(
             child: Text(
               '${p.host}:${p.port} · ${p.kind}',
-              style: SatType.mono(size: 12, color: sc.textHi),
+              style: SatType.monoM(color: sc.textHi),
             ),
           ),
           GestureDetector(
@@ -489,15 +483,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                   ),
                 ),
               ),
-              Text(
-                tag,
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
+              Text(tag, style: SatType.caption(color: sc.textLo)),
               if (trailing != null) ...[
                 const SizedBox(width: Sp.s2h),
                 trailing,

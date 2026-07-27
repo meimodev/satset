@@ -146,11 +146,7 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
                     ),
                     trailing: Text(
                       '-${formatIDR(preview)}',
-                      style: SatType.mono(
-                        size: 13,
-                        weight: FontWeight.w600,
-                        color: sc.warn,
-                      ),
+                      style: SatType.monoM(color: sc.warn),
                     ),
                     onTap: () => Navigator.pop(c, p),
                   );

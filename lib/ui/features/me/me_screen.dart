@@ -360,11 +360,7 @@ class _MeTablet extends StatelessWidget {
                 child: Text(
                   'MULAI ${m.shiftStart} · ${m.elapsedLabel} BERJALAN'
                       .toUpperCase(),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.66,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
               _ThemeIconButton(theme: theme, onTap: onPickTheme),
@@ -537,11 +533,7 @@ class _Identity extends StatelessWidget {
                 const SizedBox(height: Sp.s1h),
                 Text(
                   'MULAI ${m.shiftStart} · ${m.elapsedLabel.toUpperCase()} BERJALAN',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.44,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ],
@@ -656,26 +648,9 @@ class _KpiBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            kpi.label.toUpperCase(),
-            style: SatType.mono(
-              size: 9,
-              weight: FontWeight.w500,
-              letterSpacing: 0.72,
-              color: subColor,
-            ),
-          ),
+          Text(kpi.label.toUpperCase(), style: SatType.monoS(color: subColor)),
           const SizedBox(height: Sp.s2h),
-          Text(
-            kpi.value,
-            style: SatType.mono(
-              size: 26,
-              weight: FontWeight.w600,
-              letterSpacing: -0.52,
-              height: 1,
-              color: valColor,
-            ),
-          ),
+          Text(kpi.value, style: SatType.monoL(color: valColor)),
         ],
       ),
     );
@@ -727,15 +702,7 @@ class _PacingCard extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            m.elapsedLabel,
-            style: SatType.mono(
-              size: 16,
-              weight: FontWeight.w600,
-              letterSpacing: -0.2,
-              color: sc.textHi,
-            ),
-          ),
+          Text(m.elapsedLabel, style: SatType.monoM(color: sc.textHi)),
         ],
       ),
     );
@@ -791,21 +758,12 @@ class _ActivityCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'AKTIVITAS TERKINI',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.caption(color: sc.textLo),
                   ),
                 ),
                 Text(
                   '${audit.length} entri',
-                  style: SatType.mono(
-                    size: 10,
-                    color: sc.textDim,
-                    letterSpacing: 0.4,
-                  ),
+                  style: SatType.monoS(color: sc.textDim),
                 ),
               ],
             ),
@@ -836,15 +794,7 @@ class _SectionLabel extends StatelessWidget {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
-      child: Text(
-        label,
-        style: SatType.mono(
-          size: 10,
-          weight: FontWeight.w500,
-          letterSpacing: 1.2,
-          color: sc.textLo,
-        ),
-      ),
+      child: Text(label, style: SatType.monoS(color: sc.textLo)),
     );
   }
 }
@@ -961,14 +911,7 @@ class _AuditRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  meta,
-                  style: SatType.mono(
-                    size: 10,
-                    color: sc.textLo,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+                Text(meta, style: SatType.monoS(color: sc.textLo)),
               ],
             ),
           ),

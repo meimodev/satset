@@ -108,11 +108,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                           const SizedBox(height: Sp.sHair),
                           Text(
                             _roleOf(u, roles)?.name ?? '—',
-                            style: SatType.mono(
-                              size: 10,
-                              color: sc.textLo,
-                              letterSpacing: 0.4,
-                            ),
+                            style: SatType.monoS(color: sc.textLo),
                           ),
                         ],
                       ),
@@ -309,22 +305,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 r.capabilities.length,
                 Capability.values.length,
               ),
-              style: SatType.mono(
-                size: 11,
-                color: sc.textMd,
-                letterSpacing: 0.4,
-              ),
+              style: SatType.monoS(color: sc.textMd),
             ),
           ),
           Expanded(
             flex: 3,
             child: Text(
               AppStrings.staffMembersCount(memberCount),
-              style: SatType.mono(
-                size: 11,
-                color: sc.textMd,
-                letterSpacing: 0.4,
-              ),
+              style: SatType.monoS(color: sc.textMd),
             ),
           ),
           if (isAdminRole)
@@ -471,11 +459,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         alignment: Alignment.center,
         child: Text(
           on ? '✓' : '—',
-          style: SatType.mono(
-            size: 12,
-            weight: FontWeight.w700,
-            color: on ? sc.success : sc.textDim,
-          ),
+          style: SatType.monoM(color: on ? sc.success : sc.textDim),
         ),
       ),
     );
@@ -734,15 +718,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   Widget _h(String t) {
     final sc = context.sat;
-    return Text(
-      t.toUpperCase(),
-      style: SatType.mono(
-        size: 10,
-        weight: FontWeight.w600,
-        letterSpacing: 1.0,
-        color: sc.textLo,
-      ),
-    );
+    return Text(t.toUpperCase(), style: SatType.caption(color: sc.textLo));
   }
 
   Widget _tagBadge(BuildContext context, String t, Color fg, Color bg) {
@@ -752,15 +728,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         vertical: Sp.sHair,
       ),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(5)),
-      child: Text(
-        t,
-        style: SatType.mono(
-          size: 9,
-          weight: FontWeight.w600,
-          letterSpacing: 0.8,
-          color: fg,
-        ),
-      ),
+      child: Text(t, style: SatType.caption(color: fg)),
     );
   }
 
@@ -965,32 +933,16 @@ class _StaffCard extends StatelessWidget {
                   ),
                   child: Text(
                     role!.name.toUpperCase(),
-                    style: SatType.mono(
-                      size: 9,
-                      weight: FontWeight.w600,
-                      letterSpacing: 0.8,
-                      color: role!.color,
-                    ),
+                    style: SatType.caption(color: role!.color),
                   ),
                 )
               else
                 Text(
                   AppStrings.staffNoRole,
-                  style: SatType.mono(
-                    size: 10,
-                    color: sc.textLo,
-                    letterSpacing: 0.4,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               const Spacer(),
-              Text(
-                'PIN ${user.pin}',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.4,
-                ),
-              ),
+              Text('PIN ${user.pin}', style: SatType.monoS(color: sc.textLo)),
             ],
           ),
         ),
@@ -1201,12 +1153,7 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   AppStrings.staffAvatarColor,
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1,
-                    color: sc.textLo,
-                  ),
+                  style: SatType.caption(color: sc.textLo),
                 ),
               ),
               const SizedBox(height: Sp.s2),
@@ -1325,10 +1272,8 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                             user.disabled
                                 ? AppStrings.inactive
                                 : AppStrings.active,
-                            style: SatType.mono(
-                              size: 11,
+                            style: SatType.monoS(
                               color: user.disabled ? sc.urgent : sc.textLo,
-                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
@@ -1463,15 +1408,7 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.only(bottom: Sp.s1h),
-      child: Text(
-        t.toUpperCase(),
-        style: SatType.mono(
-          size: 10,
-          weight: FontWeight.w600,
-          letterSpacing: 1,
-          color: sc.textLo,
-        ),
-      ),
+      child: Text(t.toUpperCase(), style: SatType.caption(color: sc.textLo)),
     );
   }
 

@@ -207,7 +207,7 @@ class ReceiptPreview extends StatelessWidget {
       '------------------------------',
       maxLines: 1,
       overflow: TextOverflow.clip,
-      style: SatType.mono(size: 11, color: _inkLo),
+      style: SatType.monoS(color: _inkLo),
     ),
   );
 }

@@ -156,12 +156,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                       width: 22,
                       child: Text(
                         '×${ticket.qty}',
-                        style: SatType.mono(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: sc.textMd,
-                          letterSpacing: 0,
-                        ),
+                        style: SatType.monoM(color: sc.textMd),
                       ),
                     ),
                     const SizedBox(width: Sp.s3),
@@ -242,12 +237,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                               const Spacer(),
                               Text(
                                 formatIDR(ticket.price * ticket.qty),
-                                style: SatType.mono(
-                                  size: 12,
-                                  weight: FontWeight.w500,
-                                  color: sc.textMd,
-                                  letterSpacing: 0,
-                                ),
+                                style: SatType.monoM(color: sc.textMd),
                               ),
                             ],
                           ),

@@ -236,9 +236,7 @@ class _PayableTile extends StatelessWidget {
                         )
                       : Text(
                           b.tableLabel ?? '—',
-                          style: SatType.mono(
-                            size: 15,
-                            weight: FontWeight.w700,
+                          style: SatType.monoM(
                             color: b.detached ? sc.warn : sc.textHi,
                           ),
                         ),
@@ -290,9 +288,7 @@ class _PayableTile extends StatelessWidget {
                   children: [
                     Text(
                       formatIDR(b.outstanding),
-                      style: SatType.mono(
-                        size: 15,
-                        weight: FontWeight.w700,
+                      style: SatType.monoM(
                         color: settled ? sc.textLo : sc.textHi,
                       ),
                     ),

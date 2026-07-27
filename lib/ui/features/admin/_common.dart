@@ -56,11 +56,7 @@ class AdminEmbeddedStrip extends StatelessWidget {
                     Flexible(
                       child: Text(
                         sub.toUpperCase(),
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.textLo,
-                          letterSpacing: 0.66,
-                        ),
+                        style: SatType.monoS(color: sc.textLo),
                       ),
                     ),
                   ],
@@ -143,26 +139,9 @@ class SetTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w600,
-              letterSpacing: 1.0,
-              color: sc.textLo,
-            ),
-          ),
+          Text(label.toUpperCase(), style: SatType.caption(color: sc.textLo)),
           const SizedBox(height: Sp.s2h),
-          Text(
-            value,
-            style: SatType.mono(
-              size: 24,
-              weight: FontWeight.w600,
-              letterSpacing: -0.48,
-              height: 1,
-              color: sc.textHi,
-            ),
-          ),
+          Text(value, style: SatType.monoL(color: sc.textHi)),
           if (sub != null) ...[
             const SizedBox(height: Sp.s1h),
             Text(
@@ -206,15 +185,7 @@ class SetHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: accent,
-            ),
-          ),
+          Text(label.toUpperCase(), style: SatType.caption(color: accent)),
           const SizedBox(height: Sp.s1),
           Text(
             value,
@@ -250,14 +221,7 @@ class SetHero extends StatelessWidget {
               ],
             ),
             const SizedBox(height: Sp.s2),
-            Text(
-              'STATIONS · LIVE',
-              style: SatType.mono(
-                size: 10,
-                color: sc.textLo,
-                letterSpacing: 1.0,
-              ),
-            ),
+            Text('STATIONS · LIVE', style: SatType.monoS(color: sc.textLo)),
           ],
         ],
       ),

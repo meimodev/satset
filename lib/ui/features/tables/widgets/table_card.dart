@@ -140,7 +140,6 @@ class _TableCardState extends ConsumerState<TableCard> {
     final isMine = actor != null && actor.id == currentUserId;
     if (isMine && !brutal) border = sc.accentBorder;
 
-    final tnumSize = tablet ? 36.0 : 26.0;
     final radius = tablet ? 20.0 : 22.0;
     final padH = tablet ? 18.0 : 14.0;
     final padTop = tablet ? 18.0 : 16.0;
@@ -172,19 +171,11 @@ class _TableCardState extends ConsumerState<TableCard> {
                   child: AnimatedDefaultTextStyle(
                     duration: xfade,
                     curve: satEaseOut,
+                    // Poster size either way; the FittedBox above scales it
+                    // into the phone's smaller slot.
                     style: brutal
-                        ? SatType.display(
-                            size: tnumSize,
-                            letterSpacing: -tnumSize * 0.02,
-                            height: 1,
-                            color: numColor,
-                          )
-                        : SatType.mono(
-                            size: tnumSize,
-                            weight: FontWeight.w500,
-                            letterSpacing: -tnumSize * 0.02,
-                            color: numColor,
-                          ),
+                        ? SatType.h1(color: numColor)
+                        : SatType.monoDisplay(color: numColor),
                     child: Text(
                       table.displayName,
                       maxLines: 1,
@@ -225,11 +216,7 @@ class _TableCardState extends ConsumerState<TableCard> {
               const SizedBox(width: 3),
               Text(
                 '${table.pax}/${table.capacity}',
-                style: SatType.mono(
-                  size: tablet ? 12 : 11,
-                  color: sc.textMd,
-                  letterSpacing: 0.44,
-                ),
+                style: SatType.monoS(color: sc.textMd),
               ),
               if (table.openAmount > 0) ...[
                 const SizedBox(width: Sp.s2),
@@ -238,18 +225,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                     formatIDR(table.openAmount),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: brutal
-                        ? SatType.display(
-                            size: tablet ? 13 : 12,
-                            letterSpacing: -0.1,
-                            color: sc.textHi,
-                          )
-                        : SatType.mono(
-                            size: tablet ? 12 : 11,
-                            weight: FontWeight.w500,
-                            color: sc.textMd,
-                            letterSpacing: 0.24,
-                          ),
+                    style: SatType.monoM(color: sc.textHi),
                   ),
                 ),
               ],
@@ -302,21 +278,13 @@ class _TableCardState extends ConsumerState<TableCard> {
                 const SizedBox(width: Sp.s1h),
                 Text(
                   formatElapsedId(now.difference(table.openedAt!)),
-                  style: SatType.mono(
-                    size: tablet ? 12 : 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.44,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ] else if (hold != null) ...[
                 const SizedBox(width: Sp.s1h),
                 Text(
                   _hhmm(hold.expectedAt),
-                  style: SatType.mono(
-                    size: tablet ? 12 : 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.44,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ],
@@ -332,11 +300,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                     '${_hhmm(next.expectedAt)} · ${next.name}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: SatType.mono(
-                      size: 10,
-                      color: sc.textLo,
-                      letterSpacing: 0.44,
-                    ),
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ),
               ],
@@ -505,7 +469,7 @@ class _OwnerChip extends StatelessWidget {
         initials!,
         style: brutal
             ? SatType.display(size: 12, color: sc.textHi)
-            : SatType.mono(size: 11, weight: FontWeight.w700, color: sc.textMd),
+            : SatType.caption(color: sc.textMd),
       ),
     );
   }

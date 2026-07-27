@@ -683,13 +683,7 @@ class _Header extends ConsumerWidget {
               child: Text(
                 table.displayName,
                 maxLines: 1,
-                style: SatType.mono(
-                  size: 44,
-                  weight: FontWeight.w500,
-                  letterSpacing: -1.32,
-                  height: 1.0,
-                  color: sc.textHi,
-                ),
+                style: SatType.monoDisplay54(color: sc.textHi),
               ),
             ),
           ),
@@ -845,11 +839,7 @@ class _ContextTriggerBtn extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Text(
                             '$alertCount',
-                            style: SatType.mono(
-                              size: 9,
-                              weight: FontWeight.w700,
-                              color: onFill(sc.urgent),
-                            ),
+                            style: SatType.caption(color: onFill(sc.urgent)),
                           ),
                         ),
                 ),
@@ -918,11 +908,7 @@ class _ContextSheet extends StatelessWidget {
                   const SizedBox(height: Sp.s1),
                   Text(
                     'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
-                    style: SatType.mono(
-                      size: 11,
-                      color: sc.textLo,
-                      letterSpacing: 0.44,
-                    ),
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
               ),
@@ -981,21 +967,12 @@ class _CourseBlock extends StatelessWidget {
                 const SizedBox(width: Sp.s2h),
                 Text(
                   course.name.toUpperCase(),
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.32,
-                    color: sc.textMd,
-                  ),
+                  style: SatType.caption(color: sc.textMd),
                 ),
                 const Spacer(),
                 Text(
                   '${items.length} item${allHeld ? ' · ditahan' : ''}',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ),
@@ -1456,11 +1433,7 @@ class _TabletSplit extends StatelessWidget {
                                     child: Text(
                                       table.displayName,
                                       maxLines: 1,
-                                      style: SatType.mono(
-                                        size: 56,
-                                        weight: FontWeight.w500,
-                                        letterSpacing: -1.68,
-                                        height: 1,
+                                      style: SatType.monoDisplay54(
                                         color: sc.textHi,
                                       ),
                                     ),
@@ -1917,11 +1890,7 @@ class _ContextPane extends ConsumerWidget {
               const SizedBox(height: Sp.s1),
               Text(
                 'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.44,
-                ),
+                style: SatType.monoS(color: sc.textLo),
               ),
             ],
           ),
@@ -1947,21 +1916,9 @@ class _ContextPane extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            v,
-            style: SatType.mono(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.44,
-              height: 1,
-              color: sc.textHi,
-            ),
-          ),
+          Text(v, style: SatType.monoL(color: sc.textHi)),
           const SizedBox(height: Sp.s2),
-          Text(
-            l.toUpperCase(),
-            style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.6),
-          ),
+          Text(l.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
         ],
       ),
     );
@@ -1978,15 +1935,7 @@ class _ContextPane extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            head,
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: sc.textLo,
-            ),
-          ),
+          Text(head, style: SatType.caption(color: sc.textLo)),
           const SizedBox(height: Sp.s3),
           child,
         ],

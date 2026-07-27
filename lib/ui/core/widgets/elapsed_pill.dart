@@ -94,15 +94,7 @@ class ElapsedPill extends ConsumerWidget {
         children: [
           Icon(icon, size: 11, color: fg),
           const SizedBox(width: Sp.s1),
-          Text(
-            label,
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w600,
-              color: fg,
-              letterSpacing: 0.4,
-            ),
-          ),
+          Text(label, style: SatType.caption(color: fg)),
         ],
       ),
     );

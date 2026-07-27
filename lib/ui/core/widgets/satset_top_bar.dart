@@ -91,15 +91,7 @@ class _LoginClockState extends ConsumerState<LoginClock> {
             children: [
               Icon(Icons.access_time_filled_rounded, size: 13, color: fg),
               const SizedBox(width: Sp.s1h),
-              Text(
-                currentTime,
-                style: SatType.mono(
-                  size: 12,
-                  weight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: fg,
-                ),
-              ),
+              Text(currentTime, style: SatType.monoM(color: fg)),
             ],
           ),
         ),
@@ -117,15 +109,7 @@ class _LoginClockState extends ConsumerState<LoginClock> {
             children: [
               Icon(Icons.timer_outlined, size: 13, color: fg),
               const SizedBox(width: Sp.s1h),
-              Text(
-                elapsed,
-                style: SatType.mono(
-                  size: 12,
-                  weight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: fg,
-                ),
-              ),
+              Text(elapsed, style: SatType.monoM(color: fg)),
             ],
           ),
         ),

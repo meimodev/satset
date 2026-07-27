@@ -228,11 +228,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Text(
                 '${orders.length} ORDER · $itemCount ITEM DI ANTRIAN PERSIAPAN',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.66,
-                ),
+                style: SatType.monoS(color: sc.textLo),
               ),
             ),
             Padding(
@@ -394,12 +390,7 @@ class _OrderCard extends ConsumerWidget {
                   decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(9)),
                   child: Text(
                     tableLabel,
-                    style: SatType.mono(
-                      size: 15,
-                      weight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                      color: sc.textHi,
-                    ),
+                    style: SatType.monoM(color: sc.textHi),
                   ),
                 ),
                 const SizedBox(width: Sp.s2h),
@@ -476,20 +467,9 @@ class _AgePill extends StatelessWidget {
         children: [
           _PulseDot(color: color, pulse: age.inMinutes >= 10),
           const SizedBox(width: Sp.s1h),
-          Text(
-            formatElapsedId(age),
-            style: SatType.mono(
-              size: 12,
-              weight: FontWeight.w700,
-              letterSpacing: 0,
-              color: color,
-            ),
-          ),
+          Text(formatElapsedId(age), style: SatType.monoM(color: color)),
           const SizedBox(width: Sp.s1h),
-          Text(
-            sentAt,
-            style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.4),
-          ),
+          Text(sentAt, style: SatType.monoS(color: sc.textLo)),
         ],
       ),
     );
@@ -653,12 +633,7 @@ class _ItemRowState extends State<_ItemRow>
                 decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(6)),
                 child: Text(
                   '×${ticket.qty}',
-                  style: SatType.mono(
-                    size: 13,
-                    weight: FontWeight.w700,
-                    letterSpacing: 0,
-                    color: cooked ? sc.textLo : sc.textHi,
-                  ),
+                  style: SatType.monoM(color: cooked ? sc.textLo : sc.textHi),
                 ),
               ),
               const SizedBox(width: Sp.s3),

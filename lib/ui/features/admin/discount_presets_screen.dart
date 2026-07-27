@@ -83,15 +83,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: Sp.s1h),
-    child: Text(
-      text.toUpperCase(),
-      style: SatType.mono(
-        size: 9,
-        weight: FontWeight.w600,
-        letterSpacing: 1.4,
-        color: sc.textLo,
-      ),
-    ),
+    child: Text(text.toUpperCase(), style: SatType.caption(color: sc.textLo)),
   );
 }
 

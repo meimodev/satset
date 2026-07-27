@@ -43,10 +43,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 Widget fleetPill(SatColors sc, String text, Color fg, Color bg) => Container(
   padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: 3),
   decoration: SatBox.d(color: bg, borderRadius: SatR.a(8)),
-  child: Text(
-    text,
-    style: SatType.mono(size: 10, weight: FontWeight.w700, color: fg),
-  ),
+  child: Text(text, style: SatType.caption(color: fg)),
 );
 
 /// The shared tile: leading status-tint icon box, title + sub, an optional pill
@@ -134,7 +131,7 @@ class FleetTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: subMono
-                        ? SatType.mono(size: 11, color: sc.textLo)
+                        ? SatType.monoS(color: sc.textLo)
                         : SatType.sans(size: 12, color: sc.textLo, height: 1.3),
                   ),
                 ],
@@ -234,15 +231,7 @@ class FleetHeader extends StatelessWidget {
             Icon(icon, size: 14, color: sc.accentText),
             const SizedBox(width: Sp.s1h),
             Expanded(
-              child: Text(
-                kicker,
-                style: SatType.mono(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: sc.accentText,
-                ),
-              ),
+              child: Text(kicker, style: SatType.caption(color: sc.accentText)),
             ),
             ?trailing,
           ],

@@ -546,10 +546,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                             color: sc.textHi,
                           ),
                         ),
-                        Text(
-                          e.address,
-                          style: SatType.mono(size: 11, color: sc.textLo),
-                        ),
+                        Text(e.address, style: SatType.monoS(color: sc.textLo)),
                       ],
                     ),
                   ),

@@ -108,33 +108,30 @@ class ReportStockSection extends ConsumerWidget {
       (r as Map).cast<String, dynamic>(),
   ];
 
-  Widget _kpi(
-    SatColors sc,
-    String label,
-    String value,
-    Color color,
-  ) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
-    decoration: SatBox.d(
-      color: sc.bg2,
-      borderRadius: SatR.a(10),
-      border: SatB.all(color: sc.border1),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: SatType.mono(size: 9, color: sc.textLo, letterSpacing: 0.6),
+  Widget _kpi(SatColors sc, String label, String value, Color color) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
+        decoration: SatBox.d(
+          color: sc.bg2,
+          borderRadius: SatR.a(10),
+          border: SatB.all(color: sc.border1),
         ),
-        const SizedBox(height: Sp.sHair),
-        Text(
-          value,
-          style: SatType.sans(size: 14, weight: FontWeight.w600, color: color),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
+            const SizedBox(height: Sp.sHair),
+            Text(
+              value,
+              style: SatType.sans(
+                size: 14,
+                weight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 
   Widget _table(
     SatColors sc,
@@ -148,10 +145,7 @@ class ReportStockSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.8),
-          ),
+          Text(title.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
           const SizedBox(height: Sp.s1h),
           if (rows.isEmpty)
             Text(empty ?? '—', style: SatType.sans(size: 12, color: sc.textLo))
@@ -172,7 +166,7 @@ class ReportStockSection extends ConsumerWidget {
                         _int(row['qty']),
                         stockUnitFromKey(row['unit'] as String? ?? 'pcs'),
                       ),
-                      style: SatType.mono(size: 11, color: sc.textLo),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                     const SizedBox(width: Sp.s3),
                     SizedBox(
@@ -180,11 +174,7 @@ class ReportStockSection extends ConsumerWidget {
                       child: Text(
                         formatIDR(_int(row['value'])),
                         textAlign: TextAlign.right,
-                        style: SatType.mono(
-                          size: 11,
-                          weight: FontWeight.w600,
-                          color: valueColor ?? sc.textMd,
-                        ),
+                        style: SatType.caption(color: valueColor ?? sc.textMd),
                       ),
                     ),
                   ],

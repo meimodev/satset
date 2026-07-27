@@ -105,15 +105,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'RENTANG KHUSUS',
-              style: SatType.mono(
-                size: 11,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo,
-              ),
-            ),
+            Text('RENTANG KHUSUS', style: SatType.caption(color: sc.textLo)),
             const SizedBox(height: Sp.s4),
             Row(
               children: [
@@ -161,15 +153,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label.toUpperCase(),
-              style: SatType.mono(
-                size: 9,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo,
-              ),
-            ),
+            Text(label.toUpperCase(), style: SatType.caption(color: sc.textLo)),
             const SizedBox(height: Sp.sHair),
             Text(
               set ? _fmt(value) : 'Pilih',

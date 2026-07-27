@@ -118,10 +118,8 @@ class _SentScreenState extends ConsumerState<SentScreen>
               const SizedBox(height: Sp.s4),
               Text(
                 'LAN P50 ${_latency}MS · CLOUD QUEUED',
-                style: SatType.mono(
-                  size: 10,
+                style: SatType.monoS(
                   color: glow ? ink.withValues(alpha: 0.55) : sc.textLo,
-                  letterSpacing: 1.0,
                 ),
               ),
               if (table != null) ...[

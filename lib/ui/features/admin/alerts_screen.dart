@@ -127,12 +127,7 @@ class _ScopeCard extends StatelessWidget {
                     const SizedBox(width: Sp.s1),
                     Text(
                       scope.toUpperCase(),
-                      style: SatType.mono(
-                        size: 9,
-                        weight: FontWeight.w600,
-                        letterSpacing: 1.2,
-                        color: sc.textLo,
-                      ),
+                      style: SatType.caption(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -324,11 +319,7 @@ class _MinutesRow extends StatelessWidget {
             child: Text(
               '$value min',
               textAlign: TextAlign.center,
-              style: SatType.mono(
-                size: 13,
-                weight: FontWeight.w600,
-                color: on ? sc.textHi : sc.textLo,
-              ),
+              style: SatType.monoM(color: on ? sc.textHi : sc.textLo),
             ),
           ),
           const SizedBox(width: Sp.s2),

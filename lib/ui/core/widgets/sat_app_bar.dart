@@ -169,15 +169,7 @@ class _NetworkPill extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: Sp.s2),
-          Text(
-            label,
-            style: SatType.mono(
-              size: 11,
-              weight: FontWeight.w700,
-              letterSpacing: 0.6,
-              color: fg,
-            ),
-          ),
+          Text(label, style: SatType.caption(color: fg)),
         ],
       ),
     );
@@ -211,15 +203,7 @@ class SatAppBarPill extends StatelessWidget {
             Icon(icon, size: 12, color: fg),
             const SizedBox(width: Sp.s1h),
           ],
-          Text(
-            label,
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w500,
-              letterSpacing: 0.6,
-              color: fg,
-            ),
-          ),
+          Text(label, style: SatType.monoS(color: fg)),
         ],
       ),
     );

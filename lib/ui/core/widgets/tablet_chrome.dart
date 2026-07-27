@@ -225,12 +225,7 @@ class _Mark extends StatelessWidget {
             letterSpacing: -0.8,
             color: onDarkSlab ? sc.accent : sc.accentInk,
           ),
-          SatSkin.lembut => SatType.mono(
-            size: 20,
-            weight: FontWeight.w700,
-            letterSpacing: -0.8,
-            color: sc.accentInk,
-          ),
+          SatSkin.lembut => SatType.monoL(color: sc.accentInk),
         },
       ),
     );
@@ -386,9 +381,7 @@ class _RailBtn extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '$badge',
-                        style: SatType.mono(
-                          size: 10,
-                          weight: FontWeight.w600,
+                        style: SatType.caption(
                           color: alert ? sc.successInk : sc.accentInk,
                         ),
                       ),
@@ -482,14 +475,7 @@ class _AvatarBtn extends ConsumerWidget {
                 ),
               ),
               alignment: Alignment.center,
-              child: Text(
-                initials,
-                style: SatType.mono(
-                  size: 14,
-                  weight: FontWeight.w600,
-                  color: onFill(base),
-                ),
-              ),
+              child: Text(initials, style: SatType.monoM(color: onFill(base))),
             ),
           ),
         ),
@@ -537,11 +523,7 @@ class TabletSectionHead extends StatelessWidget {
                     sub!.toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: SatType.mono(
-                      size: 11,
-                      color: sc.textLo,
-                      letterSpacing: 0.66,
-                    ),
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
               ],
@@ -586,12 +568,7 @@ class TabletCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     header!.toUpperCase(),
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.caption(color: sc.textLo),
                   ),
                 ),
                 ?headerTrailing,
@@ -632,26 +609,9 @@ class TabletStatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: SatType.mono(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.44,
-              height: 1,
-              color: valueColor ?? sc.textHi,
-            ),
-          ),
+          Text(value, style: SatType.monoL(color: valueColor ?? sc.textHi)),
           const SizedBox(height: Sp.s2),
-          Text(
-            label.toUpperCase(),
-            style: SatType.mono(
-              size: 10,
-              color: sc.textLo,
-              letterSpacing: 0.6,
-              weight: FontWeight.w500,
-            ),
-          ),
+          Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
         ],
       ),
     );

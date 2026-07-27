@@ -106,11 +106,7 @@ class ReadyToast extends StatelessWidget {
                             'SEKARANG',
                           ].join(' · ')
                         : 'MEJA ${alert.tableLabel} · ${alert.zone.toUpperCase()} · SEKARANG',
-                    style: SatType.mono(
-                      size: 11,
-                      color: on.textMd,
-                      letterSpacing: 0.3,
-                    ),
+                    style: SatType.monoS(color: on.textMd),
                   ),
                 ],
               ),

@@ -277,15 +277,7 @@ class _PinHelper extends StatelessWidget {
     final sc = context.sat;
     if (error != null) {
       return Center(
-        child: Text(
-          error!,
-          style: SatType.mono(
-            size: 11,
-            weight: FontWeight.w600,
-            color: sc.urgent,
-            letterSpacing: 0.6,
-          ),
-        ),
+        child: Text(error!, style: SatType.caption(color: sc.urgent)),
       );
     }
     final empty = pinLength == 0;
@@ -298,10 +290,7 @@ class _PinHelper extends StatelessWidget {
         : '$pinLength / $kPinLength digit';
     final color = (busy || complete) ? sc.accentText : sc.textLo;
     return Center(
-      child: Text(
-        text,
-        style: SatType.mono(size: 11, color: color, letterSpacing: 0.6),
-      ),
+      child: Text(text, style: SatType.monoS(color: color)),
     );
   }
 }
@@ -379,10 +368,7 @@ class _PinKeyState extends State<_PinKey> {
                 )
               : Text(
                   widget.label,
-                  style: SatType.mono(
-                    size: 32,
-                    weight: FontWeight.w500,
-                    letterSpacing: 0,
+                  style: SatType.monoDisplay(
                     color: disabled ? sc.textLo : sc.textHi,
                   ),
                 ),
@@ -415,12 +401,7 @@ class _DebugCredsHint extends StatelessWidget {
               const SizedBox(width: Sp.s1h),
               Text(
                 'DEBUG · SEEDED PINS',
-                style: SatType.mono(
-                  size: 10,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  color: sc.warn,
-                ),
+                style: SatType.caption(color: sc.warn),
               ),
             ],
           ),
@@ -463,14 +444,7 @@ class _DebugCredRow extends StatelessWidget {
           children: [
             SizedBox(
               width: 76,
-              child: Text(
-                label,
-                style: SatType.mono(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  color: sc.textHi,
-                ),
-              ),
+              child: Text(label, style: SatType.caption(color: sc.textHi)),
             ),
             Expanded(
               child: Text(

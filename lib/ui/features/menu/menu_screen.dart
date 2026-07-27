@@ -209,11 +209,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                                           ? 'BAWA PULANG · TANPA MEJA'
                                           : 'TANPA MEJA · PILIH MEJA SAAT KIRIM')
                                     : '${table!.zoneId.toUpperCase()} · ${table.pax} TAMU',
-                                style: SatType.mono(
-                                  size: 11,
-                                  color: sc.textLo,
-                                  letterSpacing: 0.44,
-                                ),
+                                style: SatType.monoS(color: sc.textLo),
                               ),
                             ],
                           ),
@@ -327,11 +323,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     const SizedBox(height: Sp.s1),
                     Text(
                       'KETUK UNTUK ATUR · TEKAN LAMA UNTUK TAMBAH DEFAULT',
-                      style: SatType.mono(
-                        size: 11,
-                        color: sc.textLo,
-                        letterSpacing: 0.44,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -554,11 +546,7 @@ class _ItemCard extends ConsumerWidget {
                             ),
                             child: Text(
                               "HABIS",
-                              style: SatType.mono(
-                                size: 9,
-                                color: sc.urgent,
-                                letterSpacing: 0.72,
-                              ),
+                              style: SatType.monoS(color: sc.urgent),
                             ),
                           ),
                         ),
@@ -581,12 +569,7 @@ class _ItemCard extends ConsumerWidget {
                             alignment: Alignment.center,
                             child: Text(
                               '×$inCart',
-                              style: SatType.mono(
-                                size: 13,
-                                weight: FontWeight.w600,
-                                color: sc.accentInk,
-                                letterSpacing: 0,
-                              ),
+                              style: SatType.monoM(color: sc.accentInk),
                             ),
                           ),
                         ),
@@ -616,12 +599,7 @@ class _ItemCard extends ConsumerWidget {
                         const SizedBox(height: Sp.s1h),
                         Text(
                           '${formatIDR(item.basePrice)}${item.variants.length > 1 ? '+' : ''}',
-                          style: SatType.mono(
-                            size: 12,
-                            weight: FontWeight.w500,
-                            color: sc.textMd,
-                            letterSpacing: 0,
-                          ),
+                          style: SatType.monoM(color: sc.textMd),
                         ),
                         if (item.allergens.isNotEmpty) ...[
                           const SizedBox(height: Sp.s1),
@@ -697,14 +675,7 @@ class _CartFooter extends StatelessWidget {
                   color: sc.textHi,
                 ),
               ),
-              Text(
-                formatIDR(total),
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textMd,
-                  letterSpacing: 0,
-                ),
-              ),
+              Text(formatIDR(total), style: SatType.monoS(color: sc.textMd)),
             ],
           ),
           const Spacer(),
@@ -771,12 +742,7 @@ class _TabletCartPane extends ConsumerWidget {
                       : tableless
                       ? 'PESANAN BARU · TANPA MEJA'
                       : 'PESANAN BARU · MEJA $tableId',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.0,
-                    color: sc.textLo,
-                  ),
+                  style: SatType.caption(color: sc.textLo),
                 ),
                 const SizedBox(height: Sp.s1h),
                 Text(
@@ -795,11 +761,7 @@ class _TabletCartPane extends ConsumerWidget {
                       if (kit > 0) 'Dapur × $kit',
                       if (bar > 0) 'Bar × $bar',
                     ].join('  ·  '),
-                    style: SatType.mono(
-                      size: 11,
-                      color: sc.textLo,
-                      letterSpacing: 0.44,
-                    ),
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
               ],
@@ -829,12 +791,7 @@ class _TabletCartPane extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(vertical: Sp.s2),
                           child: Text(
                             entry.key.toUpperCase(),
-                            style: SatType.mono(
-                              size: 11,
-                              weight: FontWeight.w600,
-                              letterSpacing: 1.0,
-                              color: sc.textMd,
-                            ),
+                            style: SatType.caption(color: sc.textMd),
                           ),
                         ),
                         for (final i in entry.value)
@@ -853,11 +810,7 @@ class _TabletCartPane extends ConsumerWidget {
                                   children: [
                                     Text(
                                       '×${cart[i].qty}',
-                                      style: SatType.mono(
-                                        size: 12,
-                                        weight: FontWeight.w600,
-                                        color: sc.textMd,
-                                      ),
+                                      style: SatType.monoM(color: sc.textMd),
                                     ),
                                     const SizedBox(width: Sp.s2),
                                     Expanded(
@@ -920,11 +873,7 @@ class _TabletCartPane extends ConsumerWidget {
                                       formatIDR(
                                         cart[i].unitPrice * cart[i].qty,
                                       ),
-                                      style: SatType.mono(
-                                        size: 12,
-                                        weight: FontWeight.w500,
-                                        color: sc.textMd,
-                                      ),
+                                      style: SatType.monoM(color: sc.textMd),
                                     ),
                                   ],
                                 ),
@@ -982,11 +931,7 @@ class _TabletCartPane extends ConsumerWidget {
                                 const Spacer(),
                                 Text(
                                   formatIDR(est),
-                                  style: SatType.mono(
-                                    size: 13,
-                                    weight: FontWeight.w600,
-                                    color: sc.textHi,
-                                  ),
+                                  style: SatType.monoM(color: sc.textHi),
                                 ),
                               ],
                             ),
@@ -1040,23 +985,9 @@ class _TabletCartPane extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Text(
-            label,
-            style: SatType.mono(
-              size: 12,
-              color: sc.textMd,
-              letterSpacing: 0.24,
-            ),
-          ),
+          Text(label, style: SatType.monoM(color: sc.textMd)),
           const Spacer(),
-          Text(
-            value,
-            style: SatType.mono(
-              size: 12,
-              color: sc.textMd,
-              letterSpacing: 0.24,
-            ),
-          ),
+          Text(value, style: SatType.monoM(color: sc.textMd)),
         ],
       ),
     );

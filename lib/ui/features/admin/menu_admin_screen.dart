@@ -284,11 +284,7 @@ class _PhoneLayout extends ConsumerWidget {
                       const SizedBox(height: Sp.sHair),
                       Text(
                         '${counts.total} item · ${counts.soldOut} tidak tersedia',
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.textLo,
-                          letterSpacing: 0.5,
-                        ),
+                        style: SatType.monoS(color: sc.textLo),
                       ),
                     ],
                   ),
@@ -464,9 +460,7 @@ class _CategoryRail extends ConsumerWidget {
                   value: n,
                   builder: (_, v) => Text(
                     '$v',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
+                    style: SatType.caption(
                       color: on ? sc.accentText : sc.textLo,
                     ),
                   ),
@@ -604,45 +598,27 @@ class _ItemRow extends ConsumerWidget {
                           children: [
                             Text(
                               formatIDR(item.basePrice),
-                              style: SatType.mono(
-                                size: 11,
-                                weight: FontWeight.w600,
-                                color: sc.textMd,
-                              ),
+                              style: SatType.caption(color: sc.textMd),
                             ),
                             // Auto-habis is derived from ingredient stock, so
                             // the card shows the verdict, not a count (ADR-0040).
                             if (item.autoSoldOut) ...[
                               Text(
                                 ' · ',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.textDim,
-                                ),
+                                style: SatType.monoS(color: sc.textDim),
                               ),
                               Text(
                                 'Bahan habis',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.urgent,
-                                  letterSpacing: 0.4,
-                                ),
+                                style: SatType.monoS(color: sc.urgent),
                               ),
                             ] else if (item.soldOutVariantIds.isNotEmpty) ...[
                               Text(
                                 ' · ',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.textDim,
-                                ),
+                                style: SatType.monoS(color: sc.textDim),
                               ),
                               Text(
                                 '${item.soldOutVariantIds.length} varian habis',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.warn,
-                                  letterSpacing: 0.4,
-                                ),
+                                style: SatType.monoS(color: sc.warn),
                               ),
                             ],
                           ],
@@ -712,15 +688,7 @@ class _ItemRow extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
-      child: Text(
-        t,
-        style: SatType.mono(
-          size: 9,
-          weight: FontWeight.w600,
-          letterSpacing: 0.4,
-          color: fg,
-        ),
-      ),
+      child: Text(t, style: SatType.caption(color: fg)),
     );
   }
 }
@@ -778,11 +746,7 @@ class _StatusToggle extends ConsumerWidget {
                 child: Text(
                   label,
                   key: ValueKey(label),
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                    height: 1.0,
+                  style: SatType.caption(
                     color: fg,
                   ).copyWith(leadingDistribution: TextLeadingDistribution.even),
                 ),
@@ -948,14 +912,7 @@ class _CategoriesPanel extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        Text(
-                          '$n item',
-                          style: SatType.mono(
-                            size: 11,
-                            color: sc.textLo,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
+                        Text('$n item', style: SatType.monoS(color: sc.textLo)),
                         IconButton(
                           tooltip: AppStrings.a11yRename,
                           icon: Icon(
@@ -1151,15 +1108,7 @@ class _TagsPanel extends ConsumerWidget {
                         color: tint.withValues(alpha: 0.12),
                         borderRadius: SatR.a(4),
                       ),
-                      child: Text(
-                        t.code,
-                        style: SatType.mono(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          letterSpacing: 0.4,
-                          color: tint,
-                        ),
-                      ),
+                      child: Text(t.code, style: SatType.caption(color: tint)),
                     ),
                     const SizedBox(width: Sp.s2h),
                     Expanded(

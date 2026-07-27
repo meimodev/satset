@@ -246,11 +246,7 @@ class _FloorHead extends ConsumerWidget {
           const SizedBox(height: Sp.s1),
           Text(
             SatShape.caps(sub),
-            style: SatType.mono(
-              size: 11,
-              color: context.sat.textLo,
-              letterSpacing: 0.44,
-            ),
+            style: SatType.monoS(color: context.sat.textLo),
           ),
           const SizedBox(height: Sp.s3),
           actions,
@@ -311,14 +307,7 @@ class _FloorAction extends StatelessWidget {
               ),
             ],
             const SizedBox(width: 7),
-            Text(
-              '$count',
-              style: SatType.mono(
-                size: 12,
-                weight: FontWeight.w600,
-                color: sc.textMd,
-              ),
-            ),
+            Text('$count', style: SatType.monoM(color: sc.textMd)),
             if (alert != null) ...[
               const SizedBox(width: 7),
               Container(
@@ -519,12 +508,10 @@ class _ZoneRow extends StatelessWidget {
                       AnimatedDefaultTextStyle(
                         duration: dur,
                         curve: satEaseOut,
-                        style: SatType.mono(
-                          size: 11,
+                        style: SatType.monoS(
                           color: isActive
                               ? fg.withValues(alpha: brutal ? 1 : 0.6)
                               : sc.textLo,
-                          letterSpacing: 0,
                         ),
                         child: Text(countLabel),
                       ),
@@ -686,11 +673,7 @@ class _EmptyZoneState extends State<_EmptyZone>
             Text(
               AppStrings.tablesEmptyZoneAddTableHint,
               textAlign: TextAlign.center,
-              style: SatType.mono(
-                size: 11,
-                color: sc.textLo,
-                letterSpacing: 0.44,
-              ),
+              style: SatType.monoS(color: sc.textLo),
             ),
           ],
         ),

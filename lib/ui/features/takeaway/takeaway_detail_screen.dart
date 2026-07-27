@@ -94,11 +94,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                     '${active.length} ITEM',
                     if (handedOver) 'SUDAH DISERAHKAN',
                   ].join(' · '),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.44,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ),
@@ -245,14 +241,7 @@ class _Footer extends StatelessWidget {
             children: [
               Text('Total', style: SatType.sans(size: 13, color: sc.textMd)),
               const Spacer(),
-              Text(
-                formatIDR(total),
-                style: SatType.mono(
-                  size: 15,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(formatIDR(total), style: SatType.monoM(color: sc.textHi)),
             ],
           ),
           const SizedBox(height: Sp.s3),
@@ -295,11 +284,7 @@ class _Footer extends StatelessWidget {
                 child: Text(
                   'Bisa diserahkan setelah semua item siap/disajikan.',
                   textAlign: TextAlign.center,
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.3,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
           ] else

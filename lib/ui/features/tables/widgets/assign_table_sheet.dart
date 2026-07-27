@@ -113,11 +113,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
             const SizedBox(height: Sp.s1),
             Text(
               'Atur tamu lalu pilih meja kosong',
-              style: SatType.mono(
-                size: 11,
-                color: sc.textLo,
-                letterSpacing: 0.44,
-              ),
+              style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
             Row(
@@ -175,12 +171,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
         padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
         child: Text(
           zone.name.toUpperCase(),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.2,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
       ),
       for (final t in inZone) _targetTile(sc, t),
@@ -219,11 +210,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               children: [
                 Text(
                   target.displayName,
-                  style: SatType.mono(
-                    size: 18,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoL(color: sc.textHi),
                 ),
                 const SizedBox(width: Sp.s3),
                 Text(

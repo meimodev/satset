@@ -149,11 +149,7 @@ class ReviewScreen extends ConsumerWidget {
                                 ? 'BAWA PULANG · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM'
                                 : 'TANPA MEJA · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM · PILIH MEJA SAAT KIRIM')
                           : 'MEJA ${table!.displayName} · ${table.pax} TAMU · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM',
-                      style: SatType.mono(
-                        size: 11,
-                        color: sc.textLo,
-                        letterSpacing: 0.44,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -267,12 +263,7 @@ class ReviewScreen extends ConsumerWidget {
                           padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
                           child: Text(
                             'PEMBAYARAN DITANGANI DI LUAR SATSET · BILL DICETAK DARI POS SAAT DISAJIKAN',
-                            style: SatType.mono(
-                              size: 11,
-                              color: sc.textLo,
-                              letterSpacing: 0.44,
-                              height: 1.5,
-                            ),
+                            style: SatType.monoS(color: sc.textLo),
                           ),
                         ),
                       ],
@@ -611,21 +602,12 @@ class _CourseBlock extends StatelessWidget {
                 const SizedBox(width: Sp.s2h),
                 Text(
                   course.name.toUpperCase(),
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.32,
-                    color: sc.textMd,
-                  ),
+                  style: SatType.caption(color: sc.textMd),
                 ),
                 const Spacer(),
                 Text(
                   auto ? 'auto-bakar' : 'ditahan sampai dibakar',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ),
@@ -647,12 +629,7 @@ class _CourseBlock extends StatelessWidget {
                       width: 22,
                       child: Text(
                         '×${c.qty}',
-                        style: SatType.mono(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: sc.textMd,
-                          letterSpacing: 0,
-                        ),
+                        style: SatType.monoM(color: sc.textMd),
                       ),
                     ),
                     const SizedBox(width: Sp.s3),
@@ -719,12 +696,7 @@ class _CourseBlock extends StatelessWidget {
                               const Spacer(),
                               Text(
                                 formatIDR(c.unitPrice * c.qty),
-                                style: SatType.mono(
-                                  size: 12,
-                                  weight: FontWeight.w500,
-                                  color: sc.textMd,
-                                  letterSpacing: 0,
-                                ),
+                                style: SatType.monoM(color: sc.textMd),
                               ),
                             ],
                           ),
@@ -770,12 +742,9 @@ class _TotalsRow extends StatelessWidget {
           ),
           Text(
             value,
-            style: SatType.mono(
-              size: isTotal ? 18 : 13,
-              weight: FontWeight.w500,
-              color: sc.textHi,
-              letterSpacing: 0,
-            ),
+            style: isTotal
+                ? SatType.monoL(color: sc.textHi)
+                : SatType.monoM(color: sc.textHi),
           ),
         ],
       ),

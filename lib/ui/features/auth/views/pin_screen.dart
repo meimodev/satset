@@ -494,15 +494,7 @@ class _AdminAuthForm extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'PASSWORD',
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w500,
-                letterSpacing: 1.2,
-                color: sc.textLo,
-              ),
-            ),
+            Text('PASSWORD', style: SatType.monoS(color: sc.textLo)),
             const SizedBox(height: Sp.s1h),
             SatField.text(
               controller: password,
@@ -829,11 +821,7 @@ class _ServerRow extends StatelessWidget {
                         server.version == null
                             ? server.ipLine
                             : '${server.ipLine} · v${server.version}',
-                        style: SatType.mono(
-                          size: 10,
-                          color: sc.textLo,
-                          letterSpacing: 0.4,
-                        ),
+                        style: SatType.monoS(color: sc.textLo),
                       ),
                     ],
                   ),
@@ -908,14 +896,7 @@ class _RestoreLoadingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: Sp.s4),
-              Text(
-                'Memeriksa sesi…',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.6,
-                ),
-              ),
+              Text('Memeriksa sesi…', style: SatType.monoS(color: sc.textLo)),
             ],
           ),
         ),
@@ -935,15 +916,7 @@ class _Brand extends StatelessWidget {
           height: 32,
           decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(8)),
           alignment: Alignment.center,
-          child: Text(
-            'S',
-            style: SatType.mono(
-              size: 16,
-              weight: FontWeight.w700,
-              letterSpacing: -0.64,
-              color: sc.accentInk,
-            ),
-          ),
+          child: Text('S', style: SatType.monoM(color: sc.accentInk)),
         ),
         const SizedBox(width: Sp.s2h),
         Text(
@@ -971,15 +944,7 @@ class _TabletBrand extends StatelessWidget {
           height: 44,
           decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(12)),
           alignment: Alignment.center,
-          child: Text(
-            'S',
-            style: SatType.mono(
-              size: 22,
-              weight: FontWeight.w700,
-              letterSpacing: -0.88,
-              color: sc.accentInk,
-            ),
-          ),
+          child: Text('S', style: SatType.monoL(color: sc.accentInk)),
         ),
         const SizedBox(width: Sp.s3),
         Text(
@@ -1019,15 +984,7 @@ class _Field extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w500,
-            letterSpacing: 1.2,
-            color: sc.textLo,
-          ),
-        ),
+        Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
         const SizedBox(height: Sp.s1h),
         SatField.text(controller: controller, hint: hint, hasError: hasError),
         if (hasError)
@@ -1122,11 +1079,7 @@ class _ServerReachabilityPill extends ConsumerWidget {
         const SizedBox(width: Sp.s2),
         Text(
           v.label,
-          style: SatType.mono(
-            size: 11,
-            color: v.offline ? sc.urgent : sc.textMd,
-            letterSpacing: 0.3,
-          ),
+          style: SatType.monoS(color: v.offline ? sc.urgent : sc.textMd),
         ),
       ],
     );
@@ -1154,12 +1107,7 @@ class _ConnectedServerCard extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
           child: Text(
             'SERVER TERSAMBUNG',
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w500,
-              letterSpacing: 1.2,
-              color: sc.textLo,
-            ),
+            style: SatType.monoS(color: sc.textLo),
           ),
         ),
         Material(
@@ -1205,19 +1153,13 @@ class _ConnectedServerCard extends ConsumerWidget {
                           server.version == null
                               ? server.ipLine
                               : '${server.ipLine} · v${server.version}',
-                          style: SatType.mono(
-                            size: 10,
-                            color: sc.textLo,
-                            letterSpacing: 0.4,
-                          ),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           v.label,
-                          style: SatType.mono(
-                            size: 10,
+                          style: SatType.monoS(
                             color: v.offline ? sc.urgent : sc.textMd,
-                            letterSpacing: 0.4,
                           ),
                         ),
                       ],

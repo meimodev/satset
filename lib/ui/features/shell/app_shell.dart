@@ -313,10 +313,7 @@ class _Tab extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     '$badge',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 0,
+                    style: SatType.caption(
                       color: badgeAlert ? sc.successInk : sc.accentInk,
                     ),
                   ),

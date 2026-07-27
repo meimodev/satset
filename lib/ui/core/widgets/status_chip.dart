@@ -43,12 +43,7 @@ class StatusChip extends StatelessWidget {
         child: Text(
           label,
           key: ValueKey(label),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: fg,
-          ),
+          style: SatType.caption(color: fg),
         ),
       ),
     );

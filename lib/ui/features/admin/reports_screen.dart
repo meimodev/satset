@@ -389,12 +389,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       label.toUpperCase(),
-                      style: SatType.mono(
-                        size: 11,
-                        weight: FontWeight.w600,
-                        letterSpacing: 1.0,
-                        color: sc.textLo,
-                      ),
+                      style: SatType.caption(color: sc.textLo),
                     ),
                   ),
                 ),
@@ -434,12 +429,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 children: [
                   Text(
                     label.toUpperCase(),
-                    style: SatType.mono(
-                      size: 9,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.0,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.caption(color: sc.textLo),
                   ),
                   const SizedBox(height: Sp.sHair),
                   Text(

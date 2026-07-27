@@ -71,12 +71,7 @@ class _GuestStepperSheet extends ConsumerWidget {
               children: [
                 Text(
                   'Meja ${table.id}',
-                  style: SatType.mono(
-                    size: 22,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.44,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoL(color: sc.textHi),
                 ),
                 const SizedBox(width: Sp.s2h),
                 Text(
@@ -107,11 +102,7 @@ class _GuestStepperSheet extends ConsumerWidget {
                 child: Text(
                   'Hanya pelayan yang bisa mengubah jumlah tamu.',
                   textAlign: TextAlign.center,
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.4,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
             const SizedBox(height: Sp.s4h),

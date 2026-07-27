@@ -318,12 +318,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       child: Text(
                         label,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.mono(
-                          size: 9,
-                          weight: FontWeight.w600,
-                          color: sc.textLo,
-                          letterSpacing: 0.6,
-                        ),
+                        style: SatType.caption(color: sc.textLo),
                       ),
                     ),
                     Icon(icon, size: 16, color: color),
@@ -379,12 +374,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               children: [
                 Text(
                   'MODE STOK OPNAME',
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    color: sc.accentText,
-                    letterSpacing: 0.8,
-                  ),
+                  style: SatType.caption(color: sc.accentText),
                 ),
                 const SizedBox(height: Sp.sHair),
                 Text(
@@ -412,11 +402,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 ),
                 child: Text(
                   '${_counts.length} diisi',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    color: sc.accentInk,
-                  ),
+                  style: SatType.caption(color: sc.accentInk),
                 ),
               ),
             ),
@@ -632,20 +618,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 children: [
                                   Text(
                                     'STOK SAAT INI',
-                                    style: SatType.mono(
-                                      size: 9,
-                                      color: sc.textLo,
-                                      letterSpacing: 0.6,
-                                    ),
+                                    style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
                                   Text(
                                     i.onHandLabel,
-                                    style: SatType.mono(
-                                      size: 13,
-                                      weight: FontWeight.w600,
-                                      color: statusColor,
-                                    ),
+                                    style: SatType.monoM(color: statusColor),
                                   ),
                                 ],
                               ),
@@ -658,11 +636,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 children: [
                                   Text(
                                     'HARGA / ${i.unit.label.toUpperCase()}',
-                                    style: SatType.mono(
-                                      size: 9,
-                                      color: sc.textLo,
-                                      letterSpacing: 0.6,
-                                    ),
+                                    style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
                                   Text(
@@ -674,10 +648,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                             ),
                                           )
                                         : '—',
-                                    style: SatType.mono(
-                                      size: 13,
-                                      color: sc.textMd,
-                                    ),
+                                    style: SatType.monoM(color: sc.textMd),
                                   ),
                                 ],
                               ),
@@ -690,11 +661,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 children: [
                                   Text(
                                     'TERAKHIR TERIMA',
-                                    style: SatType.mono(
-                                      size: 9,
-                                      color: sc.textLo,
-                                      letterSpacing: 0.6,
-                                    ),
+                                    style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
                                   Text(
@@ -705,10 +672,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                               i.lastReceivedAt!,
                                             ),
                                           ),
-                                    style: SatType.mono(
-                                      size: 13,
-                                      color: sc.textMd,
-                                    ),
+                                    style: SatType.monoM(color: sc.textMd),
                                   ),
                                 ],
                               ),
@@ -891,10 +855,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             Icon(icon, size: 10, color: color),
             const SizedBox(width: 3),
           ],
-          Text(
-            label,
-            style: SatType.mono(size: 9, weight: FontWeight.w600, color: color),
-          ),
+          Text(label, style: SatType.caption(color: color)),
         ],
       ),
     );
@@ -925,7 +886,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         const SizedBox(width: Sp.s2),
         Text(
           'Batas min: ${formatQty(threshold, i.unit)}',
-          style: SatType.mono(size: 9, color: sc.textLo),
+          style: SatType.monoS(color: sc.textLo),
         ),
       ],
     );
@@ -949,7 +910,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       child: Text(
         text,
         key: ValueKey(text),
-        style: SatType.mono(size: 10, weight: FontWeight.w600, color: color),
+        style: SatType.caption(color: color),
       ),
     );
   }
@@ -1403,11 +1364,7 @@ class _LedgerSheet extends ConsumerWidget {
                       ),
                       Text(
                         ingredient.name.toUpperCase(),
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.accentText,
-                          letterSpacing: 0.8,
-                        ),
+                        style: SatType.monoS(color: sc.accentText),
                       ),
                     ],
                   ),
@@ -1489,8 +1446,7 @@ class _LedgerSheet extends ConsumerWidget {
                                               _stamp(m.at),
                                               if (m.note != null) m.note!,
                                             ].join(' · '),
-                                            style: SatType.mono(
-                                              size: 10,
+                                            style: SatType.monoS(
                                               color: sc.textLo,
                                             ),
                                           ),
@@ -1500,9 +1456,7 @@ class _LedgerSheet extends ConsumerWidget {
                                     Text(
                                       '${positive ? '+' : ''}'
                                       '${formatQty(m.delta, ingredient.unit)}',
-                                      style: SatType.mono(
-                                        size: 13,
-                                        weight: FontWeight.w600,
+                                      style: SatType.monoM(
                                         color: positive
                                             ? sc.success
                                             : sc.textMd,
