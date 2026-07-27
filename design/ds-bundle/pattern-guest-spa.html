@@ -1,0 +1,246 @@
+<!-- @dsCard group="Guest" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Guest self-order SPA</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  /* ── Guest palette — deliberately NOT the SatSet token set ─────────────
+     Verbatim from lib/server/guest_app_html.dart. Warm paper, no dark mode,
+     system font stack only: this must render before anything downloads. */
+  .g {
+    --brown: #4A3728; --cream: #FBF9F4; --line: #e7e0d4;
+    --accent: #7a5c43; --ok: #3f7d4e; --warn: #b0772a;
+    background: var(--cream); color: var(--brown);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    border-radius: var(--r-md); overflow: hidden;
+    border: var(--rule) solid var(--border1);
+  }
+  .g header { background: var(--cream); border-bottom: 1px solid var(--line); padding: 14px 16px; }
+  .g header h1 { margin: 0; font-size: 18px; }
+  .g header .s { font-size: 13px; opacity: 0.7; margin-top: 2px; }
+  .g .cats { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px;
+             border-bottom: 1px solid var(--line); }
+  .g .cats button { white-space: nowrap; border: 1px solid var(--line); background: #fff;
+                    color: var(--brown); padding: 6px 12px; border-radius: 16px; font-size: 13px; }
+  .g .cats button.on { background: var(--brown); color: #fff; border-color: var(--brown); }
+  .g .catlabel { padding: 14px 16px 4px; font-size: 13px; font-weight: 700;
+                 opacity: 0.55; text-transform: uppercase; }
+  .g .item { display: flex; gap: 12px; padding: 12px 16px;
+             border-bottom: 1px solid var(--line); align-items: center; }
+  .g .item .ph { width: 56px; height: 56px; border-radius: 8px; background: #eee;
+                 flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+                 font-size: 13px; color: #999; }
+  .g .item .b { flex: 1; min-width: 0; }
+  .g .item .name { font-weight: 600; font-size: 15px; }
+  .g .item .desc { font-size: 12px; opacity: 0.65; margin-top: 2px;
+                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g .item .price { font-size: 13px; margin-top: 4px; }
+  .g .item .add { border: 0; background: var(--brown); color: #fff; width: 34px; height: 34px;
+                  border-radius: 17px; font-size: 20px; flex: 0 0 auto; }
+  .g .bar { background: var(--brown); color: #fff; padding: 16px;
+            display: flex; align-items: center; justify-content: space-between; }
+  .g .bar b { font-size: 16px; }
+  .g .bar button { border: 0; background: #fff; color: var(--brown); font-weight: 700;
+                   padding: 12px 20px; border-radius: 10px; }
+  .g .sheetbox { background: var(--cream); border-radius: 16px 16px 0 0; padding: 18px 16px; }
+  .g .sheetbox h2 { margin: 0 0 4px; font-size: 18px; }
+  .g .grp { margin-top: 16px; }
+  .g .grp .gh { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .g .grp .req { color: var(--warn); font-size: 12px; font-weight: 600; }
+  .g .opt { display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .g .opt label { display: flex; gap: 10px; align-items: center; }
+  .g textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px;
+                padding: 8px; font-family: inherit; margin-top: 6px; }
+  .g .qtyrow { display: flex; align-items: center; gap: 16px; margin-top: 18px; }
+  .g .qtyrow button { width: 38px; height: 38px; border-radius: 19px;
+                      border: 1px solid var(--brown); background: #fff;
+                      color: var(--brown); font-size: 20px; }
+  .g .sheetcta { padding: 14px 16px; background: var(--cream); border-top: 1px solid var(--line); }
+  .g .sheetcta button { width: 100%; border: 0; background: var(--brown); color: #fff;
+                        padding: 15px; border-radius: 10px; font-weight: 700; font-size: 16px; }
+  .g .center { text-align: center; padding: 40px 24px; }
+  .g .center .big { font-size: 42px; margin-bottom: 12px; }
+  .g .pill { display: inline-block; padding: 4px 10px; border-radius: 12px;
+             font-size: 12px; font-weight: 600; }
+  .g .pill.pendingReview { background: #efe7d8; color: var(--warn); }
+  .g .pill.sent { background: #e0ece2; color: var(--ok); }
+  .g .pill.ready { background: #dCeAdd; color: var(--ok); }
+  .g .pill.voided { background: #f0dcd8; color: #9a3b2c; }
+  .g .linkbtn { background: none; border: 0; color: var(--accent);
+                text-decoration: underline; font-size: 14px; }
+  .g .err { color: #9a3b2c; padding: 16px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:360px">
+    <h3>Guest self-order</h3>
+    <p class="sub">lib/server/guest_app_html.dart · ADR-0027 / ADR-0029</p>
+
+    <div class="spec" style="margin-top:0">A different audience gets a different skin. The guest holds their own phone,
+has never seen this before, will use it once, and is sitting in a warm room
+they chose to be in — none of which describes a waiter mid-rush.
+
+So: cream and brown, not amber on charcoal. No dark mode. No design tokens,
+no shared CSS, no font download, no framework — one self-contained file of
+inline CSS and vanilla JS, served verbatim over the cleartext guest plane so
+it paints instantly on venue Wi-Fi with no internet at all (ADR-0029).
+
+It shares the staff app's grammar without sharing its palette: the same
+required/optional labelling, the same status vocabulary, the same refusal to
+imply payment. That is the part worth keeping consistent.</div>
+
+    <h4>Menu</h4>
+    <div class="g">
+      <header><h1>Menu</h1><div class="s">Meja 12</div></header>
+      <div class="cats">
+        <button class="on">Utama</button><button>Minuman</button><button>Penutup</button>
+      </div>
+      <div class="catlabel">Utama</div>
+      <div class="item">
+        <div class="ph">SA</div>
+        <div class="b">
+          <div class="name">Sate Ayam Bumbu Kacang</div>
+          <div class="desc">10 tusuk, bumbu kacang rumahan, lontong.</div>
+          <div class="price">mulai Rp 45.000</div>
+        </div>
+        <button class="add">+</button>
+      </div>
+      <div class="item">
+        <div class="ph">NG</div>
+        <div class="b">
+          <div class="name">Nasi Goreng Kampung</div>
+          <div class="desc">Nasi goreng terasi, telur mata sapi, kerupuk.</div>
+          <div class="price">Rp 38.000</div>
+        </div>
+        <button class="add">+</button>
+      </div>
+      <div class="bar">
+        <b>3 item · Rp 128.000</b>
+        <button>Lihat Keranjang</button>
+      </div>
+    </div>
+    <div class="spec">Photos load lazily as blobs after the list paints, so a slow image never
+delays the menu. Items with variants show "mulai Rp …" rather than a single
+price — the guest must not discover a higher number at checkout.
+
+The cart bar is fixed to the viewport bottom and hidden until the cart is
+non-empty, so an empty menu is a clean page.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:340px">
+    <h3>Item sheet</h3>
+    <p class="sub">Variants, modifiers, note, quantity</p>
+
+    <div class="g">
+      <div class="sheetbox">
+        <h2>Sate Ayam Bumbu Kacang</h2>
+        <div class="desc" style="font-size:12px;opacity:.65">10 tusuk, bumbu kacang rumahan, lontong.</div>
+
+        <div class="grp">
+          <div class="gh">Pilihan <span class="req">wajib</span></div>
+          <div class="opt"><label><input type="radio" checked> Reguler</label><span>Rp 45.000</span></div>
+          <div class="opt"><label><input type="radio"> Porsi besar</label><span>Rp 62.000</span></div>
+        </div>
+
+        <div class="grp">
+          <div class="gh">Tingkat pedas <span class="req">wajib</span></div>
+          <div class="opt"><label><input type="radio"> Tidak pedas</label><span></span></div>
+          <div class="opt"><label><input type="radio" checked> Sedang</label><span></span></div>
+        </div>
+
+        <div class="grp">
+          <div class="gh">Tambahan</div>
+          <div class="opt"><label><input type="checkbox" checked> Telur ceplok</label><span>+Rp 6.000</span></div>
+          <div class="opt"><label><input type="checkbox"> Tanpa bawang</label><span>−Rp 2.000</span></div>
+        </div>
+
+        <div class="grp">
+          <div class="gh">Catatan</div>
+          <textarea placeholder="mis. tidak pedas" maxlength="140"></textarea>
+        </div>
+
+        <div class="qtyrow"><button>−</button><b>1</b><button>+</button></div>
+      </div>
+      <div class="sheetcta"><button>Tambah · Rp 51.000</button></div>
+    </div>
+
+    <div class="spec">Native radio and checkbox inputs, not custom controls. A guest's phone already
+knows how to render these, they are accessible for free, and they cannot break
+on a browser nobody tested.
+
+Required groups are labelled "wajib" in warn beside the group name — same
+convention as the staff sheet, different word size. Client-side validation is
+a courtesy; the server re-validates every line regardless.
+
+Note caps at 140 chars — longer than the staff field, because a guest cannot
+be asked to be terse.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:320px">
+    <h3>Status &amp; errors</h3>
+    <p class="sub">Polled every 5s</p>
+
+    <h4>Order status</h4>
+    <div class="g">
+      <header><h1>Pesanan Anda</h1><div class="s">Meja 12</div></header>
+      <div class="center" style="padding:20px">
+        <div class="big">⏳</div>Menunggu konfirmasi pramusaji…
+      </div>
+      <div class="item">
+        <div class="b"><div class="name">2× Sate Ayam <small>(Porsi besar)</small></div></div>
+        <span class="pill pendingReview">menunggu</span>
+      </div>
+      <div class="item">
+        <div class="b"><div class="name">1× Nasi Goreng</div></div>
+        <span class="pill sent">disiapkan</span>
+      </div>
+      <div class="item">
+        <div class="b"><div class="name">2× Es Teh Manis</div></div>
+        <span class="pill ready">siap</span>
+      </div>
+      <div class="center" style="padding:16px"><button class="linkbtn">+ Pesan lagi</button></div>
+    </div>
+    <div class="spec">Guest orders land as pendingReview and never auto-fire (ADR-0028) — a waiter
+confirms before the kitchen sees them. The status copy says so out loud rather
+than showing a spinner: "Menunggu konfirmasi pramusaji…".
+
+Seven internal statuses collapse to five guest-facing words — menunggu,
+disiapkan, siap, disajikan, ditolak. The guest does not need the kitchen's
+state machine, only their own answer.</div>
+
+    <h4>Blocked &amp; error states</h4>
+    <div class="g" style="margin-bottom:10px">
+      <div class="center"><div class="big">🔔</div>Pemesanan mandiri belum diaktifkan. Silakan panggil pramusaji.</div>
+    </div>
+    <div class="g" style="margin-bottom:10px">
+      <div class="center"><div class="big">🔔</div>Tidak dapat terhubung ke server. Pastikan terhubung ke Wi-Fi restoran.</div>
+    </div>
+    <div class="g">
+      <div class="err">QR tidak valid.</div>
+    </div>
+    <div class="spec">Five named failures, each with its own sentence and each ending in something
+the guest can actually do — call a waiter, join the right Wi-Fi, rescan.
+"Silakan panggil pramusaji" is the universal fallback: there is always a human
+in the room, which is the one advantage this surface has over any app store.
+
+An unrecognised code still renders, appending the raw code and HTTP status in
+small print rather than hanging on "Memuat…" forever. Silent failure on a
+guest's own phone is unrecoverable — nobody is watching the logs.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!-- @dsCard group="Onboarding" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign-in — admin &amp; staff</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark {
+    width: 32px; height: 32px; border-radius: var(--r-sm);
+    background: var(--accent); color: var(--accentInk);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 16px; font-weight: 700; letter-spacing: -0.64px;
+  }
+  .brand .word { font-size: 18px; font-weight: 600; letter-spacing: -0.18px; color: var(--textHi); }
+  .brand--lg .mark { width: 44px; height: 44px; border-radius: var(--r-md); font-size: 22px; }
+  .brand--lg .word { font-size: 22px; }
+
+  .switcher {
+    position: relative; display: flex; gap: 4px; padding: 4px;
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-lg);
+  }
+  .switcher > div {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: var(--r-md);
+    font-size: 14px; font-weight: 600; letter-spacing: -0.14px; color: var(--textMd);
+  }
+  .switcher > div.on { background: var(--accentSoft); color: var(--textHi); }
+  .switcher > div.on .ic { color: var(--accentText); }
+
+  .srvcard {
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--lift);
+  }
+  .srvrow { display: flex; align-items: center; gap: 14px; padding: 12px 12px 12px 14px; }
+  .srvrow + .srvrow { border-top: var(--rule) solid var(--border0); }
+  .srvrow.on { background: var(--accentSoft); }
+  .srvrow .pulse { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .srvrow .nm { font-size: 14px; font-weight: 500; letter-spacing: -0.14px; color: var(--textHi); }
+  .srvrow .ip { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.4px;
+                color: var(--textLo); margin-top: 2px; }
+  .srvrow .st { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.4px;
+                color: var(--textMd); margin-top: 3px; }
+  .srvrow .tick {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+    color: var(--accentInk); display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .srvrow .ring { width: 22px; height: 22px; border-radius: 50%;
+                  border: var(--rule) solid var(--border2); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:380px">
+    <h3>Sign-in</h3>
+    <p class="sub">pin_screen.dart · two roles, one screen</p>
+
+    <h4>Brand</h4>
+    <div class="row" style="gap:28px">
+      <div class="brand"><span class="mark">S</span><span class="word">satset</span></div>
+      <div class="brand brand--lg"><span class="mark">S</span><span class="word">satset</span></div>
+    </div>
+    <div class="spec">A lowercase wordmark and a single mono "S" on accent. No logotype file, no
+lockup rules — the mark is drawn from tokens, so it recolours with the palette
+instead of going wrong on the light and brutal skins.</div>
+
+    <h4>Mode switcher</h4>
+    <div class="switcher">
+      <div class="on"><span class="ic">🛡</span>Admin</div>
+      <div><span class="ic">🎫</span>Staff</div>
+    </div>
+    <div class="spec">A sliding accentSoft pill, 280ms satEaseOut, with icon and label colours
+tweening rather than snapping. It disappears entirely once a staff device is
+connected and has a PIN to enter — the switcher is scaffolding, not chrome,
+and a waiter who signs in twenty times a week should not step past it.</div>
+
+    <h4>Server list — mDNS discovery</h4>
+    <div class="srvcard">
+      <div class="srvrow on">
+        <span class="pulse" style="background:var(--success);box-shadow:0 0 0 4px var(--successSoft)"></span>
+        <div style="flex:1;min-width:0">
+          <div class="nm">Dapur Utama</div>
+          <div class="ip">192.168.1.14:7443 · v1.4.2</div>
+        </div>
+        <span class="tick">✓</span>
+      </div>
+      <div class="srvrow">
+        <span class="pulse" style="background:var(--accent);box-shadow:0 0 0 4px var(--accentSoft)"></span>
+        <div style="flex:1;min-width:0">
+          <div class="nm">Warung Teras</div>
+          <div class="ip">192.168.1.22:7443</div>
+        </div>
+        <span style="color:var(--accentText);font-size:16px">📡</span>
+      </div>
+      <div class="srvrow">
+        <span class="pulse" style="background:var(--urgent);box-shadow:0 0 0 4px var(--urgentSoft)"></span>
+        <div style="flex:1;min-width:0">
+          <div class="nm">Cabang Selatan</div>
+          <div class="ip">192.168.1.31:7443 · v1.3.9</div>
+        </div>
+        <span class="ring"></span>
+      </div>
+    </div>
+    <div class="ferror" style="margin-top:10px">⚠ Token pairing sudah dipakai. Minta QR baru dari server.</div>
+
+    <div class="spec">Three trailing glyphs, three meanings, none of them colour-only: a filled tick
+(paired and selected), a broadcast icon (discovered but unpaired — tapping
+claims it), an empty ring (paired, not selected).
+
+The leading dot pulses (1600ms, reverse) so a live LAN reads as alive.
+Under reduced motion it holds at the midpoint rather than stopping dark.
+
+The empty state is a sentence, not a spinner: "Mencari server di jaringan…
+atau pasangkan manual lewat QR." — multicast is blocked on plenty of venue
+Wi-Fi, and the fallback has to be visible before the user gives up.</div>
+
+    <h4>Connected server card</h4>
+    <div style="margin-bottom:8px" class="flabel">Server tersambung</div>
+    <div class="srvcard">
+      <div class="srvrow">
+        <span class="pulse" style="background:var(--success);box-shadow:0 0 0 4px var(--successSoft)"></span>
+        <div style="flex:1;min-width:0">
+          <div class="nm">Dapur Utama</div>
+          <div class="ip">192.168.1.14:7443 · v1.4.2</div>
+          <div class="st">Tersambung · 42ms</div>
+        </div>
+        <span style="color:var(--textMd)">✎</span>
+      </div>
+    </div>
+    <div class="spec">Once paired the list collapses to this one card and tapping it re-opens the
+PIN sheet. The pencil is the only way back to the list — changing server is
+rare and destructive to a shift, so it is deliberately one step off the
+happy path.
+
+Reachability is debounced: a single failed probe stays on the neutral
+"Memeriksa sambungan…" in warn, and only two consecutive failures escalate
+to urgent "Server tidak terjangkau". A Wi-Fi blip must not flash red.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:320px">
+    <h3>Admin form</h3>
+    <p class="sub">Email + password, cloud-verified</p>
+
+    <div class="col" style="gap:14px">
+      <div>
+        <label class="flabel">Email</label>
+        <input class="input" placeholder="admin@warung.id">
+      </div>
+      <div>
+        <label class="flabel">Password</label>
+        <input class="input" type="password" value="••••••••">
+      </div>
+      <div style="text-align:right;font-size:12px;font-weight:500;color:var(--textMd)">Lupa password?</div>
+      <button class="btn btn--primary">🛡 Masuk sebagai admin</button>
+      <div class="ferror" style="justify-content:center">
+        ⚠ Perlu koneksi internet untuk verifikasi admin.
+      </div>
+    </div>
+
+    <div class="spec">Admin is the only role that needs the internet — staff PINs are verified by the
+LAN server. Two cold-boot blocks get their own copy, and neither blames the
+user: "stale" explains that internet is needed and what to do; "ineligible"
+says access was revoked and who to ask.
+
+While a cached admin session is being restored the form is replaced by a
+loading screen rather than being shown and then redirected away — a sign-in
+form that flashes and vanishes reads as a failed login.</div>
+
+    <h4>Restore loader</h4>
+    <div class="state-block">
+      <div class="brand brand--lg" style="justify-content:center;margin-bottom:24px">
+        <span class="mark">S</span><span class="word">satset</span>
+      </div>
+      <span class="spinner"></span>
+      <p class="mono" style="margin-top:14px;letter-spacing:0.6px">Memeriksa sesi…</p>
+    </div>
+
+    <h4>Layout</h4>
+    <div class="col" style="gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--textMd)">
+      <div>phone · single column, maxWidth 520</div>
+      <div>phone landscape ≥720 · two columns, maxWidth 980</div>
+      <div>tablet · 3fr brand+servers | 480px admin form</div>
+    </div>
+    <div class="spec">Entrance is staggered by hand here (0 / 80 / 120–140ms) rather than by the
+shared Reveal, because the blocks swap identity as the mode changes and a
+cascade keyed on index would replay on every switch.</div>
+  </div>
+
+</div>
+</body>
+</html>

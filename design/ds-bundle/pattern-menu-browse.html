@@ -1,0 +1,240 @@
+<!-- @dsCard group="Order flow" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menu browse — grid, tabs, cart</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 0; }
+  .pad { padding: 20px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+
+  .title { font-size: 30px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.05;
+           color: var(--textHi); margin: 0; text-transform: var(--caps); }
+  .kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.44px;
+            text-transform: uppercase; color: var(--textLo); margin: 4px 0 0; }
+
+  .search {
+    display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px;
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-lg); color: var(--textLo);
+    font-family: var(--font-sans); font-size: 14px;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .card {
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-2xl); overflow: hidden; box-shadow: var(--lift);
+  }
+  .card--in { background: var(--bg3); border-color: var(--accentBorder); }
+  .card--out { opacity: 0.4; }
+  .photo {
+    position: relative; aspect-ratio: 1.15;
+    background: var(--bg4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 30px; font-weight: 600; color: var(--textDim);
+  }
+  .photo .qty {
+    position: absolute; right: 8px; top: 8px;
+    min-width: 28px; height: 28px; padding: 0 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent); color: var(--accentInk); border-radius: var(--r-pill);
+    font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+  }
+  .photo .habis {
+    position: absolute; left: 8px; top: 8px; padding: 3px 8px;
+    background: rgba(0,0,0,0.55); color: var(--urgent); border-radius: var(--r-pill);
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.72px;
+  }
+  .card .body { padding: 8px 12px 10px; }
+  .card .name { font-size: 14px; font-weight: 500; letter-spacing: -0.14px; line-height: 1.2;
+                color: var(--textHi); }
+  .card .price { margin-top: 6px; font-family: var(--font-mono); font-size: 12px;
+                 font-weight: 500; color: var(--textMd); }
+  .card .tags { display: flex; gap: 3px; margin-top: 4px; }
+
+  .footer {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px 10px 18px; margin-top: 16px;
+    background: var(--scrim);
+    border: var(--rule) solid var(--border1); border-radius: var(--r-2xl);
+    box-shadow: var(--lift, 0 8px 32px rgba(0,0,0,0.4));
+  }
+  .footer .n { font-size: 13px; font-weight: 500; color: var(--textHi); }
+  .footer .t { font-family: var(--font-mono); font-size: 11px; color: var(--textMd); }
+
+  .split { display: flex; align-items: stretch; }
+  .split .main { flex: 1; min-width: 0; }
+  .pane {
+    flex: 0 0 300px; background: var(--bg1);
+    border-left: var(--rule) solid var(--border0);
+    display: flex; flex-direction: column;
+  }
+  .pane .head, .pane .foot { padding: 14px 18px; }
+  .pane .head { border-bottom: var(--rule) solid var(--border0); }
+  .pane .foot { border-top: var(--rule) solid var(--border0); }
+  .pane .list { padding: 12px 18px; flex: 1; }
+  .line {
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-md); padding: 12px; margin-bottom: 6px;
+  }
+  .trow { display: flex; padding: 3px 0; font-family: var(--font-mono); font-size: 12px;
+          letter-spacing: 0.24px; color: var(--textMd); }
+  .trow span:last-child { margin-left: auto; }
+  .trow--total { border-top: var(--rule) solid var(--border0); margin-top: 8px; padding-top: 10px;
+                 font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--textHi); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <div class="pad">
+      <h3>Menu browse — phone</h3>
+      <p class="sub">menu_screen.dart · the busiest screen in the app</p>
+
+      <p class="title">Tambah item</p>
+      <p class="kicker">Ketuk untuk atur · tekan lama untuk tambah default</p>
+
+      <h4>Search (placeholder — not yet wired)</h4>
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        Cari menu…
+      </div>
+
+      <h4>Category tabs — horizontal scroller</h4>
+      <div class="row">
+        <span class="cattab">Minuman</span>
+        <span class="cattab cattab--on">Utama</span>
+        <span class="cattab">Pembuka</span>
+        <span class="cattab">Penutup</span>
+      </div>
+
+      <h4>Item grid — 2 columns at 170px min tile</h4>
+      <div class="grid">
+        <div class="card">
+          <div class="photo">NG</div>
+          <div class="body">
+            <div class="name">Nasi Goreng Kampung</div>
+            <div class="price">Rp 38.000+</div>
+            <div class="tags"><i class="tag tag--allergen">T</i><i class="tag tag--diet">V</i></div>
+          </div>
+        </div>
+        <div class="card card--in">
+          <div class="photo">SB<span class="qty">×2</span></div>
+          <div class="body">
+            <div class="name">Sate Ayam Bumbu Kacang</div>
+            <div class="price">Rp 45.000</div>
+            <div class="tags"><i class="tag tag--allergen">K</i></div>
+          </div>
+        </div>
+        <div class="card card--out">
+          <div class="photo">GG<span class="habis">HABIS</span></div>
+          <div class="body">
+            <div class="name">Gurame Goreng</div>
+            <div class="price">Rp 120.000</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="photo">ET</div>
+          <div class="body">
+            <div class="name">Es Teh Manis</div>
+            <div class="price">Rp 8.000</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spec">Tile aspect 0.74 phone / 0.70 tablet. Column count is derived, never fixed:
+gridCount(minTileWidth: 170) so a 7" tablet gets 4 and a small phone gets 2.
+Three states are stacked on one tile and none of them is colour-only —
+in-cart gets a bg3 lift AND an accent border AND a ×n counter;
+sold-out gets 0.4 opacity AND a HABIS chip AND an inert tap target.
+Long-press adds the default variant without opening the sheet: the
+regulars-order shortcut for a waiter who already knows the answer.</div>
+
+      <h4>Cart footer — floats above the tab bar</h4>
+      <div class="footer">
+        <div>
+          <div class="n">3 item pending</div>
+          <div class="t">Rp 128.000</div>
+        </div>
+        <button class="btn btn--primary btn--sm" style="margin-left:auto">Tinjau ›</button>
+      </div>
+      <div class="spec">Sits at bottomInset + 92 on phone, 16 with a side rail. Backdrop is a 94%
+veil of scrim, not a solid — the grid stays faintly visible so the footer
+reads as an overlay on the same surface, not a new screen.</div>
+    </div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:520px">
+    <div class="pad">
+      <h3>Menu browse — tablet</h3>
+      <p class="sub">Grid left, live cart pane right (380px fixed)</p>
+    </div>
+    <div class="split">
+      <div class="main">
+        <div class="pad" style="padding-top:0">
+          <div class="row" style="margin-bottom:12px">
+            <span class="cattab cattab--on">Utama</span>
+            <span class="cattab">Minuman</span>
+          </div>
+          <div class="grid">
+            <div class="card card--in">
+              <div class="photo">SB<span class="qty">×2</span></div>
+              <div class="body"><div class="name">Sate Ayam</div><div class="price">Rp 45.000</div></div>
+            </div>
+            <div class="card">
+              <div class="photo">NG</div>
+              <div class="body"><div class="name">Nasi Goreng</div><div class="price">Rp 38.000+</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pane">
+        <div class="head">
+          <div class="sheet-kicker" style="margin:0 0 6px">Pesanan baru · Meja 12</div>
+          <div style="font-size:18px;font-weight:600;letter-spacing:-0.18px;color:var(--textHi)">3 item siap kirim</div>
+          <div class="mono" style="font-size:11px;letter-spacing:0.44px;color:var(--textLo);margin-top:4px">Dapur × 3</div>
+        </div>
+        <div class="list">
+          <div class="mono" style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--textMd);margin:8px 0">MAINS</div>
+          <div class="line">
+            <div class="row" style="gap:8px">
+              <span class="mono" style="font-size:12px;font-weight:600;color:var(--textMd)">×2</span>
+              <span style="font-size:13px;font-weight:500;color:var(--textHi)">Sate Ayam · Porsi besar</span>
+            </div>
+            <div style="font-size:11px;color:var(--textMd);margin:4px 0 0 22px">Pedas sedang · Tanpa bawang</div>
+            <div class="row" style="margin-top:8px">
+              <span style="font-size:12px;color:var(--urgent)">🗑 Hapus</span>
+              <span class="mono" style="margin-left:auto;font-size:12px;font-weight:500;color:var(--textMd)">Rp 90.000</span>
+            </div>
+          </div>
+        </div>
+        <div class="foot">
+          <div class="trow"><span>Subtotal</span><span>Rp 128.000</span></div>
+          <div class="trow"><span>Layanan · 5%</span><span>Rp 6.400</span></div>
+          <div class="trow"><span>Pajak · 11%</span><span>Rp 14.784</span></div>
+          <div class="trow trow--total"><span>Estimasi</span><span class="mono">Rp 149.184</span></div>
+          <button class="btn btn--primary" style="width:100%;margin-top:14px">Tinjau &amp; kirim ke dapur</button>
+        </div>
+      </div>
+    </div>
+    <div class="pad" style="padding-top:0">
+      <div class="spec">The tablet pane is not a drawer — it is always mounted, so the running total
+never hides behind a tap. Tax and service rows appear only when the venue has
+them enabled, and the label carries the live rate ("Layanan · 5%") because a
+waiter reading a total back to a guest needs to answer "why" without leaving.
+
+The CTA names its destination — "kirim ke dapur" / "dapur + bar" — rather than
+saying "Submit". Sent-vs-unsent is the single most expensive ambiguity here.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

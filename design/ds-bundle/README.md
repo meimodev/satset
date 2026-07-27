@@ -32,9 +32,39 @@ Flat on purpose: the pane serves each preview standalone, and a same-directory
 | `comp-tablet-surfaces.html` | `TabletSectionHead`, `TabletCard`, `TabletStatTile` |
 | `comp-ready-alerts.html` | `ready_banner.dart`, `ready_toast.dart`, `admin_grace_banner.dart` |
 | `comp-skeletons.html` | `skeleton_card.dart` |
+| `comp-motion-primitives.html` | `anim.dart` — every primitive, live, plus the full duration table |
+| `comp-buttons.html` | The button shapes that recur (there is no shared Button widget) |
+| `comp-inputs.html` | `_Field` in `pin_screen.dart`, `modifier_sheet.dart`, `reports_screen.dart` filter chip, `adminToggle` |
+| `comp-sheets.html` | `pin_sheet.dart`, `export_sheet.dart`, `custom_range_sheet.dart`, `me/widgets/theme_sheet.dart` |
+| `comp-modifier-sheet.html` | `features/menu/modifier_sheet.dart` |
+| `comp-states.html` | Empty / loading / error across every feature |
 | `pattern-floor-grid.html` | `/tables` |
 | `pattern-table-detail.html` | `/table/:id` |
 | `pattern-kds.html` | `/kitchen` |
+| `pattern-menu-browse.html` | `/table/:id/menu` — phone grid + tablet cart pane |
+| `pattern-review.html` | `/table/:id/review` + commit chooser (ADR-0026) |
+| `pattern-sent.html` | `/table/:id/sent` |
+| `pattern-signin.html` | `/pin` — admin form, staff server list, restore loader |
+| `pattern-onboarding.html` | `/onboarding`, `/pair`, `/forbidden` — **as shipped (stock Material) and as targeted** |
+| `pattern-admin.html` | `/venue`, `_common.dart` surfaces, `/reports` chrome |
+| `pattern-guest-spa.html` | `lib/server/guest_app_html.dart` (ADR-0027 / 0029) |
+
+### Known deviations recorded in the bundle
+
+- **`pattern-onboarding.html`** — mode select, pair and forbidden render stock Material 3
+  with the default purple seed. No `context.sat`, no `SatType`, no `SatBox`. The page shows
+  both what ships today and what it should be; it is the first screen a new install sees.
+- **`comp-buttons.html`** — there is no button widget in `ui/core/widgets/`. Every call site
+  builds its own. The page documents the heights and radii that repeat often enough to count
+  as the system, and says plainly that the remaining variance is drift.
+- **Menu search** — rendered on both phone and tablet menu screens, inert. Flagged in
+  `comp-inputs.html` so it is not read back as a working control.
+
+### Still not covered
+
+Cashier (`/cashier`, bill, discount sheet), stock, staff and menu admin editors, fleet
+console, takeaway and reservations surfaces, printing / receipt preview, `/me`, `/orders`,
+void flow. These reuse the primitives above; none introduces a new visual idiom.
 
 Each page renders dark plus at least one contrasting palette, and carries a `.spec` block
 holding the *why* — lifted from the Dart doc comments, not restated from the CSS.
@@ -45,9 +75,10 @@ The `/design-sync` skill is not installed, so the `DesignSync` tool is driven by
 the `_ds_manifest.json` self-check never runs — the `@dsCard` first-line comments alone
 will not build the pane index. `register_assets` is mandatory on any newly added page.
 
-1. `list_files` on the project, diff against this directory. Ignore `_adherence.oxlintrc.json`,
-   `_ds_bundle.js` and `_ds_manifest.json` — the app writes those itself. They have no local
-   counterpart and must never appear in a `deletes` list.
+1. `list_files` on the project, diff against this directory. These are app-managed, have no
+   local counterpart, and must never appear in a `deletes` list:
+   `_adherence.oxlintrc.json`, `_ds_bundle.js`, `_ds_manifest.json`, `styles.css`,
+   `thumbnail.html`, `.thumbnail`, `fonts/**`, `tokens/fonts.css`.
 2. `finalize_plan` — `writes` and `deletes` are **both required** (`deletes: []` if none);
    `localDir` is this directory.
 3. `write_files` with `localPath` per file. Same path redeploys in place.

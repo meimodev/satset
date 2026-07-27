@@ -1,0 +1,187 @@
+<!-- @dsCard group="States" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Empty, loading &amp; error states</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+  .box { background: var(--bg1); border: var(--rule) solid var(--border0);
+         border-radius: var(--r-lg); }
+  .sk { background: var(--bg3); border-radius: var(--r-sm); }
+  .skcard { padding: 14px; background: var(--bg2); border: var(--rule) solid var(--border0);
+            border-radius: var(--r-lg); margin-bottom: 8px; }
+  @keyframes shimmer { 0%,100% { opacity: 0.5 } 50% { opacity: 1 } }
+  .sk { animation: shimmer 1.4s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .sk { animation: none; opacity: 0.7 } }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:340px">
+    <h3>Loading</h3>
+    <p class="sub">Three shapes, chosen by how much is already known</p>
+
+    <h4>Full-screen — nothing to show yet</h4>
+    <div class="box state-block">
+      <span class="spinner"></span>
+      <p style="margin-top:14px">Memuat menu…</p>
+    </div>
+    <div class="spec">Used only when the screen has no cached content at all. Always names what is
+loading — a bare spinner tells a waiter the app is busy but not whether it is
+busy with the thing they are waiting for.</div>
+
+    <h4>Skeleton — shape is already known</h4>
+    <div>
+      <div class="skcard">
+        <div class="sk" style="width:40%;height:11px"></div>
+        <div class="sk" style="width:72%;height:15px;margin-top:10px"></div>
+        <div class="sk" style="width:52%;height:11px;margin-top:8px"></div>
+      </div>
+      <div class="skcard">
+        <div class="sk" style="width:34%;height:11px"></div>
+        <div class="sk" style="width:64%;height:15px;margin-top:10px"></div>
+        <div class="sk" style="width:44%;height:11px;margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="spec">bg3 blocks on the real card geometry, pulsing 0.5→1 over 1.4s. Preferred over
+a spinner wherever the layout is predictable, because the page does not jump
+when data lands. Holds at 0.7 static under reduced motion.</div>
+
+    <h4>Inline — content is stale, not absent</h4>
+    <div class="row" style="gap:8px">
+      <span class="btn btn--ghost" style="width:36px;height:36px;padding:0;border-radius:var(--r-md)"><span class="spinner" style="width:16px;height:16px"></span></span>
+      <span class="mono" style="font-size:11px;color:var(--textLo)">memuat ulang · angka di bawah masih data lama</span>
+    </div>
+    <div class="spec">A refresh over existing data never blanks the screen. The old numbers stay
+readable and the spinner sits in the control that caused it — this app's
+promise is working when the network doesn't, so degrading to "nothing" on a
+slow request would break that promise on purpose.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:340px">
+    <h3>Empty</h3>
+    <p class="sub">Nothing here yet — and what to do about it</p>
+
+    <h4>Cart pane</h4>
+    <div class="box state-block">
+      <p>Belum ada item di keranjang. Pilih dari menu di kiri.</p>
+    </div>
+
+    <h4>Server list</h4>
+    <div class="box" style="padding:18px">
+      <p style="margin:0;font-size:13px;line-height:1.5;color:var(--textMd)">
+        Mencari server di jaringan… atau pasangkan manual lewat QR.
+      </p>
+    </div>
+
+    <h4>Guest orders</h4>
+    <div class="box state-block">
+      <p>Belum ada pesanan.</p>
+      <div style="margin-top:16px"><button class="btn btn--ghost btn--sm">+ Pesan lagi</button></div>
+    </div>
+
+    <h4>Filtered to nothing</h4>
+    <div class="box state-block">
+      <div class="glyph">🔍</div>
+      <h5>Tidak ada hasil</h5>
+      <p>Tidak ada pesanan di zona Teras hari ini.</p>
+      <div style="margin-top:16px"><button class="btn btn--ghost btn--sm">Hapus filter</button></div>
+    </div>
+
+    <div class="spec">Every empty state names the next action in the same breath as the absence:
+"Pilih dari menu di kiri", "atau pasangkan manual lewat QR", "Hapus filter".
+An empty state that only reports emptiness is a dead end.
+
+Two are distinguished on purpose — nothing exists yet, versus the filter
+excluded everything. The second gets an escape hatch, because the user's
+own filter is the cause and they may not remember setting it.
+
+No illustrations. A waiter mid-rush does not need a mascot, and a 200KB
+empty-state graphic is 200KB that does not load on venue Wi-Fi.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:340px">
+    <h3>Error</h3>
+    <p class="sub">Degrade loudly, fail safely</p>
+
+    <h4>Full-screen — the screen cannot render</h4>
+    <div class="box state-block">
+      <div class="glyph" style="color:var(--urgent)">☁</div>
+      <h5>Gagal memuat menu</h5>
+      <p>Connection closed before full header was received</p>
+      <div style="margin-top:18px"><button class="btn btn--ghost btn--sm">Coba lagi</button></div>
+    </div>
+    <div class="spec">The raw exception text is shown, not hidden behind "Something went wrong".
+The person holding this device is the person who will walk to the server
+tablet — a real error string is the fastest route there.</div>
+
+    <h4>Banner — part of the screen failed</h4>
+    <div class="row" style="padding:12px 12px 12px 16px;background:var(--warnSoft);border:var(--rule) solid var(--warn);border-radius:var(--r-md)">
+      <span style="color:var(--warn)">⚠</span>
+      <span style="flex:1;font-size:13px;font-weight:500;color:var(--textHi)">Gagal memuat laporan</span>
+      <span class="pill-a">Coba lagi</span>
+    </div>
+
+    <h4>Field — the input is wrong</h4>
+    <div>
+      <label class="flabel">Email</label>
+      <input class="input input--error" value="admin@warung">
+      <div class="ferror">⚠ Email tidak valid.</div>
+    </div>
+
+    <h4>Transient — the action failed</h4>
+    <div class="row" style="padding:14px 16px;background:var(--bg3);border-radius:var(--r-md);font-size:13px;color:var(--textHi)">
+      Gagal kirim: connection refused
+    </div>
+
+    <div class="spec">Four altitudes, and the tone escalates with the cost, not with the surprise:
+
+  urgent  — the order did not send, the screen cannot render
+  warn    — a panel is stale, stock is low, a report failed
+  info    — a state changed and you should know
+
+No apology copy, no exclamation marks, no personality. "Gagal kirim:
+connection refused" — the fact, then the next action. A waiter mid-rush is
+not the audience for a friendly voice.
+
+Nothing fails silently: a submit that errors keeps the cart intact and
+leaves the button live, so the retry is one tap and no re-entry.</div>
+  </div>
+
+  <div class="stage" data-pal="light">
+    <h3>Light</h3>
+    <p class="sub">Same states, daylight contrast</p>
+    <div class="box state-block">
+      <div class="glyph" style="color:var(--urgent)">☁</div>
+      <h5>Gagal memuat menu</h5>
+      <p>Connection closed before full header was received</p>
+      <div style="margin-top:18px"><button class="btn btn--ghost btn--sm">Coba lagi</button></div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="skcard">
+      <div class="sk" style="width:40%;height:11px"></div>
+      <div class="sk" style="width:72%;height:15px;margin-top:10px"></div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="row" style="padding:12px 12px 12px 16px;background:var(--warnSoft);border:var(--rule) solid var(--warn);border-radius:var(--r-md)">
+      <span style="color:var(--warn)">⚠</span>
+      <span style="flex:1;font-size:13px;font-weight:500;color:var(--textHi)">Gagal memuat laporan</span>
+      <span class="pill-a">Coba lagi</span>
+    </div>
+    <div class="spec">Skeleton blocks use bg3 (#EFECE4) on a white card — a light-mode skeleton
+tuned by eye in the dark palette would be invisible here, which is why the
+ramp is defined per palette rather than derived by opacity.</div>
+  </div>
+
+</div>
+</body>
+</html>

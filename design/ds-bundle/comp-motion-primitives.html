@@ -1,0 +1,202 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion primitives</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  :root { --ease: cubic-bezier(0.22, 1, 0.36, 1); }
+
+  .demo { background: var(--bg2); border: var(--rule) solid var(--border0);
+          border-radius: var(--r-lg); padding: 14px; }
+  .bar { height: 34px; border-radius: var(--r-sm); background: var(--bg3);
+         display: flex; align-items: center; padding: 0 12px;
+         font-size: 13px; color: var(--textHi); margin-bottom: 6px; }
+
+  /* Reveal — fade + 14px rise, 420ms, 55ms stagger capped at 10 */
+  @keyframes reveal { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+  .rev { animation: reveal 420ms var(--ease) both; }
+  .rev:nth-child(1) { animation-delay: 0ms }
+  .rev:nth-child(2) { animation-delay: 55ms }
+  .rev:nth-child(3) { animation-delay: 110ms }
+  .rev:nth-child(4) { animation-delay: 165ms }
+
+  /* ExpandFade — height + opacity, 220ms */
+  @keyframes expandfade {
+    0%   { opacity: 0; max-height: 0 }
+    100% { opacity: 1; max-height: 60px }
+  }
+  .xf { animation: expandfade 220ms var(--ease) both; overflow: hidden; }
+
+  /* AnimatedBarFill — 620ms grow from zero */
+  .track { height: 5px; border-radius: 3px; background: var(--bg3); overflow: hidden; }
+  @keyframes fill { from { width: 0 } }
+  .track i { display: block; height: 5px; border-radius: 3px; background: var(--accent);
+             animation: fill 620ms var(--ease) both; }
+
+  /* GrowBarV — 560ms grow from baseline */
+  .chart { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
+  @keyframes growv { from { height: 0 } }
+  .chart i { width: 18px; border-radius: var(--r-sm) var(--r-sm) 0 0;
+             background: var(--accentSoft); animation: growv 560ms var(--ease) both; }
+
+  /* PressScale */
+  .press { transition: transform 220ms var(--ease); }
+  .press:active { transform: scale(0.97); transition-duration: 90ms; }
+
+  .tbl { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
+  .tbl td { padding: 6px 0; border-bottom: var(--rule) solid var(--border0);
+            color: var(--textMd); vertical-align: top; }
+  .tbl td:first-child { color: var(--textHi); font-weight: 600; width: 42%; padding-right: 12px; }
+  .tbl tr:last-child td { border-bottom: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rev, .xf, .track i, .chart i { animation: none !important; }
+    .xf { max-height: none; opacity: 1 }
+    .press { transition: none }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:360px">
+    <h3>Motion primitives</h3>
+    <p class="sub">anim.dart · every one collapses to its final frame under reduced motion</p>
+
+    <div class="spec" style="margin-top:0">The curve is a token: satEaseOut = Cubic(0.22, 1, 0.36, 1), re-exported from
+anim.dart so a screen animating something bespoke needs one import, not two.
+
+Transform and opacity only. Nothing animates a colour, a layout constraint or
+a scroll position — those cost frames on the cheap Android hardware this runs
+on, and a dropped frame during a send is worse than no animation at all.
+
+Callers never branch on reduced motion themselves. Each primitive checks
+MediaQuery.disableAnimationsOf and returns its child unchanged.</div>
+
+    <h4>Reveal — entrance cascade</h4>
+    <div class="demo">
+      <div class="bar rev">Meja 1 · terisi</div>
+      <div class="bar rev">Meja 2 · kosong</div>
+      <div class="bar rev">Meja 3 · terisi</div>
+      <div class="bar rev">Meja 4 · kosong</div>
+    </div>
+    <div class="spec">Fade + 14px rise over 420ms, 55ms per sibling. The stagger is clamped at
+index 10 — a 40-row board would otherwise leave the last row waiting two
+seconds, which reads as a hang, not a reveal.
+
+Rows inside a recycling ListView pass a stable animKey (an item id). The
+cascade plays the first time that key is seen this session and is skipped on
+every later mount, so scrolling back does not re-trigger it.</div>
+
+    <h4>ExpandFade — conditional block</h4>
+    <div class="demo">
+      <div class="bar">Lacak stok</div>
+      <div class="bar xf" style="background:var(--accentSoft);color:var(--accentText)">Ambang batas · 12 porsi</div>
+    </div>
+    <div class="spec">AnimatedSwitcher over height + opacity, 220ms, top-aligned. Used where an
+editor block toggles on (tracked stock) or a dynamic row list grows and
+shrinks — the swap animates instead of popping. Snaps under reduced motion.</div>
+
+    <h4>AnimatedReflow — container grows with its children</h4>
+    <div class="spec" style="margin-top:0">AnimatedSize, 240ms, top-centre. Wraps a list so rows added or removed
+beneath it slide rather than jump. Pairs with keyed children; degrades to a
+plain pass-through.</div>
+
+    <h4>AnimatedBarFill — 620ms from zero</h4>
+    <div class="demo">
+      <div class="track" style="margin-bottom:8px"><i style="width:72%"></i></div>
+      <div class="track" style="margin-bottom:8px"><i style="width:44%;background:var(--success)"></i></div>
+      <div class="track"><i style="width:18%;background:var(--warn)"></i></div>
+    </div>
+    <div class="spec">Grows from zero on first paint and eases to a new width whenever the factor
+changes — so a filter switch reads as the same bar moving, not as a new bar
+appearing.</div>
+
+    <h4>GrowBarV — 560ms from baseline</h4>
+    <div class="demo">
+      <div class="chart">
+        <i style="height:40%"></i><i style="height:62%"></i><i style="height:38%"></i>
+        <i style="height:88%;background:var(--accent)"></i><i style="height:54%"></i>
+        <i style="height:71%"></i><i style="height:29%"></i>
+      </div>
+    </div>
+    <div class="spec">Vertical twin of the fill, used by the cover-trend and hourly-revenue mini
+charts. Bars grow from the axis, never from the top — growth from the wrong
+edge inverts the reading of a chart for the half-second it is in flight.</div>
+
+    <h4>PressScale — tap it</h4>
+    <div class="row">
+      <button class="btn btn--primary btn--sm press">Tekan saya</button>
+      <span class="hubcard press" style="padding:12px 16px;display:inline-block">Kartu</span>
+    </div>
+    <div class="spec">0.97 in 90ms down, 220ms back. The child keeps owning the actual tap — this
+only adds the scale, so an InkWell ripple and an onTap still work underneath.
+
+Asymmetric on purpose: the dip must land within a frame or two of the finger,
+the release can take its time.</div>
+
+    <h4>AnimatedCount</h4>
+    <div class="demo">
+      <span class="mono" style="font-size:24px;font-weight:600;color:var(--textHi)">128</span>
+      <span class="mono" style="font-size:11px;color:var(--textLo);margin-left:8px">cover hari ini</span>
+    </div>
+    <div class="spec">500ms tween between integer values, rounded each frame. Used where a count
+changes after a filter or an edit — the number rolls so the eye follows it
+rather than re-reading a field that silently changed. Snaps instantly under
+reduced motion.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:300px">
+    <h3>Durations</h3>
+    <p class="sub">Every value in the system</p>
+
+    <table class="tbl">
+      <tr><td>satEaseOut</td><td>Cubic(0.22, 1, 0.36, 1)</td></tr>
+      <tr><td>Reveal</td><td>420ms · 55ms stagger · cap 10</td></tr>
+      <tr><td>ExpandFade</td><td>220ms</td></tr>
+      <tr><td>AnimatedReflow</td><td>240ms</td></tr>
+      <tr><td>AnimatedBarFill</td><td>620ms</td></tr>
+      <tr><td>GrowBarV</td><td>560ms</td></tr>
+      <tr><td>PressScale</td><td>90ms down · 220ms up · 0.97</td></tr>
+      <tr><td>AnimatedCount</td><td>500ms</td></tr>
+      <tr><td>PIN dot fill</td><td>180ms · scale 0.7→1.0</td></tr>
+      <tr><td>PIN error shake</td><td>360ms · sin ×4 · damped · ±8px</td></tr>
+      <tr><td>PIN key press</td><td>110ms · scale 0.92</td></tr>
+      <tr><td>Mode switcher</td><td>280ms AnimatedAlign</td></tr>
+      <tr><td>Mode tab tint</td><td>200ms colour tween</td></tr>
+      <tr><td>Server row select</td><td>200ms AnimatedContainer</td></tr>
+      <tr><td>Pulse dot</td><td>1600ms · repeat reverse</td></tr>
+      <tr><td>adminToggle</td><td>180ms AnimatedAlign</td></tr>
+      <tr><td>Export/kind pill</td><td>160ms</td></tr>
+      <tr><td>Sheet body swap</td><td>280ms · in easeOut / out easeInQuart</td></tr>
+      <tr><td>Sent station 1</td><td>280ms</td></tr>
+      <tr><td>Sent station 2</td><td>620ms</td></tr>
+      <tr><td>Sent auto-return</td><td>1900ms</td></tr>
+      <tr><td>Skeleton pulse</td><td>1400ms · 0.5→1.0</td></tr>
+    </table>
+
+    <div class="spec">Two clusters and almost nothing between them: 90–280ms for anything a finger
+caused, 500–620ms for anything data caused. The long tail (1600ms pulse,
+1900ms auto-return) is ambient or procedural, never blocking.
+
+satMotion(context, ms) returns Duration.zero under reduced motion, so an
+AnimatedContainer written with it collapses without a branch at the call site.
+
+No animation delays a confirmation. The Sent screen paints its tick at frame
+zero and animates the stations afterwards — the acknowledgement is never the
+thing being waited for.</div>
+  </div>
+
+</div>
+</body>
+</html>

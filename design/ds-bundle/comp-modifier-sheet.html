@@ -1,0 +1,180 @@
+<!-- @dsCard group="Order flow" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Modifier sheet</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  .msheet {
+    background: var(--bg1); border-radius: var(--r-2xl);
+    border: var(--rule) solid var(--border0); overflow: hidden; box-shadow: var(--lift);
+  }
+  .mhead { display: flex; gap: 14px; padding: 14px 20px; }
+  .mhead .ph {
+    flex: 0 0 auto; width: 64px; height: 64px; border-radius: var(--r-lg);
+    background: var(--bg4); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 20px; font-weight: 600; color: var(--textDim);
+  }
+  .mhead h5 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.19px;
+              line-height: 1.15; color: var(--textHi); text-transform: var(--caps); }
+  .mhead p { margin: 4px 0 0; font-size: 12px; line-height: 1.35; color: var(--textMd); }
+  .mhead .x { margin-left: auto; color: var(--textMd); font-size: 18px; }
+
+  .warnbox {
+    margin: 0 20px 12px; padding: 10px 12px;
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-md);
+  }
+  .warnbox div { display: flex; gap: 8px; font-size: 12px; font-weight: 500; line-height: 1.4; }
+  .warnbox div + div { margin-top: 8px; }
+
+  .mgroup { padding: 16px 20px 12px; border-bottom: var(--rule) solid var(--border0); }
+  .mgroup:last-child { border-bottom: 0; }
+  .mgroup > header { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 10px; }
+  .mgroup > header b { flex: 1; font-size: 14px; font-weight: 600; letter-spacing: -0.14px;
+                       color: var(--textHi); text-transform: var(--caps); }
+  .mgroup > header i {
+    font-style: normal; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.8px; color: var(--textLo);
+  }
+  .mgroup > header i.req { color: var(--urgent); }
+
+  .mfoot {
+    display: flex; gap: 12px; padding: 12px 16px 18px;
+    background: var(--bg1); border-top: var(--rule) solid var(--border0);
+  }
+  .mfoot .btn { flex: 1; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:420px">
+    <h3>Modifier sheet</h3>
+    <p class="sub">modifier_sheet.dart · bottom sheet on phone, 520px dialog on tablet</p>
+
+    <div class="msheet">
+      <div class="grabber" style="margin:10px auto 4px"></div>
+
+      <div class="mhead">
+        <div class="ph">SA</div>
+        <div style="flex:1;min-width:0">
+          <h5>Sate Ayam Bumbu Kacang</h5>
+          <p>10 tusuk, bumbu kacang rumahan, lontong.</p>
+        </div>
+        <span class="x">✕</span>
+      </div>
+
+      <div class="warnbox">
+        <div style="color:var(--info)">🌱 Cocok untuk bebas gluten</div>
+        <div style="color:var(--urgent)">⚠ Mengandung kacang — konfirmasi ke tamu</div>
+      </div>
+
+      <div class="mgroup">
+        <header><b>Ukuran</b><i class="req">WAJIB</i></header>
+        <div class="optrow optrow--on">
+          <span class="box box--radio">✓</span> Reguler
+          <span class="delta">Rp 45.000</span>
+        </div>
+        <div class="optrow">
+          <span class="box box--radio"></span> Porsi besar
+          <span class="delta">Rp 62.000</span>
+        </div>
+      </div>
+
+      <div class="mgroup">
+        <header><b>Tingkat pedas</b><i class="req">WAJIB</i></header>
+        <div class="optrow"><span class="box box--radio"></span> Tidak pedas</div>
+        <div class="optrow optrow--on"><span class="box box--radio">✓</span> Sedang</div>
+        <div class="optrow optrow--out"><span class="box box--radio"></span> Extra pedas · habis</div>
+      </div>
+
+      <div class="mgroup">
+        <header><b>Tambahan</b><i>BEBAS PILIH</i></header>
+        <div class="optrow optrow--on">
+          <span class="box">✓</span> Telur ceplok <span class="delta">+ Rp 6.000</span>
+        </div>
+        <div class="optrow">
+          <span class="box"></span> Tanpa bawang <span class="delta">− Rp 2.000</span>
+        </div>
+      </div>
+
+      <div class="mgroup">
+        <header><b>Course</b><i>TIMING</i></header>
+        <div class="row">
+          <span class="coursechip"><i style="background:var(--cFire)"></i>Bakar sekarang</span>
+          <span class="coursechip"><i style="background:var(--cDrinks)"></i>Minuman</span>
+          <span class="coursechip coursechip--on"><i style="background:var(--cMains)"></i>Utama</span>
+          <span class="coursechip"><i style="background:var(--cDesserts)"></i>Penutup</span>
+        </div>
+      </div>
+
+      <div class="mgroup" style="border-bottom:0">
+        <header><b>Instruksi khusus</b><i>OPSI TERAKHIR</i></header>
+        <textarea class="input input--area" placeholder="mis. alergi belum tertera, catatan plating…"></textarea>
+        <div class="fcount" style="margin-top:4px">0 / 80 · tampil ke dapur</div>
+      </div>
+
+      <div class="mfoot">
+        <div class="stepper">
+          <button disabled>−</button><var>1</var><button>+</button>
+        </div>
+        <button class="btn btn--primary">＋ <span class="btn__amt">Rp 51.000</span></button>
+      </div>
+    </div>
+
+    <div class="spec">Every group states its own obligation in the header — WAJIB / OPSIONAL /
+BEBAS PILIH / TIMING — so a waiter never has to tap the CTA to discover
+what's missing. When a required group is unanswered the CTA does not grey
+out silently: it swaps its label to "Pilih wajib" at 0.4 opacity, naming
+the blocker instead of just refusing.
+
+Shape carries the selection rule: radios are circles (r-pill), checkboxes
+are 6px squares. The tick is drawn in accentInk on a filled accent box —
+selection is never tint-only.
+
+Sold-out options come from ingredient stock (ADR-0040) and are per-option,
+not per-dish: "Extra pedas · habis" while the sate itself is still orderable.
+
+The note field caps at 80 chars and says where the text lands ("tampil ke
+dapur") — a waiter typing an allergy needs to know the kitchen will see it.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal</h3>
+    <p class="sub">Square boxes, ink rules, hard shadow</p>
+
+    <h4>Options</h4>
+    <div class="optrow optrow--on"><span class="box box--radio">✓</span> Reguler <span class="delta">Rp 45.000</span></div>
+    <div class="optrow"><span class="box"></span> Telur ceplok <span class="delta">+ Rp 6.000</span></div>
+
+    <h4>Course chips</h4>
+    <div class="row">
+      <span class="coursechip coursechip--on"><i style="background:var(--cMains)"></i>Utama</span>
+      <span class="coursechip"><i style="background:var(--cFire)"></i>Bakar</span>
+    </div>
+
+    <h4>Footer</h4>
+    <div class="row" style="gap:12px">
+      <div class="stepper"><button disabled>−</button><var>1</var><button>+</button></div>
+      <button class="btn btn--primary" style="flex:1">＋ <span class="btn__amt">Rp 51.000</span></button>
+    </div>
+
+    <div class="spec">Course pips stay circular — a colour-coded dot squared reads as a swatch,
+not a status light. Radios keep their circle too: under brutal the radius
+tokens collapse to 0, so the circle is drawn with an explicit 50%, which
+is the one place the skin is overridden on purpose.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!-- @dsCard group="Order flow" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sent — confirmation</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+
+  .confirm { text-align: center; padding: 28px 8px; }
+  .tick {
+    width: 96px; height: 96px; margin: 0 auto;
+    border-radius: 50%; background: var(--successSoft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 46px; font-weight: 800; color: var(--success); line-height: 1;
+  }
+  .confirm h5 {
+    margin: 24px 0 8px; font-size: 30px; font-weight: 600; letter-spacing: -0.6px;
+    color: var(--textHi); text-transform: var(--caps);
+  }
+  .confirm p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--textMd); }
+  .stations { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+  .schip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: var(--bg2);
+    border: var(--rule) solid var(--border0); border-radius: var(--r-lg);
+    font-size: 13px; font-weight: 500; color: var(--textHi); box-shadow: var(--lift);
+  }
+  .schip .done {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--success);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--successInk);
+  }
+  .latency {
+    margin-top: 16px; font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 1px; color: var(--textLo);
+  }
+  .timeline {
+    display: grid; grid-template-columns: 68px 1fr; gap: 4px 14px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--textMd);
+  }
+  .timeline b { color: var(--accentText); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Sent</h3>
+    <p class="sub">sent_screen.dart · full-screen, self-dismissing</p>
+
+    <div class="confirm">
+      <div class="tick">✓</div>
+      <h5>Terkirim</h5>
+      <p>Pesanan Meja 12 sudah live di display dapur dan bar.</p>
+
+      <div class="stations">
+        <span class="schip"><span class="done">✓</span>Dapur</span>
+        <span class="schip"><span class="spinner" style="width:18px;height:18px"></span>Bar</span>
+      </div>
+
+      <div class="latency">LAN P50 214MS · CLOUD QUEUED</div>
+
+      <div style="margin-top:24px">
+        <button class="btn btn--ghost btn--sm">🧾 Cetak struk</button>
+      </div>
+    </div>
+
+    <div class="spec">This screen exists for one reason: "did it actually send?" is the question a
+waiter cannot afford to be unsure about. So the answer is a full screen, not
+a toast — nothing else is on it, and it cannot be missed on the way past.
+
+The station chips resolve in sequence (280ms, 620ms) rather than all at once,
+so the confirmation reads as work completing rather than a static graphic.
+Each chip states its own state with a shape, not a colour: a filled tick or
+a spinner.
+
+The latency line is deliberately unglamorous. It is the only place a waiter
+learns the LAN is healthy, and it says "CLOUD QUEUED" plainly rather than
+implying the cloud leg already succeeded.</div>
+
+    <h4>Auto-return timeline</h4>
+    <div class="timeline">
+      <b>0ms</b><span>screen mounts, tick painted</span>
+      <b>280ms</b><span>station 1 resolves</span>
+      <b>620ms</b><span>station 2 resolves</span>
+      <b>1900ms</b><span>pops 3 routes back to table detail</span>
+    </div>
+    <div class="spec">It pops rather than navigates: the table-detail screen below is still mounted
+and still holds its lock, so re-entering it by go() would dispose and re-acquire
+for nothing.
+
+Tapping "Cetak struk" sets an engaged flag that cancels the 1900ms auto-return —
+the screen must not yank itself out from under an open printer picker.</div>
+  </div>
+
+  <div class="stage" data-pal="neoMidnight">
+    <h3>Brutal</h3>
+    <p class="sub">Same beats, square and loud</p>
+
+    <div class="confirm">
+      <div class="tick" style="border-radius:50%;border:3px solid var(--ink)">✓</div>
+      <h5 class="display">Terkirim</h5>
+      <p>Pesanan Meja 12 sudah live di display dapur dan bar.</p>
+      <div class="stations">
+        <span class="schip"><span class="done">✓</span>DAPUR</span>
+        <span class="schip"><span class="done">✓</span>BAR</span>
+      </div>
+      <div class="latency">LAN P50 214MS · CLOUD QUEUED</div>
+    </div>
+
+    <div class="spec">The success circle stays a circle. A squared tick badge reads as an error
+dialog in every operating system a waiter has ever used, and this screen's
+whole job is being unmistakable.</div>
+  </div>
+
+</div>
+</body>
+</html>

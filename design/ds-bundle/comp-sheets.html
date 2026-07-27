@@ -1,0 +1,224 @@
+<!-- @dsCard group="Sheets" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sheets — PIN, export, range, theme</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  .flabel-s { font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+              color: var(--textMd); margin: 0 0 8px; }
+  .debug {
+    margin-top: 14px; padding: 12px 14px;
+    background: var(--warnSoft); border: var(--rule) solid var(--warn);
+    border-radius: var(--r-md);
+  }
+  .debug b { font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+             letter-spacing: 1.2px; color: var(--warn); }
+  .debug .r { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+  .debug .r code { flex: 0 0 76px; font-family: var(--font-mono); font-size: 11px;
+                   font-weight: 700; color: var(--textHi); }
+  .debug .r span { flex: 1; font-size: 11px; color: var(--textMd); }
+
+  .themerow {
+    display: flex; align-items: center; gap: 14px; padding: 14px;
+    background: var(--bg2); border: var(--rule) solid var(--border1);
+    border-radius: var(--r-lg); margin-bottom: 8px;
+  }
+  .themerow--on { background: var(--accentSoft); border-color: var(--accentBorder); }
+  .themerow span { flex: 1; font-size: 14px; color: var(--textHi); }
+  .themerow .radio { color: var(--textDim); font-size: 16px; }
+  .themerow--on .radio { color: var(--accentText); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:360px">
+    <h3>PIN sheet</h3>
+    <p class="sub">pin_sheet.dart · the sign-in every shift starts with</p>
+
+    <div class="sheet-shell">
+      <div class="grabber"></div>
+      <div style="text-align:center">
+        <div style="font-size:20px;font-weight:600;letter-spacing:-0.2px;color:var(--textHi)">Masukkan PIN</div>
+        <div style="font-size:12px;color:var(--textMd);margin-top:4px">Tersambung ke Dapur Utama</div>
+        <div class="row" style="justify-content:center;margin-top:10px">
+          <span class="netpill" style="height:24px;border:0;background:none">
+            <i class="dot dot--live"></i>Tersambung · 42ms
+          </span>
+        </div>
+      </div>
+
+      <div class="pindots" style="margin:22px 0 12px">
+        <i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i>
+      </div>
+      <div class="mono" style="text-align:center;font-size:11px;letter-spacing:0.6px;color:var(--textLo);margin-bottom:18px">3 / 6 digit</div>
+
+      <div class="pinpad">
+        <button class="padkey">1</button><button class="padkey">2</button><button class="padkey">3</button>
+        <button class="padkey">4</button><button class="padkey padkey--down">5</button><button class="padkey">6</button>
+        <button class="padkey">7</button><button class="padkey">8</button><button class="padkey">9</button>
+        <span></span><button class="padkey">0</button><button class="padkey padkey--muted">⌫</button>
+      </div>
+
+      <div class="debug">
+        <b>🐞 DEBUG · SEEDED PINS</b>
+        <div class="r"><code>111111</code><span>Sari · Pelayan</span>📋</div>
+        <div class="r"><code>222222</code><span>Budi · Dapur</span>📋</div>
+      </div>
+    </div>
+
+    <div class="spec">Six digits, submitted automatically on the sixth — there is no confirm button,
+because a waiter typing a PIN one-handed while carrying a tray should not need
+a second target.
+
+Failure is physical, not textual-only: the dot row shakes (sin, 4 cycles,
+damped, 360ms), the digits clear, and the helper line turns urgent mono. Under
+reduced motion the shake is skipped and the message alone carries it.
+
+The helper line has three states in one slot — blank when empty, "n / 6 digit"
+while typing, "Memverifikasi…" once complete — so the sheet never grows or
+shrinks mid-entry.
+
+The live reachability pill sits under the subtitle and is re-probed on open,
+because a stale heartbeat would let a waiter type six digits into a server
+that is already gone.
+
+Seeded credentials render in debug builds only.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:340px">
+    <h3>Export sheet</h3>
+    <p class="sub">export_sheet.dart · one sheet, four kinds (ADR-0030/31/32)</p>
+
+    <div class="sheet-shell">
+      <div class="sheet-kicker">Ekspor laporan</div>
+
+      <p class="flabel-s">Jenis</p>
+      <div class="row" style="margin-bottom:18px">
+        <span class="pill-a pill-a--on" style="height:38px;padding:0 16px;font-size:13px">Umum</span>
+        <span class="pill-a" style="height:38px;padding:0 16px;font-size:13px">Pesanan</span>
+        <span class="pill-a" style="height:38px;padding:0 16px;font-size:13px">Staf</span>
+        <span class="pill-a" style="height:38px;padding:0 16px;font-size:13px;opacity:0.4">Akuntansi</span>
+      </div>
+
+      <p class="flabel-s">Periode</p>
+      <div class="row" style="margin-bottom:18px">
+        <span class="pill-a pill-a--on" style="height:38px;padding:0 16px;font-size:13px">12 Jun – 15 Jun</span>
+      </div>
+
+      <p class="flabel-s">Format</p>
+      <div class="row" style="margin-bottom:22px">
+        <span class="pill-a pill-a--on" style="height:38px;padding:0 16px;font-size:13px">PDF</span>
+        <span class="pill-a" style="height:38px;padding:0 16px;font-size:13px">CSV</span>
+      </div>
+
+      <button class="btn btn--primary" style="width:100%">Ekspor PDF</button>
+    </div>
+
+    <div class="spec">The period is a read-only pill, not a picker. The export inherits whatever range
+is live on the Reports screen behind it, so there is no way to export a window
+the owner is not currently looking at.
+
+An unavailable kind greys to 0.4 and stays inert rather than disappearing, with
+a sentence naming the fix ("Laporan belum siap — buka laporan dulu…"). A
+control that vanishes teaches nothing.
+
+CSV is written UTF-8 with a BOM so Excel opens Indonesian text and Rupiah
+without mangling them — the export exists to be read by an accountant, not
+by this app.</div>
+
+    <h4>Custom range sheet</h4>
+    <div class="sheet-shell">
+      <div class="sheet-kicker">Rentang khusus</div>
+      <div class="row" style="gap:12px;align-items:stretch;margin-bottom:12px">
+        <div style="flex:1;padding:10px 12px;background:var(--accentSoft);border:var(--rule) solid var(--accentBorder);border-radius:var(--r-md)">
+          <div class="mono" style="font-size:9px;font-weight:600;letter-spacing:1px;color:var(--textLo)">MULAI</div>
+          <div style="font-size:14px;font-weight:500;color:var(--accentText)">12 Jun 2026</div>
+        </div>
+        <div style="flex:1;padding:10px 12px;background:var(--bg2);border:var(--rule) solid var(--border0);border-radius:var(--r-md)">
+          <div class="mono" style="font-size:9px;font-weight:600;letter-spacing:1px;color:var(--textLo)">SELESAI</div>
+          <div style="font-size:14px;font-weight:500;color:var(--textLo)">Pilih</div>
+        </div>
+      </div>
+      <button class="btn btn--disabled" style="width:100%">Terapkan</button>
+    </div>
+    <div class="spec">The shell is bespoke; the calendar behind each field is the framework picker.
+Committing only on "Terapkan" means a dismissed sheet leaves the active range
+untouched — an owner mid-comparison never loses their place by tapping outside.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:320px">
+    <h3>Theme sheet</h3>
+    <p class="sub">theme_sheet.dart · device-local, lives on Me not Settings</p>
+
+    <div class="sheet-shell">
+      <div class="grabber"></div>
+      <div style="font-size:16px;font-weight:600;color:var(--textHi)">Tampilan</div>
+      <div style="font-size:12px;color:var(--textLo);margin:4px 0 14px">Berlaku untuk perangkat ini saja</div>
+
+      <div class="themerow themerow--on">
+        <span class="swatch" style="background:#0D0E10"><i style="background:#FF9233"></i><u style="background:#F4F3EE"></u></span>
+        <span>Gelap</span><span class="radio">◉</span>
+      </div>
+      <div class="themerow">
+        <span class="swatch" style="background:#F6F4EF"><i style="background:#FF9233"></i><u style="background:#1A1A18"></u></span>
+        <span>Terang</span><span class="radio">○</span>
+      </div>
+      <div class="themerow">
+        <span class="swatch" style="background:#000"><i style="background:#B6FF3D"></i><u style="background:#F2F2F0"></u></span>
+        <span>Neon hijau</span><span class="radio">○</span>
+      </div>
+      <div class="themerow">
+        <span class="swatch" style="background:#F4F5F8"><i style="background:#3538CD"></i><u style="background:#16181D"></u></span>
+        <span>Indigo terang</span><span class="radio">○</span>
+      </div>
+      <div class="themerow">
+        <span class="swatch" style="background:#E9E2CE"><i style="background:#FFE600"></i><u style="background:#000"></u></span>
+        <span>Neo kertas</span><span class="radio">○</span>
+      </div>
+      <div class="themerow">
+        <span class="swatch" style="background:#121118"><i style="background:#FFE600"></i><u style="background:#F2ECD8"></u></span>
+        <span>Neo midnight</span><span class="radio">○</span>
+      </div>
+    </div>
+
+    <div class="spec">This sheet lives on the Me screen, not under /settings. /settings is gated on
+editSettings; every waiter must be able to set the look of the handset in
+their own hand without an owner unlocking it (ADR-0045).
+
+Selection is stated by a radio glyph, not by the accent tint alone — the tint
+is unreadable against some of the swatches it sits next to.
+
+The swatch is three bands (ground, accent, ink) rather than a miniature
+screenshot. Enough to tell six palettes apart at a glance; not enough to
+pretend it previews a layout it cannot.
+
+The sheet is opaque on purpose: a translucent barrier would judge each swatch
+through a tint of the palette being replaced.</div>
+
+    <h4>Sheet shell — shared anatomy</h4>
+    <div class="col" style="gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--textMd)">
+      <div>bg1 fill · border0 rule · r-2xl (22)</div>
+      <div>grabber 36×4 · border2 · r 2</div>
+      <div>padding 22 / 14 / 22 / 22</div>
+      <div>maxWidth 480 at ≥600px, else full-bleed</div>
+      <div>kicker: mono 11 / +1.0em / uppercase / textLo</div>
+    </div>
+    <div class="spec">Sheets that own a keyboard pad the bottom by viewInsets so the pad is never
+covered. Sheets pushed from a route use the root navigator, so they survive
+the tab bar rebuilding underneath them.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!-- @dsCard group="Onboarding" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>First run — mode select, pair, forbidden</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  .debt {
+    padding: 12px 14px; margin-bottom: 18px;
+    background: var(--urgentSoft); border: var(--rule) solid var(--urgent);
+    border-radius: var(--r-md);
+    font-size: 12px; line-height: 1.5; color: var(--textHi);
+  }
+
+  /* Deliberately stock Material — this is what the app renders today. */
+  .mcard {
+    background: #1E1E1E; color: #E6E1E5;
+    border-radius: 12px; padding: 20px; margin-bottom: 12px;
+    font-family: Roboto, system-ui, sans-serif;
+  }
+  .mcard b { display: block; font-size: 22px; font-weight: 400; margin-bottom: 4px; }
+  .mcard p { margin: 0; font-size: 14px; opacity: 0.85; }
+  .mfield { border-bottom: 1px solid #938F99; padding: 18px 0 6px; margin-bottom: 4px;
+            font-family: Roboto, system-ui, sans-serif; }
+  .mfield label { display: block; font-size: 12px; color: #CAC4D0; margin-bottom: 4px; }
+  .mfield span { font-size: 16px; color: #E6E1E5; opacity: 0.5; }
+  .mbtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 40px; padding: 0 24px; border-radius: 20px; border: 0;
+    background: #D0BCFF; color: #381E72;
+    font-family: Roboto, system-ui, sans-serif; font-size: 14px; font-weight: 500;
+  }
+  .mockwrap { background: #141218; border-radius: var(--r-md); padding: 20px; }
+
+  .fixrow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:400px">
+    <h3>First run — as shipped</h3>
+    <p class="sub">mode_select_screen.dart · pair_screen.dart · forbidden_screen.dart</p>
+
+    <div class="debt">
+      <b>These three screens are not on the design system.</b> They render stock Material 3
+      with the default purple seed — no <code>context.sat</code>, no <code>SatType</code>, no
+      <code>SatBox</code>. That is a real deviation from “generic Material 3 default” being an
+      explicit anti-reference, and it is the first thing a new install sees. Recorded here as
+      built, not as intended.
+    </div>
+
+    <h4>Mode select — /onboarding</h4>
+    <div class="mockwrap">
+      <div style="font-family:Roboto,system-ui,sans-serif;color:#E6E1E5">
+        <div style="font-size:24px;margin-bottom:8px">Pilih mode</div>
+        <div style="font-size:14px;opacity:.85;margin-bottom:24px">Tablet ini akan jadi server atau klien?</div>
+      </div>
+      <div class="mcard"><b>Server</b><p>Tablet ini host venue. Database lokal di sini.</p></div>
+      <div class="mcard"><b>Klien</b><p>Tablet ini ambil order, terhubung ke server lewat LAN.</p></div>
+    </div>
+    <div class="spec">The decision itself is sound — one binary question, stated plainly, with the
+consequence spelled out on each card ("Database lokal di sini"). It is
+irreversible in practice, and the copy says what each side means rather than
+naming a mode and hoping.
+
+What's wrong is only the skin: default Card, default typography, purple seed.</div>
+
+    <h4>Pair — /pair</h4>
+    <div class="mockwrap">
+      <div style="font-family:Roboto,system-ui,sans-serif;font-size:14px;color:#E6E1E5;opacity:.85;line-height:1.5">
+        Scan QR dari server tablet, atau isi manual jika multicast diblokir di WiFi:
+      </div>
+      <div class="mfield"><label>Host (IP)</label><span>192.168.1.14</span></div>
+      <div class="mfield"><label>Port</label><span>7443</span></div>
+      <div class="mfield"><label>Pair token (sekali pakai)</label><span>—</span></div>
+      <div class="mfield"><label>Cert fingerprint (SHA-256)</label><span>—</span></div>
+      <div style="margin-top:20px"><button class="mbtn">Pasangkan</button></div>
+    </div>
+    <div class="spec">The manual path exists because venue Wi-Fi routinely blocks multicast, and the
+intro sentence says exactly that instead of hiding the fields behind an
+"Advanced" disclosure. Four raw fields — host, port, one-time token, cert
+fingerprint — is the honest shape of a self-signed LAN handshake.
+
+In practice this screen is bypassed: /pin carries an inline pair flow, and the
+discovered-server list claims a token automatically on tap. This route is the
+fallback, which is why it never got styled.</div>
+
+    <h4>Forbidden — /forbidden</h4>
+    <div class="mockwrap" style="text-align:center;padding:40px 20px">
+      <div style="font-size:48px;color:#E6E1E5;opacity:.85">🔒</div>
+      <div style="font-family:Roboto,system-ui,sans-serif;font-size:14px;color:#E6E1E5;margin:12px 0 20px">Akses tidak diizinkan</div>
+      <button class="mbtn">Kembali</button>
+    </div>
+    <div class="spec">Where the capability guard fails closed. Four words and one way out. The copy
+is right for the brand — no apology, no explanation of the permission model to
+someone who cannot change it — but it does not say which capability was missing
+or who can grant it, so a waiter who lands here has to go find a manager blind.</div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:340px">
+    <h3>Same screens, on the system</h3>
+    <p class="sub">What these should look like — target, not current state</p>
+
+    <h4>Mode select</h4>
+    <p style="font-size:30px;font-weight:600;letter-spacing:-0.6px;line-height:1.05;color:var(--textHi);margin:0;text-transform:var(--caps)">Pilih mode</p>
+    <p class="mono" style="font-size:11px;letter-spacing:0.44px;text-transform:uppercase;color:var(--textLo);margin:6px 0 16px">Sekali saja · tidak bisa diubah tanpa reset</p>
+
+    <div class="hubcard" style="margin-bottom:10px">
+      <div class="row">
+        <span class="ico" style="background:var(--accentSoft);color:var(--accentText)">🖥</span>
+        <span class="badge" style="margin-left:auto">DB LOKAL</span>
+      </div>
+      <h5>Server</h5>
+      <p>Tablet ini host venue. Database lokal di sini.</p>
+    </div>
+    <div class="hubcard">
+      <div class="row">
+        <span class="ico" style="background:var(--infoSoft);color:var(--info)">📱</span>
+        <span class="badge" style="margin-left:auto">VIA LAN</span>
+      </div>
+      <h5>Klien</h5>
+      <p>Tablet ini ambil order, terhubung ke server lewat LAN.</p>
+    </div>
+
+    <h4>Pair — manual fallback</h4>
+    <div class="col" style="gap:12px">
+      <div class="row" style="gap:12px;align-items:stretch">
+        <div style="flex:2"><label class="flabel">Host (IP)</label><input class="input" value="192.168.1.14"></div>
+        <div style="flex:1"><label class="flabel">Port</label><input class="input" value="7443"></div>
+      </div>
+      <div><label class="flabel">Pair token</label><input class="input" placeholder="sekali pakai"></div>
+      <div><label class="flabel">Cert fingerprint</label><input class="input" placeholder="SHA-256"></div>
+      <button class="btn btn--primary">Pasangkan</button>
+    </div>
+
+    <h4>Forbidden</h4>
+    <div class="state-block">
+      <div class="glyph">🔒</div>
+      <h5>Akses tidak diizinkan</h5>
+      <p>Halaman ini butuh izin <b class="mono" style="color:var(--textMd)">manageStaff</b>.<br>Minta pengelola membuka aksesnya.</p>
+      <div style="margin-top:18px"><button class="btn btn--ghost btn--sm">Kembali ke Meja</button></div>
+    </div>
+
+    <div class="spec">Two changes carry most of it: route the copy through AppStrings and swap
+Card/Text/FilledButton for the hub card, field and button already in the system.
+The forbidden screen additionally names the missing capability and who grants
+it, which turns a dead end into an instruction.</div>
+  </div>
+
+</div>
+</body>
+</html>

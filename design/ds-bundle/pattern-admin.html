@@ -1,0 +1,274 @@
+<!-- @dsCard group="Admin" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin — hub, settings, reports</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 0; }
+  .pad { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hero {
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-xl); padding: 18px; box-shadow: var(--lift);
+  }
+  .hero .mark {
+    width: 44px; height: 44px; border-radius: var(--r-md);
+    background: var(--accentSoft); border: var(--rule) solid var(--accentBorder);
+    color: var(--accentText); display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .lanpill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+    background: var(--successSoft); border: var(--rule) solid var(--success);
+    border-radius: var(--r-pill);
+    font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.5px; color: var(--success);
+  }
+  .statbadge { display: inline-flex; align-items: center; gap: 4px;
+               font-size: 11.5px; font-weight: 500; color: var(--textLo); }
+  .seedbanner {
+    padding: 16px; border-radius: var(--r-lg);
+    background: var(--accentSoft); border: var(--rule) solid var(--accentBorder);
+    box-shadow: var(--lift);
+  }
+  .errbanner {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 16px;
+    background: var(--warnSoft); border: var(--rule) solid var(--warn);
+    border-radius: var(--r-md);
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:440px">
+    <div class="astrip">
+      <h4 style="margin:0;font-family:var(--font-sans);font-size:20px;font-weight:600;letter-spacing:-0.3px;color:var(--textHi);text-transform:none">Kelola venue</h4>
+      <p>Konfigurasi · zona, menu, stok, staf</p>
+    </div>
+
+    <div class="pad">
+      <h3 style="margin-top:0">Venue hub</h3>
+      <p class="sub">venue_hub_screen.dart · the owner's front door</p>
+
+      <h4>AdminPage strip</h4>
+      <div class="spec" style="margin-top:0">Every admin route opens with the same embedded strip — sans 20/w600 title over a
+mono 11 uppercase subtitle, on a border0 underline. It is not an app bar: it
+scrolls with nothing and owns no back button, because admin routes live inside
+the shell and the tab bar is the way out.
+
+The subtitle takes an optional leading dot, used by Reports for live-vs-snapshot
+freshness.</div>
+
+      <h4>Hero strip</h4>
+      <div class="hero">
+        <div class="row" style="gap:12px">
+          <span class="mark">🏪</span>
+          <div style="flex:1;min-width:0">
+            <div class="row" style="gap:8px">
+              <span style="font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--textHi)">Warung Sederhana</span>
+              <span class="lanpill"><i class="dot dot--live" style="box-shadow:none;width:5px;height:5px"></i>LAN AKTIF</span>
+            </div>
+            <div style="font-size:12px;color:var(--textLo);margin-top:2px">PT Sederhana Jaya · Jl. Melati 12</div>
+          </div>
+          <span class="btn btn--ghost btn--xs">⚙ Pengaturan</span>
+        </div>
+        <div class="row" style="gap:12px;margin-top:14px">
+          <span class="statbadge" style="color:var(--textLo)">📍 24 meja (3 zona)</span>
+          <span class="statbadge">🍽 68 item menu</span>
+          <span class="statbadge">📦 41 bahan (3 low)</span>
+          <span class="statbadge">🎫 9 staf</span>
+        </div>
+      </div>
+      <div class="spec">Identity, reachability and four counts in one block. The counts are live
+provider reads, not a cached summary — an owner opening this screen is usually
+checking whether something is missing, so a stale number would be worse than
+no number.</div>
+
+      <h4>Seed banner — first boot only</h4>
+      <div class="seedbanner">
+        <div class="row" style="gap:8px">
+          <span style="color:var(--accentText)">✨</span>
+          <b style="font-size:15px;font-weight:700;color:var(--textHi)">Mulai dengan data contoh</b>
+        </div>
+        <p style="margin:6px 0 14px;font-size:12.5px;line-height:1.35;color:var(--textLo)">
+          Isi menu, zona dan staf contoh supaya bisa langsung dicoba. Bisa dihapus kapan saja.
+        </p>
+        <div class="row" style="gap:10px">
+          <button class="btn btn--primary btn--xs" style="flex:1;border-radius:var(--r-md)">Muat data contoh</button>
+          <button class="btn btn--ghost btn--xs" style="border-radius:var(--r-md)">Nanti saja</button>
+        </div>
+      </div>
+
+      <h4>Section grid — 2 columns, Reveal cascade</h4>
+      <div class="g2">
+        <div class="hubcard">
+          <div class="row">
+            <span class="ico" style="background:var(--accentSoft);color:var(--accentText)">📍</span>
+            <span class="badge" style="margin-left:auto">24 meja · 3 zona</span>
+          </div>
+          <h5>Zona &amp; meja</h5>
+          <p>Denah, kapasitas, penomoran</p>
+        </div>
+        <div class="hubcard">
+          <div class="row">
+            <span class="ico" style="background:var(--warnSoft);color:var(--warn)">🍽</span>
+            <span class="badge" style="margin-left:auto">68 item · 9 kategori</span>
+          </div>
+          <h5>Menu</h5>
+          <p>Item, harga, varian, modifier</p>
+        </div>
+        <div class="hubcard hubcard--alert">
+          <div class="row">
+            <span class="ico" style="background:var(--successSoft);color:var(--success)">📦</span>
+            <span class="badge badge--alert" style="margin-left:auto">3 perhatian</span>
+          </div>
+          <h5>Stok</h5>
+          <p>Bahan, ambang batas, habis</p>
+        </div>
+        <div class="hubcard">
+          <div class="row">
+            <span class="ico" style="background:var(--violetSoft);color:var(--violet)">🏪</span>
+            <span class="badge" style="margin-left:auto">Pajak 11% · Service 5%</span>
+          </div>
+          <h5>Venue</h5>
+          <p>Identitas, pajak, struk</p>
+        </div>
+      </div>
+      <div class="spec">Eight sections, each carrying a live badge that answers the question the
+section exists to answer — "24 meja · 3 zona", "Pajak 11% · Service 5%".
+The owner should be able to decide whether to tap without tapping.
+
+A section that needs attention swaps its badge to warn and borders the whole
+card warn. Alert is a card-level state, not a dot in a corner: at a glance
+across eight tiles, a 6px dot is invisible.
+
+Tints are per-section and drawn from the semantic set at 12% — the only place
+in the app where colour is used for identity rather than status, and it works
+because the label is right underneath it.</div>
+    </div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:360px">
+    <div class="pad">
+      <h3>Settings surfaces</h3>
+      <p class="sub">_common.dart · shared by every admin route</p>
+
+      <h4>SetHero — one number that matters</h4>
+      <div class="sethero">
+        <b>Dapur siap</b>
+        <strong>4 / 4</strong>
+        <p>Semua stasiun terhubung dan menerima tiket.</p>
+        <div class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+        <div class="mono" style="font-size:10px;letter-spacing:1px;color:var(--textLo);margin-top:8px">STATIONS · LIVE</div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="sethero sethero--warn">
+        <b>Stok menipis</b>
+        <strong>3 bahan</strong>
+        <p>Ayam fillet, cabai merah dan santan di bawah ambang batas.</p>
+        <div class="meter"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="mono" style="font-size:10px;letter-spacing:1px;color:var(--textLo);margin-top:8px">STATIONS · LIVE</div>
+      </div>
+      <div class="spec">Two tones only — success and warn. There is no urgent hero: a red block at the
+top of a settings page would be shouting at someone who is seated and calm,
+and would devalue urgent everywhere it genuinely matters.
+
+36px sans display, 1.5px border on a 14% tint. The meter fills at 50% alpha so
+it reads as a gauge, not as another set of buttons.</div>
+
+      <h4>SetTile — stat grid</h4>
+      <div class="g2">
+        <div class="settile"><b>Cover hari ini</b><strong>128</strong><p>+12% vs kemarin</p></div>
+        <div class="settile"><b>Rata-rata bill</b><strong>Rp 87k</strong><p>Dari 41 meja</p></div>
+        <div class="settile"><b>Waktu siap</b><strong>12m</strong><p>Target 15m</p></div>
+        <div class="settile"><b>Void</b><strong>2</strong><p>0.4% dari total</p></div>
+      </div>
+      <div class="spec">Mono 24 for the value, mono 10 uppercase for the label, sans 11 for the
+context line. Numbers are mono everywhere in this app so a column of them
+aligns without a table.</div>
+
+      <h4>AdminRow — label / control</h4>
+      <div>
+        <div class="arow"><b>Nama tampilan</b><span>Warung Sederhana</span></div>
+        <div class="arow"><b>Pajak</b><span class="row"><span class="toggle toggle--on"></span><span class="mono" style="font-size:12px">11%</span></span></div>
+        <div class="arow"><b>Layanan</b><span class="row"><span class="toggle toggle--on"></span><span class="mono" style="font-size:12px">5%</span></span></div>
+        <div class="arow" style="border-bottom:0"><b>Pesan mandiri tamu</b><span><span class="toggle"></span></span></div>
+      </div>
+      <div class="spec">Fixed 150px label column so a page of rows reads as a table without drawing
+one. The last row drops its rule rather than doubling up with the container's.</div>
+    </div>
+  </div>
+
+  <div class="stage" data-pal="dark" style="flex-basis:340px">
+    <div class="pad">
+      <h3>Reports chrome</h3>
+      <p class="sub">reports_screen.dart · sections delegate to ReportSectionsView</p>
+
+      <h4>Error banner</h4>
+      <div class="errbanner">
+        <span style="color:var(--warn)">⚠</span>
+        <span style="flex:1;font-size:13px;font-weight:500;color:var(--textHi)">Gagal memuat laporan</span>
+        <span class="pill-a">Coba lagi</span>
+      </div>
+      <div class="spec">Warn, not urgent — a failed report fetch costs an owner a refresh, not a
+service. The retry is a pill inside the banner, so the fix is where the
+problem is stated.</div>
+
+      <h4>Range pills</h4>
+      <div class="row">
+        <span class="pill-a pill-a--on">Hari ini</span>
+        <span class="pill-a">Kemarin</span>
+        <span class="pill-a">7 hari</span>
+        <span class="pill-a">30 hari</span>
+        <span class="pill-a">Bulan ini</span>
+        <span class="pill-a">Custom</span>
+      </div>
+      <div class="spec">Horizontally scrollable, never wrapped — a wrapping filter row changes height
+as labels change, and a committed custom range makes its own label longer
+("12 Jun – 15 Jun").</div>
+
+      <h4>Filter row</h4>
+      <div class="row" style="gap:8px;align-items:stretch">
+        <div class="fchip" style="flex:1"><div style="flex:1"><b>Pelayan</b><span>Semua</span></div><span style="color:var(--textLo)">⌄</span></div>
+        <div class="fchip fchip--on" style="flex:1"><div style="flex:1"><b>Zona</b><span>Teras</span></div><span style="color:var(--textLo)">⌄</span></div>
+        <div class="fchip" style="flex:1"><div style="flex:1"><b>Kategori</b><span>Semua</span></div><span style="color:var(--textLo)">⌄</span></div>
+      </div>
+
+      <h4>Freshness</h4>
+      <div class="row" style="gap:8px">
+        <i class="dot dot--live" style="box-shadow:none"></i>
+        <span class="mono" style="font-size:11px;letter-spacing:0.66px;text-transform:uppercase;color:var(--textLo)">Live · Hari ini · 27 Jul — 27 Jul</span>
+      </div>
+      <div style="height:8px"></div>
+      <div class="row" style="gap:8px">
+        <i class="dot" style="background:var(--textLo)"></i>
+        <span class="mono" style="font-size:11px;letter-spacing:0.66px;text-transform:uppercase;color:var(--textLo)">Snapshot · 7 hari · 21 Jul — 27 Jul</span>
+      </div>
+      <div class="spec">A report that includes today is Live and gets a success dot; anything else is
+a frozen Snapshot on a muted dot. The word is written out next to the dot —
+an owner exporting numbers to an accountant needs to know whether they will
+change under them.
+
+The resolved date span is always printed, so "7 hari" is never ambiguous about
+which seven.</div>
+
+      <h4>Export entry</h4>
+      <div class="row"><span class="pill-a">Ekspor</span><span class="btn btn--ghost" style="width:36px;height:36px;padding:0;border-radius:var(--r-md)">⟳</span></div>
+      <div class="spec">One Ekspor entry for all four export kinds (ADR-0030/31/32) — the kind is
+chosen inside the sheet, not by four buttons on the toolbar.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

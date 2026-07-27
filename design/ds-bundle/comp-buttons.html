@@ -1,0 +1,166 @@
+<!-- @dsCard group="Forms" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Buttons</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+  .warn-note {
+    padding: 12px 14px; margin-bottom: 18px;
+    background: var(--warnSoft); border: var(--rule) solid var(--warn);
+    border-radius: var(--r-md);
+    font-family: var(--font-sans); font-size: 12px; line-height: 1.5; color: var(--textHi);
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Buttons</h3>
+    <p class="sub">No Button widget exists — these are the shapes that recur</p>
+
+    <div class="warn-note">
+      <b>Known debt.</b> There is no shared button in <code>ui/core/widgets/</code>. Every
+      call site builds its own <code>ElevatedButton</code> or <code>GestureDetector</code> +
+      <code>Container</code>. The heights and radii below are the values that repeat often
+      enough to be treated as the system; the variance that remains is drift, not intent.
+    </div>
+
+    <h4>Primary — 52px, r-xl (18)</h4>
+    <div class="col">
+      <button class="btn btn--primary">Kirim ke dapur</button>
+      <button class="btn btn--primary">✦ Kirim ke dapur <span class="btn__amt">Rp 178.000</span></button>
+      <button class="btn btn--busy"><span class="spinner" style="width:16px;height:16px"></span> Mengirim…</button>
+      <button class="btn btn--disabled">Terapkan</button>
+    </div>
+    <div class="spec">accent fill, accentInk label. The disabled variant does NOT fade the accent —
+it swaps to bg3 + textLo, because a 40%-opacity amber on charcoal still reads
+as "tappable" from arm's length.
+
+Busy keeps the button's footprint and swaps to accentSoft + spinner, so a
+second tap lands on an inert button rather than a moved one.
+
+The trailing amount is mono at 70% ink: it is confirmation, not the label.</div>
+
+    <h4>Sizes</h4>
+    <div class="row">
+      <button class="btn btn--primary">52 · primary</button>
+      <button class="btn btn--primary btn--sm">44 · sm</button>
+      <button class="btn btn--primary btn--xs">38 · xs</button>
+    </div>
+    <div class="spec">44 is the floor for anything a walking waiter taps. 38 appears only inside
+sheets and admin rows, where the user is stationary and looking.</div>
+
+    <h4>Secondary &amp; destructive</h4>
+    <div class="row">
+      <button class="btn btn--ghost btn--sm">Coba lagi</button>
+      <button class="btn btn--ghost btn--sm">🧾 Cetak struk</button>
+      <button class="btn btn--danger btn--sm">Void item</button>
+    </div>
+    <div class="spec">Ghost is a border1 outline on transparent — never a filled grey, which is
+the legacy-POS tell. Destructive is urgentSoft on an urgent rule: red is
+scarce, so a red button means the action cannot be undone.</div>
+
+    <h4>Banner buttons — SeedDataBanner</h4>
+    <div class="row">
+      <button class="btn btn--primary btn--xs" style="border-radius:var(--r-md)">Muat data contoh</button>
+      <button class="btn btn--ghost btn--xs" style="border-radius:var(--r-md)">Nanti saja</button>
+    </div>
+    <div class="spec">Paired filled + ghost, r-md, 11px vertical padding. The dismissive option is
+never a bare text link — it has the same hit area as the affirmative one.</div>
+
+    <h4>adminPill — filter / action chips</h4>
+    <div class="row">
+      <span class="pill-a">Kemarin</span>
+      <span class="pill-a pill-a--on">Hari ini</span>
+      <span class="pill-a">7 hari</span>
+      <span class="pill-a">12 Jun – 15 Jun</span>
+      <span class="pill-a">Ekspor</span>
+      <span class="pill-a pill-a--danger">Hapus staf</span>
+    </div>
+    <div class="spec">30px, pill radius, three tones only: off (bg3/border1/textMd), on
+(accentSoft/accentBorder/accentText), danger (urgentSoft/urgent/urgent).
+A committed custom range replaces its own label with the span it selected,
+so the chip row always reads as the current truth.</div>
+
+    <h4>Category tabs</h4>
+    <div class="row">
+      <span class="cattab cattab--on">Utama</span>
+      <span class="cattab">Minuman</span>
+      <span class="cattab">Pembuka</span>
+    </div>
+    <div class="spec">Inactive tabs have no border and no background — the row must not look like
+a row of buttons competing with the grid beneath it.</div>
+
+    <h4>Quantity stepper</h4>
+    <div class="row">
+      <div class="stepper"><button disabled>−</button><var>1</var><button>+</button></div>
+      <div class="stepper"><button>−</button><var>4</var><button>+</button></div>
+    </div>
+    <div class="spec">Clamped 1–20. The minus greys to textDim at the floor rather than
+disappearing — a control that vanishes makes the waiter hunt for it.</div>
+
+    <h4>Icon button — back / refresh</h4>
+    <div class="row">
+      <span class="btn btn--ghost" style="width:36px;height:36px;padding:0;border-radius:var(--r-md)">←</span>
+      <span class="btn btn--ghost" style="width:36px;height:36px;padding:0;border-radius:var(--r-md)">⟳</span>
+      <span class="btn btn--ghost" style="width:36px;height:36px;padding:0;border-radius:var(--r-md)"><span class="spinner" style="width:16px;height:16px"></span></span>
+    </div>
+    <div class="spec">36×36, r-md, bg2 on border0. The refresh button swaps to a spinner in place
+and goes inert during the fetch — it never shows a spinner elsewhere on
+screen while the icon stays live.</div>
+
+    <h4>Press feedback</h4>
+    <div class="row">
+      <button class="btn btn--primary btn--sm">rest — 1.0</button>
+      <button class="btn btn--primary btn--sm" style="transform:scale(0.97)">pressed — 0.97</button>
+    </div>
+    <div class="spec">PressScale wraps the tappable, not the label: 0.97 in 90ms down, 220ms back.
+The child keeps owning the tap. Under reduced motion it is a pass-through.</div>
+  </div>
+
+  <div class="stage" data-pal="light">
+    <h3>Light</h3>
+    <p class="sub">Amber is 2.2:1 on paper — accentText carries labels, accent carries fills</p>
+    <div class="col">
+      <button class="btn btn--primary">Kirim ke dapur</button>
+      <button class="btn btn--ghost btn--sm">Coba lagi</button>
+      <button class="btn btn--disabled btn--sm">Terapkan</button>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <span class="pill-a pill-a--on">Hari ini</span>
+      <span class="pill-a">7 hari</span>
+    </div>
+    <div class="spec">On a filled accent button the label stays accentInk (#160D04) — near-black on
+amber, which survives daylight. Only text ON the background switches to
+accentText (#A34B00).</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal</h3>
+    <p class="sub">Square, 3px ink rule, 3px hard shadow, uppercase</p>
+    <div class="col">
+      <button class="btn btn--primary" style="border:3px solid var(--ink)">Kirim ke dapur</button>
+      <button class="btn btn--ghost" style="border-width:3px">Coba lagi</button>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <span class="pill-a pill-a--on">Hari ini</span>
+      <span class="pill-a">7 hari</span>
+    </div>
+    <div class="spec">The hard shadow is a solid ink offset with zero blur — it only paints when the
+element owns its own fill AND has a border AND a radius AND is rectangular.
+A lift on a shapeless element reads as a rendering bug, so SatBox.d refuses it.</div>
+  </div>
+
+</div>
+</body>
+</html>

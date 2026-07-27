@@ -1,3 +1,8 @@
+/* Self-hosted IBM Plex Sans/Mono, Archivo, Archivo Black, DM Mono.
+   Written by the project's own setup — do not mirror it locally, just import it.
+   Without this the brutal skin falls back to system-ui and loses its whole point. */
+@import url('tokens/fonts.css');
+
 /* SatSet design system — token layer transcribed from lib/ui/core/design/.
    Source of truth is Dart; this file mirrors it. Update both together. */
 
@@ -237,3 +242,308 @@ body {
   font-weight: var(--display-weight);
   line-height: var(--display-lh);
 }
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+
+/* The app has no Button widget: every call site builds an ElevatedButton or a
+   GestureDetector + Container. These classes name the shapes that recur. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border: 0; cursor: pointer;
+  font-family: var(--font-sans); font-size: 15px; font-weight: 600;
+  text-transform: var(--caps);
+  border-radius: var(--r-xl);
+  padding: 0 20px; height: 52px;
+  box-shadow: var(--lift);
+}
+.btn--primary  { background: var(--accent); color: var(--accentInk); }
+.btn--disabled { background: var(--bg3); color: var(--textLo); cursor: not-allowed; }
+.btn--busy     { background: var(--accentSoft); color: var(--accentText); }
+.btn--ghost {
+  background: transparent; color: var(--textHi);
+  border: var(--rule) solid var(--border1);
+}
+.btn--danger { background: var(--urgentSoft); color: var(--urgent);
+               border: var(--rule) solid var(--urgent); }
+.btn--sm { height: 44px; font-size: 14px; border-radius: var(--r-lg); }
+.btn--xs { height: 38px; font-size: 13px; border-radius: var(--r-md); padding: 0 16px; }
+.btn__amt { font-family: var(--font-mono); font-weight: 500; font-size: 14px; opacity: 0.7; }
+
+/* adminPill — _common.dart */
+.pill-a {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 30px; padding: 0 12px;
+  background: var(--bg3);
+  border: var(--rule) solid var(--border1);
+  border-radius: var(--r-pill);
+  font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+  color: var(--textMd);
+  text-transform: var(--caps);
+}
+.pill-a--on     { background: var(--accentSoft); border-color: var(--accentBorder); color: var(--accentText); }
+.pill-a--danger { background: var(--urgentSoft); border-color: var(--urgent);       color: var(--urgent); }
+
+/* Category tab — menu_screen.dart _CatTabs */
+.cattab {
+  display: inline-flex; align-items: center;
+  padding: 8px 14px; border-radius: var(--r-pill);
+  background: transparent;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  color: var(--textMd);
+}
+.cattab--on { background: var(--accentSoft); color: var(--accentText); }
+
+/* ── Inputs ────────────────────────────────────────────────────────────── */
+
+.flabel {
+  display: block;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--textLo); margin-bottom: 6px;
+}
+.input {
+  display: block; width: 100%;
+  background: var(--bg2);
+  border: var(--rule) solid var(--border0);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-family: var(--font-sans); font-size: 15px;
+  color: var(--textHi);
+}
+.input::placeholder { color: var(--textLo); }
+.input--focus { border-color: var(--accent); }
+.input--error { border-color: var(--urgent); }
+.input--area  { min-height: 66px; border-radius: var(--r-lg); font-size: 13px; resize: vertical; }
+.ferror {
+  display: flex; align-items: center; gap: 6px; margin-top: 6px;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--urgent);
+}
+.fcount { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.4px; color: var(--textLo); }
+
+/* Filter chip — reports_screen.dart */
+.fchip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: var(--rule) solid var(--border0);
+  border-radius: var(--r-md);
+}
+.fchip--on { background: var(--accentSoft); border-color: var(--accentBorder); }
+.fchip b {
+  display: block;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--textLo);
+}
+.fchip span { font-family: var(--font-sans); font-size: 13px; font-weight: 500; color: var(--textHi); }
+.fchip--on span { color: var(--accentText); }
+
+/* adminToggle — _common.dart */
+.toggle {
+  display: inline-block; position: relative;
+  width: 36px; height: 20px;
+  background: var(--bg3);
+  border: var(--rule) solid var(--border1);
+  border-radius: var(--r-pill);
+}
+.toggle i {
+  position: absolute; top: 50%; left: 3px; transform: translateY(-50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--textLo);
+}
+.toggle--on { background: var(--success); border-color: var(--success); }
+.toggle--on i { left: auto; right: 3px; background: var(--successInk); }
+
+/* Option row (radio / checkbox) — modifier_sheet.dart _ModOpt */
+.optrow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; margin-bottom: 6px;
+  background: var(--bg2);
+  border: var(--rule) solid var(--border0);
+  border-radius: var(--r-lg);
+  font-family: var(--font-sans); font-size: 14px; color: var(--textHi);
+}
+.optrow--on { background: var(--accentSoft); border-color: var(--accentBorder); }
+.optrow--out { opacity: 0.45; }
+.optrow .box {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--border2); border-radius: var(--r-sm);
+  color: var(--accentInk); font-size: 13px;
+}
+.optrow .box--radio { border-radius: 50%; }
+.optrow--on .box { background: var(--accent); border-color: var(--accent); }
+.optrow .delta { margin-left: auto; font-family: var(--font-mono); font-size: 12px;
+                 font-weight: 500; color: var(--textMd); }
+.optrow--on .delta { color: var(--accentText); }
+
+/* Course chip — modifier_sheet.dart _CourseChip */
+.coursechip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: var(--r-pill);
+  background: var(--bg2); border: var(--rule) solid var(--border0);
+  font-family: var(--font-sans); font-size: 13px; color: var(--textMd);
+}
+.coursechip--on { background: var(--bg4); border-color: var(--border2); color: var(--textHi); }
+.coursechip i { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Quantity stepper — modifier_sheet.dart _Foot */
+.stepper {
+  display: inline-flex; align-items: center; height: 52px; padding: 0 4px;
+  background: var(--bg2); border: var(--rule) solid var(--border0);
+  border-radius: var(--r-lg);
+}
+.stepper button {
+  width: 38px; height: 100%; border: 0; background: none; cursor: pointer;
+  font-family: var(--font-sans); font-size: 20px; color: var(--textHi);
+}
+.stepper button:disabled { color: var(--textDim); cursor: not-allowed; }
+.stepper var {
+  width: 28px; text-align: center; font-style: normal;
+  font-family: var(--font-mono); font-size: 15px; font-weight: 600; color: var(--textHi);
+}
+
+/* ── Sheets ────────────────────────────────────────────────────────────── */
+
+.sheet-shell {
+  background: var(--bg1);
+  border: var(--rule) solid var(--border0);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--lift);
+  padding: 14px 20px 20px;
+}
+.grabber {
+  width: 36px; height: 4px; margin: 0 auto 16px;
+  background: var(--border2); border-radius: 2px;
+}
+.sheet-kicker {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--textLo);
+  margin: 0 0 16px;
+}
+
+/* PIN sheet — pin_sheet.dart */
+.pindots { display: flex; justify-content: center; gap: 18px; }
+.pindots i { width: 16px; height: 16px; border-radius: 50%; background: var(--bg3); }
+.pindots i.on { background: var(--accent); }
+.pinpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.padkey {
+  aspect-ratio: 1.6; display: flex; align-items: center; justify-content: center;
+  background: var(--bg2); border: 0; border-radius: var(--r-2xl); cursor: pointer;
+  font-family: var(--font-mono); font-size: 32px; font-weight: 500; color: var(--textHi);
+}
+.padkey--muted { background: transparent; color: var(--textMd); font-size: 22px; }
+.padkey--down  { background: var(--accentSoft); }
+
+/* ── Admin surfaces ────────────────────────────────────────────────────── */
+
+/* AdminEmbeddedStrip — _common.dart */
+.astrip {
+  padding: 14px 22px 12px;
+  border-bottom: var(--rule) solid var(--border0);
+}
+.astrip h4 {
+  margin: 0; font-family: var(--font-sans); font-size: 20px; font-weight: 600;
+  letter-spacing: -0.3px; color: var(--textHi); text-transform: var(--caps);
+}
+.astrip p {
+  margin: 4px 0 0; font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.66px; text-transform: uppercase; color: var(--textLo);
+}
+
+/* AdminRow — _common.dart */
+.arow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: var(--rule) solid var(--border0);
+  font-family: var(--font-sans); font-size: 13px; color: var(--textMd);
+}
+.arow > b { flex: 0 0 150px; font-weight: 400; }
+.arow > span { flex: 1; color: var(--textHi); }
+
+/* SetTile — _common.dart */
+.settile {
+  background: var(--bg2); border: var(--rule) solid var(--border0);
+  border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--lift);
+}
+.settile b {
+  display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--textLo);
+}
+.settile strong {
+  display: block; margin-top: 10px;
+  font-family: var(--font-mono); font-size: 24px; font-weight: 600;
+  letter-spacing: -0.48px; line-height: 1; color: var(--textHi);
+}
+.settile p { margin: 6px 0 0; font-family: var(--font-sans); font-size: 11px;
+             line-height: 1.4; color: var(--textMd); }
+
+/* SetHero — _common.dart */
+.sethero {
+  background: var(--successSoft); border: 1.5px solid var(--success);
+  border-radius: var(--r-xl); padding: 22px; box-shadow: var(--lift);
+}
+.sethero--warn { background: var(--warnSoft); border-color: var(--warn); }
+.sethero b {
+  display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--success);
+}
+.sethero--warn b, .sethero--warn strong { color: var(--warn); }
+.sethero strong {
+  display: block; margin-top: 4px;
+  font-family: var(--font-sans); font-size: 36px; font-weight: 600;
+  letter-spacing: -0.9px; line-height: 1.05; color: var(--success);
+}
+.sethero p { margin: 8px 0 0; font-family: var(--font-sans); font-size: 13px;
+             line-height: 1.5; color: var(--textMd); }
+.meter { display: flex; gap: 4px; margin-top: 16px; }
+.meter i { flex: 1; height: 5px; border-radius: 3px; background: var(--bg3); }
+.meter i.on { background: var(--success); opacity: 0.5; }
+.sethero--warn .meter i.on { background: var(--warn); }
+
+/* Hub card — venue_hub_screen.dart _HubCard */
+.hubcard {
+  background: var(--bg2); border: var(--rule) solid var(--border0);
+  border-radius: var(--r-xl); padding: 16px; box-shadow: var(--lift);
+}
+.hubcard--alert { border-color: var(--warn); }
+.hubcard .ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: var(--r-lg); font-size: 20px;
+}
+.hubcard .badge {
+  padding: 4px 8px; border-radius: var(--r-md);
+  background: var(--bg1); border: var(--rule) solid var(--border0);
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; color: var(--textLo);
+}
+.hubcard .badge--alert { background: var(--warnSoft); border-color: var(--warn); color: var(--warn); }
+.hubcard h5 {
+  margin: 14px 0 4px; font-family: var(--font-sans); font-size: 15px; font-weight: 600;
+  letter-spacing: -0.2px; color: var(--textHi); text-transform: var(--caps);
+}
+.hubcard p { margin: 0; font-family: var(--font-sans); font-size: 11.5px;
+             line-height: 1.3; color: var(--textLo); }
+
+/* Theme swatch — theme_sheet.dart _Swatch */
+.swatch {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  width: 44px; height: 30px; border-radius: var(--r-sm);
+  border: var(--rule) solid var(--border2);
+}
+.swatch i { width: 12px; height: 12px; border-radius: 50%; }
+.swatch u { width: 12px; height: 3px; border-radius: 2px; text-decoration: none; }
+
+/* ── States ────────────────────────────────────────────────────────────── */
+
+.state-block { text-align: center; padding: 32px 24px; }
+.state-block .glyph { font-size: 34px; line-height: 1; margin-bottom: 12px; }
+.state-block h5 { margin: 0 0 6px; font-family: var(--font-sans); font-size: 16px;
+                  font-weight: 600; color: var(--textHi); }
+.state-block p { margin: 0; font-family: var(--font-sans); font-size: 12px;
+                 line-height: 1.5; color: var(--textLo); }
+.spinner {
+  display: inline-block; width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--border2); border-top-color: var(--accentText);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

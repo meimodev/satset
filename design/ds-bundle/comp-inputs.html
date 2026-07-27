@@ -1,0 +1,176 @@
+<!-- @dsCard group="Forms" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inputs &amp; form fields</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+  .wrap { position: relative; }
+  .wrap .eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+               color: var(--textMd); font-size: 16px; }
+  .datefield {
+    padding: 10px 12px; background: var(--bg2);
+    border: var(--rule) solid var(--border0); border-radius: var(--r-md);
+  }
+  .datefield--set { background: var(--accentSoft); border-color: var(--accentBorder); }
+  .datefield b { display: block; font-family: var(--font-mono); font-size: 9px;
+                 font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+                 color: var(--textLo); }
+  .datefield span { font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+                    color: var(--textLo); }
+  .datefield--set span { color: var(--accentText); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:380px">
+    <h3>Inputs</h3>
+    <p class="sub">pin_screen.dart _Field · modifier_sheet.dart · reports_screen.dart</p>
+
+    <h4>Labelled field — rest / focus / error</h4>
+    <div class="col" style="gap:16px">
+      <div>
+        <label class="flabel">Email</label>
+        <input class="input" placeholder="admin@warung.id">
+      </div>
+      <div>
+        <label class="flabel">Email</label>
+        <input class="input input--focus" value="admin@warung.id">
+      </div>
+      <div>
+        <label class="flabel">Email</label>
+        <input class="input input--error" value="admin@warung">
+        <div class="ferror">⚠ Email tidak valid.</div>
+      </div>
+    </div>
+    <div class="spec">The label is mono 10 / +1.2em uppercase, sitting above the field rather than
+floating inside it — a floating label vanishes the moment the field has content,
+and this form is filled once by someone who has never seen it before.
+
+Border0 at rest, accent on focus, urgent on error. The error border and the
+error line appear together; neither is used alone, because a red outline with
+no sentence tells a user something is wrong but not what.
+
+Errors clear on the next keystroke, not on the next submit.</div>
+
+    <h4>Password — visibility toggle</h4>
+    <div>
+      <label class="flabel">Password</label>
+      <div class="wrap">
+        <input class="input" type="password" value="••••••••">
+        <span class="eye">👁</span>
+      </div>
+    </div>
+    <div class="spec">The toggle is a real IconButton with a tooltip that names the resulting state
+("Tampilkan password" / "Sembunyikan password"), not the current one.</div>
+
+    <h4>Multiline + counter</h4>
+    <div>
+      <textarea class="input input--area" placeholder="mis. alergi belum tertera, catatan plating…"></textarea>
+      <div class="fcount" style="margin-top:4px">0 / 80 · tampil ke dapur</div>
+    </div>
+    <div class="spec">The counter is not a limit warning — it also states where the text will be
+read ("tampil ke dapur"). Border switches to accentBorder as soon as the
+field is non-empty, so a note that has been written is visibly different
+from one that has not.</div>
+
+    <h4>Date field — custom range sheet</h4>
+    <div class="row" style="gap:12px;align-items:stretch">
+      <div class="datefield datefield--set" style="flex:1">
+        <b>Mulai</b><span>12 Jun 2026</span>
+      </div>
+      <div class="datefield" style="flex:1">
+        <b>Selesai</b><span>Pilih</span>
+      </div>
+    </div>
+    <div class="ferror" style="margin-top:10px">Rentang maksimal 92 hari.</div>
+    <div class="spec">Unfilled reads "Pilih" in textLo; filled tints to accentSoft. Picking a start
+after the existing end clears the end rather than silently reordering the pair.
+
+Validation is stated as a sentence under the row, and "Terapkan" stays inert
+until the range is both ordered and inside the cap.</div>
+
+    <h4>Filter chip — value-carrying select</h4>
+    <div class="col">
+      <div class="fchip"><div style="flex:1"><b>Pelayan</b><span>Semua pelayan</span></div><span style="color:var(--textLo)">⌄</span></div>
+      <div class="fchip fchip--on"><div style="flex:1"><b>Zona</b><span>Teras</span></div><span style="color:var(--textLo)">⌄</span></div>
+    </div>
+    <div class="spec">Label and value stack inside one control so the row reads without a legend.
+"Semua …" is treated as unset — the chip only tints accent when a real filter
+is applied, so an owner can see at a glance whether the numbers are filtered.
+
+Opening it pushes a bottom sheet with a checked list, not a dropdown menu:
+a menu anchored near the screen edge is unusable one-handed.</div>
+
+    <h4>Toggle</h4>
+    <div class="row" style="gap:16px">
+      <span class="toggle"></span>
+      <span class="toggle toggle--on"></span>
+    </div>
+    <div class="spec">36×20, knob 14. On is a full success fill with a successInk knob — not an
+accent fill, which would collide with "selected" everywhere else. 180ms
+AnimatedAlign, collapsing under reduced motion.</div>
+
+    <h4>Search — placeholder, not yet wired</h4>
+    <div class="row" style="height:40px;padding:0 12px;background:var(--bg2);border:var(--rule) solid var(--border0);border-radius:var(--r-lg);color:var(--textLo);font-size:14px">
+      🔍 Cari menu…
+    </div>
+    <div class="spec">Rendered on both the phone and tablet menu screens but inert. Listed here
+so it is not mistaken for a working control when the design is read back.</div>
+  </div>
+
+  <div class="stage" data-pal="light">
+    <h3>Light</h3>
+    <p class="sub">Field fill is bg2 (#FAF8F3) on a #F6F4EF ground</p>
+    <div class="col" style="gap:16px">
+      <div>
+        <label class="flabel">Email</label>
+        <input class="input" placeholder="admin@warung.id">
+      </div>
+      <div>
+        <label class="flabel">Password</label>
+        <input class="input input--error" type="password" value="••••">
+        <div class="ferror">⚠ Minimal 6 karakter.</div>
+      </div>
+      <div class="fchip fchip--on"><div style="flex:1"><b>Zona</b><span>Teras</span></div><span style="color:var(--textLo)">⌄</span></div>
+      <div class="row" style="gap:16px"><span class="toggle"></span><span class="toggle toggle--on"></span></div>
+    </div>
+    <div class="spec">The field is barely lighter than the page — separation comes from the border,
+not from a shadow. Terrace service is read in sunlight, so the outline has to
+survive glare that would wash a soft elevation away entirely.</div>
+  </div>
+
+  <div class="stage" data-pal="neoMidnight">
+    <h3>Brutal</h3>
+    <p class="sub">Square fields, 3px bone rules</p>
+    <div class="col" style="gap:16px">
+      <div>
+        <label class="flabel">Email</label>
+        <input class="input" style="border-width:3px" placeholder="admin@warung.id">
+      </div>
+      <div>
+        <label class="flabel">Password</label>
+        <input class="input input--error" style="border-width:3px" type="password" value="••••">
+        <div class="ferror">⚠ Minimal 6 karakter.</div>
+      </div>
+      <div class="fchip fchip--on" style="border-width:3px"><div style="flex:1"><b>Zona</b><span>Teras</span></div><span>⌄</span></div>
+      <div class="row" style="gap:16px"><span class="toggle"></span><span class="toggle toggle--on"></span></div>
+    </div>
+    <div class="spec">Radii collapse to 0 and every rule thickens to 3px, but the error colour and
+the error sentence are unchanged — the skin is allowed to restyle structure,
+never to restate meaning. The toggle knob stays circular for the same reason
+the status pips do.</div>
+  </div>
+
+</div>
+</body>
+</html>

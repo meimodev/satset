@@ -1,0 +1,214 @@
+<!-- @dsCard group="Order flow" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review — course blocks &amp; totals</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+
+  .title { font-size: 30px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.05;
+           color: var(--textHi); margin: 0; text-transform: var(--caps); }
+  .kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.44px;
+            text-transform: uppercase; color: var(--textLo); margin: 4px 0 14px; }
+
+  .rpill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: var(--r-pill);
+    background: var(--bg3); color: var(--textMd);
+    font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+  }
+  .rpill--urgent { background: var(--urgentSoft); color: var(--urgent); }
+
+  .cblock > header {
+    display: flex; align-items: center; gap: 10px; padding: 16px 4px 8px;
+  }
+  .cblock > header i { width: 8px; height: 8px; border-radius: 50%; }
+  .cblock > header b {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 1.32px; text-transform: uppercase; color: var(--textMd);
+  }
+  .cblock > header span {
+    margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--textLo);
+  }
+  .rline {
+    display: flex; gap: 12px; padding: 14px;
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-lg); margin-bottom: 6px; box-shadow: var(--lift);
+  }
+  .rline .q { flex: 0 0 22px; font-family: var(--font-mono); font-size: 13px;
+              font-weight: 600; color: var(--textMd); }
+  .rline .nm { font-size: 14px; font-weight: 500; letter-spacing: -0.14px; color: var(--textHi); }
+  .rline .mods { margin-top: 3px; font-size: 12px; line-height: 1.4; color: var(--textMd); }
+  .rline .act { display: flex; align-items: center; margin-top: 10px; }
+  .rline .act .del { font-size: 12px; color: var(--urgent); }
+  .rline .act .amt { margin-left: auto; font-family: var(--font-mono); font-size: 12px;
+                     font-weight: 500; color: var(--textMd); }
+
+  .totals {
+    padding: 16px 18px; margin-top: 12px;
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-xl); box-shadow: var(--lift);
+  }
+  .trow { display: flex; padding: 4px 0; font-size: 13px; color: var(--textMd); }
+  .trow span:last-child { margin-left: auto; font-family: var(--font-mono); color: var(--textHi); }
+  .trow--grand {
+    margin-top: 8px; padding-top: 12px; border-top: var(--rule) solid var(--border0);
+    font-size: 16px; font-weight: 600; color: var(--textHi);
+  }
+  .trow--grand span:last-child { font-size: 18px; }
+
+  .disclaimer {
+    margin: 14px 0 0; font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.44px; line-height: 1.5; text-transform: uppercase; color: var(--textLo);
+  }
+
+  .tile {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-lg); margin-bottom: 10px; box-shadow: var(--lift);
+  }
+  .tile .g { font-size: 20px; color: var(--accentText); }
+  .tile b { display: block; font-size: 15px; font-weight: 600; color: var(--textHi);
+            text-transform: var(--caps); }
+  .tile p { margin: 2px 0 0; font-size: 12px; color: var(--textMd); }
+  .tile .chev { margin-left: auto; color: var(--textLo); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex-basis:420px">
+    <h3>Review</h3>
+    <p class="sub">review_screen.dart · the last chance to catch a wrong order</p>
+
+    <p class="title">Tinjau pesanan</p>
+    <p class="kicker">Meja 12 · 4 tamu · 5 item</p>
+
+    <h4>Summary pills</h4>
+    <div class="row">
+      <span class="rpill">🔥 Dapur × 5</span>
+      <span class="rpill rpill--urgent">⚠ Kacang · Susu</span>
+    </div>
+    <div class="spec">Allergens are hoisted out of the line items into a single screen-level pill.
+A waiter reading back to a guest needs one place to look, not five rows to scan.</div>
+
+    <h4>Course blocks — fixed fire order</h4>
+    <div class="cblock">
+      <header>
+        <i style="background:var(--cDrinks)"></i><b>Minuman</b><span>auto-bakar</span>
+      </header>
+      <div class="rline">
+        <span class="q">×2</span>
+        <div style="flex:1">
+          <div class="nm">Es Teh Manis</div>
+          <div class="act"><span class="del">🗑 Hapus</span><span class="amt">Rp 16.000</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cblock">
+      <header>
+        <i style="background:var(--cMains)"></i><b>Utama</b><span>ditahan sampai dibakar</span>
+      </header>
+      <div class="rline">
+        <span class="q">×2</span>
+        <div style="flex:1">
+          <div class="nm">Sate Ayam · Porsi besar</div>
+          <div class="row" style="gap:3px;margin-top:4px">
+            <i class="tag tag--allergen">K</i>
+          </div>
+          <div class="mods">Pedas sedang · Telur ceplok</div>
+          <div class="note" style="margin-top:6px"><b>Instruksi khusus</b>Bumbu dipisah</div>
+          <div class="act"><span class="del">🗑 Hapus</span><span class="amt">Rp 124.000</span></div>
+        </div>
+      </div>
+      <div class="rline">
+        <span class="q">×1</span>
+        <div style="flex:1">
+          <div class="nm">Nasi Goreng Kampung</div>
+          <div class="act"><span class="del">🗑 Hapus</span><span class="amt">Rp 38.000</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec">Blocks render in a fixed order — drinks, starters, mains, sides, desserts,
+fire-now — regardless of the order items were tapped. The kitchen's timeline
+is the organising principle here, not the waiter's.
+
+Each header states the block's own firing rule in plain words: "auto-bakar"
+for drinks and fire-now, "ditahan sampai dibakar" for everything else. Held
+vs. fired is the state a waiter is most often wrong about, so it is written
+out per block rather than implied by the course colour.</div>
+
+    <h4>Totals</h4>
+    <div class="totals">
+      <div class="trow"><span>Subtotal</span><span>Rp 178.000</span></div>
+      <div class="trow"><span>Layanan · 5%</span><span>Rp 8.900</span></div>
+      <div class="trow"><span>Pajak · 11%</span><span>Rp 20.559</span></div>
+      <div class="trow trow--grand"><span>Total perkiraan</span><span>Rp 207.459</span></div>
+    </div>
+    <p class="disclaimer">Pembayaran ditangani di luar SatSet · bill dicetak dari POS saat disajikan</p>
+    <div class="spec">"Total perkiraan", never "Total". SatSet does not settle money, and the
+disclaimer under the card says so in full. Overstating certainty about a
+number the guest will be charged is the one place this app must not be
+confident.</div>
+
+    <h4>Send CTA</h4>
+    <button class="btn btn--primary" style="width:100%">✦ Kirim ke dapur <span class="btn__amt">Rp 178.000</span></button>
+    <div style="height:10px"></div>
+    <button class="btn btn--busy" style="width:100%"><span class="spinner" style="width:16px;height:16px"></span> Mengirim…</button>
+    <div class="spec">The button names the destination and carries the subtotal. Busy state keeps
+the same footprint and swaps to a spinner + "Mengirim…" — no layout shift,
+so a double-tap lands on a disabled button rather than a moved one.</div>
+  </div>
+
+  <div class="stage" data-pal="dark">
+    <h3>Commit chooser</h3>
+    <p class="sub">Table-less menu-first draft (ADR-0026)</p>
+
+    <div class="sheet-shell">
+      <div class="grabber"></div>
+      <div style="font-size:18px;font-weight:600;color:var(--textHi);margin-bottom:16px">Kirim pesanan ke</div>
+      <div class="tile">
+        <span class="g">🍽</span>
+        <div><b>Meja (dine-in)</b><p>Tetapkan ke meja kosong</p></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="tile">
+        <span class="g">🛍</span>
+        <div><b>Bawa pulang</b><p>Takeaway tanpa meja</p></div>
+        <span class="chev">›</span>
+      </div>
+    </div>
+
+    <div class="spec">A menu-first draft has no table yet, so the destination is chosen at commit
+time rather than at the start. Two tiles, no default, no "remember my choice" —
+picking wrong here seats a party at the wrong table.
+
+Dine-in continues into the assign-table sheet and seats the table before the
+cart submits; a race there ("Meja keburu terisi. Pilih meja lain.") is
+surfaced as a snackbar and the submit is abandoned, not retried silently.</div>
+
+    <h4>Guest name prompt — takeaway</h4>
+    <div class="sheet-shell" style="border-radius:var(--r-lg)">
+      <div style="font-size:15px;font-weight:600;color:var(--textHi);margin-bottom:10px">Nama tamu</div>
+      <input class="input" placeholder="mis. Budi">
+      <div class="row" style="justify-content:flex-end;margin-top:14px">
+        <button class="btn btn--ghost btn--xs">Batal</button>
+        <button class="btn btn--primary btn--xs">Lanjut</button>
+      </div>
+    </div>
+    <div class="spec">The guest name is a takeaway visit's only handle — there is no table number
+to fall back on — so it is required, and "Lanjut" stays inert on an empty field.</div>
+  </div>
+
+</div>
+</body>
+</html>
