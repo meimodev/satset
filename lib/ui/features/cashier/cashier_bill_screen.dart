@@ -208,16 +208,13 @@ class CashierBillScreen extends ConsumerWidget {
             label: AppStrings.cancel,
             onTap: () => Navigator.pop(c),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(c).colorScheme.error,
-            ),
-            onPressed: () {
+          SatButton.danger(
+            label: 'Catat kerugian',
+            onTap: () {
               final t = ctrl.text.trim();
               if (t.isEmpty) return;
               Navigator.pop(c, t);
             },
-            child: const Text('Catat kerugian'),
           ),
         ],
       ),
@@ -1412,14 +1409,12 @@ class _ResetMethodButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return Align(
       alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        style: TextButton.styleFrom(foregroundColor: sc.textLo),
-        icon: const Icon(Icons.refresh_rounded, size: 18),
-        label: const Text('Ganti metode pembayaran'),
-        onPressed: () async {
+      child: SatButton.ghost(
+        label: 'Ganti metode pembayaran',
+        icon: Icons.refresh_rounded,
+        onTap: () async {
           if (await _confirm(
             context,
             title: 'Ganti metode pembayaran',
@@ -1495,18 +1490,10 @@ class _TopActions extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: sc.textHi,
-              side: SatB.side(color: sc.border0),
-              padding: const EdgeInsets.symmetric(vertical: Sp.s3),
-            ),
-            icon: const Icon(Icons.receipt_long_outlined, size: 18),
-            label: Text(
-              paid ? 'Cetak struk meja' : 'Cetak tagihan meja',
-              style: SatType.sans(size: 13, weight: FontWeight.w600),
-            ),
-            onPressed: () => printDoc(null),
+          child: SatButton.outline(
+            label: paid ? 'Cetak struk meja' : 'Cetak tagihan meja',
+            icon: Icons.receipt_long_outlined,
+            onTap: () => printDoc(null),
           ),
         ),
         const SizedBox(width: Sp.s2),
@@ -1671,14 +1658,9 @@ Future<bool> _confirm(
           label: AppStrings.cancel,
           onTap: () => Navigator.pop(c, false),
         ),
-        FilledButton(
-          style: destructive
-              ? FilledButton.styleFrom(
-                  backgroundColor: Theme.of(c).colorScheme.error,
-                )
-              : null,
-          onPressed: () => Navigator.pop(c, true),
-          child: Text(confirmLabel),
+        SatButton.danger(
+          label: confirmLabel,
+          onTap: () => Navigator.pop(c, true),
         ),
       ],
     ),

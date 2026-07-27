@@ -259,13 +259,12 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
             label: AppStrings.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: sc.urgent),
-            onPressed: () {
+          SatButton.danger(
+            label: 'Lanjut',
+            onTap: () {
               Navigator.pop(ctx);
               onYes();
             },
-            child: const Text('Lanjut'),
           ),
         ],
       ),

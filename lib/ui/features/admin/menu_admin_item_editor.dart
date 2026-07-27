@@ -327,12 +327,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     ),
                     const SizedBox(width: Sp.s2h),
                     Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: sc.urgent,
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Hapus'),
+                      child: SatButton.danger(
+                        label: AppStrings.delete,
+                        onTap: () => Navigator.pop(ctx, true),
                       ),
                     ),
                   ],
@@ -1701,25 +1698,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   Widget _ghostButton(String t, {required VoidCallback onTap}) {
-    final sc = context.sat;
-    return TextButton(
-      onPressed: onTap,
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Sp.s2h,
-          vertical: Sp.s1,
-        ),
-        foregroundColor: sc.accentText,
-      ),
-      child: Text(
-        t,
-        style: SatType.sans(
-          size: 12,
-          weight: FontWeight.w600,
-          color: sc.accentText,
-        ),
-      ),
-    );
+    return SatButton.ghost(label: t, onTap: onTap);
   }
 }
 

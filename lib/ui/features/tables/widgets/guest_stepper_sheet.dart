@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -116,8 +118,10 @@ class _GuestStepperSheet extends ConsumerWidget {
             if (canMove) ...[
               SizedBox(
                 height: Sp.s12,
-                child: FilledButton.icon(
-                  onPressed: () async {
+                child: SatButton.primary(
+                  label: 'Pindahkan meja',
+                  icon: Icons.swap_horiz_rounded,
+                  onTap: () async {
                     final targetId = await showMoveTableSheet(
                       context: context,
                       sourceId: table.id,
@@ -126,41 +130,15 @@ class _GuestStepperSheet extends ConsumerWidget {
                     Navigator.of(context).pop(); // close this stepper sheet
                     context.push('/table/$targetId');
                   },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: sc.bg3,
-                    foregroundColor: sc.textHi,
-                    shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                  ),
-                  icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                  label: Text(
-                    'Pindahkan meja',
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(height: Sp.s2h),
             ],
             SizedBox(
               height: Sp.s12,
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: sc.textHi,
-                  side: SatB.side(color: sc.border2),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                ),
-                child: Text(
-                  'Tutup',
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+              child: SatButton.outline(
+                label: AppStrings.close,
+                onTap: () => Navigator.of(context).pop(),
               ),
             ),
           ],

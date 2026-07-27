@@ -903,12 +903,9 @@ Future<bool?> _confirmSheet(
                   ),
                   const SizedBox(width: Sp.s2h),
                   Expanded(
-                    child: FilledButton(
-                      style: danger
-                          ? FilledButton.styleFrom(backgroundColor: sc.urgent)
-                          : null,
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: Text(confirmLabel),
+                    child: SatButton.danger(
+                      label: confirmLabel,
+                      onTap: () => Navigator.pop(ctx, true),
                     ),
                   ),
                 ],
@@ -1460,12 +1457,9 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _deleteUser(user),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: sc.urgent,
-                        ),
-                        child: const Text(AppStrings.delete),
+                      child: SatButton.danger(
+                        label: AppStrings.delete,
+                        onTap: () => _deleteUser(user),
                       ),
                     ),
                     const SizedBox(width: Sp.s2h),

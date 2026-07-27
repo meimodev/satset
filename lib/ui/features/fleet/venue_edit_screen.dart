@@ -522,13 +522,12 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             label: AppStrings.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: sc.urgent),
-            onPressed: () {
+          SatButton.danger(
+            label: 'Lanjut',
+            onTap: () {
               Navigator.pop(ctx);
               onYes();
             },
-            child: const Text('Lanjut'),
           ),
         ],
       ),

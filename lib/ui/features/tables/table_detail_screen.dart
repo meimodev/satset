@@ -1109,28 +1109,12 @@ class _FireButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: sc.accentSoft,
-          foregroundColor: sc.accentText,
-          side: SatB.side(color: sc.accentBorder, style: BorderStyle.solid),
-          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
-          shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-        ),
-        icon: Icon(Icons.local_fire_department, size: 14, color: sc.accentText),
-        label: Text(
-          label.toUpperCase(),
-          style: SatType.sans(
-            size: 12,
-            weight: FontWeight.w600,
-            letterSpacing: 0.48,
-            color: sc.accentText,
-          ),
-        ),
+      child: SatButton.outline(
+        label: label.toUpperCase(),
+        icon: Icons.local_fire_department,
+        onTap: onTap,
       ),
     );
   }

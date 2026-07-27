@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -105,18 +106,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               if (_opname) ...[
                 const SizedBox(width: Sp.s2),
                 PressScale(
-                  child: FilledButton.icon(
-                    onPressed: _counts.isEmpty ? null : _submitOpname,
-                    icon: const Icon(Icons.check_circle_outline, size: 16),
-                    label: Text('Simpan (${_counts.length})'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: sc.accent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Sp.s4,
-                        vertical: Sp.s2,
-                      ),
-                      shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-                    ),
+                  child: SatButton.primary(
+                    label: 'Simpan (${_counts.length})',
+                    icon: Icons.check_circle_outline,
+                    onTap: _counts.isEmpty ? null : _submitOpname,
                   ),
                 ),
               ],
@@ -832,28 +825,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             PressScale(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _receive(i),
-                                icon: const Icon(
-                                  Icons.add_shopping_cart,
-                                  size: 14,
-                                ),
-                                label: const Text('Terima'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: sc.accentText,
-                                  side: SatB.side(color: sc.border1),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: Sp.s2h,
-                                    vertical: Sp.s1h,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: SatR.a(8),
-                                  ),
-                                  textStyle: SatType.sans(
-                                    size: 11,
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
+                              child: SatButton.outline(
+                                label: 'Terima',
+                                icon: Icons.add_shopping_cart,
+                                onTap: () => _receive(i),
                               ),
                             ),
                             PopupMenuButton<String>(
@@ -1438,21 +1413,9 @@ class _Sheet extends StatelessWidget {
 
             // Primary Action Button
             PressScale(
-              child: FilledButton(
-                onPressed: onConfirm,
-                style: FilledButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(12)),
-                ),
-                child: Text(
-                  'Simpan',
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.accentInk,
-                  ),
-                ),
+              child: SatButton.primary(
+                label: AppStrings.save,
+                onTap: onConfirm,
               ),
             ),
           ],
@@ -1691,18 +1654,10 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: Sp.s5),
             PressScale(
-              child: FilledButton.icon(
-                onPressed: onAction,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Tambah Bahan Pertama'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Sp.s5,
-                    vertical: Sp.s3,
-                  ),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(12)),
-                ),
+              child: SatButton.primary(
+                label: 'Tambah Bahan Pertama',
+                icon: Icons.add,
+                onTap: onAction,
               ),
             ),
           ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
@@ -854,25 +855,10 @@ class _StepperBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return SizedBox(
       width: 38,
       height: double.infinity,
-      child: TextButton(
-        onPressed: disabled ? null : onTap,
-        style: TextButton.styleFrom(
-          foregroundColor: sc.textHi,
-          disabledForegroundColor: sc.textDim,
-          padding: EdgeInsets.zero,
-        ),
-        child: Text(
-          label,
-          style: SatType.sans(
-            size: 20,
-            color: disabled ? sc.textDim : sc.textHi,
-          ),
-        ),
-      ),
+      child: SatButton.ghost(label: label, onTap: disabled ? null : onTap),
     );
   }
 }

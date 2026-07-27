@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -259,30 +260,18 @@ class _Footer extends StatelessWidget {
             children: [
               if (!handedOver)
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: busy ? null : onAddItems,
-                    icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text('Tambah item'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: sc.textHi,
-                      side: SatB.side(color: sc.border2),
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                    ),
+                  child: SatButton.outline(
+                    label: 'Tambah item',
+                    icon: Icons.add_rounded,
+                    onTap: busy ? null : onAddItems,
                   ),
                 ),
               if (!handedOver) const SizedBox(width: Sp.s2h),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onPrint,
-                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                  label: const Text('Tagihan'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: sc.textHi,
-                    side: SatB.side(color: sc.border2),
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                  ),
+                child: SatButton.outline(
+                  label: 'Tagihan',
+                  icon: Icons.receipt_long_rounded,
+                  onTap: onPrint,
                 ),
               ),
             ],
