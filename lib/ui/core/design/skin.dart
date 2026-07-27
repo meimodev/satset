@@ -44,26 +44,77 @@ class SatShape {
 
   static bool get brutal => skin == SatSkin.brutal;
 
+  static bool get glow => skin == SatSkin.glow;
+
+  static bool get lembut => skin == SatSkin.lembut;
+
   /// Brutal on a light ground — the palette that fills chrome with the accent
   /// itself rather than a surface from the ramp.
   static bool get brutalPaper => brutal && brightness == Brightness.light;
+
+  /// Glow on a dark ground. The mirror of [brutalPaper], and needed in the same
+  /// places: the brand mark, rail avatars and the active category tab all fill
+  /// with lime on obsidian here and invert on the light palette (ADR-0050).
+  static bool get glowNoir => glow && brightness == Brightness.dark;
 
   /// Fat rule width. Neo draws every border at 3px regardless of what the
   /// call site asked for; hairlines and 1.5px check pips both flatten to it.
   static const double brutalBorder = 3;
 
-  /// Hard offset shadow. No blur, no spread — a solid ink slab shifted down
-  /// and right, which is the whole trick.
-  static List<BoxShadow> hardShadow([double offset = 3]) => [
-    BoxShadow(color: ink, offset: Offset(offset, offset), blurRadius: 0),
+  /// The lifting shadow for a card, per skin.
+  ///
+  /// Brutal: a hard offset slab. No blur, no spread — a solid ink rect shifted
+  /// down and right, which is the whole trick. Glow: a soft ambient shadow,
+  /// which under a skin that draws no rules is the *only* thing separating a
+  /// card from its ground. Lembut: nothing, as before.
+  ///
+  /// Named `hardShadow` still because ten call sites reach it directly and the
+  /// brutal reading is the one they were written for; renaming it would churn
+  /// them for no gain.
+  static List<BoxShadow> hardShadow([double offset = 3]) {
+    switch (skin) {
+      case SatSkin.brutal:
+        return [
+          BoxShadow(color: ink, offset: Offset(offset, offset), blurRadius: 0),
+        ];
+      case SatSkin.glow:
+        return lift;
+      case SatSkin.lembut:
+        return const [];
+    }
+  }
+
+  /// Glow's resting card shadow. Darker and heavier on the obsidian palette —
+  /// a 7% ink shadow that reads on bone is invisible on near-black.
+  static List<BoxShadow> get lift => [
+    BoxShadow(
+      color: brightness == Brightness.light
+          ? const Color(0x1208080A)
+          : const Color(0x73000000),
+      offset: const Offset(0, 6),
+      blurRadius: 18,
+    ),
+  ];
+
+  /// Glow's shadow for something floating clear of the page — a modal, a sheet,
+  /// a drawer, the action panel.
+  static List<BoxShadow> get liftLg => [
+    BoxShadow(
+      color: brightness == Brightness.light
+          ? const Color(0x2908080A)
+          : const Color(0x99000000),
+      offset: Offset(0, brightness == Brightness.light ? 20 : 24),
+      blurRadius: brightness == Brightness.light ? 50 : 60,
+    ),
   ];
 
   /// Tint for floating chrome that sits over scrolling content — the tab bar,
-  /// the cart footer. The soft skin lets the content ghost through; the brutal
-  /// one does not do frosted glass, so the surface goes fully opaque and the
-  /// caller drops its blur.
+  /// the cart footer. The soft skin lets the content ghost through; neither the
+  /// brutal nor the glow skin does frosted glass, so the surface goes fully
+  /// opaque and the caller drops its blur. Glow separates it with [liftLg]
+  /// instead, which has to fall outside the clip a blur would need anyway.
   static Color veil(Color c, double alpha) =>
-      brutal ? c : c.withValues(alpha: alpha);
+      brutal || glow ? c : c.withValues(alpha: alpha);
 
   /// Uppercases display and label copy under the brutal skin. Indonesian has
   /// no casing rules this breaks, and the neo type ramp is uppercase-only.
@@ -71,19 +122,47 @@ class SatShape {
 }
 
 /// Skin-aware corner radii. Every radius collapses to zero under
-/// [SatSkin.brutal]; under `lembut` these are pass-throughs.
+/// [SatSkin.brutal] and steps up onto Glow's coarser ramp under [SatSkin.glow];
+/// under `lembut` these are pass-throughs.
 class SatR {
   SatR._();
 
-  static BorderRadius a(double r) =>
-      BorderRadius.circular(SatShape.brutal ? 0 : r);
+  /// Glow's ramp is `12 / 16 / 20 / 26 / 32 / pill` — coarser than the app's,
+  /// and starting higher. This maps onto it, total and monotone, so every
+  /// output is a real token: a flat multiplier would land on 19.6.
+  ///
+  /// The `< 8` passthrough is load-bearing. Those call sites are status pips,
+  /// check marks and meter bars rather than corners — inflating them rounds
+  /// away the shapes they exist to draw.
+  static double _glow(double r) {
+    if (r >= 999) return r;
+    if (r >= 28) return 32;
+    if (r >= 20) return 26;
+    if (r >= 14) return 20;
+    if (r >= 8) return 16;
+    return r;
+  }
 
-  static Radius c(double r) => Radius.circular(SatShape.brutal ? 0 : r);
+  static double _r(double r) => switch (SatShape.skin) {
+    SatSkin.brutal => 0,
+    SatSkin.glow => _glow(r),
+    SatSkin.lembut => r,
+  };
+
+  static BorderRadius a(double r) => BorderRadius.circular(_r(r));
+
+  static Radius c(double r) => Radius.circular(_r(r));
 }
 
 /// Skin-aware borders. Under [SatSkin.brutal] every side snaps to
 /// [SatShape.brutalBorder]; the colour still comes from the palette, whose
 /// `border*` tokens are already solid ink in the neo palettes.
+///
+/// Under [SatSkin.glow] this is a pure passthrough, and deliberately so. Glow
+/// draws no rules — but its own border ramp is already α 0.05/0.09/0.14, the
+/// same range as the hairline it *does* keep on chrome. So the palette carries
+/// "no borders" and 268 call sites stay untouched. Border colour is a palette
+/// decision; border width is a skin decision (ADR-0050).
 class SatB {
   SatB._();
 
@@ -150,8 +229,13 @@ class SatBox {
     // its surface from an ancestor Material (border and radius only, no colour)
     // would render as a solid ink slab with the real content nowhere in sight.
     // Those cards stay flat; wrong beats invisible.
+    //
+    // Glow lifts the same set, with a soft ambient shadow instead of the ink
+    // slab. The fill check matters less there — a blurred 7% shadow under a
+    // borrowed surface is merely wrong, not opaque — but the heuristic is kept
+    // identical so both skins lift exactly the same widgets.
     final lift =
-        SatShape.brutal &&
+        (SatShape.brutal || SatShape.glow) &&
         boxShadow == null &&
         (color != null || gradient != null) &&
         border != null &&

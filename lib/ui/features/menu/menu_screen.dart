@@ -647,14 +647,13 @@ class _CartFooter extends StatelessWidget {
         color: SatShape.veil(sc.scrim, 0.94),
         borderRadius: SatR.a(22),
         border: SatB.all(color: sc.border1),
-        boxShadow: SatShape.brutal
-            ? SatShape.hardShadow(5)
-            : [
-                BoxShadow(
-                  color: satShadowInk.withValues(alpha: 0.4),
-                  blurRadius: 32,
-                ),
-              ],
+        boxShadow: switch (SatShape.skin) {
+          SatSkin.brutal => SatShape.hardShadow(5),
+          SatSkin.glow => SatShape.liftLg,
+          SatSkin.lembut => [
+            BoxShadow(color: satShadowInk.withValues(alpha: 0.4), blurRadius: 32),
+          ],
+        },
       ),
       child: Row(
         children: [

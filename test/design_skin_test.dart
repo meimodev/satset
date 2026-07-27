@@ -208,6 +208,68 @@ void main() {
     });
   });
 
+  group('glow', () {
+    setUp(() => SatTheme.neonTerang.adopt());
+
+    test('radii step onto the glow ramp, and pips are left alone', () {
+      // Every output has to be a real token from `12 / 16 / 20 / 26 / 32`, and
+      // the map has to be monotone — a bucket boundary that inverts two corners
+      // shows up as a card with a smaller radius than the chip inside it.
+      final ramp = <double>{16, 20, 26, 32};
+      double last = 0;
+      for (var r = 8; r <= 40; r++) {
+        final got = SatR.a(r.toDouble()).topLeft.x;
+        expect(ramp, contains(got), reason: 'r=$r landed off-ramp at $got');
+        expect(got, greaterThanOrEqualTo(last), reason: 'r=$r went backwards');
+        last = got;
+      }
+      // Pips, check marks and meter bars are not corners.
+      for (var r = 1; r < 8; r++) {
+        expect(SatR.a(r.toDouble()).topLeft.x, r.toDouble(), reason: 'r=$r');
+      }
+      expect(SatR.a(999).topLeft.x, 999);
+      // The app's most common corner, moved one full step. Deliberate.
+      expect(SatR.a(14).topLeft.x, 20);
+    });
+
+    test('borders pass through — the palette carries "no rules"', () {
+      expect(SatB.all(color: const Color(0xFF112233)).top.width, 1.0);
+      expect(SatB.side(width: 1.5).width, 1.5);
+      for (final c in [
+        SatColors.glow.border0,
+        SatColors.glow.border1,
+        SatColors.glow.border2,
+      ]) {
+        expect(c.a, lessThan(0.2), reason: 'a rule this visible is not glow');
+      }
+    });
+
+    test('cards lift on the soft shadow, not the ink slab', () {
+      final d = SatBox.d(
+        color: const Color(0xFF000000),
+        border: SatB.all(),
+        borderRadius: SatR.a(14),
+      );
+      expect(d.boxShadow, isNotNull);
+      expect(d.boxShadow!.single.blurRadius, greaterThan(0));
+    });
+
+    test('the light palette hands slab content the dark one', () {
+      expect(SatColors.glow.slab, SatColors.glowNoir);
+      // Every dark palette is its own, so call sites never branch.
+      expect(SatColors.glowNoir.slab, SatColors.glowNoir);
+      expect(SatColors.dark.slab, SatColors.dark);
+    });
+
+    test('onHue overrides the luminance rule where the design needs it', () {
+      // These two sit just under onFill()'s cut and would take white ink.
+      expect(onFill(SatColors.glowNoir.urgent), const Color(0xFFFFFFFF));
+      expect(SatColors.glowNoir.inkOn(SatColors.glowNoir.urgent), const Color(0xFF08080A));
+      // A palette that declares nothing still computes, as before.
+      expect(SatColors.dark.inkOn(SatColors.dark.success), onFill(SatColors.dark.success));
+    });
+  });
+
   test('neo borders are fully opaque — the ramp draws with ink, not tint', () {
     for (final sc in [SatColors.neoKertas, SatColors.neoMidnight]) {
       for (final c in [sc.border0, sc.border1, sc.border2]) {

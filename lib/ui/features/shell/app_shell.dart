@@ -173,15 +173,18 @@ class _FloatingTabBar extends StatelessWidget {
         color: SatShape.veil(sc.scrim, 0.92),
         borderRadius: SatR.a(22),
         border: SatB.all(color: sc.border1),
-        boxShadow: SatShape.brutal
-            ? SatShape.hardShadow(5)
-            : [
-                BoxShadow(
-                  color: satShadowInk.withValues(alpha: 0.4),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+        boxShadow: switch (SatShape.skin) {
+          SatSkin.brutal => SatShape.hardShadow(5),
+          // Floating chrome is exactly what Glow's larger lift is for.
+          SatSkin.glow => SatShape.liftLg,
+          SatSkin.lembut => [
+            BoxShadow(
+              color: satShadowInk.withValues(alpha: 0.4),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        },
       ),
       padding: const EdgeInsets.all(Sp.s1),
       child: Row(
@@ -230,8 +233,9 @@ class _FloatingTabBar extends StatelessWidget {
         ],
       ),
     );
-    // The brutal skin has no frosted glass — an opaque slab on a hard shadow.
-    if (SatShape.brutal) return bar;
+    // Neither the brutal nor the glow skin does frosted glass — an opaque slab
+    // on a shadow. Glow's has to fall outside the clip a blur would need.
+    if (!SatShape.lembut) return bar;
     return ClipRRect(
       borderRadius: SatR.a(22),
       child: BackdropFilter(

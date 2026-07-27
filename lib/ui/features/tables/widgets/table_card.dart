@@ -360,10 +360,11 @@ class _TableCardState extends ConsumerState<TableCard> {
       color: bg,
       borderRadius: SatR.a(radius),
       border: SatB.all(color: border),
-      boxShadow: brutal ? _brutalShadow(stale, sc) : null,
+      boxShadow: _cardShadow(stale, sc),
     );
 
-    // Brutal presses the card into its own shadow; lembut scales it down.
+    // Brutal presses the card into its own shadow; the other two scale it down
+    // — 0.97 is also exactly what Glow specifies for a press.
     final pressOffset = brutal && _pressed ? 3.0 : 0.0;
     final card = AnimatedScale(
       scale: !brutal && _pressed ? 0.97 : 1.0,
@@ -403,21 +404,36 @@ class _TableCardState extends ConsumerState<TableCard> {
     return MergeSemantics(child: Semantics(button: true, child: card));
   }
 
-  /// Crit cards sit on a doubled shadow — a red slab behind the ink one — so a
-  /// screen of black-edged cards still has one that reads as lifted further.
-  List<BoxShadow> _brutalShadow(TableStale? stale, SatColors sc) {
-    if (stale?.severity == StaleSeverity.crit) {
-      return [
-        BoxShadow(color: sc.urgent, offset: const Offset(5, 5)),
-        BoxShadow(
-          color: SatShape.ink,
-          offset: const Offset(5, 5),
-          spreadRadius: 3,
-          blurRadius: 0,
-        ),
-      ].reversed.toList();
+  /// Crit cards sit on a doubled shadow so a screen of lifted cards still has
+  /// one that reads as lifted further.
+  ///
+  /// Brutal stacks a red slab behind the ink one. Glow does the same job with
+  /// a hard 2px `urgent` ring under its ordinary lift, which is what the source
+  /// design specifies for `.sev-crit` — a blurred red glow would read as
+  /// decoration, and `urgent` is too scarce a colour to spend on that.
+  List<BoxShadow>? _cardShadow(TableStale? stale, SatColors sc) {
+    final crit = stale?.severity == StaleSeverity.crit;
+    switch (SatShape.skin) {
+      case SatSkin.lembut:
+        return null;
+      case SatSkin.brutal:
+        if (!crit) return SatShape.hardShadow(5);
+        return [
+          BoxShadow(color: sc.urgent, offset: const Offset(5, 5)),
+          BoxShadow(
+            color: SatShape.ink,
+            offset: const Offset(5, 5),
+            spreadRadius: 3,
+            blurRadius: 0,
+          ),
+        ].reversed.toList();
+      case SatSkin.glow:
+        if (!crit) return SatShape.lift;
+        return [
+          BoxShadow(color: sc.urgent, spreadRadius: 2, blurRadius: 0),
+          ...SatShape.lift,
+        ];
     }
-    return SatShape.hardShadow(5);
   }
 
   List<Widget> _pills(VenueTable t, ServiceState service, SatColors sc) {
