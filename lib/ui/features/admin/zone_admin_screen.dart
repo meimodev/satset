@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -600,10 +601,10 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
             runSpacing: 8,
             children: [
               for (final z in zones)
-                _SelectChip(
+                SatChip.select(
                   label: z.name,
                   icon: z.icon,
-                  tint: z.color,
+                  dot: z.color,
                   selected: z.id == _zoneId,
                   onTap: () => setState(() => _zoneId = z.id),
                 ),
@@ -1681,58 +1682,6 @@ class _Stepper extends StatelessWidget {
           icon,
           size: 18,
           color: onTap == null ? sc.textDim : sc.textHi,
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectChip extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final Color? tint;
-  final bool selected;
-  final VoidCallback onTap;
-  const _SelectChip({
-    required this.label,
-    this.icon,
-    this.tint,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final c = tint ?? sc.accentText;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: satMotion(context, 130),
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
-        decoration: SatBox.d(
-          color: selected ? c.withValues(alpha: 0.18) : sc.bg2,
-          border: SatB.all(
-            color: selected ? c.withValues(alpha: 0.6) : sc.border1,
-          ),
-          borderRadius: SatR.a(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: selected ? c : sc.textMd),
-              const SizedBox(width: Sp.s1h),
-            ],
-            Text(
-              label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: selected ? c : sc.textMd,
-              ),
-            ),
-          ],
         ),
       ),
     );

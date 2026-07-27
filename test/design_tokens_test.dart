@@ -175,7 +175,7 @@ void main() {
   // them: `_CourseBlock` (table detail vs. review) and `_ZoneRow` (floor vs.
   // zone admin) may be real copies.
   test('no new: widget class name declared in 2+ files', () {
-    const baseline = 12;
+    const baseline = 11;
     final byName = <String, List<String>>{};
     for (final file in files) {
       final src = file.readAsStringSync();
@@ -282,7 +282,7 @@ void main() {
   // earlier regex version did not draw that line and rewrote layout dimensions
   // (a 560px panel width became 48) — hence the argument parser.
   test('no new: raw spacing literal', () {
-    const baseline = 177;
+    const baseline = 175;
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();

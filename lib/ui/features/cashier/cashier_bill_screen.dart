@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -1110,10 +1111,10 @@ class _ReceiptCard extends ConsumerWidget {
                   spacing: 8,
                   children: _methodLabels.entries
                       .map(
-                        (e) => ChoiceChip(
-                          label: Text(e.value),
+                        (e) => SatChip.select(
+                          label: e.value,
                           selected: method == e.key,
-                          onSelected: (_) => setState(() => method = e.key),
+                          onTap: () => setState(() => method = e.key),
                         ),
                       )
                       .toList(),
@@ -1914,63 +1915,21 @@ class _FilterBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         children: [
-          _FilterChip(
+          SatChip.select(
             label: 'Semua',
-            active: selected == null,
+            selected: selected == null,
             onTap: () => onSelect(null),
           ),
           for (final e in entries)
             Padding(
               padding: const EdgeInsets.only(left: Sp.s2),
-              child: _FilterChip(
+              child: SatChip.select(
                 label: 'Meja ${e.value ?? '—'}',
-                active: selected == e.key,
+                selected: selected == e.key,
                 onTap: () => onSelect(e.key),
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _FilterChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      child: Material(
-        color: active ? sc.accent : sc.bg2,
-        borderRadius: SatR.a(20),
-        child: InkWell(
-          borderRadius: SatR.a(20),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
-            alignment: Alignment.center,
-            decoration: SatBox.d(
-              borderRadius: SatR.a(20),
-              border: SatB.all(color: active ? sc.accent : sc.border1),
-            ),
-            child: Text(
-              label,
-              style: SatType.sans(
-                size: 12.5,
-                weight: FontWeight.w600,
-                color: active ? sc.accentInk : sc.textMd,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

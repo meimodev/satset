@@ -34,6 +34,10 @@ class SatChip extends StatelessWidget {
   final SatChipHue hue;
   final SatChipSize size;
   final bool selected;
+
+  /// A tally after the label — how many rows this filter would show. Set in
+  /// mono so a row of chips keeps its numbers in a column.
+  final int? count;
   final VoidCallback? onTap;
   final bool _selectable;
 
@@ -45,6 +49,7 @@ class SatChip extends StatelessWidget {
     this.dot,
     this.hue = SatChipHue.neutral,
     this.size = SatChipSize.md,
+    this.count,
   }) : selected = false,
        onTap = null,
        _selectable = false;
@@ -59,6 +64,7 @@ class SatChip extends StatelessWidget {
     this.icon,
     this.dot,
     this.size = SatChipSize.md,
+    this.count,
   }) : hue = SatChipHue.neutral,
        _selectable = true;
 
@@ -124,16 +130,30 @@ class SatChip extends StatelessWidget {
               decoration: SatBox.d(shape: BoxShape.circle, color: dot),
             ),
             const SizedBox(width: Sp.s2),
-          ] else if (icon != null) ...[
-            Icon(icon, size: _iconSize, color: ink),
+          ],
+          if (icon != null) ...[
+            // The glyph takes the dot's hue when there is one — a zone chip
+            // carries both, and two colours in one chip reads as two facts.
+            Icon(icon, size: _iconSize, color: dot ?? ink),
             const SizedBox(width: Sp.s1h),
           ],
-          Text(
-            SatShape.caps(label),
-            style: _labelStyle(ink),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Text(
+              SatShape.caps(label),
+              style: _labelStyle(ink),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          if (count != null) ...[
+            const SizedBox(width: Sp.s1h),
+            Text(
+              '$count',
+              style: SatType.caption(
+                color: selected || !_selectable ? ink : sc.textLo,
+              ),
+            ),
+          ],
         ],
       ),
     );

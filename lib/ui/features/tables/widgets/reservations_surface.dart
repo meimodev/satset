@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -209,7 +210,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
             padding: const EdgeInsets.symmetric(horizontal: Sp.s5),
             children: [
               for (final f in _RvFilter.values) ...[
-                _FilterChip(
+                SatChip.select(
                   label: switch (f) {
                     _RvFilter.waiting => AppStrings.reservationFilterWaiting,
                     _RvFilter.late => AppStrings.reservationFilterLate,
@@ -218,7 +219,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                     _RvFilter.all => AppStrings.reservationFilterAll,
                   },
                   count: pick(f).length,
-                  active: _filter == f,
+                  selected: _filter == f,
                   onTap: () => setState(() => _filter = f),
                 ),
                 if (f != _RvFilter.values.last) const SizedBox(width: Sp.s1h),
@@ -257,63 +258,6 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final int count;
-  final bool active;
-  final VoidCallback onTap;
-  const _FilterChip({
-    required this.label,
-    required this.count,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final brutal = SatShape.brutal;
-    // Brutal fills the selected chip with the accent; lembut inverts to textHi.
-    final fill = active ? (brutal ? sc.accent : sc.textHi) : sc.bg2;
-    final fg = active ? (brutal ? sc.accentInk : sc.bg0) : sc.textMd;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        // Tight: five of these have to fit the drawer's 480px without the last
-        // one hanging half off the edge.
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 9),
-        decoration: SatBox.d(
-          color: fill,
-          borderRadius: SatR.a(999),
-          border: SatB.all(color: active && !brutal ? sc.textHi : sc.border0),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              SatShape.caps(label),
-              style: SatType.sans(
-                size: 11.5,
-                weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                color: fg,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '$count',
-              style: SatType.mono(
-                size: 11,
-                color: active ? fg : sc.textLo,
-                letterSpacing: 0,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
