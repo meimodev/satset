@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,17 +89,23 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(u.name,
-                              style: SatType.sans(
-                                  size: 14,
-                                  weight: FontWeight.w500,
-                                  color: sc.textHi)),
+                          Text(
+                            u.name,
+                            style: SatType.sans(
+                              size: 14,
+                              weight: FontWeight.w500,
+                              color: sc.textHi,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(_roleOf(u, roles)?.name ?? '—',
-                              style: SatType.mono(
-                                  size: 10,
-                                  color: sc.textLo,
-                                  letterSpacing: 0.4)),
+                          Text(
+                            _roleOf(u, roles)?.name ?? '—',
+                            style: SatType.mono(
+                              size: 10,
+                              color: sc.textLo,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -147,8 +154,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                         style: SatType.sans(size: 13, color: sc.textHi),
                         decoration: InputDecoration.collapsed(
                           hintText: 'Search by name',
-                          hintStyle:
-                              SatType.sans(size: 13, color: sc.textLo),
+                          hintStyle: SatType.sans(size: 13, color: sc.textLo),
                         ),
                       ),
                     ),
@@ -158,8 +164,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
             ),
             const SizedBox(width: 10),
             GestureDetector(
-                onTap: () => _addStaff(roles),
-                child: adminPill(context, '+ Add staff', on: true)),
+              onTap: () => _addStaff(roles),
+              child: adminPill(context, '+ Add staff', on: true),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -174,8 +181,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               for (final r in roles) ...[
                 const SizedBox(width: 8),
                 _filterChip(r.name, _roleFilter == r.id, () {
-                  setState(() =>
-                      _roleFilter = _roleFilter == r.id ? null : r.id);
+                  setState(
+                    () => _roleFilter = _roleFilter == r.id ? null : r.id,
+                  );
                 }, color: r.color),
               ],
             ],
@@ -191,8 +199,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               border: SatB.all(color: sc.border0),
               borderRadius: SatR.a(14),
             ),
-            child: Text('No staff match these filters',
-                style: SatType.sans(size: 13, color: sc.textLo)),
+            child: Text(
+              'No staff match these filters',
+              style: SatType.sans(size: 13, color: sc.textLo),
+            ),
           )
         else
           GridView.builder(
@@ -205,8 +215,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               mainAxisSpacing: 12,
             ),
             itemCount: filtered.length,
-            itemBuilder: (ctx, i) =>
-                _StaffCard(user: filtered[i], role: _roleOf(filtered[i], roles), onTap: () => _openDetail(filtered[i])),
+            itemBuilder: (ctx, i) => _StaffCard(
+              user: filtered[i],
+              role: _roleOf(filtered[i], roles),
+              onTap: () => _openDetail(filtered[i]),
+            ),
           ),
       ],
     );
@@ -220,9 +233,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       children: [
         Row(
           children: [
-            Text('${roles.length} custom roles',
-                style: SatType.sans(
-                    size: 13, weight: FontWeight.w500, color: sc.textMd)),
+            Text(
+              '${roles.length} custom roles',
+              style: SatType.sans(
+                size: 13,
+                weight: FontWeight.w500,
+                color: sc.textMd,
+              ),
+            ),
             const Spacer(),
             GestureDetector(
               onTap: _createRole,
@@ -250,8 +268,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   Widget _roleRow(Role r, List<AppUser> users, {bool last = false}) {
     final sc = context.sat;
-    final memberCount =
-        users.where((u) => u.roleId == r.id && !u.disabled).length;
+    final memberCount = users
+        .where((u) => u.roleId == r.id && !u.disabled)
+        .length;
     final isAdminRole = r.has(Capability.manageStaff);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
@@ -270,34 +289,49 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           const SizedBox(width: 12),
           Expanded(
             flex: 5,
-            child: Text(r.name,
-                style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.textHi)),
+            child: Text(
+              r.name,
+              style: SatType.sans(
+                size: 14,
+                weight: FontWeight.w600,
+                color: sc.textHi,
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
             child: Text(
-                '${r.capabilities.length}/${Capability.values.length} capabilities',
-                style: SatType.mono(
-                    size: 11, color: sc.textMd, letterSpacing: 0.4)),
+              '${r.capabilities.length}/${Capability.values.length} capabilities',
+              style: SatType.mono(
+                size: 11,
+                color: sc.textMd,
+                letterSpacing: 0.4,
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
-            child: Text('$memberCount members',
-                style: SatType.mono(
-                    size: 11, color: sc.textMd, letterSpacing: 0.4)),
+            child: Text(
+              '$memberCount members',
+              style: SatType.mono(
+                size: 11,
+                color: sc.textMd,
+                letterSpacing: 0.4,
+              ),
+            ),
           ),
-          if (isAdminRole) _tagBadge(context, 'ADMIN', sc.violet, sc.violetSoft),
+          if (isAdminRole)
+            _tagBadge(context, 'ADMIN', sc.violet, sc.violetSoft),
           const SizedBox(width: 8),
           GestureDetector(
-              onTap: () => _pickRoleColor(r),
-              child: adminPill(context, 'Color')),
+            onTap: () => _pickRoleColor(r),
+            child: adminPill(context, 'Color'),
+          ),
           const SizedBox(width: 6),
           GestureDetector(
-              onTap: () => _renameRole(r),
-              child: adminPill(context, 'Rename')),
+            onTap: () => _renameRole(r),
+            child: adminPill(context, 'Rename'),
+          ),
           const SizedBox(width: 6),
           GestureDetector(
             onTap: memberCount == 0 ? () => _deleteRole(r) : null,
@@ -330,14 +364,19 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Role × capability matrix',
-              style: SatType.sans(
-                  size: 15,
-                  weight: FontWeight.w600,
-                  color: sc.textHi)),
+          Text(
+            'Role × capability matrix',
+            style: SatType.sans(
+              size: 15,
+              weight: FontWeight.w600,
+              color: sc.textHi,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('Tap a cell to toggle. Last admin guard prevents removing the final “Manage staff” holder.',
-              style: SatType.sans(size: 11, color: sc.textLo)),
+          Text(
+            'Tap a cell to toggle. Last admin guard prevents removing the final “Manage staff” holder.',
+            style: SatType.sans(size: 11, color: sc.textLo),
+          ),
           const SizedBox(height: 18),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -359,8 +398,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: SatBox.d(
-                      border: Border(
-                          top: SatB.side(color: sc.border0)),
+                      border: Border(top: SatB.side(color: sc.border0)),
                     ),
                     child: Row(
                       children: [
@@ -372,26 +410,27 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                                 width: 10,
                                 height: 10,
                                 decoration: SatBox.d(
-                                    color: r.color,
-                                    shape: BoxShape.circle),
+                                  color: r.color,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(r.name,
-                                    style: SatType.sans(
-                                        size: 13,
-                                        weight: FontWeight.w500,
-                                        color: sc.textHi)),
+                                child: Text(
+                                  r.name,
+                                  style: SatType.sans(
+                                    size: 13,
+                                    weight: FontWeight.w500,
+                                    color: sc.textHi,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                         ),
                         for (final g in CapabilityGroup.values) ...[
                           for (final c in grouped[g]!)
-                            SizedBox(
-                              width: 110,
-                              child: _capCell(r, c),
-                            ),
+                            SizedBox(width: 110, child: _capCell(r, c)),
                         ],
                       ],
                     ),
@@ -418,12 +457,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           borderRadius: SatR.a(6),
         ),
         alignment: Alignment.center,
-        child: Text(on ? '✓' : '—',
-            style: SatType.mono(
-              size: 12,
-              weight: FontWeight.w700,
-              color: on ? sc.success : sc.textDim,
-            )),
+        child: Text(
+          on ? '✓' : '—',
+          style: SatType.mono(
+            size: 12,
+            weight: FontWeight.w700,
+            color: on ? sc.success : sc.textDim,
+          ),
+        ),
       ),
     );
   }
@@ -470,7 +511,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
   // ── Actions ─────────────────────────────────────────────────
   Future<void> _addStaff(List<Role> roles) async {
     final selectable = [
-      for (final r in roles) if (!r.has(Capability.manageStaff)) r,
+      for (final r in roles)
+        if (!r.has(Capability.manageStaff)) r,
     ];
     if (selectable.isEmpty) {
       _toast('Create a non-admin role first');
@@ -497,7 +539,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       _toast('Avatar color already used by another account');
     }
     try {
-      final created = ref.read(staffRepositoryProvider.notifier).create(
+      final created = ref
+          .read(staffRepositoryProvider.notifier)
+          .create(
             name: res.name,
             initials: res.initials,
             roleId: res.roleId,
@@ -545,11 +589,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               children: [
                 Center(child: _sheetHandle(sc)),
                 const SizedBox(height: 18),
-                Text('Role color',
-                    style: SatType.sans(
-                        size: 16,
-                        weight: FontWeight.w600,
-                        color: sc.textHi)),
+                Text(
+                  'Role color',
+                  style: SatType.sans(
+                    size: 16,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 14,
@@ -590,8 +637,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
   }
 
   Future<void> _deleteRole(Role r) async {
-    final ok = await _confirm('Delete role “${r.name}”?',
-        'Capabilities assigned to this role will be lost.');
+    final ok = await _confirm(
+      'Delete role “${r.name}”?',
+      'Capabilities assigned to this role will be lost.',
+    );
     if (ok != true) return;
     if (r.has(Capability.manageStaff)) {
       final holders = ref
@@ -628,8 +677,12 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     );
   }
 
-  Widget _filterChip(String label, bool on, VoidCallback onTap,
-      {Color? color}) {
+  Widget _filterChip(
+    String label,
+    bool on,
+    VoidCallback onTap, {
+    Color? color,
+  }) {
     final sc = context.sat;
     return GestureDetector(
       onTap: onTap,
@@ -639,8 +692,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         alignment: Alignment.center,
         decoration: SatBox.d(
           color: on ? sc.accentSoft : sc.bg3,
-          border:
-              SatB.all(color: on ? sc.accentBorder : sc.border1),
+          border: SatB.all(color: on ? sc.accentBorder : sc.border1),
           borderRadius: SatR.a(999),
         ),
         child: Row(
@@ -648,17 +700,20 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           children: [
             if (color != null) ...[
               Container(
-                  width: 8,
-                  height: 8,
-                  decoration:
-                      SatBox.d(color: color, shape: BoxShape.circle)),
+                width: 8,
+                height: 8,
+                decoration: SatBox.d(color: color, shape: BoxShape.circle),
+              ),
               const SizedBox(width: 6),
             ],
-            Text(label,
-                style: SatType.sans(
-                    size: 11,
-                    weight: FontWeight.w500,
-                    color: on ? sc.accentText : sc.textMd)),
+            Text(
+              label,
+              style: SatType.sans(
+                size: 11,
+                weight: FontWeight.w500,
+                color: on ? sc.accentText : sc.textMd,
+              ),
+            ),
           ],
         ),
       ),
@@ -667,25 +722,30 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   Widget _h(String t) {
     final sc = context.sat;
-    return Text(t.toUpperCase(),
-        style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: sc.textLo));
+    return Text(
+      t.toUpperCase(),
+      style: SatType.mono(
+        size: 10,
+        weight: FontWeight.w600,
+        letterSpacing: 1.0,
+        color: sc.textLo,
+      ),
+    );
   }
 
   Widget _tagBadge(BuildContext context, String t, Color fg, Color bg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration:
-          SatBox.d(color: bg, borderRadius: SatR.a(5)),
-      child: Text(t,
-          style: SatType.mono(
-              size: 9,
-              weight: FontWeight.w600,
-              letterSpacing: 0.8,
-              color: fg)),
+      decoration: SatBox.d(color: bg, borderRadius: SatR.a(5)),
+      child: Text(
+        t,
+        style: SatType.mono(
+          size: 9,
+          weight: FontWeight.w600,
+          letterSpacing: 0.8,
+          color: fg,
+        ),
+      ),
     );
   }
 
@@ -705,8 +765,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       builder: (ctx) {
         final sc = ctx.sat;
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -716,31 +777,37 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 children: [
                   Center(child: _sheetHandle(sc)),
                   const SizedBox(height: 18),
-                  Text(title,
-                      style: SatType.sans(
-                          size: 16,
-                          weight: FontWeight.w600,
-                          color: sc.textHi)),
+                  Text(
+                    title,
+                    style: SatType.sans(
+                      size: 16,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    ),
+                  ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: ctl,
                     autofocus: true,
-                    decoration:
-                        const InputDecoration(border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Cancel')),
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text(AppStrings.cancel),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: FilledButton(
-                            onPressed: () => Navigator.pop(ctx, ctl.text),
-                            child: const Text('Save')),
+                          onPressed: () => Navigator.pop(ctx, ctl.text),
+                          child: const Text('Save'),
+                        ),
                       ),
                     ],
                   ),
@@ -764,13 +831,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 // Bottom-sheet helpers
 // ─────────────────────────────────────────────────────────────
 Widget _sheetHandle(SatColors sc) => Container(
-      width: 40,
-      height: 4,
-      decoration: SatBox.d(
-        color: sc.border1,
-        borderRadius: SatR.a(2),
-      ),
-    );
+  width: 40,
+  height: 4,
+  decoration: SatBox.d(color: sc.border1, borderRadius: SatR.a(2)),
+);
 
 Future<bool?> _confirmSheet(
   BuildContext context,
@@ -797,20 +861,27 @@ Future<bool?> _confirmSheet(
             children: [
               Center(child: _sheetHandle(sc)),
               const SizedBox(height: 18),
-              Text(title,
-                  style: SatType.sans(
-                      size: 16, weight: FontWeight.w600, color: sc.textHi)),
+              Text(
+                title,
+                style: SatType.sans(
+                  size: 16,
+                  weight: FontWeight.w600,
+                  color: sc.textHi,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text(body,
-                  style:
-                      SatType.sans(size: 13, color: sc.textMd, height: 1.4)),
+              Text(
+                body,
+                style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+              ),
               const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancel')),
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text(AppStrings.cancel),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -839,8 +910,11 @@ class _StaffCard extends StatelessWidget {
   final AppUser user;
   final Role? role;
   final VoidCallback onTap;
-  const _StaffCard(
-      {required this.user, required this.role, required this.onTap});
+  const _StaffCard({
+    required this.user,
+    required this.role,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -862,38 +936,55 @@ class _StaffCard extends StatelessWidget {
             children: [
               _Avatar(user: user, role: role, size: 44),
               const SizedBox(height: 12),
-              Text(user.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.textHi)),
+              Text(
+                user.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: SatType.sans(
+                  size: 15,
+                  weight: FontWeight.w600,
+                  color: sc.textHi,
+                ),
+              ),
               const SizedBox(height: 4),
               if (role != null)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: SatBox.d(
-                      color: role!.color.withValues(alpha: 0.16),
-                      borderRadius: SatR.a(5)),
-                  child: Text(role!.name.toUpperCase(),
-                      style: SatType.mono(
-                          size: 9,
-                          weight: FontWeight.w600,
-                          letterSpacing: 0.8,
-                          color: role!.color)),
+                    color: role!.color.withValues(alpha: 0.16),
+                    borderRadius: SatR.a(5),
+                  ),
+                  child: Text(
+                    role!.name.toUpperCase(),
+                    style: SatType.mono(
+                      size: 9,
+                      weight: FontWeight.w600,
+                      letterSpacing: 0.8,
+                      color: role!.color,
+                    ),
+                  ),
                 )
               else
-                Text('No role',
-                    style: SatType.mono(
-                        size: 10,
-                        color: sc.textLo,
-                        letterSpacing: 0.4)),
-              const Spacer(),
-              Text('PIN ${user.pin}',
+                Text(
+                  'No role',
                   style: SatType.mono(
-                      size: 11, color: sc.textLo, letterSpacing: 0.4)),
+                    size: 10,
+                    color: sc.textLo,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              const Spacer(),
+              Text(
+                'PIN ${user.pin}',
+                style: SatType.mono(
+                  size: 11,
+                  color: sc.textLo,
+                  letterSpacing: 0.4,
+                ),
+              ),
             ],
           ),
         ),
@@ -920,16 +1011,22 @@ class _Avatar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [base, Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base)],
+          colors: [
+            base,
+            Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base),
+          ],
         ),
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Text(user.initials,
-          style: SatType.mono(
-              size: size * 0.32,
-              weight: FontWeight.w600,
-              color: Colors.white)),
+      child: Text(
+        user.initials,
+        style: SatType.mono(
+          size: size * 0.32,
+          weight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 }
@@ -988,26 +1085,34 @@ class _SwatchDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Opacity(
-        opacity: taken ? 0.4 : 1,
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: SatBox.d(
-            color: color,
-            shape: BoxShape.circle,
-            border: SatB.all(
-              color: selected ? borderColor : faintBorder,
-              width: selected ? 3 : 1,
+    return Semantics(
+      button: true,
+      selected: taken,
+      label: AppStrings.a11yPickColor,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Opacity(
+          opacity: taken ? 0.4 : 1,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: SatBox.d(
+              color: color,
+              shape: BoxShape.circle,
+              border: SatB.all(
+                color: selected ? borderColor : faintBorder,
+                width: selected ? 3 : 1,
+              ),
             ),
+            alignment: Alignment.center,
+            child: taken
+                ? Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  )
+                : null,
           ),
-          alignment: Alignment.center,
-          child: taken
-              ? Icon(Icons.warning_amber_rounded,
-                  size: 16, color: Colors.white.withValues(alpha: 0.85))
-              : null,
         ),
       ),
     );
@@ -1023,8 +1128,13 @@ class _NewStaff {
   final String roleId;
   final UserRole legacyRole;
   final int avatarColorHex;
-  _NewStaff(this.name, this.initials, this.roleId, this.legacyRole,
-      this.avatarColorHex);
+  _NewStaff(
+    this.name,
+    this.initials,
+    this.roleId,
+    this.legacyRole,
+    this.avatarColorHex,
+  );
 }
 
 class _NewStaffDialog extends StatefulWidget {
@@ -1048,8 +1158,9 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
     // Pre-pick the first non-taken swatch as a hint, but the user must still
     // confirm by leaving or tapping any swatch before Add becomes enabled.
     _avatarHex = avatarColorPalette.firstWhere(
-        (c) => !widget.takenColors.contains(c),
-        orElse: () => avatarColorPalette.first);
+      (c) => !widget.takenColors.contains(c),
+      orElse: () => avatarColorPalette.first,
+    );
   }
 
   void _submit() {
@@ -1062,22 +1173,28 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
         .map((s) => s[0].toUpperCase())
         .join();
     // Pick legacy role best-fit by name keyword
-    final rname =
-        widget.roles.firstWhere((r) => r.id == _roleId).name.toLowerCase();
+    final rname = widget.roles
+        .firstWhere((r) => r.id == _roleId)
+        .name
+        .toLowerCase();
     final legacy = rname.contains('kitchen') || rname.contains('dapur')
         ? UserRole.kitchen
         : (rname.contains('admin') || rname.contains('manager'))
-            ? UserRole.admin
-            : UserRole.waiter;
-    Navigator.pop(context,
-        _NewStaff(name, initials, _roleId!, legacy, _avatarHex!));
+        ? UserRole.admin
+        : UserRole.waiter;
+    Navigator.pop(
+      context,
+      _NewStaff(name, initials, _roleId!, legacy, _avatarHex!),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -1087,15 +1204,22 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
             children: [
               Center(child: _sheetHandle(sc)),
               const SizedBox(height: 18),
-              Text('Add staff',
-                  style: SatType.sans(
-                      size: 16, weight: FontWeight.w600, color: sc.textHi)),
+              Text(
+                'Add staff',
+                style: SatType.sans(
+                  size: 16,
+                  weight: FontWeight.w600,
+                  color: sc.textHi,
+                ),
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _nameCtl,
                 autofocus: true,
                 decoration: const InputDecoration(
-                    labelText: 'Full name', border: OutlineInputBorder()),
+                  labelText: 'Full name',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -1106,17 +1230,22 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
                 ],
                 onChanged: (v) => setState(() => _roleId = v),
                 decoration: const InputDecoration(
-                    labelText: 'Role', border: OutlineInputBorder()),
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Avatar color',
-                    style: SatType.mono(
-                        size: 10,
-                        weight: FontWeight.w600,
-                        letterSpacing: 1,
-                        color: sc.textLo)),
+                child: Text(
+                  'Avatar color',
+                  style: SatType.mono(
+                    size: 10,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1,
+                    color: sc.textLo,
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               _AvatarSwatchGrid(
@@ -1130,14 +1259,16 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel')),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(AppStrings.cancel),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton(
-                        onPressed: _avatarHex == null ? null : _submit,
-                        child: const Text('Add')),
+                      onPressed: _avatarHex == null ? null : _submit,
+                      child: const Text('Add'),
+                    ),
                   ),
                 ],
               ),
@@ -1167,8 +1298,7 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
   @override
   void initState() {
     super.initState();
-    final u =
-        ref.read(staffRepositoryProvider.notifier).byId(widget.userId);
+    final u = ref.read(staffRepositoryProvider.notifier).byId(widget.userId);
     _nameCtl = TextEditingController(text: u?.name ?? '');
     _pinCtl = TextEditingController(text: u?.pin ?? '');
   }
@@ -1185,8 +1315,9 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
       }
     }
     if (maybeUser == null) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       return const SizedBox.shrink();
     }
     final AppUser user = maybeUser;
@@ -1210,29 +1341,37 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                 child: Row(
                   children: [
                     _Avatar(
-                        user: user,
-                        role: _findRole(roles, user.roleId),
-                        size: 48),
+                      user: user,
+                      role: _findRole(roles, user.roleId),
+                      size: 48,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(user.name,
-                              style: SatType.sans(
-                                  size: 18,
-                                  weight: FontWeight.w600,
-                                  color: sc.textHi)),
+                          Text(
+                            user.name,
+                            style: SatType.sans(
+                              size: 18,
+                              weight: FontWeight.w600,
+                              color: sc.textHi,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(user.disabled ? 'Disabled' : 'Active',
-                              style: SatType.mono(
-                                  size: 11,
-                                  color: user.disabled ? sc.urgent : sc.textLo,
-                                  letterSpacing: 0.4)),
+                          Text(
+                            user.disabled ? 'Disabled' : 'Active',
+                            style: SatType.mono(
+                              size: 11,
+                              color: user.disabled ? sc.urgent : sc.textLo,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     IconButton(
+                      tooltip: AppStrings.close,
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -1247,8 +1386,9 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                     _label('Name'),
                     TextField(
                       controller: _nameCtl,
-                      decoration:
-                          const InputDecoration(border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
                       onSubmitted: (_) => _saveName(user),
                     ),
                     const SizedBox(height: 16),
@@ -1260,14 +1400,18 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                           if (!r.has(Capability.manageStaff) ||
                               r.id == user.roleId)
                             DropdownMenuItem(
-                                value: r.id,
-                                child: Text(r.has(Capability.manageStaff)
+                              value: r.id,
+                              child: Text(
+                                r.has(Capability.manageStaff)
                                     ? '${r.name} (admin)'
-                                    : r.name)),
+                                    : r.name,
+                              ),
+                            ),
                       ],
                       onChanged: (v) => _changeRole(user, v, roles),
-                      decoration:
-                          const InputDecoration(border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _label('Avatar color'),
@@ -1294,23 +1438,26 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                               LengthLimitingTextInputFormatter(6),
                             ],
                             decoration: const InputDecoration(
-                                border: OutlineInputBorder()),
+                              border: OutlineInputBorder(),
+                            ),
                             onSubmitted: (_) => _savePin(user),
                           ),
                         ),
                         const SizedBox(width: 8),
                         FilledButton(
-                            onPressed: () => _resetPin(user),
-                            child: const Text('Reset')),
+                          onPressed: () => _resetPin(user),
+                          child: const Text('Reset'),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
-                          child: Text(user.disabled ? 'Disabled' : 'Active',
-                              style:
-                                  SatType.sans(size: 13, color: sc.textHi)),
+                          child: Text(
+                            user.disabled ? 'Disabled' : 'Active',
+                            style: SatType.sans(size: 13, color: sc.textHi),
+                          ),
                         ),
                         Switch(
                           value: !user.disabled,
@@ -1332,7 +1479,8 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                       child: OutlinedButton(
                         onPressed: () => _deleteUser(user),
                         style: OutlinedButton.styleFrom(
-                            foregroundColor: sc.urgent),
+                          foregroundColor: sc.urgent,
+                        ),
                         child: const Text('Delete'),
                       ),
                     ),
@@ -1365,12 +1513,15 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(t.toUpperCase(),
-          style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w600,
-              letterSpacing: 1,
-              color: sc.textLo)),
+      child: Text(
+        t.toUpperCase(),
+        style: SatType.mono(
+          size: 10,
+          weight: FontWeight.w600,
+          letterSpacing: 1,
+          color: sc.textLo,
+        ),
+      ),
     );
   }
 
@@ -1434,16 +1585,16 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
 
   void _pickAvatarColor(AppUser u, int hex, List<AppUser> users) {
     if (hex == u.avatarColorHex) return;
-    final collision = users.any(
-        (x) => x.id != u.id && x.avatarColorHex == hex);
+    final collision = users.any((x) => x.id != u.id && x.avatarColorHex == hex);
     if (collision) _toast('Color also used by another account');
     ref.read(staffRepositoryProvider.notifier).setAvatarColor(u.id, hex);
   }
 
   Future<void> _resetPin(AppUser u) async {
     try {
-      final pin =
-          await ref.read(staffRepositoryProvider.notifier).resetPin(u.id);
+      final pin = await ref
+          .read(staffRepositoryProvider.notifier)
+          .resetPin(u.id);
       _pinCtl.text = pin;
       _toast('New PIN: $pin');
     } on StaffException catch (e) {
@@ -1463,9 +1614,7 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
       if (ok != true) return;
     }
     try {
-      ref
-          .read(staffRepositoryProvider.notifier)
-          .setDisabled(u.id, disabled);
+      ref.read(staffRepositoryProvider.notifier).setDisabled(u.id, disabled);
     } on StaffException catch (e) {
       _toast(e.message);
     }

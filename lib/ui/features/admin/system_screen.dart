@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -40,7 +41,8 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
   Widget _tablet(BuildContext context) {
     final sc = context.sat;
     final venueName = ref.watch(
-        venueSettingsProvider.select((s) => s.displayName));
+      venueSettingsProvider.select((s) => s.displayName),
+    );
     final wsState = ref.watch(wsConnStateProvider);
     final ping = ref.watch(pingProvider);
     final degraded = !ping.reachable || wsState != WsConnState.open;
@@ -65,8 +67,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     final stationsAsync = ref.watch(kdsStationsProvider);
     final queueAsync = ref.watch(queueDepthProvider);
 
-    final pairedTablets =
-        devices.where((d) => !d.revoked).length;
+    final pairedTablets = devices.where((d) => !d.revoked).length;
     final kdsCount = stationsAsync.maybeWhen(
       data: (s) => s.length,
       orElse: () => 0,
@@ -83,36 +84,36 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           children: [
             Expanded(
               flex: 2,
-              child: _SystemHero(
-                ping: ping,
-                wsState: wsState,
-                status: status,
+              child: _SystemHero(ping: ping, wsState: wsState, status: status),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SetTile(
+                label: 'KDS Online',
+                value: '$kdsCount',
+                sub: kdsCount == 0 ? 'Belum ada stasiun' : 'Stasiun aktif',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: SetTile(
-                  label: 'KDS Online',
-                  value: '$kdsCount',
-                  sub: kdsCount == 0
-                      ? 'Belum ada stasiun'
-                      : 'Stasiun aktif')),
+                label: 'Tablet Pair',
+                value: '$pairedTablets',
+                sub: pairedTablets == 0
+                    ? 'Belum ada perangkat'
+                    : 'Perangkat aktif',
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: SetTile(
-                    label: 'Tablet Pair',
-                    value: '$pairedTablets',
-                    sub: pairedTablets == 0
-                        ? 'Belum ada perangkat'
-                        : 'Perangkat aktif')),
-            const SizedBox(width: 12),
-            Expanded(
-                child: SetTile(
-                    label: 'Antrian',
-                    value: '$queueTotal',
-                    sub: queueTotal == 0
-                        ? 'Tidak ada job tertunda'
-                        : 'Tiket menunggu')),
+              child: SetTile(
+                label: 'Antrian',
+                value: '$queueTotal',
+                sub: queueTotal == 0
+                    ? 'Tidak ada job tertunda'
+                    : 'Tiket menunggu',
+              ),
+            ),
           ],
         ),
       ),
@@ -162,39 +163,47 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       tag: status == null ? 'BOOTING' : 'PRIMARY',
       rows: [
         AdminRow(
-            label: 'Alamat',
-            value: Text(addr,
-                style: SatType.mono(size: 12, color: sc.textHi))),
+          label: 'Alamat',
+          value: Text(addr, style: SatType.mono(size: 12, color: sc.textHi)),
+        ),
         AdminRow(
-            label: 'Uptime',
-            value: Text(
-                status == null
-                    ? '—'
-                    : _humanDuration(
-                        Duration(milliseconds: status.uptimeMs)),
-                style: SatType.mono(size: 12, color: sc.textHi))),
+          label: 'Uptime',
+          value: Text(
+            status == null
+                ? '—'
+                : _humanDuration(Duration(milliseconds: status.uptimeMs)),
+            style: SatType.mono(size: 12, color: sc.textHi),
+          ),
+        ),
         AdminRow(
-            label: 'Sertifikat',
-            value: Text(cert,
-                style: SatType.sans(size: 13, color: sc.textHi))),
+          label: 'Sertifikat',
+          value: Text(cert, style: SatType.sans(size: 13, color: sc.textHi)),
+        ),
         AdminRow(
-            label: 'Ping LAN',
-            value: Text(pingText,
-                style: SatType.mono(size: 12, color: sc.textHi))),
+          label: 'Ping LAN',
+          value: Text(
+            pingText,
+            style: SatType.mono(size: 12, color: sc.textHi),
+          ),
+        ),
         AdminRow(
-            label: 'p95 latensi',
-            value: Text(
-                status == null
-                    ? '—'
-                    : '${status.p95LatencyMs} ms · ${status.requestCountRecent} req',
-                style: SatType.mono(size: 12, color: sc.textHi))),
+          label: 'p95 latensi',
+          value: Text(
+            status == null
+                ? '—'
+                : '${status.p95LatencyMs} ms · ${status.requestCountRecent} req',
+            style: SatType.mono(size: 12, color: sc.textHi),
+          ),
+        ),
         AdminRow(
-            label: 'Fingerprint',
-            value: Row(children: [
+          label: 'Fingerprint',
+          value: Row(
+            children: [
               Expanded(
-                child: Text(fpShort,
-                    style:
-                        SatType.mono(size: 12, color: sc.textHi)),
+                child: Text(
+                  fpShort,
+                  style: SatType.mono(size: 12, color: sc.textHi),
+                ),
               ),
               GestureDetector(
                 onTap: fp.isEmpty
@@ -203,14 +212,15 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                         await Clipboard.setData(ClipboardData(text: fp));
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Fingerprint disalin')),
+                          const SnackBar(content: Text('Fingerprint disalin')),
                         );
                       },
                 child: adminPill(context, 'Salin'),
               ),
-            ]),
-            last: true),
+            ],
+          ),
+          last: true,
+        ),
       ],
     );
   }
@@ -224,15 +234,26 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     );
     final rows = <Widget>[];
     if (printers.isEmpty && stations.isEmpty) {
-      rows.add(AdminRow(
+      rows.add(
+        AdminRow(
           label: 'Belum ada',
-          value: Text('Tambahkan printer atau stasiun',
-              style: SatType.sans(size: 13, color: sc.textMd)),
-          last: true));
+          value: Text(
+            'Tambahkan printer atau stasiun',
+            style: SatType.sans(size: 13, color: sc.textMd),
+          ),
+          last: true,
+        ),
+      );
     } else {
       for (var i = 0; i < printers.length; i++) {
-        rows.add(_printerRow(context, sc, printers[i],
-            last: i == printers.length - 1 && stations.isEmpty));
+        rows.add(
+          _printerRow(
+            context,
+            sc,
+            printers[i],
+            last: i == printers.length - 1 && stations.isEmpty,
+          ),
+        );
       }
       for (var i = 0; i < stations.length; i++) {
         final s = stations[i];
@@ -245,30 +266,41 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       title: 'Printer & KDS',
       tag: '${printers.length + stations.length} STASIUN',
       rows: rows,
-      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-        GestureDetector(
-          onTap: () => _discoverPrinters(context),
-          child: adminPill(context, 'Cari'),
-        ),
-        const SizedBox(width: 6),
-        GestureDetector(
-          onTap: () => _showAddPrinterSheet(context),
-          child: adminPill(context, '+ Printer'),
-        ),
-      ]),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => _discoverPrinters(context),
+            child: adminPill(context, 'Cari'),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => _showAddPrinterSheet(context),
+            child: adminPill(context, '+ Printer'),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _printerRow(BuildContext context, SatColors sc, PrinterDto p,
-      {bool last = false}) {
-    final online = p.lastSeenAt != null &&
+  Widget _printerRow(
+    BuildContext context,
+    SatColors sc,
+    PrinterDto p, {
+    bool last = false,
+  }) {
+    final online =
+        p.lastSeenAt != null &&
         DateTime.now().difference(p.lastSeenAt!).inMinutes < 5;
     return AdminRow(
-        label: p.label,
-        value: Row(children: [
+      label: p.label,
+      value: Row(
+        children: [
           Expanded(
-            child: Text('${p.host}:${p.port} · ${p.kind}',
-                style: SatType.mono(size: 12, color: sc.textHi)),
+            child: Text(
+              '${p.host}:${p.port} · ${p.kind}',
+              style: SatType.mono(size: 12, color: sc.textHi),
+            ),
           ),
           GestureDetector(
             onTap: () async {
@@ -276,35 +308,44 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                   .read(printersRepositoryProvider.notifier)
                   .testPrint(p.id);
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(err ?? 'Tes tercetak')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(err ?? 'Tes tercetak')));
             },
             child: adminPill(context, 'Test'),
           ),
           const SizedBox(width: 6),
           adminPill(context, online ? 'Online' : 'Offline', on: online),
-        ]),
-        last: last);
+        ],
+      ),
+      last: last,
+    );
   }
 
   Widget _stationRow(
-      BuildContext context, SatColors sc, Map<String, dynamic> s,
-      {bool last = false}) {
+    BuildContext context,
+    SatColors sc,
+    Map<String, dynamic> s, {
+    bool last = false,
+  }) {
     final name = s['station'] as String? ?? '—';
     final pending = (s['pendingTickets'] as num? ?? 0).toInt();
     final staffOnline = (s['staffOnline'] as num? ?? 0).toInt();
     return AdminRow(
-        label: name,
-        value: Row(children: [
+      label: name,
+      value: Row(
+        children: [
           Expanded(
-            child: Text('$staffOnline staf · $pending tiket',
-                style: SatType.sans(size: 13, color: sc.textHi)),
+            child: Text(
+              '$staffOnline staf · $pending tiket',
+              style: SatType.sans(size: 13, color: sc.textHi),
+            ),
           ),
-          adminPill(context, pending == 0 ? 'Sepi' : 'Aktif',
-              on: pending > 0),
-        ]),
-        last: last);
+          adminPill(context, pending == 0 ? 'Sepi' : 'Aktif', on: pending > 0),
+        ],
+      ),
+      last: last,
+    );
   }
 
   Widget _devicesCard(BuildContext context, SatColors sc) {
@@ -317,35 +358,46 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       rows: devices.isEmpty
           ? [
               AdminRow(
-                  label: 'Belum ada',
-                  value: Text('Belum ada perangkat dipasangkan',
-                      style: SatType.sans(size: 13, color: sc.textMd)),
-                  last: true),
+                label: 'Belum ada',
+                value: Text(
+                  'Belum ada perangkat dipasangkan',
+                  style: SatType.sans(size: 13, color: sc.textMd),
+                ),
+                last: true,
+              ),
             ]
           : [
               for (var i = 0; i < devices.length; i++)
-                _deviceRow(context, sc, devices[i],
-                    last: i == devices.length - 1),
+                _deviceRow(
+                  context,
+                  sc,
+                  devices[i],
+                  last: i == devices.length - 1,
+                ),
             ],
     );
   }
 
-  Widget _deviceRow(BuildContext context, SatColors sc, DeviceDto d,
-      {bool last = false}) {
+  Widget _deviceRow(
+    BuildContext context,
+    SatColors sc,
+    DeviceDto d, {
+    bool last = false,
+  }) {
     final sub = d.lastSessionAt == null
         ? 'belum sign-in'
         : 'sesi ${_relTime(d.lastSessionAt!)}';
     final pillLabel = d.revoked
         ? 'Revoked'
         : d.sessionActive
-            ? 'Aktif'
-            : 'Idle';
+        ? 'Aktif'
+        : 'Idle';
     return AdminRow(
-        label: d.label,
-        value: Row(children: [
+      label: d.label,
+      value: Row(
+        children: [
           Expanded(
-            child: Text(sub,
-                style: SatType.sans(size: 13, color: sc.textHi)),
+            child: Text(sub, style: SatType.sans(size: 13, color: sc.textHi)),
           ),
           if (!d.revoked)
             GestureDetector(
@@ -354,8 +406,10 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             ),
           const SizedBox(width: 6),
           adminPill(context, pillLabel, on: d.sessionActive && !d.revoked),
-        ]),
-        last: last);
+        ],
+      ),
+      last: last,
+    );
   }
 
   Widget _opsCard(BuildContext context, SatColors sc) {
@@ -367,28 +421,35 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       tag: 'RUNTIME',
       rows: [
         AdminRow(
-            label: 'Alert audio',
-            value: Row(children: [
+          label: 'Alert audio',
+          value: Row(
+            children: [
               const Spacer(),
               GestureDetector(
-                  onTap: () async {
-                    final prefs = ref.read(prefsServiceProvider).valueOrNull;
-                    if (prefs == null) return;
-                    await prefs.setAudioAlertEnabled(!audio);
-                    if (!context.mounted) return;
-                    ref.invalidate(prefsServiceProvider);
-                  },
-                  child: adminToggle(context, on: audio)),
-            ])),
+                onTap: () async {
+                  final prefs = ref.read(prefsServiceProvider).valueOrNull;
+                  if (prefs == null) return;
+                  await prefs.setAudioAlertEnabled(!audio);
+                  if (!context.mounted) return;
+                  ref.invalidate(prefsServiceProvider);
+                },
+                child: adminToggle(context, on: audio),
+              ),
+            ],
+          ),
+        ),
         AdminRow(
-            label: 'Tindakan',
-            value: Row(children: [
+          label: 'Tindakan',
+          value: Row(
+            children: [
               GestureDetector(
                 onTap: () => _confirmRestart(),
                 child: adminPill(context, 'Mulai ulang server'),
               ),
-            ]),
-            last: true),
+            ],
+          ),
+          last: true,
+        ),
       ],
     );
   }
@@ -414,24 +475,25 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(title,
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    )),
-              ),
-              Text(tag,
-                  style: SatType.mono(
-                    size: 9,
+                child: Text(
+                  title,
+                  style: SatType.sans(
+                    size: 15,
                     weight: FontWeight.w600,
-                    letterSpacing: 1.4,
-                    color: sc.textLo,
-                  )),
-              if (trailing != null) ...[
-                const SizedBox(width: 10),
-                trailing,
-              ],
+                    color: sc.textHi,
+                  ),
+                ),
+              ),
+              Text(
+                tag,
+                style: SatType.mono(
+                  size: 9,
+                  weight: FontWeight.w600,
+                  letterSpacing: 1.4,
+                  color: sc.textLo,
+                ),
+              ),
+              if (trailing != null) ...[const SizedBox(width: 10), trailing],
             ],
           ),
           const SizedBox(height: 10),
@@ -465,48 +527,76 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-            child: Text('Sistem',
-                style: SatType.sans(
-                  size: 30,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.6,
-                  color: sc.textHi,
-                )),
+            child: Text(
+              'Sistem',
+              style: SatType.sans(
+                size: 30,
+                weight: FontWeight.w600,
+                letterSpacing: -0.6,
+                color: sc.textHi,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Text('Server, jaringan, printer, perangkat',
-                style: SatType.sans(size: 13, color: sc.textMd)),
+            child: Text(
+              'Server, jaringan, printer, perangkat',
+              style: SatType.sans(size: 13, color: sc.textMd),
+            ),
           ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               children: [
-                _phoneRow(context, sc,
-                    label: 'Server LAN',
-                    value: pingValue,
-                    onTap: () => _openDetail(context, 'Server LAN',
-                        (c, s) => _serverCard(c, s))),
-                _phoneRow(context, sc,
-                    label: 'Printer & KDS',
-                    value:
-                        '${printers.length} printer · ${stations.length} stasiun',
-                    onTap: () => _openDetail(context, 'Printer & KDS',
-                        (c, s) => _printersCard(c, s))),
-                _phoneRow(context, sc,
-                    label: 'Perangkat',
-                    value:
-                        '${devices.where((d) => !d.revoked).length} pair · ${devices.where((d) => d.sessionActive).length} aktif',
-                    onTap: () => _openDetail(context, 'Perangkat aktif',
-                        (c, s) => _devicesCard(c, s))),
-                _phoneRow(context, sc,
-                    label: 'Operasional',
-                    value: ref.watch(audioAlertEnabledProvider)
-                        ? 'Audio on'
-                        : 'Audio off',
-                    onTap: () => _openDetail(context, 'Operasional',
-                        (c, s) => _opsCard(c, s)),
-                    last: true),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: 'Server LAN',
+                  value: pingValue,
+                  onTap: () => _openDetail(
+                    context,
+                    'Server LAN',
+                    (c, s) => _serverCard(c, s),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: 'Printer & KDS',
+                  value:
+                      '${printers.length} printer · ${stations.length} stasiun',
+                  onTap: () => _openDetail(
+                    context,
+                    'Printer & KDS',
+                    (c, s) => _printersCard(c, s),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: 'Perangkat',
+                  value:
+                      '${devices.where((d) => !d.revoked).length} pair · ${devices.where((d) => d.sessionActive).length} aktif',
+                  onTap: () => _openDetail(
+                    context,
+                    'Perangkat aktif',
+                    (c, s) => _devicesCard(c, s),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: 'Operasional',
+                  value: ref.watch(audioAlertEnabledProvider)
+                      ? 'Audio on'
+                      : 'Audio off',
+                  onTap: () => _openDetail(
+                    context,
+                    'Operasional',
+                    (c, s) => _opsCard(c, s),
+                  ),
+                  last: true,
+                ),
               ],
             ),
           ),
@@ -540,15 +630,16 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      )),
+                  Text(
+                    label,
+                    style: SatType.sans(
+                      size: 14,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(value,
-                      style: SatType.sans(size: 12, color: sc.textMd)),
+                  Text(value, style: SatType.sans(size: 12, color: sc.textMd)),
                 ],
               ),
             ),
@@ -564,9 +655,11 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     String title,
     Widget Function(BuildContext, SatColors) builder,
   ) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => _PhoneDetailScreen(title: title, builder: builder),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _PhoneDetailScreen(title: title, builder: builder),
+      ),
+    );
   }
 
   // --- Dialogs ---
@@ -609,9 +702,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       wsClient.connState.addListener(listener);
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Restart gagal: ${e.statusCode}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Restart gagal: ${e.statusCode}')));
     }
   }
 
@@ -644,18 +737,20 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => const AlertDialog(
-        content: Row(children: [
-          SizedBox(
+        content: Row(
+          children: [
+            SizedBox(
               width: 22,
               height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2)),
-          SizedBox(width: 16),
-          Text('Mencari printer…'),
-        ]),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 16),
+            Text('Mencari printer…'),
+          ],
+        ),
       ),
     );
-    final printers =
-        await ref.read(printerDiscoveryServiceProvider).discover();
+    final printers = await ref.read(printerDiscoveryServiceProvider).discover();
     if (context.mounted && Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
@@ -685,11 +780,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       ),
     );
     if (chosen == null || !context.mounted) return;
-    await ref.read(printersRepositoryProvider.notifier).create(
-          label: chosen.name,
-          host: chosen.host,
-          port: chosen.port,
-        );
+    await ref
+        .read(printersRepositoryProvider.notifier)
+        .create(label: chosen.name, host: chosen.host, port: chosen.port);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Printer "${chosen.name}" ditambahkan')),
@@ -752,12 +845,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     final host = hostCtl.text.trim();
     final port = int.tryParse(portCtl.text.trim()) ?? 9100;
     if (label.isEmpty || host.isEmpty) return;
-    await ref.read(printersRepositoryProvider.notifier).create(
-          label: label,
-          host: host,
-          port: port,
-          kind: kind,
-        );
+    await ref
+        .read(printersRepositoryProvider.notifier)
+        .create(label: label, host: host, port: port, kind: kind);
   }
 }
 
@@ -767,8 +857,11 @@ class _SystemHero extends StatelessWidget {
   final PingState ping;
   final WsConnState? wsState;
   final SystemStatusDto? status;
-  const _SystemHero(
-      {required this.ping, required this.wsState, required this.status});
+  const _SystemHero({
+    required this.ping,
+    required this.wsState,
+    required this.status,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -820,17 +913,15 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-              'WS clients akan disconnect ~1-3 detik. Masukkan PIN untuk konfirmasi.'),
+            'WS clients akan disconnect ~1-3 detik. Masukkan PIN untuk konfirmasi.',
+          ),
           const SizedBox(height: 10),
           TextField(
             controller: _ctl,
             obscureText: true,
             keyboardType: TextInputType.number,
             maxLength: 6,
-            decoration: InputDecoration(
-              labelText: 'PIN',
-              errorText: _err,
-            ),
+            decoration: InputDecoration(labelText: 'PIN', errorText: _err),
           ),
         ],
       ),
@@ -886,17 +977,20 @@ class _PhoneDetailScreen extends StatelessWidget {
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: AppStrings.back,
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),
                   Expanded(
-                    child: Text(title,
-                        style: SatType.sans(
-                          size: 22,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.4,
-                          color: sc.textHi,
-                        )),
+                    child: Text(
+                      title,
+                      style: SatType.sans(
+                        size: 22,
+                        weight: FontWeight.w600,
+                        letterSpacing: -0.4,
+                        color: sc.textHi,
+                      ),
+                    ),
                   ),
                 ],
               ),

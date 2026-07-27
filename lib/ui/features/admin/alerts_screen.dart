@@ -104,8 +104,7 @@ class _ScopeCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: SatBox.d(
                   color: deviceScoped ? sc.bg3 : sc.bg1,
                   border: SatB.all(color: sc.border0),
@@ -250,9 +249,9 @@ class _ThresholdCard extends ConsumerWidget {
   }
 
   Widget _rule(SatColors sc) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Divider(height: 1, color: sc.border0),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    child: Divider(height: 1, color: sc.border0),
+  );
 }
 
 /// Label + hint on the left, a −/value/+ stepper on the right, and (for the
@@ -307,14 +306,14 @@ class _MinutesRow extends StatelessWidget {
             ),
           ),
           if (onEnabledChanged != null) ...[
-            Switch(
-              value: on,
-              onChanged: (v) => onEnabledChanged!(v),
-            ),
+            Switch(value: on, onChanged: (v) => onEnabledChanged!(v)),
             const SizedBox(width: 4),
           ],
-          _step(sc, Icons.remove,
-              on && value > min ? () => onChanged(value - step) : null),
+          _step(
+            sc,
+            Icons.remove,
+            on && value > min ? () => onChanged(value - step) : null,
+          ),
           const SizedBox(width: 8),
           SizedBox(
             width: 66,
@@ -329,8 +328,11 @@ class _MinutesRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _step(sc, Icons.add,
-              on && value < max ? () => onChanged(value + step) : null),
+          _step(
+            sc,
+            Icons.add,
+            on && value < max ? () => onChanged(value + step) : null,
+          ),
         ],
       ),
     );
@@ -427,7 +429,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
       title: AppStrings.venueSettingsSectionSound,
       scope: AppStrings.alertsScopeVenue,
       deviceScoped: false,
-      hint: 'Pilih nada untuk tiap kejadian. Pilihan ini berlaku untuk semua '
+      hint:
+          'Pilih nada untuk tiap kejadian. Pilihan ini berlaku untuk semua '
           'perangkat di venue.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +489,9 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                   ? Icons.volume_off
                   : Icons.play_circle_outline,
               size: 22,
-              color: preset == null || preset.isSilent ? sc.textDim : sc.accentText,
+              color: preset == null || preset.isSilent
+                  ? sc.textDim
+                  : sc.accentText,
             ),
             tooltip: AppStrings.venueSettingsSoundPreview,
           ),
@@ -533,6 +538,9 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                     style: SatType.sans(size: 14, color: sc.textHi),
                   ),
                   trailing: IconButton(
+                    tooltip: preset.isSilent
+                        ? AppStrings.a11ySoundSilent
+                        : AppStrings.a11ySoundPreview,
                     onPressed: preset.isSilent
                         ? null
                         : () => _playPreset(preset.asset),
@@ -585,9 +593,8 @@ class _DeviceMuteCard extends ConsumerWidget {
     final sc = context.sat;
     final muted = ref.watch(mutedAlertsProvider);
     final mode = ref.watch(prefsServiceProvider).valueOrNull?.appMode();
-    final visible =
-        (mode == AppMode.server ? _kitchen : _waiter).toList()
-          ..sort((a, b) => a.index.compareTo(b.index));
+    final visible = (mode == AppMode.server ? _kitchen : _waiter).toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
 
     return _ScopeCard(
       title: AppStrings.venueSettingsTimingMuteTitle,

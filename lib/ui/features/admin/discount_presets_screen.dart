@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,29 +44,29 @@ class DiscountPresetsScreen extends ConsumerWidget {
           const SatAppBar(title: 'Diskon'),
           Expanded(
             child: presets.isEmpty
-          ? _Empty(sc: sc)
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-              children: [
-                Text(
-                  'Kasir memilih dari daftar ini — mereka tidak bisa mengetik '
-                  'angka diskon sendiri.',
-                  style: SatType.sans(size: 12, color: sc.textLo),
-                ),
-                const SizedBox(height: 16),
-                if (order.isNotEmpty) ...[
-                  _SectionLabel('Seluruh pesanan', sc: sc),
-                  for (final p in order)
-                    _PresetTile(preset: p, repo: repo, sc: sc),
-                  const SizedBox(height: 20),
-                ],
-                if (line.isNotEmpty) ...[
-                  _SectionLabel('Per item', sc: sc),
-                  for (final p in line)
-                    _PresetTile(preset: p, repo: repo, sc: sc),
-                ],
-              ],
-            ),
+                ? _Empty(sc: sc)
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                    children: [
+                      Text(
+                        'Kasir memilih dari daftar ini — mereka tidak bisa mengetik '
+                        'angka diskon sendiri.',
+                        style: SatType.sans(size: 12, color: sc.textLo),
+                      ),
+                      const SizedBox(height: 16),
+                      if (order.isNotEmpty) ...[
+                        _SectionLabel('Seluruh pesanan', sc: sc),
+                        for (final p in order)
+                          _PresetTile(preset: p, repo: repo, sc: sc),
+                        const SizedBox(height: 20),
+                      ],
+                      if (line.isNotEmpty) ...[
+                        _SectionLabel('Per item', sc: sc),
+                        for (final p in line)
+                          _PresetTile(preset: p, repo: repo, sc: sc),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),
@@ -79,16 +80,17 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text, {required this.sc});
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text.toUpperCase(),
-          style: SatType.mono(
-              size: 9,
-              weight: FontWeight.w600,
-              letterSpacing: 1.4,
-              color: sc.textLo),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      text.toUpperCase(),
+      style: SatType.mono(
+        size: 9,
+        weight: FontWeight.w600,
+        letterSpacing: 1.4,
+        color: sc.textLo,
+      ),
+    ),
+  );
 }
 
 class _Empty extends StatelessWidget {
@@ -96,35 +98,43 @@ class _Empty extends StatelessWidget {
   const _Empty({required this.sc});
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.sell_outlined, size: 40, color: sc.textLo),
-              const SizedBox(height: 12),
-              Text('Belum ada preset diskon',
-                  style: SatType.sans(
-                      size: 15, weight: FontWeight.w600, color: sc.textHi)),
-              const SizedBox(height: 6),
-              Text(
-                'Buat preset agar kasir bisa memberi diskon tanpa mengetik '
-                'angka sendiri.',
-                textAlign: TextAlign.center,
-                style: SatType.sans(size: 12.5, color: sc.textLo),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.sell_outlined, size: 40, color: sc.textLo),
+          const SizedBox(height: 12),
+          Text(
+            'Belum ada preset diskon',
+            style: SatType.sans(
+              size: 15,
+              weight: FontWeight.w600,
+              color: sc.textHi,
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: 6),
+          Text(
+            'Buat preset agar kasir bisa memberi diskon tanpa mengetik '
+            'angka sendiri.',
+            textAlign: TextAlign.center,
+            style: SatType.sans(size: 12.5, color: sc.textLo),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _PresetTile extends StatelessWidget {
   final DiscountPresetDto preset;
   final DiscountPresetsRepository repo;
   final SatColors sc;
-  const _PresetTile(
-      {required this.preset, required this.repo, required this.sc});
+  const _PresetTile({
+    required this.preset,
+    required this.repo,
+    required this.sc,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -140,16 +150,21 @@ class _PresetTile extends StatelessWidget {
         title: Row(
           children: [
             Flexible(
-              child: Text(p.name,
-                  style: SatType.sans(
-                      size: 13.5,
-                      weight: FontWeight.w600,
-                      color: p.active ? sc.textHi : sc.textLo)),
+              child: Text(
+                p.name,
+                style: SatType.sans(
+                  size: 13.5,
+                  weight: FontWeight.w600,
+                  color: p.active ? sc.textHi : sc.textLo,
+                ),
+              ),
             ),
             if (!p.active) ...[
               const SizedBox(width: 8),
-              Text('nonaktif',
-                  style: SatType.sans(size: 10.5, color: sc.textLo)),
+              Text(
+                'nonaktif',
+                style: SatType.sans(size: 10.5, color: sc.textLo),
+              ),
             ],
           ],
         ),
@@ -160,6 +175,7 @@ class _PresetTile extends StatelessWidget {
           style: SatType.sans(size: 12, color: sc.textLo),
         ),
         trailing: IconButton(
+          tooltip: AppStrings.delete,
           icon: Icon(Icons.delete_outline, color: sc.urgent),
           onPressed: () async {
             final ok = await showDialog<bool>(
@@ -172,11 +188,13 @@ class _PresetTile extends StatelessWidget {
                 ),
                 actions: [
                   TextButton(
-                      onPressed: () => Navigator.pop(c, false),
-                      child: const Text('Batal')),
+                    onPressed: () => Navigator.pop(c, false),
+                    child: const Text('Batal'),
+                  ),
                   FilledButton(
-                      onPressed: () => Navigator.pop(c, true),
-                      child: const Text('Hapus')),
+                    onPressed: () => Navigator.pop(c, true),
+                    child: const Text('Hapus'),
+                  ),
                 ],
               ),
             );
@@ -200,8 +218,8 @@ Future<void> _edit(
     text: existing == null
         ? ''
         : (existing.isPercent
-            ? (existing.value / 100).toStringAsFixed(0)
-            : '${existing.value}'),
+              ? (existing.value / 100).toStringAsFixed(0)
+              : '${existing.value}'),
   );
   var scope = existing?.scope ?? 'order';
   var kind = existing?.kind ?? 'percent';
@@ -217,14 +235,23 @@ Future<void> _edit(
       return StatefulBuilder(
         builder: (c, setState) => Padding(
           padding: EdgeInsets.fromLTRB(
-              16, 0, 16, MediaQuery.of(c).viewInsets.bottom + 16),
+            16,
+            0,
+            16,
+            MediaQuery.of(c).viewInsets.bottom + 16,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(existing == null ? 'Preset baru' : 'Ubah preset',
-                  style: SatType.sans(
-                      size: 15, weight: FontWeight.w700, color: sc.textHi)),
+              Text(
+                existing == null ? 'Preset baru' : 'Ubah preset',
+                style: SatType.sans(
+                  size: 15,
+                  weight: FontWeight.w700,
+                  color: sc.textHi,
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: nameCtrl,
@@ -268,10 +295,14 @@ Future<void> _edit(
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text('Aktif',
-                    style: SatType.sans(size: 13, color: sc.textHi)),
-                subtitle: Text('Nonaktif menyembunyikan preset dari kasir',
-                    style: SatType.sans(size: 11.5, color: sc.textLo)),
+                title: Text(
+                  'Aktif',
+                  style: SatType.sans(size: 13, color: sc.textHi),
+                ),
+                subtitle: Text(
+                  'Nonaktif menyembunyikan preset dari kasir',
+                  style: SatType.sans(size: 11.5, color: sc.textLo),
+                ),
                 value: active,
                 onChanged: (v) => setState(() => active = v),
               ),
@@ -298,18 +329,21 @@ Future<void> _edit(
                     }
                     if (existing == null) {
                       await r.create(
-                          name: name,
-                          scope: scope,
-                          kind: kind,
-                          value: value,
-                          active: active);
+                        name: name,
+                        scope: scope,
+                        kind: kind,
+                        value: value,
+                        active: active,
+                      );
                     } else {
-                      await r.update(existing.id,
-                          name: name,
-                          scope: scope,
-                          kind: kind,
-                          value: value,
-                          active: active);
+                      await r.update(
+                        existing.id,
+                        name: name,
+                        scope: scope,
+                        kind: kind,
+                        value: value,
+                        active: active,
+                      );
                     }
                     if (c.mounted) Navigator.pop(c);
                   },

@@ -45,24 +45,26 @@ class _TakeawayList extends ConsumerWidget {
             child: Container(
               width: 40,
               height: 4,
-              decoration: SatBox.d(
-                color: sc.border1,
-                borderRadius: SatR.a(2),
-              ),
+              decoration: SatBox.d(color: sc.border1, borderRadius: SatR.a(2)),
             ),
           ),
           const SizedBox(height: 14),
           Text(
             SatShape.caps(AppStrings.floorTakeaway),
             style: SatType.display(
-                size: 18, weight: FontWeight.w700, color: sc.textHi),
+              size: 18,
+              weight: FontWeight.w700,
+              color: sc.textHi,
+            ),
           ),
           const SizedBox(height: 12),
           if (visits.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Text(AppStrings.takeawayEmpty,
-                  style: SatType.sans(size: 13, color: sc.textMd)),
+              child: Text(
+                AppStrings.takeawayEmpty,
+                style: SatType.sans(size: 13, color: sc.textMd),
+              ),
             )
           else
             Flexible(
@@ -94,19 +96,21 @@ class _TakeawayRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final tickets = ref.watch(ticketsProvider)[visit.id] ?? const <Ticket>[];
-    final active =
-        tickets.where((t) => t.status != TicketStatus.voided).toList();
+    final active = tickets
+        .where((t) => t.status != TicketStatus.voided)
+        .toList();
     final ready = tickets.any((t) => t.status == TicketStatus.ready);
-    final live = tickets.any((t) =>
-        t.status != TicketStatus.served && t.status != TicketStatus.voided);
+    final live = tickets.any(
+      (t) => t.status != TicketStatus.served && t.status != TicketStatus.voided,
+    );
 
     final (statusLabel, statusColor) = visit.handedOver
         ? ('Diserahkan', sc.textMd)
         : ready
-            ? ('Siap', sc.success)
-            : live
-                ? ('Diproses', sc.warn)
-                : ('Selesai', sc.info);
+        ? ('Siap', sc.success)
+        : live
+        ? ('Diproses', sc.warn)
+        : ('Selesai', sc.info);
 
     return GestureDetector(
       onTap: onTap,
@@ -124,12 +128,15 @@ class _TakeawayRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(visit.label,
-                      style: SatType.mono(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                          letterSpacing: 0.2)),
+                  Text(
+                    visit.label,
+                    style: SatType.mono(
+                      size: 13,
+                      weight: FontWeight.w600,
+                      color: sc.textHi,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
                   const SizedBox(height: 3),
                   Text(
                     [
@@ -139,7 +146,10 @@ class _TakeawayRow extends ConsumerWidget {
                       '${active.length} item',
                     ].join(' · '),
                     style: SatType.sans(
-                        size: 12, weight: FontWeight.w500, color: sc.textMd),
+                      size: 12,
+                      weight: FontWeight.w500,
+                      color: sc.textMd,
+                    ),
                   ),
                 ],
               ),
@@ -161,11 +171,7 @@ class _TakeawayRow extends ConsumerWidget {
                   size: 9,
                   weight: FontWeight.w800,
                   letterSpacing: 0.8,
-                  color: SatShape.brutal
-                      ? (statusColor.computeLuminance() > 0.45
-                          ? const Color(0xFF0B0B0F)
-                          : Colors.white)
-                      : statusColor,
+                  color: SatShape.brutal ? onFill(statusColor) : statusColor,
                 ),
               ),
             ),

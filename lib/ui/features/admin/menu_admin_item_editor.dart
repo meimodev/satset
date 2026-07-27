@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,7 +36,8 @@ class MenuAdminItemEditor extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<MenuAdminItemEditor> createState() => _MenuAdminItemEditorState();
+  ConsumerState<MenuAdminItemEditor> createState() =>
+      _MenuAdminItemEditorState();
 }
 
 class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
@@ -126,14 +128,19 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     if (id == null) {
       _draft = _blankItem();
     } else {
-      final found = ref.read(menuItemsProvider).where((i) => i.id == id).firstOrNull;
+      final found = ref
+          .read(menuItemsProvider)
+          .where((i) => i.id == id)
+          .firstOrNull;
       _draft = found ?? _blankItem();
     }
     _name.text = _draft.name;
     _desc.text = _draft.description;
     // Zero seeds a blank, not a literal "0" — an untouched field must show its
     // hint, not a value the admin has to select-all-delete before typing.
-    _basePrice.text = _draft.basePrice == 0 ? '' : groupRupiah(_draft.basePrice);
+    _basePrice.text = _draft.basePrice == 0
+        ? ''
+        : groupRupiah(_draft.basePrice);
     _cost.text = _draft.cost == 0 ? '' : groupRupiah(_draft.cost);
     _showErrors = false;
     // Empty = "ikut target venue" (ADR-0043). The hint carries the number it
@@ -195,9 +202,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   bool get _hasBlankNames =>
       _name.text.trim().isEmpty ||
       _realVariants.any((v) => v.name.trim().isEmpty) ||
-      _draft.modifierGroups.any((g) =>
-          g.name.trim().isEmpty ||
-          g.options.any((o) => o.name.trim().isEmpty));
+      _draft.modifierGroups.any(
+        (g) =>
+            g.name.trim().isEmpty ||
+            g.options.any((o) => o.name.trim().isEmpty),
+      );
 
   /// Returns false when the save did not land, so the footer skips its success
   /// tick instead of flashing a green check over a failure.
@@ -209,15 +218,19 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       );
       return false;
     }
-    final priceCents = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
-    final costCents = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    final priceCents =
+        int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    final costCents =
+        int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     // Blank (or unparseable) clears the override back to inherit.
     final prep = int.tryParse(_prep.text.trim());
     final variants = _draft.variants.isEmpty
         ? [Variant(id: 'reg', name: '', price: priceCents)]
         : [
             for (final v in _draft.variants)
-              v.id == 'reg' && v.name.isEmpty ? v.copyWith(price: priceCents) : v,
+              v.id == 'reg' && v.name.isEmpty
+                  ? v.copyWith(price: priceCents)
+                  : v,
           ];
     final saved = _draft.copyWith(
       name: _name.text.trim(),
@@ -252,7 +265,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       ref.read(menuAdminSelectedItemIdProvider.notifier).state = saved.id;
     }
     messenger.showSnackBar(
-      SnackBar(content: Text(wasNew ? 'Item ditambahkan' : 'Perubahan tersimpan')),
+      SnackBar(
+        content: Text(wasNew ? 'Item ditambahkan' : 'Perubahan tersimpan'),
+      ),
     );
     widget.onClose?.call();
     return true;
@@ -286,28 +301,34 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                Text('Hapus item?',
-                    style: SatType.sans(
-                        size: 16,
-                        weight: FontWeight.w600,
-                        color: sc.textHi)),
+                Text(
+                  'Hapus item?',
+                  style: SatType.sans(
+                    size: 16,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('Item "${_draft.name}" akan dihapus dari menu.',
-                    style: SatType.sans(
-                        size: 13, color: sc.textMd, height: 1.4)),
+                Text(
+                  'Item "${_draft.name}" akan dihapus dari menu.',
+                  style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+                ),
                 const SizedBox(height: 18),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Batal')),
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Batal'),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                            backgroundColor: sc.urgent),
+                          backgroundColor: sc.urgent,
+                        ),
                         onPressed: () => Navigator.pop(ctx, true),
                         child: const Text('Hapus'),
                       ),
@@ -388,7 +409,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   // ---- sections ---------------------------------------------------------
 
-  Widget _identitySection(SatColors sc, List<MenuCategory> cats, bool readOnly) {
+  Widget _identitySection(
+    SatColors sc,
+    List<MenuCategory> cats,
+    bool readOnly,
+  ) {
     return _Section(
       title: 'Identitas',
       child: Column(
@@ -402,12 +427,20 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _input(_name, 'Nama item',
-                        readOnly: readOnly,
-                        error: _errorIfBlank(_name.text),
-                        onChanged: (_) => setState(() {})),
+                    _input(
+                      _name,
+                      'Nama item',
+                      readOnly: readOnly,
+                      error: _errorIfBlank(_name.text),
+                      onChanged: (_) => setState(() {}),
+                    ),
                     const SizedBox(height: 10),
-                    _input(_desc, 'Deskripsi singkat', maxLines: 3, readOnly: readOnly),
+                    _input(
+                      _desc,
+                      'Deskripsi singkat',
+                      maxLines: 3,
+                      readOnly: readOnly,
+                    ),
                   ],
                 ),
               ),
@@ -417,13 +450,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           _label('Kategori'),
           const SizedBox(height: 6),
           Wrap(
-            spacing: 6, runSpacing: 6,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               for (final c in cats)
                 _chipChoice(
                   label: c.name,
                   selected: _draft.categoryId == c.id,
-                  onTap: readOnly ? null : () => _patch(_draft.copyWith(categoryId: c.id)),
+                  onTap: readOnly
+                      ? null
+                      : () => _patch(_draft.copyWith(categoryId: c.id)),
                 ),
             ],
           ),
@@ -444,8 +480,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       sig = 'pending:${_pendingPhoto!.length}';
       preview = ClipRRect(
         borderRadius: radius,
-        child: Image.memory(_pendingPhoto!,
-            fit: BoxFit.cover, width: 92, height: 92, gaplessPlayback: true),
+        child: Image.memory(
+          _pendingPhoto!,
+          fit: BoxFit.cover,
+          width: 92,
+          height: 92,
+          gaplessPlayback: true,
+        ),
       );
     } else {
       sig = 'rev:${_pendingPhotoClear ? 0 : _draft.photoRev}';
@@ -459,8 +500,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     // Crossfade when the photo changes (pick / clear / revision bump).
     preview = AnimatedSwitcher(
       duration: const Duration(milliseconds: 240),
-      switchInCurve: kSatEase,
-      switchOutCurve: kSatEase,
+      switchInCurve: satEaseOut,
+      switchOutCurve: satEaseOut,
       child: KeyedSubtree(key: ValueKey(sig), child: preview),
     );
     return GestureDetector(
@@ -468,7 +509,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: Stack(
         children: [
           Container(
-            width: 92, height: 92,
+            width: 92,
+            height: 92,
             decoration: SatBox.d(
               border: SatB.all(color: sc.border1),
               borderRadius: radius,
@@ -477,7 +519,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           if (!readOnly)
             Positioned(
-              right: 0, bottom: 0,
+              right: 0,
+              bottom: 0,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: SatBox.d(
@@ -487,11 +530,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     bottomRight: SatR.c(13),
                   ),
                 ),
-                child: Text(_hasPhotoNow ? 'UBAH' : 'FOTO',
-                    style: SatType.mono(
-                      size: 8, weight: FontWeight.w600,
-                      letterSpacing: 1.0, color: Colors.white,
-                    )),
+                child: Text(
+                  _hasPhotoNow ? 'UBAH' : 'FOTO',
+                  style: SatType.mono(
+                    size: 8,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.0,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
         ],
@@ -514,10 +561,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           children: [
             const SizedBox(height: 12),
             Container(
-              width: 40, height: 4,
-              decoration: SatBox.d(
-                color: sc.border1, borderRadius: SatR.a(2),
-              ),
+              width: 40,
+              height: 4,
+              decoration: SatBox.d(color: sc.border1, borderRadius: SatR.a(2)),
             ),
             const SizedBox(height: 8),
             ListTile(
@@ -539,8 +585,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             if (_hasPhotoNow)
               ListTile(
                 leading: Icon(Icons.delete_outline, color: sc.urgent),
-                title: Text('Hapus foto',
-                    style: SatType.sans(color: sc.urgent)),
+                title: Text(
+                  'Hapus foto',
+                  style: SatType.sans(color: sc.urgent),
+                ),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   setState(() {
@@ -575,8 +623,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       await _commitPhotoIfExisting();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal memuat foto: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memuat foto: $e')));
     }
   }
 
@@ -633,7 +682,17 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         children: [
           Row(
             children: [
-              Expanded(child: _input(_basePrice, 'Harga dasar', keyboard: TextInputType.number, amount: true, money: true, readOnly: readOnly, onChanged: (_) => setState(() {}))),
+              Expanded(
+                child: _input(
+                  _basePrice,
+                  'Harga dasar',
+                  keyboard: TextInputType.number,
+                  amount: true,
+                  money: true,
+                  readOnly: readOnly,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: _input(
@@ -641,7 +700,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   // Empty field reads as what it inherits, so a blank is never
                   // mistaken for "no target" (ADR-0043).
                   'Ikut venue '
-                      '(${ref.watch(venueSettingsProvider).prepTargetMins}m)',
+                  '(${ref.watch(venueSettingsProvider).prepTargetMins}m)',
                   label: 'Waktu siap (menit)',
                   keyboard: TextInputType.number,
                   readOnly: readOnly,
@@ -672,13 +731,20 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ],
           ),
           const SizedBox(height: 14),
-          _subhead('Varian ukuran', trailing: readOnly ? null : _ghostButton('+ Varian', onTap: _addVariant)),
+          _subhead(
+            'Varian ukuran',
+            trailing: readOnly
+                ? null
+                : _ghostButton('+ Varian', onTap: _addVariant),
+          ),
           const SizedBox(height: 6),
           ExpandFade(
             child: _realVariants.isEmpty
-                ? Text('Belum ada varian. Hanya pakai harga dasar.',
+                ? Text(
+                    'Belum ada varian. Hanya pakai harga dasar.',
                     key: const ValueKey('var-empty'),
-                    style: SatType.sans(size: 12, color: sc.textLo))
+                    style: SatType.sans(size: 12, color: sc.textLo),
+                  )
                 : AnimatedReflow(
                     key: const ValueKey('var-list'),
                     child: Column(
@@ -708,8 +774,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             child: TextField(
               controller: _ctrl('v:${v.id}:name', v.name),
               readOnly: readOnly,
-              decoration: _fieldDeco('Nama (mis. Besar)',
-                  error: _errorIfBlank(v.name)),
+              decoration: _fieldDeco(
+                'Nama (mis. Besar)',
+                error: _errorIfBlank(v.name),
+              ),
               // setState, not a bare assign: the recipe scope chips are built
               // from these names and must repaint as they're typed.
               onChanged: (t) => setState(() {
@@ -723,8 +791,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           SizedBox(
             width: 140,
             child: TextField(
-              controller:
-                  _ctrl('v:${v.id}:price', v.price == 0 ? '' : groupRupiah(v.price)),
+              controller: _ctrl(
+                'v:${v.id}:price',
+                v.price == 0 ? '' : groupRupiah(v.price),
+              ),
               readOnly: readOnly,
               keyboardType: TextInputType.number,
               inputFormatters: const [RupiahInputFormatter()],
@@ -739,6 +809,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           if (!readOnly)
             IconButton(
+              tooltip: AppStrings.delete,
               icon: Icon(Icons.close, size: 18, color: sc.textLo),
               onPressed: () {
                 final next = List<Variant>.of(_draft.variants)..removeAt(idx);
@@ -762,12 +833,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Widget _modifiersSection(SatColors sc, bool readOnly) {
     return _Section(
       title: 'Grup modifier',
-      trailing: readOnly ? null : _ghostButton('+ Grup', onTap: _addModifierGroup),
+      trailing: readOnly
+          ? null
+          : _ghostButton('+ Grup', onTap: _addModifierGroup),
       child: ExpandFade(
         child: _draft.modifierGroups.isEmpty
-            ? Text('Belum ada grup modifier (mis. tingkat pedas, pilih protein).',
+            ? Text(
+                'Belum ada grup modifier (mis. tingkat pedas, pilih protein).',
                 key: const ValueKey('mod-empty'),
-                style: SatType.sans(size: 12, color: sc.textLo))
+                style: SatType.sans(size: 12, color: sc.textLo),
+              )
             : AnimatedReflow(
                 key: const ValueKey('mod-list'),
                 child: Column(
@@ -788,11 +863,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final id = 'g${const Uuid().v4().substring(0, 6)}';
     final oid = 'o${const Uuid().v4().substring(0, 6)}';
     final next = List<ModifierGroup>.of(_draft.modifierGroups)
-      ..add(ModifierGroup(
-        id: id,
-        name: '',
-        options: [ModifierOption(id: oid, name: '')],
-      ));
+      ..add(
+        ModifierGroup(
+          id: id,
+          name: '',
+          options: [ModifierOption(id: oid, name: '')],
+        ),
+      );
     _patch(_draft.copyWith(modifierGroups: next));
   }
 
@@ -814,9 +891,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 child: TextField(
                   controller: _ctrl('g:${g.id}:name', g.name),
                   readOnly: readOnly,
-                  style: SatType.sans(size: 14, weight: FontWeight.w600, color: sc.textHi),
-                  decoration: _fieldDeco('Nama grup', error: _errorIfBlank(g.name))
-                      .copyWith(isDense: true),
+                  style: SatType.sans(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: sc.textHi,
+                  ),
+                  decoration: _fieldDeco(
+                    'Nama grup',
+                    error: _errorIfBlank(g.name),
+                  ).copyWith(isDense: true),
                   onChanged: (t) => setState(() {
                     final next = List<ModifierGroup>.of(_draft.modifierGroups);
                     next[gi] = next[gi].copyWith(name: t);
@@ -826,9 +909,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
               if (!readOnly)
                 IconButton(
+                  tooltip: AppStrings.delete,
                   icon: Icon(Icons.delete_outline, size: 18, color: sc.textLo),
                   onPressed: () {
-                    final next = List<ModifierGroup>.of(_draft.modifierGroups)..removeAt(gi);
+                    final next = List<ModifierGroup>.of(_draft.modifierGroups)
+                      ..removeAt(gi);
                     _patch(_draft.copyWith(modifierGroups: next));
                   },
                 ),
@@ -840,21 +925,29 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               _toggleChip(
                 label: 'Wajib',
                 on: g.required,
-                onTap: readOnly ? null : () {
-                  final next = List<ModifierGroup>.of(_draft.modifierGroups);
-                  next[gi] = next[gi].copyWith(required: !g.required);
-                  _patch(_draft.copyWith(modifierGroups: next));
-                },
+                onTap: readOnly
+                    ? null
+                    : () {
+                        final next = List<ModifierGroup>.of(
+                          _draft.modifierGroups,
+                        );
+                        next[gi] = next[gi].copyWith(required: !g.required);
+                        _patch(_draft.copyWith(modifierGroups: next));
+                      },
               ),
               const SizedBox(width: 8),
               _toggleChip(
                 label: 'Pilih banyak',
                 on: g.multi,
-                onTap: readOnly ? null : () {
-                  final next = List<ModifierGroup>.of(_draft.modifierGroups);
-                  next[gi] = next[gi].copyWith(multi: !g.multi);
-                  _patch(_draft.copyWith(modifierGroups: next));
-                },
+                onTap: readOnly
+                    ? null
+                    : () {
+                        final next = List<ModifierGroup>.of(
+                          _draft.modifierGroups,
+                        );
+                        next[gi] = next[gi].copyWith(multi: !g.multi);
+                        _patch(_draft.copyWith(modifierGroups: next));
+                      },
               ),
             ],
           ),
@@ -873,14 +966,21 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           if (!readOnly)
             Align(
               alignment: Alignment.centerLeft,
-              child: _ghostButton('+ Opsi', onTap: () {
-                final opts = List<ModifierOption>.of(g.options)
-                  ..add(ModifierOption(
-                      id: 'o${const Uuid().v4().substring(0, 6)}', name: ''));
-                final next = List<ModifierGroup>.of(_draft.modifierGroups);
-                next[gi] = next[gi].copyWith(options: opts);
-                _patch(_draft.copyWith(modifierGroups: next));
-              }),
+              child: _ghostButton(
+                '+ Opsi',
+                onTap: () {
+                  final opts = List<ModifierOption>.of(g.options)
+                    ..add(
+                      ModifierOption(
+                        id: 'o${const Uuid().v4().substring(0, 6)}',
+                        name: '',
+                      ),
+                    );
+                  final next = List<ModifierGroup>.of(_draft.modifierGroups);
+                  next[gi] = next[gi].copyWith(options: opts);
+                  _patch(_draft.copyWith(modifierGroups: next));
+                },
+              ),
             ),
         ],
       ),
@@ -898,8 +998,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             child: TextField(
               controller: _ctrl('o:${g.id}:${o.id}:name', o.name),
               readOnly: readOnly,
-              decoration: _fieldDeco('Nama opsi', error: _errorIfBlank(o.name))
-                  .copyWith(isDense: true),
+              decoration: _fieldDeco(
+                'Nama opsi',
+                error: _errorIfBlank(o.name),
+              ).copyWith(isDense: true),
               onChanged: (t) => setState(() {
                 final opts = List<ModifierOption>.of(g.options);
                 opts[oi] = opts[oi].copyWith(name: t);
@@ -915,17 +1017,22 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             width: 140,
             child: TextField(
               controller: _ctrl(
-                  'o:${g.id}:${o.id}:price',
-                  o.priceDelta == 0
-                      ? ''
-                      : o.priceDelta < 0
-                          ? '-${groupRupiah(-o.priceDelta)}'
-                          : groupRupiah(o.priceDelta)),
+                'o:${g.id}:${o.id}:price',
+                o.priceDelta == 0
+                    ? ''
+                    : o.priceDelta < 0
+                    ? '-${groupRupiah(-o.priceDelta)}'
+                    : groupRupiah(o.priceDelta),
+              ),
               readOnly: readOnly,
               keyboardType: const TextInputType.numberWithOptions(signed: true),
-              inputFormatters: const [RupiahInputFormatter(allowNegative: true)],
-              decoration:
-                  _fieldDeco('+/-', money: true).copyWith(isDense: true),
+              inputFormatters: const [
+                RupiahInputFormatter(allowNegative: true),
+              ],
+              decoration: _fieldDeco(
+                '+/-',
+                money: true,
+              ).copyWith(isDense: true),
               onChanged: (t) => setState(() {
                 final neg = t.trimLeft().startsWith('-');
                 final digits = t.replaceAll(RegExp(r'[^0-9]'), '');
@@ -940,6 +1047,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           if (!readOnly)
             IconButton(
+              tooltip: AppStrings.delete,
               icon: Icon(Icons.close, size: 16, color: sc.textLo),
               onPressed: () {
                 final opts = List<ModifierOption>.of(g.options)..removeAt(oi);
@@ -975,7 +1083,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           next[scope.substring(2)] = lines;
         }
         _recipes = ItemRecipes(
-            base: _recipes.base, byVariant: next, byOption: _recipes.byOption);
+          base: _recipes.base,
+          byVariant: next,
+          byOption: _recipes.byOption,
+        );
       } else if (scope.startsWith('o:')) {
         final next = Map<String, List<RecipeLine>>.of(_recipes.byOption);
         if (lines.isEmpty) {
@@ -984,12 +1095,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           next[scope.substring(2)] = lines;
         }
         _recipes = ItemRecipes(
-            base: _recipes.base, byVariant: _recipes.byVariant, byOption: next);
+          base: _recipes.base,
+          byVariant: _recipes.byVariant,
+          byOption: next,
+        );
       } else {
         _recipes = ItemRecipes(
-            base: lines,
-            byVariant: _recipes.byVariant,
-            byOption: _recipes.byOption);
+          base: lines,
+          byVariant: _recipes.byVariant,
+          byOption: _recipes.byOption,
+        );
       }
     });
   }
@@ -1016,12 +1131,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           padding: EdgeInsets.symmetric(vertical: 12),
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
-        error: (e, _) => Text('Gagal memuat bahan: $e',
-            style: SatType.sans(size: 12, color: sc.urgent)),
+        error: (e, _) => Text(
+          'Gagal memuat bahan: $e',
+          style: SatType.sans(size: 12, color: sc.urgent),
+        ),
         data: (list) => list.isEmpty
             ? Text(
                 'Belum ada bahan. Tambahkan di menu Stok sebelum menyusun resep.',
-                style: SatType.sans(size: 12, color: sc.textLo))
+                style: SatType.sans(size: 12, color: sc.textLo),
+              )
             : _recipeBody(sc, readOnly, list),
       ),
     );
@@ -1065,14 +1183,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           isVariant
               ? 'Resep varian menggantikan resep dasar sepenuhnya. Kosong = ikut resep dasar.'
               : isOption
-                  ? 'Resep modifier ditambahkan di atas resep yang berlaku.'
-                  : 'Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.',
+              ? 'Resep modifier ditambahkan di atas resep yang berlaku.'
+              : 'Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.',
           style: SatType.sans(size: 11, color: sc.textLo),
         ),
         const SizedBox(height: 10),
         if (lines.isEmpty)
-          Text('Belum ada bahan pada resep ini.',
-              style: SatType.sans(size: 12, color: sc.textLo)),
+          Text(
+            'Belum ada bahan pada resep ini.',
+            style: SatType.sans(size: 12, color: sc.textLo),
+          ),
         for (var i = 0; i < lines.length; i++)
           _recipeLineRow(sc, readOnly, pantry, byId, lines, i),
         if (!readOnly) ...[
@@ -1123,7 +1243,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               items: [
                 for (final p in pantry)
                   DropdownMenuItem(
-                      value: p.id, child: Text('${p.name} (${p.unit.label})')),
+                    value: p.id,
+                    child: Text('${p.name} (${p.unit.label})'),
+                  ),
               ],
               onChanged: readOnly
                   ? null
@@ -1134,9 +1256,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                       // Units are per-ingredient, so re-read the typed amount
                       // against the new one rather than carrying milli-base
                       // across dimensions.
-                      final typed = double.tryParse(
-                              ctrl.text.replaceAll(',', '.')) ??
-                          1;
+                      final typed =
+                          double.tryParse(ctrl.text.replaceAll(',', '.')) ?? 1;
                       next[i] = RecipeLine(
                         id: line.id,
                         ingredientId: v,
@@ -1152,8 +1273,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             child: TextField(
               controller: ctrl,
               readOnly: readOnly,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               style: SatType.sans(size: 14, color: sc.textHi),
               // Unit as a suffix, not a hint: a hint vanishes the moment a
               // number is typed, which is exactly when "g or kg?" matters.
@@ -1177,7 +1299,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               icon: Icon(Icons.close, size: 18, color: sc.textLo),
               onPressed: () {
                 _subCtrls.remove(ctrlKey)?.dispose();
-                _setLines(_recipeScope, List<RecipeLine>.of(lines)..removeAt(i));
+                _setLines(
+                  _recipeScope,
+                  List<RecipeLine>.of(lines)..removeAt(i),
+                );
               },
             ),
         ],
@@ -1205,17 +1330,20 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           _label('Alergen'),
           const SizedBox(height: 6),
           Wrap(
-            spacing: 6, runSpacing: 6,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               for (final t in allergens)
                 _toggleChip(
                   label: t.name,
                   on: _draft.allergens.contains(t.id),
-                  onTap: readOnly ? null : () {
-                    final set = List<String>.of(_draft.allergens);
-                    set.contains(t.id) ? set.remove(t.id) : set.add(t.id);
-                    _patch(_draft.copyWith(allergens: set));
-                  },
+                  onTap: readOnly
+                      ? null
+                      : () {
+                          final set = List<String>.of(_draft.allergens);
+                          set.contains(t.id) ? set.remove(t.id) : set.add(t.id);
+                          _patch(_draft.copyWith(allergens: set));
+                        },
                 ),
             ],
           ),
@@ -1223,17 +1351,20 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           _label('Diet'),
           const SizedBox(height: 6),
           Wrap(
-            spacing: 6, runSpacing: 6,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               for (final t in diets)
                 _toggleChip(
                   label: t.name,
                   on: _draft.dietary.contains(t.id),
-                  onTap: readOnly ? null : () {
-                    final set = List<String>.of(_draft.dietary);
-                    set.contains(t.id) ? set.remove(t.id) : set.add(t.id);
-                    _patch(_draft.copyWith(dietary: set));
-                  },
+                  onTap: readOnly
+                      ? null
+                      : () {
+                          final set = List<String>.of(_draft.dietary);
+                          set.contains(t.id) ? set.remove(t.id) : set.add(t.id);
+                          _patch(_draft.copyWith(dietary: set));
+                        },
                 ),
             ],
           ),
@@ -1255,8 +1386,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               auto
                   ? 'Tidak tersedia (stok 0)'
                   : (_draft.unavailable
-                      ? 'Tidak tersedia (manual)'
-                      : 'Aktif untuk dijual'),
+                        ? 'Tidak tersedia (manual)'
+                        : 'Aktif untuk dijual'),
               style: SatType.sans(
                 size: 14,
                 weight: FontWeight.w600,
@@ -1269,9 +1400,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           TextButton(
             onPressed: auto
                 ? null
-                : () => _patch(_draft.copyWith(unavailable: !_draft.unavailable)),
+                : () =>
+                      _patch(_draft.copyWith(unavailable: !_draft.unavailable)),
             child: Text(
-                _draft.unavailable ? 'Aktifkan' : 'Tandai tidak tersedia'),
+              _draft.unavailable ? 'Aktifkan' : 'Tandai tidak tersedia',
+            ),
           ),
         ],
       ),
@@ -1374,18 +1507,24 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       keyboardType: keyboard,
       onChanged: onChanged,
       style: SatType.sans(size: 14, color: context.sat.textHi),
-      decoration: _fieldDeco(hint,
-          label: label, money: money, error: error, helper: helper),
+      decoration: _fieldDeco(
+        hint,
+        label: label,
+        money: money,
+        error: error,
+        helper: helper,
+      ),
       inputFormatters: amount
           ? const [RupiahInputFormatter()]
           : keyboard == TextInputType.number
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : null,
     );
   }
 
   Widget _marginPreview(SatColors sc) {
-    final price = int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    final price =
+        int.tryParse(_basePrice.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final cost = int.tryParse(_cost.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
     final hasData = price > 0;
     final marginPct = hasData ? ((price - cost) / price * 100) : 0;
@@ -1407,7 +1546,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     }
     return AnimatedContainer(
       duration: const Duration(milliseconds: 240),
-      curve: kSatEase,
+      curve: satEaseOut,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: SatBox.d(
         color: tone.withValues(alpha: 0.08),
@@ -1417,11 +1556,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('MARGIN',
-              style: SatType.mono(
-                size: 9, weight: FontWeight.w600,
-                letterSpacing: 1.0, color: sc.textLo,
-              )),
+          Text(
+            'MARGIN',
+            style: SatType.mono(
+              size: 9,
+              weight: FontWeight.w600,
+              letterSpacing: 1.0,
+              color: sc.textLo,
+            ),
+          ),
           const SizedBox(height: 4),
           AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 240),
@@ -1435,8 +1578,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 : const Text('—'),
           ),
           const SizedBox(height: 2),
-          Text(hasData ? 'Rp $marginRp · $hint' : hint,
-              style: SatType.sans(size: 11, color: sc.textMd)),
+          Text(
+            hasData ? 'Rp $marginRp · $hint' : hint,
+            style: SatType.sans(size: 11, color: sc.textMd),
+          ),
         ],
       ),
     );
@@ -1444,11 +1589,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _label(String t) {
     final sc = context.sat;
-    return Text(t.toUpperCase(),
-        style: SatType.mono(
-          size: 10, weight: FontWeight.w600,
-          letterSpacing: 1.0, color: sc.textLo,
-        ));
+    return Text(
+      t.toUpperCase(),
+      style: SatType.mono(
+        size: 10,
+        weight: FontWeight.w600,
+        letterSpacing: 1.0,
+        color: sc.textLo,
+      ),
+    );
   }
 
   Widget _subhead(String t, {Widget? trailing}) {
@@ -1460,7 +1609,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     );
   }
 
-  Widget _chipChoice({required String label, required bool selected, VoidCallback? onTap}) {
+  Widget _chipChoice({
+    required String label,
+    required bool selected,
+    VoidCallback? onTap,
+  }) {
     final sc = context.sat;
     return PressScale(
       pressedScale: onTap == null ? 1.0 : 0.95,
@@ -1468,7 +1621,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          curve: kSatEase,
+          curve: satEaseOut,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: SatBox.d(
             color: selected ? sc.accentSoft : sc.bg2,
@@ -1489,7 +1642,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     );
   }
 
-  Widget _toggleChip({required String label, required bool on, VoidCallback? onTap}) {
+  Widget _toggleChip({
+    required String label,
+    required bool on,
+    VoidCallback? onTap,
+  }) {
     final sc = context.sat;
     return PressScale(
       pressedScale: onTap == null ? 1.0 : 0.95,
@@ -1497,7 +1654,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          curve: kSatEase,
+          curve: satEaseOut,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: SatBox.d(
             color: on ? sc.successSoft : sc.bg2,
@@ -1509,8 +1666,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                curve: kSatEase,
-                width: 6, height: 6,
+                curve: satEaseOut,
+                width: 6,
+                height: 6,
                 decoration: SatBox.d(
                   color: on ? sc.success : sc.textLo,
                   shape: BoxShape.circle,
@@ -1519,7 +1677,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               const SizedBox(width: 6),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
-                style: SatType.sans(size: 11, weight: FontWeight.w500, color: on ? sc.success : sc.textMd),
+                style: SatType.sans(
+                  size: 11,
+                  weight: FontWeight.w500,
+                  color: on ? sc.success : sc.textMd,
+                ),
                 child: Text(label),
               ),
             ],
@@ -1537,7 +1699,14 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         foregroundColor: sc.accentText,
       ),
-      child: Text(t, style: SatType.sans(size: 12, weight: FontWeight.w600, color: sc.accentText)),
+      child: Text(
+        t,
+        style: SatType.sans(
+          size: 12,
+          weight: FontWeight.w600,
+          color: sc.accentText,
+        ),
+      ),
     );
   }
 }
@@ -1564,11 +1733,15 @@ class _Section extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(title.toUpperCase(),
-                    style: SatType.mono(
-                      size: 10, weight: FontWeight.w600,
-                      letterSpacing: 1.2, color: sc.textLo,
-                    )),
+                child: Text(
+                  title.toUpperCase(),
+                  style: SatType.mono(
+                    size: 10,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                    color: sc.textLo,
+                  ),
+                ),
               ),
               ?trailing,
             ],
@@ -1583,13 +1756,13 @@ class _Section extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   final String title;
+
   /// Null for admins — the availability badge takes the line instead. Staff
   /// keep it, since it explains why the form is inert (ADR-0046).
   final String? sub;
   final Widget? badge;
   final VoidCallback? onClose;
-  const _Header(
-      {required this.title, this.sub, this.badge, this.onClose});
+  const _Header({required this.title, this.sub, this.badge, this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -1605,12 +1778,17 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: SatType.sans(
-                      size: 22, weight: FontWeight.w600,
-                      letterSpacing: -0.3, color: sc.textHi,
-                    )),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: SatType.sans(
+                    size: 22,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                    color: sc.textHi,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -1618,11 +1796,16 @@ class _Header extends StatelessWidget {
                     if (badge != null && sub != null) const SizedBox(width: 8),
                     if (sub != null)
                       Flexible(
-                        child: Text(sub!.toUpperCase(),
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: SatType.mono(
-                              size: 11, color: sc.textLo, letterSpacing: 0.66,
-                            )),
+                        child: Text(
+                          sub!.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: SatType.mono(
+                            size: 11,
+                            color: sc.textLo,
+                            letterSpacing: 0.66,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -1631,6 +1814,7 @@ class _Header extends StatelessWidget {
           ),
           if (onClose != null)
             IconButton(
+              tooltip: AppStrings.close,
               icon: Icon(Icons.close, color: sc.textMd),
               onPressed: onClose,
             ),
@@ -1685,17 +1869,27 @@ class _FooterState extends State<_Footer> {
     if (saving) {
       label = SizedBox(
         key: const ValueKey('saving'),
-        width: 16, height: 16,
+        width: 16,
+        height: 16,
         child: CircularProgressIndicator(strokeWidth: 2, color: sc.accentInk),
       );
     } else if (done) {
-      label = Icon(Icons.check_rounded,
-          key: const ValueKey('done'), size: 18, color: sc.accentInk);
+      label = Icon(
+        Icons.check_rounded,
+        key: const ValueKey('done'),
+        size: 18,
+        color: sc.accentInk,
+      );
     } else {
-      label = Text('Simpan',
-          key: const ValueKey('idle'),
-          style: SatType.sans(
-              size: 13, weight: FontWeight.w600, color: sc.accentInk));
+      label = Text(
+        'Simpan',
+        key: const ValueKey('idle'),
+        style: SatType.sans(
+          size: 13,
+          weight: FontWeight.w600,
+          color: sc.accentInk,
+        ),
+      );
     }
 
     return Container(
@@ -1712,7 +1906,14 @@ class _FooterState extends State<_Footer> {
               child: TextButton.icon(
                 onPressed: widget.onDelete,
                 icon: Icon(Icons.delete_outline, color: sc.urgent, size: 18),
-                label: Text('Hapus', style: SatType.sans(size: 13, weight: FontWeight.w600, color: sc.urgent)),
+                label: Text(
+                  'Hapus',
+                  style: SatType.sans(
+                    size: 13,
+                    weight: FontWeight.w600,
+                    color: sc.urgent,
+                  ),
+                ),
               ),
             ),
           const Spacer(),
@@ -1724,14 +1925,22 @@ class _FooterState extends State<_Footer> {
                 backgroundColor: done ? sc.success : sc.accent,
                 foregroundColor: sc.accentInk,
                 disabledBackgroundColor: done ? sc.success : sc.accent,
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
               ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                switchInCurve: kSatEase,
-                transitionBuilder: (child, anim) =>
-                    FadeTransition(opacity: anim, child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(anim), child: child)),
+                switchInCurve: satEaseOut,
+                transitionBuilder: (child, anim) => FadeTransition(
+                  opacity: anim,
+                  child: ScaleTransition(
+                    scale: Tween(begin: 0.85, end: 1.0).animate(anim),
+                    child: child,
+                  ),
+                ),
                 child: label,
               ),
             ),
@@ -1741,4 +1950,3 @@ class _FooterState extends State<_Footer> {
     );
   }
 }
-

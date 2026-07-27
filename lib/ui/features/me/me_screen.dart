@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'dart:math' as math;
 
@@ -87,7 +88,9 @@ _ShiftMetrics _computeMetrics({
     }
   }
   final openCovers = myTables.fold<int>(
-      0, (s, t) => s + (t.status != TableStatus.available ? t.pax : 0));
+    0,
+    (s, t) => s + (t.status != TableStatus.available ? t.pax : 0),
+  );
   final voidCount = audit.where((a) => a.type == AuditType.voidItem).length;
   final compCount = audit.where((a) => a.type == AuditType.comp).length;
   final modifyCount = audit.where((a) => a.type == AuditType.modify).length;
@@ -142,12 +145,16 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final user = ref.watch(authStateProvider).user;
     final roles = ref.watch(rolesRepositoryProvider);
     // Hide staff/role admin audit rows from users without `manageStaff`.
-    final canManageStaff = user != null &&
+    final canManageStaff =
+        user != null &&
         !user.disabled &&
         roles.any((r) => r.id == user.roleId && r.has(Capability.manageStaff));
     final audit = canManageStaff
         ? rawAudit
-        : [for (final e in rawAudit) if (!isAdminAuditType(e.type)) e];
+        : [
+            for (final e in rawAudit)
+              if (!isAdminAuditType(e.type)) e,
+          ];
 
     // Role · zone label. Prefer the custom role name; fall back to the generic
     // role label. Drop the zone segment when unassigned ('—' / empty).
@@ -159,7 +166,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       roleName = match.isNotEmpty ? match.first.name : userRoleLabel(user.role);
     }
     final zone = user?.zoneAssigned ?? '';
-    final roleLabel = (zone.isEmpty || zone == '—') ? roleName : '$roleName · $zone';
+    final roleLabel = (zone.isEmpty || zone == '—')
+        ? roleName
+        : '$roleName · $zone';
 
     // Elapsed from login. shiftStartedAt is the login ISO timestamp.
     final shiftIso = user?.shiftStartedAt ?? '';
@@ -204,18 +213,21 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       // Confirm first, warning about live tables. See ADR-0015.
       final isServer = ref.read(serverRuntimeProvider) != null;
       if (isServer) {
-        final liveCount =
-            tables.where((t) => t.status != TableStatus.available).length;
+        final liveCount = tables
+            .where((t) => t.status != TableStatus.available)
+            .length;
         final ok = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Akhiri sesi admin?'),
-            content: Text(liveCount > 0
-                ? '$liveCount meja masih aktif. Keluar akan mematikan server — '
-                    'semua staff terputus dan tidak bisa menyambung sampai '
-                    'admin masuk lagi.'
-                : 'Keluar akan mematikan server. Staff tidak bisa menyambung '
-                    'sampai admin masuk lagi.'),
+            content: Text(
+              liveCount > 0
+                  ? '$liveCount meja masih aktif. Keluar akan mematikan server — '
+                        'semua staff terputus dan tidak bisa menyambung sampai '
+                        'admin masuk lagi.'
+                  : 'Keluar akan mematikan server. Staff tidak bisa menyambung '
+                        'sampai admin masuk lagi.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -324,7 +336,11 @@ class _MePhone extends StatelessWidget {
             const _SectionLabel(label: 'AKTIVITAS TERBARU'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _ActivityCard(audit: audit, tableNames: tableNames, max: 5),
+              child: _ActivityCard(
+                audit: audit,
+                tableNames: tableNames,
+                max: 5,
+              ),
             ),
             SizedBox(height: l.bottomInset),
           ],
@@ -372,17 +388,20 @@ class _MeTablet extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                    'MULAI ${m.shiftStart} · ${m.elapsedLabel} BERJALAN'
-                        .toUpperCase(),
-                    style: SatType.mono(
-                      size: 11,
-                      color: sc.textLo,
-                      letterSpacing: 0.66,
-                    )),
+                  'MULAI ${m.shiftStart} · ${m.elapsedLabel} BERJALAN'
+                      .toUpperCase(),
+                  style: SatType.mono(
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0.66,
+                  ),
+                ),
               ),
               if (showLayoutToggle) ...[
                 _LayoutToggleButton(
-                    forcePhone: forcePhone, onTap: onToggleLayout),
+                  forcePhone: forcePhone,
+                  onTap: onToggleLayout,
+                ),
                 const SizedBox(width: 8),
               ],
               _ThemeIconButton(theme: theme, onTap: onPickTheme),
@@ -414,10 +433,11 @@ class _MeTablet extends StatelessWidget {
                 Expanded(
                   flex: 4,
                   child: _ActivityCard(
-                      audit: audit,
-                      tableNames: tableNames,
-                      max: 9,
-                      padded: true),
+                    audit: audit,
+                    tableNames: tableNames,
+                    max: 9,
+                    padded: true,
+                  ),
                 ),
               ],
             ),
@@ -474,7 +494,7 @@ class _LayoutToggleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Material(
+    final inner = Material(
       color: Colors.transparent,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
@@ -496,6 +516,11 @@ class _LayoutToggleButton extends StatelessWidget {
         ),
       ),
     );
+    return Semantics(
+      button: true,
+      label: AppStrings.a11yToggleLayout,
+      child: inner,
+    );
   }
 }
 
@@ -510,7 +535,7 @@ class _ThemeIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Material(
+    final inner = Material(
       color: Colors.transparent,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
@@ -536,6 +561,11 @@ class _ThemeIconButton extends StatelessWidget {
         ),
       ),
     );
+    return Semantics(
+      button: true,
+      label: AppStrings.a11yPickTheme,
+      child: inner,
+    );
   }
 }
 
@@ -543,7 +573,11 @@ class _Identity extends StatelessWidget {
   final _ShiftMetrics m;
   final bool big;
   final bool showShiftLine;
-  const _Identity({required this.m, this.big = false, this.showShiftLine = true});
+  const _Identity({
+    required this.m,
+    this.big = false,
+    this.showShiftLine = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -576,19 +610,22 @@ class _Identity extends StatelessWidget {
                   colors: [
                     Color(m.avatarColorHex ?? 0xFFFF9233),
                     Color.alphaBlend(
-                        Colors.black.withValues(alpha: 0.36),
-                        Color(m.avatarColorHex ?? 0xFFFF9233)),
+                      Colors.black.withValues(alpha: 0.36),
+                      Color(m.avatarColorHex ?? 0xFFFF9233),
+                    ),
                   ],
                 ),
               ),
               alignment: Alignment.center,
-              child: Text(m.initials,
-                  style: SatType.mono(
-                    size: big ? 22 : 18,
-                    weight: FontWeight.w600,
-                    letterSpacing: 0.36,
-                    color: Colors.white,
-                  )),
+              child: Text(
+                m.initials,
+                style: SatType.mono(
+                  size: big ? 22 : 18,
+                  weight: FontWeight.w600,
+                  letterSpacing: 0.36,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         ),
@@ -597,16 +634,20 @@ class _Identity extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(m.name,
-                  style: SatType.sans(
-                    size: big ? 24 : 22,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.32,
-                    color: sc.textHi,
-                  )),
+              Text(
+                m.name,
+                style: SatType.sans(
+                  size: big ? 24 : 22,
+                  weight: FontWeight.w600,
+                  letterSpacing: -0.32,
+                  color: sc.textHi,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(m.roleLabel,
-                  style: SatType.sans(size: 13, color: sc.textMd)),
+              Text(
+                m.roleLabel,
+                style: SatType.sans(size: 13, color: sc.textMd),
+              ),
               if (showShiftLine) ...[
                 const SizedBox(height: 6),
                 Text(
@@ -660,17 +701,21 @@ class _KpiGrid extends StatelessWidget {
     }
     return Column(
       children: [
-        Row(children: [
-          Expanded(child: _KpiBox(kpi: items[0])),
-          const SizedBox(width: 8),
-          Expanded(child: _KpiBox(kpi: items[1])),
-        ]),
+        Row(
+          children: [
+            Expanded(child: _KpiBox(kpi: items[0])),
+            const SizedBox(width: 8),
+            Expanded(child: _KpiBox(kpi: items[1])),
+          ],
+        ),
         const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: _KpiBox(kpi: items[2])),
-          const SizedBox(width: 8),
-          Expanded(child: _KpiBox(kpi: items[3])),
-        ]),
+        Row(
+          children: [
+            Expanded(child: _KpiBox(kpi: items[2])),
+            const SizedBox(width: 8),
+            Expanded(child: _KpiBox(kpi: items[3])),
+          ],
+        ),
       ],
     );
   }
@@ -726,22 +771,26 @@ class _KpiBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(kpi.label.toUpperCase(),
-              style: SatType.mono(
-                size: 9,
-                weight: FontWeight.w500,
-                letterSpacing: 0.72,
-                color: subColor,
-              )),
+          Text(
+            kpi.label.toUpperCase(),
+            style: SatType.mono(
+              size: 9,
+              weight: FontWeight.w500,
+              letterSpacing: 0.72,
+              color: subColor,
+            ),
+          ),
           const SizedBox(height: 10),
-          Text(kpi.value,
-              style: SatType.mono(
-                size: 26,
-                weight: FontWeight.w600,
-                letterSpacing: -0.52,
-                height: 1,
-                color: valColor,
-              )),
+          Text(
+            kpi.value,
+            style: SatType.mono(
+              size: 26,
+              weight: FontWeight.w600,
+              letterSpacing: -0.52,
+              height: 1,
+              color: valColor,
+            ),
+          ),
         ],
       ),
     );
@@ -775,25 +824,33 @@ class _PacingCard extends StatelessWidget {
               borderRadius: SatR.a(10),
             ),
             alignment: Alignment.center,
-            child: Icon(Icons.show_chart_rounded, size: 18, color: sc.accentText),
+            child: Icon(
+              Icons.show_chart_rounded,
+              size: 18,
+              color: sc.accentText,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Text(
               '$perHour tiket / jam',
               style: SatType.sans(
-                  size: 15,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.15,
-                  color: sc.textHi),
+                size: 15,
+                weight: FontWeight.w600,
+                letterSpacing: -0.15,
+                color: sc.textHi,
+              ),
             ),
           ),
-          Text(m.elapsedLabel,
-              style: SatType.mono(
-                  size: 16,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.2,
-                  color: sc.textHi)),
+          Text(
+            m.elapsedLabel,
+            style: SatType.mono(
+              size: 16,
+              weight: FontWeight.w600,
+              letterSpacing: -0.2,
+              color: sc.textHi,
+            ),
+          ),
         ],
       ),
     );
@@ -805,11 +862,12 @@ class _ActivityCard extends StatelessWidget {
   final Map<String, String> tableNames;
   final int max;
   final bool padded;
-  const _ActivityCard(
-      {required this.audit,
-      required this.tableNames,
-      required this.max,
-      this.padded = false});
+  const _ActivityCard({
+    required this.audit,
+    required this.tableNames,
+    required this.max,
+    this.padded = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -846,16 +904,24 @@ class _ActivityCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text('AKTIVITAS TERKINI',
-                      style: SatType.mono(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                          color: sc.textLo)),
-                ),
-                Text('${audit.length} entri',
+                  child: Text(
+                    'AKTIVITAS TERKINI',
                     style: SatType.mono(
-                        size: 10, color: sc.textDim, letterSpacing: 0.4)),
+                      size: 10,
+                      weight: FontWeight.w600,
+                      letterSpacing: 1.2,
+                      color: sc.textLo,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${audit.length} entri',
+                  style: SatType.mono(
+                    size: 10,
+                    color: sc.textDim,
+                    letterSpacing: 0.4,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -885,13 +951,15 @@ class _SectionLabel extends StatelessWidget {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
-      child: Text(label,
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w500,
-            letterSpacing: 1.2,
-            color: sc.textLo,
-          )),
+      child: Text(
+        label,
+        style: SatType.mono(
+          size: 10,
+          weight: FontWeight.w500,
+          letterSpacing: 1.2,
+          color: sc.textLo,
+        ),
+      ),
     );
   }
 }
@@ -915,26 +983,70 @@ class _AuditRow extends StatelessWidget {
       AuditType.voidItem => (Icons.delete_outline, sc.urgentSoft, sc.urgent),
       AuditType.comp => (Icons.card_giftcard_rounded, sc.warnSoft, sc.warn),
       AuditType.modify => (Icons.edit_outlined, sc.infoSoft, sc.info),
-      AuditType.fire => (Icons.local_fire_department, sc.accentSoft, sc.accentText),
+      AuditType.fire => (
+        Icons.local_fire_department,
+        sc.accentSoft,
+        sc.accentText,
+      ),
       AuditType.tableMoved => (Icons.swap_horiz_rounded, sc.infoSoft, sc.info),
-      AuditType.paymentRecorded => (Icons.payments_outlined, sc.successSoft, sc.success),
+      AuditType.paymentRecorded => (
+        Icons.payments_outlined,
+        sc.successSoft,
+        sc.success,
+      ),
       AuditType.refund => (Icons.undo_rounded, sc.warnSoft, sc.warn),
       AuditType.discountApplied => (Icons.sell_outlined, sc.warnSoft, sc.warn),
       AuditType.discountRemoved => (Icons.sell_outlined, sc.infoSoft, sc.info),
-      AuditType.billReopened => (Icons.lock_open_outlined, sc.infoSoft, sc.info),
-      AuditType.billClosed => (Icons.receipt_long_outlined, sc.successSoft, sc.success),
-      AuditType.staffCreated => (Icons.person_add_alt_1, sc.successSoft, sc.success),
+      AuditType.billReopened => (
+        Icons.lock_open_outlined,
+        sc.infoSoft,
+        sc.info,
+      ),
+      AuditType.billClosed => (
+        Icons.receipt_long_outlined,
+        sc.successSoft,
+        sc.success,
+      ),
+      AuditType.staffCreated => (
+        Icons.person_add_alt_1,
+        sc.successSoft,
+        sc.success,
+      ),
       AuditType.staffDeleted => (Icons.person_remove, sc.urgentSoft, sc.urgent),
       AuditType.staffDisabled => (Icons.block, sc.urgentSoft, sc.urgent),
-      AuditType.staffEnabled => (Icons.check_circle_outline, sc.successSoft, sc.success),
-      AuditType.staffRoleChanged => (Icons.badge_outlined, sc.infoSoft, sc.info),
+      AuditType.staffEnabled => (
+        Icons.check_circle_outline,
+        sc.successSoft,
+        sc.success,
+      ),
+      AuditType.staffRoleChanged => (
+        Icons.badge_outlined,
+        sc.infoSoft,
+        sc.info,
+      ),
       AuditType.staffPinSet => (Icons.lock_reset, sc.infoSoft, sc.info),
       AuditType.staffPinReset => (Icons.lock_reset, sc.warnSoft, sc.warn),
-      AuditType.roleCreated => (Icons.shield_outlined, sc.successSoft, sc.success),
+      AuditType.roleCreated => (
+        Icons.shield_outlined,
+        sc.successSoft,
+        sc.success,
+      ),
       AuditType.roleRenamed => (Icons.edit_outlined, sc.infoSoft, sc.info),
-      AuditType.roleDeleted => (Icons.shield_outlined, sc.urgentSoft, sc.urgent),
-      AuditType.roleColorChanged => (Icons.palette_outlined, sc.infoSoft, sc.info),
-      AuditType.roleCapabilityChanged => (Icons.key_outlined, sc.infoSoft, sc.info),
+      AuditType.roleDeleted => (
+        Icons.shield_outlined,
+        sc.urgentSoft,
+        sc.urgent,
+      ),
+      AuditType.roleColorChanged => (
+        Icons.palette_outlined,
+        sc.infoSoft,
+        sc.info,
+      ),
+      AuditType.roleCapabilityChanged => (
+        Icons.key_outlined,
+        sc.infoSoft,
+        sc.info,
+      ),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -944,8 +1056,7 @@ class _AuditRow extends StatelessWidget {
           Container(
             width: 28,
             height: 28,
-            decoration: SatBox.d(
-                color: bg, borderRadius: SatR.a(8)),
+            decoration: SatBox.d(color: bg, borderRadius: SatR.a(8)),
             alignment: Alignment.center,
             child: Icon(icon, size: 14, color: fg),
           ),
@@ -954,19 +1065,24 @@ class _AuditRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(entry.title,
-                    style: SatType.sans(
-                      size: 13,
-                      weight: FontWeight.w500,
-                      letterSpacing: -0.13,
-                      color: sc.textHi,
-                      height: 1.25,
-                    )),
+                Text(
+                  entry.title,
+                  style: SatType.sans(
+                    size: 13,
+                    weight: FontWeight.w500,
+                    letterSpacing: -0.13,
+                    color: sc.textHi,
+                    height: 1.25,
+                  ),
+                ),
                 const SizedBox(height: 3),
                 Text(
                   meta,
                   style: SatType.mono(
-                      size: 10, color: sc.textLo, letterSpacing: 0.3),
+                    size: 10,
+                    color: sc.textLo,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ],
             ),
@@ -989,19 +1105,21 @@ class _EndShiftButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: Icon(Icons.logout_rounded, size: 18, color: sc.textHi),
-        label: Text('Akhiri shift & keluar',
-            style: SatType.sans(
-                size: 15, weight: FontWeight.w600, color: sc.textHi)),
+        label: Text(
+          'Akhiri shift & keluar',
+          style: SatType.sans(
+            size: 15,
+            weight: FontWeight.w600,
+            color: sc.textHi,
+          ),
+        ),
         style: OutlinedButton.styleFrom(
           foregroundColor: sc.textHi,
           side: SatB.side(color: sc.border2),
-          shape: RoundedRectangleBorder(
-              borderRadius: SatR.a(18)),
+          shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
           minimumSize: const Size.fromHeight(52),
         ),
       ),
     );
   }
 }
-
-

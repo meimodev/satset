@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/skin.dart';
+
+export 'package:satset/ui/core/design/motion.dart'
+    show satEaseOut, motionEnabled;
 
 /// Shared motion primitives for SatSet screens. Every animation here collapses
 /// to its final frame when the platform requests reduced motion, so callers
 /// never need to branch on it themselves.
+///
+/// The curve itself is a token — `satEaseOut` in `design/motion.dart`, re-exported
+/// here so a screen animating something bespoke needs one import, not two.
 
-/// Confident deceleration curve (ease-out-expo). Used across entrances and
-/// bar growth so motion feels of-a-piece.
-const Curve kSatEase = Cubic(0.16, 1, 0.3, 1);
-
-Duration _motion(BuildContext c, int ms) =>
-    MediaQuery.disableAnimationsOf(c) ? Duration.zero : Duration(milliseconds: ms);
+Duration _motion(BuildContext c, int ms) => MediaQuery.disableAnimationsOf(c)
+    ? Duration.zero
+    : Duration(milliseconds: ms);
 
 /// Fade + slide-up entrance, played once on mount. Give siblings increasing
 /// [index] values for a staggered cascade (55ms per step).
@@ -36,8 +40,10 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     vsync: this,
     duration: const Duration(milliseconds: 420),
   );
-  late final Animation<double> _curve =
-      CurvedAnimation(parent: _c, curve: kSatEase);
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _c,
+    curve: satEaseOut,
+  );
   bool _skip = false;
 
   @override
@@ -50,9 +56,16 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
       return;
     }
     if (key != null) Reveal._seen.add(key);
-    Future.delayed(Duration(milliseconds: 55 * widget.index), () {
-      if (mounted) _c.forward();
-    });
+    // Cap the cascade: a 40-row board would otherwise leave the last row
+    // waiting two seconds, which reads as a hang rather than a reveal.
+    final delay = 55 * widget.index.clamp(0, 10);
+    if (delay == 0) {
+      _c.forward();
+    } else {
+      Future.delayed(Duration(milliseconds: delay), () {
+        if (mounted) _c.forward();
+      });
+    }
   }
 
   @override
@@ -98,8 +111,8 @@ class ExpandFade extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
       duration: _motion(context, ms),
-      switchInCurve: kSatEase,
-      switchOutCurve: kSatEase,
+      switchInCurve: satEaseOut,
+      switchOutCurve: satEaseOut,
       transitionBuilder: (child, anim) => FadeTransition(
         opacity: anim,
         child: SizeTransition(
@@ -108,10 +121,8 @@ class ExpandFade extends StatelessWidget {
           child: child,
         ),
       ),
-      layoutBuilder: (current, previous) => Stack(
-        alignment: alignment,
-        children: [...previous, ?current],
-      ),
+      layoutBuilder: (current, previous) =>
+          Stack(alignment: alignment, children: [...previous, ?current]),
       child: child,
     );
   }
@@ -135,7 +146,7 @@ class AnimatedReflow extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedSize(
       duration: _motion(context, ms),
-      curve: kSatEase,
+      curve: satEaseOut,
       alignment: alignment,
       child: child,
     );
@@ -162,26 +173,26 @@ class AnimatedBarFill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final f = factor.clamp(0.0, 1.0);
-    return Stack(children: [
-      Container(
-        height: height,
-        decoration: SatBox.d(
-            color: track, borderRadius: SatR.a(radius)),
-      ),
-      TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: f),
-        duration: _motion(context, 620),
-        curve: kSatEase,
-        builder: (context, v, _) => FractionallySizedBox(
-          widthFactor: v,
-          child: Container(
-            height: height,
-            decoration: SatBox.d(
-                color: color, borderRadius: SatR.a(radius)),
+    return Stack(
+      children: [
+        Container(
+          height: height,
+          decoration: SatBox.d(color: track, borderRadius: SatR.a(radius)),
+        ),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: f),
+          duration: _motion(context, 620),
+          curve: satEaseOut,
+          builder: (context, v, _) => FractionallySizedBox(
+            widthFactor: v,
+            child: Container(
+              height: height,
+              decoration: SatBox.d(color: color, borderRadius: SatR.a(radius)),
+            ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -205,7 +216,7 @@ class GrowBarV extends StatelessWidget {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: height),
       duration: _motion(context, 560),
-      curve: kSatEase,
+      curve: satEaseOut,
       builder: (context, h, _) => Container(
         width: width,
         height: h,
@@ -245,7 +256,7 @@ class _PressScaleState extends State<PressScale> {
       child: AnimatedScale(
         scale: _down ? widget.pressedScale : 1.0,
         duration: Duration(milliseconds: _down ? 90 : 220),
-        curve: kSatEase,
+        curve: satEaseOut,
         child: widget.child,
       ),
     );
@@ -272,7 +283,7 @@ class AnimatedCount extends StatelessWidget {
     return TweenAnimationBuilder<double>(
       tween: Tween(end: value.toDouble()),
       duration: duration,
-      curve: kSatEase,
+      curve: satEaseOut,
       builder: (context, v, _) => builder(context, v.round()),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -502,6 +503,7 @@ class _Head extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: AppStrings.close,
             onPressed: onClose,
             icon: Icon(Icons.close, size: 18, color: sc.textMd),
           ),
@@ -781,9 +783,7 @@ class _Foot extends StatelessWidget {
                   foregroundColor: sc.accentInk,
                   elevation: 0,
                   minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: SatR.a(18),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

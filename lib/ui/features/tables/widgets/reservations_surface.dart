@@ -81,8 +81,10 @@ Future<void> openReservationsSurface(
       ),
     ),
     transitionBuilder: (ctx, anim, _, child) => SlideTransition(
-      position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-          .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+      position: Tween<Offset>(
+        begin: const Offset(1, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
       child: child,
     ),
   );
@@ -116,34 +118,43 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
     final grace = ref.watch(venueSettingsProvider).reservationGraceMins;
     final start = DateTime(now.year, now.month, now.day);
     final end = start.add(const Duration(days: 1));
-    final today = ref
-        .watch(reservationsRepositoryProvider)
-        .where((r) =>
-            r.expectedAt.isAfter(start.subtract(const Duration(minutes: 1))) &&
-            r.expectedAt.isBefore(end))
-        .toList()
-      ..sort((a, b) => a.expectedAt.compareTo(b.expectedAt));
+    final today =
+        ref
+            .watch(reservationsRepositoryProvider)
+            .where(
+              (r) =>
+                  r.expectedAt.isAfter(
+                    start.subtract(const Duration(minutes: 1)),
+                  ) &&
+                  r.expectedAt.isBefore(end),
+            )
+            .toList()
+          ..sort((a, b) => a.expectedAt.compareTo(b.expectedAt));
 
     List<Reservation> pick(_RvFilter f) => switch (f) {
-          _RvFilter.waiting =>
-            today.where((r) => r.status == ReservationStatus.pending).toList(),
-          _RvFilter.late =>
-            today.where((r) => _isLate(r, grace, now)).toList(),
-          _RvFilter.seated =>
-            today.where((r) => r.status == ReservationStatus.seated).toList(),
-          _RvFilter.noShow => today
-              .where((r) =>
+      _RvFilter.waiting =>
+        today.where((r) => r.status == ReservationStatus.pending).toList(),
+      _RvFilter.late => today.where((r) => _isLate(r, grace, now)).toList(),
+      _RvFilter.seated =>
+        today.where((r) => r.status == ReservationStatus.seated).toList(),
+      _RvFilter.noShow =>
+        today
+            .where(
+              (r) =>
                   r.status == ReservationStatus.noShow ||
-                  r.status == ReservationStatus.cancelled)
-              .toList(),
-          _RvFilter.all => today,
-        };
+                  r.status == ReservationStatus.cancelled,
+            )
+            .toList(),
+      _RvFilter.all => today,
+    };
 
     final list = pick(_filter);
     final covers = today
-        .where((r) =>
-            r.status != ReservationStatus.noShow &&
-            r.status != ReservationStatus.cancelled)
+        .where(
+          (r) =>
+              r.status != ReservationStatus.noShow &&
+              r.status != ReservationStatus.cancelled,
+        )
         .fold<int>(0, (s, r) => s + r.partySize);
 
     return Column(
@@ -274,25 +285,28 @@ class _FilterChip extends StatelessWidget {
         decoration: SatBox.d(
           color: fill,
           borderRadius: SatR.a(999),
-          border: SatB.all(
-              color: active && !brutal ? sc.textHi : sc.border0),
+          border: SatB.all(color: active && !brutal ? sc.textHi : sc.border0),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(SatShape.caps(label),
-                style: SatType.sans(
-                  size: 11.5,
-                  weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                  color: fg,
-                )),
+            Text(
+              SatShape.caps(label),
+              style: SatType.sans(
+                size: 11.5,
+                weight: brutal ? FontWeight.w700 : FontWeight.w500,
+                color: fg,
+              ),
+            ),
             const SizedBox(width: 5),
-            Text('$count',
-                style: SatType.mono(
-                  size: 11,
-                  color: active ? fg : sc.textLo,
-                  letterSpacing: 0,
-                )),
+            Text(
+              '$count',
+              style: SatType.mono(
+                size: 11,
+                color: active ? fg : sc.textLo,
+                letterSpacing: 0,
+              ),
+            ),
           ],
         ),
       ),
@@ -313,23 +327,23 @@ class _ReservationRow extends ConsumerWidget {
     final tableLabel = r.tableId == null
         ? null
         : ref
-                .watch(tablesProvider)
-                .where((t) => t.id == r.tableId)
-                .map((t) => t.displayName)
-                .firstOrNull ??
-            r.tableId!;
+                  .watch(tablesProvider)
+                  .where((t) => t.id == r.tableId)
+                  .map((t) => t.displayName)
+                  .firstOrNull ??
+              r.tableId!;
 
     final (statusLabel, statusTone) = late
         ? (AppStrings.reservationLate, sc.urgent)
         : switch (r.status) {
             ReservationStatus.pending => (
-                reservationStatusLabel(r.status),
-                sc.info
-              ),
+              reservationStatusLabel(r.status),
+              sc.info,
+            ),
             ReservationStatus.seated => (
-                reservationStatusLabel(r.status),
-                sc.success
-              ),
+              reservationStatusLabel(r.status),
+              sc.success,
+            ),
             _ => (reservationStatusLabel(r.status), sc.textLo),
           };
 
@@ -351,20 +365,24 @@ class _ReservationRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_hhmm(r.expectedAt),
-                        style: SatShape.brutal
-                            ? SatType.display(size: 16, color: sc.textHi)
-                            : SatType.mono(
-                                size: 15,
-                                weight: FontWeight.w600,
-                                color: sc.textHi)),
+                    Text(
+                      _hhmm(r.expectedAt),
+                      style: SatShape.brutal
+                          ? SatType.display(size: 16, color: sc.textHi)
+                          : SatType.mono(
+                              size: 15,
+                              weight: FontWeight.w600,
+                              color: sc.textHi,
+                            ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       _relative(r, late),
                       style: SatType.mono(
-                          size: 10,
-                          color: late ? sc.urgent : sc.textLo,
-                          letterSpacing: 0.4),
+                        size: 10,
+                        color: late ? sc.urgent : sc.textLo,
+                        letterSpacing: 0.4,
+                      ),
                     ),
                   ],
                 ),
@@ -374,29 +392,39 @@ class _ReservationRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.name,
-                        style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w600,
-                            color: sc.textHi)),
+                    Text(
+                      r.name,
+                      style: SatType.sans(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: sc.textHi,
+                      ),
+                    ),
                     const SizedBox(height: 3),
                     Text(
                       [
                         '${r.partySize} tamu',
-                        if (tableLabel != null) 'Meja $tableLabel'
-                        else AppStrings.tableNoReservationTable,
+                        if (tableLabel != null)
+                          'Meja $tableLabel'
+                        else
+                          AppStrings.tableNoReservationTable,
                         if (r.phone != null && r.phone!.trim().isNotEmpty)
                           r.phone!.trim(),
                       ].join(' · '),
                       style: SatType.mono(
-                          size: 10, color: sc.textLo, letterSpacing: 0.4),
+                        size: 10,
+                        color: sc.textLo,
+                        letterSpacing: 0.4,
+                      ),
                     ),
                     if (r.notes != null && r.notes!.trim().isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(r.notes!.trim(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: SatType.sans(size: 12, color: sc.textMd)),
+                      Text(
+                        r.notes!.trim(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: SatType.sans(size: 12, color: sc.textMd),
+                      ),
                     ],
                   ],
                 ),
@@ -476,11 +504,7 @@ class _Tag extends StatelessWidget {
           size: 9,
           weight: brutal ? FontWeight.w800 : FontWeight.w700,
           letterSpacing: brutal ? 1.0 : 0.2,
-          color: brutal
-              ? (tone.computeLuminance() > 0.45
-                  ? const Color(0xFF0B0B0F)
-                  : Colors.white)
-              : tone,
+          color: brutal ? onFill(tone) : tone,
         ),
       ),
     );
@@ -515,21 +539,26 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
     final activeZoneId = _zoneId ?? (zones.isNotEmpty ? zones.first.id : null);
     final r = widget.reservation;
     final available = tables
-        .where((t) =>
-            t.status == TableStatus.available &&
-            t.capacity >= r.partySize &&
-            (activeZoneId == null || t.zoneId == activeZoneId))
+        .where(
+          (t) =>
+              t.status == TableStatus.available &&
+              t.capacity >= r.partySize &&
+              (activeZoneId == null || t.zoneId == activeZoneId),
+        )
         .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(SatShape.caps('${AppStrings.reservationActionSeat} ke meja:'),
-            style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo)),
+        Text(
+          SatShape.caps('${AppStrings.reservationActionSeat} ke meja:'),
+          style: SatType.mono(
+            size: 10,
+            weight: FontWeight.w600,
+            letterSpacing: 1.0,
+            color: sc.textLo,
+          ),
+        ),
         const SizedBox(height: 8),
         if (zones.length > 1)
           SizedBox(
@@ -553,13 +582,16 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                       border: SatB.all(color: sc.border0),
                       borderRadius: SatR.a(999),
                     ),
-                    child: Text(z.name,
-                        style: SatType.sans(
-                            size: 11,
-                            weight: FontWeight.w600,
-                            color: isActive
-                                ? (SatShape.brutal ? sc.accentInk : sc.bg0)
-                                : sc.textMd)),
+                    child: Text(
+                      z.name,
+                      style: SatType.sans(
+                        size: 11,
+                        weight: FontWeight.w600,
+                        color: isActive
+                            ? (SatShape.brutal ? sc.accentInk : sc.bg0)
+                            : sc.textMd,
+                      ),
+                    ),
                   ),
                 );
               },
@@ -567,8 +599,10 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
           ),
         const SizedBox(height: 8),
         if (available.isEmpty)
-          Text('Tidak ada meja kapasitas ≥ ${r.partySize} di zona ini.',
-              style: SatType.sans(size: 12, color: sc.textMd))
+          Text(
+            'Tidak ada meja kapasitas ≥ ${r.partySize} di zona ini.',
+            style: SatType.sans(size: 12, color: sc.textMd),
+          )
         else
           SizedBox(
             height: 36,
@@ -591,15 +625,20 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(t.displayName,
-                            style: SatType.mono(
-                                size: 12,
-                                weight: FontWeight.w600,
-                                color: sc.textHi)),
+                        Text(
+                          t.displayName,
+                          style: SatType.mono(
+                            size: 12,
+                            weight: FontWeight.w600,
+                            color: sc.textHi,
+                          ),
+                        ),
                         const SizedBox(width: 6),
                         Icon(Icons.person_outline, size: 11, color: sc.textLo),
-                        Text('${t.capacity}',
-                            style: SatType.mono(size: 10, color: sc.textLo)),
+                        Text(
+                          '${t.capacity}',
+                          style: SatType.mono(size: 10, color: sc.textLo),
+                        ),
                       ],
                     ),
                   ),
@@ -615,7 +654,9 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
     final r = widget.reservation;
     final user = ref.read(authStateProvider).user;
     try {
-      await ref.read(tablesProvider.notifier).seat(
+      await ref
+          .read(tablesProvider.notifier)
+          .seat(
             t.id,
             pax: r.partySize,
             guestName: r.name,
@@ -640,9 +681,9 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
       }
     } catch (e) {
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text('Gagal duduk: $e')),
-        );
+        ScaffoldMessenger.of(
+          ctx,
+        ).showSnackBar(SnackBar(content: Text('Gagal duduk: $e')));
       }
     }
   }
@@ -651,7 +692,9 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
 /// Create form. Stays a sheet on both form factors — it is a keyboard-driven
 /// task, and a keyboard makes a side drawer as narrow as a sheet anyway.
 Future<void> openCreateReservationSheet(
-    BuildContext context, WidgetRef ref) async {
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final sc = context.sat;
   final nameCtl = TextEditingController();
   final phoneCtl = TextEditingController();
@@ -671,181 +714,204 @@ Future<void> openCreateReservationSheet(
       borderRadius: BorderRadius.vertical(top: SatR.c(24)),
     ),
     builder: (ctx) {
-      return StatefulBuilder(builder: (ctx, setLocal) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: SatBox.d(
-                      color: sc.border1,
-                      borderRadius: SatR.a(2),
+      return StatefulBuilder(
+        builder: (ctx, setLocal) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: SatBox.d(
+                        color: sc.border1,
+                        borderRadius: SatR.a(2),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Text(SatShape.caps('Reservasi baru'),
+                  const SizedBox(height: 14),
+                  Text(
+                    SatShape.caps('Reservasi baru'),
                     style: SatType.display(
-                        size: 18,
-                        weight: FontWeight.w700,
-                        color: sc.textHi)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameCtl,
-                  decoration: const InputDecoration(labelText: 'Nama tamu'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: phoneCtl,
-                  keyboardType: TextInputType.phone,
-                  decoration:
-                      const InputDecoration(labelText: 'No. HP (opsional)'),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Text('Jumlah tamu',
-                        style: SatType.sans(size: 13, color: sc.textHi)),
-                    const Spacer(),
-                    IconButton(
-                      onPressed:
-                          party > 1 ? () => setLocal(() => party--) : null,
-                      icon: const Icon(Icons.remove_circle_outline),
+                      size: 18,
+                      weight: FontWeight.w700,
+                      color: sc.textHi,
                     ),
-                    SizedBox(
-                      width: 32,
-                      child: Center(
-                        child: Text('$party',
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameCtl,
+                    decoration: const InputDecoration(labelText: 'Nama tamu'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: phoneCtl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'No. HP (opsional)',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Text(
+                        'Jumlah tamu',
+                        style: SatType.sans(size: 13, color: sc.textHi),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: AppStrings.a11yGuestDecrease,
+                        onPressed: party > 1
+                            ? () => setLocal(() => party--)
+                            : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      SizedBox(
+                        width: 32,
+                        child: Center(
+                          child: Text(
+                            '$party',
                             style: SatType.sans(
-                                size: 16,
-                                weight: FontWeight.w600,
-                                color: sc.textHi)),
+                              size: 16,
+                              weight: FontWeight.w600,
+                              color: sc.textHi,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => setLocal(() => party++),
-                      icon: const Icon(Icons.add_circle_outline),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.calendar_today, size: 16),
-                        label: Text(_fmtDate(expected)),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: ctx,
-                            initialDate: expected,
-                            firstDate: DateTime(now.year - 1),
-                            lastDate: DateTime(now.year + 2),
-                          );
-                          if (picked != null) {
-                            setLocal(() => expected = DateTime(
-                                picked.year,
-                                picked.month,
-                                picked.day,
-                                expected.hour,
-                                expected.minute));
-                          }
-                        },
+                      IconButton(
+                        tooltip: AppStrings.a11yGuestIncrease,
+                        onPressed: () => setLocal(() => party++),
+                        icon: const Icon(Icons.add_circle_outline),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.schedule, size: 16),
-                        label: Text(_hhmm(expected)),
-                        onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: ctx,
-                            initialTime: TimeOfDay(
-                                hour: expected.hour, minute: expected.minute),
-                          );
-                          if (picked != null) {
-                            setLocal(() => expected = DateTime(
-                                expected.year,
-                                expected.month,
-                                expected.day,
-                                picked.hour,
-                                picked.minute));
-                          }
-                        },
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_today, size: 16),
+                          label: Text(_fmtDate(expected)),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: ctx,
+                              initialDate: expected,
+                              firstDate: DateTime(now.year - 1),
+                              lastDate: DateTime(now.year + 2),
+                            );
+                            if (picked != null) {
+                              setLocal(
+                                () => expected = DateTime(
+                                  picked.year,
+                                  picked.month,
+                                  picked.day,
+                                  expected.hour,
+                                  expected.minute,
+                                ),
+                              );
+                            }
+                          },
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.schedule, size: 16),
+                          label: Text(_hhmm(expected)),
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: ctx,
+                              initialTime: TimeOfDay(
+                                hour: expected.hour,
+                                minute: expected.minute,
+                              ),
+                            );
+                            if (picked != null) {
+                              setLocal(
+                                () => expected = DateTime(
+                                  expected.year,
+                                  expected.month,
+                                  expected.day,
+                                  picked.hour,
+                                  picked.minute,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // Pre-assigning a table is what makes the floor card read
+                  // "Dipesan" before the guest arrives — without it a booking is
+                  // invisible on the grid until someone seats it (ADR-0048).
+                  _TablePicker(
+                    ref: ref,
+                    zoneId: zoneId,
+                    tableId: tableId,
+                    partySize: party,
+                    onPick: (z, t) => setLocal(() {
+                      zoneId = z;
+                      tableId = t;
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: notesCtl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Catatan (opsional)',
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                // Pre-assigning a table is what makes the floor card read
-                // "Dipesan" before the guest arrives — without it a booking is
-                // invisible on the grid until someone seats it (ADR-0048).
-                _TablePicker(
-                  ref: ref,
-                  zoneId: zoneId,
-                  tableId: tableId,
-                  partySize: party,
-                  onPick: (z, t) => setLocal(() {
-                    zoneId = z;
-                    tableId = t;
-                  }),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: notesCtl,
-                  maxLines: 2,
-                  decoration:
-                      const InputDecoration(labelText: 'Catatan (opsional)'),
-                ),
-                const SizedBox(height: 18),
-                FilledButton(
-                  onPressed: () async {
-                    final name = nameCtl.text.trim();
-                    if (name.isEmpty) return;
-                    try {
-                      await ref
-                          .read(reservationsRepositoryProvider.notifier)
-                          .create(
-                            name: name,
-                            phone: phoneCtl.text.trim().isEmpty
-                                ? null
-                                : phoneCtl.text.trim(),
-                            partySize: party,
-                            expectedAt: expected,
-                            zoneId: zoneId,
-                            tableId: tableId,
-                            notes: notesCtl.text.trim().isEmpty
-                                ? null
-                                : notesCtl.text.trim(),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton(
+                    onPressed: () async {
+                      final name = nameCtl.text.trim();
+                      if (name.isEmpty) return;
+                      try {
+                        await ref
+                            .read(reservationsRepositoryProvider.notifier)
+                            .create(
+                              name: name,
+                              phone: phoneCtl.text.trim().isEmpty
+                                  ? null
+                                  : phoneCtl.text.trim(),
+                              partySize: party,
+                              expectedAt: expected,
+                              zoneId: zoneId,
+                              tableId: tableId,
+                              notes: notesCtl.text.trim().isEmpty
+                                  ? null
+                                  : notesCtl.text.trim(),
+                            );
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(content: Text('Gagal simpan: $e')),
                           );
-                      if (ctx.mounted) Navigator.of(ctx).pop();
-                    } catch (e) {
-                      if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(content: Text('Gagal simpan: $e')),
-                        );
+                        }
                       }
-                    }
-                  },
-                  child: const Text('Simpan reservasi'),
-                ),
-              ],
+                    },
+                    child: const Text('Simpan reservasi'),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
     },
   );
 }
@@ -874,14 +940,17 @@ class _TablePicker extends StatelessWidget {
     final activeZone = zoneId ?? (zones.isNotEmpty ? zones.first.id : null);
     final free = ref
         .watch(tablesProvider)
-        .where((t) =>
-            t.active &&
-            t.status == TableStatus.available &&
-            t.capacity >= partySize &&
-            (activeZone == null || t.zoneId == activeZone))
+        .where(
+          (t) =>
+              t.active &&
+              t.status == TableStatus.available &&
+              t.capacity >= partySize &&
+              (activeZone == null || t.zoneId == activeZone),
+        )
         .toList();
 
-    Widget chip(String label, bool active, VoidCallback onTap) => GestureDetector(
+    Widget chip(String label, bool active, VoidCallback onTap) =>
+        GestureDetector(
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -892,26 +961,31 @@ class _TablePicker extends StatelessWidget {
               border: SatB.all(color: sc.border0),
               borderRadius: SatR.a(999),
             ),
-            child: Text(SatShape.caps(label),
-                style: SatType.sans(
-                  size: 11.5,
-                  weight: FontWeight.w600,
-                  color: active
-                      ? (SatShape.brutal ? sc.accentInk : sc.bg0)
-                      : sc.textMd,
-                )),
+            child: Text(
+              SatShape.caps(label),
+              style: SatType.sans(
+                size: 11.5,
+                weight: FontWeight.w600,
+                color: active
+                    ? (SatShape.brutal ? sc.accentInk : sc.bg0)
+                    : sc.textMd,
+              ),
+            ),
           ),
         );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(SatShape.caps('Zona & meja (opsional)'),
-            style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo)),
+        Text(
+          SatShape.caps('Zona & meja (opsional)'),
+          style: SatType.mono(
+            size: 10,
+            weight: FontWeight.w600,
+            letterSpacing: 1.0,
+            color: sc.textLo,
+          ),
+        ),
         const SizedBox(height: 8),
         if (zones.length > 1)
           SizedBox(
@@ -936,12 +1010,18 @@ class _TablePicker extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 6),
             itemBuilder: (_, i) {
               if (i == 0) {
-                return chip(AppStrings.tableNoReservationTable, tableId == null,
-                    () => onPick(activeZone, null));
+                return chip(
+                  AppStrings.tableNoReservationTable,
+                  tableId == null,
+                  () => onPick(activeZone, null),
+                );
               }
               final t = free[i - 1];
-              return chip('${t.displayName} · ${t.capacity}p',
-                  tableId == t.id, () => onPick(t.zoneId, t.id));
+              return chip(
+                '${t.displayName} · ${t.capacity}p',
+                tableId == t.id,
+                () => onPick(t.zoneId, t.id),
+              );
             },
           ),
         ),
@@ -968,7 +1048,7 @@ String _fmtDate(DateTime d) {
     'Sep',
     'Okt',
     'Nov',
-    'Des'
+    'Des',
   ];
   return '${d.day} ${months[d.month - 1]} ${d.year}';
 }

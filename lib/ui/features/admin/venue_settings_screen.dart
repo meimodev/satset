@@ -422,10 +422,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           Container(
             width: 64,
             height: 64,
-            decoration: SatBox.d(
-              color: sc.textHi,
-              borderRadius: SatR.a(14),
-            ),
+            decoration: SatBox.d(color: sc.textHi, borderRadius: SatR.a(14)),
             alignment: Alignment.center,
             child: Text(
               _initials(s.displayName),
@@ -1086,9 +1083,9 @@ class _PajakLayananCard extends ConsumerWidget {
           Text(
             s.taxAfterDiscount
                 ? 'Diskon mengurangi dasar pengenaan — pajak & layanan '
-                    'dihitung dari jumlah setelah diskon.'
+                      'dihitung dari jumlah setelah diskon.'
                 : 'Pajak & layanan dihitung dari subtotal kotor, diskon '
-                    'dipotong dari total akhir.',
+                      'dipotong dari total akhir.',
             style: SatType.sans(size: 11.5, color: sc.textLo),
           ),
           const SizedBox(height: 4),
@@ -1109,8 +1106,10 @@ class _PajakLayananCard extends ConsumerWidget {
                   Icon(Icons.sell_outlined, size: 18, color: sc.textHi),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text('Preset diskon',
-                        style: SatType.sans(size: 13, color: sc.textHi)),
+                    child: Text(
+                      'Preset diskon',
+                      style: SatType.sans(size: 13, color: sc.textHi),
+                    ),
                   ),
                   Icon(Icons.chevron_right, size: 18, color: sc.textLo),
                 ],
@@ -1655,6 +1654,7 @@ class _PhoneDetailScreen extends StatelessWidget {
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: AppStrings.back,
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -31,6 +32,7 @@ import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -38,9 +40,7 @@ import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 const Curve _kEase = Curves.easeOutQuart;
 const Duration _kStatusXfade = Duration(milliseconds: 280);
 const Duration _kChipMorph = Duration(milliseconds: 220);
-const Duration _kBlockEnter = Duration(milliseconds: 360);
 const Duration _kPressIn = Duration(milliseconds: 90);
-const int _kStaggerStepMs = 50;
 
 bool _animationsDisabled(BuildContext c) =>
     MediaQuery.maybeOf(c)?.disableAnimations ?? false;
@@ -93,7 +93,10 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
   /// build() takes over once the row transitions to non-available.
   Future<void> _initialAcquire() async {
     final tables = ref.read(tablesProvider);
-    final t = tables.where((x) => x.id == _tableId).cast<VenueTable?>().firstOrNull;
+    final t = tables
+        .where((x) => x.id == _tableId)
+        .cast<VenueTable?>()
+        .firstOrNull;
     if (t != null && t.status == TableStatus.available) {
       if (mounted) setState(() => _acquiring = false);
       return;
@@ -180,9 +183,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         _startHeartbeat();
       } else if (r.conflict != null) {
         final holder = r.conflict!.lockedByName ?? 'pengguna lain';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Meja diambil oleh $holder')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Meja diambil oleh $holder')));
       }
     } catch (_) {
       if (mounted) setState(() => _acquiring = false);
@@ -251,7 +254,8 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       }
     });
     final isKosong = table.status == TableStatus.available;
-    final canSeat = isKosong && auth.has(Capability.takeOrder) && !lockedByOther;
+    final canSeat =
+        isKosong && auth.has(Capability.takeOrder) && !lockedByOther;
     // Gate by capability, not role enum: admins also have takeOrder and need
     // to be able to correct guest counts during testing/coverage.
     final canEditGuests = auth.has(Capability.takeOrder) && !readOnly;
@@ -259,12 +263,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     Future<void> onSeat() async {
       if (!canSeat || actorId == null) return;
       try {
-        await ref.read(tablesProvider.notifier).seat(
-              _tableId,
-              pax: 1,
-              userId: actorId,
-              userName: user?.name,
-            );
+        await ref
+            .read(tablesProvider.notifier)
+            .seat(_tableId, pax: 1, userId: actorId, userName: user?.name);
         // The status flip from `available` → `occupied` triggers the
         // tablesProvider listener above, which schedules the auto-acquire.
         // No explicit lock call here.
@@ -274,12 +275,14 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         final msg = e.code == 'already_seated'
             ? 'Meja sudah diisi oleh $holder'
             : 'Gagal mulai layani: ${e.code ?? e.statusCode}';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       } catch (e) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mulai layani: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal mulai layani: $e')));
       }
     }
 
@@ -287,6 +290,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       if (readOnly) return;
       ref.read(tablesProvider.notifier).decrementPax(_tableId, userId: actorId);
     }
+
     void onPlus() {
       if (readOnly) return;
       ref.read(tablesProvider.notifier).incrementPax(_tableId, userId: actorId);
@@ -330,11 +334,8 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         isScrollControlled: true,
         useRootNavigator: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => _ContextSheet(
-          table: table,
-          tickets: tickets,
-          menu: menuItems,
-        ),
+        builder: (_) =>
+            _ContextSheet(table: table, tickets: tickets, menu: menuItems),
       );
     }
 
@@ -345,12 +346,17 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       return Scaffold(
         backgroundColor: sc.bg0,
         body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 12),
-            Text('Memuat menu…',
-                style: SatType.sans(size: 13, color: sc.textMd)),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 12),
+              Text(
+                'Memuat menu…',
+                style: SatType.sans(size: 13, color: sc.textMd),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -360,22 +366,27 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.cloud_off, size: 36, color: sc.urgent),
-              const SizedBox(height: 10),
-              Text('Gagal memuat menu meja',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off, size: 36, color: sc.urgent),
+                const SizedBox(height: 10),
+                Text(
+                  'Gagal memuat menu meja',
                   style: SatType.sans(
                     size: 15,
                     weight: FontWeight.w600,
                     color: sc.textHi,
-                  )),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: () =>
-                    ref.read(menuRepositoryProvider.notifier).refresh(),
-                child: const Text('Coba lagi'),
-              ),
-            ]),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () =>
+                      ref.read(menuRepositoryProvider.notifier).refresh(),
+                  child: const Text('Coba lagi'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -398,11 +409,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
 
     void openAction(Ticket t) {
       if (readOnly) return;
-      showLineItemActionSheet(
-        context: context,
-        tableId: _tableId,
-        ticket: t,
-      );
+      showLineItemActionSheet(context: context, tableId: _tableId, ticket: t);
     }
 
     void onAdd() {
@@ -416,20 +423,25 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(isEmptyClose ? 'Lepaskan Meja?' : 'Selesaikan Layanan?'),
-          content: Text(isEmptyClose
-              ? 'Belum ada pesanan. Kosongkan meja ${table.displayName}?'
-              : 'Semua tiket telah selesai. Kosongkan meja ${table.displayName} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.'),
+          content: Text(
+            isEmptyClose
+                ? 'Belum ada pesanan. Kosongkan meja ${table.displayName}?'
+                : 'Semua tiket telah selesai. Kosongkan meja ${table.displayName} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.',
+          ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(ctx).pop('cancel'),
-                child: const Text('Batal')),
+              onPressed: () => Navigator.of(ctx).pop('cancel'),
+              child: const Text('Batal'),
+            ),
             if (!isEmptyClose)
               TextButton(
-                  onPressed: () => Navigator.of(ctx).pop('print'),
-                  child: const Text('Cetak struk')),
+                onPressed: () => Navigator.of(ctx).pop('print'),
+                child: const Text('Cetak struk'),
+              ),
             FilledButton(
-                onPressed: () => Navigator.of(ctx).pop('close'),
-                child: Text(closeLabel)),
+              onPressed: () => Navigator.of(ctx).pop('close'),
+              child: Text(closeLabel),
+            ),
           ],
         ),
       );
@@ -438,7 +450,11 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       // leave the table live so the waiter can re-confirm before closing.
       if (choice == 'print') {
         await printTableStruk(
-            context: context, ref: ref, table: table, tickets: tickets);
+          context: context,
+          ref: ref,
+          table: table,
+          tickets: tickets,
+        );
         return;
       }
       if (choice != 'close') return;
@@ -452,9 +468,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         if (context.mounted) safePop(context);
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menutup meja: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Gagal menutup meja: $e')));
         }
       }
     }
@@ -536,15 +552,20 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                           )
                         : ListView(
                             padding: EdgeInsets.fromLTRB(
-                                0, 0, 0, l.bottomInset + 80),
+                              0,
+                              0,
+                              0,
+                              l.bottomInset + 80,
+                            ),
                             children: [
-                              for (final (i, cid) in Courses.stationOrder
-                                  .map((c) => c.id)
-                                  .indexed)
+                              for (final (i, cid)
+                                  in Courses.stationOrder
+                                      .map((c) => c.id)
+                                      .indexed)
                                 if (grouped[cid] != null &&
                                     grouped[cid]!.isNotEmpty)
-                                  _EntranceFade(
-                                    delayMs: i * _kStaggerStepMs,
+                                  Reveal(
+                                    index: i,
                                     child: _CourseBlock(
                                       course: Courses.byId(cid),
                                       items: grouped[cid]!,
@@ -557,12 +578,18 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                               if (tickets.isEmpty)
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(
-                                      24, 32, 24, 32),
+                                    24,
+                                    32,
+                                    24,
+                                    32,
+                                  ),
                                   child: Text(
                                     'Belum ada item — ketuk "Tambah ke pesanan" untuk mulai.',
                                     textAlign: TextAlign.center,
                                     style: SatType.sans(
-                                        size: 13, color: sc.textLo),
+                                      size: 13,
+                                      color: sc.textLo,
+                                    ),
                                   ),
                                 ),
                             ],
@@ -650,15 +677,17 @@ class _Header extends ConsumerWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(table.displayName,
-                  maxLines: 1,
-                  style: SatType.mono(
-                    size: 44,
-                    weight: FontWeight.w500,
-                    letterSpacing: -1.32,
-                    height: 1.0,
-                    color: sc.textHi,
-                  )),
+              child: Text(
+                table.displayName,
+                maxLines: 1,
+                style: SatType.mono(
+                  size: 44,
+                  weight: FontWeight.w500,
+                  letterSpacing: -1.32,
+                  height: 1.0,
+                  color: sc.textHi,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -666,8 +695,14 @@ class _Header extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(zoneName,
-                    style: SatType.sans(size: 13, weight: FontWeight.w500, color: sc.textMd)),
+                Text(
+                  zoneName,
+                  style: SatType.sans(
+                    size: 13,
+                    weight: FontWeight.w500,
+                    color: sc.textMd,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -804,10 +839,7 @@ class _HPill extends StatelessWidget {
     final sc = context.sat;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: SatBox.d(
-        color: sc.bg3,
-        borderRadius: SatR.a(999),
-      ),
+      decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -815,12 +847,14 @@ class _HPill extends StatelessWidget {
             Icon(icon, size: 12, color: sc.textMd),
             const SizedBox(width: 6),
           ],
-          Text(label,
-              style: SatType.sans(
-                size: 11,
-                weight: FontWeight.w500,
-                color: sc.textMd,
-              )),
+          Text(
+            label,
+            style: SatType.sans(
+              size: 11,
+              weight: FontWeight.w500,
+              color: sc.textMd,
+            ),
+          ),
         ],
       ),
     );
@@ -873,16 +907,16 @@ class _ContextTriggerBtn extends StatelessWidget {
                       : Container(
                           key: ValueKey(alertCount),
                           constraints: const BoxConstraints(
-                              minWidth: 16, minHeight: 16),
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           decoration: SatBox.d(
                             color: sc.urgent,
                             shape: alertCount < 10
                                 ? BoxShape.circle
                                 : BoxShape.rectangle,
-                            borderRadius: alertCount < 10
-                                ? null
-                                : SatR.a(8),
+                            borderRadius: alertCount < 10 ? null : SatR.a(8),
                             border: SatB.all(color: sc.bg0, width: 1.5),
                           ),
                           alignment: Alignment.center,
@@ -949,20 +983,24 @@ class _ContextSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Konteks meja',
-                      style: SatType.sans(
-                        size: 20,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.4,
-                        color: sc.textHi,
-                      )),
+                  Text(
+                    'Konteks meja',
+                    style: SatType.sans(
+                      size: 20,
+                      weight: FontWeight.w600,
+                      letterSpacing: -0.4,
+                      color: sc.textHi,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
-                      style: SatType.mono(
-                        size: 11,
-                        color: sc.textLo,
-                        letterSpacing: 0.44,
-                      )),
+                  Text(
+                    'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                    style: SatType.mono(
+                      size: 11,
+                      color: sc.textLo,
+                      letterSpacing: 0.44,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1012,20 +1050,29 @@ class _CourseBlock extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: SatBox.d(shape: BoxShape.circle, color: course.color(sc)),
+                  decoration: SatBox.d(
+                    shape: BoxShape.circle,
+                    color: course.color(sc),
+                  ),
                 ),
                 const SizedBox(width: 10),
-                Text(course.name.toUpperCase(),
-                    style: SatType.mono(
-                      size: 11,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.32,
-                      color: sc.textMd,
-                    )),
+                Text(
+                  course.name.toUpperCase(),
+                  style: SatType.mono(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    letterSpacing: 1.32,
+                    color: sc.textMd,
+                  ),
+                ),
                 const Spacer(),
                 Text(
                   '${items.length} item${allHeld ? ' · ditahan' : ''}',
-                  style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0),
+                  style: SatType.mono(
+                    size: 11,
+                    color: sc.textLo,
+                    letterSpacing: 0,
+                  ),
                 ),
               ],
             ),
@@ -1040,7 +1087,10 @@ class _CourseBlock extends StatelessWidget {
           if (allHeld && !readOnly)
             Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: _FireButton(label: 'Bakar ${course.name}', onTap: onFireCourse),
+              child: _FireButton(
+                label: 'Bakar ${course.name}',
+                onTap: onFireCourse,
+              ),
             ),
         ],
       ),
@@ -1068,13 +1118,15 @@ class _FireButton extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
         ),
         icon: Icon(Icons.local_fire_department, size: 14, color: sc.accentText),
-        label: Text(label.toUpperCase(),
-            style: SatType.sans(
-              size: 12,
-              weight: FontWeight.w600,
-              letterSpacing: 0.48,
-              color: sc.accentText,
-            )),
+        label: Text(
+          label.toUpperCase(),
+          style: SatType.sans(
+            size: 12,
+            weight: FontWeight.w600,
+            letterSpacing: 0.48,
+            color: sc.accentText,
+          ),
+        ),
       ),
     );
   }
@@ -1145,31 +1197,36 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
             Container(
               width: 72,
               height: 72,
-              decoration: SatBox.d(
-                color: sc.bg2,
-                borderRadius: SatR.a(36),
+              decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(36)),
+              child: Icon(
+                Icons.event_seat_outlined,
+                size: 36,
+                color: sc.textMd,
               ),
-              child: Icon(Icons.event_seat_outlined,
-                  size: 36, color: sc.textMd),
             ),
             const SizedBox(height: 18),
-            Text('Meja ${widget.tableName} kosong',
-                style: SatType.sans(
-                  size: 16,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                )),
+            Text(
+              'Meja ${widget.tableName} kosong',
+              style: SatType.sans(
+                size: 16,
+                weight: FontWeight.w600,
+                color: sc.textHi,
+              ),
+            ),
             const SizedBox(height: 6),
-            Text('Tap untuk mulai melayani tamu',
-                style: SatType.sans(size: 13, color: sc.textLo)),
+            Text(
+              'Tap untuk mulai melayani tamu',
+              style: SatType.sans(size: 13, color: sc.textLo),
+            ),
             const SizedBox(height: 24),
             Opacity(
               opacity: enabled ? 1 : 0.5,
               child: AnimatedBuilder(
                 animation: _breathe,
                 builder: (context, child) {
-                  final breath =
-                      (enabled && !reduced) ? 1 + 0.025 * _breathe.value : 1.0;
+                  final breath = (enabled && !reduced)
+                      ? 1 + 0.025 * _breathe.value
+                      : 1.0;
                   final scale = _pressed ? 0.96 : breath;
                   final glow = (enabled && !reduced) ? _breathe.value : 0.0;
                   return Transform.scale(
@@ -1180,8 +1237,9 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                         boxShadow: glow > 0
                             ? [
                                 BoxShadow(
-                                  color: sc.accent
-                                      .withValues(alpha: 0.18 + 0.16 * glow),
+                                  color: sc.accent.withValues(
+                                    alpha: 0.18 + 0.16 * glow,
+                                  ),
                                   blurRadius: 12 + 10 * glow,
                                   spreadRadius: glow,
                                 ),
@@ -1203,7 +1261,9 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                     borderRadius: SatR.a(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 28, vertical: 16),
+                        horizontal: 28,
+                        vertical: 16,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1255,29 +1315,37 @@ class _PrimaryIconButtonState extends State<_PrimaryIconButton> {
     final reduced = _animationsDisabled(context);
     final fg = enabled ? sc.accentInk : sc.textLo;
     final bg = enabled ? sc.accent : sc.bg3;
-    return Center(
-      child: AnimatedScale(
-        scale: _pressed ? 0.92 : 1.0,
-        duration: reduced ? Duration.zero : _kPressIn,
-        curve: _kEase,
-        child: AnimatedContainer(
-          duration: reduced ? Duration.zero : _kStatusXfade,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      // Disabled here means the table is locked by someone else, which is the
+      // reason the waiter cannot add — say that rather than let the glyph swap
+      // silently.
+      label: enabled ? AppStrings.a11yAddItem : AppStrings.a11yTableLocked,
+      child: Center(
+        child: AnimatedScale(
+          scale: _pressed ? 0.92 : 1.0,
+          duration: reduced ? Duration.zero : _kPressIn,
           curve: _kEase,
-          decoration: SatBox.d(color: bg, shape: BoxShape.circle),
-          child: Material(
-            color: Colors.transparent,
-            shape: const CircleBorder(),
-            elevation: 0,
-            child: InkWell(
-              onTap: enabled ? widget.onTap : null,
-              onHighlightChanged: (h) {
-                if (enabled) setState(() => _pressed = h);
-              },
-              customBorder: const CircleBorder(),
-              child: SizedBox(
-                width: 64,
-                height: 64,
-                child: Icon(widget.icon, size: 28, color: fg),
+          child: AnimatedContainer(
+            duration: reduced ? Duration.zero : _kStatusXfade,
+            curve: _kEase,
+            decoration: SatBox.d(color: bg, shape: BoxShape.circle),
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              elevation: 0,
+              child: InkWell(
+                onTap: enabled ? widget.onTap : null,
+                onHighlightChanged: (h) {
+                  if (enabled) setState(() => _pressed = h);
+                },
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: Icon(widget.icon, size: 28, color: fg),
+                ),
               ),
             ),
           ),
@@ -1318,27 +1386,27 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
             onHighlightChanged: (h) => setState(() => _pressed = h),
             borderRadius: SatR.a(18),
             child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle, size: 20, color: sc.successInk),
-                const SizedBox(width: 10),
-                Text(
-                  widget.label,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w700,
-                    letterSpacing: -0.15,
-                    color: sc.successInk,
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle, size: 20, color: sc.successInk),
+                  const SizedBox(width: 10),
+                  Text(
+                    widget.label,
+                    style: SatType.sans(
+                      size: 15,
+                      weight: FontWeight.w700,
+                      letterSpacing: -0.15,
+                      color: sc.successInk,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -1359,7 +1427,7 @@ class _LockedBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final sinceLabel = since == null ? '' : ' · sejak ${_hhmm(since!)}';
-    return _EntranceFade(
+    return Reveal(
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -1454,207 +1522,238 @@ class _TabletSplit extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-          SizedBox(
-            width: 560,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.fromLTRB(28, 22, 28, 16),
-                  decoration: SatBox.d(
-                    border: Border(bottom: SatB.side(color: sc.border0)),
-                  ),
+                SizedBox(
+                  width: 560,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(table.displayName,
-                                  maxLines: 1,
-                                  style: SatType.mono(
-                                    size: 56,
-                                    weight: FontWeight.w500,
-                                    letterSpacing: -1.68,
-                                    height: 1,
-                                    color: sc.textHi,
-                                  )),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(zone.name,
-                                    style: SatType.sans(size: 15, color: sc.textMd)),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    GuestStepper(
-                                      pax: table.pax,
-                                      max: table.capacity,
-                                      enabled: canEditGuests,
-                                      onMinus: onMinusPax,
-                                      onPlus: onPlusPax,
-                                      size: 36,
-                                    ),
-                                    if (table.openedAt != null) ...[
-                                      const SizedBox(width: 10),
-                                      _LiveSeatedChip(
-                                          openedAt: table.openedAt!, height: 36),
-                                    ],
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (readyN > 0 ||
-                          (table.guestName != null &&
-                              table.guestName!.trim().isNotEmpty) ||
-                          (table.guestNotes != null &&
-                              table.guestNotes!.trim().isNotEmpty)) ...[
-                        const SizedBox(height: 14),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (readyN > 0)
-                              _pill(context, sc, '$readyN siap diambil',
-                                  tone: 'success'),
-                            if (table.guestName != null &&
-                                table.guestName!.trim().isNotEmpty)
-                              _pill(context, sc, '👤 ${table.guestName!}'),
-                            if (table.guestNotes != null &&
-                                table.guestNotes!.trim().isNotEmpty)
-                              NoteLine(text: table.guestNotes!),
-                          ],
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(28, 22, 28, 16),
+                        decoration: SatBox.d(
+                          border: Border(bottom: SatB.side(color: sc.border0)),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-                ?lockBanner,
-                Expanded(
-                  child: isKosong
-                      ? _KosongSeatCard(
-                          tableName: table.displayName,
-                          enabled: canSeat,
-                          onTap: onSeat,
-                        )
-                      : tickets.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(28),
-                                child: Text(
-                                  'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
-                                  textAlign: TextAlign.center,
-                                  style: SatType.sans(
-                                      size: 14, color: sc.textLo, height: 1.5),
-                                ),
-                              ),
-                            )
-                          : ListView(
-                              padding:
-                                  const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                for (final (i, cid) in Courses.stationOrder
-                                    .map((c) => c.id)
-                                    .indexed)
-                                  if (grouped[cid] != null &&
-                                      grouped[cid]!.isNotEmpty)
-                                    _EntranceFade(
-                                      delayMs: i * _kStaggerStepMs,
-                                      child: _CourseBlock(
-                                        course: Courses.byId(cid),
-                                        items: grouped[cid]!,
-                                        readOnly: readOnly,
-                                        onMarkServed: onMarkServed,
-                                        onFireCourse: () => onFireCourse(cid),
-                                        onTicketTap: onTicketTap,
+                                Flexible(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      table.displayName,
+                                      maxLines: 1,
+                                      style: SatType.mono(
+                                        size: 56,
+                                        weight: FontWeight.w500,
+                                        letterSpacing: -1.68,
+                                        height: 1,
+                                        color: sc.textHi,
                                       ),
                                     ),
-                              ],
-                            ),
-                ),
-                if (!isKosong)
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
-                    decoration: SatBox.d(
-                      border: Border(top: SatB.side(color: sc.border0)),
-                    ),
-                    child: Row(
-                      children: [
-                        if (canClose) ...[
-                          Expanded(
-                            child: _CloseTableButton(
-                              label: closeLabel,
-                              onTap: onClose,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                        ],
-                        Expanded(
-                          flex: canClose ? 1 : 1,
-                          child: Opacity(
-                            opacity: readOnly ? 0.5 : 1,
-                            child: Material(
-                              color: sc.accent,
-                              borderRadius: SatR.a(14),
-                              child: InkWell(
-                                onTap: readOnly ? null : onAdd,
-                                borderRadius: SatR.a(14),
-                                child: Container(
-                                  height: 52,
-                                  alignment: Alignment.center,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        readOnly
-                                            ? Icons.lock_outline
-                                            : Icons.add,
-                                        size: 18,
-                                        color: sc.accentInk,
-                                      ),
-                                      const SizedBox(width: 8),
                                       Text(
-                                        readOnly
-                                            ? 'Hanya lihat'
-                                            : (tickets.isEmpty
-                                                ? 'Buat pesanan'
-                                                : 'Tambah pesanan'),
+                                        zone.name,
                                         style: SatType.sans(
                                           size: 15,
-                                          weight: FontWeight.w600,
-                                          color: sc.accentInk,
+                                          color: sc.textMd,
                                         ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          GuestStepper(
+                                            pax: table.pax,
+                                            max: table.capacity,
+                                            enabled: canEditGuests,
+                                            onMinus: onMinusPax,
+                                            onPlus: onPlusPax,
+                                            size: 36,
+                                          ),
+                                          if (table.openedAt != null) ...[
+                                            const SizedBox(width: 10),
+                                            _LiveSeatedChip(
+                                              openedAt: table.openedAt!,
+                                              height: 36,
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
+                            if (readyN > 0 ||
+                                (table.guestName != null &&
+                                    table.guestName!.trim().isNotEmpty) ||
+                                (table.guestNotes != null &&
+                                    table.guestNotes!.trim().isNotEmpty)) ...[
+                              const SizedBox(height: 14),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (readyN > 0)
+                                    _pill(
+                                      context,
+                                      sc,
+                                      '$readyN siap diambil',
+                                      tone: 'success',
+                                    ),
+                                  if (table.guestName != null &&
+                                      table.guestName!.trim().isNotEmpty)
+                                    _pill(
+                                      context,
+                                      sc,
+                                      '👤 ${table.guestName!}',
+                                    ),
+                                  if (table.guestNotes != null &&
+                                      table.guestNotes!.trim().isNotEmpty)
+                                    NoteLine(text: table.guestNotes!),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      ?lockBanner,
+                      Expanded(
+                        child: isKosong
+                            ? _KosongSeatCard(
+                                tableName: table.displayName,
+                                enabled: canSeat,
+                                onTap: onSeat,
+                              )
+                            : tickets.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(28),
+                                  child: Text(
+                                    'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
+                                    textAlign: TextAlign.center,
+                                    style: SatType.sans(
+                                      size: 14,
+                                      color: sc.textLo,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : ListView(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  16,
+                                  24,
+                                  16,
+                                ),
+                                children: [
+                                  for (final (i, cid)
+                                      in Courses.stationOrder
+                                          .map((c) => c.id)
+                                          .indexed)
+                                    if (grouped[cid] != null &&
+                                        grouped[cid]!.isNotEmpty)
+                                      Reveal(
+                                        index: i,
+                                        child: _CourseBlock(
+                                          course: Courses.byId(cid),
+                                          items: grouped[cid]!,
+                                          readOnly: readOnly,
+                                          onMarkServed: onMarkServed,
+                                          onFireCourse: () => onFireCourse(cid),
+                                          onTicketTap: onTicketTap,
+                                        ),
+                                      ),
+                                ],
+                              ),
+                      ),
+                      if (!isKosong)
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+                          decoration: SatBox.d(
+                            border: Border(top: SatB.side(color: sc.border0)),
+                          ),
+                          child: Row(
+                            children: [
+                              if (canClose) ...[
+                                Expanded(
+                                  child: _CloseTableButton(
+                                    label: closeLabel,
+                                    onTap: onClose,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                              ],
+                              Expanded(
+                                flex: canClose ? 1 : 1,
+                                child: Opacity(
+                                  opacity: readOnly ? 0.5 : 1,
+                                  child: Material(
+                                    color: sc.accent,
+                                    borderRadius: SatR.a(14),
+                                    child: InkWell(
+                                      onTap: readOnly ? null : onAdd,
+                                      borderRadius: SatR.a(14),
+                                      child: Container(
+                                        height: 52,
+                                        alignment: Alignment.center,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              readOnly
+                                                  ? Icons.lock_outline
+                                                  : Icons.add,
+                                              size: 18,
+                                              color: sc.accentInk,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              readOnly
+                                                  ? 'Hanya lihat'
+                                                  : (tickets.isEmpty
+                                                        ? 'Buat pesanan'
+                                                        : 'Tambah pesanan'),
+                                              style: SatType.sans(
+                                                size: 15,
+                                                weight: FontWeight.w600,
+                                                color: sc.accentInk,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-              ],
-            ),
-          ),
-          Container(width: 1, color: sc.border0),
-          Expanded(
-            child: _ContextPane(table: table, tickets: tickets, menu: menu),
-          ),
+                ),
+                Container(width: 1, color: sc.border0),
+                Expanded(
+                  child: _ContextPane(
+                    table: table,
+                    tickets: tickets,
+                    menu: menu,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1663,11 +1762,20 @@ class _TabletSplit extends StatelessWidget {
     );
   }
 
-  Widget _pill(BuildContext context, SatColors sc, String text, {String tone = 'normal'}) {
+  Widget _pill(
+    BuildContext context,
+    SatColors sc,
+    String text, {
+    String tone = 'normal',
+  }) {
     Color bg = sc.bg3;
     Color fg = sc.textMd;
     Color border = sc.border1;
-    if (tone == 'success') { bg = sc.successSoft; fg = sc.success; border = sc.success.withValues(alpha: 0.3); }
+    if (tone == 'success') {
+      bg = sc.successSoft;
+      fg = sc.success;
+      border = sc.success.withValues(alpha: 0.3);
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: SatBox.d(
@@ -1675,13 +1783,15 @@ class _TabletSplit extends StatelessWidget {
         border: SatB.all(color: border),
         borderRadius: SatR.a(999),
       ),
-      child: Text(text,
-          style: SatType.sans(
-            size: 11,
-            weight: FontWeight.w500,
-            letterSpacing: 0.2,
-            color: fg,
-          )),
+      child: Text(
+        text,
+        style: SatType.sans(
+          size: 11,
+          weight: FontWeight.w500,
+          letterSpacing: 0.2,
+          color: fg,
+        ),
+      ),
     );
   }
 }
@@ -1705,14 +1815,17 @@ class _ContextPane extends ConsumerWidget {
     final actorId = auth.user?.id;
     // Move is offered only on a live table the caller may operate and that
     // isn't actively held by someone else. Server re-checks the lock anyway.
-    final canMove = table.status != TableStatus.available &&
+    final canMove =
+        table.status != TableStatus.available &&
         auth.has(Capability.takeOrder) &&
         !table.isLockedByOther(actorId);
     final router = GoRouter.of(context);
     final navigator = Navigator.of(context);
     Future<void> onMove() async {
-      final targetId =
-          await showMoveTableSheet(context: context, sourceId: table.id);
+      final targetId = await showMoveTableSheet(
+        context: context,
+        sourceId: table.id,
+      );
       if (targetId == null) return;
       // Phone shows this pane inside the modal context sheet — close it first;
       // the tablet pane is inline so there's nothing to pop. Then land the
@@ -1720,7 +1833,14 @@ class _ContextPane extends ConsumerWidget {
       if (compact && navigator.canPop()) navigator.pop();
       router.pushReplacement('/table/$targetId');
     }
-    final sent = tickets.where((t) => t.status != TicketStatus.voided && t.status != TicketStatus.served).length;
+
+    final sent = tickets
+        .where(
+          (t) =>
+              t.status != TicketStatus.voided &&
+              t.status != TicketStatus.served,
+        )
+        .length;
     final served = tickets.where((t) => t.status == TicketStatus.served).length;
     final allergens = <String>{};
     for (final t in tickets) {
@@ -1729,8 +1849,7 @@ class _ContextPane extends ConsumerWidget {
     }
     final guestNotes = <String>{
       for (final t in tickets)
-        if (t.note != null && t.note!.trim().isNotEmpty)
-          t.note!.trim(),
+        if (t.note != null && t.note!.trim().isNotEmpty) t.note!.trim(),
     }.toList();
 
     final body = Column(
@@ -1738,91 +1857,126 @@ class _ContextPane extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _stat(context, sc, tickets.length.toString(), 'Total item')),
+            Expanded(
+              child: _stat(
+                context,
+                sc,
+                tickets.length.toString(),
+                'Total item',
+              ),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _stat(context, sc, sent.toString(), 'Dalam proses')),
+            Expanded(
+              child: _stat(context, sc, sent.toString(), 'Dalam proses'),
+            ),
             const SizedBox(width: 8),
             Expanded(child: _stat(context, sc, served.toString(), 'Disajikan')),
           ],
         ),
         const SizedBox(height: 16),
-        _card(context, sc, 'CATATAN TAMU',
-                    guestNotes.isEmpty
-                        ? Text('Belum ada catatan khusus.',
-                            style: SatType.sans(size: 13, color: sc.textLo))
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (final note in guestNotes)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: SatBox.d(
-                                      color: sc.bg2,
-                                      border: SatB.all(color: sc.border0),
-                                      borderRadius: SatR.a(12),
-                                    ),
-                                    child: NoteLine(
-                                        label: 'Instruksi khusus', text: note),
-                                  ),
-                                ),
-                            ],
-                          )),
-                const SizedBox(height: 14),
-                _card(context, sc, 'ALERGEN DI PESANAN',
-                    allergens.isEmpty
-                        ? Text('Tidak ada.', style: SatType.sans(size: 13, color: sc.textLo))
-                        : Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              for (final a in allergens)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: SatBox.d(
-                                    color: sc.urgentSoft,
-                                    border: SatB.all(color: sc.urgent.withValues(alpha: 0.35)),
-                                    borderRadius: SatR.a(999),
-                                  ),
-                                  child: Text(a,
-                                      style: SatType.sans(
-                                        size: 12,
-                                        weight: FontWeight.w500,
-                                        color: sc.urgent,
-                                      )),
-                                ),
-                            ],
-                          )),
-                const SizedBox(height: 14),
-        _card(context, sc, 'AKSI CEPAT',
-            Column(
-              children: [
+        _card(
+          context,
+          sc,
+          'CATATAN TAMU',
+          guestNotes.isEmpty
+              ? Text(
+                  'Belum ada catatan khusus.',
+                  style: SatType.sans(size: 13, color: sc.textLo),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final note in guestNotes)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: SatBox.d(
+                            color: sc.bg2,
+                            border: SatB.all(color: sc.border0),
+                            borderRadius: SatR.a(12),
+                          ),
+                          child: NoteLine(
+                            label: 'Instruksi khusus',
+                            text: note,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        const SizedBox(height: 14),
+        _card(
+          context,
+          sc,
+          'ALERGEN DI PESANAN',
+          allergens.isEmpty
+              ? Text(
+                  'Tidak ada.',
+                  style: SatType.sans(size: 13, color: sc.textLo),
+                )
+              : Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final a in allergens)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: SatBox.d(
+                          color: sc.urgentSoft,
+                          border: SatB.all(
+                            color: sc.urgent.withValues(alpha: 0.35),
+                          ),
+                          borderRadius: SatR.a(999),
+                        ),
+                        child: Text(
+                          a,
+                          style: SatType.sans(
+                            size: 12,
+                            weight: FontWeight.w500,
+                            color: sc.urgent,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        const SizedBox(height: 14),
+        _card(
+          context,
+          sc,
+          'AKSI CEPAT',
+          Column(
+            children: [
+              _quickAction(
+                context,
+                sc,
+                Icons.receipt_long_rounded,
+                'Cetak struk meja',
+                accent: true,
+                onTap: () => printTableStruk(
+                  context: context,
+                  ref: ref,
+                  table: table,
+                  tickets: tickets,
+                ),
+              ),
+              if (canMove) ...[
+                const SizedBox(height: 6),
                 _quickAction(
                   context,
                   sc,
-                  Icons.receipt_long_rounded,
-                  'Cetak struk meja',
-                  accent: true,
-                  onTap: () => printTableStruk(
-                    context: context,
-                    ref: ref,
-                    table: table,
-                    tickets: tickets,
-                  ),
+                  Icons.swap_horiz_rounded,
+                  'Pindahkan meja',
+                  onTap: onMove,
                 ),
-                if (canMove) ...[
-                  const SizedBox(height: 6),
-                  _quickAction(
-                    context,
-                    sc,
-                    Icons.swap_horiz_rounded,
-                    'Pindahkan meja',
-                    onTap: onMove,
-                  ),
-                ],
               ],
-            )),
+            ],
+          ),
+        ),
       ],
     );
 
@@ -1840,20 +1994,24 @@ class _ContextPane extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Konteks meja',
-                  style: SatType.sans(
-                    size: 22,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.44,
-                    color: sc.textHi,
-                  )),
+              Text(
+                'Konteks meja',
+                style: SatType.sans(
+                  size: 22,
+                  weight: FontWeight.w600,
+                  letterSpacing: -0.44,
+                  color: sc.textHi,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.44,
-                  )),
+              Text(
+                'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                style: SatType.mono(
+                  size: 11,
+                  color: sc.textLo,
+                  letterSpacing: 0.44,
+                ),
+              ),
             ],
           ),
         ),
@@ -1878,10 +2036,21 @@ class _ContextPane extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(v, style: SatType.mono(size: 22, weight: FontWeight.w600, letterSpacing: -0.44, height: 1, color: sc.textHi)),
+          Text(
+            v,
+            style: SatType.mono(
+              size: 22,
+              weight: FontWeight.w600,
+              letterSpacing: -0.44,
+              height: 1,
+              color: sc.textHi,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(l.toUpperCase(),
-              style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.6)),
+          Text(
+            l.toUpperCase(),
+            style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.6),
+          ),
         ],
       ),
     );
@@ -1898,8 +2067,15 @@ class _ContextPane extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(head,
-              style: SatType.mono(size: 10, weight: FontWeight.w600, letterSpacing: 1.2, color: sc.textLo)),
+          Text(
+            head,
+            style: SatType.mono(
+              size: 10,
+              weight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: sc.textLo,
+            ),
+          ),
           const SizedBox(height: 12),
           child,
         ],
@@ -1924,9 +2100,7 @@ class _ContextPane extends ConsumerWidget {
         child: Container(
           height: 38,
           decoration: SatBox.d(
-            border: SatB.all(
-              color: accent ? sc.accentBorder : sc.border1,
-            ),
+            border: SatB.all(color: accent ? sc.accentBorder : sc.border1),
             borderRadius: SatR.a(10),
           ),
           child: Row(
@@ -1934,13 +2108,15 @@ class _ContextPane extends ConsumerWidget {
             children: [
               Icon(icon, size: 14, color: accent ? sc.accentText : sc.textMd),
               const SizedBox(width: 8),
-              Text(label.toUpperCase(),
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w600,
-                    letterSpacing: 0.48,
-                    color: accent ? sc.accentText : sc.textMd,
-                  )),
+              Text(
+                label.toUpperCase(),
+                style: SatType.sans(
+                  size: 12,
+                  weight: FontWeight.w600,
+                  letterSpacing: 0.48,
+                  color: accent ? sc.accentText : sc.textMd,
+                ),
+              ),
             ],
           ),
         ),
@@ -1948,52 +2124,3 @@ class _ContextPane extends ConsumerWidget {
     );
   }
 }
-
-/// One-shot entrance: fade + small upward slide. Animates once on mount —
-/// [TweenAnimationBuilder]-style behaviour via a post-frame flip, so the
-/// frequent WS-driven rebuilds of this screen never re-trigger it. [delayMs]
-/// staggers siblings for a gentle cascade.
-class _EntranceFade extends StatefulWidget {
-  final Widget child;
-  final int delayMs;
-  const _EntranceFade({required this.child, this.delayMs = 0});
-
-  @override
-  State<_EntranceFade> createState() => _EntranceFadeState();
-}
-
-class _EntranceFadeState extends State<_EntranceFade> {
-  bool _shown = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (widget.delayMs == 0) {
-        setState(() => _shown = true);
-      } else {
-        Future<void>.delayed(Duration(milliseconds: widget.delayMs), () {
-          if (mounted) setState(() => _shown = true);
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_animationsDisabled(context)) return widget.child;
-    return AnimatedSlide(
-      offset: _shown ? Offset.zero : const Offset(0, 0.05),
-      duration: _kBlockEnter,
-      curve: _kEase,
-      child: AnimatedOpacity(
-        opacity: _shown ? 1 : 0,
-        duration: _kBlockEnter,
-        curve: _kEase,
-        child: widget.child,
-      ),
-    );
-  }
-}
-

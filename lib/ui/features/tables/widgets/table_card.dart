@@ -215,15 +215,20 @@ class _TableCardState extends ConsumerState<TableCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Icon(Icons.person_outline,
-                  size: tablet ? 14 : 12, color: sc.textMd),
+              Icon(
+                Icons.person_outline,
+                size: tablet ? 14 : 12,
+                color: sc.textMd,
+              ),
               const SizedBox(width: 3),
-              Text('${table.pax}/${table.capacity}',
-                  style: SatType.mono(
-                    size: tablet ? 12 : 11,
-                    color: sc.textMd,
-                    letterSpacing: 0.44,
-                  )),
+              Text(
+                '${table.pax}/${table.capacity}',
+                style: SatType.mono(
+                  size: tablet ? 12 : 11,
+                  color: sc.textMd,
+                  letterSpacing: 0.44,
+                ),
+              ),
               if (table.openAmount > 0) ...[
                 const SizedBox(width: 8),
                 Expanded(
@@ -389,7 +394,12 @@ class _TableCardState extends ConsumerState<TableCard> {
       ),
     );
 
-    return card;
+    // The card's number, owner chip, pills and stale banner are separate text
+    // nodes; without merging, TalkBack reads them as four unrelated stops and a
+    // waiter sweeping the grid never hears a whole table. Merged, one swipe
+    // announces "Meja 4, terisi, Punya saya" in visual order — and because the
+    // label is derived from what is actually painted, it cannot drift.
+    return MergeSemantics(child: Semantics(button: true, child: card));
   }
 
   /// Crit cards sit on a doubled shadow — a red slab behind the ink one — so a
@@ -399,10 +409,11 @@ class _TableCardState extends ConsumerState<TableCard> {
       return [
         BoxShadow(color: sc.urgent, offset: const Offset(5, 5)),
         BoxShadow(
-            color: SatShape.ink,
-            offset: const Offset(5, 5),
-            spreadRadius: 3,
-            blurRadius: 0),
+          color: SatShape.ink,
+          offset: const Offset(5, 5),
+          spreadRadius: 3,
+          blurRadius: 0,
+        ),
       ].reversed.toList();
     }
     return SatShape.hardShadow(5);
@@ -412,7 +423,10 @@ class _TableCardState extends ConsumerState<TableCard> {
     return [
       if (service == ServiceState.ungreeted)
         _StatePill(
-            label: AppStrings.tableStateUngreeted, tone: sc.urgent, sc: sc),
+          label: AppStrings.tableStateUngreeted,
+          tone: sc.urgent,
+          sc: sc,
+        ),
       if (service == ServiceState.idle)
         _StatePill(label: AppStrings.tableStateIdle, tone: sc.warn, sc: sc),
       if (t.billClosed || t.moneyState == 'paid')
@@ -427,13 +441,6 @@ String _hhmm(DateTime d) {
   String pad(int n) => n.toString().padLeft(2, '0');
   return '${pad(d.hour)}:${pad(d.minute)}';
 }
-
-/// Foreground for text sitting on a saturated fill.
-// ponytail: computed rather than a token per semantic colour — six palettes ×
-// four fills is 24 tokens to hand-tune, and luminance gets all of them right.
-// Add an explicit `*Ink` token the day one of them looks wrong.
-Color onFill(Color c) =>
-    c.computeLuminance() > 0.45 ? const Color(0xFF0B0B0F) : Colors.white;
 
 /// "Punya saya" on a table this waiter is running, or the other waiter's
 /// initials. Squared under brutal per the rail-avatar precedent (ADR-0047):
@@ -480,8 +487,7 @@ class _OwnerChip extends StatelessWidget {
         initials!,
         style: brutal
             ? SatType.display(size: 12, color: sc.textHi)
-            : SatType.mono(
-                size: 11, weight: FontWeight.w700, color: sc.textMd),
+            : SatType.mono(size: 11, weight: FontWeight.w700, color: sc.textMd),
       ),
     );
   }
@@ -558,7 +564,11 @@ class _StaleBanner extends StatelessWidget {
               style: brutal
                   ? SatType.display(size: 10, height: 1.1, color: fg)
                   : SatType.sans(
-                      size: 10, weight: FontWeight.w800, height: 1.1, color: fg),
+                      size: 10,
+                      weight: FontWeight.w800,
+                      height: 1.1,
+                      color: fg,
+                    ),
             ),
           ),
           const SizedBox(width: 7),

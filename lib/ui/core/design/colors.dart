@@ -491,3 +491,17 @@ class SatColors extends ThemeExtension<SatColors> {
 extension SatColorsX on BuildContext {
   SatColors get sat => Theme.of(this).extension<SatColors>()!;
 }
+
+/// Near-black used as ink on a light fill. Not part of the neutral ramp: the
+/// ramp's `bg0` follows the active theme, and this must stay dark even when the
+/// theme is light, because the *fill* underneath is what it has to contrast
+/// with — not the page.
+const Color _inkOnLight = Color(0xFF0B0B0F);
+
+/// Foreground for text sitting on a saturated fill (status pill, owner chip,
+/// brutal-skin badge).
+// ponytail: computed rather than a token per semantic colour — six palettes ×
+// four fills is 24 tokens to hand-tune, and luminance gets all of them right.
+// Add an explicit `*Ink` token the day one of them looks wrong.
+Color onFill(Color c) =>
+    c.computeLuminance() > 0.45 ? _inkOnLight : const Color(0xFFFFFFFF);

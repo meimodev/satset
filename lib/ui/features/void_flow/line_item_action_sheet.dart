@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -7,14 +8,27 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
+import 'package:satset/ui/core/widgets/status_chip.dart';
 
 // Canonical reason codes — must match the server taxonomy in
 // reports_routes.dart and the void_reason_code DB column (see ADR-0006).
 const _voidReasons = <Map<String, String>>[
-  {'id': 'wrongOrder', 'label': 'Terkirim salah', 'desc': 'Salah meja, tap ganda, salah ring'},
-  {'id': 'customerChange', 'label': 'Tamu berubah pikiran', 'desc': 'Tamu batalkan permintaan'},
+  {
+    'id': 'wrongOrder',
+    'label': 'Terkirim salah',
+    'desc': 'Salah meja, tap ganda, salah ring',
+  },
+  {
+    'id': 'customerChange',
+    'label': 'Tamu berubah pikiran',
+    'desc': 'Tamu batalkan permintaan',
+  },
   {'id': 'outOfStock', 'label': 'Stok habis', 'desc': 'Item habis di stasiun'},
-  {'id': 'kitchenError', 'label': 'Komplain / kualitas dapur', 'desc': 'Masalah kualitas — pertimbangkan refire'},
+  {
+    'id': 'kitchenError',
+    'label': 'Komplain / kualitas dapur',
+    'desc': 'Masalah kualitas — pertimbangkan refire',
+  },
   {'id': 'other', 'label': 'Lainnya', 'desc': 'Alasan bebas wajib diisi'},
 ];
 
@@ -114,7 +128,9 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
     // Free-text rides only for `other`; fixed reasons store their label so the
     // audit row + reports read cleanly. The server stamps the acting waiter.
     final reasonStr = _reasonText.isNotEmpty ? _reasonText : reason['label']!;
-    await ref.read(advanceTicketStatusUseCaseProvider).call(
+    await ref
+        .read(advanceTicketStatusUseCaseProvider)
+        .call(
           widget.tableId,
           t.id,
           TicketStatus.voided,
@@ -143,13 +159,13 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
             child: Container(
               width: 38,
               height: 4,
-              decoration:
-                  SatBox.d(color: sc.textDim, borderRadius: SatR.a(4)),
+              decoration: SatBox.d(color: sc.textDim, borderRadius: SatR.a(4)),
             ),
           ),
           _Head(
             ticket: ticket,
-            tableName: widget.displayName ??
+            tableName:
+                widget.displayName ??
                 ref
                     .watch(tablesProvider)
                     .where((t) => t.id == widget.tableId)
@@ -162,14 +178,17 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
             child: SingleChildScrollView(
               controller: widget.scrollController,
               child: switch (_step) {
-                _Step.actions => _ActionList(ticket: ticket, onPick: _pickAction),
+                _Step.actions => _ActionList(
+                  ticket: ticket,
+                  onPick: _pickAction,
+                ),
                 _Step.voidReason => _VoidReasonList(
-                    onPick: (r, text) {
-                      _reason = r;
-                      _reasonText = text;
-                      _commitVoid();
-                    },
-                  ),
+                  onPick: (r, text) {
+                    _reason = r;
+                    _reasonText = text;
+                    _commitVoid();
+                  },
+                ),
                 _Step.confirmed => _ConfirmedView(ticket: ticket),
               },
             ),
@@ -184,7 +203,11 @@ class _Head extends StatelessWidget {
   final Ticket ticket;
   final String tableName;
   final VoidCallback onClose;
-  const _Head({required this.ticket, required this.tableName, required this.onClose});
+  const _Head({
+    required this.ticket,
+    required this.tableName,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +223,7 @@ class _Head extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    _StatusChip(status: ticket.status),
+                    StatusChip(status: ticket.status),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
@@ -228,79 +251,24 @@ class _Head extends StatelessWidget {
                 if (ticket.modifiers.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(ticket.modifiers.map((m) => m.display).join(' · '),
-                        style: SatType.sans(
-                          size: 12,
-                          color: sc.textMd,
-                          height: 1.35,
-                        )),
+                    child: Text(
+                      ticket.modifiers.map((m) => m.display).join(' · '),
+                      style: SatType.sans(
+                        size: 12,
+                        color: sc.textMd,
+                        height: 1.35,
+                      ),
+                    ),
                   ),
               ],
             ),
           ),
           IconButton(
+            tooltip: AppStrings.close,
             onPressed: onClose,
             icon: Icon(Icons.close, size: 18, color: sc.textMd),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final TicketStatus status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    Color bg;
-    Color fg;
-    switch (status) {
-      case TicketStatus.draft:
-      case TicketStatus.acknowledged:
-      case TicketStatus.sent:
-        bg = sc.infoSoft;
-        fg = sc.info;
-        break;
-      case TicketStatus.prep:
-        bg = sc.warnSoft;
-        fg = sc.warn;
-        break;
-      case TicketStatus.cooked:
-        bg = sc.accentSoft;
-        fg = sc.accentText;
-        break;
-      case TicketStatus.ready:
-        bg = sc.successSoft;
-        fg = sc.success;
-        break;
-      case TicketStatus.served:
-        bg = sc.bg3;
-        fg = sc.textLo;
-        break;
-      case TicketStatus.pendingReview:
-      case TicketStatus.held:
-        bg = sc.violetSoft;
-        fg = sc.violet;
-        break;
-      case TicketStatus.voided:
-        bg = sc.urgentSoft;
-        fg = sc.urgent;
-        break;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
-      child: Text(
-        ticketStatusLabel(status).toUpperCase(),
-        style: SatType.mono(
-          size: 10,
-          weight: FontWeight.w600,
-          letterSpacing: 1.0,
-          color: fg,
-        ),
       ),
     );
   }
@@ -316,40 +284,48 @@ class _ActionList extends StatelessWidget {
     final sc = context.sat;
     final rows = <_ActionItem>[];
     if (ticket.status == TicketStatus.held) {
-      rows.add(_ActionItem(
-        id: 'fire',
-        icon: Icons.local_fire_department,
-        title: 'Bakar sekarang',
-        desc: 'Kirim course ke line langsung',
-        tone: _Tone.accent,
-      ));
+      rows.add(
+        _ActionItem(
+          id: 'fire',
+          icon: Icons.local_fire_department,
+          title: 'Bakar sekarang',
+          desc: 'Kirim course ke line langsung',
+          tone: _Tone.accent,
+        ),
+      );
     }
     if (ticket.status == TicketStatus.ready) {
-      rows.add(_ActionItem(
-        id: 'serve',
-        icon: Icons.check,
-        title: 'Tandai disajikan',
-        desc: 'Konfirmasi diambil & diantar ke meja',
-        tone: _Tone.success,
-      ));
+      rows.add(
+        _ActionItem(
+          id: 'serve',
+          icon: Icons.check,
+          title: 'Tandai disajikan',
+          desc: 'Konfirmasi diambil & diantar ke meja',
+          tone: _Tone.success,
+        ),
+      );
     }
     if (ticket.status == TicketStatus.served) {
-      rows.add(_ActionItem(
-        id: 'unserve',
-        icon: Icons.undo,
-        title: 'Batalkan sajian',
-        desc: 'Kembalikan status jika ditandai terlalu cepat',
-        tone: _Tone.normal,
-      ));
+      rows.add(
+        _ActionItem(
+          id: 'unserve',
+          icon: Icons.undo,
+          title: 'Batalkan sajian',
+          desc: 'Kembalikan status jika ditandai terlalu cepat',
+          tone: _Tone.normal,
+        ),
+      );
     }
     if (ticket.status != TicketStatus.voided) {
-      rows.add(_ActionItem(
-        id: 'void',
-        icon: Icons.delete_outline,
-        title: 'Batalkan item',
-        desc: 'Hapus dari pesanan · tercatat atas nama kamu',
-        tone: _Tone.danger,
-      ));
+      rows.add(
+        _ActionItem(
+          id: 'void',
+          icon: Icons.delete_outline,
+          title: 'Batalkan item',
+          desc: 'Hapus dari pesanan · tercatat atas nama kamu',
+          tone: _Tone.danger,
+        ),
+      );
     }
 
     return Padding(
@@ -357,10 +333,7 @@ class _ActionList extends StatelessWidget {
       child: Column(
         children: [
           for (final r in rows) ...[
-            _ActionRow(
-              item: r,
-              onTap: () => onPick(r.id),
-            ),
+            _ActionRow(item: r, onTap: () => onPick(r.id)),
             const SizedBox(height: 6),
           ],
           const SizedBox(height: 60),
@@ -445,10 +418,7 @@ class _ActionRow extends StatelessWidget {
               Container(
                 width: 36,
                 height: 36,
-                decoration: SatBox.d(
-                  color: iconBg,
-                  borderRadius: SatR.a(10),
-                ),
+                decoration: SatBox.d(color: iconBg, borderRadius: SatR.a(10)),
                 alignment: Alignment.center,
                 child: Icon(item.icon, size: 18, color: iconFg),
               ),
@@ -457,20 +427,24 @@ class _ActionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.title,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.14,
-                          color: titleColor,
-                        )),
+                    Text(
+                      item.title,
+                      style: SatType.sans(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        letterSpacing: -0.14,
+                        color: titleColor,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(item.desc,
-                        style: SatType.sans(
-                          size: 11,
-                          color: sc.textMd,
-                          height: 1.35,
-                        )),
+                    Text(
+                      item.desc,
+                      style: SatType.sans(
+                        size: 11,
+                        color: sc.textMd,
+                        height: 1.35,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -522,7 +496,11 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 Expanded(
                   child: Text(
                     'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan. Refire mungkin lebih cocok untuk isu kualitas.',
-                    style: SatType.sans(size: 12, color: sc.textMd, height: 1.4),
+                    style: SatType.sans(
+                      size: 12,
+                      color: sc.textMd,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
@@ -538,11 +516,16 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                   onTap: () => setState(() => _pickedId = r['id']),
                   borderRadius: SatR.a(14),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: SatBox.d(
                       borderRadius: SatR.a(14),
                       border: SatB.all(
-                        color: _pickedId == r['id'] ? sc.accentBorder : sc.border0,
+                        color: _pickedId == r['id']
+                            ? sc.accentBorder
+                            : sc.border0,
                       ),
                     ),
                     child: Row(
@@ -551,10 +534,14 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                           width: 22,
                           height: 22,
                           decoration: SatBox.d(
-                            color: _pickedId == r['id'] ? sc.accent : Colors.transparent,
+                            color: _pickedId == r['id']
+                                ? sc.accent
+                                : Colors.transparent,
                             shape: BoxShape.circle,
                             border: SatB.all(
-                              color: _pickedId == r['id'] ? sc.accent : sc.border2,
+                              color: _pickedId == r['id']
+                                  ? sc.accent
+                                  : sc.border2,
                               width: 1.5,
                             ),
                           ),
@@ -568,12 +555,19 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(r['label']!,
-                                  style: SatType.sans(
-                                      size: 14, weight: FontWeight.w500, color: sc.textHi)),
+                              Text(
+                                r['label']!,
+                                style: SatType.sans(
+                                  size: 14,
+                                  weight: FontWeight.w500,
+                                  color: sc.textHi,
+                                ),
+                              ),
                               const SizedBox(height: 2),
-                              Text(r['desc']!,
-                                  style: SatType.sans(size: 11, color: sc.textMd)),
+                              Text(
+                                r['desc']!,
+                                style: SatType.sans(size: 11, color: sc.textMd),
+                              ),
                             ],
                           ),
                         ),
@@ -613,8 +607,13 @@ class _VoidReasonListState extends State<_VoidReasonList> {
             child: ElevatedButton(
               onPressed: _canContinue
                   ? () {
-                      final r = _voidReasons.firstWhere((x) => x['id'] == _pickedId);
-                      widget.onPick(r, _pickedId == 'other' ? _other.trim() : '');
+                      final r = _voidReasons.firstWhere(
+                        (x) => x['id'] == _pickedId,
+                      );
+                      widget.onPick(
+                        r,
+                        _pickedId == 'other' ? _other.trim() : '',
+                      );
                     }
                   : null,
               style: ElevatedButton.styleFrom(
@@ -628,12 +627,14 @@ class _VoidReasonListState extends State<_VoidReasonList> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Batalkan item',
-                      style: SatType.sans(
-                        size: 15,
-                        weight: FontWeight.w600,
-                        color: sc.accentInk,
-                      )),
+                  Text(
+                    'Batalkan item',
+                    style: SatType.sans(
+                      size: 15,
+                      weight: FontWeight.w600,
+                      color: sc.accentInk,
+                    ),
+                  ),
                   const SizedBox(width: 6),
                   Icon(Icons.delete_outline, size: 14, color: sc.accentInk),
                 ],
@@ -668,13 +669,15 @@ class _ConfirmedView extends StatelessWidget {
             child: Icon(Icons.delete_outline, size: 46, color: sc.urgent),
           ),
           const SizedBox(height: 16),
-          Text('Item dibatalkan',
-              style: SatType.sans(
-                size: 22,
-                weight: FontWeight.w600,
-                letterSpacing: -0.22,
-                color: sc.textHi,
-              )),
+          Text(
+            'Item dibatalkan',
+            style: SatType.sans(
+              size: 22,
+              weight: FontWeight.w600,
+              letterSpacing: -0.22,
+              color: sc.textHi,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             'Tercatat: ×${ticket.qty} ${ticket.name} · atas nama kamu · terlihat di laporan',

@@ -24,7 +24,18 @@ class SatSetApp extends ConsumerWidget {
         return ColoredBox(
           color: bg,
           child: SafeArea(
-            child: AlertHost(child: child ?? const SizedBox.shrink()),
+            // ponytail: a ceiling, not a fix. The dense boards (KDS, table
+            // detail, cashier bill) are built from fixed-height rows, so an
+            // Android font scale of 2.0 clips them silently in release. The
+            // clamp bounds that everywhere at once instead of auditing ~600
+            // fixed dimensions. It also caps how far a user can enlarge text,
+            // so it is a deliberate trade, not free: the real fix is
+            // min-height constraints on those rows, after which this ceiling
+            // should rise.
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: AlertHost(child: child ?? const SizedBox.shrink()),
+            ),
           ),
         );
       },

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -90,7 +91,9 @@ class _PinScreenState extends ConsumerState<PinScreen>
       return;
     }
     FocusScope.of(context).unfocus();
-    final ok = await ref.read(pinViewModelProvider.notifier).submitAdmin(
+    final ok = await ref
+        .read(pinViewModelProvider.notifier)
+        .submitAdmin(
           email: _adminEmail.text.trim(),
           password: _adminPassword.text,
         );
@@ -107,18 +110,18 @@ class _PinScreenState extends ConsumerState<PinScreen>
     FocusScope.of(context).unfocus();
     final email = _adminEmail.text.trim();
     try {
-      await ref
-          .read(authStateProvider.notifier)
-          .sendAdminPasswordReset(email);
+      await ref.read(authStateProvider.notifier).sendAdminPasswordReset(email);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Link reset dikirim ke $email'),
-      ));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Link reset dikirim ke $email')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Gagal kirim link reset. Cek email & koneksi.'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal kirim link reset. Cek email & koneksi.'),
+        ),
+      );
     }
   }
 
@@ -137,8 +140,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
       title: 'Masukkan PIN',
       subtitle: 'Tersambung ke ${server.label}',
       statusSlot: const _ServerReachabilityPill(),
-      onSubmit: (pin) =>
-          ref.read(pinViewModelProvider.notifier).verifyPin(pin),
+      onSubmit: (pin) => ref.read(pinViewModelProvider.notifier).verifyPin(pin),
     );
     _sheetOpen = false;
     if (!mounted) return;
@@ -163,7 +165,10 @@ class _PinScreenState extends ConsumerState<PinScreen>
           child: SizedBox(
             width: 28,
             height: 28,
-            child: CircularProgressIndicator(strokeWidth: 2, color: sc.accentText),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: sc.accentText,
+            ),
           ),
         ),
       );
@@ -178,9 +183,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
     // Admin auto-login: while the boot-time session restore is in flight, mask
     // the sign-in form behind a loading screen so the form never flashes before
     // the router redirects an already-authenticated admin into the app.
-    final restoring = ref.watch(
-      authStateProvider.select((s) => s.restoring),
-    );
+    final restoring = ref.watch(authStateProvider.select((s) => s.restoring));
     if (state.mode == SignInMode.admin && restoring) {
       return const _RestoreLoadingScreen();
     }
@@ -201,12 +204,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
       }
     });
 
-    final staffConnected = state.mode == SignInMode.staff &&
+    final staffConnected =
+        state.mode == SignInMode.staff &&
         (state.selectedServer?.paired ?? false);
     final staffEditing =
         state.mode == SignInMode.staff && (_serverEditing || !staffConnected);
-    final showModeSwitcher =
-        state.mode == SignInMode.admin || staffEditing;
+    final showModeSwitcher = state.mode == SignInMode.admin || staffEditing;
 
     final modeSwitcher = _ModeSwitcher(
       mode: state.mode,
@@ -220,23 +223,21 @@ class _PinScreenState extends ConsumerState<PinScreen>
     final serverPanel = state.mode != SignInMode.staff
         ? const SizedBox.shrink()
         : staffEditing
-            ? _ServerList(
-                servers: state.servers,
-                selectedKey: state.selectedServerKey,
-                pairingBusy: state.pairingBusy,
-                pairingError: state.pairingError,
-                onSelect: (k) => ref
-                    .read(pinViewModelProvider.notifier)
-                    .selectServer(k),
-                onAutoClaim: (s) => ref
-                    .read(pinViewModelProvider.notifier)
-                    .selectDiscovered(s),
-              )
-            : _ConnectedServerCard(
-                server: state.selectedServer!,
-                onEdit: () => setState(() => _serverEditing = true),
-                onReenterPin: () => _openPinSheet(state.selectedServer!),
-              );
+        ? _ServerList(
+            servers: state.servers,
+            selectedKey: state.selectedServerKey,
+            pairingBusy: state.pairingBusy,
+            pairingError: state.pairingError,
+            onSelect: (k) =>
+                ref.read(pinViewModelProvider.notifier).selectServer(k),
+            onAutoClaim: (s) =>
+                ref.read(pinViewModelProvider.notifier).selectDiscovered(s),
+          )
+        : _ConnectedServerCard(
+            server: state.selectedServer!,
+            onEdit: () => setState(() => _serverEditing = true),
+            onReenterPin: () => _openPinSheet(state.selectedServer!),
+          );
 
     if (l.useTabletShell) {
       // Tablet: left = brand + mode switch + server panel. Right = admin form
@@ -475,12 +476,15 @@ class _AdminAuthForm extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('PASSWORD',
-                style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w500,
-                    letterSpacing: 1.2,
-                    color: sc.textLo)),
+            Text(
+              'PASSWORD',
+              style: SatType.mono(
+                size: 10,
+                weight: FontWeight.w500,
+                letterSpacing: 1.2,
+                color: sc.textLo,
+              ),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: password,
@@ -503,12 +507,18 @@ class _AdminAuthForm extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: SatR.a(12),
-                  borderSide:
-                      SatB.side(color: pwHasError ? sc.urgent : sc.accent),
+                  borderSide: SatB.side(
+                    color: pwHasError ? sc.urgent : sc.accent,
+                  ),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 suffixIcon: IconButton(
+                  tooltip: showPassword
+                      ? AppStrings.a11yHidePassword
+                      : AppStrings.a11yShowPassword,
                   onPressed: onToggleShow,
                   icon: Icon(
                     showPassword
@@ -527,11 +537,14 @@ class _AdminAuthForm extends StatelessWidget {
                   children: [
                     Icon(Icons.error_outline, size: 12, color: sc.urgent),
                     const SizedBox(width: 6),
-                    Text(passwordError!,
-                        style: SatType.sans(
-                            size: 12,
-                            weight: FontWeight.w500,
-                            color: sc.urgent)),
+                    Text(
+                      passwordError!,
+                      style: SatType.sans(
+                        size: 12,
+                        weight: FontWeight.w500,
+                        color: sc.urgent,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -543,12 +556,16 @@ class _AdminAuthForm extends StatelessWidget {
           child: TextButton(
             onPressed: onForgotPassword,
             style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 4)),
-            child: Text('Lupa password?',
-                style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.textMd)),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+            ),
+            child: Text(
+              'Lupa password?',
+              style: SatType.sans(
+                size: 12,
+                weight: FontWeight.w500,
+                color: sc.textMd,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -561,21 +578,28 @@ class _AdminAuthForm extends StatelessWidget {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: sc.accentInk),
+                      strokeWidth: 2,
+                      color: sc.accentInk,
+                    ),
                   )
-                : Icon(Icons.shield_moon_outlined,
-                    size: 18, color: sc.accentInk),
-            label: Text(busy ? 'Memuat...' : 'Masuk sebagai admin',
-                style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.accentInk)),
+                : Icon(
+                    Icons.shield_moon_outlined,
+                    size: 18,
+                    color: sc.accentInk,
+                  ),
+            label: Text(
+              busy ? 'Memuat...' : 'Masuk sebagai admin',
+              style: SatType.sans(
+                size: 15,
+                weight: FontWeight.w600,
+                color: sc.accentInk,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: sc.accent,
               foregroundColor: sc.accentInk,
               disabledBackgroundColor: sc.accent.withValues(alpha: 0.7),
-              shape: RoundedRectangleBorder(
-                  borderRadius: SatR.a(16)),
+              shape: RoundedRectangleBorder(borderRadius: SatR.a(16)),
             ),
           ),
         ),
@@ -587,12 +611,15 @@ class _AdminAuthForm extends StatelessWidget {
               Icon(Icons.error_outline, size: 12, color: sc.urgent),
               const SizedBox(width: 6),
               Flexible(
-                child: Text(serverError!,
-                    textAlign: TextAlign.center,
-                    style: SatType.sans(
-                        size: 12,
-                        weight: FontWeight.w500,
-                        color: sc.urgent)),
+                child: Text(
+                  serverError!,
+                  textAlign: TextAlign.center,
+                  style: SatType.sans(
+                    size: 12,
+                    weight: FontWeight.w500,
+                    color: sc.urgent,
+                  ),
+                ),
               ),
             ],
           ),
@@ -624,8 +651,9 @@ class _ModeSwitcher extends StatelessWidget {
           return Stack(
             children: [
               AnimatedAlign(
-                alignment:
-                    isAdmin ? Alignment.centerLeft : Alignment.centerRight,
+                alignment: isAdmin
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
                 duration: _d(context, _kPanelDur),
                 curve: _kPanelCurve,
                 child: Container(
@@ -700,13 +728,15 @@ class _ModeSwitcher extends StatelessWidget {
                 tween: Tween(end: active ? 1.0 : 0.0),
                 duration: _d(context, _kMicroDur),
                 curve: Curves.easeOutQuart,
-                builder: (context, t, _) => Text(label,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.14,
-                      color: Color.lerp(sc.textMd, sc.textHi, t),
-                    )),
+                builder: (context, t, _) => Text(
+                  label,
+                  style: SatType.sans(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    letterSpacing: -0.14,
+                    color: Color.lerp(sc.textMd, sc.textHi, t),
+                  ),
+                ),
               ),
             ),
           ],
@@ -776,11 +806,14 @@ class _ServerList extends ConsumerWidget {
               Icon(Icons.error_outline, size: 12, color: sc.urgent),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(pairingError!,
-                    style: SatType.sans(
-                        size: 12,
-                        weight: FontWeight.w500,
-                        color: sc.urgent)),
+                child: Text(
+                  pairingError!,
+                  style: SatType.sans(
+                    size: 12,
+                    weight: FontWeight.w500,
+                    color: sc.urgent,
+                  ),
+                ),
               ),
             ],
           ),
@@ -814,73 +847,80 @@ class _ServerRow extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-        onTap: busy ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            children: [
-              _PulseDot(color: dotColor, glow: dotShadow),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(server.label,
+          onTap: busy ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
+              children: [
+                _PulseDot(color: dotColor, glow: dotShadow),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        server.label,
                         overflow: TextOverflow.ellipsis,
                         style: SatType.sans(
                           size: 14,
                           weight: FontWeight.w500,
                           letterSpacing: -0.14,
                           color: sc.textHi,
-                        )),
-                    const SizedBox(height: 2),
-                    Text(
-                      server.version == null
-                          ? server.ipLine
-                          : '${server.ipLine} · v${server.version}',
-                      style: SatType.mono(
-                        size: 10,
-                        color: sc.textLo,
-                        letterSpacing: 0.4,
+                        ),
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        server.version == null
+                            ? server.ipLine
+                            : '${server.ipLine} · v${server.version}',
+                        style: SatType.mono(
+                          size: 10,
+                          color: sc.textLo,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (busy)
+                  SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: sc.accentText,
                     ),
-                  ],
-                ),
-              ),
-              if (busy)
-                SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: sc.accentText),
-                )
-              else if (selected && server.paired)
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: SatBox.d(
-                    shape: BoxShape.circle,
-                    color: sc.accent,
+                  )
+                else if (selected && server.paired)
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: SatBox.d(
+                      shape: BoxShape.circle,
+                      color: sc.accent,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(Icons.check, size: 14, color: sc.accentInk),
+                  )
+                else if (!server.paired)
+                  Icon(
+                    Icons.wifi_tethering_rounded,
+                    size: 18,
+                    color: sc.accentText,
+                  )
+                else
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: SatBox.d(
+                      shape: BoxShape.circle,
+                      border: SatB.all(color: sc.border2),
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Icon(Icons.check, size: 14, color: sc.accentInk),
-                )
-              else if (!server.paired)
-                Icon(Icons.wifi_tethering_rounded,
-                    size: 18, color: sc.accentText)
-              else
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: SatBox.d(
-                    shape: BoxShape.circle,
-                    border: SatB.all(color: sc.border2),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -907,15 +947,19 @@ class _RestoreLoadingScreen extends StatelessWidget {
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: sc.accentText),
+                  strokeWidth: 2,
+                  color: sc.accentText,
+                ),
               ),
               const SizedBox(height: 16),
-              Text('Memeriksa sesi…',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.6,
-                  )),
+              Text(
+                'Memeriksa sesi…',
+                style: SatType.mono(
+                  size: 11,
+                  color: sc.textLo,
+                  letterSpacing: 0.6,
+                ),
+              ),
             ],
           ),
         ),
@@ -933,10 +977,7 @@ class _Brand extends StatelessWidget {
         Container(
           width: 32,
           height: 32,
-          decoration: SatBox.d(
-            color: sc.accent,
-            borderRadius: SatR.a(8),
-          ),
+          decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(8)),
           alignment: Alignment.center,
           child: Text(
             'S',
@@ -949,13 +990,15 @@ class _Brand extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text('satset',
-            style: SatType.sans(
-              size: 18,
-              weight: FontWeight.w600,
-              letterSpacing: -0.18,
-              color: sc.textHi,
-            )),
+        Text(
+          'satset',
+          style: SatType.sans(
+            size: 18,
+            weight: FontWeight.w600,
+            letterSpacing: -0.18,
+            color: sc.textHi,
+          ),
+        ),
       ],
     );
   }
@@ -970,10 +1013,7 @@ class _TabletBrand extends StatelessWidget {
         Container(
           width: 44,
           height: 44,
-          decoration: SatBox.d(
-            color: sc.accent,
-            borderRadius: SatR.a(12),
-          ),
+          decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(12)),
           alignment: Alignment.center,
           child: Text(
             'S',
@@ -986,13 +1026,15 @@ class _TabletBrand extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Text('satset',
-            style: SatType.sans(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.22,
-              color: sc.textHi,
-            )),
+        Text(
+          'satset',
+          style: SatType.sans(
+            size: 22,
+            weight: FontWeight.w600,
+            letterSpacing: -0.22,
+            color: sc.textHi,
+          ),
+        ),
       ],
     );
   }
@@ -1022,12 +1064,15 @@ class _Field extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(),
-            style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w500,
-                letterSpacing: 1.2,
-                color: sc.textLo)),
+        Text(
+          label.toUpperCase(),
+          style: SatType.mono(
+            size: 10,
+            weight: FontWeight.w500,
+            letterSpacing: 1.2,
+            color: sc.textLo,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -1049,11 +1094,12 @@ class _Field extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: SatR.a(12),
-              borderSide:
-                  SatB.side(color: hasError ? sc.urgent : sc.accent),
+              borderSide: SatB.side(color: hasError ? sc.urgent : sc.accent),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
         ),
         if (hasError)
@@ -1063,11 +1109,14 @@ class _Field extends StatelessWidget {
               children: [
                 Icon(Icons.error_outline, size: 12, color: sc.urgent),
                 const SizedBox(width: 6),
-                Text(errorText!,
-                    style: SatType.sans(
-                        size: 12,
-                        weight: FontWeight.w500,
-                        color: sc.urgent)),
+                Text(
+                  errorText!,
+                  style: SatType.sans(
+                    size: 12,
+                    weight: FontWeight.w500,
+                    color: sc.urgent,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1083,18 +1132,20 @@ void _retain(WidgetRef ref) => ref.read(authStateProvider);
 
 /// Maps a cold-boot admin block code to user-facing copy. See ADR-0015.
 String? _bootBlockText(String? code) => switch (code) {
-      'stale' =>
-        'Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.',
-      'ineligible' => 'Akses admin dicabut. Hubungi pengelola.',
-      _ => null,
-    };
+  'stale' =>
+    'Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.',
+  'ineligible' => 'Akses admin dicabut. Hubungi pengelola.',
+  _ => null,
+};
 
 /// Three-state reachability derived from the live `/healthz` heartbeat
 /// ([pingProvider]) of the currently-published paired server. Debounced: a
 /// single failed probe stays in the neutral "checking" state so a momentary
 /// Wi-Fi blip doesn't flash "down" while the server is actually up.
 ({Color dot, Color glow, String label, bool offline}) _reachabilityVisual(
-    PingState ping, SatColors sc) {
+  PingState ping,
+  SatColors sc,
+) {
   if (ping.reachable) {
     final ms = (ping.latest ?? ping.p50)?.inMilliseconds;
     return (
@@ -1173,13 +1224,15 @@ class _ConnectedServerCard extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-          child: Text('SERVER TERSAMBUNG',
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w500,
-                letterSpacing: 1.2,
-                color: sc.textLo,
-              )),
+          child: Text(
+            'SERVER TERSAMBUNG',
+            style: SatType.mono(
+              size: 10,
+              weight: FontWeight.w500,
+              letterSpacing: 1.2,
+              color: sc.textLo,
+            ),
+          ),
         ),
         Material(
           color: sc.bg2,
@@ -1201,9 +1254,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                     decoration: SatBox.d(
                       shape: BoxShape.circle,
                       color: v.dot,
-                      boxShadow: [
-                        BoxShadow(color: v.glow, spreadRadius: 3),
-                      ],
+                      boxShadow: [BoxShadow(color: v.glow, spreadRadius: 3)],
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -1247,8 +1298,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                   IconButton(
                     onPressed: onEdit,
                     tooltip: 'Ubah server',
-                    icon: Icon(Icons.edit_outlined,
-                        size: 18, color: sc.textMd),
+                    icon: Icon(Icons.edit_outlined, size: 18, color: sc.textMd),
                   ),
                 ],
               ),
@@ -1269,8 +1319,7 @@ class _Reveal extends StatefulWidget {
   State<_Reveal> createState() => _RevealState();
 }
 
-class _RevealState extends State<_Reveal>
-    with SingleTickerProviderStateMixin {
+class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
   late final AnimationController _c;
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -57,16 +58,21 @@ class _GuestStepperState extends State<GuestStepper> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _btn(context, sc, Icons.remove_rounded,
-              canMinus ? widget.onMinus : null, canMinus),
+          _btn(
+            context,
+            sc,
+            Icons.remove_rounded,
+            canMinus ? widget.onMinus : null,
+            canMinus,
+            AppStrings.a11yGuestDecrease,
+          ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: size * 0.22),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(Icons.person_outline,
-                    size: size * 0.38, color: sc.textMd),
+                Icon(Icons.person_outline, size: size * 0.38, color: sc.textMd),
                 SizedBox(width: size * 0.12),
                 AnimatedSwitcher(
                   duration: reduced
@@ -100,27 +106,48 @@ class _GuestStepperState extends State<GuestStepper> {
               ],
             ),
           ),
-          _btn(context, sc, Icons.add_rounded,
-              canPlus ? widget.onPlus : null, canPlus),
+          _btn(
+            context,
+            sc,
+            Icons.add_rounded,
+            canPlus ? widget.onPlus : null,
+            canPlus,
+            AppStrings.a11yGuestIncrease,
+          ),
         ],
       ),
     );
   }
 
-  Widget _btn(BuildContext context, SatColors sc, IconData icon, VoidCallback? cb, bool active) {
+  /// [label] is what a screen reader announces — the glyph alone carries no
+  /// name, and "tombol" on its own tells a waiter nothing about which way the
+  /// count moves.
+  Widget _btn(
+    BuildContext context,
+    SatColors sc,
+    IconData icon,
+    VoidCallback? cb,
+    bool active,
+    String label,
+  ) {
     final size = widget.size;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: cb,
-        borderRadius: SatR.a(size / 2),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Icon(
-            icon,
-            size: size * 0.5,
-            color: active ? sc.textHi : sc.textDim,
+    return Semantics(
+      button: true,
+      enabled: cb != null,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: cb,
+          borderRadius: SatR.a(size / 2),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(
+              icon,
+              size: size * 0.5,
+              color: active ? sc.textHi : sc.textDim,
+            ),
           ),
         ),
       ),

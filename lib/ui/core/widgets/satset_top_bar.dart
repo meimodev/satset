@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -47,15 +48,18 @@ class _LoginClockState extends ConsumerState<LoginClock> {
 
   String _two(int v) => v.toString().padLeft(2, '0');
 
-  String _clock(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}:${_two(d.second)}';
+  String _clock(DateTime d) =>
+      '${_two(d.hour)}:${_two(d.minute)}:${_two(d.second)}';
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final fg = widget.textColor ??
+    final fg =
+        widget.textColor ??
         (SatShape.brutal && SatShape.brutalPaper ? SatShape.ink : sc.textHi);
-    final startedRaw =
-        ref.watch(authStateProvider.select((s) => s.user?.shiftStartedAt));
+    final startedRaw = ref.watch(
+      authStateProvider.select((s) => s.user?.shiftStartedAt),
+    );
     final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
     final currentTime = _clock(_now);
     final elapsed = started == null
@@ -65,8 +69,9 @@ class _LoginClockState extends ConsumerState<LoginClock> {
     final badgeBg = SatShape.brutal
         ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2)
         : sc.bg2;
-    final badgeBorder =
-        SatB.all(color: SatShape.brutal ? SatShape.ink : sc.border1);
+    final badgeBorder = SatB.all(
+      color: SatShape.brutal ? SatShape.ink : sc.border1,
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -130,24 +135,43 @@ class _LoginClockState extends ConsumerState<LoginClock> {
 class SatBackButton extends StatelessWidget {
   final VoidCallback onTap;
   final IconData icon;
-  const SatBackButton({super.key, required this.onTap, this.icon = Icons.arrow_back});
+
+  /// Overrides the screen-reader name. Defaults to "Kembali"; pass something
+  /// specific when the glyph is not a back arrow.
+  final String? semanticLabel;
+  const SatBackButton({
+    super.key,
+    required this.onTap,
+    this.icon = Icons.arrow_back,
+    this.semanticLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final fg = SatShape.brutal && SatShape.brutalPaper ? SatShape.ink : sc.textHi;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: SatBox.d(
-          color: SatShape.brutal ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2) : sc.bg2,
-          borderRadius: SatR.a(12),
-          border: SatB.all(color: SatShape.brutal ? SatShape.ink : sc.border0),
+    final fg = SatShape.brutal && SatShape.brutalPaper
+        ? SatShape.ink
+        : sc.textHi;
+    return Semantics(
+      button: true,
+      label: semanticLabel ?? AppStrings.back,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: SatBox.d(
+            color: SatShape.brutal
+                ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2)
+                : sc.bg2,
+            borderRadius: SatR.a(12),
+            border: SatB.all(
+              color: SatShape.brutal ? SatShape.ink : sc.border0,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 20, color: fg),
         ),
-        alignment: Alignment.center,
-        child: Icon(icon, size: 20, color: fg),
       ),
     );
   }

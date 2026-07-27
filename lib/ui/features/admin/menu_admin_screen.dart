@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -86,9 +87,7 @@ class _TabletLayout extends ConsumerWidget {
                         flex: 5,
                         child: Container(
                           decoration: SatBox.d(
-                            border: Border(
-                              right: SatB.side(color: sc.border0),
-                            ),
+                            border: Border(right: SatB.side(color: sc.border0)),
                           ),
                           child: const _ListPane(),
                         ),
@@ -100,8 +99,8 @@ class _TabletLayout extends ConsumerWidget {
                         // hard-cutting between items.
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 240),
-                          switchInCurve: kSatEase,
-                          switchOutCurve: kSatEase,
+                          switchInCurve: satEaseOut,
+                          switchOutCurve: satEaseOut,
                           transitionBuilder: (child, anim) => FadeTransition(
                             opacity: anim,
                             child: SlideTransition(
@@ -164,8 +163,8 @@ class _TabFade extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 240),
-      switchInCurve: kSatEase,
-      switchOutCurve: kSatEase,
+      switchInCurve: satEaseOut,
+      switchOutCurve: satEaseOut,
       transitionBuilder: (child, anim) => FadeTransition(
         opacity: anim,
         child: SlideTransition(
@@ -455,7 +454,7 @@ class _CategoryRail extends ConsumerWidget {
               ref.read(menuAdminCategoryFilterProvider.notifier).state = id,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            curve: kSatEase,
+            curve: satEaseOut,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: SatBox.d(
               color: on ? sc.accentSoft : sc.bg2,
@@ -531,8 +530,8 @@ class _ItemList extends ConsumerWidget {
     // already entered won't re-cascade (Reveal keys on item id).
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
-      switchInCurve: kSatEase,
-      switchOutCurve: kSatEase,
+      switchInCurve: satEaseOut,
+      switchOutCurve: satEaseOut,
       child: KeyedSubtree(key: ValueKey('$cat|$search'), child: body),
     );
   }
@@ -576,7 +575,7 @@ class _ItemRow extends ConsumerWidget {
                 : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              curve: kSatEase,
+              curve: satEaseOut,
               decoration: SatBox.d(
                 color: isSelected ? sc.accentSoft : sc.bg2,
                 border: SatB.all(
@@ -644,7 +643,9 @@ class _ItemRow extends ConsumerWidget {
                               Text(
                                 ' · ',
                                 style: SatType.mono(
-                                    size: 10, color: sc.textDim),
+                                  size: 10,
+                                  color: sc.textDim,
+                                ),
                               ),
                               Text(
                                 '${item.soldOutVariantIds.length} varian habis',
@@ -721,10 +722,7 @@ class _ItemRow extends ConsumerWidget {
   Widget _miniBadge(SatColors sc, String t, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: SatBox.d(
-        color: bg,
-        borderRadius: SatR.a(4),
-      ),
+      decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
       child: Text(
         t,
         style: SatType.mono(
@@ -761,7 +759,7 @@ class _StatusToggle extends ConsumerWidget {
             : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
-          curve: kSatEase,
+          curve: satEaseOut,
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           alignment: Alignment.center,
@@ -777,7 +775,7 @@ class _StatusToggle extends ConsumerWidget {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
-                curve: kSatEase,
+                curve: satEaseOut,
                 width: 6,
                 height: 6,
                 decoration: SatBox.d(color: fg, shape: BoxShape.circle),
@@ -785,7 +783,7 @@ class _StatusToggle extends ConsumerWidget {
               const SizedBox(width: 6),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                switchInCurve: kSatEase,
+                switchInCurve: satEaseOut,
                 transitionBuilder: (child, anim) =>
                     FadeTransition(opacity: anim, child: child),
                 child: Text(
@@ -856,7 +854,7 @@ class _TabSwitcher extends ConsumerWidget {
           onTap: () => ref.read(menuAdminTabProvider.notifier).state = value,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
-            curve: kSatEase,
+            curve: satEaseOut,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             decoration: SatBox.d(
               color: on ? sc.accent : Colors.transparent,
@@ -964,6 +962,7 @@ class _CategoriesPanel extends ConsumerWidget {
                           ),
                         ),
                         IconButton(
+                          tooltip: AppStrings.a11yRename,
                           icon: Icon(
                             Icons.edit_outlined,
                             size: 18,
@@ -972,6 +971,7 @@ class _CategoriesPanel extends ConsumerWidget {
                           onPressed: () => _rename(context, ref, c.id, c.name),
                         ),
                         IconButton(
+                          tooltip: AppStrings.delete,
                           icon: Icon(
                             Icons.delete_outline,
                             size: 18,
@@ -1179,6 +1179,7 @@ class _TagsPanel extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
+                      tooltip: AppStrings.a11yEdit,
                       icon: Icon(
                         Icons.edit_outlined,
                         size: 18,
@@ -1187,6 +1188,7 @@ class _TagsPanel extends ConsumerWidget {
                       onPressed: () => _edit(context, ref, t),
                     ),
                     IconButton(
+                      tooltip: AppStrings.delete,
                       icon: Icon(
                         Icons.delete_outline,
                         size: 18,
