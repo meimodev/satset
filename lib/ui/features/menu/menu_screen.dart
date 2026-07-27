@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -126,10 +127,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                   style: SatType.sans(size: 12, color: sc.textLo),
                 ),
                 const SizedBox(height: Sp.s3h),
-                OutlinedButton(
-                  onPressed: () =>
+                SatButton.outline(
+                  label: 'Coba lagi',
+                  onTap: () =>
                       ref.read(menuRepositoryProvider.notifier).refresh(),
-                  child: const Text('Coba lagi'),
                 ),
               ],
             ),
@@ -707,36 +708,7 @@ class _CartFooter extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          ElevatedButton(
-            onPressed: onReview,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: sc.accent,
-              foregroundColor: sc.accentInk,
-              elevation: 0,
-              minimumSize: const Size(0, 44),
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s4h),
-              // Glow sets every control as a pill — the send button most of
-              // all, since it is the one action on the screen.
-              shape: RoundedRectangleBorder(
-                borderRadius: SatR.a(SatShape.glow ? 999 : 14),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Tinjau',
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.accentInk,
-                  ),
-                ),
-                const SizedBox(width: Sp.s1h),
-                Icon(Icons.chevron_right, size: 16, color: sc.accentInk),
-              ],
-            ),
-          ),
+          SatButton.primary(label: 'Tinjau', onTap: onReview),
         ],
       ),
     );

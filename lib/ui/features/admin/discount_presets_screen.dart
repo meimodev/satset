@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
@@ -188,13 +189,13 @@ class _PresetTile extends StatelessWidget {
                   'lama tidak berubah — nilainya sudah tersimpan di sana.',
                 ),
                 actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(c, false),
-                    child: const Text('Batal'),
+                  SatButton.ghost(
+                    label: AppStrings.cancel,
+                    onTap: () => Navigator.pop(c, false),
                   ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(c, true),
-                    child: const Text('Hapus'),
+                  SatButton.danger(
+                    label: AppStrings.delete,
+                    onTap: () => Navigator.pop(c, true),
                   ),
                 ],
               ),

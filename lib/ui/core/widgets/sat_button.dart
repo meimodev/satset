@@ -108,11 +108,16 @@ class SatButton extends StatelessWidget {
     SatButtonSize.lg => Sp.s6 - 2,
   };
 
-  BorderRadius get _radius => switch (size) {
-    SatButtonSize.sm => SatR.sm,
-    SatButtonSize.md => SatR.lg,
-    SatButtonSize.lg => SatR.xl,
-  };
+  /// Glow sets every control as a pill (ADR-0050) — the send button most of
+  /// all, since it is the one action on the screen. Held here rather than at
+  /// the call site, where it was a per-screen `SatShape.glow ? 999 : 14`.
+  BorderRadius get _radius => SatShape.glow
+      ? SatR.pill
+      : switch (size) {
+          SatButtonSize.sm => SatR.sm,
+          SatButtonSize.md => SatR.lg,
+          SatButtonSize.lg => SatR.xl,
+        };
 
   double get _iconSize => switch (size) {
     SatButtonSize.sm => 14,

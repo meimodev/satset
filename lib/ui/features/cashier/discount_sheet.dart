@@ -12,6 +12,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/discount_dto.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
@@ -72,9 +74,9 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
                     'Pengaturan venue › Diskon.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Tutup'),
+          SatButton.ghost(
+            label: AppStrings.close,
+            onTap: () => Navigator.pop(c),
           ),
         ],
       ),
@@ -202,13 +204,13 @@ Future<String?> _askApproverPin(BuildContext context) async {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(c),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(c),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(c, ctrl.text.trim()),
-          child: const Text('Setujui'),
+        SatButton.primary(
+          label: 'Setujui',
+          onTap: () => Navigator.pop(c, ctrl.text.trim()),
         ),
       ],
     ),
