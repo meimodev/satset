@@ -76,7 +76,7 @@ class _GuestStepperSheet extends ConsumerWidget {
                 const SizedBox(width: Sp.s2h),
                 Text(
                   'Atur jumlah tamu',
-                  style: SatType.sans(size: 13, color: sc.textMd),
+                  style: SatType.bodyM(color: sc.textMd),
                 ),
               ],
             ),

@@ -515,20 +515,9 @@ class _Identity extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                m.name,
-                style: SatType.sans(
-                  size: big ? 24 : 22,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.32,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(m.name, style: SatType.h2(color: sc.textHi)),
               const SizedBox(height: Sp.sHair),
-              Text(
-                m.roleLabel,
-                style: SatType.sans(size: 13, color: sc.textMd),
-              ),
+              Text(m.roleLabel, style: SatType.bodyM(color: sc.textMd)),
               if (showShiftLine) ...[
                 const SizedBox(height: Sp.s1h),
                 Text(
@@ -694,12 +683,7 @@ class _PacingCard extends StatelessWidget {
           Expanded(
             child: Text(
               '$perHour tiket / jam',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w600,
-                letterSpacing: -0.15,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
           ),
           Text(m.elapsedLabel, style: SatType.monoM(color: sc.textHi)),
@@ -729,7 +713,7 @@ class _ActivityCard extends StatelessWidget {
             padding: const EdgeInsets.all(Sp.s5),
             child: Text(
               'Belum ada entri audit. Pembatalan, comp, dan perubahan pasca-kirim muncul di sini.',
-              style: SatType.sans(size: 13, color: sc.textLo, height: 1.5),
+              style: SatType.bodyM(color: sc.textLo),
             ),
           )
         : Column(
@@ -900,16 +884,7 @@ class _AuditRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  entry.title,
-                  style: SatType.sans(
-                    size: 13,
-                    weight: FontWeight.w500,
-                    letterSpacing: -0.13,
-                    color: sc.textHi,
-                    height: 1.25,
-                  ),
-                ),
+                Text(entry.title, style: SatType.bodyM(color: sc.textHi)),
                 const SizedBox(height: 3),
                 Text(meta, style: SatType.monoS(color: sc.textLo)),
               ],

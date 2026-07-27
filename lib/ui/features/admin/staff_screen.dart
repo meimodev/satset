@@ -97,14 +97,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            u.name,
-                            style: SatType.sans(
-                              size: 14,
-                              weight: FontWeight.w500,
-                              color: sc.textHi,
-                            ),
-                          ),
+                          Text(u.name, style: SatType.bodyM(color: sc.textHi)),
                           const SizedBox(height: Sp.sHair),
                           Text(
                             _roleOf(u, roles)?.name ?? '—',
@@ -201,7 +194,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
             ),
             child: Text(
               AppStrings.staffEmpty,
-              style: SatType.sans(size: 13, color: sc.textLo),
+              style: SatType.bodyM(color: sc.textLo),
             ),
           )
         else
@@ -235,11 +228,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           children: [
             Text(
               AppStrings.staffRolesCount(roles.length),
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: sc.textMd,
-              ),
+              style: SatType.bodyM(color: sc.textMd),
             ),
             const Spacer(),
             GestureDetector(
@@ -289,14 +278,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           const SizedBox(width: Sp.s3),
           Expanded(
             flex: 5,
-            child: Text(
-              r.name,
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
-            ),
+            child: Text(r.name, style: SatType.labelM(color: sc.textHi)),
           ),
           Expanded(
             flex: 3,
@@ -366,16 +348,12 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         children: [
           Text(
             AppStrings.staffMatrixTitle,
-            style: SatType.sans(
-              size: 15,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
+            style: SatType.labelL(color: sc.textHi),
           ),
           const SizedBox(height: Sp.s1),
           Text(
             AppStrings.staffMatrixHint,
-            style: SatType.sans(size: 11, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s4h),
           SingleChildScrollView(
@@ -418,11 +396,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                               Expanded(
                                 child: Text(
                                   r.name,
-                                  style: SatType.sans(
-                                    size: 13,
-                                    weight: FontWeight.w500,
-                                    color: sc.textHi,
-                                  ),
+                                  style: SatType.bodyM(color: sc.textHi),
                                 ),
                               ),
                             ],
@@ -587,11 +561,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 const SizedBox(height: Sp.s4h),
                 Text(
                   AppStrings.staffRoleColor,
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s4),
                 Wrap(
@@ -704,11 +674,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
             ],
             Text(
               label,
-              style: SatType.sans(
-                size: 11,
-                weight: FontWeight.w500,
-                color: on ? sc.accentText : sc.textMd,
-              ),
+              style: SatType.bodyS(color: on ? sc.accentText : sc.textMd),
             ),
           ],
         ),
@@ -760,14 +726,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 children: [
                   Center(child: _sheetHandle(sc)),
                   const SizedBox(height: Sp.s4h),
-                  Text(
-                    title,
-                    style: SatType.sans(
-                      size: 16,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text(title, style: SatType.labelL(color: sc.textHi)),
                   const SizedBox(height: Sp.s3h),
                   SatField.text(controller: ctl, hint: '', autofocus: true),
                   const SizedBox(height: Sp.s4),
@@ -838,19 +797,9 @@ Future<bool?> _confirmSheet(
             children: [
               Center(child: _sheetHandle(sc)),
               const SizedBox(height: Sp.s4h),
-              Text(
-                title,
-                style: SatType.sans(
-                  size: 16,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(title, style: SatType.labelL(color: sc.textHi)),
               const SizedBox(height: Sp.s2),
-              Text(
-                body,
-                style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
-              ),
+              Text(body, style: SatType.bodyM(color: sc.textMd)),
               const SizedBox(height: Sp.s4h),
               Row(
                 children: [
@@ -914,11 +863,7 @@ class _StaffCard extends StatelessWidget {
                 user.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: SatType.sans(
-                  size: 15,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
+                style: SatType.labelL(color: sc.textHi),
               ),
               const SizedBox(height: Sp.s1),
               if (role != null)
@@ -1126,11 +1071,7 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
               const SizedBox(height: Sp.s4h),
               Text(
                 AppStrings.staffAdd,
-                style: SatType.sans(
-                  size: 16,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
+                style: SatType.labelL(color: sc.textHi),
               ),
               const SizedBox(height: Sp.s4),
               SatField.text(
@@ -1259,14 +1200,7 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            user.name,
-                            style: SatType.sans(
-                              size: 18,
-                              weight: FontWeight.w600,
-                              color: sc.textHi,
-                            ),
-                          ),
+                          Text(user.name, style: SatType.h3(color: sc.textHi)),
                           const SizedBox(height: Sp.sHair),
                           Text(
                             user.disabled
@@ -1354,7 +1288,7 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                             user.disabled
                                 ? AppStrings.inactive
                                 : AppStrings.active,
-                            style: SatType.sans(size: 13, color: sc.textHi),
+                            style: SatType.bodyM(color: sc.textHi),
                           ),
                         ),
                         Switch(

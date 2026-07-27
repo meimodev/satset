@@ -231,7 +231,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
               const SizedBox(height: Sp.s2),
               Text(
                 'Laporan belum siap — buka laporan dulu agar bisa diekspor.',
-                style: SatType.sans(size: 11.5, color: sc.textLo),
+                style: SatType.bodyS(color: sc.textLo),
               ),
             ],
             const SizedBox(height: Sp.s4h),
@@ -256,7 +256,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: Sp.s3h),
-              Text(_error!, style: SatType.sans(size: 12, color: sc.urgent)),
+              Text(_error!, style: SatType.bodyS(color: sc.urgent)),
             ],
             const SizedBox(height: 22),
             SizedBox(width: double.infinity, child: _exportButton(context)),
@@ -292,21 +292,13 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                   const SizedBox(width: Sp.s2h),
                   Text(
                     'Menyiapkan…',
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.accentText,
-                    ),
+                    style: SatType.labelM(color: sc.accentText),
                   ),
                 ],
               )
             : Text(
                 'Ekspor ${_format.label}',
-                style: SatType.sans(
-                  size: 15,
-                  weight: FontWeight.w700,
-                  color: sc.accentInk,
-                ),
+                style: SatType.labelL(color: sc.accentInk),
               ),
       ),
     );
@@ -327,23 +319,13 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
       ),
       child: Text(
         rangeLabelId(_range, from: _from, to: _to),
-        style: SatType.sans(
-          size: 13,
-          weight: FontWeight.w600,
-          color: sc.accentText,
-        ),
+        style: SatType.labelM(color: sc.accentText),
       ),
     );
   }
 
-  Widget _label(BuildContext context, String text) => Text(
-    text,
-    style: SatType.sans(
-      size: 12,
-      weight: FontWeight.w600,
-      color: context.sat.textMd,
-    ),
-  );
+  Widget _label(BuildContext context, String text) =>
+      Text(text, style: SatType.labelS(color: context.sat.textMd));
 
   /// Disabled when [enabled] is false: greyed out and inert.
   Widget _kindPill(BuildContext context, _ExportKind k) {
@@ -381,11 +363,9 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
           ),
           child: Text(
             text,
-            style: SatType.sans(
-              size: 13,
-              weight: on ? FontWeight.w600 : FontWeight.w500,
-              color: on ? sc.accentText : sc.textMd,
-            ),
+            style: (on
+                ? SatType.labelM(color: on ? sc.accentText : sc.textMd)
+                : SatType.bodyM(color: on ? sc.accentText : sc.textMd)),
           ),
         ),
       ),

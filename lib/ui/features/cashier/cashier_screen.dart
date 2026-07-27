@@ -42,14 +42,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
               child: Row(
                 children: [
-                  Text(
-                    'Kasir',
-                    style: SatType.sans(
-                      size: 26,
-                      weight: FontWeight.w700,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text('Kasir', style: SatType.h2(color: sc.textHi)),
                   const Spacer(),
                   _TabToggle(
                     tab: _tab,
@@ -111,11 +104,7 @@ class _TabToggle extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w600,
-              color: active ? sc.textHi : sc.textLo,
-            ),
+            style: SatType.labelM(color: active ? sc.textHi : sc.textLo),
           ),
         ),
       );
@@ -254,11 +243,7 @@ class _PayableTile extends StatelessWidget {
                             : (b.guestName?.trim().isNotEmpty == true
                                   ? b.guestName!
                                   : 'Meja ${b.tableLabel ?? ''}'.trim()),
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.labelM(color: sc.textHi),
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -270,15 +255,17 @@ class _PayableTile extends StatelessWidget {
                                   ? 'Meja sudah ditutup · belum lunas'
                                   : '${b.pax} tamu · ${b.receiptCount} struk'
                                         '${b.mode == 'even' ? ' · rata' : ''}'),
-                        style: SatType.sans(
-                          size: 11.5,
-                          weight: (b.detached || b.isTakeaway)
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: b.isTakeaway
-                              ? sc.accentText
-                              : (b.detached ? sc.warn : sc.textLo),
-                        ),
+                        style: ((b.detached || b.isTakeaway)
+                            ? SatType.labelS(
+                                color: b.isTakeaway
+                                    ? sc.accentText
+                                    : (b.detached ? sc.warn : sc.textLo),
+                              )
+                            : SatType.bodyS(
+                                color: b.isTakeaway
+                                    ? sc.accentText
+                                    : (b.detached ? sc.warn : sc.textLo),
+                              )),
                       ),
                     ],
                   ),
@@ -307,11 +294,7 @@ class _PayableTile extends StatelessWidget {
                       child: AnimatedDefaultTextStyle(
                         duration: satMotion(context, 240),
                         curve: satEaseOut,
-                        style: SatType.sans(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          color: badgeColor,
-                        ),
+                        style: SatType.labelS(color: badgeColor),
                         child: Text(badgeText),
                       ),
                     ),
@@ -342,7 +325,7 @@ class _Empty extends StatelessWidget {
         Text(
           text,
           textAlign: TextAlign.center,
-          style: SatType.sans(size: 13, color: sc.textLo),
+          style: SatType.bodyM(color: sc.textLo),
         ),
       ],
     );

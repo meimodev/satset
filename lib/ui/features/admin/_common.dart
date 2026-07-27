@@ -37,15 +37,7 @@ class AdminEmbeddedStrip extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: SatType.sans(
-                    size: 20,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.3,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(title, style: SatType.h2(color: sc.textHi)),
                 const SizedBox(height: Sp.s1),
                 Row(
                   children: [
@@ -144,10 +136,7 @@ class SetTile extends StatelessWidget {
           Text(value, style: SatType.monoL(color: sc.textHi)),
           if (sub != null) ...[
             const SizedBox(height: Sp.s1h),
-            Text(
-              sub!,
-              style: SatType.sans(size: 11, color: sc.textMd, height: 1.4),
-            ),
+            Text(sub!, style: SatType.bodyS(color: sc.textMd)),
           ],
         ],
       ),
@@ -187,21 +176,9 @@ class SetHero extends StatelessWidget {
         children: [
           Text(label.toUpperCase(), style: SatType.caption(color: accent)),
           const SizedBox(height: Sp.s1),
-          Text(
-            value,
-            style: SatType.sans(
-              size: 36,
-              weight: FontWeight.w600,
-              letterSpacing: -0.9,
-              height: 1.05,
-              color: accent,
-            ),
-          ),
+          Text(value, style: SatType.h1(color: accent)),
           const SizedBox(height: Sp.s2),
-          Text(
-            desc,
-            style: SatType.sans(size: 13, color: sc.textMd, height: 1.5),
-          ),
+          Text(desc, style: SatType.bodyM(color: sc.textMd)),
           if (meter.isNotEmpty) ...[
             const SizedBox(height: Sp.s4),
             Row(
@@ -254,7 +231,7 @@ class AdminRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 150,
-            child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
+            child: Text(label, style: SatType.bodyM(color: sc.textMd)),
           ),
           Expanded(child: value),
         ],
@@ -292,10 +269,7 @@ Widget adminPill(
       border: SatB.all(color: border),
       borderRadius: SatR.a(999),
     ),
-    child: Text(
-      text,
-      style: SatType.sans(size: 11, weight: FontWeight.w500, color: fg),
-    ),
+    child: Text(text, style: SatType.bodyS(color: fg)),
   );
 }
 

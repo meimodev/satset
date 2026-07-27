@@ -169,14 +169,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         backgroundColor: sc.bg0,
         elevation: 0,
         iconTheme: IconThemeData(color: sc.textHi),
-        title: Text(
-          'Edit venue',
-          style: SatType.sans(
-            size: 18,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
-        ),
+        title: Text('Edit venue', style: SatType.h3(color: sc.textHi)),
         actions: [
           SatButton.ghost(
             label: AppStrings.save,
@@ -282,7 +275,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         if (all.hasError)
           Text(
             'Gagal memuat: ${fleetErrText(all.error!)}',
-            style: SatType.sans(size: 12, color: sc.urgent),
+            style: SatType.bodyS(color: sc.urgent),
           )
         else if (loading)
           Padding(
@@ -294,10 +287,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         else if (rows.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
-            child: Text(
-              emptyMsg,
-              style: SatType.sans(size: 13, color: sc.textLo),
-            ),
+            child: Text(emptyMsg, style: SatType.bodyM(color: sc.textLo)),
           )
         else
           for (var i = 0; i < rows.length; i++) ...[
@@ -380,7 +370,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         backgroundColor: sc.bg1,
         title: Text(
           'Tambah $roleLabel · ${widget.venue.name}',
-          style: SatType.sans(size: 17, color: sc.textHi),
+          style: SatType.h3(color: sc.textHi),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -442,7 +432,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             blocked
                 ? 'Hapus semua admin venue ini dulu sebelum menghapus venue.'
                 : 'Menghapus venue tidak dapat dibatalkan.',
-            style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+            style: SatType.bodyM(color: sc.textMd),
           ),
           const SizedBox(height: Sp.s3h),
           Material(
@@ -465,9 +455,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                     const SizedBox(width: Sp.s2),
                     Text(
                       'Hapus venue',
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w700,
+                      style: SatType.labelM(
                         color: blocked || _busy ? sc.textLo : sc.bg0,
                       ),
                     ),
@@ -497,8 +485,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(title, style: SatType.sans(size: 17, color: sc.textHi)),
-        content: Text(body, style: SatType.sans(size: 14, color: sc.textMd)),
+        title: Text(title, style: SatType.h3(color: sc.textHi)),
+        content: Text(body, style: SatType.bodyM(color: sc.textMd)),
         actions: [
           SatButton.ghost(
             label: AppStrings.cancel,
@@ -539,17 +527,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               children: [
                 Text(
                   'Berlaku sampai (paidUntil)',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const SizedBox(height: Sp.sHair),
-                Text(
-                  label,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(label, style: SatType.labelL(color: sc.textHi)),
               ],
             ),
           ),

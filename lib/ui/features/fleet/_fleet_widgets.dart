@@ -79,7 +79,6 @@ class FleetTile extends StatelessWidget {
     final radius = big ? 16.0 : 14.0;
     final iconBox = big ? 48.0 : 40.0;
     final iconSize = big ? 22.0 : 18.0;
-    final titleSize = big ? 16.0 : 15.0;
 
     final body = Container(
       padding: EdgeInsets.fromLTRB(
@@ -114,15 +113,7 @@ class FleetTile extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: Sp.s1),
-                  child: Text(
-                    title,
-                    style: SatType.sans(
-                      size: titleSize,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  child: Text(title, style: SatType.labelL(color: sc.textHi)),
                 ),
                 if (sub != null) ...[
                   const SizedBox(height: 3),
@@ -132,7 +123,7 @@ class FleetTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: subMono
                         ? SatType.monoS(color: sc.textLo)
-                        : SatType.sans(size: 12, color: sc.textLo, height: 1.3),
+                        : SatType.bodyS(color: sc.textLo),
                   ),
                 ],
                 if (pills.isNotEmpty) ...[
@@ -177,8 +168,7 @@ Widget fleetMenu(
         value: e.key,
         child: Text(
           e.value,
-          style: SatType.sans(
-            size: 13,
+          style: SatType.bodyM(
             color: dangerKeys.contains(e.key) ? sc.urgent : sc.textHi,
           ),
         ),
@@ -193,7 +183,7 @@ void fleetToast(BuildContext context, String msg, {bool error = false}) {
     ..clearSnackBars()
     ..showSnackBar(
       SnackBar(
-        content: Text(msg, style: SatType.sans(size: 13, color: sc.textHi)),
+        content: Text(msg, style: SatType.bodyM(color: sc.textHi)),
         backgroundColor: error ? sc.urgentSoft : sc.bg3,
       ),
     );
@@ -237,16 +227,7 @@ class FleetHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Sp.s1),
-        Text(
-          title,
-          style: SatType.sans(
-            size: 22,
-            weight: FontWeight.w600,
-            letterSpacing: -0.44,
-            height: 1.05,
-            color: sc.textHi,
-          ),
-        ),
+        Text(title, style: SatType.h2(color: sc.textHi)),
       ],
     );
   }
@@ -296,9 +277,7 @@ class FleetPrimaryButton extends StatelessWidget {
               const SizedBox(width: Sp.s2),
               Text(
                 label,
-                style: SatType.sans(
-                  size: 14,
-                  weight: FontWeight.w700,
+                style: SatType.labelM(
                   color: onTap == null ? sc.textLo : sc.bg0,
                 ),
               ),

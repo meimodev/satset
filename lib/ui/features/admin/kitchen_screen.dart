@@ -216,12 +216,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
               child: Text(
                 'Antrian Persiapan',
-                style: SatType.sans(
-                  size: 26,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.5,
-                  color: sc.textHi,
-                ),
+                style: SatType.h2(color: sc.textHi),
               ),
             ),
             Padding(
@@ -324,11 +319,7 @@ class _CompletedFilter extends StatelessWidget {
               const SizedBox(width: Sp.s2),
               Text(
                 'Tampilkan order selesai',
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: value ? sc.textHi : sc.textMd,
-                ),
+                style: SatType.labelM(color: value ? sc.textHi : sc.textMd),
               ),
             ],
           ),
@@ -396,11 +387,7 @@ class _OrderCard extends ConsumerWidget {
                 const SizedBox(width: Sp.s2h),
                 Text(
                   '${order.done}/${order.total} selesai',
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.textMd,
-                  ),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),
                 _AgePill(age: ageDur, sentAt: order.sentAt, color: ageColor),
@@ -649,29 +636,18 @@ class _ItemRowState extends State<_ItemRow>
                             (ticket.variantName.isEmpty
                                 ? ''
                                 : ' · ${ticket.variantName}'),
-                        style:
-                            SatType.sans(
-                              size: 16,
-                              weight: FontWeight.w600,
-                              letterSpacing: -0.2,
-                              height: 1.25,
-                              color: sc.textHi,
-                            ).copyWith(
-                              decoration: cooked
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
+                        style: SatType.labelL(color: sc.textHi).copyWith(
+                          decoration: cooked
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
                       ),
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 3),
                           child: Text(
                             ticket.modifiers.map((m) => m.display).join(' · '),
-                            style: SatType.sans(
-                              size: 13,
-                              color: sc.textMd,
-                              height: 1.4,
-                            ),
+                            style: SatType.bodyM(color: sc.textMd),
                           ),
                         ),
                       if (ticket.note != null && ticket.note!.trim().isNotEmpty)
@@ -816,18 +792,11 @@ class _EmptyQueueState extends State<_EmptyQueue>
             child: Icon(Icons.restaurant_rounded, size: 40, color: sc.textDim),
           ),
           const SizedBox(height: Sp.s3h),
-          Text(
-            'Antrian masak kosong',
-            style: SatType.sans(
-              size: 16,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-            ),
-          ),
+          Text('Antrian masak kosong', style: SatType.labelL(color: sc.textMd)),
           const SizedBox(height: Sp.s1h),
           Text(
             'Semua pesanan dapur sudah selesai dimasak.',
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ],
       ),

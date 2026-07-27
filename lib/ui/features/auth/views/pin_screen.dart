@@ -520,11 +520,7 @@ class _AdminAuthForm extends StatelessWidget {
                     const SizedBox(width: Sp.s1h),
                     Text(
                       passwordError!,
-                      style: SatType.sans(
-                        size: 12,
-                        weight: FontWeight.w500,
-                        color: sc.urgent,
-                      ),
+                      style: SatType.bodyS(color: sc.urgent),
                     ),
                   ],
                 ),
@@ -562,11 +558,7 @@ class _AdminAuthForm extends StatelessWidget {
                 child: Text(
                   serverError!,
                   textAlign: TextAlign.center,
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.urgent,
-                  ),
+                  style: SatType.bodyS(color: sc.urgent),
                 ),
               ),
             ],
@@ -678,10 +670,7 @@ class _ModeSwitcher extends StatelessWidget {
                 curve: satEaseOut,
                 builder: (context, t, _) => Text(
                   label,
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.14,
+                  style: SatType.labelM(
                     color: Color.lerp(sc.textMd, sc.textHi, t),
                   ),
                 ),
@@ -727,7 +716,7 @@ class _ServerList extends ConsumerWidget {
                   padding: const EdgeInsets.all(Sp.s4h),
                   child: Text(
                     'Mencari server di jaringan… atau pasangkan manual lewat QR.',
-                    style: SatType.sans(size: 13, color: sc.textMd),
+                    style: SatType.bodyM(color: sc.textMd),
                   ),
                 )
               : Column(
@@ -756,11 +745,7 @@ class _ServerList extends ConsumerWidget {
               Expanded(
                 child: Text(
                   pairingError!,
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.urgent,
-                  ),
+                  style: SatType.bodyS(color: sc.urgent),
                 ),
               ),
             ],
@@ -809,12 +794,7 @@ class _ServerRow extends StatelessWidget {
                       Text(
                         server.label,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w500,
-                          letterSpacing: -0.14,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.bodyM(color: sc.textHi),
                       ),
                       const SizedBox(height: Sp.sHair),
                       Text(
@@ -919,15 +899,7 @@ class _Brand extends StatelessWidget {
           child: Text('S', style: SatType.monoM(color: sc.accentInk)),
         ),
         const SizedBox(width: Sp.s2h),
-        Text(
-          'satset',
-          style: SatType.sans(
-            size: 18,
-            weight: FontWeight.w600,
-            letterSpacing: -0.18,
-            color: sc.textHi,
-          ),
-        ),
+        Text('satset', style: SatType.h3(color: sc.textHi)),
       ],
     );
   }
@@ -947,15 +919,7 @@ class _TabletBrand extends StatelessWidget {
           child: Text('S', style: SatType.monoL(color: sc.accentInk)),
         ),
         const SizedBox(width: Sp.s3),
-        Text(
-          'satset',
-          style: SatType.sans(
-            size: 22,
-            weight: FontWeight.w600,
-            letterSpacing: -0.22,
-            color: sc.textHi,
-          ),
-        ),
+        Text('satset', style: SatType.h2(color: sc.textHi)),
       ],
     );
   }
@@ -994,14 +958,7 @@ class _Field extends StatelessWidget {
               children: [
                 Icon(Icons.error_outline, size: 12, color: sc.urgent),
                 const SizedBox(width: Sp.s1h),
-                Text(
-                  errorText!,
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.urgent,
-                  ),
-                ),
+                Text(errorText!, style: SatType.bodyS(color: sc.urgent)),
               ],
             ),
           ),
@@ -1141,12 +1098,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                         Text(
                           server.label,
                           overflow: TextOverflow.ellipsis,
-                          style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w500,
-                            letterSpacing: -0.14,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.bodyM(color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(

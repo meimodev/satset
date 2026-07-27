@@ -177,12 +177,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                   children: [
                     Text(
                       SatShape.caps(AppStrings.floorReservationsBook),
-                      style: SatType.display(
-                        size: 22,
-                        weight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.h2(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.s1),
                     Text(
@@ -232,7 +227,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                     child: Text(
                       AppStrings.reservationEmptyFilter,
                       textAlign: TextAlign.center,
-                      style: SatType.sans(size: 13, color: sc.textMd),
+                      style: SatType.bodyM(color: sc.textMd),
                     ),
                   ),
                 )
@@ -317,11 +312,7 @@ class _ReservationRow extends ConsumerWidget {
                       // `display` ignores the weight under brutal anyway.
                       style: SatShape.lembut
                           ? SatType.monoM(color: sc.textHi)
-                          : SatType.display(
-                              size: 16,
-                              weight: FontWeight.w800,
-                              color: sc.textHi,
-                            ),
+                          : SatType.labelL(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
@@ -336,14 +327,7 @@ class _ReservationRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      r.name,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    Text(r.name, style: SatType.labelM(color: sc.textHi)),
                     const SizedBox(height: 3),
                     Text(
                       [
@@ -363,7 +347,7 @@ class _ReservationRow extends ConsumerWidget {
                         r.notes!.trim(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(size: 12, color: sc.textMd),
+                        style: SatType.bodyS(color: sc.textMd),
                       ),
                     ],
                   ],
@@ -440,12 +424,7 @@ class _Tag extends StatelessWidget {
       ),
       child: Text(
         SatShape.caps(label),
-        style: SatType.sans(
-          size: 9,
-          weight: brutal ? FontWeight.w800 : FontWeight.w700,
-          letterSpacing: brutal ? 1.0 : 0.2,
-          color: brutal ? onFill(tone) : tone,
-        ),
+        style: SatType.labelS(color: brutal ? onFill(tone) : tone),
       ),
     );
   }
@@ -519,9 +498,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                     ),
                     child: Text(
                       z.name,
-                      style: SatType.sans(
-                        size: 11,
-                        weight: FontWeight.w600,
+                      style: SatType.labelS(
                         color: isActive
                             ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
                             : sc.textMd,
@@ -536,7 +513,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
         if (available.isEmpty)
           Text(
             'Tidak ada meja kapasitas ≥ ${r.partySize} di zona ini.',
-            style: SatType.sans(size: 12, color: sc.textMd),
+            style: SatType.bodyS(color: sc.textMd),
           )
         else
           SizedBox(
@@ -672,11 +649,7 @@ Future<void> openCreateReservationSheet(
                   const SizedBox(height: Sp.s3h),
                   Text(
                     SatShape.caps('Reservasi baru'),
-                    style: SatType.display(
-                      size: 18,
-                      weight: FontWeight.w700,
-                      color: sc.textHi,
-                    ),
+                    style: SatType.h3(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.s4),
                   SatField.text(
@@ -695,7 +668,7 @@ Future<void> openCreateReservationSheet(
                     children: [
                       Text(
                         'Jumlah tamu',
-                        style: SatType.sans(size: 13, color: sc.textHi),
+                        style: SatType.bodyM(color: sc.textHi),
                       ),
                       const Spacer(),
                       IconButton(
@@ -710,11 +683,7 @@ Future<void> openCreateReservationSheet(
                         child: Center(
                           child: Text(
                             '$party',
-                            style: SatType.sans(
-                              size: 16,
-                              weight: FontWeight.w600,
-                              color: sc.textHi,
-                            ),
+                            style: SatType.labelL(color: sc.textHi),
                           ),
                         ),
                       ),
@@ -892,9 +861,7 @@ class _TablePicker extends StatelessWidget {
             ),
             child: Text(
               SatShape.caps(label),
-              style: SatType.sans(
-                size: 11.5,
-                weight: FontWeight.w600,
+              style: SatType.labelS(
                 color: active
                     ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
                     : sc.textMd,

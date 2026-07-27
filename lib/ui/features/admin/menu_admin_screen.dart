@@ -227,7 +227,7 @@ class _EmptyDetail extends StatelessWidget {
             staff
                 ? 'Pilih item untuk lihat detail'
                 : 'Pilih item atau tambah baru',
-            style: SatType.sans(size: 14, color: sc.textMd),
+            style: SatType.bodyM(color: sc.textMd),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: Sp.s1h),
@@ -235,7 +235,7 @@ class _EmptyDetail extends StatelessWidget {
             staff
                 ? 'Mode staf: hanya tandai habis. Edit penuh hanya admin.'
                 : 'Kelola harga, modifier, stok, dan ketersediaan.',
-            style: SatType.sans(size: 12, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
             textAlign: TextAlign.center,
           ),
         ],
@@ -272,15 +272,7 @@ class _PhoneLayout extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Menu',
-                        style: SatType.sans(
-                          size: 26,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.5,
-                          color: sc.textHi,
-                        ),
-                      ),
+                      Text('Menu', style: SatType.h2(color: sc.textHi)),
                       const SizedBox(height: Sp.sHair),
                       Text(
                         '${counts.total} item · ${counts.soldOut} tidak tersedia',
@@ -448,11 +440,7 @@ class _CategoryRail extends ConsumerWidget {
               children: [
                 AnimatedDefaultTextStyle(
                   duration: satMotion(context, 200),
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: on ? sc.accentText : sc.textMd,
-                  ),
+                  style: SatType.bodyS(color: on ? sc.accentText : sc.textMd),
                   child: Text(name),
                 ),
                 const SizedBox(width: Sp.s1h),
@@ -492,7 +480,7 @@ class _ItemList extends ConsumerWidget {
               padding: const EdgeInsets.all(28),
               child: Text(
                 'Tidak ada item cocok.',
-                style: SatType.sans(size: 13, color: sc.textLo),
+                style: SatType.bodyM(color: sc.textLo),
               ),
             ),
           )
@@ -581,11 +569,8 @@ class _ItemRow extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style:
-                              SatType.sans(
-                                size: 14,
-                                weight: FontWeight.w600,
+                              SatType.labelM(
                                 color: disabled ? sc.textLo : sc.textHi,
-                                letterSpacing: -0.14,
                               ).copyWith(
                                 decoration: disabled
                                     ? TextDecoration.lineThrough
@@ -780,14 +765,7 @@ class _PrimaryButton extends StatelessWidget {
               horizontal: Sp.s3h,
               vertical: 9,
             ),
-            child: Text(
-              label,
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w600,
-                color: sc.accentInk,
-              ),
-            ),
+            child: Text(label, style: SatType.labelS(color: sc.accentInk)),
           ),
         ),
       ),
@@ -821,11 +799,7 @@ class _TabSwitcher extends ConsumerWidget {
             ),
             child: AnimatedDefaultTextStyle(
               duration: satMotion(context, 220),
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w600,
-                color: on ? sc.accentInk : sc.textMd,
-              ),
+              style: SatType.labelS(color: on ? sc.accentInk : sc.textMd),
               child: Text(label),
             ),
           ),
@@ -905,11 +879,7 @@ class _CategoriesPanel extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             c.name,
-                            style: SatType.sans(
-                              size: 14,
-                              weight: FontWeight.w600,
-                              color: sc.textHi,
-                            ),
+                            style: SatType.labelM(color: sc.textHi),
                           ),
                         ),
                         Text('$n item', style: SatType.monoS(color: sc.textLo)),
@@ -1020,7 +990,7 @@ class _CategoriesPanel extends ConsumerWidget {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(title, style: SatType.sans(size: 16, color: sc.textHi)),
+        title: Text(title, style: SatType.bodyL(color: sc.textHi)),
         content: SatField.text(
           controller: ctrl,
           hint: 'Nama kategori',
@@ -1074,14 +1044,7 @@ class _TagsPanel extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: Sp.s1, bottom: Sp.s2),
-          child: Text(
-            title,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-            ),
-          ),
+          child: Text(title, style: SatType.labelM(color: sc.textMd)),
         ),
         for (final (i, t) in tags.indexed)
           Padding(
@@ -1114,11 +1077,7 @@ class _TagsPanel extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         t.name,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.labelM(color: sc.textHi),
                       ),
                     ),
                     IconButton(
@@ -1180,11 +1139,11 @@ class _TagsPanel extends ConsumerWidget {
         backgroundColor: context.sat.bg1,
         title: Text(
           'Hapus "${tag.name}"?',
-          style: SatType.sans(size: 16, color: context.sat.textHi),
+          style: SatType.bodyL(color: context.sat.textHi),
         ),
         content: Text(
           'Tag ini akan dilepas dari semua item yang memakainya.',
-          style: SatType.sans(size: 13, color: context.sat.textMd),
+          style: SatType.bodyM(color: context.sat.textMd),
         ),
         actions: [
           SatButton.ghost(
@@ -1215,7 +1174,7 @@ class _TagsPanel extends ConsumerWidget {
         backgroundColor: sc.bg1,
         title: Text(
           tag == null ? 'Tag baru' : 'Ubah tag',
-          style: SatType.sans(size: 16, color: sc.textHi),
+          style: SatType.bodyL(color: sc.textHi),
         ),
         content: SingleChildScrollView(
           child: Column(

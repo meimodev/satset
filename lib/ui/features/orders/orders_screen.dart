@@ -142,7 +142,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             child: Text(
               emptyMsg,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: sc.textLo),
+              style: SatType.bodyM(color: sc.textLo),
             ),
           ),
         );
@@ -221,13 +221,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     Expanded(
                       child: Text(
                         venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
-                        style: SatType.sans(
-                          size: 32,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.8,
-                          height: 1.05,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.h1(color: sc.textHi),
                       ),
                     ),
                   ],
@@ -284,12 +278,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   Expanded(
                     child: Text(
                       venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
-                      style: SatType.sans(
-                        size: 30,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.6,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.h1(color: sc.textHi),
                     ),
                   ),
                 ],
@@ -448,11 +437,7 @@ class _SegBtn extends StatelessWidget {
           children: [
             Text(
               label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: active ? sc.bg0 : sc.textMd,
-              ),
+              style: SatType.bodyM(color: active ? sc.bg0 : sc.textMd),
             ),
             const SizedBox(width: Sp.s2),
             Text(
@@ -562,19 +547,12 @@ class _OrderRow extends StatelessWidget {
                                 ),
                               TextSpan(
                                 text: t.name,
-                                style: SatType.sans(
-                                  size: 14,
-                                  weight: FontWeight.w500,
-                                  color: sc.textHi,
-                                ),
+                                style: SatType.bodyM(color: sc.textHi),
                               ),
                               if (t.variantName.isNotEmpty)
                                 TextSpan(
                                   text: ' · ${t.variantName}',
-                                  style: SatType.sans(
-                                    size: 14,
-                                    color: sc.textMd,
-                                  ),
+                                  style: SatType.bodyM(color: sc.textMd),
                                 ),
                             ],
                           ),
@@ -588,11 +566,7 @@ class _OrderRow extends StatelessWidget {
                                       .map((m) => m.display)
                                       .join(' · ') +
                                   (t.modifiers.length > 2 ? ' · …' : ''),
-                              style: SatType.sans(
-                                size: 11,
-                                color: sc.textMd,
-                                height: 1.3,
-                              ),
+                              style: SatType.bodyS(color: sc.textMd),
                             ),
                           ),
                         const SizedBox(height: 7),
@@ -652,14 +626,7 @@ class _ServeButton extends StatelessWidget {
             children: [
               Icon(Icons.check_rounded, size: 14, color: sc.accentInk),
               const SizedBox(width: Sp.s1h),
-              Text(
-                'Sajikan',
-                style: SatType.sans(
-                  size: 12,
-                  weight: FontWeight.w600,
-                  color: sc.accentInk,
-                ),
-              ),
+              Text('Sajikan', style: SatType.labelS(color: sc.accentInk)),
             ],
           ),
         ),
@@ -700,11 +667,7 @@ class _TabletSeg extends StatelessWidget {
           children: [
             Text(
               label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: active ? sc.bg0 : sc.textMd,
-              ),
+              style: SatType.bodyM(color: active ? sc.bg0 : sc.textMd),
             ),
             const SizedBox(width: Sp.s2h),
             Text(

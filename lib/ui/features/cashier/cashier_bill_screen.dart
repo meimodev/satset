@@ -79,20 +79,10 @@ class CashierBillScreen extends ConsumerWidget {
         title: billAsync.maybeWhen(
           data: (b) => Text(
             'Tagihan · Meja ${b.tableLabel ?? ''}'.trim(),
-            style: SatType.sans(
-              size: 16,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
+            style: SatType.labelL(color: sc.textHi),
           ),
-          orElse: () => Text(
-            'Tagihan',
-            style: SatType.sans(
-              size: 16,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
-          ),
+          orElse: () =>
+              Text('Tagihan', style: SatType.labelL(color: sc.textHi)),
         ),
         actions: [
           IconButton(
@@ -114,7 +104,7 @@ class CashierBillScreen extends ConsumerWidget {
         error: (e, _) => Center(
           child: Text(
             'Gagal memuat tagihan.',
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ),
         data: (bill) => _BillBody(
@@ -342,11 +332,7 @@ class _UnassignedBanner extends StatelessWidget {
           Expanded(
             child: Text(
               '$n item belum diatur ke struk',
-              style: SatType.sans(
-                size: 12.5,
-                weight: FontWeight.w600,
-                color: sc.warn,
-              ),
+              style: SatType.labelM(color: sc.warn),
             ),
           ),
         ],
@@ -368,11 +354,9 @@ class _TotalsCard extends StatelessWidget {
         children: [
           Text(
             k,
-            style: SatType.sans(
-              size: strong ? 14 : 12.5,
-              weight: strong ? FontWeight.w700 : FontWeight.w400,
-              color: strong ? sc.textHi : sc.textLo,
-            ),
+            style: (strong
+                ? SatType.labelM(color: strong ? sc.textHi : sc.textLo)
+                : SatType.bodyM(color: strong ? sc.textHi : sc.textLo)),
           ),
           AnimatedDefaultTextStyle(
             duration: satMotion(context, 260),
@@ -545,19 +529,9 @@ class _LinesSection extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Item pesanan',
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w600,
-                color: sc.textLo,
-              ),
-            ),
+            Text('Item pesanan', style: SatType.labelS(color: sc.textLo)),
             if (!bill.fullyAssigned && assignable)
-              Text(
-                'Belum semua diatur',
-                style: SatType.sans(size: 10.5, color: sc.warn),
-              ),
+              Text('Belum semua diatur', style: SatType.bodyS(color: sc.warn)),
           ],
         ),
       ),
@@ -571,12 +545,7 @@ class _LinesSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
             child: Text(
               'PESANAN $batchNo · $key',
-              style: SatType.sans(
-                size: 10.5,
-                weight: FontWeight.w700,
-                color: sc.textLo,
-                letterSpacing: 0.5,
-              ),
+              style: SatType.labelS(color: sc.textLo),
             ),
           ),
         );
@@ -604,7 +573,7 @@ class _LinesSection extends StatelessWidget {
       shape: pending ? RoundedRectangleBorder(borderRadius: SatR.a(8)) : null,
       title: Text(
         '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
-        style: SatType.sans(size: 13, color: sc.textHi),
+        style: SatType.bodyM(color: sc.textHi),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,22 +581,20 @@ class _LinesSection extends StatelessWidget {
           Text(
             '${l.qty} × ${formatIDR(l.unitPrice)}'
             '${assignable ? '  ·  $assigned/${l.qty} diatur' : ''}',
-            style: SatType.sans(
-              size: 11,
-              color: pending ? sc.warn : sc.textLo,
-              weight: pending ? FontWeight.w600 : FontWeight.w400,
-            ),
+            style: (pending
+                ? SatType.labelS(color: pending ? sc.warn : sc.textLo)
+                : SatType.bodyS(color: pending ? sc.warn : sc.textLo)),
           ),
           for (final m in l.modifiers)
             Text(
               '${m.display}'
               '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
-              style: SatType.sans(size: 11, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
           if (hasNote)
             Text(
               'Catatan: ${l.note!.trim()}',
-              style: SatType.sans(size: 11, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
         ],
       ),
@@ -663,16 +630,12 @@ class _LinesSection extends StatelessWidget {
           children: [
             Text(
               'Atur "${line.name}"',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1),
             Text(
               '${line.qty} unit total · ${line.unassignedUnits} belum diatur',
-              style: SatType.sans(size: 11.5, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s3),
             ...bill.receipts.where((r) => r.mode != 'even').map((r) {
@@ -724,10 +687,7 @@ class _AssignRowState extends State<_AssignRow> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              widget.label,
-              style: SatType.sans(size: 13, color: sc.textHi),
-            ),
+            child: Text(widget.label, style: SatType.bodyM(color: sc.textHi)),
           ),
           IconButton(
             tooltip: AppStrings.a11yDecrease,
@@ -807,11 +767,7 @@ class _ReceiptCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   r.label.isEmpty ? 'Struk' : r.label,
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelM(color: sc.textHi),
                 ),
               ),
               AnimatedContainer(
@@ -828,11 +784,7 @@ class _ReceiptCard extends ConsumerWidget {
                 child: AnimatedDefaultTextStyle(
                   duration: satMotion(context, 280),
                   curve: satEaseOut,
-                  style: SatType.sans(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    color: paid ? sc.success : sc.warn,
-                  ),
+                  style: SatType.labelS(color: paid ? sc.success : sc.warn),
                   child: Text(paid ? 'Lunas' : 'Belum bayar'),
                 ),
               ),
@@ -861,7 +813,7 @@ class _ReceiptCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total', style: SatType.sans(size: 12.5, color: sc.textLo)),
+              Text('Total', style: SatType.bodyM(color: sc.textLo)),
               Text(formatIDR(r.total), style: SatType.monoM(color: sc.textHi)),
             ],
           ),
@@ -871,10 +823,7 @@ class _ReceiptCard extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Terbayar',
-                    style: SatType.sans(size: 11.5, color: sc.textLo),
-                  ),
+                  Text('Terbayar', style: SatType.bodyS(color: sc.textLo)),
                   Text(
                     formatIDR(r.paidNet),
                     style: SatType.monoM(color: sc.success),
@@ -895,7 +844,7 @@ class _ReceiptCard extends ConsumerWidget {
                   const SizedBox(width: Sp.s1h),
                   Text(
                     _methodLabels[p.method] ?? p.method,
-                    style: SatType.sans(size: 11, color: sc.textLo),
+                    style: SatType.bodyS(color: sc.textLo),
                   ),
                   if (p.hasPhoto) ...[
                     const SizedBox(width: Sp.s1h),
@@ -1085,11 +1034,7 @@ class _ReceiptCard extends ConsumerWidget {
               children: [
                 Text(
                   refund ? 'Refund ${r.label}' : 'Bayar ${r.label}',
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s3),
                 Wrap(
@@ -1139,9 +1084,7 @@ class _ReceiptCard extends ConsumerWidget {
                               change >= 0
                                   ? 'Kembalian ${formatIDR(change)}'
                                   : 'Kurang ${formatIDR(-change)}',
-                              style: SatType.sans(
-                                size: 13,
-                                weight: FontWeight.w600,
+                              style: SatType.labelM(
                                 color: change >= 0 ? sc.success : sc.warn,
                               ),
                             ),
@@ -1153,11 +1096,7 @@ class _ReceiptCard extends ConsumerWidget {
                   const SizedBox(height: Sp.s3),
                   Text(
                     'Foto bukti (wajib)',
-                    style: SatType.sans(
-                      size: 12,
-                      weight: FontWeight.w600,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.labelS(color: sc.textLo),
                   ),
                   const SizedBox(height: Sp.s2),
                   Row(
@@ -1312,7 +1251,7 @@ class _ReceiptItemRow extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     '$qtyUnits× $name$variant',
-                    style: SatType.sans(size: 12, color: sc.textHi),
+                    style: SatType.bodyS(color: sc.textHi),
                   ),
                 ),
                 if (canDiscount && existing == null)
@@ -1327,7 +1266,7 @@ class _ReceiptItemRow extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         existing.label,
-                        style: SatType.sans(size: 11, color: sc.warn),
+                        style: SatType.bodyS(color: sc.warn),
                       ),
                     ),
                     Text(
@@ -1507,11 +1446,7 @@ class _DetachedBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Meja sudah ditutup waiter — tagihan belum lunas',
-              style: SatType.sans(
-                size: 11.5,
-                weight: FontWeight.w600,
-                color: sc.warn,
-              ),
+              style: SatType.labelS(color: sc.warn),
             ),
           ),
         ],
@@ -1550,11 +1485,7 @@ class _BigBtn extends StatelessWidget {
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: SatType.sans(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelS(color: sc.textHi),
                 ),
               ],
             ),
@@ -1591,11 +1522,7 @@ class _SmallBtn extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: SatType.sans(
-                size: 12.5,
-                weight: FontWeight.w600,
-                color: filled ? sc.accentInk : sc.textHi,
-              ),
+              style: SatType.labelM(color: filled ? sc.accentInk : sc.textHi),
             ),
           ),
         ),
@@ -1700,12 +1627,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
           padding: const EdgeInsets.only(top: Sp.s1h, bottom: Sp.sHair),
           child: Text(
             'PESANAN $batchNo · $key',
-            style: SatType.sans(
-              size: 10.5,
-              weight: FontWeight.w700,
-              color: sc.textLo,
-              letterSpacing: 0.5,
-            ),
+            style: SatType.labelS(color: sc.textLo),
           ),
         ),
       );
@@ -1725,7 +1647,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                   Expanded(
                     child: Text(
                       '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
-                      style: SatType.sans(size: 13, color: sc.textHi),
+                      style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),
                   Text(
@@ -1740,7 +1662,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                   child: Text(
                     '${m.display}'
                     '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
-                    style: SatType.sans(size: 11, color: sc.textLo),
+                    style: SatType.bodyS(color: sc.textLo),
                   ),
                 ),
               if (hasNote)
@@ -1748,7 +1670,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                   padding: const EdgeInsets.only(left: 28, top: 1),
                   child: Text(
                     'Catatan: ${l.note!.trim()}',
-                    style: SatType.sans(size: 11, color: sc.textLo),
+                    style: SatType.bodyS(color: sc.textLo),
                   ),
                 ),
             ],
@@ -1802,7 +1724,7 @@ class _VenueHistoryViewState extends ConsumerState<VenueHistoryView> {
       error: (_, _) => Center(
         child: Text(
           'Gagal memuat riwayat.',
-          style: SatType.sans(size: 13, color: sc.textLo),
+          style: SatType.bodyM(color: sc.textLo),
         ),
       ),
       data: (rows) {
@@ -1853,7 +1775,7 @@ class _HistoryEmpty extends StatelessWidget {
           Text(
             'Belum ada tagihan 7 hari terakhir.',
             textAlign: TextAlign.center,
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ],
       ),
@@ -1955,15 +1877,7 @@ class _DayHeader extends StatelessWidget {
     final sc = context.sat;
     return Padding(
       padding: EdgeInsets.fromLTRB(4, first ? 4 : 16, 4, 8),
-      child: Text(
-        label.toUpperCase(),
-        style: SatType.sans(
-          size: 11,
-          weight: FontWeight.w700,
-          color: sc.textLo,
-          letterSpacing: 0.6,
-        ),
-      ),
+      child: Text(label.toUpperCase(), style: SatType.labelS(color: sc.textLo)),
     );
   }
 }
@@ -2022,11 +1936,7 @@ class PastBillsScreen extends ConsumerWidget {
         backgroundColor: sc.bg1,
         title: Text(
           'Riwayat · Meja ${tableLabel ?? ''}'.trim(),
-          style: SatType.sans(
-            size: 16,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
+          style: SatType.labelL(color: sc.textHi),
         ),
       ),
       body: async.when(
@@ -2034,14 +1944,14 @@ class PastBillsScreen extends ConsumerWidget {
         error: (e, _) => Center(
           child: Text(
             'Gagal memuat riwayat.',
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ),
         data: (rows) => rows.isEmpty
             ? Center(
                 child: Text(
                   'Belum ada tagihan 7 hari terakhir.',
-                  style: SatType.sans(size: 13, color: sc.textLo),
+                  style: SatType.bodyM(color: sc.textLo),
                 ),
               )
             : ListView.separated(
@@ -2103,18 +2013,14 @@ class _PastBillTile extends StatelessWidget {
                             : _shortWhen(b.closedAt),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(
-                          size: 13.5,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.labelM(color: sc.textHi),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         b.isTakeaway
                             ? '${_shortWhen(b.closedAt)} · ${b.ticketCount} item'
                             : '${b.pax} tamu · ${b.ticketCount} item',
-                        style: SatType.sans(size: 11.5, color: sc.textLo),
+                        style: SatType.bodyS(color: sc.textLo),
                       ),
                     ],
                   ),
@@ -2130,11 +2036,7 @@ class _PastBillTile extends StatelessWidget {
                       const SizedBox(height: Sp.s1),
                       Text(
                         'tak tertagih ${formatIDR(b.lossAmount)}',
-                        style: SatType.sans(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          color: sc.urgent,
-                        ),
+                        style: SatType.labelS(color: sc.urgent),
                       ),
                     ],
                   ],
@@ -2170,11 +2072,7 @@ class PastBillDetailScreen extends ConsumerWidget {
         backgroundColor: sc.bg1,
         title: Text(
           'Struk · Meja ${tableLabel ?? ''}'.trim(),
-          style: SatType.sans(
-            size: 16,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
+          style: SatType.labelL(color: sc.textHi),
         ),
       ),
       body: FutureBuilder<Bill>(
@@ -2187,7 +2085,7 @@ class PastBillDetailScreen extends ConsumerWidget {
             return Center(
               child: Text(
                 'Gagal memuat struk.',
-                style: SatType.sans(size: 13, color: sc.textLo),
+                style: SatType.bodyM(color: sc.textLo),
               ),
             );
           }
@@ -2213,10 +2111,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                                 Text(
                                   '${p.isRefund ? 'Refund' : 'Bayar'} · '
                                   '${_methodLabels[p.method] ?? p.method}',
-                                  style: SatType.sans(
-                                    size: 12,
-                                    color: sc.textLo,
-                                  ),
+                                  style: SatType.bodyS(color: sc.textLo),
                                 ),
                                 if (p.hasPhoto) ...[
                                   const SizedBox(width: Sp.s2),

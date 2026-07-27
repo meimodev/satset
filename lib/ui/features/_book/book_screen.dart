@@ -56,15 +56,12 @@ class _BookScreenState extends ConsumerState<BookScreen> {
       for (final e in items) {
         rows.add(
           ListTile(
-            title: Text(
-              e.name,
-              style: SatType.sans(size: 15, color: sc.textHi),
-            ),
+            title: Text(e.name, style: SatType.bodyL(color: sc.textHi)),
             subtitle: Text(
               e.states.isEmpty
                   ? 'not rendered — see note'
                   : '${e.states.length} state${e.states.length == 1 ? '' : 's'}',
-              style: SatType.sans(size: 12, color: sc.textDim),
+              style: SatType.bodyS(color: sc.textDim),
             ),
             trailing: Icon(Icons.chevron_right_rounded, color: sc.textDim),
             onTap: () => Navigator.of(context).push(
@@ -89,11 +86,11 @@ class _BookScreenState extends ConsumerState<BookScreen> {
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: TextField(
                 onChanged: (v) => setState(() => _query = v),
-                style: SatType.sans(size: 14, color: sc.textHi),
+                style: SatType.bodyM(color: sc.textHi),
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: 'search',
-                  hintStyle: SatType.sans(size: 14, color: sc.textDim),
+                  hintStyle: SatType.bodyM(color: sc.textDim),
                   prefixIcon: Icon(Icons.search_rounded, color: sc.textDim),
                   filled: true,
                   fillColor: sc.bg1,
@@ -109,7 +106,7 @@ class _BookScreenState extends ConsumerState<BookScreen> {
                   ? Center(
                       child: Text(
                         'nothing matches "$_query"',
-                        style: SatType.sans(size: 13, color: sc.textDim),
+                        style: SatType.bodyM(color: sc.textDim),
                       ),
                     )
                   : ListView(children: rows),
@@ -170,7 +167,7 @@ class _BookStageState extends ConsumerState<_BookStage> {
               padding: const EdgeInsets.all(Sp.s4),
               child: Text(
                 'No states — this widget is not rendered in the book.',
-                style: SatType.sans(size: 13, color: sc.textDim),
+                style: SatType.bodyM(color: sc.textDim),
               ),
             ),
           for (final s in entry.states) ...[
@@ -340,14 +337,7 @@ class _BookBar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: SatType.sans(
-                    size: 17,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(title, style: SatType.h3(color: sc.textHi)),
                 Text(subtitle, style: SatType.monoS(color: sc.textDim)),
               ],
             ),
@@ -404,10 +394,7 @@ class _BookNote extends StatelessWidget {
         borderRadius: SatR.a(8),
         border: SatB.all(color: sc.border0),
       ),
-      child: Text(
-        text,
-        style: SatType.sans(size: 12, height: 1.4, color: sc.textLo),
-      ),
+      child: Text(text, style: SatType.bodyS(color: sc.textLo)),
     );
   }
 }

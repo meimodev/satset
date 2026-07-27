@@ -196,12 +196,9 @@ class _TableCardState extends ConsumerState<TableCard> {
               hold.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: SatType.sans(
-                size: tablet ? 13 : 12,
-                weight: FontWeight.w600,
-                letterSpacing: -0.1,
-                color: sc.textHi,
-              ),
+              style: (tablet
+                  ? SatType.labelM(color: sc.textHi)
+                  : SatType.labelS(color: sc.textHi)),
             ),
           ],
           const SizedBox(height: Sp.s1h),
@@ -258,15 +255,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                 child: AnimatedDefaultTextStyle(
                   duration: xfade,
                   curve: satEaseOut,
-                  style: SatType.sans(
-                    size: brutal ? 11 : (tablet ? 13 : 12),
-                    weight: brutal
-                        ? FontWeight.w700
-                        : (isReady ? FontWeight.w600 : FontWeight.w500),
-                    letterSpacing: brutal ? 0.66 : -0.12,
-                    height: 1.15,
-                    color: statusColor,
-                  ),
+                  style: SatType.labelS(color: statusColor),
                   child: Text(
                     SatShape.caps(_statusLabel(table, hold)),
                     maxLines: 2,
@@ -447,12 +436,7 @@ class _OwnerChip extends StatelessWidget {
         ),
         child: Text(
           SatShape.caps(AppStrings.tableOwnerMine),
-          style: SatType.sans(
-            size: 9,
-            weight: brutal ? FontWeight.w800 : FontWeight.w700,
-            letterSpacing: 1.0,
-            color: brutal ? sc.accentInk : sc.accentText,
-          ),
+          style: SatType.labelS(color: brutal ? sc.accentInk : sc.accentText),
         ),
       );
     }
@@ -468,7 +452,7 @@ class _OwnerChip extends StatelessWidget {
       child: Text(
         initials!,
         style: brutal
-            ? SatType.display(size: 12, color: sc.textHi)
+            ? SatType.labelS(color: sc.textHi)
             : SatType.caption(color: sc.textMd),
       ),
     );
@@ -495,12 +479,7 @@ class _StatePill extends StatelessWidget {
       ),
       child: Text(
         SatShape.caps(label),
-        style: SatType.sans(
-          size: 9,
-          weight: brutal ? FontWeight.w800 : FontWeight.w700,
-          letterSpacing: brutal ? 1.0 : 0.2,
-          color: brutal ? onFill(tone) : tone,
-        ),
+        style: SatType.labelS(color: brutal ? onFill(tone) : tone),
       ),
     );
   }
@@ -560,13 +539,8 @@ class _StaleBanner extends StatelessWidget {
             child: Text(
               '!',
               style: brutal
-                  ? SatType.display(size: 10, height: 1.1, color: fg)
-                  : SatType.sans(
-                      size: 10,
-                      weight: FontWeight.w800,
-                      height: 1.1,
-                      color: fg,
-                    ),
+                  ? SatType.labelS(color: fg)
+                  : SatType.labelS(color: fg),
             ),
           ),
           const SizedBox(width: 7),
@@ -575,13 +549,7 @@ class _StaleBanner extends StatelessWidget {
               SatShape.caps(stale.label),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: SatType.sans(
-                size: 10,
-                weight: brutal ? FontWeight.w800 : FontWeight.w700,
-                letterSpacing: 0.5,
-                height: 1.2,
-                color: fg,
-              ),
+              style: SatType.labelS(color: fg),
             ),
           ),
         ],

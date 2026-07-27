@@ -100,15 +100,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      'Laporan',
-                      style: SatType.sans(
-                        size: 30,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.6,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    child: Text('Laporan', style: SatType.h1(color: sc.textHi)),
                   ),
                   GestureDetector(
                     onTap: () => showExportSheet(
@@ -265,11 +257,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
             child: Text(
               'Gagal memuat laporan',
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: sc.textHi,
-              ),
+              style: SatType.bodyM(color: sc.textHi),
             ),
           ),
           GestureDetector(
@@ -395,10 +383,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
                 for (final o in options)
                   ListTile(
-                    title: Text(
-                      o.name,
-                      style: SatType.sans(size: 14, color: sc.textHi),
-                    ),
+                    title: Text(o.name, style: SatType.bodyM(color: sc.textHi)),
                     trailing: o.name == value
                         ? Icon(Icons.check, color: sc.accentText, size: 18)
                         : null,
@@ -436,9 +421,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: SatType.sans(
-                      size: 13,
-                      weight: FontWeight.w500,
+                    style: SatType.bodyM(
                       color: active ? sc.accentText : sc.textHi,
                     ),
                   ),

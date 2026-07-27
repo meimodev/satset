@@ -132,16 +132,7 @@ class ReviewScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Tinjau pesanan',
-                      style: SatType.sans(
-                        size: 30,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.6,
-                        height: 1.05,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    Text('Tinjau pesanan', style: SatType.h1(color: sc.textHi)),
                     const SizedBox(height: Sp.s1),
                     Text(
                       tableless
@@ -443,14 +434,7 @@ Future<_Commit?> _chooseCommit(BuildContext context) {
               ),
             ),
             const SizedBox(height: Sp.s4h),
-            Text(
-              'Kirim pesanan ke',
-              style: SatType.sans(
-                size: 18,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
-            ),
+            Text('Kirim pesanan ke', style: SatType.h3(color: sc.textHi)),
             const SizedBox(height: Sp.s4),
             _CommitTile(
               icon: Icons.table_restaurant_rounded,
@@ -510,16 +494,9 @@ class _CommitTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: SatType.sans(
-                        size: 15,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    Text(title, style: SatType.labelL(color: sc.textHi)),
                     const SizedBox(height: Sp.sHair),
-                    Text(sub, style: SatType.sans(size: 12, color: sc.textMd)),
+                    Text(sub, style: SatType.bodyS(color: sc.textMd)),
                   ],
                 ),
               ),
@@ -540,7 +517,7 @@ Future<String?> _askGuestName(BuildContext context) {
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: sc.bg1,
-      title: Text('Nama tamu', style: SatType.sans(color: sc.textHi)),
+      title: Text('Nama tamu', style: SatType.bodyM(color: sc.textHi)),
       content: SatField.text(
         controller: ctrl,
         hint: 'mis. Budi',
@@ -642,12 +619,7 @@ class _CourseBlock extends StatelessWidget {
                                 (c.variantName.isEmpty
                                     ? ''
                                     : ' · ${c.variantName}'),
-                            style: SatType.sans(
-                              size: 14,
-                              weight: FontWeight.w500,
-                              letterSpacing: -0.14,
-                              color: sc.textHi,
-                            ),
+                            style: SatType.bodyM(color: sc.textHi),
                           ),
                           MenuTagBadges(itemId: c.itemId),
                           if (c.modifiers.isNotEmpty)
@@ -655,11 +627,7 @@ class _CourseBlock extends StatelessWidget {
                               padding: const EdgeInsets.only(top: 3),
                               child: Text(
                                 c.modifiers.join(' · '),
-                                style: SatType.sans(
-                                  size: 12,
-                                  color: sc.textMd,
-                                  height: 1.4,
-                                ),
+                                style: SatType.bodyS(color: sc.textMd),
                               ),
                             ),
                           if (c.note.isNotEmpty)
@@ -685,10 +653,7 @@ class _CourseBlock extends StatelessWidget {
                                     const SizedBox(width: Sp.s1),
                                     Text(
                                       'Hapus',
-                                      style: SatType.sans(
-                                        size: 12,
-                                        color: sc.urgent,
-                                      ),
+                                      style: SatType.bodyS(color: sc.urgent),
                                     ),
                                   ],
                                 ),
@@ -733,11 +698,9 @@ class _TotalsRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: SatType.sans(
-                size: isTotal ? 16 : 13,
-                weight: isTotal ? FontWeight.w600 : FontWeight.w400,
-                color: isTotal ? sc.textHi : sc.textMd,
-              ),
+              style: (isTotal
+                  ? SatType.labelL(color: isTotal ? sc.textHi : sc.textMd)
+                  : SatType.bodyM(color: isTotal ? sc.textHi : sc.textMd)),
             ),
           ),
           Text(

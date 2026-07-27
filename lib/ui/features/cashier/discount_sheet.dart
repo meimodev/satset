@@ -100,18 +100,14 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
           children: [
             Text(
               'Diskon · ${target.title}',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w700,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.sHair),
             Text(
               target.isLine
                   ? 'Berlaku untuk item ini'
                   : 'Berlaku seluruh struk',
-              style: SatType.sans(size: 12, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s3),
             Flexible(
@@ -132,17 +128,13 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       p.name,
-                      style: SatType.sans(
-                        size: 13.5,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.labelM(color: sc.textHi),
                     ),
                     subtitle: Text(
                       p.isPercent
                           ? '${(p.value / 100).toStringAsFixed(0)}%'
                           : formatIDR(p.value),
-                      style: SatType.sans(size: 11.5, color: sc.textLo),
+                      style: SatType.bodyS(color: sc.textLo),
                     ),
                     trailing: Text(
                       '-${formatIDR(preview)}',
@@ -185,7 +177,7 @@ Future<String?> _askApproverPin(BuildContext context) async {
         children: [
           Text(
             'Diskon perlu disetujui manajer. Minta manajer memasukkan PIN.',
-            style: SatType.sans(size: 12.5, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s3),
           SatField.pin(

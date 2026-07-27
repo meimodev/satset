@@ -417,14 +417,7 @@ class _TagLine extends StatelessWidget {
         Icon(icon, size: 14, color: color),
         const SizedBox(width: Sp.s2),
         Expanded(
-          child: Text(
-            text,
-            style: SatType.sans(
-              size: 12,
-              weight: FontWeight.w500,
-              color: color,
-            ),
-          ),
+          child: Text(text, style: SatType.bodyS(color: color)),
         ),
       ],
     );
@@ -459,21 +452,9 @@ class _Head extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.name,
-                  style: SatType.sans(
-                    size: 19,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.19,
-                    height: 1.15,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(item.name, style: SatType.h3(color: sc.textHi)),
                 const SizedBox(height: Sp.s1),
-                Text(
-                  item.description,
-                  style: SatType.sans(size: 12, color: sc.textMd, height: 1.35),
-                ),
+                Text(item.description, style: SatType.bodyS(color: sc.textMd)),
               ],
             ),
           ),
@@ -521,15 +502,7 @@ class _ModGroup extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: Text(
-                    title,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.14,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  child: Text(title, style: SatType.labelM(color: sc.textHi)),
                 ),
                 Text(tag, style: SatType.caption(color: tagColor)),
               ],
@@ -607,8 +580,7 @@ class _ModOpt extends StatelessWidget {
                   Expanded(
                     child: Text(
                       soldOut ? '$name · habis' : name,
-                      style: SatType.sans(
-                        size: 14,
+                      style: SatType.bodyM(
                         color: soldOut ? sc.textLo : sc.textHi,
                       ),
                     ),

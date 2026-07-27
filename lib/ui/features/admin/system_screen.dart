@@ -182,7 +182,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         ),
         AdminRow(
           label: 'Sertifikat',
-          value: Text(cert, style: SatType.sans(size: 13, color: sc.textHi)),
+          value: Text(cert, style: SatType.bodyM(color: sc.textHi)),
         ),
         AdminRow(
           label: 'Ping LAN',
@@ -238,7 +238,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           label: 'Belum ada',
           value: Text(
             'Tambahkan printer atau stasiun',
-            style: SatType.sans(size: 13, color: sc.textMd),
+            style: SatType.bodyM(color: sc.textMd),
           ),
           last: true,
         ),
@@ -337,7 +337,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           Expanded(
             child: Text(
               '$staffOnline staf · $pending tiket',
-              style: SatType.sans(size: 13, color: sc.textHi),
+              style: SatType.bodyM(color: sc.textHi),
             ),
           ),
           adminPill(context, pending == 0 ? 'Sepi' : 'Aktif', on: pending > 0),
@@ -360,7 +360,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                 label: 'Belum ada',
                 value: Text(
                   'Belum ada perangkat dipasangkan',
-                  style: SatType.sans(size: 13, color: sc.textMd),
+                  style: SatType.bodyM(color: sc.textMd),
                 ),
                 last: true,
               ),
@@ -396,7 +396,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       value: Row(
         children: [
           Expanded(
-            child: Text(sub, style: SatType.sans(size: 13, color: sc.textHi)),
+            child: Text(sub, style: SatType.bodyM(color: sc.textHi)),
           ),
           if (!d.revoked)
             GestureDetector(
@@ -474,14 +474,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                child: Text(title, style: SatType.labelL(color: sc.textHi)),
               ),
               Text(tag, style: SatType.caption(color: sc.textLo)),
               if (trailing != null) ...[
@@ -521,21 +514,13 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-            child: Text(
-              'Sistem',
-              style: SatType.sans(
-                size: 30,
-                weight: FontWeight.w600,
-                letterSpacing: -0.6,
-                color: sc.textHi,
-              ),
-            ),
+            child: Text('Sistem', style: SatType.h1(color: sc.textHi)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Text(
               'Server, jaringan, printer, perangkat',
-              style: SatType.sans(size: 13, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
           ),
           Expanded(
@@ -624,16 +609,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text(label, style: SatType.labelM(color: sc.textHi)),
                   const SizedBox(height: Sp.sHair),
-                  Text(value, style: SatType.sans(size: 12, color: sc.textMd)),
+                  Text(value, style: SatType.bodyS(color: sc.textMd)),
                 ],
               ),
             ),
@@ -966,15 +944,7 @@ class _PhoneDetailScreen extends StatelessWidget {
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),
                   Expanded(
-                    child: Text(
-                      title,
-                      style: SatType.sans(
-                        size: 22,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.4,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    child: Text(title, style: SatType.h2(color: sc.textHi)),
                   ),
                 ],
               ),

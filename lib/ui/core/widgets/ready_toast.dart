@@ -90,12 +90,7 @@ class ReadyToast extends StatelessWidget {
                 children: [
                   Text(
                     'Siap di pass · ${alert.what}',
-                    style: SatType.sans(
-                      size: 13,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.13,
-                      color: on.textHi,
-                    ),
+                    style: SatType.labelM(color: on.textHi),
                   ),
                   const SizedBox(height: Sp.sHair),
                   Text(
@@ -128,11 +123,7 @@ class ReadyToast extends StatelessWidget {
               ),
               child: Text(
                 'Ambil',
-                style: SatType.sans(
-                  size: 12,
-                  weight: glow ? FontWeight.w700 : FontWeight.w600,
-                  color: glow ? on.accentInk : sc.success,
-                ),
+                style: SatType.labelS(color: glow ? on.accentInk : sc.success),
               ),
             ),
           ],

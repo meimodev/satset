@@ -160,7 +160,7 @@ class _BookSwatch extends StatelessWidget {
         borderRadius: SatR.a(10),
         border: SatB.all(color: sc.border1),
       ),
-      child: Text(text, style: SatType.sans(size: 13, color: sc.textMd)),
+      child: Text(text, style: SatType.bodyM(color: sc.textMd)),
     );
   }
 }
@@ -422,10 +422,8 @@ List<BookEntry> bookEntries() => [
           values: const [0, 7, 128, 4210],
           builder: (c, v) => AnimatedCount(
             value: v,
-            builder: (c, n) => Text(
-              '$n',
-              style: SatType.display(size: 32, color: c.sat.textHi),
-            ),
+            builder: (c, n) =>
+                Text('$n', style: SatType.h1(color: c.sat.textHi)),
           ),
         ),
       ),

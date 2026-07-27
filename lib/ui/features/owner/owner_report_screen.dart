@@ -96,11 +96,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               Expanded(
                 child: Text(
                   'Laporan Venue',
-                  style: SatType.sans(
-                    size: 22,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h2(color: sc.textHi),
                 ),
               ),
               IconButton(
@@ -168,9 +164,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                   ),
                   child: Text(
                     _rangeLabel[key] ?? key,
-                    style: SatType.sans(
-                      size: 12,
-                      weight: FontWeight.w500,
+                    style: SatType.bodyS(
                       color: _range == key ? sc.textHi : sc.textLo,
                     ),
                   ),
@@ -228,7 +222,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 14, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
           ],
         ),

@@ -210,10 +210,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(
-          'Venue baru',
-          style: SatType.sans(size: 17, color: sc.textHi),
-        ),
+        title: Text('Venue baru', style: SatType.h3(color: sc.textHi)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -247,8 +244,8 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(title, style: SatType.sans(size: 17, color: sc.textHi)),
-        content: Text(body, style: SatType.sans(size: 14, color: sc.textMd)),
+        title: Text(title, style: SatType.h3(color: sc.textHi)),
+        content: Text(body, style: SatType.bodyM(color: sc.textMd)),
         actions: [
           SatButton.ghost(
             label: AppStrings.cancel,
@@ -271,7 +268,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   Widget _empty(SatColors sc, String msg) => Padding(
     padding: const EdgeInsets.symmetric(vertical: Sp.s12),
     child: Center(
-      child: Text(msg, style: SatType.sans(size: 14, color: sc.textLo)),
+      child: Text(msg, style: SatType.bodyM(color: sc.textLo)),
     ),
   );
 
@@ -281,7 +278,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       child: Text(
         'Gagal memuat fleet:\n${fleetErrText(e)}',
         textAlign: TextAlign.center,
-        style: SatType.sans(size: 13, color: sc.urgent),
+        style: SatType.bodyM(color: sc.urgent),
       ),
     ),
   );

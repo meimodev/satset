@@ -239,24 +239,14 @@ class _Head extends StatelessWidget {
                 const SizedBox(height: Sp.s1h),
                 Text(
                   '×${ticket.qty} ${ticket.name}${ticket.variantName.isEmpty ? '' : ' · ${ticket.variantName}'}',
-                  style: SatType.sans(
-                    size: 17,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.17,
-                    height: 1.2,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h3(color: sc.textHi),
                 ),
                 if (ticket.modifiers.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: Sp.s1),
                     child: Text(
                       ticket.modifiers.map((m) => m.display).join(' · '),
-                      style: SatType.sans(
-                        size: 12,
-                        color: sc.textMd,
-                        height: 1.35,
-                      ),
+                      style: SatType.bodyS(color: sc.textMd),
                     ),
                   ),
               ],
@@ -338,7 +328,7 @@ class _ActionList extends StatelessWidget {
           const SizedBox(height: 60),
           Text(
             'Tap luar sheet untuk batal.',
-            style: SatType.sans(size: 11, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
         ],
       ),
@@ -429,24 +419,9 @@ class _ActionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.title,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.14,
-                        color: titleColor,
-                      ),
-                    ),
+                    Text(item.title, style: SatType.labelM(color: titleColor)),
                     const SizedBox(height: Sp.sHair),
-                    Text(
-                      item.desc,
-                      style: SatType.sans(
-                        size: 11,
-                        color: sc.textMd,
-                        height: 1.35,
-                      ),
-                    ),
+                    Text(item.desc, style: SatType.bodyS(color: sc.textMd)),
                   ],
                 ),
               ),
@@ -501,11 +476,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 Expanded(
                   child: Text(
                     'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan. Refire mungkin lebih cocok untuk isu kualitas.',
-                    style: SatType.sans(
-                      size: 12,
-                      color: sc.textMd,
-                      height: 1.4,
-                    ),
+                    style: SatType.bodyS(color: sc.textMd),
                   ),
                 ),
               ],
@@ -562,16 +533,12 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                             children: [
                               Text(
                                 r['label']!,
-                                style: SatType.sans(
-                                  size: 14,
-                                  weight: FontWeight.w500,
-                                  color: sc.textHi,
-                                ),
+                                style: SatType.bodyM(color: sc.textHi),
                               ),
                               const SizedBox(height: Sp.sHair),
                               Text(
                                 r['desc']!,
-                                style: SatType.sans(size: 11, color: sc.textMd),
+                                style: SatType.bodyS(color: sc.textMd),
                               ),
                             ],
                           ),
@@ -642,20 +609,12 @@ class _ConfirmedView extends StatelessWidget {
             child: Icon(Icons.delete_outline, size: 46, color: sc.urgent),
           ),
           const SizedBox(height: Sp.s4),
-          Text(
-            'Item dibatalkan',
-            style: SatType.sans(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.22,
-              color: sc.textHi,
-            ),
-          ),
+          Text('Item dibatalkan', style: SatType.h2(color: sc.textHi)),
           const SizedBox(height: Sp.s2),
           Text(
             'Tercatat: ×${ticket.qty} ${ticket.name} · atas nama kamu · terlihat di laporan',
             textAlign: TextAlign.center,
-            style: SatType.sans(size: 13, color: sc.textMd, height: 1.45),
+            style: SatType.bodyM(color: sc.textMd),
           ),
         ],
       ),

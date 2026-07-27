@@ -91,12 +91,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
             const SizedBox(height: Sp.s4h),
             Text(
               'Pindahkan meja ${source.displayName}',
-              style: SatType.sans(
-                size: 20,
-                weight: FontWeight.w600,
-                letterSpacing: -0.4,
-                color: sc.textHi,
-              ),
+              style: SatType.h2(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1),
             Text(
@@ -111,7 +106,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                       child: Text(
                         'Tidak ada meja kosong untuk dituju.',
                         textAlign: TextAlign.center,
-                        style: SatType.sans(size: 13, color: sc.textLo),
+                        style: SatType.bodyM(color: sc.textLo),
                       ),
                     )
                   : ListView(
@@ -176,7 +171,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                 const SizedBox(width: Sp.s3),
                 Text(
                   'kapasitas ${target.capacity}',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),
                 if (overCapacity)
@@ -246,7 +241,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
       };
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(msg, style: SatType.sans(color: sc.textHi)),
+          content: Text(msg, style: SatType.bodyM(color: sc.textHi)),
         ),
       );
     } catch (e) {

@@ -213,13 +213,6 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
     decoration: SatBox.d(color: color, borderRadius: SatR.a(10)),
-    child: Text(
-      '$count',
-      style: SatType.sans(
-        size: 13,
-        weight: FontWeight.w700,
-        color: onFill(color),
-      ),
-    ),
+    child: Text('$count', style: SatType.labelM(color: onFill(color))),
   );
 }

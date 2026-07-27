@@ -53,7 +53,7 @@ class DiscountPresetsScreen extends ConsumerWidget {
                       Text(
                         'Kasir memilih dari daftar ini — mereka tidak bisa mengetik '
                         'angka diskon sendiri.',
-                        style: SatType.sans(size: 12, color: sc.textLo),
+                        style: SatType.bodyS(color: sc.textLo),
                       ),
                       const SizedBox(height: Sp.s4),
                       if (order.isNotEmpty) ...[
@@ -101,18 +101,14 @@ class _Empty extends StatelessWidget {
           const SizedBox(height: Sp.s3),
           Text(
             'Belum ada preset diskon',
-            style: SatType.sans(
-              size: 15,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
+            style: SatType.labelL(color: sc.textHi),
           ),
           const SizedBox(height: Sp.s1h),
           Text(
             'Buat preset agar kasir bisa memberi diskon tanpa mengetik '
             'angka sendiri.',
             textAlign: TextAlign.center,
-            style: SatType.sans(size: 12.5, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ],
       ),
@@ -146,19 +142,12 @@ class _PresetTile extends StatelessWidget {
             Flexible(
               child: Text(
                 p.name,
-                style: SatType.sans(
-                  size: 13.5,
-                  weight: FontWeight.w600,
-                  color: p.active ? sc.textHi : sc.textLo,
-                ),
+                style: SatType.labelM(color: p.active ? sc.textHi : sc.textLo),
               ),
             ),
             if (!p.active) ...[
               const SizedBox(width: Sp.s2),
-              Text(
-                'nonaktif',
-                style: SatType.sans(size: 10.5, color: sc.textLo),
-              ),
+              Text('nonaktif', style: SatType.bodyS(color: sc.textLo)),
             ],
           ],
         ),
@@ -166,7 +155,7 @@ class _PresetTile extends StatelessWidget {
           p.isPercent
               ? '${(p.value / 100).toStringAsFixed(0)}%'
               : formatIDR(p.value),
-          style: SatType.sans(size: 12, color: sc.textLo),
+          style: SatType.bodyS(color: sc.textLo),
         ),
         trailing: IconButton(
           tooltip: AppStrings.delete,
@@ -240,11 +229,7 @@ Future<void> _edit(
             children: [
               Text(
                 existing == null ? 'Preset baru' : 'Ubah preset',
-                style: SatType.sans(
-                  size: 15,
-                  weight: FontWeight.w700,
-                  color: sc.textHi,
-                ),
+                style: SatType.labelL(color: sc.textHi),
               ),
               const SizedBox(height: Sp.s3),
               SatField.text(
@@ -282,13 +267,10 @@ Future<void> _edit(
               const SizedBox(height: Sp.s2),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Aktif',
-                  style: SatType.sans(size: 13, color: sc.textHi),
-                ),
+                title: Text('Aktif', style: SatType.bodyM(color: sc.textHi)),
                 subtitle: Text(
                   'Nonaktif menyembunyikan preset dari kasir',
-                  style: SatType.sans(size: 11.5, color: sc.textLo),
+                  style: SatType.bodyS(color: sc.textLo),
                 ),
                 value: active,
                 onChanged: (v) => setState(() => active = v),

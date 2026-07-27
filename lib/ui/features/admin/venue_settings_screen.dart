@@ -317,19 +317,14 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
             child: Text(
               AppStrings.venueSettingsTitle,
-              style: SatType.sans(
-                size: 30,
-                weight: FontWeight.w600,
-                letterSpacing: -0.6,
-                color: sc.textHi,
-              ),
+              style: SatType.h1(color: sc.textHi),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Text(
               AppStrings.venueSettingsSubtitle,
-              style: SatType.sans(size: 13, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
           ),
           Expanded(
@@ -429,12 +424,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             alignment: Alignment.center,
             child: Text(
               _initials(s.displayName),
-              style: SatType.sans(
-                size: 22,
-                weight: FontWeight.w700,
-                letterSpacing: -0.4,
-                color: sc.bg1,
-              ),
+              style: SatType.h2(color: sc.bg1),
             ),
           ),
           const SizedBox(width: Sp.s4),
@@ -449,22 +439,17 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                 const SizedBox(height: Sp.s2),
                 Text(
                   s.displayName.isEmpty ? '—' : s.displayName,
-                  style: SatType.sans(
-                    size: 26,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h2(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s1),
                 Text(
                   s.legalName.isEmpty ? 'Belum ada nama legal' : s.legalName,
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const SizedBox(height: Sp.s2h),
                 Text(
                   s.address.isEmpty ? 'Belum ada alamat' : s.address,
-                  style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+                  style: SatType.bodyM(color: sc.textMd),
                 ),
               ],
             ),
@@ -525,7 +510,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         Text(
           value.isEmpty ? '—' : value,
           textAlign: TextAlign.right,
-          style: SatType.sans(size: 13, color: sc.textHi, height: 1.4),
+          style: SatType.bodyM(color: sc.textHi),
         ),
         const SizedBox(height: 3),
         Row(
@@ -535,7 +520,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             const SizedBox(width: 3),
             Text(
               AppStrings.venueSettingsManagedBySuperAdmin,
-              style: SatType.sans(size: 10, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
           ],
         ),
@@ -710,10 +695,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           border: SatB.all(color: c.withValues(alpha: 0.4)),
           borderRadius: SatR.a(8),
         ),
-        child: Text(
-          label,
-          style: SatType.sans(size: 12, weight: FontWeight.w600, color: c),
-        ),
+        child: Text(label, style: SatType.labelS(color: c)),
       ),
     );
   }
@@ -826,14 +808,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                child: Text(title, style: SatType.labelL(color: sc.textHi)),
               ),
               Text(tag, style: SatType.caption(color: sc.textLo)),
             ],
@@ -870,16 +845,9 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text(label, style: SatType.labelM(color: sc.textHi)),
                   const SizedBox(height: Sp.sHair),
-                  Text(value, style: SatType.sans(size: 12, color: sc.textMd)),
+                  Text(value, style: SatType.bodyS(color: sc.textMd)),
                 ],
               ),
             ),
@@ -960,11 +928,7 @@ class _PajakLayananCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   AppStrings.venueSettingsSectionTax,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
               ),
               Text('BIAYA', style: SatType.caption(color: sc.textLo)),
@@ -1048,12 +1012,12 @@ class _PajakLayananCard extends ConsumerWidget {
                       'dihitung dari jumlah setelah diskon.'
                 : 'Pajak & layanan dihitung dari subtotal kotor, diskon '
                       'dipotong dari total akhir.',
-            style: SatType.sans(size: 11.5, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s1),
           Text(
             'Diskon per item selalu dihitung sebelum pajak.',
-            style: SatType.sans(size: 11, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s2h),
           // The catalogue itself lives on its own screen — it is list-shaped
@@ -1070,7 +1034,7 @@ class _PajakLayananCard extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'Preset diskon',
-                      style: SatType.sans(size: 13, color: sc.textHi),
+                      style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),
                   Icon(Icons.chevron_right, size: 18, color: sc.textLo),
@@ -1093,7 +1057,7 @@ class _PajakLayananCard extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: SatType.sans(size: 13, color: sc.textHi)),
+          child: Text(label, style: SatType.bodyM(color: sc.textHi)),
         ),
         GestureDetector(
           onTap: onToggle,
@@ -1113,10 +1077,7 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(
-            'Tipe biaya',
-            style: SatType.sans(size: 13, color: sc.textMd),
-          ),
+          child: Text('Tipe biaya', style: SatType.bodyM(color: sc.textMd)),
         ),
         Expanded(
           child: Row(
@@ -1154,11 +1115,7 @@ class _PajakLayananCard extends ConsumerWidget {
         ),
         child: Text(
           label,
-          style: SatType.sans(
-            size: 12,
-            weight: FontWeight.w600,
-            color: on ? sc.accentText : sc.textMd,
-          ),
+          style: SatType.labelS(color: on ? sc.accentText : sc.textMd),
         ),
       ),
     );
@@ -1180,7 +1137,7 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
+          child: Text(label, style: SatType.bodyM(color: sc.textMd)),
         ),
         Expanded(
           child: Row(
@@ -1239,7 +1196,7 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
+          child: Text(label, style: SatType.bodyM(color: sc.textMd)),
         ),
         Expanded(
           child: Row(
@@ -1323,11 +1280,7 @@ class _GuestOrderingCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   AppStrings.venueSettingsSectionGuestOrdering,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
               ),
               Text('QR TAMU', style: SatType.caption(color: sc.textLo)),
@@ -1337,7 +1290,7 @@ class _GuestOrderingCard extends ConsumerWidget {
           Text(
             'Tamu pindai QR di meja, pesan sendiri lewat web. Pesanan masuk '
             'antrian “Mandiri” untuk Anda setujui sebelum ke dapur.',
-            style: SatType.sans(size: 12, color: sc.textLo, height: 1.4),
+            style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s3h),
           Row(
@@ -1345,7 +1298,7 @@ class _GuestOrderingCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Aktifkan pesanan mandiri',
-                  style: SatType.sans(size: 13, color: sc.textHi),
+                  style: SatType.bodyM(color: sc.textHi),
                 ),
               ),
               GestureDetector(
@@ -1394,7 +1347,7 @@ class _GuestOrderingCard extends ConsumerWidget {
             ),
             Text(
               'Aktifkan per meja dari layar Atur zona untuk menampilkan QR.',
-              style: SatType.sans(size: 11, color: sc.textDim, height: 1.4),
+              style: SatType.bodyS(color: sc.textDim),
             ),
           ],
         ],
@@ -1439,10 +1392,7 @@ class _GuestOrderingCard extends ConsumerWidget {
           ),
           const SizedBox(width: Sp.s2h),
           Expanded(
-            child: Text(
-              text,
-              style: SatType.sans(size: 12, color: sc.textHi, height: 1.4),
-            ),
+            child: Text(text, style: SatType.bodyS(color: sc.textHi)),
           ),
         ],
       ),
@@ -1472,11 +1422,7 @@ class _ReportsHourCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   AppStrings.venueSettingsSectionReports,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
               ),
               Text('LAPORAN', style: SatType.caption(color: sc.textLo)),
@@ -1492,12 +1438,12 @@ class _ReportsHourCard extends ConsumerWidget {
                   children: [
                     Text(
                       'Jam mulai hari kerja',
-                      style: SatType.sans(size: 13, color: sc.textMd),
+                      style: SatType.bodyM(color: sc.textMd),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
                       'Pengelompokan laporan "Hari ini"',
-                      style: SatType.sans(size: 11, color: sc.textLo),
+                      style: SatType.bodyS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -1594,15 +1540,7 @@ class _PhoneDetailScreen extends StatelessWidget {
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),
                   Expanded(
-                    child: Text(
-                      title,
-                      style: SatType.sans(
-                        size: 22,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.4,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    child: Text(title, style: SatType.h2(color: sc.textHi)),
                   ),
                 ],
               ),

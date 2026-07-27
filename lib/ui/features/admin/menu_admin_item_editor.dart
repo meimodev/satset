@@ -305,18 +305,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   ),
                 ),
                 const SizedBox(height: Sp.s4h),
-                Text(
-                  'Hapus item?',
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text('Hapus item?', style: SatType.labelL(color: sc.textHi)),
                 const SizedBox(height: Sp.s2),
                 Text(
                   'Item "${_draft.name}" akan dihapus dari menu.',
-                  style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+                  style: SatType.bodyM(color: sc.textMd),
                 ),
                 const SizedBox(height: Sp.s4h),
                 Row(
@@ -586,7 +579,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 leading: Icon(Icons.delete_outline, color: sc.urgent),
                 title: Text(
                   'Hapus foto',
-                  style: SatType.sans(color: sc.urgent),
+                  style: SatType.bodyM(color: sc.urgent),
                 ),
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -740,7 +733,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 ? Text(
                     'Belum ada varian. Hanya pakai harga dasar.',
                     key: const ValueKey('var-empty'),
-                    style: SatType.sans(size: 12, color: sc.textLo),
+                    style: SatType.bodyS(color: sc.textLo),
                   )
                 : AnimatedReflow(
                     key: const ValueKey('var-list'),
@@ -834,7 +827,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ? Text(
                 'Belum ada grup modifier (mis. tingkat pedas, pilih protein).',
                 key: const ValueKey('mod-empty'),
-                style: SatType.sans(size: 12, color: sc.textLo),
+                style: SatType.bodyS(color: sc.textLo),
               )
             : AnimatedReflow(
                 key: const ValueKey('mod-list'),
@@ -1111,12 +1104,12 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         ),
         error: (e, _) => Text(
           'Gagal memuat bahan: $e',
-          style: SatType.sans(size: 12, color: sc.urgent),
+          style: SatType.bodyS(color: sc.urgent),
         ),
         data: (list) => list.isEmpty
             ? Text(
                 'Belum ada bahan. Tambahkan di menu Stok sebelum menyusun resep.',
-                style: SatType.sans(size: 12, color: sc.textLo),
+                style: SatType.bodyS(color: sc.textLo),
               )
             : _recipeBody(sc, readOnly, list),
       ),
@@ -1163,13 +1156,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               : isOption
               ? 'Resep modifier ditambahkan di atas resep yang berlaku.'
               : 'Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.',
-          style: SatType.sans(size: 11, color: sc.textLo),
+          style: SatType.bodyS(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2h),
         if (lines.isEmpty)
           Text(
             'Belum ada bahan pada resep ini.',
-            style: SatType.sans(size: 12, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
         for (var i = 0; i < lines.length; i++)
           _recipeLineRow(sc, readOnly, pantry, byId, lines, i),
@@ -1358,9 +1351,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   : (_draft.unavailable
                         ? 'Tidak tersedia (manual)'
                         : 'Aktif untuk dijual'),
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w600,
+              style: SatType.labelM(
                 color: _draft.isSoldOut ? sc.urgent : sc.success,
               ),
             ),
@@ -1392,7 +1383,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       ),
       child: Text(
         out ? 'Tidak tersedia' : 'Aktif',
-        style: SatType.sans(size: 11, weight: FontWeight.w600, color: tone),
+        style: SatType.labelS(color: tone),
       ),
     );
   }
@@ -1498,7 +1489,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(height: Sp.s1),
           AnimatedDefaultTextStyle(
             duration: satMotion(context, 240),
-            style: SatType.sans(size: 18, weight: FontWeight.w600, color: tone),
+            style: SatType.h3(color: tone),
             child: hasData
                 ? AnimatedCount(
                     value: marginPct.round(),
@@ -1510,7 +1501,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(height: Sp.sHair),
           Text(
             hasData ? 'Rp $marginRp · $hint' : hint,
-            style: SatType.sans(size: 11, color: sc.textMd),
+            style: SatType.bodyS(color: sc.textMd),
           ),
         ],
       ),
@@ -1552,11 +1543,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           child: AnimatedDefaultTextStyle(
             duration: satMotion(context, 200),
-            style: SatType.sans(
-              size: 12,
-              weight: FontWeight.w500,
-              color: selected ? sc.accentText : sc.textMd,
-            ),
+            style: SatType.bodyS(color: selected ? sc.accentText : sc.textMd),
             child: Text(label),
           ),
         ),
@@ -1602,11 +1589,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               const SizedBox(width: Sp.s1h),
               AnimatedDefaultTextStyle(
                 duration: satMotion(context, 200),
-                style: SatType.sans(
-                  size: 11,
-                  weight: FontWeight.w500,
-                  color: on ? sc.success : sc.textMd,
-                ),
+                style: SatType.bodyS(color: on ? sc.success : sc.textMd),
                 child: Text(label),
               ),
             ],
@@ -1687,12 +1670,7 @@ class _Header extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: SatType.sans(
-                    size: 22,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.3,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h2(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s1),
                 Row(

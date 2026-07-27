@@ -37,7 +37,7 @@ class ReportStockSection extends ConsumerWidget {
       ),
       error: (e, _) => Text(
         'Gagal memuat laporan bahan: $e',
-        style: SatType.sans(size: 12, color: sc.warn),
+        style: SatType.bodyS(color: sc.warn),
       ),
       data: (r) {
         if (r.isEmpty) return const SizedBox.shrink();
@@ -51,7 +51,7 @@ class ReportStockSection extends ConsumerWidget {
             valuation.isEmpty) {
           return Text(
             'Belum ada aktivitas bahan pada rentang ini.',
-            style: SatType.sans(size: 12, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           );
         }
         return Column(
@@ -121,14 +121,7 @@ class ReportStockSection extends ConsumerWidget {
           children: [
             Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
             const SizedBox(height: Sp.sHair),
-            Text(
-              value,
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w600,
-                color: color,
-              ),
-            ),
+            Text(value, style: SatType.labelM(color: color)),
           ],
         ),
       );
@@ -148,7 +141,7 @@ class ReportStockSection extends ConsumerWidget {
           Text(title.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
           const SizedBox(height: Sp.s1h),
           if (rows.isEmpty)
-            Text(empty ?? '—', style: SatType.sans(size: 12, color: sc.textLo))
+            Text(empty ?? '—', style: SatType.bodyS(color: sc.textLo))
           else
             for (final row in rows)
               Padding(
@@ -158,7 +151,7 @@ class ReportStockSection extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         row['name'] as String? ?? '—',
-                        style: SatType.sans(size: 13, color: sc.textHi),
+                        style: SatType.bodyM(color: sc.textHi),
                       ),
                     ),
                     Text(

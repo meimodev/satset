@@ -26,15 +26,11 @@ class NoteLine extends StatelessWidget {
         children: [
           TextSpan(
             text: '$label  ',
-            style: SatType.sans(
-              size: 12,
-              color: sc.textLo,
-              weight: FontWeight.w600,
-            ),
+            style: SatType.labelS(color: sc.textLo),
           ),
           TextSpan(
             text: t,
-            style: SatType.sans(size: 13, color: sc.textMd, height: 1.35),
+            style: SatType.bodyM(color: sc.textMd),
           ),
         ],
       ),

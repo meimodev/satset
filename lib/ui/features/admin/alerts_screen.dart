@@ -95,14 +95,7 @@ class _ScopeCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                child: Text(title, style: SatType.labelL(color: sc.textHi)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -136,10 +129,7 @@ class _ScopeCard extends StatelessWidget {
           ),
           if (hint != null) ...[
             const SizedBox(height: Sp.s1h),
-            Text(
-              hint!,
-              style: SatType.sans(size: 12, color: sc.textLo, height: 1.4),
-            ),
+            Text(hint!, style: SatType.bodyS(color: sc.textLo)),
           ],
           const SizedBox(height: Sp.s3),
           child,
@@ -294,13 +284,10 @@ class _MinutesRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: SatType.sans(
-                    size: 13,
-                    color: on ? sc.textMd : sc.textLo,
-                  ),
+                  style: SatType.bodyM(color: on ? sc.textMd : sc.textLo),
                 ),
                 const SizedBox(height: Sp.sHair),
-                Text(hint, style: SatType.sans(size: 11, color: sc.textLo)),
+                Text(hint, style: SatType.bodyS(color: sc.textLo)),
               ],
             ),
           ),
@@ -449,7 +436,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: SatType.sans(size: 13, color: sc.textHi)),
+            child: Text(label, style: SatType.bodyM(color: sc.textHi)),
           ),
           GestureDetector(
             onTap: () => _openPicker(sc, event),
@@ -468,7 +455,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                 children: [
                   Text(
                     preset?.label ?? id,
-                    style: SatType.sans(size: 12.5, color: sc.textHi),
+                    style: SatType.bodyM(color: sc.textHi),
                   ),
                   const SizedBox(width: Sp.s1h),
                   Icon(Icons.expand_more, size: 16, color: sc.textLo),
@@ -533,7 +520,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                   ),
                   title: Text(
                     preset.label,
-                    style: SatType.sans(size: 14, color: sc.textHi),
+                    style: SatType.bodyM(color: sc.textHi),
                   ),
                   trailing: IconButton(
                     tooltip: preset.isSilent
@@ -608,7 +595,7 @@ class _DeviceMuteCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     _labels[e]!,
-                    style: SatType.sans(size: 13, color: sc.textMd),
+                    style: SatType.bodyM(color: sc.textMd),
                   ),
                 ),
                 Switch(

@@ -214,15 +214,10 @@ class _Mark extends StatelessWidget {
       child: Text(
         'S',
         style: switch (SatShape.skin) {
-          SatSkin.brutal => SatType.display(
-            size: 20,
-            letterSpacing: -0.8,
+          SatSkin.brutal => SatType.h2(
             color: onDarkSlab ? sc.accent : sc.accentInk,
           ),
-          SatSkin.glow => SatType.sans(
-            size: 20,
-            weight: FontWeight.w800,
-            letterSpacing: -0.8,
+          SatSkin.glow => SatType.h2(
             color: onDarkSlab ? sc.accent : sc.accentInk,
           ),
           SatSkin.lembut => SatType.monoL(color: sc.accentInk),
@@ -507,16 +502,7 @@ class TabletSectionHead extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: SatType.sans(
-                    size: 32,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.8,
-                    height: 1.05,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(title, style: SatType.h1(color: sc.textHi)),
                 if (sub != null) ...[
                   const SizedBox(height: Sp.s1h),
                   Text(

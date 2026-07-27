@@ -87,21 +87,12 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 ),
               ),
               const SizedBox(height: Sp.s6),
-              Text(
-                'Terkirim',
-                style: SatType.sans(
-                  size: 30,
-                  weight: glow ? FontWeight.w800 : FontWeight.w600,
-                  letterSpacing: glow ? -0.9 : -0.6,
-                  color: ink,
-                ),
-              ),
+              Text('Terkirim', style: SatType.h1(color: ink)),
               const SizedBox(height: Sp.s2),
               Text(
                 'Pesanan Meja $name sudah live di display dapur dan bar.',
                 textAlign: TextAlign.center,
-                style: SatType.sans(
-                  size: 14,
+                style: SatType.bodyM(
                   color: glow ? ink.withValues(alpha: 0.7) : sc.textMd,
                 ),
               ),
@@ -187,14 +178,7 @@ class _StationChip extends StatelessWidget {
                   ),
                 ),
           const SizedBox(width: Sp.s2),
-          Text(
-            name,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w500,
-              color: sc.textHi,
-            ),
-          ),
+          Text(name, style: SatType.bodyM(color: sc.textHi)),
         ],
       ),
     );

@@ -101,15 +101,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               ),
             ),
             const SizedBox(height: Sp.s4h),
-            Text(
-              'Tetapkan ke meja',
-              style: SatType.sans(
-                size: 20,
-                weight: FontWeight.w600,
-                letterSpacing: -0.4,
-                color: sc.textHi,
-              ),
-            ),
+            Text('Tetapkan ke meja', style: SatType.h2(color: sc.textHi)),
             const SizedBox(height: Sp.s1),
             Text(
               'Atur tamu lalu pilih meja kosong',
@@ -118,14 +110,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
             const SizedBox(height: Sp.s4),
             Row(
               children: [
-                Text(
-                  'Tamu',
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w500,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text('Tamu', style: SatType.bodyM(color: sc.textHi)),
                 const Spacer(),
                 GuestStepper(
                   pax: _pax,
@@ -147,7 +132,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                       child: Text(
                         'Tidak ada meja kosong.',
                         textAlign: TextAlign.center,
-                        style: SatType.sans(size: 13, color: sc.textLo),
+                        style: SatType.bodyM(color: sc.textLo),
                       ),
                     )
                   : ListView(
@@ -215,7 +200,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 const SizedBox(width: Sp.s3),
                 Text(
                   'kapasitas ${target.capacity}',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),
                 if (overCapacity)

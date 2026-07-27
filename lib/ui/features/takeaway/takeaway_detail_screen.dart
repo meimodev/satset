@@ -77,16 +77,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: SatType.sans(
-                    size: 30,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                    height: 1.05,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(label, style: SatType.h1(color: sc.textHi)),
                 const SizedBox(height: Sp.s1),
                 Text(
                   [
@@ -104,7 +95,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                 ? Center(
                     child: Text(
                       'Belum ada item.',
-                      style: SatType.sans(size: 13, color: sc.textLo),
+                      style: SatType.bodyM(color: sc.textLo),
                     ),
                   )
                 : ListView(
@@ -239,7 +230,7 @@ class _Footer extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Total', style: SatType.sans(size: 13, color: sc.textMd)),
+              Text('Total', style: SatType.bodyM(color: sc.textMd)),
               const Spacer(),
               Text(formatIDR(total), style: SatType.monoM(color: sc.textHi)),
             ],
@@ -292,7 +283,7 @@ class _Footer extends StatelessWidget {
               padding: const EdgeInsets.only(top: Sp.s1),
               child: Text(
                 'Sudah diserahkan ke tamu.',
-                style: SatType.sans(size: 12, color: sc.textMd),
+                style: SatType.bodyS(color: sc.textMd),
               ),
             ),
         ],

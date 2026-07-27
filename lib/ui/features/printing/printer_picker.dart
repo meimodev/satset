@@ -412,16 +412,12 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     children: [
                       Text(
                         'Pilih printer',
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w700,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.h3(color: sc.textHi),
                       ),
                       const SizedBox(height: Sp.s1),
                       Text(
                         widget.job.subtitle,
-                        style: SatType.sans(size: 13, color: sc.textLo),
+                        style: SatType.bodyM(color: sc.textLo),
                       ),
                     ],
                   ),
@@ -445,7 +441,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                 child: Text(
                   'Tidak ada printer online. Tambah manual, atau pair printer Bluetooth di Pengaturan dulu.',
                   textAlign: TextAlign.center,
-                  style: SatType.sans(size: 13, color: sc.textLo),
+                  style: SatType.bodyM(color: sc.textLo),
                 ),
               ),
 
@@ -496,14 +492,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
         Expanded(child: Divider(color: sc.border0)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
-          child: Text(
-            label,
-            style: SatType.sans(
-              size: 11,
-              weight: FontWeight.w600,
-              color: sc.textLo,
-            ),
-          ),
+          child: Text(label, style: SatType.labelS(color: sc.textLo)),
         ),
         Expanded(child: Divider(color: sc.border0)),
       ],
@@ -538,14 +527,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          e.label,
-                          style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          ),
-                        ),
+                        Text(e.label, style: SatType.labelM(color: sc.textHi)),
                         Text(e.address, style: SatType.monoS(color: sc.textLo)),
                       ],
                     ),
@@ -571,11 +553,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     ),
                     child: Text(
                       e.scopeTag,
-                      style: SatType.sans(
-                        size: 10,
-                        weight: FontWeight.w600,
-                        color: sc.textMd,
-                      ),
+                      style: SatType.labelS(color: sc.textMd),
                     ),
                   ),
                 ],
@@ -627,14 +605,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             children: [
               Icon(icon, size: 18, color: sc.textMd),
               const SizedBox(width: Sp.s2),
-              Text(
-                label,
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(label, style: SatType.labelM(color: sc.textHi)),
             ],
           ),
         ),
@@ -715,10 +686,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
           final sc = ctx.sat;
           return AlertDialog(
             backgroundColor: sc.bg1,
-            title: Text(
-              'Tambah printer Wi-Fi',
-              style: SatType.sans(size: 16, weight: FontWeight.w700),
-            ),
+            title: Text('Tambah printer Wi-Fi', style: SatType.labelL()),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

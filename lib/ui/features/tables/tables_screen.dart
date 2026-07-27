@@ -235,13 +235,7 @@ class _FloorHead extends ConsumerWidget {
         children: [
           Text(
             SatShape.caps(title),
-            style: SatType.display(
-              size: 30,
-              weight: FontWeight.w600,
-              letterSpacing: -0.6,
-              height: 1.05,
-              color: context.sat.textHi,
-            ),
+            style: SatType.h1(color: context.sat.textHi),
           ),
           const SizedBox(height: Sp.s1),
           Text(
@@ -299,11 +293,9 @@ class _FloorAction extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 SatShape.caps(label),
-                style: SatType.sans(
-                  size: 12,
-                  weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                  color: sc.textHi,
-                ),
+                style: (brutal
+                    ? SatType.labelS(color: sc.textHi)
+                    : SatType.bodyS(color: sc.textHi)),
               ),
             ],
             const SizedBox(width: 7),
@@ -324,12 +316,7 @@ class _FloorAction extends StatelessWidget {
                 ),
                 child: Text(
                   SatShape.caps(alert!),
-                  style: SatType.sans(
-                    size: 9,
-                    weight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    color: onFill(sc.urgent),
-                  ),
+                  style: SatType.labelS(color: onFill(sc.urgent)),
                 ),
               ),
             ],
@@ -497,11 +484,9 @@ class _ZoneRow extends StatelessWidget {
                       AnimatedDefaultTextStyle(
                         duration: dur,
                         curve: satEaseOut,
-                        style: SatType.sans(
-                          size: 13,
-                          weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                          color: fg,
-                        ),
+                        style: (brutal
+                            ? SatType.labelM(color: fg)
+                            : SatType.bodyM(color: fg)),
                         child: Text(SatShape.caps(z.name)),
                       ),
                       const SizedBox(width: Sp.s2h),
@@ -662,12 +647,9 @@ class _EmptyZoneState extends State<_EmptyZone>
             Text(
               'Belum ada meja di ${widget.zoneName}',
               textAlign: TextAlign.center,
-              style: SatType.sans(
-                size: tablet ? 18 : 15,
-                weight: FontWeight.w600,
-                letterSpacing: -0.2,
-                color: sc.textHi,
-              ),
+              style: (tablet
+                  ? SatType.h3(color: sc.textHi)
+                  : SatType.labelL(color: sc.textHi)),
             ),
             const SizedBox(height: Sp.s1h),
             Text(

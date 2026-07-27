@@ -93,6 +93,43 @@ void main() {
     );
   });
 
+  test('no literal type sizes outside core/design', () {
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      // Renders what a thermal printer will emit, not app chrome — its sizes
+      // are the paper's, not the design system's.
+      if (file.path.endsWith('receipt_preview.dart')) continue;
+      // The rail label is tuned per skin to fit a 56px tile — 'MANDIRI' at
+      // caption's tracking wrapped to two lines and overflowed the column.
+      // Named here rather than exempted by shape, so any *other* literal in
+      // the file still trips.
+      if (file.path.endsWith('tablet_chrome.dart')) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'SatType\.(sans|mono|display)\(',
+      ).allMatches(src)) {
+        // A glyph sized off its own container — an avatar's initials, a
+        // stepper's numeral — scales with the thing it sits in and has no
+        // fixed role. It is the *literal* that is banned, not the call.
+        final body = _callBody(src, m.start);
+        if (!RegExp(r'size:\s*[\d.]').hasMatch(body)) continue;
+        hits.add('${file.path}:${_lineOf(src, m.start)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use a named role — SatType.h1/h2/h3, bodyL/M/S, labelL/M/S, '
+          'monoDisplay54/monoDisplay/monoL/monoM/monoS, caption. Size and '
+          'weight belong to the role; only colour varies per call site. '
+          'Reaching for sans()/mono()/display() directly is how five weights '
+          'across 827 sites happened.\n'
+          '${hits.join('\n')}',
+    );
+  });
+
   test('no raw text inputs or dropdowns outside core/widgets', () {
     final hits = <String>[];
     for (final file in files) {

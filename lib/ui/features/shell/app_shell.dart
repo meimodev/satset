@@ -286,12 +286,7 @@ class _Tab extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     label,
-                    style: SatType.sans(
-                      size: 10,
-                      weight: FontWeight.w500,
-                      letterSpacing: 0.2,
-                      color: active ? sc.textHi : sc.textLo,
-                    ),
+                    style: SatType.bodyS(color: active ? sc.textHi : sc.textLo),
                   ),
                 ],
               ),

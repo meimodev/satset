@@ -122,9 +122,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   alignment: Alignment.center,
                   child: Text(
                     _sectionLabel[s]!,
-                    style: SatType.sans(
-                      size: 12,
-                      weight: FontWeight.w500,
+                    style: SatType.bodyS(
                       color: _on.contains(s) ? sc.textHi : sc.textLo,
                     ),
                   ),
@@ -248,14 +246,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             ),
           ),
           const SizedBox(width: 9),
-          Text(
-            'Memperbarui…',
-            style: SatType.sans(
-              size: 12,
-              weight: FontWeight.w500,
-              color: sc.textHi,
-            ),
-          ),
+          Text('Memperbarui…', style: SatType.bodyS(color: sc.textHi)),
         ],
       ),
     );
@@ -285,14 +276,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: SatType.sans(
-                        size: 15,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    Text(title, style: SatType.labelL(color: sc.textHi)),
                     if (sub != null) ...[
                       const SizedBox(height: Sp.sHair),
                       Text(
@@ -337,7 +321,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         sub: 'bukti foto wajib',
         child: Text(
           'Tidak ada pembayaran non-tunai pada rentang ini.',
-          style: SatType.sans(size: 13, color: sc.textLo),
+          style: SatType.bodyM(color: sc.textLo),
         ),
       );
     }
@@ -351,7 +335,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           if (!widget.showProofPhotos && p.rows.any((r) => r.hasPhoto)) ...[
             Text(
               'Bukti foto tersedia di perangkat venue.',
-              style: SatType.sans(size: 11.5, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s2h),
           ],
@@ -373,7 +357,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   child: Text(
                     '${_payMethodLabel[m.method] ?? m.method} · '
                     '${m.count}× · ${formatIDR(m.amount)}',
-                    style: SatType.sans(size: 11.5, color: sc.textHi),
+                    style: SatType.bodyS(color: sc.textHi),
                   ),
                 ),
             ],
@@ -418,16 +402,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                         Text(
                           '${_payMethodLabel[r.method] ?? r.method} · '
                           'Meja ${r.tableLabel ?? '-'}',
-                          style: SatType.sans(
-                            size: 13,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.labelM(color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(
                           '${_payTime(r.at)} · ${r.cashierName ?? '-'}',
-                          style: SatType.sans(size: 11, color: sc.textLo),
+                          style: SatType.bodyS(color: sc.textLo),
                         ),
                       ],
                     ),
@@ -646,10 +626,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(2)),
               ),
               const SizedBox(width: Sp.s1h),
-              Text(
-                'Minggu ini',
-                style: SatType.sans(size: 11, color: sc.textMd),
-              ),
+              Text('Minggu ini', style: SatType.bodyS(color: sc.textMd)),
               const SizedBox(width: Sp.s3h),
               Container(
                 width: 9,
@@ -657,10 +634,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 decoration: SatBox.d(color: sc.bg4, borderRadius: SatR.a(2)),
               ),
               const SizedBox(width: Sp.s1h),
-              Text(
-                'Minggu lalu',
-                style: SatType.sans(size: 11, color: sc.textMd),
-              ),
+              Text('Minggu lalu', style: SatType.bodyS(color: sc.textMd)),
             ],
           ),
         ],
@@ -795,7 +769,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 _StaffSort.voidPct: 'Void terbanyak',
                 _StaffSort.avgTicket: 'Avg ticket',
               }[s]!,
-              style: SatType.sans(size: 13, color: sc.textHi),
+              style: SatType.bodyM(color: sc.textHi),
             ),
           ),
       ],
@@ -814,14 +788,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           children: [
             Icon(Icons.swap_vert, size: 14, color: sc.textMd),
             const SizedBox(width: Sp.s1h),
-            Text(
-              label,
-              style: SatType.sans(
-                size: 11,
-                weight: FontWeight.w500,
-                color: sc.textHi,
-              ),
-            ),
+            Text(label, style: SatType.bodyS(color: sc.textHi)),
           ],
         ),
       ),
@@ -905,11 +872,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     r.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: SatType.sans(
-                      size: 13,
-                      weight: FontWeight.w500,
-                      color: sc.textHi,
-                    ),
+                    style: SatType.bodyM(color: sc.textHi),
                   ),
                 ),
               ],
@@ -991,7 +954,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       Expanded(
                         child: Text(
                           r.name,
-                          style: SatType.sans(size: 13, color: sc.textHi),
+                          style: SatType.bodyM(color: sc.textHi),
                         ),
                       ),
                       Text(
@@ -1097,11 +1060,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       children: [
                         Text(
                           rows[i].name,
-                          style: SatType.sans(
-                            size: 13,
-                            weight: FontWeight.w500,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.bodyM(color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(
@@ -1172,7 +1131,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       Expanded(
                         child: Text(
                           m.group,
-                          style: SatType.sans(size: 13, color: sc.textHi),
+                          style: SatType.bodyM(color: sc.textHi),
                         ),
                       ),
                       Text(
@@ -1254,7 +1213,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 '· ${spec.action}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: SatType.sans(size: 11, color: sc.textLo),
+                style: SatType.bodyS(color: sc.textLo),
               ),
             ),
           ],
@@ -1265,7 +1224,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             padding: const EdgeInsets.symmetric(vertical: Sp.s1),
             child: Text(
               'tidak ada item',
-              style: SatType.sans(size: 12, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
           )
         else ...[
@@ -1288,11 +1247,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       it.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: SatType.sans(
-                        size: 13,
-                        weight: FontWeight.w500,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),
                   const SizedBox(width: Sp.s2h),
@@ -1395,7 +1350,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   Expanded(
                     child: Text(
                       cats[i].name,
-                      style: SatType.sans(size: 13, color: sc.textHi),
+                      style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),
                   Text(
@@ -1467,11 +1422,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                                 pairs[i].itemA,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: SatType.sans(
-                                  size: 13,
-                                  weight: FontWeight.w500,
-                                  color: sc.textHi,
-                                ),
+                                style: SatType.bodyM(color: sc.textHi),
                               ),
                             ),
                             Padding(
@@ -1489,11 +1440,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                                 pairs[i].itemB,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: SatType.sans(
-                                  size: 13,
-                                  weight: FontWeight.w500,
-                                  color: sc.textHi,
-                                ),
+                                style: SatType.bodyM(color: sc.textHi),
                               ),
                             ),
                           ],
@@ -1678,7 +1625,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 // ("% of courses that hit their own target"). ADR-0043.
                 child: Text(
                   'kursus siap di bawah target masing-masing',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
               ),
             ],
@@ -1714,12 +1661,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             // its mains. ADR-0043.
             Text(
               'Menu paling lambat (rata-rata prep)',
-              style: SatType.sans(
-                size: 11,
-                weight: FontWeight.w600,
-                color: sc.textLo,
-                letterSpacing: 0.4,
-              ),
+              style: SatType.labelS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s2),
             for (final it in s.slowItems)
@@ -1735,7 +1677,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                             it.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: SatType.sans(size: 13, color: sc.textHi),
+                            style: SatType.bodyM(color: sc.textHi),
                           ),
                         ),
                         Text(
@@ -1930,7 +1872,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           ),
           const SizedBox(width: Sp.s2h),
           Expanded(
-            child: Text(label, style: SatType.sans(size: 13, color: sc.textHi)),
+            child: Text(label, style: SatType.bodyM(color: sc.textHi)),
           ),
           Text('$n', style: SatType.monoM(color: sc.textMd)),
           const SizedBox(width: Sp.s2h),
@@ -1981,7 +1923,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       Expanded(
                         child: Text(
                           rows[i].label,
-                          style: SatType.sans(size: 13, color: sc.textHi),
+                          style: SatType.bodyM(color: sc.textHi),
                         ),
                       ),
                       Text(
@@ -2039,7 +1981,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       Expanded(
                         child: Text(
                           r.name,
-                          style: SatType.sans(size: 13, color: sc.textHi),
+                          style: SatType.bodyM(color: sc.textHi),
                         ),
                       ),
                       Text(
@@ -2066,7 +2008,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       const SizedBox(width: Sp.s2h),
                       Text(
                         'alasan: ${r.topReasonLabel}',
-                        style: SatType.sans(size: 10, color: sc.textLo),
+                        style: SatType.bodyS(color: sc.textLo),
                       ),
                     ],
                   ),
@@ -2093,16 +2035,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           const SizedBox(height: Sp.s2h),
           Text(
             'Tidak ada bagian aktif',
-            style: SatType.sans(
-              size: 14,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
+            style: SatType.labelM(color: sc.textHi),
           ),
           const SizedBox(height: Sp.s1),
           Text(
             'Aktifkan minimal satu tab di atas',
-            style: SatType.sans(size: 12, color: sc.textMd),
+            style: SatType.bodyS(color: sc.textMd),
           ),
         ],
       ),
@@ -2113,7 +2051,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: Sp.s2h),
-      child: Text(text, style: SatType.sans(size: 12, color: sc.textMd)),
+      child: Text(text, style: SatType.bodyS(color: sc.textMd)),
     );
   }
 
@@ -2150,9 +2088,9 @@ class _MiniStatRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: SatType.sans(size: 12, color: sc.textMd)),
+                Text(label, style: SatType.bodyS(color: sc.textMd)),
                 const SizedBox(height: 1),
-                Text(sub, style: SatType.sans(size: 11, color: sc.textLo)),
+                Text(sub, style: SatType.bodyS(color: sc.textLo)),
               ],
             ),
           ),

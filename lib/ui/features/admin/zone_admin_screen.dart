@@ -109,7 +109,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
             const SizedBox(height: Sp.s3),
             Text(
               '${AppStrings.zoneAdminEmptyZone} ${zone.name}',
-              style: SatType.sans(size: 14, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
             const SizedBox(height: Sp.s4),
             _FilledBtn(
@@ -134,11 +134,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
             const SizedBox(height: Sp.s3h),
             Text(
               AppStrings.zoneAdminNoZones,
-              style: SatType.sans(
-                size: 18,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
+              style: SatType.h3(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1h),
             Text(
@@ -146,7 +142,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
                   ? AppStrings.zoneAdminNoZonesCreate
                   : AppStrings.zoneAdminNoZonesCreateRequest,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
             if (canManage) ...[
               const SizedBox(height: Sp.s4h),
@@ -196,12 +192,7 @@ class _Header extends StatelessWidget {
               children: [
                 Text(
                   AppStrings.zoneAdminTitle,
-                  style: SatType.sans(
-                    size: 24,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.4,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h2(color: sc.textHi),
                 ),
                 const SizedBox(height: 3),
                 Text(sub.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
@@ -333,12 +324,7 @@ class _TableRow extends StatelessWidget {
                       table.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: SatType.sans(
-                        size: 15,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                        color: nameColor,
-                      ),
+                      style: SatType.labelL(color: nameColor),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
@@ -360,11 +346,7 @@ class _TableRow extends StatelessWidget {
                   ),
                   child: Text(
                     AppStrings.inactive,
-                    style: SatType.sans(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      color: sc.urgent,
-                    ),
+                    style: SatType.labelS(color: sc.urgent),
                   ),
                 ),
               const SizedBox(width: Sp.s1h),
@@ -584,16 +566,12 @@ class _ActiveRow extends StatelessWidget {
                 children: [
                   Text(
                     AppStrings.zoneAdminTableActive,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
+                    style: SatType.labelM(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.sHair),
                   Text(
                     AppStrings.zoneAdminTableActiveSub,
-                    style: SatType.sans(size: 12, color: sc.textMd),
+                    style: SatType.bodyS(color: sc.textMd),
                   ),
                 ],
               ),
@@ -645,16 +623,12 @@ class _GuestOrderRow extends StatelessWidget {
                       children: [
                         Text(
                           AppStrings.zoneAdminGuestOrdering,
-                          style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.labelM(color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(
                           AppStrings.zoneAdminGuestOrderingSub,
-                          style: SatType.sans(size: 12, color: sc.textMd),
+                          style: SatType.bodyS(color: sc.textMd),
                         ),
                       ],
                     ),
@@ -679,11 +653,7 @@ class _GuestOrderRow extends StatelessWidget {
                     const SizedBox(width: Sp.s2),
                     Text(
                       AppStrings.zoneAdminShowQr,
-                      style: SatType.sans(
-                        size: 13,
-                        weight: FontWeight.w600,
-                        color: sc.accentText,
-                      ),
+                      style: SatType.labelM(color: sc.accentText),
                     ),
                   ],
                 ),
@@ -714,11 +684,7 @@ class _QrDialog extends ConsumerWidget {
           children: [
             Text(
               'QR Meja ${table.displayName}',
-              style: SatType.sans(
-                size: 16,
-                weight: FontWeight.w700,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s4),
             net.when(
@@ -805,10 +771,7 @@ class _QrDialog extends ConsumerWidget {
           ),
           const SizedBox(width: Sp.s2h),
           Expanded(
-            child: Text(
-              text,
-              style: SatType.sans(size: 12, color: sc.textHi, height: 1.4),
-            ),
+            child: Text(text, style: SatType.bodyS(color: sc.textHi)),
           ),
         ],
       ),
@@ -835,7 +798,7 @@ class _ZonesEditor extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: Text(
                 'Belum ada zona. Tambah zona pertama.',
-                style: SatType.sans(size: 13, color: sc.textMd),
+                style: SatType.bodyM(color: sc.textMd),
               ),
             )
           : ReorderableListView.builder(
@@ -940,14 +903,7 @@ class _ZoneRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    zone.name,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text(zone.name, style: SatType.labelM(color: sc.textHi)),
                   const SizedBox(height: Sp.sHair),
                   Text(
                     '$tableCount meja',
@@ -1162,11 +1118,7 @@ class _ZonePreview extends StatelessWidget {
                   shown,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.sHair),
                 Text('PRATINJAU', style: SatType.monoS(color: color)),
@@ -1277,7 +1229,7 @@ class _MetaRow extends StatelessWidget {
               tableCount == 0
                   ? 'Belum ada meja di zona ini.'
                   : '$tableCount meja saat ini ada di zona ini.',
-              style: SatType.sans(size: 13, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
           ),
         ],
@@ -1325,15 +1277,7 @@ class _SheetShell extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          color: sc.textHi,
-                        ),
-                      ),
+                      Text(title, style: SatType.h3(color: sc.textHi)),
                       if (subtitle != null) ...[
                         const SizedBox(height: Sp.sHair),
                         Text(
@@ -1409,19 +1353,9 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
             children: [
               Center(child: _sheetHandle(sc)),
               const SizedBox(height: Sp.s4h),
-              Text(
-                title,
-                style: SatType.sans(
-                  size: 16,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(title, style: SatType.labelL(color: sc.textHi)),
               const SizedBox(height: Sp.s2),
-              Text(
-                message,
-                style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
-              ),
+              Text(message, style: SatType.bodyM(color: sc.textMd)),
               const SizedBox(height: Sp.s4h),
               Row(
                 children: [
@@ -1598,14 +1532,7 @@ class _FilledBtn extends StatelessWidget {
               Icon(icon, size: 17, color: sc.accentInk),
               const SizedBox(width: Sp.s1h),
             ],
-            Text(
-              label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w600,
-                color: sc.accentInk,
-              ),
-            ),
+            Text(label, style: SatType.labelM(color: sc.accentInk)),
           ],
         ),
       ),
@@ -1646,14 +1573,7 @@ class _GhostBtn extends StatelessWidget {
               Icon(icon, size: 16, color: sc.textMd),
               const SizedBox(width: Sp.s1h),
             ],
-            Text(
-              label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w600,
-                color: sc.textMd,
-              ),
-            ),
+            Text(label, style: SatType.labelM(color: sc.textMd)),
           ],
         ),
       ),
@@ -1685,14 +1605,7 @@ class _DangerBtn extends StatelessWidget {
           border: SatB.all(color: sc.urgent),
           borderRadius: SatR.a(999),
         ),
-        child: Text(
-          label,
-          style: SatType.sans(
-            size: 13,
-            weight: FontWeight.w600,
-            color: sc.urgent,
-          ),
-        ),
+        child: Text(label, style: SatType.labelM(color: sc.urgent)),
       ),
     );
   }

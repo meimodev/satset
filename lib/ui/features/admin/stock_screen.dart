@@ -325,17 +325,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   ],
                 ),
                 const SizedBox(height: Sp.s1h),
-                Text(
-                  value,
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: color,
-                    letterSpacing: -0.2,
-                  ),
-                ),
+                Text(value, style: SatType.labelL(color: color)),
                 const SizedBox(height: Sp.sHair),
-                Text(sub, style: SatType.sans(size: 10, color: sc.textLo)),
+                Text(sub, style: SatType.bodyS(color: sc.textLo)),
               ],
             ),
           ),
@@ -379,7 +371,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 const SizedBox(height: Sp.sHair),
                 Text(
                   'Ketik jumlah fisik di gudang saat ini. Selisih akan otomatis dihitung sebagai penyesuaian mutasi.',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
               ],
             ),
@@ -507,11 +499,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           ),
           child: Text(
             label,
-            style: SatType.sans(
-              size: 11,
-              weight: active ? FontWeight.w600 : FontWeight.w500,
-              color: color,
-            ),
+            style: (active
+                ? SatType.labelS(color: color)
+                : SatType.bodyS(color: color)),
           ),
         ),
       ),
@@ -570,11 +560,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             Expanded(
                               child: Text(
                                 i.name,
-                                style: SatType.sans(
-                                  size: 15,
-                                  weight: FontWeight.w600,
-                                  color: sc.textHi,
-                                ),
+                                style: SatType.labelL(color: sc.textHi),
                               ),
                             ),
                             if (i.isProduced) ...[
@@ -1263,20 +1249,10 @@ class _Sheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
-                      ),
+                      Text(title, style: SatType.h3(color: sc.textHi)),
                       if (subtitle != null) ...[
                         const SizedBox(height: Sp.sHair),
-                        Text(
-                          subtitle!,
-                          style: SatType.sans(size: 12, color: sc.textLo),
-                        ),
+                        Text(subtitle!, style: SatType.bodyS(color: sc.textLo)),
                       ],
                     ],
                   ),
@@ -1356,11 +1332,7 @@ class _LedgerSheet extends ConsumerWidget {
                     children: [
                       Text(
                         'Riwayat Mutasi',
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.h3(color: sc.textHi),
                       ),
                       Text(
                         ingredient.name.toUpperCase(),
@@ -1432,9 +1404,7 @@ class _LedgerSheet extends ConsumerWidget {
                                         children: [
                                           Text(
                                             m.reason.label,
-                                            style: SatType.sans(
-                                              size: 13,
-                                              weight: FontWeight.w600,
+                                            style: SatType.labelM(
                                               color: sc.textHi,
                                             ),
                                           ),
@@ -1518,19 +1488,12 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Sp.s4),
-            Text(
-              title,
-              style: SatType.sans(
-                size: 18,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
-            ),
+            Text(title, style: SatType.h3(color: sc.textHi)),
             const SizedBox(height: Sp.s2),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: sc.textLo),
+              style: SatType.bodyM(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s5),
             PressScale(
@@ -1569,7 +1532,7 @@ class _Message extends StatelessWidget {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: color ?? sc.textLo),
+              style: SatType.bodyM(color: color ?? sc.textLo),
             ),
           ],
         ),
@@ -1605,7 +1568,6 @@ class _RecipeLinkChips extends StatelessWidget {
   static const _iconSize = 11.0;
   static const _iconGap = 3.0;
   static const _border = 1.0;
-  static const _fontSize = 11.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1663,10 +1625,7 @@ class _RecipeLinkChips extends StatelessWidget {
 
   double _chipWidth(String label, TextScaler scaler) {
     final tp = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: SatType.sans(size: _fontSize),
-      ),
+      text: TextSpan(text: label, style: SatType.bodyS()),
       textDirection: TextDirection.ltr,
       textScaler: scaler,
     )..layout();
@@ -1697,10 +1656,7 @@ class _RecipeLinkChips extends StatelessWidget {
                 : Icon(icon, size: _iconSize, color: color),
           ),
           const SizedBox(width: _iconGap),
-          Text(
-            label,
-            style: SatType.sans(size: _fontSize, color: color),
-          ),
+          Text(label, style: SatType.bodyS(color: color)),
         ],
       ),
     );

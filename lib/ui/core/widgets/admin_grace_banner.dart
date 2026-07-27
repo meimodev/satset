@@ -45,7 +45,7 @@ class AdminGraceBanner extends ConsumerWidget {
           Expanded(
             child: Text(
               _message(grace.remaining),
-              style: SatType.sans(size: 12, weight: FontWeight.w600, color: fg),
+              style: SatType.labelS(color: fg),
             ),
           ),
         ],

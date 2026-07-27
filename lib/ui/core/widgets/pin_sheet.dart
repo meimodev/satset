@@ -171,18 +171,13 @@ class _PinSheetState extends State<_PinSheet>
                     Text(
                       widget.title,
                       textAlign: TextAlign.center,
-                      style: SatType.sans(
-                        size: 20,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.h2(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.s1),
                     Text(
                       widget.subtitle,
                       textAlign: TextAlign.center,
-                      style: SatType.sans(size: 12, color: sc.textMd),
+                      style: SatType.bodyS(color: sc.textMd),
                     ),
                     if (widget.statusSlot != null) ...[
                       const SizedBox(height: Sp.s2h),
@@ -447,10 +442,7 @@ class _DebugCredRow extends StatelessWidget {
               child: Text(label, style: SatType.caption(color: sc.textHi)),
             ),
             Expanded(
-              child: Text(
-                value,
-                style: SatType.sans(size: 11, color: sc.textMd),
-              ),
+              child: Text(value, style: SatType.bodyS(color: sc.textMd)),
             ),
             Icon(Icons.copy_rounded, size: 12, color: sc.textLo),
           ],

@@ -120,7 +120,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
             ),
             if (err != null) ...[
               const SizedBox(height: Sp.s3),
-              Text(err, style: SatType.sans(size: 12, color: sc.urgent)),
+              Text(err, style: SatType.bodyS(color: sc.urgent)),
             ],
             const SizedBox(height: 22),
             SizedBox(width: double.infinity, child: _applyButton(context)),
@@ -157,11 +157,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
             const SizedBox(height: Sp.sHair),
             Text(
               set ? _fmt(value) : 'Pilih',
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w500,
-                color: set ? sc.accentText : sc.textLo,
-              ),
+              style: SatType.bodyM(color: set ? sc.accentText : sc.textLo),
             ),
           ],
         ),
@@ -182,11 +178,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
         ),
         child: Text(
           'Terapkan',
-          style: SatType.sans(
-            size: 15,
-            weight: FontWeight.w700,
-            color: _valid ? sc.accentInk : sc.textLo,
-          ),
+          style: SatType.labelL(color: _valid ? sc.accentInk : sc.textLo),
         ),
       ),
     );
