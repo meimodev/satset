@@ -145,6 +145,9 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             ? Value(
                 ((body['reservationGraceMins'] as num).toInt()).clamp(0, 240))
             : const Value.absent(),
+        pendingReviewMins: body.containsKey('pendingReviewMins')
+            ? Value(((body['pendingReviewMins'] as num).toInt()).clamp(1, 120))
+            : const Value.absent(),
         ungreetedAlertEnabled: body.containsKey('ungreetedAlertEnabled')
             ? Value(body['ungreetedAlertEnabled'] == true)
             : const Value.absent(),
@@ -299,6 +302,7 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
       'longStayMins': s.longStayMins,
       'idleTableMins': s.idleTableMins,
       'reservationGraceMins': s.reservationGraceMins,
+      'pendingReviewMins': s.pendingReviewMins,
       'ungreetedAlertEnabled': s.ungreetedAlertEnabled,
       'pickupAlertEnabled': s.pickupAlertEnabled,
       'guestOrderingEnabled': s.guestOrderingEnabled,

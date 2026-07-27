@@ -1,111 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
-import 'package:satset/data/repositories/auth_repository.dart';
-import 'package:satset/ui/core/design/colors.dart';
-import 'package:satset/ui/core/design/format.dart';
-import 'package:satset/ui/core/design/layout.dart';
-import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/data/repositories/staff_repository.dart';
-import 'package:satset/data/repositories/zones_repository.dart';
-import 'package:satset/domain/models/user.dart';
+import 'package:satset/data/repositories/reservations_repository.dart';
+import 'package:satset/data/repositories/takeaway_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
-import 'package:satset/data/repositories/tickets_repository.dart';
-import 'package:satset/data/repositories/venue_settings_repository.dart';
-import 'package:satset/data/models/venue_settings_dto.dart';
-import 'package:satset/domain/models/ticket.dart';
-import 'package:satset/ui/core/state/view_mode_view_model.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
+import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/ui/core/design/skin.dart';
+import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper_sheet.dart';
-import 'package:satset/ui/features/tables/widgets/reservations_strip.dart';
-import 'package:satset/ui/features/tables/widgets/takeaway_strip.dart';
-
-/// Ticks once per second to drive live elapsed-time updates on table cards.
-/// autoDispose so the stream stops when no card is watching it.
-final _tableElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
-  (ref) => Stream<DateTime>.periodic(
-    const Duration(seconds: 1),
-    (_) => DateTime.now(),
-  ),
-);
+import 'package:satset/ui/features/tables/widgets/reservations_surface.dart';
+import 'package:satset/ui/features/tables/widgets/table_card.dart';
+import 'package:satset/ui/features/tables/widgets/takeaway_surface.dart';
 
 // Animation tuning. Lively but professional. easeOutQuart per design tokens.
 const Curve _kEase = Curves.easeOutQuart;
-const Duration _kStatusXfade = Duration(milliseconds: 280);
 const Duration _kChipMorph = Duration(milliseconds: 240);
 const Duration _kCardEnter = Duration(milliseconds: 380);
-const Duration _kPressIn = Duration(milliseconds: 90);
 const int _kStaggerStepMs = 26;
-
-// Elapsed-time heat, ramped against the venue's "Meja lama" threshold
-// (`longStayMins`, was a hardcoded 1h): linear textLo→warn over the first
-// half, warn→urgent over the second, clamped red past the threshold.
-//
-// This stays **visual only** — deliberately never a cue. A waiter cannot make
-// a party leave, so a sound here would be noise they can't discharge, which
-// devalues every cue they *can* act on. See ADR-0044.
-Color _elapsedHeatColor(Duration elapsed, SatColors sc, int longStayMins) {
-  final full = Duration(minutes: longStayMins).inSeconds;
-  final t = full <= 0 ? 1.0 : (elapsed.inSeconds / full).clamp(0.0, 1.0);
-  if (t < 0.5) return Color.lerp(sc.textLo, sc.warn, t / 0.5)!;
-  return Color.lerp(sc.warn, sc.urgent, (t - 0.5) / 0.5)!;
-}
-
-/// Derived, never stored: the two silent floor states from ADR-0044.
-enum _ServiceState {
-  none,
-
-  /// Seated, nothing sent yet, past `ungreetedMins`. The audible cue for this
-  /// lives in `AlertSoundService`; the card carries the standing state so a
-  /// one-shot cue that was missed is still visible.
-  ungreeted,
-
-  /// Everything ordered is served and nothing has moved for `idleTableMins` —
-  /// probably wants dessert or the bill.
-  idle,
-}
-
-_ServiceState _serviceStateFor(
-  VenueTable table,
-  List<Ticket> lines,
-  VenueSettingsDto s,
-  DateTime now,
-) {
-  if (table.status == TableStatus.available) return _ServiceState.none;
-  final openedAt = table.openedAt;
-  if (openedAt == null) return _ServiceState.none;
-
-  final live = lines.where((t) => t.status != TicketStatus.voided).toList();
-  if (live.isEmpty) {
-    return now.difference(openedAt) >= Duration(minutes: s.ungreetedMins)
-        ? _ServiceState.ungreeted
-        : _ServiceState.none;
-  }
-
-  // Idle needs *everything* terminal, and a last-activity stamp to measure
-  // from. A line still in the kitchen means the visit is plainly not idle.
-  if (live.any((t) => t.status != TicketStatus.served)) {
-    return _ServiceState.none;
-  }
-  DateTime? lastServed;
-  for (final t in live) {
-    final at = t.servedAtTime;
-    if (at == null) return _ServiceState.none; // Can't date it — stay silent.
-    if (lastServed == null || at.isAfter(lastServed)) lastServed = at;
-  }
-  if (lastServed == null) return _ServiceState.none;
-  return now.difference(lastServed) >= Duration(minutes: s.idleTableMins)
-      ? _ServiceState.idle
-      : _ServiceState.none;
-}
-
-bool _animationsDisabled(BuildContext context) =>
-    MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
 class TablesScreen extends ConsumerStatefulWidget {
   const TablesScreen({super.key});
@@ -120,7 +42,6 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.layout;
-    final forcePhone = ref.watch(forcePhoneViewProvider);
     final tables = ref.watch(tablesProvider);
     final zones = ref.watch(zonesProvider);
 
@@ -139,9 +60,12 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
           : zones.first,
     );
 
-    final zoneTables = activeTables.where((t) => t.zoneId == activeZoneId).toList();
-    final occupied = zoneTables.where((t) => t.status != TableStatus.available).length;
-    final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
+    final zoneTables =
+        activeTables.where((t) => t.zoneId == activeZoneId).toList();
+    final occupied =
+        zoneTables.where((t) => t.status != TableStatus.available).length;
+    final ready =
+        zoneTables.where((t) => t.status == TableStatus.ready).length;
     final openTotal = zoneTables.fold<int>(0, (s, t) => s + t.openAmount);
     final subParts = <String>[
       '$occupied dari ${zoneTables.length} terisi',
@@ -150,60 +74,33 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     ];
     final subLine = subParts.join(' · ');
 
-    if (l.useTabletShell && !forcePhone) {
+    final tablet = l.useTabletShell;
+
+    final head = _FloorHead(tablet: tablet, title: zone.name, sub: subLine);
+    final zoneRow = _ZoneRow(
+      tables: activeTables,
+      zones: zones,
+      active: activeZoneId,
+      onChange: (id) => setState(() => _activeZone = id),
+      tablet: tablet,
+    );
+
+    if (tablet) {
       return Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TabletSectionHead(
-                  title: zone.name,
-                  sub: subLine,
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(0, 0, 32, 0),
-                child: _NewOrderButton(tablet: true),
-              ),
-            ],
-          ),
-          const ReservationsStrip(tablet: true),
-          const TakeawayStrip(tablet: true),
-          _ZoneRow(
-            tables: activeTables,
-            zones: zones,
-            active: activeZoneId,
-            onChange: (id) => setState(() => _activeZone = id),
-            tablet: true,
-          ),
+          head,
+          zoneRow,
           Expanded(
             child: zoneTables.isEmpty
                 ? _EmptyZone(zoneName: zone.name, tablet: true)
                 : SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(32, 16, 32, 96),
-                    child: GridView.count(
-                      crossAxisCount: 4,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.45,
-                      children: [
-                        for (final entry in zoneTables.asMap().entries)
-                          _CardFadeIn(
-                            key: ValueKey('tab-$activeZoneId-${entry.value.id}'),
-                            index: entry.key,
-                            child: _TableCard(
-                              table: entry.value,
-                              tablet: true,
-                              onTap: () => context.push('/table/${entry.value.id}'),
-                              onLongPress: () => showGuestStepperSheet(
-                                context: context,
-                                tableId: entry.value.id,
-                              ),
-                            ),
-                          ),
-                      ],
+                    child: _FloorGrid(
+                      tables: zoneTables,
+                      zoneId: activeZoneId,
+                      cols: 4,
+                      gap: 12,
+                      tablet: true,
                     ),
                   ),
           ),
@@ -211,51 +108,10 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
       );
     }
 
-    final cols = l.gridCount(minTileWidth: 180);
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(zone.name,
-                        style: SatType.sans(
-                          size: 30,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.6,
-                          height: 1.05,
-                          color: context.sat.textHi,
-                        )),
-                    const SizedBox(height: 4),
-                    Text(
-                      subLine,
-                      style: SatType.mono(
-                        size: 11,
-                        color: context.sat.textLo,
-                        letterSpacing: 0.44,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const _NewOrderButton(tablet: false),
-            ],
-          ),
-        ),
-        const ReservationsStrip(tablet: false),
-        const TakeawayStrip(tablet: false),
-        _ZoneRow(
-          tables: activeTables,
-          zones: zones,
-          active: activeZoneId,
-          onChange: (id) => setState(() => _activeZone = id),
-          tablet: false,
-        ),
+        head,
+        zoneRow,
         Expanded(
           child: zoneTables.isEmpty
               ? _EmptyZone(zoneName: zone.name, tablet: false)
@@ -263,30 +119,14 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                   padding: EdgeInsets.fromLTRB(16, 4, 16, l.bottomInset),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
-                      child: GridView.count(
-                        crossAxisCount: cols,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        childAspectRatio: 1.45,
-                        children: [
-                          for (final entry in zoneTables.asMap().entries)
-                            _CardFadeIn(
-                              key: ValueKey('phn-$activeZoneId-${entry.value.id}'),
-                              index: entry.key,
-                              child: _TableCard(
-                                table: entry.value,
-                                tablet: false,
-                                onTap: () => context.push('/table/${entry.value.id}'),
-                                onLongPress: () => showGuestStepperSheet(
-                                  context: context,
-                                  tableId: entry.value.id,
-                                ),
-                              ),
-                            ),
-                        ],
+                      constraints:
+                          BoxConstraints(maxWidth: l.contentMaxWidth),
+                      child: _FloorGrid(
+                        tables: zoneTables,
+                        zoneId: activeZoneId,
+                        cols: l.gridCount(minTileWidth: 180),
+                        gap: 8,
+                        tablet: false,
                       ),
                     ),
                   ),
@@ -294,6 +134,252 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
         ),
       ],
     );
+  }
+}
+
+/// Zone title + counts, and the three floor entry points.
+///
+/// Reservations and takeaway used to live here as always-on horizontal strips
+/// that cost ~140px of grid before a waiter had looked at a single table
+/// (ADR-0048). They are now counted triggers: the number is the whole point,
+/// and the list is one tap away.
+class _FloorHead extends ConsumerWidget {
+  final bool tablet;
+  final String title;
+  final String sub;
+  const _FloorHead({
+    required this.tablet,
+    required this.title,
+    required this.sub,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final grace = ref.watch(venueSettingsProvider).reservationGraceMins;
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+    final today = ref.watch(reservationsRepositoryProvider).where((r) =>
+        r.expectedAt.isAfter(start.subtract(const Duration(minutes: 1))) &&
+        r.expectedAt.isBefore(end));
+    final waiting =
+        today.where((r) => r.status == ReservationStatus.pending).length;
+    final late = today
+        .where((r) =>
+            r.status == ReservationStatus.pending &&
+            now.difference(r.expectedAt) > Duration(minutes: grace))
+        .length;
+    final takeaway = ref.watch(takeawayVisitsProvider).length;
+
+    final actions = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      // Tablet hangs these off the right of the section head; on a phone they
+      // are their own row, so they start at the margin like everything else
+      // rather than floating against the right edge.
+      alignment: tablet ? WrapAlignment.end : WrapAlignment.start,
+      children: [
+        _FloorAction(
+          icon: Icons.event_outlined,
+          label: AppStrings.floorReservations,
+          count: waiting,
+          alert: late > 0 ? '$late ${AppStrings.floorReservationsLateCount}' : null,
+          compact: !tablet,
+          onTap: () => openReservationsSurface(context, tablet: tablet),
+        ),
+        _FloorAction(
+          icon: Icons.shopping_bag_outlined,
+          label: AppStrings.floorTakeaway,
+          count: takeaway,
+          compact: !tablet,
+          onTap: () => openTakeawaySurface(context),
+        ),
+        _NewOrderButton(tablet: tablet),
+      ],
+    );
+
+    if (tablet) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 32, 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: TabletSectionHead(title: title, sub: sub)),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: actions,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(SatShape.caps(title),
+              style: SatType.display(
+                size: 30,
+                weight: FontWeight.w600,
+                letterSpacing: -0.6,
+                height: 1.05,
+                color: context.sat.textHi,
+              )),
+          const SizedBox(height: 4),
+          Text(
+            SatShape.caps(sub),
+            style: SatType.mono(
+              size: 11,
+              color: context.sat.textLo,
+              letterSpacing: 0.44,
+            ),
+          ),
+          const SizedBox(height: 12),
+          actions,
+        ],
+      ),
+    );
+  }
+}
+
+/// A counted trigger. The count is the reason the button exists; `alert` is the
+/// subset that needs someone now and takes the urgent fill.
+class _FloorAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int count;
+  final String? alert;
+  final bool compact;
+  final VoidCallback onTap;
+  const _FloorAction({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.compact,
+    required this.onTap,
+    this.alert,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final brutal = SatShape.brutal;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+            horizontal: compact ? 10 : 14, vertical: compact ? 9 : 11),
+        decoration: SatBox.d(
+          color: sc.bg2,
+          borderRadius: SatR.a(12),
+          border: SatB.all(color: alert != null ? sc.urgent : sc.border0),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: sc.textMd),
+            if (!compact) ...[
+              const SizedBox(width: 7),
+              Text(SatShape.caps(label),
+                  style: SatType.sans(
+                      size: 12,
+                      weight: brutal ? FontWeight.w700 : FontWeight.w500,
+                      color: sc.textHi)),
+            ],
+            const SizedBox(width: 7),
+            Text('$count',
+                style: SatType.mono(
+                    size: 12, weight: FontWeight.w600, color: sc.textMd)),
+            if (alert != null) ...[
+              const SizedBox(width: 7),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: sc.urgent,
+                  borderRadius: SatR.a(5),
+                  border: brutal
+                      ? Border.all(color: SatShape.ink, width: 2)
+                      : null,
+                ),
+                child: Text(SatShape.caps(alert!),
+                    style: SatType.sans(
+                      size: 9,
+                      weight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                      color: onFill(sc.urgent),
+                    )),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Rows of [cols] cards, each row as tall as its tallest card.
+///
+/// A `GridView` cannot do that — one `childAspectRatio` sizes every cell on the
+/// screen — and the card's height is now genuinely variable: pills and the
+/// stale banner both come and go. Chunked rows under `IntrinsicHeight` give the
+/// CSS-grid behaviour the design assumes. It costs the grid's laziness, which
+/// is affordable: one zone is a dozen or two cards, all of them already built.
+class _FloorGrid extends StatelessWidget {
+  final List<VenueTable> tables;
+  final String zoneId;
+  final int cols;
+  final double gap;
+  final bool tablet;
+  const _FloorGrid({
+    required this.tables,
+    required this.zoneId,
+    required this.cols,
+    required this.gap,
+    required this.tablet,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var start = 0; start < tables.length; start += cols) {
+      final slice = tables.sublist(
+          start, (start + cols).clamp(0, tables.length));
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < cols; i++) ...[
+                if (i > 0) SizedBox(width: gap),
+                Expanded(
+                  child: i < slice.length
+                      ? _CardFadeIn(
+                          key: ValueKey('$zoneId-${slice[i].id}'),
+                          index: start + i,
+                          child: TableCard(
+                            table: slice[i],
+                            tablet: tablet,
+                            onTap: () => context.push('/table/${slice[i].id}'),
+                            onLongPress: () => showGuestStepperSheet(
+                              context: context,
+                              tableId: slice[i].id,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+      if (start + cols < tables.length) rows.add(SizedBox(height: gap));
+    }
+    return Column(children: rows);
   }
 }
 
@@ -317,11 +403,10 @@ class _NewOrderButton extends ConsumerWidget {
         elevation: 0,
         padding: EdgeInsets.symmetric(
             horizontal: tablet ? 18 : 14, vertical: tablet ? 14 : 11),
-        shape:
-            RoundedRectangleBorder(borderRadius: SatR.a(14)),
+        shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
       ),
       icon: const Icon(Icons.add_rounded, size: 18),
-      label: Text('Pesanan baru',
+      label: Text(SatShape.caps('Pesanan baru'),
           style: SatType.sans(
               size: 13, weight: FontWeight.w600, color: sc.accentInk)),
     );
@@ -334,11 +419,18 @@ class _ZoneRow extends StatelessWidget {
   final String active;
   final ValueChanged<String> onChange;
   final bool tablet;
-  const _ZoneRow({required this.tables, required this.zones, required this.active, required this.onChange, required this.tablet});
+  const _ZoneRow({
+    required this.tables,
+    required this.zones,
+    required this.active,
+    required this.onChange,
+    required this.tablet,
+  });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final brutal = SatShape.brutal;
     final padH = tablet ? 32.0 : 16.0;
     final padV = tablet ? 12.0 : 10.0;
     return Padding(
@@ -352,10 +444,18 @@ class _ZoneRow extends StatelessWidget {
           itemBuilder: (_, i) {
             final z = zones[i];
             final isActive = active == z.id;
-            final zoneTables = tables.where((t) => t.zoneId == z.id).toList();
-            final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
-            final countLabel = ready > 0 ? '$ready siap' : '${zoneTables.length}';
-            final dur = _animationsDisabled(context) ? Duration.zero : _kChipMorph;
+            final zoneTables =
+                tables.where((t) => t.zoneId == z.id).toList();
+            final ready = zoneTables
+                .where((t) => t.status == TableStatus.ready)
+                .length;
+            final countLabel =
+                ready > 0 ? '$ready siap' : '${zoneTables.length}';
+            final dur = motionEnabled(context) ? _kChipMorph : Duration.zero;
+            // Brutal fills the selected chip with the accent and keeps ink on
+            // it; lembut inverts to the text ramp as before.
+            final fill = isActive ? (brutal ? sc.accent : sc.textHi) : sc.bg2;
+            final fg = isActive ? (brutal ? sc.accentInk : sc.bg0) : sc.textMd;
             return GestureDetector(
               onTap: () => onChange(z.id),
               child: AnimatedScale(
@@ -365,11 +465,13 @@ class _ZoneRow extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: dur,
                   curve: _kEase,
-                  padding: EdgeInsets.symmetric(horizontal: tablet ? 16 : 14, vertical: tablet ? 10 : 9),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: tablet ? 16 : 14, vertical: tablet ? 10 : 9),
                   decoration: SatBox.d(
-                    color: isActive ? sc.textHi : sc.bg2,
+                    color: fill,
                     borderRadius: SatR.a(999),
-                    border: SatB.all(color: isActive ? sc.textHi : sc.border0),
+                    border: SatB.all(
+                        color: isActive && !brutal ? sc.textHi : sc.border0),
                   ),
                   child: Row(
                     children: [
@@ -378,10 +480,11 @@ class _ZoneRow extends StatelessWidget {
                         curve: _kEase,
                         style: SatType.sans(
                           size: 13,
-                          weight: FontWeight.w500,
-                          color: isActive ? sc.bg0 : sc.textMd,
+                          weight:
+                              brutal ? FontWeight.w700 : FontWeight.w500,
+                          color: fg,
                         ),
-                        child: Text(z.name),
+                        child: Text(SatShape.caps(z.name)),
                       ),
                       const SizedBox(width: 10),
                       AnimatedDefaultTextStyle(
@@ -389,7 +492,9 @@ class _ZoneRow extends StatelessWidget {
                         curve: _kEase,
                         style: SatType.mono(
                           size: 11,
-                          color: isActive ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
+                          color: isActive
+                              ? fg.withValues(alpha: brutal ? 1 : 0.6)
+                              : sc.textLo,
                           letterSpacing: 0,
                         ),
                         child: Text(countLabel),
@@ -400,380 +505,6 @@ class _ZoneRow extends StatelessWidget {
               ),
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _TableCard extends ConsumerStatefulWidget {
-  final VenueTable table;
-  final VoidCallback onTap;
-  final VoidCallback? onLongPress;
-  final bool tablet;
-  const _TableCard({
-    required this.table,
-    required this.onTap,
-    required this.tablet,
-    this.onLongPress,
-  });
-
-  @override
-  ConsumerState<_TableCard> createState() => _TableCardState();
-}
-
-class _TableCardState extends ConsumerState<_TableCard>
-    with SingleTickerProviderStateMixin {
-  bool _pressed = false;
-  late final AnimationController _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    );
-    if (widget.table.status == TableStatus.ready) {
-      _pulse.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _TableCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final shouldPulse = widget.table.status == TableStatus.ready;
-    if (shouldPulse && !_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    } else if (!shouldPulse && _pulse.isAnimating) {
-      _pulse.stop();
-      _pulse.value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  String _statusLabel(VenueTable table) => switch (table.status) {
-        TableStatus.available => 'Kosong',
-        TableStatus.occupied => 'Terisi',
-        TableStatus.pending => 'Pesanan masuk',
-        TableStatus.ready => 'Siap ×${table.readyCount > 0 ? table.readyCount : 1}',
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final table = widget.table;
-    final tablet = widget.tablet;
-    final sc = context.sat;
-    final isReady = table.status == TableStatus.ready;
-    final isOccupied = table.status == TableStatus.occupied;
-    final isPending = table.status == TableStatus.pending;
-
-    Color bg = sc.bg2;
-    Color border = sc.border0;
-    Color statusDot = sc.textDim;
-    Color statusColor = sc.textMd;
-    Color numColor = sc.textHi;
-
-    if (isOccupied) {
-      bg = sc.bg3;
-      statusDot = sc.info;
-      statusColor = sc.info;
-    } else if (isPending) {
-      bg = sc.bg3;
-      border = sc.warnSoft;
-      statusDot = sc.warn;
-      statusColor = sc.warn;
-    } else if (isReady) {
-      bg = sc.successSoft;
-      border = sc.success.withValues(alpha: 0.5);
-      statusDot = sc.success;
-      statusColor = sc.success;
-      numColor = sc.success;
-    }
-
-    final currentUserId = ref.watch(authStateProvider).user?.id;
-    final staff = ref.watch(staffRepositoryProvider);
-    final actor = table.lastActorId == null
-        ? null
-        : staff.where((u) => u.id == table.lastActorId).firstOrNull;
-    final isMine = actor != null && actor.id == currentUserId;
-    if (isMine) {
-      border = sc.accentBorder;
-    }
-
-    final tnumSize = tablet ? 36.0 : 26.0;
-    final radius = tablet ? 20.0 : 22.0;
-    final padding = tablet ? const EdgeInsets.fromLTRB(18, 18, 18, 16) : const EdgeInsets.fromLTRB(14, 16, 14, 14);
-    final avatarSize = tablet ? 24.0 : 20.0;
-
-    final reduced = _animationsDisabled(context);
-    final xfade = reduced ? Duration.zero : _kStatusXfade;
-    final pressDur = reduced ? Duration.zero : _kPressIn;
-
-    final card = AnimatedScale(
-      scale: _pressed ? 0.97 : 1.0,
-      duration: pressDur,
-      curve: _kEase,
-      child: AnimatedContainer(
-        duration: xfade,
-        curve: _kEase,
-        decoration: SatBox.d(
-          color: bg,
-          borderRadius: SatR.a(radius),
-          border: SatB.all(color: border),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: SatR.a(radius),
-          child: InkWell(
-            onTap: widget.onTap,
-            onLongPress: widget.onLongPress,
-            onTapDown: (_) {
-              if (!reduced) setState(() => _pressed = true);
-            },
-            onTapCancel: () {
-              if (_pressed) setState(() => _pressed = false);
-            },
-            onTapUp: (_) {
-              if (_pressed) setState(() => _pressed = false);
-            },
-            borderRadius: SatR.a(radius),
-            child: Padding(
-              padding: padding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedDefaultTextStyle(
-                            duration: xfade,
-                            curve: _kEase,
-                            style: SatType.mono(
-                              size: tnumSize,
-                              weight: FontWeight.w500,
-                              letterSpacing: -tnumSize * 0.02,
-                              color: numColor,
-                            ),
-                            child: Text(
-                              table.displayName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(Icons.person_outline,
-                          size: tablet ? 16 : 13, color: sc.textMd),
-                      const SizedBox(width: 3),
-                      Text('${table.pax}/${table.capacity}',
-                          style: SatType.mono(
-                            size: tablet ? 13 : 11,
-                            color: sc.textMd,
-                            letterSpacing: 0.44,
-                          )),
-                    ],
-                  ),
-                  if (table.billClosed || table.moneyState == 'paid')
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: _MoneyPill(
-                          label: 'Lunas', color: sc.success, icon: true),
-                    )
-                  else if (table.moneyState == 'partial')
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _MoneyPill(label: 'Sebagian', color: sc.warn),
-                          const SizedBox(width: 6),
-                          Text(formatIDR(table.openAmount),
-                              style: SatType.mono(
-                                size: 12,
-                                weight: FontWeight.w600,
-                                color: sc.warn,
-                                letterSpacing: 0.24,
-                              )),
-                        ],
-                      ),
-                    )
-                  else if (table.openAmount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(formatIDR(table.openAmount),
-                          style: SatType.mono(
-                            size: 12,
-                            weight: FontWeight.w500,
-                            color: sc.textMd,
-                            letterSpacing: 0.24,
-                          )),
-                    ),
-                  // Silent floor states (ADR-0044) — never a sound, just a
-                  // standing marker the waiter can scan for.
-                  Builder(builder: (ctx) {
-                    ref.watch(_tableElapsedTickerProvider);
-                    final s = ref.watch(venueSettingsProvider);
-                    final visitId = table.currentVisitId;
-                    final lines = visitId == null
-                        ? const <Ticket>[]
-                        : (ref.watch(ticketsProvider)[visitId] ??
-                            const <Ticket>[]);
-                    final state = _serviceStateFor(
-                        table, lines, s, DateTime.now());
-                    return switch (state) {
-                      _ServiceState.none => const SizedBox.shrink(),
-                      _ServiceState.ungreeted => Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: _MoneyPill(
-                              label: AppStrings.tableStateUngreeted,
-                              color: sc.urgent),
-                        ),
-                      _ServiceState.idle => Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: _MoneyPill(
-                              label: AppStrings.tableStateIdle,
-                              color: sc.info),
-                        ),
-                    };
-                  }),
-                  const Spacer(),
-                  if (table.openedAt != null)
-                    Padding(
-                      padding: EdgeInsets.only(bottom: tablet ? 4 : 3, left: 18),
-                      child: Builder(builder: (ctx) {
-                        ref.watch(_tableElapsedTickerProvider);
-                        final elapsed = DateTime.now().difference(table.openedAt!);
-                        final timing = ref.watch(venueSettingsProvider);
-                        return Text(
-                          formatElapsedId(elapsed),
-                          style: SatType.mono(
-                            size: tablet ? 12 : 11,
-                            color: _elapsedHeatColor(
-                                elapsed, sc, timing.longStayMins),
-                            letterSpacing: 0.44,
-                          ),
-                        );
-                      }),
-                    ),
-                  Row(
-                    children: [
-                      AnimatedContainer(
-                        duration: xfade,
-                        curve: _kEase,
-                        width: 10,
-                        height: 10,
-                        decoration: SatBox.d(
-                          shape: BoxShape.circle,
-                          color: statusDot,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: AnimatedDefaultTextStyle(
-                          duration: xfade,
-                          curve: _kEase,
-                          style: SatType.sans(
-                            size: tablet ? 13 : 12,
-                            weight: isReady ? FontWeight.w600 : FontWeight.w500,
-                            letterSpacing: -0.12,
-                            height: isPending ? 1.15 : 1.0,
-                            color: statusColor,
-                          ),
-                          child: Text(
-                            _statusLabel(table),
-                            maxLines: isPending ? 2 : 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                      if (actor != null) ...[
-                        const SizedBox(width: 8),
-                        _ActorAvatar(actor: actor, size: avatarSize, mine: isMine),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    if (!isReady || reduced) return card;
-
-    // Ready: soft pulsing glow halo. Communicates "pick me up".
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (_, child) {
-        final t = Curves.easeInOut.transform(_pulse.value);
-        return DecoratedBox(
-          decoration: SatBox.d(
-            borderRadius: SatR.a(radius),
-            boxShadow: [
-              BoxShadow(
-                color: sc.success.withValues(alpha: 0.10 + 0.22 * t),
-                blurRadius: 10 + 10 * t,
-                spreadRadius: 0.5 + 1.5 * t,
-              ),
-            ],
-          ),
-          child: child,
-        );
-      },
-      child: card,
-    );
-  }
-}
-
-class _ActorAvatar extends StatelessWidget {
-  final AppUser actor;
-  final double size;
-  final bool mine;
-  const _ActorAvatar({required this.actor, required this.size, required this.mine});
-
-  static const _fallback = 0xFFFF9233;
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final base = Color(actor.avatarColorHex ?? _fallback);
-    final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.36), base);
-    final grad = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [base, dark],
-    );
-    return Container(
-      width: size,
-      height: size,
-      decoration: SatBox.d(
-        gradient: grad,
-        shape: BoxShape.circle,
-        border: SatB.all(
-          color: mine ? sc.accent : Colors.transparent,
-          width: mine ? 2 : 0,
-        ),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        actor.initials,
-        style: SatType.mono(
-          size: size * 0.42,
-          weight: FontWeight.w700,
-          color: Colors.white,
-          letterSpacing: 0.2,
         ),
       ),
     );
@@ -807,7 +538,7 @@ class _CardFadeInState extends State<_CardFadeIn>
     super.didChangeDependencies();
     if (_scheduled) return;
     _scheduled = true;
-    if (_animationsDisabled(context)) {
+    if (!motionEnabled(context)) {
       _c.value = 1;
       return;
     }
@@ -875,7 +606,7 @@ class _EmptyZoneState extends State<_EmptyZone>
     final tablet = widget.tablet;
     final sc = context.sat;
     final pad = tablet ? 48.0 : 24.0;
-    final reduced = _animationsDisabled(context);
+    final reduced = !motionEnabled(context);
     final iconBubble = Container(
       width: tablet ? 72 : 56,
       height: tablet ? 72 : 56,
@@ -885,7 +616,8 @@ class _EmptyZoneState extends State<_EmptyZone>
         border: SatB.all(color: sc.border0),
       ),
       alignment: Alignment.center,
-      child: Icon(Icons.grid_view_rounded, size: tablet ? 32 : 26, color: sc.textLo),
+      child: Icon(Icons.grid_view_rounded,
+          size: tablet ? 32 : 26, color: sc.textLo),
     );
     return Padding(
       padding: EdgeInsets.all(pad),
@@ -934,35 +666,3 @@ class _EmptyZoneState extends State<_EmptyZone>
     );
   }
 }
-
-/// Floor money badge pill — Lunas (paid) / Sebagian (partial). See ADR-0024.
-class _MoneyPill extends StatelessWidget {
-  final String label;
-  final Color color;
-  final bool icon;
-  const _MoneyPill({required this.label, required this.color, this.icon = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: SatBox.d(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: SatR.a(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon) ...[
-            Icon(Icons.check_circle, size: 12, color: color),
-            const SizedBox(width: 4),
-          ],
-          Text(label,
-              style: SatType.sans(
-                  size: 10.5, weight: FontWeight.w700, color: color)),
-        ],
-      ),
-    );
-  }
-}
-

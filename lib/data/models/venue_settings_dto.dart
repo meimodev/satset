@@ -42,6 +42,9 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(90) int longStayMins,
     @Default(20) int idleTableMins,
     @Default(15) int reservationGraceMins,
+    /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
+    /// unreviewed before the floor card goes critical. Visual only, never a cue.
+    @Default(6) int pendingReviewMins,
     @Default(true) bool ungreetedAlertEnabled,
     @Default(true) bool pickupAlertEnabled,
     @Default(false) bool guestOrderingEnabled,

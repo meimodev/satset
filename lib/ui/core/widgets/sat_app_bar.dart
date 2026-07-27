@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/data/services/ws_client.dart';
@@ -23,6 +22,7 @@ class SatAppBar extends ConsumerWidget {
   final List<String> crumbs;
   final List<Widget> trailingPills;
   final bool showAvatar;
+  final Color? backgroundColor;
 
   const SatAppBar({
     super.key,
@@ -31,6 +31,7 @@ class SatAppBar extends ConsumerWidget {
     this.crumbs = const [],
     this.trailingPills = const [],
     this.showAvatar = true,
+    this.backgroundColor,
   });
 
   @override
@@ -39,39 +40,44 @@ class SatAppBar extends ConsumerWidget {
     return l.useTabletShell ? _tablet(context) : _phone(context);
   }
 
+  Color _resolveBg(SatColors sc) {
+    if (backgroundColor != null) return backgroundColor!;
+    if (SatShape.brutal) {
+      return SatShape.brutalPaper ? sc.accent : sc.bg1;
+    }
+    return sc.bg0;
+  }
+
   Widget _phone(BuildContext context) {
     final sc = context.sat;
     final l = context.layout;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, l.topInset, 16, 10),
+    final bg = _resolveBg(sc);
+
+    return Container(
+      decoration: SatBox.d(
+        color: bg,
+        border: Border(
+          bottom: SatB.side(
+            color: SatShape.brutal ? SatShape.ink : sc.border0,
+            width: SatShape.brutal ? SatShape.brutalBorder : 1,
+          ),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(16, l.topInset + 6, 16, 10),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (onBack != null) ...[
-            SatBackButton(onTap: onBack!),
-            const SizedBox(width: 10),
-          ],
-          const LoginClock(),
-          if (title != null) ...[
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                SatShape.caps(title!),
-                overflow: TextOverflow.ellipsis,
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
-            ),
-          ],
-          const Spacer(),
-          for (final p in trailingPills) ...[p, const SizedBox(width: 8)],
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onBack != null) ...[
+                SatBackButton(onTap: onBack!),
+                const SizedBox(width: 10),
+              ],
+              const LoginClock(),
+            ],
+          ),
           const _NetworkPill(),
-          if (showAvatar) ...[
-            const SizedBox(width: 10),
-            const _AvatarBtn(size: 32),
-          ],
         ],
       ),
     );
@@ -79,53 +85,34 @@ class SatAppBar extends ConsumerWidget {
 
   Widget _tablet(BuildContext context) {
     final sc = context.sat;
+    final bg = _resolveBg(sc);
+
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: SatBox.d(
-        border: Border(bottom: SatB.side(color: sc.border0)),
+        color: bg,
+        border: Border(
+          bottom: SatB.side(
+            color: SatShape.brutal ? SatShape.ink : sc.border0,
+            width: SatShape.brutal ? SatShape.brutalBorder : 1,
+          ),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                if (onBack != null) ...[
-                  SatBackButton(onTap: onBack!),
-                  const SizedBox(width: 10),
-                ],
-                const LoginClock(),
-                const SizedBox(width: 14),
-                if (crumbs.isNotEmpty)
-                  Flexible(child: _Crumbs(items: crumbs))
-                else if (title != null)
-                  Flexible(
-                    child: Text(
-                      SatShape.caps(title!),
-                      overflow: TextOverflow.ellipsis,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (final p in trailingPills) ...[p, const SizedBox(width: 8)],
-              const _NetworkPill(),
-              if (showAvatar) ...[
+              if (onBack != null) ...[
+                SatBackButton(onTap: onBack!),
                 const SizedBox(width: 10),
-                const _AvatarBtn(size: 36),
               ],
+              const LoginClock(),
             ],
           ),
+          const _NetworkPill(),
         ],
       ),
     );
@@ -149,20 +136,22 @@ class _NetworkPill extends ConsumerWidget {
       WsConnState.connecting => (sc.warn, sc.warnSoft, 'MENGHUBUNGKAN…'),
       _ => (sc.urgent, sc.urgentSoft, 'OFFLINE'),
     };
+    final fg = SatShape.brutal && SatShape.brutalPaper ? SatShape.ink : sc.textHi;
+
     return Container(
-      height: 26,
+      height: 30,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border1),
+        color: SatShape.brutal ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2) : sc.bg2,
+        border: SatB.all(color: SatShape.brutal ? SatShape.ink : sc.border1),
         borderRadius: SatR.a(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 7,
+            height: 7,
             decoration: SatBox.d(
               color: dotColor,
               shape: BoxShape.circle,
@@ -175,10 +164,10 @@ class _NetworkPill extends ConsumerWidget {
           Text(
             label,
             style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w500,
+              size: 11,
+              weight: FontWeight.w700,
               letterSpacing: 0.6,
-              color: sc.textMd,
+              color: fg,
             ),
           ),
         ],
@@ -187,85 +176,7 @@ class _NetworkPill extends ConsumerWidget {
   }
 }
 
-class _AvatarBtn extends ConsumerWidget {
-  final double size;
-  const _AvatarBtn({required this.size});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider).user;
-    final initials = (user?.initials.isNotEmpty ?? false)
-        ? user!.initials
-        : '—';
-    final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
-    final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base);
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () => context.go('/me'),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: SatBox.d(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [base, dark],
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            initials,
-            style: SatType.sans(
-              size: size <= 32 ? 12 : 14,
-              weight: FontWeight.w600,
-              letterSpacing: 0.24,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Crumbs extends StatelessWidget {
-  final List<String> items;
-  const _Crumbs({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final children = <Widget>[];
-    for (var i = 0; i < items.length; i++) {
-      if (i > 0) {
-        children.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('›', style: SatType.mono(size: 12, color: sc.textDim)),
-          ),
-        );
-      }
-      children.add(
-        Text(
-          SatShape.caps(items[i]),
-          overflow: TextOverflow.ellipsis,
-          style: SatType.mono(
-            size: 12,
-            weight: i == items.length - 1 ? FontWeight.w500 : FontWeight.w400,
-            letterSpacing: 0.48,
-            color: i == items.length - 1 ? sc.textHi : sc.textMd,
-          ),
-        ),
-      );
-    }
-    return Row(mainAxisSize: MainAxisSize.min, children: children);
-  }
-}
 
 /// Compact pill shown as a trailing slot in [SatAppBar]. Used for things like
 /// "T+0:45" on the table detail screen.

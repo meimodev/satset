@@ -50,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   /// At most one whole-order discount per receipt, and one line discount per
   /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
@@ -501,6 +501,13 @@ class AppDatabase extends _$AppDatabase {
                 type: "TEXT NOT NULL DEFAULT 'chime'");
             await _safeAddColumnOn('venue_settings', 'sound_pickup',
                 type: "TEXT NOT NULL DEFAULT 'chime'");
+          }
+          if (from < 38) {
+            // Floor staleness (ADR-0048). Every other threshold the stale
+            // banner reads already existed; only the unreviewed guest order
+            // had none.
+            await _safeAddColumnOn('venue_settings', 'pending_review_mins',
+                type: 'INTEGER NOT NULL DEFAULT 6');
           }
         },
         onCreate: (m) async {

@@ -370,6 +370,11 @@ class VenueSettings extends Table {
   IntColumn get reservationGraceMins =>
       integer().withDefault(const Constant(15))();
 
+  /// "Belum ditinjau" — a guest-sent order (ADR-0028) waiting on a waiter to
+  /// review it. Drives the critical stale banner on the floor card. Visual
+  /// only, never audible: the arrival itself already cued once.
+  IntColumn get pendingReviewMins => integer().withDefault(const Constant(6))();
+
   /// Venue-wide off switches for the two **audible** table cues. Distinct from
   /// the per-device mute (device-local) and from the threshold value — a
   /// disabled cue is not a mistyped one. See ADR-0044.

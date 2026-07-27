@@ -19,7 +19,8 @@ void safePop(BuildContext context, {String fallback = '/tables'}) {
 }
 
 class LoginClock extends ConsumerStatefulWidget {
-  const LoginClock({super.key});
+  final Color? textColor;
+  const LoginClock({super.key, this.textColor});
 
   @override
   ConsumerState<LoginClock> createState() => _LoginClockState();
@@ -51,19 +52,77 @@ class _LoginClockState extends ConsumerState<LoginClock> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final startedRaw = ref.watch(authStateProvider.select((s) => s.user?.shiftStartedAt));
+    final fg = widget.textColor ??
+        (SatShape.brutal && SatShape.brutalPaper ? SatShape.ink : sc.textHi);
+    final startedRaw =
+        ref.watch(authStateProvider.select((s) => s.user?.shiftStartedAt));
     final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
-    final label = started == null
-        ? _clock(_now)
-        : '${_clock(_now)} · ${formatElapsedId(_now.difference(started))}';
-    return Text(
-      label,
-      style: SatType.mono(
-        size: 11,
-        weight: FontWeight.w500,
-        letterSpacing: 0.44,
-        color: sc.textMd,
-      ),
+    final currentTime = _clock(_now);
+    final elapsed = started == null
+        ? '00:00:00'
+        : formatElapsedId(_now.difference(started));
+
+    final badgeBg = SatShape.brutal
+        ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2)
+        : sc.bg2;
+    final badgeBorder =
+        SatB.all(color: SatShape.brutal ? SatShape.ink : sc.border1);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Current Time Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: SatBox.d(
+            color: badgeBg,
+            border: badgeBorder,
+            borderRadius: SatR.a(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.access_time_filled_rounded, size: 13, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                currentTime,
+                style: SatType.mono(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Elapsed Time Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: SatBox.d(
+            color: badgeBg,
+            border: badgeBorder,
+            borderRadius: SatR.a(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.timer_outlined, size: 13, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                elapsed,
+                style: SatType.mono(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -76,18 +135,19 @@ class SatBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final fg = SatShape.brutal && SatShape.brutalPaper ? SatShape.ink : sc.textHi;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 38,
         height: 38,
         decoration: SatBox.d(
-          color: sc.bg2,
+          color: SatShape.brutal ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2) : sc.bg2,
           borderRadius: SatR.a(12),
-          border: SatB.all(color: sc.border0),
+          border: SatB.all(color: SatShape.brutal ? SatShape.ink : sc.border0),
         ),
         alignment: Alignment.center,
-        child: Icon(icon, size: 20, color: sc.textMd),
+        child: Icon(icon, size: 20, color: fg),
       ),
     );
   }

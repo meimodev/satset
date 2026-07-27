@@ -86,6 +86,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     int? longStayMins,
     int? idleTableMins,
     int? reservationGraceMins,
+    int? pendingReviewMins,
     bool? ungreetedAlertEnabled,
     bool? pickupAlertEnabled,
     bool? guestOrderingEnabled,
@@ -127,6 +128,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       idleTableMins: idleTableMins ?? state.idleTableMins,
       reservationGraceMins:
           reservationGraceMins ?? state.reservationGraceMins,
+      pendingReviewMins: pendingReviewMins ?? state.pendingReviewMins,
       ungreetedAlertEnabled:
           ungreetedAlertEnabled ?? state.ungreetedAlertEnabled,
       pickupAlertEnabled: pickupAlertEnabled ?? state.pickupAlertEnabled,
@@ -169,6 +171,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'longStayMins': ?longStayMins,
         'idleTableMins': ?idleTableMins,
         'reservationGraceMins': ?reservationGraceMins,
+        'pendingReviewMins': ?pendingReviewMins,
         'ungreetedAlertEnabled': ?ungreetedAlertEnabled,
         'pickupAlertEnabled': ?pickupAlertEnabled,
         'guestOrderingEnabled': ?guestOrderingEnabled,

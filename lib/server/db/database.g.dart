@@ -8512,6 +8512,18 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(15),
   );
+  static const VerificationMeta _pendingReviewMinsMeta = const VerificationMeta(
+    'pendingReviewMins',
+  );
+  @override
+  late final GeneratedColumn<int> pendingReviewMins = GeneratedColumn<int>(
+    'pending_review_mins',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(6),
+  );
   static const VerificationMeta _ungreetedAlertEnabledMeta =
       const VerificationMeta('ungreetedAlertEnabled');
   @override
@@ -8658,6 +8670,7 @@ class $VenueSettingsTable extends VenueSettings
     longStayMins,
     idleTableMins,
     reservationGraceMins,
+    pendingReviewMins,
     ungreetedAlertEnabled,
     pickupAlertEnabled,
     guestOrderingEnabled,
@@ -8919,6 +8932,15 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('pending_review_mins')) {
+      context.handle(
+        _pendingReviewMinsMeta,
+        pendingReviewMins.isAcceptableOrUnknown(
+          data['pending_review_mins']!,
+          _pendingReviewMinsMeta,
+        ),
+      );
+    }
     if (data.containsKey('ungreeted_alert_enabled')) {
       context.handle(
         _ungreetedAlertEnabledMeta,
@@ -9119,6 +9141,10 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.int,
         data['${effectivePrefix}reservation_grace_mins'],
       )!,
+      pendingReviewMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_review_mins'],
+      )!,
       ungreetedAlertEnabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}ungreeted_alert_enabled'],
@@ -9240,6 +9266,11 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// renders late. Display state only: never auto-flips status to `noShow`.
   final int reservationGraceMins;
 
+  /// "Belum ditinjau" — a guest-sent order (ADR-0028) waiting on a waiter to
+  /// review it. Drives the critical stale banner on the floor card. Visual
+  /// only, never audible: the arrival itself already cued once.
+  final int pendingReviewMins;
+
   /// Venue-wide off switches for the two **audible** table cues. Distinct from
   /// the per-device mute (device-local) and from the threshold value — a
   /// disabled cue is not a mistyped one. See ADR-0044.
@@ -9293,6 +9324,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.longStayMins,
     required this.idleTableMins,
     required this.reservationGraceMins,
+    required this.pendingReviewMins,
     required this.ungreetedAlertEnabled,
     required this.pickupAlertEnabled,
     required this.guestOrderingEnabled,
@@ -9337,6 +9369,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['long_stay_mins'] = Variable<int>(longStayMins);
     map['idle_table_mins'] = Variable<int>(idleTableMins);
     map['reservation_grace_mins'] = Variable<int>(reservationGraceMins);
+    map['pending_review_mins'] = Variable<int>(pendingReviewMins);
     map['ungreeted_alert_enabled'] = Variable<bool>(ungreetedAlertEnabled);
     map['pickup_alert_enabled'] = Variable<bool>(pickupAlertEnabled);
     map['guest_ordering_enabled'] = Variable<bool>(guestOrderingEnabled);
@@ -9380,6 +9413,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       longStayMins: Value(longStayMins),
       idleTableMins: Value(idleTableMins),
       reservationGraceMins: Value(reservationGraceMins),
+      pendingReviewMins: Value(pendingReviewMins),
       ungreetedAlertEnabled: Value(ungreetedAlertEnabled),
       pickupAlertEnabled: Value(pickupAlertEnabled),
       guestOrderingEnabled: Value(guestOrderingEnabled),
@@ -9433,6 +9467,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       reservationGraceMins: serializer.fromJson<int>(
         json['reservationGraceMins'],
       ),
+      pendingReviewMins: serializer.fromJson<int>(json['pendingReviewMins']),
       ungreetedAlertEnabled: serializer.fromJson<bool>(
         json['ungreetedAlertEnabled'],
       ),
@@ -9481,6 +9516,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'longStayMins': serializer.toJson<int>(longStayMins),
       'idleTableMins': serializer.toJson<int>(idleTableMins),
       'reservationGraceMins': serializer.toJson<int>(reservationGraceMins),
+      'pendingReviewMins': serializer.toJson<int>(pendingReviewMins),
       'ungreetedAlertEnabled': serializer.toJson<bool>(ungreetedAlertEnabled),
       'pickupAlertEnabled': serializer.toJson<bool>(pickupAlertEnabled),
       'guestOrderingEnabled': serializer.toJson<bool>(guestOrderingEnabled),
@@ -9523,6 +9559,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     int? longStayMins,
     int? idleTableMins,
     int? reservationGraceMins,
+    int? pendingReviewMins,
     bool? ungreetedAlertEnabled,
     bool? pickupAlertEnabled,
     bool? guestOrderingEnabled,
@@ -9562,6 +9599,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     longStayMins: longStayMins ?? this.longStayMins,
     idleTableMins: idleTableMins ?? this.idleTableMins,
     reservationGraceMins: reservationGraceMins ?? this.reservationGraceMins,
+    pendingReviewMins: pendingReviewMins ?? this.pendingReviewMins,
     ungreetedAlertEnabled: ungreetedAlertEnabled ?? this.ungreetedAlertEnabled,
     pickupAlertEnabled: pickupAlertEnabled ?? this.pickupAlertEnabled,
     guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
@@ -9649,6 +9687,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       reservationGraceMins: data.reservationGraceMins.present
           ? data.reservationGraceMins.value
           : this.reservationGraceMins,
+      pendingReviewMins: data.pendingReviewMins.present
+          ? data.pendingReviewMins.value
+          : this.pendingReviewMins,
       ungreetedAlertEnabled: data.ungreetedAlertEnabled.present
           ? data.ungreetedAlertEnabled.value
           : this.ungreetedAlertEnabled,
@@ -9709,6 +9750,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('longStayMins: $longStayMins, ')
           ..write('idleTableMins: $idleTableMins, ')
           ..write('reservationGraceMins: $reservationGraceMins, ')
+          ..write('pendingReviewMins: $pendingReviewMins, ')
           ..write('ungreetedAlertEnabled: $ungreetedAlertEnabled, ')
           ..write('pickupAlertEnabled: $pickupAlertEnabled, ')
           ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
@@ -9753,6 +9795,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     longStayMins,
     idleTableMins,
     reservationGraceMins,
+    pendingReviewMins,
     ungreetedAlertEnabled,
     pickupAlertEnabled,
     guestOrderingEnabled,
@@ -9796,6 +9839,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.longStayMins == this.longStayMins &&
           other.idleTableMins == this.idleTableMins &&
           other.reservationGraceMins == this.reservationGraceMins &&
+          other.pendingReviewMins == this.pendingReviewMins &&
           other.ungreetedAlertEnabled == this.ungreetedAlertEnabled &&
           other.pickupAlertEnabled == this.pickupAlertEnabled &&
           other.guestOrderingEnabled == this.guestOrderingEnabled &&
@@ -9837,6 +9881,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<int> longStayMins;
   final Value<int> idleTableMins;
   final Value<int> reservationGraceMins;
+  final Value<int> pendingReviewMins;
   final Value<bool> ungreetedAlertEnabled;
   final Value<bool> pickupAlertEnabled;
   final Value<bool> guestOrderingEnabled;
@@ -9877,6 +9922,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.longStayMins = const Value.absent(),
     this.idleTableMins = const Value.absent(),
     this.reservationGraceMins = const Value.absent(),
+    this.pendingReviewMins = const Value.absent(),
     this.ungreetedAlertEnabled = const Value.absent(),
     this.pickupAlertEnabled = const Value.absent(),
     this.guestOrderingEnabled = const Value.absent(),
@@ -9918,6 +9964,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.longStayMins = const Value.absent(),
     this.idleTableMins = const Value.absent(),
     this.reservationGraceMins = const Value.absent(),
+    this.pendingReviewMins = const Value.absent(),
     this.ungreetedAlertEnabled = const Value.absent(),
     this.pickupAlertEnabled = const Value.absent(),
     this.guestOrderingEnabled = const Value.absent(),
@@ -9959,6 +10006,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<int>? longStayMins,
     Expression<int>? idleTableMins,
     Expression<int>? reservationGraceMins,
+    Expression<int>? pendingReviewMins,
     Expression<bool>? ungreetedAlertEnabled,
     Expression<bool>? pickupAlertEnabled,
     Expression<bool>? guestOrderingEnabled,
@@ -10004,6 +10052,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (idleTableMins != null) 'idle_table_mins': idleTableMins,
       if (reservationGraceMins != null)
         'reservation_grace_mins': reservationGraceMins,
+      if (pendingReviewMins != null) 'pending_review_mins': pendingReviewMins,
       if (ungreetedAlertEnabled != null)
         'ungreeted_alert_enabled': ungreetedAlertEnabled,
       if (pickupAlertEnabled != null)
@@ -10050,6 +10099,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<int>? longStayMins,
     Value<int>? idleTableMins,
     Value<int>? reservationGraceMins,
+    Value<int>? pendingReviewMins,
     Value<bool>? ungreetedAlertEnabled,
     Value<bool>? pickupAlertEnabled,
     Value<bool>? guestOrderingEnabled,
@@ -10092,6 +10142,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       longStayMins: longStayMins ?? this.longStayMins,
       idleTableMins: idleTableMins ?? this.idleTableMins,
       reservationGraceMins: reservationGraceMins ?? this.reservationGraceMins,
+      pendingReviewMins: pendingReviewMins ?? this.pendingReviewMins,
       ungreetedAlertEnabled:
           ungreetedAlertEnabled ?? this.ungreetedAlertEnabled,
       pickupAlertEnabled: pickupAlertEnabled ?? this.pickupAlertEnabled,
@@ -10200,6 +10251,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (reservationGraceMins.present) {
       map['reservation_grace_mins'] = Variable<int>(reservationGraceMins.value);
     }
+    if (pendingReviewMins.present) {
+      map['pending_review_mins'] = Variable<int>(pendingReviewMins.value);
+    }
     if (ungreetedAlertEnabled.present) {
       map['ungreeted_alert_enabled'] = Variable<bool>(
         ungreetedAlertEnabled.value,
@@ -10269,6 +10323,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('longStayMins: $longStayMins, ')
           ..write('idleTableMins: $idleTableMins, ')
           ..write('reservationGraceMins: $reservationGraceMins, ')
+          ..write('pendingReviewMins: $pendingReviewMins, ')
           ..write('ungreetedAlertEnabled: $ungreetedAlertEnabled, ')
           ..write('pickupAlertEnabled: $pickupAlertEnabled, ')
           ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
@@ -24800,6 +24855,7 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<int> longStayMins,
       Value<int> idleTableMins,
       Value<int> reservationGraceMins,
+      Value<int> pendingReviewMins,
       Value<bool> ungreetedAlertEnabled,
       Value<bool> pickupAlertEnabled,
       Value<bool> guestOrderingEnabled,
@@ -24842,6 +24898,7 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<int> longStayMins,
       Value<int> idleTableMins,
       Value<int> reservationGraceMins,
+      Value<int> pendingReviewMins,
       Value<bool> ungreetedAlertEnabled,
       Value<bool> pickupAlertEnabled,
       Value<bool> guestOrderingEnabled,
@@ -25005,6 +25062,11 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<int> get reservationGraceMins => $composableBuilder(
     column: $table.reservationGraceMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pendingReviewMins => $composableBuilder(
+    column: $table.pendingReviewMins,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25208,6 +25270,11 @@ class $$VenueSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pendingReviewMins => $composableBuilder(
+    column: $table.pendingReviewMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get ungreetedAlertEnabled => $composableBuilder(
     column: $table.ungreetedAlertEnabled,
     builder: (column) => ColumnOrderings(column),
@@ -25396,6 +25463,11 @@ class $$VenueSettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get pendingReviewMins => $composableBuilder(
+    column: $table.pendingReviewMins,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get ungreetedAlertEnabled => $composableBuilder(
     column: $table.ungreetedAlertEnabled,
     builder: (column) => column,
@@ -25500,6 +25572,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> longStayMins = const Value.absent(),
                 Value<int> idleTableMins = const Value.absent(),
                 Value<int> reservationGraceMins = const Value.absent(),
+                Value<int> pendingReviewMins = const Value.absent(),
                 Value<bool> ungreetedAlertEnabled = const Value.absent(),
                 Value<bool> pickupAlertEnabled = const Value.absent(),
                 Value<bool> guestOrderingEnabled = const Value.absent(),
@@ -25540,6 +25613,7 @@ class $$VenueSettingsTableTableManager
                 longStayMins: longStayMins,
                 idleTableMins: idleTableMins,
                 reservationGraceMins: reservationGraceMins,
+                pendingReviewMins: pendingReviewMins,
                 ungreetedAlertEnabled: ungreetedAlertEnabled,
                 pickupAlertEnabled: pickupAlertEnabled,
                 guestOrderingEnabled: guestOrderingEnabled,
@@ -25582,6 +25656,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> longStayMins = const Value.absent(),
                 Value<int> idleTableMins = const Value.absent(),
                 Value<int> reservationGraceMins = const Value.absent(),
+                Value<int> pendingReviewMins = const Value.absent(),
                 Value<bool> ungreetedAlertEnabled = const Value.absent(),
                 Value<bool> pickupAlertEnabled = const Value.absent(),
                 Value<bool> guestOrderingEnabled = const Value.absent(),
@@ -25622,6 +25697,7 @@ class $$VenueSettingsTableTableManager
                 longStayMins: longStayMins,
                 idleTableMins: idleTableMins,
                 reservationGraceMins: reservationGraceMins,
+                pendingReviewMins: pendingReviewMins,
                 ungreetedAlertEnabled: ungreetedAlertEnabled,
                 pickupAlertEnabled: pickupAlertEnabled,
                 guestOrderingEnabled: guestOrderingEnabled,

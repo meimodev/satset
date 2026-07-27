@@ -57,6 +57,10 @@ mixin _$VenueSettingsDto {
   int get longStayMins => throw _privateConstructorUsedError;
   int get idleTableMins => throw _privateConstructorUsedError;
   int get reservationGraceMins => throw _privateConstructorUsedError;
+
+  /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
+  /// unreviewed before the floor card goes critical. Visual only, never a cue.
+  int get pendingReviewMins => throw _privateConstructorUsedError;
   bool get ungreetedAlertEnabled => throw _privateConstructorUsedError;
   bool get pickupAlertEnabled => throw _privateConstructorUsedError;
   bool get guestOrderingEnabled =>
@@ -116,6 +120,7 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     int longStayMins,
     int idleTableMins,
     int reservationGraceMins,
+    int pendingReviewMins,
     bool ungreetedAlertEnabled,
     bool pickupAlertEnabled,
     bool guestOrderingEnabled,
@@ -171,6 +176,7 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? longStayMins = null,
     Object? idleTableMins = null,
     Object? reservationGraceMins = null,
+    Object? pendingReviewMins = null,
     Object? ungreetedAlertEnabled = null,
     Object? pickupAlertEnabled = null,
     Object? guestOrderingEnabled = null,
@@ -295,6 +301,10 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.reservationGraceMins
                 : reservationGraceMins // ignore: cast_nullable_to_non_nullable
                       as int,
+            pendingReviewMins: null == pendingReviewMins
+                ? _value.pendingReviewMins
+                : pendingReviewMins // ignore: cast_nullable_to_non_nullable
+                      as int,
             ungreetedAlertEnabled: null == ungreetedAlertEnabled
                 ? _value.ungreetedAlertEnabled
                 : ungreetedAlertEnabled // ignore: cast_nullable_to_non_nullable
@@ -375,6 +385,7 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     int longStayMins,
     int idleTableMins,
     int reservationGraceMins,
+    int pendingReviewMins,
     bool ungreetedAlertEnabled,
     bool pickupAlertEnabled,
     bool guestOrderingEnabled,
@@ -429,6 +440,7 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? longStayMins = null,
     Object? idleTableMins = null,
     Object? reservationGraceMins = null,
+    Object? pendingReviewMins = null,
     Object? ungreetedAlertEnabled = null,
     Object? pickupAlertEnabled = null,
     Object? guestOrderingEnabled = null,
@@ -553,6 +565,10 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.reservationGraceMins
             : reservationGraceMins // ignore: cast_nullable_to_non_nullable
                   as int,
+        pendingReviewMins: null == pendingReviewMins
+            ? _value.pendingReviewMins
+            : pendingReviewMins // ignore: cast_nullable_to_non_nullable
+                  as int,
         ungreetedAlertEnabled: null == ungreetedAlertEnabled
             ? _value.ungreetedAlertEnabled
             : ungreetedAlertEnabled // ignore: cast_nullable_to_non_nullable
@@ -626,6 +642,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.longStayMins = 90,
     this.idleTableMins = 20,
     this.reservationGraceMins = 15,
+    this.pendingReviewMins = 6,
     this.ungreetedAlertEnabled = true,
     this.pickupAlertEnabled = true,
     this.guestOrderingEnabled = false,
@@ -732,6 +749,12 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final int reservationGraceMins;
+
+  /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
+  /// unreviewed before the floor card goes critical. Visual only, never a cue.
+  @override
+  @JsonKey()
+  final int pendingReviewMins;
   @override
   @JsonKey()
   final bool ungreetedAlertEnabled;
@@ -765,7 +788,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, guestOrderingEnabled: $guestOrderingEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, pendingReviewMins: $pendingReviewMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, guestOrderingEnabled: $guestOrderingEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup)';
   }
 
   @override
@@ -825,6 +848,8 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
                 other.idleTableMins == idleTableMins) &&
             (identical(other.reservationGraceMins, reservationGraceMins) ||
                 other.reservationGraceMins == reservationGraceMins) &&
+            (identical(other.pendingReviewMins, pendingReviewMins) ||
+                other.pendingReviewMins == pendingReviewMins) &&
             (identical(other.ungreetedAlertEnabled, ungreetedAlertEnabled) ||
                 other.ungreetedAlertEnabled == ungreetedAlertEnabled) &&
             (identical(other.pickupAlertEnabled, pickupAlertEnabled) ||
@@ -877,6 +902,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     longStayMins,
     idleTableMins,
     reservationGraceMins,
+    pendingReviewMins,
     ungreetedAlertEnabled,
     pickupAlertEnabled,
     guestOrderingEnabled,
@@ -935,6 +961,7 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final int longStayMins,
     final int idleTableMins,
     final int reservationGraceMins,
+    final int pendingReviewMins,
     final bool ungreetedAlertEnabled,
     final bool pickupAlertEnabled,
     final bool guestOrderingEnabled,
@@ -1011,6 +1038,11 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   int get idleTableMins;
   @override
   int get reservationGraceMins;
+
+  /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
+  /// unreviewed before the floor card goes critical. Visual only, never a cue.
+  @override
+  int get pendingReviewMins;
   @override
   bool get ungreetedAlertEnabled;
   @override

@@ -40,7 +40,37 @@ Per-user advisory lease on a table's detail screen. Prevents two waiters editing
 **Scope:** the lock is only active when the table's status is **not** `available`. Kosong tables are lock-free; their detail screen is read/seat-only. See ADR-0001.
 
 ### Reservation
-A planned future visit: name, phone, party size, expected time, optional zone hint, optional pre-assigned table, optional notes. Status lifecycle: `pending` → (`seated` | `noShow` | `cancelled`). Reservations are created via the floor's "Reservasi" strip and seated through the same strip's action sheet.
+A planned future visit: name, phone, party size, expected time, optional zone hint, optional pre-assigned table, optional notes. Status lifecycle: `pending` → (`seated` | `noShow` | `cancelled`). Created and seated from the **buku reservasi** — the floor head's "Reservasi" trigger, a right-side drawer on tablet and a bottom sheet on a phone (ADR-0048).
+
+### Terlambat (reservation late)
+A `pending` reservation whose `expectedAt` is more than `reservationGraceMins` in the past. **Derived, never stored** — there is no `late` status and no button that sets one. A clock must not decide a no-show, and auto-flipping would make `seated` unreachable for the party that turns up at +46m. See ADR-0044 / ADR-0048.
+
+### Dipesan (table hold)
+A **kosong** table that a `pending` reservation names, whose time falls between the start of the current business day (`businessDayStartHour`) and 60 minutes from now. The card reads "Dipesan" and prints the guest's name under the table number.
+
+The lower bound is not cosmetic: `pending` is only ever cleared by hand, so a forgotten no-show would otherwise hold its table "Dipesan" forever.
+
+**Derived, not persisted (ADR-0048):** no lock is taken, so releasing a no-show frees nothing and two waiters can still seat walk-ins on the same booked table. Distinct from [[Table lock]], which *is* a real lease.
+
+### Reservasi berikutnya (next booking)
+The soonest `pending` reservation on a table beyond the hold window — a footnote on the card, not a state. Shown on occupied tables too: "this one has to be turned by 20:30".
+
+### Basi (stale)
+A table stuck in one condition longer than the venue allows. At most **one** per card, banded full-bleed across the card's foot, worst-condition-wins. Two severities: `crit` (urgent fill, plus a doubled hard shadow under the brutal skin) and `warn`.
+
+| sev | condition | threshold |
+| ------ | ----------------------------- | ----------------------------------------- |
+| `crit` | ready, nobody collected it | `pickupTargetMins × 2` |
+| `crit` | held table, guest not arrived | `reservationGraceMins` |
+| `crit` | seated, still ungreeted | `ungreetedMins + ungreetedEscalateMins` |
+| `crit` | guest order still unreviewed | `pendingReviewMins` |
+| `warn` | everything served, idle | `idleTableMins` |
+| `warn` | long occupancy | `longStayMins` |
+
+Every threshold comes from `venue_settings`; none are hardcoded. Always **visual, never audible** — the two conditions that do have a sound cued once already, and this banner is for the cue that went unanswered, which is why those two read a second window past the audible threshold. Replaces the elapsed-clock heat ramp from ADR-0044: the banner names the same overrun in words, with the action attached. See ADR-0048.
+
+### Belum ditinjau (pendingReviewMins)
+How long a guest-sent order (ADR-0028) may wait on a waiter to review it before the table's card goes `crit`. Default 6 minutes, venue-configurable in `/alerts`.
 
 ### Party / partySize
 The number of guests of a single reservation or walk-in. Distinct from a table's **capacity** (max seats); pax stepper on the table detail is clamped to `[1, capacity]`.
@@ -102,7 +132,7 @@ The report's verdict on each menu item, crossing two traits: **popularitas** (ho
 User-facing copy is **"Klasifikasi menu"** with the plain-meaning bucket labels above (describe the trait, no metaphor); the English menu-engineering terms (Star/Plowhorse/Puzzle/Dog) stay as code/internal identifiers only. Presented as four labeled, colour-coded sections (Andalan→success, Kuda Beban→warn, Teka-teki→info, Buntung→textLo) each listing its **top items** with pop/margin, action-priority order, empty buckets shown as "tidak ada item". _Avoid_: the prior two-axis scatter "Menu engineering matrix" plot (replaced — too hard to decode) and the English jargon title in user-facing copy.
 
 ### Floor
-The waiter's live operational screen that lists all tables with status chips and the **Reservasi** strip across the top. The primary jumping-off point for waiters during service. Implemented as `TablesScreen` at route **`/tables`** (`lib/ui/features/tables/`).
+The waiter's live operational screen: zone tabs over a grid of table cards, headed by the zone's counts and three counted triggers — **Reservasi** (with a `N telat` badge), **Bawa pulang**, **Pesanan baru**. The primary jumping-off point for waiters during service. Implemented as `TablesScreen` at route **`/tables`** (`lib/ui/features/tables/`); the card is `widgets/table_card.dart` and everything it derives lives in `view_models/floor_signals.dart`. See [[Basi (stale)]] and ADR-0048.
 
 _Not_ the same as `FloorScreen` at route **`/floor`** (`lib/ui/features/admin/floor_screen.dart`) — that is the **admin floor configuration** screen (create/rename/reorder/delete zones and tables, capacity/active edits). The glossary term **"Floor"** always means the waiter grid; the admin screen is called **floor configuration** to keep them distinct. _Avoid_: calling the admin `/floor` screen "the Floor".
 

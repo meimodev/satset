@@ -109,6 +109,9 @@ class AppStrings {
       'Toleransi reservasi';
   static const String venueSettingsTimingReservationGraceHint =
       'Lewat ini chip reservasi ditandai terlambat. Status tidak berubah.';
+  static const String venueSettingsTimingPendingReview = 'Belum ditinjau';
+  static const String venueSettingsTimingPendingReviewHint =
+      'Pesanan tamu menunggu ditinjau waiter. Tanpa suara.';
   static const String venueSettingsTimingAlertsOn = 'Bunyikan peringatan';
   static const String venueSettingsTimingMuteTitle = 'Senyapkan di alat ini';
   static const String venueSettingsTimingMuteHint =
@@ -126,6 +129,43 @@ class AppStrings {
   static const String tableStateUngreeted = 'Belum dilayani';
   static const String tableStateIdle = 'Selesai makan';
   static const String reservationLate = 'Terlambat';
+
+  // Floor staleness (ADR-0048) — the banner across the foot of a table card.
+  // Interpolated because every one of them names how long it has been stuck;
+  // a bare label ("Belum disapa") is the standing state, this is the overrun.
+  static String staleReadyUncollected(int mins) =>
+      'Siap $mins mnt — belum diambil';
+  static String staleReservationLate(int mins) =>
+      'Tamu telat $mins mnt — lepas meja?';
+  static String staleUngreeted(int mins) => 'Belum disapa $mins mnt';
+  static String stalePendingReview(int mins) => 'Belum ditinjau $mins mnt';
+  static String staleIdle(int mins) => 'Selesai makan $mins mnt — tawarkan lagi';
+  static String staleLongStay(String elapsed) =>
+      'Duduk $elapsed — cek penutupan';
+
+  // Floor card chips.
+  static const String tableOwnerMine = 'Punya saya';
+  static const String tablePaidFull = 'Lunas';
+  static const String tablePaidPartial = 'Sebagian';
+  static const String tableNoReservationTable = 'Belum ada meja';
+
+  // Floor head triggers + the surfaces behind them (ADR-0048).
+  static const String floorReservations = 'Reservasi';
+  static const String floorTakeaway = 'Bawa pulang';
+  static const String floorReservationsBook = 'Buku reservasi';
+  static const String floorReservationsLateCount = 'telat';
+  static const String reservationFilterWaiting = 'Menunggu';
+  static const String reservationFilterLate = 'Terlambat';
+  static const String reservationFilterSeated = 'Duduk';
+  static const String reservationFilterNoShow = 'No-show';
+  static const String reservationFilterAll = 'Semua';
+  static const String reservationEmptyFilter =
+      'Tidak ada reservasi di filter ini.';
+  static const String reservationActionSeat = 'Dudukkan';
+  static const String reservationActionLate = 'Telat';
+  static const String reservationActionNoShow = 'No-show';
+  static const String reservationActionRestore = 'Pulihkan';
+  static const String takeawayEmpty = 'Belum ada pesanan bawa pulang.';
   static const String venueSettingsSoundPreview = 'Dengar';
 
   // Zone Admin Screen (formerly Floor Screen)

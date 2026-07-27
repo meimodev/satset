@@ -236,6 +236,14 @@ class _ThresholdCard extends ConsumerWidget {
             max: 120,
             onChanged: (v) => n.patch(reservationGraceMins: v),
           ),
+          _MinutesRow(
+            label: AppStrings.venueSettingsTimingPendingReview,
+            hint: AppStrings.venueSettingsTimingPendingReviewHint,
+            value: s.pendingReviewMins,
+            min: 1,
+            max: 60,
+            onChanged: (v) => n.patch(pendingReviewMins: v),
+          ),
         ],
       ),
     );

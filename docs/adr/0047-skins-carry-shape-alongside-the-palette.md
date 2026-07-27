@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted.
+Accepted. **Amended by ADR-0048** — the last consequence below ("Layout is
+untouched") held only for this change and is no longer true of the floor screen.
 
 ## Context
 
@@ -176,5 +177,10 @@ would be all border and no count.
   `SatType`. Adding a *palette* is still just a `SatColors` const.
 - New UI must use the helpers. A raw `BorderRadius.circular` compiles fine and
   silently ignores the skin — the failure is visual, not a build break.
-- Layout is untouched. Every token here is paint-level: no size, spacing,
-  breakpoint, or composition changed.
+- Layout is untouched **by this ADR**. Every token here is paint-level: no size,
+  spacing, breakpoint, or composition changed.
+
+  Superseded in scope by ADR-0048: the floor screen's composition, grid and card
+  anatomy did subsequently change, for every palette rather than just the brutal
+  ones. The rule that still holds is the narrower one — *a skin* changes paint
+  only. A skin cannot move a widget, and nothing here lets it.
