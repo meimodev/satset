@@ -281,9 +281,20 @@ class ReviewScreen extends ConsumerWidget {
                 ? 16 + l.padding.bottom
                 : 92 + l.padding.bottom,
             child: SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: cart.isEmpty || reviewState.busy
+              width: double.infinity,
+              child: SatButton.primary(
+                label: reviewState.busy
+                    ? 'Mengirim…'
+                    : _isTakeaway
+                    ? 'Tambah ke pesanan'
+                    : tableless
+                    ? 'Kirim pesanan'
+                    : 'Kirim ke $sendTarget',
+                icon: Icons.auto_awesome,
+                busy: reviewState.busy,
+                size: SatButtonSize.lg,
+                trailingValue: formatIDR(subtotal),
+                onTap: cart.isEmpty || reviewState.busy
                     ? null
                     : () async {
                         final vm = ref.read(reviewViewModelProvider.notifier);
@@ -393,54 +404,6 @@ class ReviewScreen extends ConsumerWidget {
                           );
                         }
                       },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  foregroundColor: sc.accentInk,
-                  elevation: 0,
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (reviewState.busy)
-                      SizedBox(
-                        width: Sp.s4,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(sc.accentInk),
-                        ),
-                      )
-                    else
-                      Icon(Icons.auto_awesome, size: 16, color: sc.accentInk),
-                    const SizedBox(width: Sp.s2h),
-                    Text(
-                      reviewState.busy
-                          ? 'Mengirim…'
-                          : _isTakeaway
-                          ? 'Tambah ke pesanan'
-                          : tableless
-                          ? 'Kirim pesanan'
-                          : 'Kirim ke $sendTarget',
-                      style: SatType.sans(
-                        size: 15,
-                        weight: FontWeight.w600,
-                        color: sc.accentInk,
-                      ),
-                    ),
-                    const SizedBox(width: Sp.s2h),
-                    Text(
-                      formatIDR(subtotal),
-                      style: SatType.mono(
-                        size: 14,
-                        weight: FontWeight.w500,
-                        color: sc.accentInk.withValues(alpha: 0.7),
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),

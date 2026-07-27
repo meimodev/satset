@@ -48,14 +48,14 @@ class SatTabs extends StatelessWidget {
       for (var i = 0; i < tabs.length; i++)
         if (expand)
           Expanded(
-            child: _Tab(
+            child: _SatTabItem(
               tab: tabs[i],
               on: i == selected,
               onTap: () => onSelected(i),
             ),
           )
         else
-          _Tab(tab: tabs[i], on: i == selected, onTap: () => onSelected(i)),
+          _SatTabItem(tab: tabs[i], on: i == selected, onTap: () => onSelected(i)),
     ];
 
     return Container(
@@ -73,11 +73,11 @@ class SatTabs extends StatelessWidget {
   }
 }
 
-class _Tab extends StatelessWidget {
+class _SatTabItem extends StatelessWidget {
   final SatTab tab;
   final bool on;
   final VoidCallback onTap;
-  const _Tab({required this.tab, required this.on, required this.onTap});
+  const _SatTabItem({required this.tab, required this.on, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

@@ -31,6 +31,15 @@ class SatButton extends StatelessWidget {
   final bool busy;
   final SatButtonSize size;
   final VoidCallback? onTap;
+
+  /// A number carried on the right of the label — the cart total on "Kirim ke
+  /// Dapur", the amount on "Bayar". Set in mono at reduced alpha so it reads
+  /// as a value the action applies to rather than part of the action's name.
+  ///
+  /// A fourth axis, added deliberately: this is the order flow's main button
+  /// and the pattern recurs, so the alternative was a file exemption from the
+  /// raw-button ban, which is worse (ADR-0055).
+  final String? trailingValue;
   final _SatButtonKind _kind;
 
   /// The affirmative action on a screen. Accent fill. One per view.
@@ -40,6 +49,7 @@ class SatButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.size = SatButtonSize.md,
+    this.trailingValue,
     required this.onTap,
   }) : _kind = _SatButtonKind.primary;
 
@@ -50,6 +60,7 @@ class SatButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.size = SatButtonSize.md,
+    this.trailingValue,
     required this.onTap,
   }) : _kind = _SatButtonKind.neutral;
 
@@ -61,6 +72,7 @@ class SatButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.size = SatButtonSize.md,
+    this.trailingValue,
     required this.onTap,
   }) : _kind = _SatButtonKind.outline;
 
@@ -71,6 +83,7 @@ class SatButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.size = SatButtonSize.md,
+    this.trailingValue,
     required this.onTap,
   }) : _kind = _SatButtonKind.ghost;
 
@@ -81,6 +94,7 @@ class SatButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.size = SatButtonSize.md,
+    this.trailingValue,
     required this.onTap,
   }) : _kind = _SatButtonKind.success;
 
@@ -91,6 +105,7 @@ class SatButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.size = SatButtonSize.md,
+    this.trailingValue,
     required this.onTap,
   }) : _kind = _SatButtonKind.danger;
 
@@ -170,22 +185,29 @@ class SatButton extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        if (trailingValue != null) ...[
+          SizedBox(width: Sp.s2h),
+          Text(
+            trailingValue!,
+            style: SatType.monoM(color: ink.withValues(alpha: 0.7)),
+          ),
+        ],
       ],
     );
 
-    return Semantics(
-      button: true,
-      enabled: _enabled,
-      label: label,
-      child: AnimatedContainer(
-        duration: satMotion(context, 120),
-        curve: satEaseOut,
-        height: _height,
-        decoration: SatBox.d(
-          color: fill,
-          border: borderColor == null ? null : SatB.all(color: borderColor),
-          borderRadius: _radius,
-        ),
+    return AnimatedContainer(
+      duration: satMotion(context, 120),
+      curve: satEaseOut,
+      height: _height,
+      decoration: SatBox.d(
+        color: fill,
+        border: borderColor == null ? null : SatB.all(color: borderColor),
+        borderRadius: _radius,
+      ),
+      child: Semantics(
+        button: true,
+        enabled: _enabled,
+        label: label,
         child: Material(
           color: Colors.transparent,
           borderRadius: _radius,
