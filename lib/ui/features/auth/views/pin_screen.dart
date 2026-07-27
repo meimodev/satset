@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -477,7 +479,6 @@ class _AdminAuthForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final pwHasError = passwordError != null;
-    final pwBorder = pwHasError ? sc.urgent : sc.border0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -503,48 +504,19 @@ class _AdminAuthForm extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Sp.s1h),
-            TextField(
+            SatField.text(
               controller: password,
-              obscureText: !showPassword,
-              textInputAction: TextInputAction.done,
+              hint: '••••••••',
+              hasError: pwHasError,
               onSubmitted: (_) => onSubmit(),
-              style: SatType.sans(size: 15, color: sc.textHi),
-              decoration: InputDecoration(
-                hintText: '••••••••',
-                hintStyle: SatType.sans(size: 15, color: sc.textLo),
-                filled: true,
-                fillColor: sc.bg2,
-                border: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: pwBorder),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: pwBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(
-                    color: pwHasError ? sc.urgent : sc.accent,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s3h,
-                  vertical: Sp.s3,
-                ),
-                suffixIcon: IconButton(
-                  tooltip: showPassword
-                      ? AppStrings.a11yHidePassword
-                      : AppStrings.a11yShowPassword,
-                  onPressed: onToggleShow,
-                  icon: Icon(
-                    showPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 18,
-                    color: sc.textMd,
-                  ),
-                ),
+              suffix: SatIconButton.plain(
+                icon: showPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                tooltip: showPassword
+                    ? AppStrings.a11yHidePassword
+                    : AppStrings.a11yShowPassword,
+                onTap: onToggleShow,
               ),
             ),
             if (pwHasError)
@@ -1044,7 +1016,6 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final hasError = errorText != null;
-    final borderColor = hasError ? sc.urgent : sc.border0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1058,34 +1029,7 @@ class _Field extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Sp.s1h),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          style: SatType.sans(size: 15, color: sc.textHi),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: SatType.sans(size: 15, color: sc.textLo),
-            filled: true,
-            fillColor: sc.bg2,
-            border: OutlineInputBorder(
-              borderRadius: SatR.a(12),
-              borderSide: SatB.side(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: SatR.a(12),
-              borderSide: SatB.side(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: SatR.a(12),
-              borderSide: SatB.side(color: hasError ? sc.urgent : sc.accent),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: Sp.s3,
-            ),
-          ),
-        ),
+        SatField.text(controller: controller, hint: hint, hasError: hasError),
         if (hasError)
           Padding(
             padding: const EdgeInsets.only(top: Sp.s1h, left: Sp.sHair),

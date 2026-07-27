@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
@@ -799,34 +800,14 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     bool mono = false,
     TextInputType? inputType,
   }) {
-    final sc = context.sat;
-    return TextField(
+    return SatField.inline(
       controller: controller,
       focusNode: focus,
-      maxLines: multiline ? null : 1,
-      minLines: multiline ? 1 : 1,
-      keyboardType:
-          inputType ??
-          (multiline ? TextInputType.multiline : TextInputType.text),
-      textInputAction: multiline
-          ? TextInputAction.newline
-          : TextInputAction.done,
-      textAlign: TextAlign.right,
+      hint: hint,
+      multiline: multiline,
+      mono: mono,
+      keyboard: inputType,
       onSubmitted: onSubmit,
-      onTapOutside: (_) => focus.unfocus(),
-      inputFormatters: multiline
-          ? null
-          : [LengthLimitingTextInputFormatter(120)],
-      style: mono
-          ? SatType.mono(size: 12, color: sc.textHi)
-          : SatType.sans(size: 13, color: sc.textHi, height: 1.4),
-      decoration: InputDecoration(
-        isDense: true,
-        contentPadding: EdgeInsets.zero,
-        border: InputBorder.none,
-        hintText: hint,
-        hintStyle: SatType.sans(size: 13, color: sc.textLo),
-      ),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -1501,31 +1502,10 @@ class _SatField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
-    return TextField(
+    return SatField.text(
       controller: controller,
+      hint: hint,
       onChanged: onChanged,
-      style: SatType.sans(size: 14, color: sc.textHi),
-      cursorColor: sc.accentText,
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: hint,
-        hintStyle: SatType.sans(size: 14, color: sc.textDim),
-        filled: true,
-        fillColor: sc.bg2,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: Sp.s3h,
-          vertical: 13,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: SatR.a(12),
-          borderSide: SatB.side(color: sc.border1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: SatR.a(12),
-          borderSide: SatB.side(color: sc.accentBorder),
-        ),
-      ),
     );
   }
 }

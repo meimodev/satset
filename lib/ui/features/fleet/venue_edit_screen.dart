@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -215,13 +216,13 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           const SizedBox(height: Sp.s2h),
           SatField.text(controller: _plan, label: 'Paket', hint: ''),
           const SizedBox(height: Sp.s3h),
-          DropdownButtonFormField<String>(
-            initialValue: _billingStatus,
-            decoration: const InputDecoration(labelText: 'Status tagihan'),
-            items: const [
-              DropdownMenuItem(value: 'trial', child: Text('trial')),
-              DropdownMenuItem(value: 'paid', child: Text('paid')),
-              DropdownMenuItem(value: 'overdue', child: Text('overdue')),
+          SatDropdown<String>(
+            value: _billingStatus,
+            label: 'Status tagihan',
+            options: const [
+              SatOption('trial', 'trial'),
+              SatOption('paid', 'paid'),
+              SatOption('overdue', 'overdue'),
             ],
             onChanged: (x) =>
                 setState(() => _billingStatus = x ?? _billingStatus),

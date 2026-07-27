@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -362,40 +363,12 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextField(
+                        SatField.text(
+                          hint: 'mis. alergi belum tertera, catatan plating…',
                           maxLength: 80,
                           minLines: 2,
                           maxLines: 3,
                           onChanged: (v) => setState(() => _special = v),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: sc.bg2,
-                            border: OutlineInputBorder(
-                              borderRadius: SatR.a(14),
-                              borderSide: SatB.side(
-                                color: _special.isEmpty
-                                    ? sc.border0
-                                    : sc.accentBorder,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: SatR.a(14),
-                              borderSide: SatB.side(
-                                color: _special.isEmpty
-                                    ? sc.border0
-                                    : sc.accentBorder,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: SatR.a(14),
-                              borderSide: SatB.side(color: sc.accentBorder),
-                            ),
-                            hintText:
-                                'mis. alergi belum tertera, catatan plating…',
-                            hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                            counterText: '',
-                          ),
-                          style: SatType.sans(size: 13, color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.s1),
                         Text(

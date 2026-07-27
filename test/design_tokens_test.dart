@@ -93,6 +93,34 @@ void main() {
     );
   });
 
+  test('no raw text inputs or dropdowns outside core/widgets', () {
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      if (file.path.contains('/core/widgets/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'\b(TextField|TextFormField|InputDecoration|DropdownButton|'
+        r'DropdownButtonFormField)\s*[.(<]',
+      ).allMatches(src)) {
+        hits.add('${file.path}:${_lineOf(src, m.start)} ${m.group(1)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use SatField — core/widgets/sat_field.dart. The constructor names '
+          'what the field accepts (.text/.number/.money/.decimal/.search/'
+          '.pin/.inline) and carries the keyboard, formatters and affix that '
+          'go with it. A neighbour that Material dresses with an '
+          'InputDecoration calls satInputDecoration() so it matches exactly. '
+          'A closed list of choices is SatDropdown — or, where they all fit on '
+          'screen, a row of SatChip.select.\n'
+          '${hits.join('\n')}',
+    );
+  });
+
   // Accessibility rules need the whole constructor call, not one line: the
   // `tooltip:` that names a button sits several lines below `IconButton(`.
   // Balanced-paren scan instead of a line regex.

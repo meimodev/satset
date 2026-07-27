@@ -8,7 +8,67 @@ import '../design/spacing.dart';
 import '../design/typography.dart';
 
 /// What a field accepts. Private — the named constructors are the API.
-enum _Kind { text, number, money, decimal, search, pin }
+enum _Kind { text, number, money, decimal, search, pin, inline }
+
+/// The app's one input skin, shared by [SatField] and by anything else Material
+/// dresses with an `InputDecoration` — the recipe editor's ingredient dropdown
+/// sits in a row with two text fields and has to match them exactly.
+///
+/// Public only so those neighbours can reach it. A screen that wants a text
+/// input reaches for [SatField], not for this.
+InputDecoration satInputDecoration(
+  BuildContext context, {
+  String? hint,
+  bool enabled = true,
+  String? errorText,
+  String? helperText,
+  bool hasError = false,
+  IconData? prefixIcon,
+  String? prefixText,
+  String? suffixText,
+  Widget? suffix,
+}) {
+  final sc = context.sat;
+  final bad = hasError || errorText != null;
+  OutlineInputBorder border(Color c) => OutlineInputBorder(
+    borderRadius: SatR.md,
+    borderSide: SatB.side(color: c),
+  );
+
+  return InputDecoration(
+    isDense: true,
+    hintText: hint,
+    hintStyle: SatType.bodyM(color: sc.textDim),
+    // Never the Material counter: it reserves a line under every capped field
+    // and no screen here asked for one.
+    counterText: '',
+    errorText: errorText,
+    errorStyle: SatType.bodyS(color: sc.urgent),
+    helperText: helperText,
+    helperStyle: SatType.bodyS(color: sc.textLo),
+    helperMaxLines: 2,
+    filled: true,
+    fillColor: enabled ? sc.bg2 : sc.bg1,
+    prefixText: prefixText,
+    prefixStyle: SatType.monoM(color: sc.textLo),
+    prefixIcon: prefixIcon == null
+        ? null
+        : Icon(prefixIcon, size: 18, color: sc.textLo),
+    prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: 20),
+    suffixIcon: suffix,
+    suffixText: suffixText,
+    suffixStyle: SatType.monoM(color: sc.textLo),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: Sp.s3h,
+      vertical: 13,
+    ),
+    enabledBorder: border(bad ? sc.urgent : sc.border1),
+    focusedBorder: border(bad ? sc.urgent : sc.accentBorder),
+    errorBorder: border(sc.urgent),
+    focusedErrorBorder: border(sc.urgent),
+    disabledBorder: border(sc.border0),
+  );
+}
 
 /// The app's text input (ADR-0055).
 ///
@@ -61,6 +121,18 @@ class SatField extends StatelessWidget {
   final bool hasError;
   final TextAlign textAlign;
   final TextCapitalization capitalization;
+
+  /// Inline only. A phone or URL keyboard where the row asks for one — the
+  /// other kinds derive their keyboard from what they accept.
+  final TextInputType? keyboard;
+
+  /// Inline only. Receipt lines are set in mono so what the owner types lines
+  /// up with what the printer will emit.
+  final bool mono;
+
+  /// Money only. Lets a leading `-` through — a modifier can knock money off
+  /// the line as well as add to it.
+  final bool signed;
   final _Kind _kind;
 
   /// Free text — names, notes, descriptions.
@@ -86,7 +158,10 @@ class SatField extends StatelessWidget {
     this.hasError = false,
     this.textAlign = TextAlign.start,
     this.capitalization = TextCapitalization.sentences,
-  }) : _kind = _Kind.text;
+  }) : signed = false,
+       mono = false,
+       keyboard = null,
+       _kind = _Kind.text;
 
   /// Whole numbers — quantities, minutes, seats. Digits only, enforced by
   /// formatter rather than by validation after the fact: a waiter mid-rush
@@ -113,6 +188,9 @@ class SatField extends StatelessWidget {
        minLines = null,
        suffix = null,
        capitalization = TextCapitalization.none,
+       signed = false,
+       mono = false,
+       keyboard = null,
        _kind = _Kind.number;
 
   /// Rupiah. Groups thousands as you type and carries the `Rp` mark, so the
@@ -132,6 +210,7 @@ class SatField extends StatelessWidget {
     this.helperText,
     this.hasError = false,
     this.textAlign = TextAlign.start,
+    this.signed = false,
   }) : maxLines = 1,
        minLines = null,
        maxLength = null,
@@ -139,6 +218,8 @@ class SatField extends StatelessWidget {
        suffixText = null,
        suffix = null,
        capitalization = TextCapitalization.none,
+       mono = false,
+       keyboard = null,
        _kind = _Kind.money;
 
   /// Fractional amounts — stock in kg or litres. Accepts a comma as well as a
@@ -165,6 +246,9 @@ class SatField extends StatelessWidget {
        maxLength = null,
        suffix = null,
        capitalization = TextCapitalization.none,
+       signed = false,
+       mono = false,
+       keyboard = null,
        _kind = _Kind.decimal;
 
   /// Filters a list as you type. Carries its own leading glass.
@@ -190,7 +274,42 @@ class SatField extends StatelessWidget {
        hasError = false,
        textAlign = TextAlign.start,
        capitalization = TextCapitalization.none,
+       signed = false,
+       mono = false,
+       keyboard = null,
        _kind = _Kind.search;
+
+  /// A value edited in place at the right of a settings row. No box, no
+  /// border, no fill — the row is the container, and a boxed field inside a
+  /// boxed row reads as two nested things. The only field kind that is not a
+  /// rectangle you can see.
+  const SatField.inline({
+    super.key,
+    this.controller,
+    required this.hint,
+    this.onSubmitted,
+    this.focusNode,
+    this.enabled = true,
+    bool multiline = false,
+    this.mono = false,
+    this.keyboard,
+  }) : label = null,
+       readOnly = false,
+       autofocus = false,
+       maxLines = multiline ? 4 : 1,
+       minLines = 1,
+       maxLength = multiline ? null : 120,
+       prefixIcon = null,
+       suffixText = null,
+       suffix = null,
+       onChanged = null,
+       errorText = null,
+       helperText = null,
+       hasError = false,
+       textAlign = TextAlign.end,
+       capitalization = TextCapitalization.sentences,
+       signed = false,
+       _kind = _Kind.inline;
 
   /// A staff PIN. Obscured, digits only, capped at six — the shape the auth
   /// route accepts, held here so no screen re-derives it.
@@ -216,32 +335,33 @@ class SatField extends StatelessWidget {
        helperText = null,
        textAlign = TextAlign.start,
        capitalization = TextCapitalization.none,
+       signed = false,
+       mono = false,
+       keyboard = null,
        _kind = _Kind.pin;
 
-  TextInputType get _keyboard => switch (_kind) {
-    _Kind.number || _Kind.money || _Kind.pin => TextInputType.number,
-    _Kind.decimal => const TextInputType.numberWithOptions(decimal: true),
-    _Kind.text => maxLines == 1 ? TextInputType.text : TextInputType.multiline,
-    _Kind.search => TextInputType.text,
-  };
+  TextInputType get _keyboard =>
+      keyboard ??
+      switch (_kind) {
+        _Kind.number || _Kind.pin => TextInputType.number,
+        _Kind.money => TextInputType.numberWithOptions(signed: signed),
+        _Kind.decimal => const TextInputType.numberWithOptions(decimal: true),
+        _Kind.text || _Kind.inline =>
+          maxLines == 1 ? TextInputType.text : TextInputType.multiline,
+        _Kind.search => TextInputType.text,
+      };
 
   List<TextInputFormatter>? get _formatters => switch (_kind) {
     _Kind.number || _Kind.pin => [FilteringTextInputFormatter.digitsOnly],
-    _Kind.money => const [RupiahInputFormatter()],
+    _Kind.money => [RupiahInputFormatter(allowNegative: signed)],
     _Kind.decimal => null,
-    _Kind.text || _Kind.search => null,
+    _Kind.text || _Kind.search || _Kind.inline => null,
   };
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     final ink = enabled ? sc.textHi : sc.textLo;
-    final bad = hasError || errorText != null;
-
-    OutlineInputBorder border(Color c) => OutlineInputBorder(
-      borderRadius: SatR.md,
-      borderSide: SatB.side(color: c),
-    );
 
     final field = TextField(
       controller: controller,
@@ -259,44 +379,33 @@ class SatField extends StatelessWidget {
       inputFormatters: _formatters,
       onChanged: onChanged,
       onSubmitted: onSubmitted,
-      style: SatType.bodyM(color: ink),
+      textInputAction: maxLines == 1
+          ? TextInputAction.done
+          : TextInputAction.newline,
+      onTapOutside: (_) => focusNode?.unfocus(),
+      style: mono ? SatType.monoM(color: ink) : SatType.bodyM(color: ink),
       cursorColor: sc.accentText,
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: hint,
-        hintStyle: SatType.bodyM(color: sc.textDim),
-        // Never the Material counter: it reserves a line under every capped
-        // field and no screen here asked for one.
-        counterText: '',
-        errorText: errorText,
-        errorStyle: SatType.bodyS(color: sc.urgent),
-        helperText: helperText,
-        helperStyle: SatType.bodyS(color: sc.textLo),
-        helperMaxLines: 2,
-        filled: true,
-        fillColor: enabled ? sc.bg2 : sc.bg1,
-        prefixText: _kind == _Kind.money ? 'Rp ' : null,
-        prefixStyle: SatType.monoM(color: sc.textLo),
-        prefixIcon: prefixIcon == null
-            ? null
-            : Icon(prefixIcon, size: 18, color: sc.textLo),
-        prefixIconConstraints: const BoxConstraints(
-          minWidth: 38,
-          minHeight: 20,
-        ),
-        suffixIcon: suffix,
-        suffixText: suffixText,
-        suffixStyle: SatType.monoM(color: sc.textLo),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: Sp.s3h,
-          vertical: 13,
-        ),
-        enabledBorder: border(bad ? sc.urgent : sc.border1),
-        focusedBorder: border(bad ? sc.urgent : sc.accentBorder),
-        errorBorder: border(sc.urgent),
-        focusedErrorBorder: border(sc.urgent),
-        disabledBorder: border(sc.border0),
-      ),
+      decoration: _kind == _Kind.inline
+          ? InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
+              counterText: '',
+              hintText: hint,
+              hintStyle: SatType.bodyM(color: sc.textLo),
+            )
+          : satInputDecoration(
+              context,
+              hint: hint,
+              enabled: enabled,
+              errorText: errorText,
+              helperText: helperText,
+              hasError: hasError,
+              prefixIcon: prefixIcon,
+              prefixText: _kind == _Kind.money ? 'Rp ' : null,
+              suffixText: suffixText,
+              suffix: suffix,
+            ),
     );
 
     if (label == null) return field;

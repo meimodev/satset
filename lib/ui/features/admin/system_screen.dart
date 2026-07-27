@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -814,11 +815,12 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               SatField.text(controller: hostCtl, label: 'Host (IP)', hint: ''),
               SatField.number(controller: portCtl, label: 'Port', hint: ''),
               const SizedBox(height: Sp.s2),
-              DropdownButton<String>(
+              SatDropdown<String>(
                 value: kind,
-                items: const [
-                  DropdownMenuItem(value: 'escpos', child: Text('ESC/POS')),
-                  DropdownMenuItem(value: 'kds', child: Text('KDS')),
+                label: 'Jenis',
+                options: const [
+                  SatOption('escpos', 'ESC/POS'),
+                  SatOption('kds', 'KDS'),
                 ],
                 onChanged: (v) => setLocal(() => kind = v ?? 'escpos'),
               ),

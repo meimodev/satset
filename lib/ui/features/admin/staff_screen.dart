@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -1187,17 +1188,13 @@ class _NewStaffDialogState extends State<_NewStaffDialog> {
                 autofocus: true,
               ),
               const SizedBox(height: Sp.s3),
-              DropdownButtonFormField<String>(
-                initialValue: _roleId,
-                items: [
-                  for (final r in widget.roles)
-                    DropdownMenuItem(value: r.id, child: Text(r.name)),
+              SatDropdown<String>(
+                value: _roleId,
+                label: AppStrings.staffRole,
+                options: [
+                  for (final r in widget.roles) SatOption(r.id, r.name),
                 ],
                 onChanged: (v) => setState(() => _roleId = v),
-                decoration: const InputDecoration(
-                  labelText: AppStrings.staffRole,
-                  border: OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: Sp.s4),
               Align(
@@ -1358,25 +1355,20 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                     ),
                     const SizedBox(height: Sp.s4),
                     _label(AppStrings.staffRole),
-                    DropdownButtonFormField<String>(
-                      initialValue: user.roleId,
-                      items: [
+                    SatDropdown<String>(
+                      value: user.roleId,
+                      options: [
                         for (final r in roles)
                           if (!r.has(Capability.manageStaff) ||
                               r.id == user.roleId)
-                            DropdownMenuItem(
-                              value: r.id,
-                              child: Text(
-                                r.has(Capability.manageStaff)
-                                    ? AppStrings.staffRoleAdminSuffix(r.name)
-                                    : r.name,
-                              ),
+                            SatOption(
+                              r.id,
+                              r.has(Capability.manageStaff)
+                                  ? AppStrings.staffRoleAdminSuffix(r.name)
+                                  : r.name,
                             ),
                       ],
                       onChanged: (v) => _changeRole(user, v, roles),
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
                     ),
                     const SizedBox(height: Sp.s4),
                     _label(AppStrings.staffAvatarColor),

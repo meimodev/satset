@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -690,7 +692,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   'Harga dasar',
                   keyboard: TextInputType.number,
                   amount: true,
-                  money: true,
                   readOnly: readOnly,
                   onChanged: (_) => setState(() {}),
                 ),
@@ -719,7 +720,6 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   'HPP',
                   keyboard: TextInputType.number,
                   amount: true,
-                  money: true,
                   readOnly: readOnly,
                   // Recipe-derived cost sits *below* the field, not in the
                   // hint, so it stays readable next to the number it's meant
@@ -773,13 +773,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
+            child: SatField.text(
               controller: _ctrl('v:${v.id}:name', v.name),
+              hint: 'Nama (mis. Besar)',
               readOnly: readOnly,
-              decoration: _fieldDeco(
-                'Nama (mis. Besar)',
-                error: _errorIfBlank(v.name),
-              ),
+              errorText: _errorIfBlank(v.name),
               // setState, not a bare assign: the recipe scope chips are built
               // from these names and must repaint as they're typed.
               onChanged: (t) => setState(() {
@@ -792,15 +790,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(width: Sp.s2h),
           SizedBox(
             width: 140,
-            child: TextField(
+            child: SatField.money(
               controller: _ctrl(
                 'v:${v.id}:price',
                 v.price == 0 ? '' : groupRupiah(v.price),
               ),
+              hint: 'Harga',
               readOnly: readOnly,
-              keyboardType: TextInputType.number,
-              inputFormatters: const [RupiahInputFormatter()],
-              decoration: _fieldDeco('Harga', money: true),
               onChanged: (t) => setState(() {
                 final n = int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0;
                 final next = List<Variant>.of(_draft.variants);
@@ -890,18 +886,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: SatField.text(
                   controller: _ctrl('g:${g.id}:name', g.name),
+                  hint: 'Nama grup',
                   readOnly: readOnly,
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                  decoration: _fieldDeco(
-                    'Nama grup',
-                    error: _errorIfBlank(g.name),
-                  ).copyWith(isDense: true),
+                  errorText: _errorIfBlank(g.name),
                   onChanged: (t) => setState(() {
                     final next = List<ModifierGroup>.of(_draft.modifierGroups);
                     next[gi] = next[gi].copyWith(name: t);
@@ -997,13 +986,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
+            child: SatField.text(
               controller: _ctrl('o:${g.id}:${o.id}:name', o.name),
+              hint: 'Nama opsi',
               readOnly: readOnly,
-              decoration: _fieldDeco(
-                'Nama opsi',
-                error: _errorIfBlank(o.name),
-              ).copyWith(isDense: true),
+              errorText: _errorIfBlank(o.name),
               onChanged: (t) => setState(() {
                 final opts = List<ModifierOption>.of(g.options);
                 opts[oi] = opts[oi].copyWith(name: t);
@@ -1017,7 +1004,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           SizedBox(
             // Wide enough for the 'Rp ' prefix plus a signed five-digit delta.
             width: 140,
-            child: TextField(
+            child: SatField.money(
               controller: _ctrl(
                 'o:${g.id}:${o.id}:price',
                 o.priceDelta == 0
@@ -1026,15 +1013,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     ? '-${groupRupiah(-o.priceDelta)}'
                     : groupRupiah(o.priceDelta),
               ),
+              hint: '+/-',
+              signed: true,
               readOnly: readOnly,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              inputFormatters: const [
-                RupiahInputFormatter(allowNegative: true),
-              ],
-              decoration: _fieldDeco(
-                '+/-',
-                money: true,
-              ).copyWith(isDense: true),
               onChanged: (t) => setState(() {
                 final neg = t.trimLeft().startsWith('-');
                 final digits = t.replaceAll(RegExp(r'[^0-9]'), '');
@@ -1237,17 +1218,12 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         children: [
           Expanded(
             flex: 3,
-            child: DropdownButtonFormField<String>(
-              initialValue: ing.id,
-              isExpanded: true,
-              decoration: _fieldDeco('Bahan'),
-              style: SatType.sans(size: 13, color: sc.textHi),
-              items: [
+            child: SatDropdown<String>(
+              value: ing.id,
+              hint: 'Bahan',
+              options: [
                 for (final p in pantry)
-                  DropdownMenuItem(
-                    value: p.id,
-                    child: Text('${p.name} (${p.unit.label})'),
-                  ),
+                  SatOption(p.id, '${p.name} (${p.unit.label})'),
               ],
               onChanged: readOnly
                   ? null
@@ -1272,16 +1248,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           const SizedBox(width: Sp.s2),
           Expanded(
             flex: 2,
-            child: TextField(
+            // Unit as a suffix, not a hint: a hint vanishes the moment a
+            // number is typed, which is exactly when "g or kg?" matters.
+            child: SatField.decimal(
               controller: ctrl,
+              hint: 'Jumlah',
+              suffixText: ing.unit.label,
               readOnly: readOnly,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              style: SatType.sans(size: 14, color: sc.textHi),
-              // Unit as a suffix, not a hint: a hint vanishes the moment a
-              // number is typed, which is exactly when "g or kg?" matters.
-              decoration: _fieldDeco('Jumlah', suffix: ing.unit.label),
               onChanged: (t) {
                 final v = double.tryParse(t.replaceAll(',', '.'));
                 if (v == null) return;
@@ -1444,52 +1417,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   String? _errorIfBlank(String value) =>
       _showErrors && value.trim().isEmpty ? 'Wajib diisi' : null;
 
-  InputDecoration _fieldDeco(
-    String hint, {
-    String? label,
-    String? suffix,
-    String? error,
-    String? helper,
-    bool money = false,
-  }) {
-    final sc = context.sat;
-    return InputDecoration(
-      hintText: hint,
-      labelText: label,
-      suffixText: suffix,
-      errorText: error,
-      helperText: helper,
-      // Always visible, unlike a hint — the field reads as money even once a
-      // number is in it.
-      prefixText: money ? 'Rp ' : null,
-      prefixStyle: SatType.sans(size: 13, color: sc.textLo),
-      suffixStyle: SatType.sans(size: 13, color: sc.textLo),
-      helperStyle: SatType.sans(size: 11, color: sc.textLo),
-      helperMaxLines: 2,
-      errorStyle: SatType.sans(size: 11, color: sc.urgent),
-      labelStyle: SatType.sans(size: 12, color: sc.textLo),
-      hintStyle: SatType.sans(size: 13, color: sc.textLo),
-      filled: true,
-      fillColor: sc.bg2,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: Sp.s3,
-        vertical: Sp.s2h,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: SatR.a(10),
-        borderSide: SatB.side(color: sc.border1),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: SatR.a(10),
-        borderSide: SatB.side(color: sc.border1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: SatR.a(10),
-        borderSide: SatB.side(color: sc.accent, width: 1.5),
-      ),
-    );
-  }
-
+  /// The editor's fields, in the app's one input skin. Kept as a local helper
+  /// only because every one of them shares `readOnly` and the blank-check.
   Widget _input(
     TextEditingController c,
     String hint, {
@@ -1497,31 +1426,42 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     TextInputType? keyboard,
     bool readOnly = false,
     bool amount = false,
-    bool money = false,
     ValueChanged<String>? onChanged,
     String? label,
     String? error,
     String? helper,
   }) {
-    return TextField(
+    if (amount) {
+      return SatField.money(
+        controller: c,
+        hint: hint,
+        label: label,
+        readOnly: readOnly,
+        errorText: error,
+        helperText: helper,
+        onChanged: onChanged,
+      );
+    }
+    if (keyboard == TextInputType.number) {
+      return SatField.number(
+        controller: c,
+        hint: hint,
+        label: label,
+        readOnly: readOnly,
+        errorText: error,
+        helperText: helper,
+        onChanged: onChanged,
+      );
+    }
+    return SatField.text(
       controller: c,
+      hint: hint,
+      label: label,
       maxLines: maxLines,
       readOnly: readOnly,
-      keyboardType: keyboard,
+      errorText: error,
+      helperText: helper,
       onChanged: onChanged,
-      style: SatType.sans(size: 14, color: context.sat.textHi),
-      decoration: _fieldDeco(
-        hint,
-        label: label,
-        money: money,
-        error: error,
-        helper: helper,
-      ),
-      inputFormatters: amount
-          ? const [RupiahInputFormatter()]
-          : keyboard == TextInputType.number
-          ? [FilteringTextInputFormatter.digitsOnly]
-          : null,
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -588,25 +589,13 @@ class _VoidReasonListState extends State<_VoidReasonList> {
           if (_pickedId == 'other')
             Padding(
               padding: const EdgeInsets.only(top: Sp.s1),
-              child: TextField(
+              child: SatField.text(
+                hint: 'Wajib — jelaskan alasan pembatalan',
                 maxLength: 120,
+                // Red before it is wrong: the reason gates the void, so the
+                // field wears the same border it would on rejection.
+                hasError: _other.trim().isEmpty,
                 onChanged: (v) => setState(() => _other = v),
-                decoration: InputDecoration(
-                  hintText: 'Wajib — jelaskan alasan pembatalan',
-                  filled: true,
-                  fillColor: sc.bg2,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(14),
-                    borderSide: SatB.side(color: sc.urgent),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(14),
-                    borderSide: SatB.side(color: sc.urgent),
-                  ),
-                  counterText: '',
-                  hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                ),
-                style: SatType.sans(size: 13, color: sc.textHi),
               ),
             ),
           const SizedBox(height: Sp.s4),

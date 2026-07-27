@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -436,39 +438,19 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         Row(
           children: [
             Expanded(
-              child: TextField(
+              child: SatField.search(
                 controller: _searchCtrl,
-                style: SatType.sans(size: 13, color: sc.textHi),
-                decoration: InputDecoration(
-                  hintText: 'Cari nama bahan...',
-                  hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                  prefixIcon: Icon(Icons.search, size: 18, color: sc.textLo),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          tooltip: AppStrings.a11yClear,
-                          icon: Icon(Icons.clear, size: 16, color: sc.textLo),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: sc.bg2,
-                  contentPadding: const EdgeInsets.symmetric(vertical: Sp.s2h),
-                  border: OutlineInputBorder(
-                    borderRadius: SatR.a(12),
-                    borderSide: SatB.side(color: sc.border1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(12),
-                    borderSide: SatB.side(color: sc.border1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(12),
-                    borderSide: SatB.side(color: sc.accent),
-                  ),
-                ),
+                hint: 'Cari nama bahan...',
+                suffix: _searchQuery.isEmpty
+                    ? null
+                    : SatIconButton.plain(
+                        icon: Icons.clear,
+                        tooltip: AppStrings.a11yClear,
+                        onTap: () {
+                          _searchCtrl.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      ),
                 onChanged: (val) => setState(() => _searchQuery = val),
               ),
             ),
@@ -767,35 +749,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              TextField(
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                              SatField.decimal(
+                                hint: i.unit.label,
                                 textAlign: TextAlign.right,
-                                style: SatType.mono(
-                                  size: 13,
-                                  weight: FontWeight.w600,
-                                  color: sc.textHi,
-                                ),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: i.unit.label,
-                                  hintStyle: SatType.sans(
-                                    size: 12,
-                                    color: sc.textLo,
-                                  ),
-                                  filled: true,
-                                  fillColor: sc.bg3,
-                                  border: OutlineInputBorder(
-                                    borderRadius: SatR.a(8),
-                                    borderSide: SatB.side(color: sc.border1),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: Sp.s2,
-                                    vertical: Sp.s2,
-                                  ),
-                                ),
                                 onChanged: (t) {
                                   final v = double.tryParse(
                                     t.replaceAll(',', '.'),
@@ -1047,46 +1003,41 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             builder: (_, setSheet) => Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: SatField.decimal(
                     controller: qtyCtrl,
+                    label: 'Jumlah',
+                    hint: '',
                     autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Jumlah',
-                      prefixIcon: Icon(Icons.numbers_outlined, size: 18),
-                    ),
+                    prefixIcon: Icons.numbers_outlined,
                   ),
                 ),
                 const SizedBox(width: Sp.s2h),
-                DropdownButton<StockUnit>(
-                  value: unit,
-                  items: [
-                    for (final u in entryUnitsFor(i.unit))
-                      DropdownMenuItem(value: u, child: Text(u.label)),
-                  ],
-                  onChanged: (u) => setSheet(() => unit = u ?? unit),
+                SizedBox(
+                  width: 110,
+                  child: SatDropdown<StockUnit>(
+                    value: unit,
+                    options: [
+                      for (final u in entryUnitsFor(i.unit))
+                        SatOption(u, u.label),
+                    ],
+                    onChanged: (u) => setSheet(() => unit = u ?? unit),
+                  ),
                 ),
               ],
             ),
           ),
-          TextField(
+          SatField.number(
             controller: priceCtrl,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: 'Harga per ${i.unit.label} (opsional)',
-              helperText: 'Kosongkan jika tidak mengubah harga rata-rata',
-              prefixIcon: const Icon(Icons.payments_outlined, size: 18),
-            ),
+            label: 'Harga per ${i.unit.label} (opsional)',
+            hint: '',
+            helperText: 'Kosongkan jika tidak mengubah harga rata-rata',
+            prefixIcon: Icons.payments_outlined,
           ),
-          TextField(
+          SatField.text(
             controller: supplierCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Pemasok (opsional)',
-              prefixIcon: Icon(Icons.storefront_outlined, size: 18),
-            ),
+            label: 'Pemasok (opsional)',
+            hint: '',
+            prefixIcon: Icons.storefront_outlined,
           ),
         ],
         onConfirm: () => Navigator.of(ctx).pop(true),
@@ -1131,15 +1082,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             : '1 batch = ${formatQty(i.batchYield!, i.unit)}. '
                   'Bahan baku penyusun akan berkurang otomatis.',
         children: [
-          TextField(
+          SatField.number(
             controller: ctrl,
+            label: 'Jumlah batch',
+            hint: '',
             autofocus: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              labelText: 'Jumlah batch',
-              prefixIcon: Icon(Icons.blender_outlined, size: 18),
-            ),
+            prefixIcon: Icons.blender_outlined,
           ),
         ],
         onConfirm: () => Navigator.of(ctx).pop(true),
@@ -1208,65 +1156,48 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           title: existing == null ? 'Bahan Baru' : 'Ubah ${existing.name}',
           subtitle: 'Atur nama, satuan unit, dan batas reorder.',
           children: [
-            TextField(
+            SatField.text(
               controller: nameCtrl,
+              label: 'Nama bahan',
+              hint: '',
               autofocus: existing == null,
-              decoration: const InputDecoration(
-                labelText: 'Nama bahan',
-                prefixIcon: Icon(Icons.inventory_outlined, size: 18),
-              ),
+              prefixIcon: Icons.inventory_outlined,
             ),
-            DropdownButtonFormField<StockUnit>(
-              initialValue: unit,
-              decoration: const InputDecoration(
-                labelText: 'Satuan',
-                prefixIcon: Icon(Icons.straighten_outlined, size: 18),
-              ),
-              items: [
+            SatDropdown<StockUnit>(
+              value: unit,
+              label: 'Satuan',
+              prefixIcon: Icons.straighten_outlined,
+              options: [
                 for (final u in StockUnit.values)
-                  DropdownMenuItem(
-                    value: u,
-                    child: Text(
-                      '${u.label} · ${stockDimensionLabel(u.dimension)}',
-                    ),
+                  SatOption(
+                    u,
+                    '${u.label} · ${stockDimensionLabel(u.dimension)}',
                   ),
               ],
               onChanged: (u) => setSheet(() => unit = u ?? unit),
             ),
             if (existing == null)
-              TextField(
+              SatField.decimal(
                 controller: openingCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Stok awal (${unit.label})',
-                  helperText: 'Dicatat sebagai mutasi awal',
-                  prefixIcon: const Icon(Icons.assessment_outlined, size: 18),
-                ),
+                label: 'Stok awal (${unit.label})',
+                hint: '',
+                helperText: 'Dicatat sebagai mutasi awal',
+                prefixIcon: Icons.assessment_outlined,
               ),
-            TextField(
+            SatField.decimal(
               controller: lowCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Batas menipis (${unit.label}, opsional)',
-                helperText: 'Munculkan peringatan saat stok di bawah angka ini',
-                prefixIcon: const Icon(Icons.warning_amber_rounded, size: 18),
-              ),
+              label: 'Batas menipis (${unit.label}, opsional)',
+              hint: '',
+              helperText: 'Munculkan peringatan saat stok di bawah angka ini',
+              prefixIcon: Icons.warning_amber_rounded,
             ),
-            TextField(
+            SatField.decimal(
               controller: yieldCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Hasil 1 batch (${unit.label}, opsional)',
-                helperText:
-                    'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
-                prefixIcon: const Icon(Icons.blender_outlined, size: 18),
-              ),
+              label: 'Hasil 1 batch (${unit.label}, opsional)',
+              hint: '',
+              helperText:
+                  'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
+              prefixIcon: Icons.blender_outlined,
             ),
           ],
           onConfirm: () => Navigator.of(ctx).pop(true),
