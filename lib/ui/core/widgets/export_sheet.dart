@@ -21,6 +21,7 @@ import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 /// What an export covers. All kinds share one sheet and one **Ekspor** entry
 /// (ADR-0030 / ADR-0031 / ADR-0032); the user picks the kind via the **Jenis**
@@ -374,7 +375,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: satMotion(context, 160),
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
           alignment: Alignment.center,

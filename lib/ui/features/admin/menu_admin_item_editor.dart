@@ -500,7 +500,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     }
     // Crossfade when the photo changes (pick / clear / revision bump).
     preview = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 240),
+      duration: satMotion(context, 240),
       switchInCurve: satEaseOut,
       switchOutCurve: satEaseOut,
       child: KeyedSubtree(key: ValueKey(sig), child: preview),
@@ -1552,7 +1552,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       hint = 'Margin kritis';
     }
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 240),
+      duration: satMotion(context, 240),
       curve: satEaseOut,
       padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
@@ -1574,7 +1574,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           const SizedBox(height: Sp.s1),
           AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 240),
+            duration: satMotion(context, 240),
             style: SatType.sans(size: 18, weight: FontWeight.w600, color: tone),
             child: hasData
                 ? AnimatedCount(
@@ -1627,7 +1627,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: satMotion(context, 200),
           curve: satEaseOut,
           padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
           decoration: SatBox.d(
@@ -1636,7 +1636,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             borderRadius: SatR.a(999),
           ),
           child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 200),
+            duration: satMotion(context, 200),
             style: SatType.sans(
               size: 12,
               weight: FontWeight.w500,
@@ -1660,7 +1660,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: satMotion(context, 200),
           curve: satEaseOut,
           padding: const EdgeInsets.symmetric(
             horizontal: Sp.s2h,
@@ -1675,7 +1675,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: satMotion(context, 200),
                 curve: satEaseOut,
                 width: 6,
                 height: 6,
@@ -1686,7 +1686,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
               const SizedBox(width: Sp.s1h),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+                duration: satMotion(context, 200),
                 style: SatType.sans(
                   size: 11,
                   weight: FontWeight.w500,
@@ -1946,7 +1946,7 @@ class _FooterState extends State<_Footer> {
                 shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
               ),
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
+                duration: satMotion(context, 200),
                 switchInCurve: satEaseOut,
                 transitionBuilder: (child, anim) => FadeTransition(
                   opacity: anim,

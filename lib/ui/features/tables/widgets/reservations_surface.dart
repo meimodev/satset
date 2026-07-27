@@ -14,6 +14,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 /// The booking book (ADR-0048). One content widget, two containers: a right-side
 /// drawer on tablet — the source design's idiom for a surface you read *against*
@@ -85,7 +86,7 @@ Future<void> openReservationsSurface(
       position: Tween<Offset>(
         begin: const Offset(1, 0),
         end: Offset.zero,
-      ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+      ).animate(CurvedAnimation(parent: anim, curve: satEaseOut)),
       child: child,
     ),
   );

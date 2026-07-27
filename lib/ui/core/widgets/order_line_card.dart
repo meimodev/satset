@@ -15,6 +15,7 @@ import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 /// The canonical order-line card — one sent [Ticket] rendered with its full
 /// context: qty, name/variant, allergen/diet badges, modifiers, item note,
@@ -41,9 +42,6 @@ class OrderLineCard extends ConsumerStatefulWidget {
   @override
   ConsumerState<OrderLineCard> createState() => _OrderLineCardState();
 }
-
-const Curve _kEase = Curves.easeOutQuart;
-const Duration _kStatusXfade = Duration(milliseconds: 280);
 
 bool _animationsDisabled(BuildContext c) =>
     MediaQuery.maybeOf(c)?.disableAnimations ?? false;
@@ -111,15 +109,19 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
       padding: const EdgeInsets.only(bottom: Sp.s1h),
       child: AnimatedOpacity(
         opacity: isVoided ? 0.5 : 1,
-        duration: reduced ? Duration.zero : _kStatusXfade,
-        curve: _kEase,
+        duration: reduced
+            ? Duration.zero
+            : const Duration(milliseconds: satStatusXfadeMs),
+        curve: satEaseOut,
         child: AnimatedBuilder(
           animation: _glow,
           builder: (context, child) {
             final glowT = (isReady && !reduced) ? _glow.value : 0.0;
             return AnimatedContainer(
-              duration: reduced ? Duration.zero : _kStatusXfade,
-              curve: _kEase,
+              duration: reduced
+                  ? Duration.zero
+                  : const Duration(milliseconds: satStatusXfadeMs),
+              curve: satEaseOut,
               decoration: SatBox.d(
                 color: bg,
                 borderRadius: SatR.a(14),

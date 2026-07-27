@@ -7,15 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 const int kPinLength = 6;
-
-const _kMicroDur = Duration(milliseconds: 200);
-const _kPressDur = Duration(milliseconds: 110);
-const _kShakeDur = Duration(milliseconds: 360);
-
-Duration _d(BuildContext c, Duration d) =>
-    MediaQuery.disableAnimationsOf(c) ? Duration.zero : d;
 
 /// Callback fired when the user has typed `kPinLength` digits.
 /// Return `null` on success — sheet closes with `true`.
@@ -84,7 +78,10 @@ class _PinSheetState extends State<_PinSheet>
   @override
   void initState() {
     super.initState();
-    _shake = AnimationController(vsync: this, duration: _kShakeDur);
+    _shake = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
   }
 
   @override
@@ -234,8 +231,8 @@ class _PinDots extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: pad),
           child: TweenAnimationBuilder<double>(
             tween: Tween(begin: filled ? 0 : 1, end: filled ? 1 : 0),
-            duration: _d(context, const Duration(milliseconds: 180)),
-            curve: Curves.easeOutQuart,
+            duration: satMotion(context, 180),
+            curve: satEaseOut,
             builder: (context, t, _) {
               final scale = 0.7 + 0.3 * t;
               return Transform.scale(
@@ -360,11 +357,11 @@ class _PinKeyState extends State<_PinKey> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _pressed ? 0.92 : 1.0,
-        duration: _d(context, _kPressDur),
-        curve: Curves.easeOutQuart,
+        duration: satMotion(context, 110),
+        curve: satEaseOut,
         child: AnimatedContainer(
-          duration: _d(context, _kMicroDur),
-          curve: Curves.easeOutQuart,
+          duration: satMotion(context, 200),
+          curve: satEaseOut,
           decoration: SatBox.d(
             color: muted
                 ? Colors.transparent

@@ -172,7 +172,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       crossFadeState: _opname
                           ? CrossFadeState.showSecond
                           : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 240),
+                      duration: satMotion(context, 240),
                       firstCurve: satEaseOut,
                       secondCurve: satEaseOut,
                     ),
@@ -303,7 +303,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           onTap: onTap,
           borderRadius: SatR.a(14),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: satMotion(context, 180),
             curve: satEaseOut,
             padding: const EdgeInsets.symmetric(
               horizontal: Sp.s3h,
@@ -406,7 +406,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           if (_counts.isNotEmpty) ...[
             const SizedBox(width: Sp.s2),
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
+              duration: satMotion(context, 180),
               transitionBuilder: (child, anim) =>
                   ScaleTransition(scale: anim, child: child),
               child: Container(
@@ -535,7 +535,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         onTap: () => setState(() => _activeFilter = filter),
         borderRadius: SatR.a(999),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: satMotion(context, 150),
           curve: satEaseOut,
           padding: const EdgeInsets.symmetric(
             horizontal: Sp.s3,
@@ -593,7 +593,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               left: 0,
               // Health status accent strip on left
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: satMotion(context, 200),
                 width: 4,
                 color: statusColor,
               ),
@@ -1016,7 +1016,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final text = delta == 0 ? 'Pas' : '$sign${formatQty(delta, i.unit)}';
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
+      duration: satMotion(context, 180),
       transitionBuilder: (child, anim) =>
           ScaleTransition(scale: anim, child: child),
       child: Text(

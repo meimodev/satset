@@ -15,6 +15,7 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 class ZoneAdminScreen extends ConsumerStatefulWidget {
   const ZoneAdminScreen({super.key});
@@ -333,7 +334,7 @@ class _ZoneChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
+        duration: satMotion(context, 140),
         padding: const EdgeInsets.fromLTRB(8, 0, 14, 0),
         decoration: SatBox.d(
           color: selected ? zone.color.withValues(alpha: 0.14) : sc.bg2,
@@ -1322,7 +1323,7 @@ class _ColorDot extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 130),
+          duration: satMotion(context, 130),
           width: 38,
           height: 38,
           decoration: SatBox.d(
@@ -1360,7 +1361,7 @@ class _IconTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 130),
+        duration: satMotion(context, 130),
         width: 46,
         height: 46,
         decoration: SatBox.d(
@@ -1709,7 +1710,7 @@ class _SelectChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 130),
+        duration: satMotion(context, 130),
         padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
         decoration: SatBox.d(
           color: selected ? c.withValues(alpha: 0.18) : sc.bg2,
@@ -1748,7 +1749,7 @@ class _Switch extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
+      duration: satMotion(context, 160),
       width: 44,
       height: 26,
       decoration: SatBox.d(
@@ -1757,7 +1758,7 @@ class _Switch extends StatelessWidget {
         borderRadius: SatR.a(999),
       ),
       child: AnimatedAlign(
-        duration: const Duration(milliseconds: 160),
+        duration: satMotion(context, 160),
         alignment: on ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
           margin: const EdgeInsets.all(Sp.sHair),

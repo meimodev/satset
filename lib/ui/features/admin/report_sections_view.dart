@@ -112,7 +112,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   }
                 }),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
+                  duration: satMotion(context, 160),
                   padding: const EdgeInsets.symmetric(vertical: 9),
                   margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
                   decoration: SatBox.d(
@@ -201,7 +201,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     return Stack(
       children: [
         AnimatedOpacity(
-          duration: const Duration(milliseconds: 220),
+          duration: satMotion(context, 220),
           curve: satEaseOut,
           opacity: loading ? 0.45 : 1,
           child: IgnorePointer(ignoring: loading, child: col),

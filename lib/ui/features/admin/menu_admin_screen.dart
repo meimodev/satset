@@ -102,7 +102,7 @@ class _TabletLayout extends ConsumerWidget {
                         // changes, so the detail pane swaps instead of
                         // hard-cutting between items.
                         child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 240),
+                          duration: satMotion(context, 240),
                           switchInCurve: satEaseOut,
                           switchOutCurve: satEaseOut,
                           transitionBuilder: (child, anim) => FadeTransition(
@@ -166,7 +166,7 @@ class _TabFade extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 240),
+      duration: satMotion(context, 240),
       switchInCurve: satEaseOut,
       switchOutCurve: satEaseOut,
       transitionBuilder: (child, anim) => FadeTransition(
@@ -457,7 +457,7 @@ class _CategoryRail extends ConsumerWidget {
           onTap: () =>
               ref.read(menuAdminCategoryFilterProvider.notifier).state = id,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: satMotion(context, 200),
             curve: satEaseOut,
             padding: const EdgeInsets.symmetric(
               horizontal: Sp.s3,
@@ -472,7 +472,7 @@ class _CategoryRail extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
+                  duration: satMotion(context, 200),
                   style: SatType.sans(
                     size: 12,
                     weight: FontWeight.w500,
@@ -536,7 +536,7 @@ class _ItemList extends ConsumerWidget {
     // Crossfade the whole list when the active filter changes; rows that have
     // already entered won't re-cascade (Reveal keys on item id).
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
+      duration: satMotion(context, 220),
       switchInCurve: satEaseOut,
       switchOutCurve: satEaseOut,
       child: KeyedSubtree(key: ValueKey('$cat|$search'), child: body),
@@ -584,7 +584,7 @@ class _ItemRow extends ConsumerWidget {
                       .toggleAvailability(item.id)
                 : null,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: satMotion(context, 200),
               curve: satEaseOut,
               decoration: SatBox.d(
                 color: isSelected ? sc.accentSoft : sc.bg2,
@@ -768,7 +768,7 @@ class _StatusToggle extends ConsumerWidget {
                   .toggleAvailability(item.id)
             : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: satMotion(context, 220),
           curve: satEaseOut,
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
@@ -784,7 +784,7 @@ class _StatusToggle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: satMotion(context, 220),
                 curve: satEaseOut,
                 width: 6,
                 height: 6,
@@ -792,7 +792,7 @@ class _StatusToggle extends ConsumerWidget {
               ),
               const SizedBox(width: Sp.s1h),
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
+                duration: satMotion(context, 200),
                 switchInCurve: satEaseOut,
                 transitionBuilder: (child, anim) =>
                     FadeTransition(opacity: anim, child: child),
@@ -866,7 +866,7 @@ class _TabSwitcher extends ConsumerWidget {
         child: GestureDetector(
           onTap: () => ref.read(menuAdminTabProvider.notifier).state = value,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
+            duration: satMotion(context, 220),
             curve: satEaseOut,
             padding: const EdgeInsets.symmetric(
               horizontal: Sp.s3h,
@@ -877,7 +877,7 @@ class _TabSwitcher extends ConsumerWidget {
               borderRadius: SatR.a(8),
             ),
             child: AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 220),
+              duration: satMotion(context, 220),
               style: SatType.sans(
                 size: 12,
                 weight: FontWeight.w600,

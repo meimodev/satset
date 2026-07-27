@@ -175,6 +175,71 @@ void main() {
     }
   });
 
+  // Reduced motion. A ban, not a baseline — every `AnimatedFoo` in lib/ui now
+  // takes its duration from `satMotion(context, ms)`, which collapses to zero
+  // when the platform asks for it.
+  //
+  // This is an accessibility rule, not a stylistic one: a raw `duration:` keeps
+  // animating for a user who has explicitly asked the OS to stop, and it fails
+  // silently — nothing in review shows it, because the reviewer has motion on.
+  // A hand-rolled `reduced ? Duration.zero : …` ternary passes too; the point
+  // is that the decision is visible in the argument.
+  test('every animation respects reduced motion', () {
+    final animated = RegExp(
+      r'\b(?:AnimatedContainer|AnimatedOpacity|AnimatedSwitcher|AnimatedAlign'
+      r'|AnimatedPadding|AnimatedPositioned|AnimatedScale|AnimatedSlide'
+      r'|AnimatedSize|AnimatedRotation|AnimatedDefaultTextStyle'
+      r'|TweenAnimationBuilder(?:<[^>]*>)?|AnimatedCrossFade)\(',
+    );
+    final durationArg = RegExp(
+      r'^\s*(?:reverse)?[Dd]uration:\s*(.*)$',
+      dotAll: true,
+    );
+    final guarded = RegExp(r'satMotion|Duration\.zero|motionEnabled|reduce');
+    // `duration: xfade` is fine when `xfade` itself was computed from the
+    // reduced-motion flag, and a widget that early-returns its child under
+    // reduced motion has already answered the question for its whole build.
+    final bareName = RegExp(r'^\w+$');
+    final earlyReturn = RegExp(
+      r'(?:disableAnimationsOf|!\s*motionEnabled)\([^)]*\)\)?\s*\)?\s*return',
+    );
+    final hits = <String>[];
+    for (final file in files) {
+      final src = file.readAsStringSync();
+      for (final m in animated.allMatches(src)) {
+        final body = _callBody(src, m.end - 1);
+        if (body.length < 2) continue;
+        final before = src.substring(
+          (m.start - 900).clamp(0, m.start),
+          m.start,
+        );
+        if (earlyReturn.hasMatch(before)) continue;
+        for (final arg in _splitArgs(body.substring(1, body.length - 1))) {
+          final am = durationArg.firstMatch(arg);
+          if (am == null) continue;
+          if (guarded.hasMatch(arg)) continue;
+          final value = am.group(1)!.trim();
+          if (bareName.hasMatch(value)) {
+            final assign = RegExp(
+              '(?:final|var|Duration)\\s+$value\\s*=([^;]*);',
+            ).firstMatch(src);
+            if (assign != null && guarded.hasMatch(assign.group(1)!)) continue;
+            // A widget field named `duration` is the caller's decision to make.
+            if (RegExp('final Duration $value;').hasMatch(src)) continue;
+          }
+          hits.add('${file.path}:${_lineOf(src, m.start)}  ${arg.trim()}');
+        }
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Animation ignores reduced motion. Take the duration from '
+          'satMotion(context, ms) — design/motion.dart.\n${hits.join('\n')}',
+    );
+  });
+
   // Spacing. The scale now carries half-steps (6/10/14/18) and a 2px hair gap,
   // because those were already in the code 428 times before they had names —
   // so every value a component legitimately wants has a token, and a raw number

@@ -34,12 +34,11 @@ import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
 // feels like one continuous surface.
-const Curve _kEase = Curves.easeOutQuart;
-const Duration _kStatusXfade = Duration(milliseconds: 280);
 const Duration _kChipMorph = Duration(milliseconds: 220);
 const Duration _kPressIn = Duration(milliseconds: 90);
 
@@ -898,7 +897,7 @@ class _ContextTriggerBtn extends StatelessWidget {
                   duration: _animationsDisabled(context)
                       ? Duration.zero
                       : _kChipMorph,
-                  switchInCurve: _kEase,
+                  switchInCurve: satEaseOut,
                   transitionBuilder: (child, anim) => ScaleTransition(
                     scale: anim,
                     child: FadeTransition(opacity: anim, child: child),
@@ -1329,10 +1328,12 @@ class _PrimaryIconButtonState extends State<_PrimaryIconButton> {
         child: AnimatedScale(
           scale: _pressed ? 0.92 : 1.0,
           duration: reduced ? Duration.zero : _kPressIn,
-          curve: _kEase,
+          curve: satEaseOut,
           child: AnimatedContainer(
-            duration: reduced ? Duration.zero : _kStatusXfade,
-            curve: _kEase,
+            duration: reduced
+                ? Duration.zero
+                : const Duration(milliseconds: satStatusXfadeMs),
+            curve: satEaseOut,
             decoration: SatBox.d(color: bg, shape: BoxShape.circle),
             child: Material(
               color: Colors.transparent,
@@ -1377,7 +1378,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
     return AnimatedScale(
       scale: _pressed ? 0.97 : 1.0,
       duration: reduced ? Duration.zero : _kPressIn,
-      curve: _kEase,
+      curve: satEaseOut,
       child: SizedBox(
         height: 52,
         child: Material(

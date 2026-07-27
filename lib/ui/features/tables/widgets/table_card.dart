@@ -27,8 +27,6 @@ final tableElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   ),
 );
 
-const Curve _kEase = Curves.easeOutQuart;
-const Duration _kStatusXfade = Duration(milliseconds: 280);
 const Duration _kPressIn = Duration(milliseconds: 90);
 
 /// A table on the floor grid.
@@ -153,7 +151,9 @@ class _TableCardState extends ConsumerState<TableCard> {
     final pills = _pills(table, service, sc);
 
     final reduced = !motionEnabled(context);
-    final xfade = reduced ? Duration.zero : _kStatusXfade;
+    final xfade = reduced
+        ? Duration.zero
+        : const Duration(milliseconds: satStatusXfadeMs);
     final pressDur = reduced ? Duration.zero : _kPressIn;
 
     final body = Padding(
@@ -170,7 +170,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                   alignment: Alignment.centerLeft,
                   child: AnimatedDefaultTextStyle(
                     duration: xfade,
-                    curve: _kEase,
+                    curve: satEaseOut,
                     style: brutal
                         ? SatType.display(
                             size: tnumSize,
@@ -264,7 +264,7 @@ class _TableCardState extends ConsumerState<TableCard> {
             children: [
               AnimatedContainer(
                 duration: xfade,
-                curve: _kEase,
+                curve: satEaseOut,
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
@@ -280,7 +280,7 @@ class _TableCardState extends ConsumerState<TableCard> {
               Expanded(
                 child: AnimatedDefaultTextStyle(
                   duration: xfade,
-                  curve: _kEase,
+                  curve: satEaseOut,
                   style: SatType.sans(
                     size: brutal ? 11 : (tablet ? 13 : 12),
                     weight: brutal
@@ -368,10 +368,10 @@ class _TableCardState extends ConsumerState<TableCard> {
     final card = AnimatedScale(
       scale: !brutal && _pressed ? 0.97 : 1.0,
       duration: pressDur,
-      curve: _kEase,
+      curve: satEaseOut,
       child: AnimatedContainer(
         duration: pressDur,
-        curve: _kEase,
+        curve: satEaseOut,
         transform: Matrix4.translationValues(pressOffset, pressOffset, 0),
         decoration: brutal && _pressed
             ? decoration.copyWith(boxShadow: const [])

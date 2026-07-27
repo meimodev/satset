@@ -99,8 +99,8 @@ class _TabToggle extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: () => onChanged(t),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
+          duration: satMotion(context, 180),
+          curve: satEaseOut,
           padding: const EdgeInsets.symmetric(
             horizontal: Sp.s4,
             vertical: Sp.s2,
@@ -298,7 +298,7 @@ class _PayableTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     AnimatedContainer(
-                      duration: const Duration(milliseconds: 240),
+                      duration: satMotion(context, 240),
                       curve: satEaseOut,
                       padding: const EdgeInsets.symmetric(
                         horizontal: Sp.s2,
@@ -309,7 +309,7 @@ class _PayableTile extends StatelessWidget {
                         borderRadius: SatR.a(6),
                       ),
                       child: AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 240),
+                        duration: satMotion(context, 240),
                         curve: satEaseOut,
                         style: SatType.sans(
                           size: 10,

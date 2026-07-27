@@ -12,6 +12,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/report_sections_view.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 /// Read-only, off-site report view for an [[Owner]] (ADR-0036). Diverts here at
 /// login (`role == 'owner'`), reads the host-published snapshot from
@@ -160,7 +161,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               child: GestureDetector(
                 onTap: () => setState(() => _range = key),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
+                  duration: satMotion(context, 160),
                   padding: const EdgeInsets.symmetric(vertical: 9),
                   margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
                   alignment: Alignment.center,

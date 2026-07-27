@@ -375,7 +375,7 @@ class _TotalsCard extends StatelessWidget {
             ),
           ),
           AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 260),
+            duration: satMotion(context, 260),
             curve: satEaseOut,
             style: SatType.mono(
               size: strong ? 15 : 12.5,
@@ -737,7 +737,7 @@ class _AssignRowState extends State<_AssignRow> {
             onPressed: v > 0 ? () => setState(() => v--) : null,
           ),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 150),
+            duration: satMotion(context, 150),
             transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
             child: Text(
               '$v',
@@ -797,7 +797,7 @@ class _ReceiptCard extends ConsumerWidget {
     final isWholeBill = bill.receipts.length == 1 && bill.fullyAssigned;
     final showItems = r.lines.isNotEmpty && !isWholeBill;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 280),
+      duration: satMotion(context, 280),
       curve: satEaseOut,
       decoration: SatBox.d(
         color: sc.bg1,
@@ -821,7 +821,7 @@ class _ReceiptCard extends ConsumerWidget {
                 ),
               ),
               AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
+                duration: satMotion(context, 280),
                 curve: satEaseOut,
                 padding: const EdgeInsets.symmetric(
                   horizontal: Sp.s2,
@@ -832,7 +832,7 @@ class _ReceiptCard extends ConsumerWidget {
                   borderRadius: SatR.a(6),
                 ),
                 child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 280),
+                  duration: satMotion(context, 280),
                   curve: satEaseOut,
                   style: SatType.sans(
                     size: 10,
@@ -1142,7 +1142,7 @@ class _ReceiptCard extends ConsumerWidget {
                     ),
                   ),
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
+                    duration: satMotion(context, 200),
                     switchInCurve: satEaseOut,
                     switchOutCurve: satEaseOut,
                     transitionBuilder: (c, a) => FadeTransition(

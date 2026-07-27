@@ -25,7 +25,6 @@ import 'package:satset/ui/features/tables/widgets/takeaway_surface.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
 // Animation tuning. Lively but professional. easeOutQuart per design tokens.
-const Curve _kEase = Curves.easeOutQuart;
 const Duration _kChipMorph = Duration(milliseconds: 240);
 const Duration _kCardEnter = Duration(milliseconds: 380);
 const int _kStaggerStepMs = 26;
@@ -499,10 +498,10 @@ class _ZoneRow extends StatelessWidget {
               child: AnimatedScale(
                 scale: isActive ? 1.0 : 0.97,
                 duration: dur,
-                curve: _kEase,
+                curve: satEaseOut,
                 child: AnimatedContainer(
                   duration: dur,
-                  curve: _kEase,
+                  curve: satEaseOut,
                   padding: EdgeInsets.symmetric(
                     horizontal: tablet ? 16 : 14,
                     vertical: tablet ? 10 : 9,
@@ -518,7 +517,7 @@ class _ZoneRow extends StatelessWidget {
                     children: [
                       AnimatedDefaultTextStyle(
                         duration: dur,
-                        curve: _kEase,
+                        curve: satEaseOut,
                         style: SatType.sans(
                           size: 13,
                           weight: brutal ? FontWeight.w700 : FontWeight.w500,
@@ -529,7 +528,7 @@ class _ZoneRow extends StatelessWidget {
                       const SizedBox(width: Sp.s2h),
                       AnimatedDefaultTextStyle(
                         duration: dur,
-                        curve: _kEase,
+                        curve: satEaseOut,
                         style: SatType.mono(
                           size: 11,
                           color: isActive
@@ -599,7 +598,7 @@ class _CardFadeInState extends State<_CardFadeIn>
     return AnimatedBuilder(
       animation: _c,
       builder: (_, child) {
-        final t = _kEase.transform(_c.value);
+        final t = satEaseOut.transform(_c.value);
         return Opacity(
           opacity: t,
           child: Transform.translate(

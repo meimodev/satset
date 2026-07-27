@@ -15,15 +15,7 @@ import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
-
-const _kEnterDur = Duration(milliseconds: 480);
-const _kMicroDur = Duration(milliseconds: 200);
-const _kPanelDur = Duration(milliseconds: 280);
-const _kEnterCurve = Curves.easeOutQuart;
-const _kPanelCurve = Curves.easeOutQuint;
-
-Duration _d(BuildContext c, Duration d) =>
-    MediaQuery.disableAnimationsOf(c) ? Duration.zero : d;
+import 'package:satset/ui/core/design/motion.dart';
 
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
@@ -295,8 +287,8 @@ class _PinScreenState extends ConsumerState<PinScreen>
                       _Reveal(
                         delay: const Duration(milliseconds: 80),
                         child: AnimatedSize(
-                          duration: _d(context, _kPanelDur),
-                          curve: _kPanelCurve,
+                          duration: satMotion(context, 280),
+                          curve: satEaseOut,
                           alignment: Alignment.topCenter,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -347,8 +339,8 @@ class _PinScreenState extends ConsumerState<PinScreen>
     final swapKey = state.mode == SignInMode.admin ? 'admin' : 'staff';
 
     final modeBlock = AnimatedSize(
-      duration: _d(context, _kPanelDur),
-      curve: _kPanelCurve,
+      duration: satMotion(context, 280),
+      curve: satEaseOut,
       alignment: Alignment.topCenter,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -655,8 +647,8 @@ class _ModeSwitcher extends StatelessWidget {
                 alignment: isAdmin
                     ? Alignment.centerLeft
                     : Alignment.centerRight,
-                duration: _d(context, _kPanelDur),
-                curve: _kPanelCurve,
+                duration: satMotion(context, 280),
+                curve: satEaseOut,
                 child: Container(
                   width: pillW,
                   height: 52,
@@ -715,8 +707,8 @@ class _ModeSwitcher extends StatelessWidget {
           children: [
             TweenAnimationBuilder<double>(
               tween: Tween(end: active ? 1.0 : 0.0),
-              duration: _d(context, _kMicroDur),
-              curve: Curves.easeOutQuart,
+              duration: satMotion(context, 200),
+              curve: satEaseOut,
               builder: (context, t, _) => Icon(
                 icon,
                 size: 18,
@@ -727,8 +719,8 @@ class _ModeSwitcher extends StatelessWidget {
             Expanded(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: active ? 1.0 : 0.0),
-                duration: _d(context, _kMicroDur),
-                curve: Curves.easeOutQuart,
+                duration: satMotion(context, 200),
+                curve: satEaseOut,
                 builder: (context, t, _) => Text(
                   label,
                   style: SatType.sans(
@@ -842,8 +834,8 @@ class _ServerRow extends StatelessWidget {
     final dotColor = server.paired ? sc.success : sc.accent;
     final dotShadow = server.paired ? sc.successSoft : sc.accentSoft;
     return AnimatedContainer(
-      duration: _d(context, _kMicroDur),
-      curve: Curves.easeOutQuart,
+      duration: satMotion(context, 200),
+      curve: satEaseOut,
       color: selected ? sc.accentSoft : Colors.transparent,
       child: Material(
         color: Colors.transparent,
@@ -1326,7 +1318,10 @@ class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: _kEnterDur);
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
     Future<void>.delayed(widget.delay, () {
       if (mounted) _c.forward();
     });
@@ -1344,7 +1339,7 @@ class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
     return AnimatedBuilder(
       animation: _c,
       builder: (context, child) {
-        final t = _kEnterCurve.transform(_c.value);
+        final t = satEaseOut.transform(_c.value);
         return Opacity(
           opacity: t,
           child: Transform.translate(
@@ -1416,12 +1411,12 @@ class _SwapBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: _d(context, _kPanelDur),
-      curve: _kPanelCurve,
+      duration: satMotion(context, 280),
+      curve: satEaseOut,
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
-        duration: _d(context, _kPanelDur),
-        switchInCurve: _kPanelCurve,
+        duration: satMotion(context, 280),
+        switchInCurve: satEaseOut,
         switchOutCurve: Curves.easeInQuart,
         transitionBuilder: (child, anim) => FadeTransition(
           opacity: anim,

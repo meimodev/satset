@@ -3,6 +3,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 export 'package:satset/ui/core/widgets/tablet_chrome.dart'
     show TabletCard, TabletStatTile;
@@ -345,7 +346,7 @@ Widget adminToggle(BuildContext context, {required bool on}) {
       borderRadius: SatR.a(999),
     ),
     child: AnimatedAlign(
-      duration: const Duration(milliseconds: 180),
+      duration: satMotion(context, 180),
       alignment: on ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),

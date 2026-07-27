@@ -3,7 +3,7 @@ import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 export 'package:satset/ui/core/design/motion.dart'
-    show satEaseOut, motionEnabled;
+    show satEaseOut, motionEnabled, satMotion;
 
 /// Shared motion primitives for SatSet screens. Every animation here collapses
 /// to its final frame when the platform requests reduced motion, so callers
@@ -11,10 +11,6 @@ export 'package:satset/ui/core/design/motion.dart'
 ///
 /// The curve itself is a token — `satEaseOut` in `design/motion.dart`, re-exported
 /// here so a screen animating something bespoke needs one import, not two.
-
-Duration _motion(BuildContext c, int ms) => MediaQuery.disableAnimationsOf(c)
-    ? Duration.zero
-    : Duration(milliseconds: ms);
 
 /// Fade + slide-up entrance, played once on mount. Give siblings increasing
 /// [index] values for a staggered cascade (55ms per step).
@@ -110,7 +106,7 @@ class ExpandFade extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: _motion(context, ms),
+      duration: satMotion(context, ms),
       switchInCurve: satEaseOut,
       switchOutCurve: satEaseOut,
       transitionBuilder: (child, anim) => FadeTransition(
@@ -145,7 +141,7 @@ class AnimatedReflow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: _motion(context, ms),
+      duration: satMotion(context, ms),
       curve: satEaseOut,
       alignment: alignment,
       child: child,
@@ -181,7 +177,7 @@ class AnimatedBarFill extends StatelessWidget {
         ),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: f),
-          duration: _motion(context, 620),
+          duration: satMotion(context, 620),
           curve: satEaseOut,
           builder: (context, v, _) => FractionallySizedBox(
             widthFactor: v,
@@ -215,7 +211,7 @@ class GrowBarV extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: height),
-      duration: _motion(context, 560),
+      duration: satMotion(context, 560),
       curve: satEaseOut,
       builder: (context, h, _) => Container(
         width: width,

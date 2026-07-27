@@ -31,7 +31,7 @@ Never hardcode a `Color`, a spacing number, or a curve. Go through these.
 | `Sp.sHair`, `Sp.s1`…`Sp.s12` | `spacing.dart` | Every gap and pad. 2/4/6/8/10/12/14/16/18/20/24/32/40/48 — a 4px grid with half-steps below 20, because a chip with 10px type has no room for an 8px inset and 12 makes it read as a button. `sHair` (2) is for stacked text that belongs together, not for layout. Above 20 the grid is pure. |
 | `SatR` | `skin.dart` | Every corner radius. Skin-aware (ADR-0047) — a raw `BorderRadius.circular(n)` ignores the active skin. |
 | `SatType` | `typography.dart` | Every text style. |
-| `satEaseOut`, `motionEnabled(context)` | `motion.dart` | Every animation. One curve app-wide. Re-exported by `anim.dart`, so a screen using both needs one import. Prefer the `anim.dart` primitives below over raw `AnimatedFoo`. |
+| `satEaseOut`, `motionEnabled(context)`, `satMotion(context, ms)` | `motion.dart` | Every animation. One curve app-wide. **Take every `duration:` from `satMotion`** — it collapses to zero under reduced motion, and a raw `Duration` ignores that silently (hard-banned by the guard test). Re-exported by `anim.dart`, so a screen using both needs one import. Prefer the `anim.dart` primitives below over raw `AnimatedFoo`. |
 | `onFill(Color)` | `colors.dart` | Ink for text on a *saturated* fill (status pill, owner chip, brutal badge). Luminance-derived, so it stays correct on every palette. Never a literal near-black. |
 | `darken(Color, [amount])` | `colors.dart` | Far end of an avatar/badge gradient. Blends toward black so a saturated hue keeps its identity. |
 | `satBarrier`, `satMediaScrim`, `satShadowInk` | `colors.dart` | Dimming and shadow that must stay dark on *both* themes — modal barrier, label-over-photo scrim, ambient shadow. Not `sc.scrim`: that token is an opaque blend base and paints the layer underneath out entirely. |
@@ -186,3 +186,5 @@ Rebuilt in more than one place. Guarded by `test/design_tokens_test.dart`
 | `Reveal` ×2 + `PressableScale`/`PressScale` (two parallel motion systems, one in `design/motion.dart` and one in `widgets/anim.dart`) | One each in `anim.dart`. `design/motion.dart` is tokens only, per the layout rule above. |
 | `kSatEase` `Cubic(0.16, 1, 0.3, 1)` vs `satEaseOut` `Cubic(0.22, 1, 0.36, 1)` | `satEaseOut`. Two ease curves is two hands, not one. |
 | `computeLuminance() > 0.45 ? dark : light` ×3 | `onFill(Color)` — `design/colors.dart`. Took the last hardcoded `Color(0x…)` in `lib/ui/` with it; that rule is now a hard ban. |
+| Inline avatar ×3 (`staff_screen`, `me_screen`, plus the rail) with 0.32/0.36 darkening | `StaffAvatar` / `StaffAvatar.raw`. The rail keeps its own chrome but shares the tokens. |
+| `_d(context, …)` ×2, `_motion(context, …)`, `_kEase` ×4, `_kStatusXfade` ×3 | `satMotion`, `satEaseOut`, `satStatusXfadeMs` — `design/motion.dart`. |

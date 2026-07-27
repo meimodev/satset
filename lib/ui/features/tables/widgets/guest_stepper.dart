@@ -3,6 +3,7 @@ import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 class GuestStepper extends StatefulWidget {
   final int pax;
@@ -78,8 +79,8 @@ class _GuestStepperState extends State<GuestStepper> {
                   duration: reduced
                       ? Duration.zero
                       : const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeOutQuart,
-                  switchOutCurve: Curves.easeOutQuart,
+                  switchInCurve: satEaseOut,
+                  switchOutCurve: satEaseOut,
                   transitionBuilder: (child, anim) {
                     final slide = Tween<Offset>(
                       begin: Offset(0, goingUp ? 0.6 : -0.6),

@@ -16,6 +16,7 @@ import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 /// One kitchen order card: the kitchen-station tickets a table sent together.
 class _KOrder {
@@ -301,7 +302,7 @@ class _CompletedFilter extends StatelessWidget {
         borderRadius: SatR.a(999),
         onTap: () => onChanged(!value),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: satMotion(context, 160),
           padding: const EdgeInsets.symmetric(
             horizontal: Sp.s3,
             vertical: Sp.s2,
@@ -367,8 +368,8 @@ class _OrderCard extends ConsumerWidget {
         order.tableId;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
+      duration: satMotion(context, 300),
+      curve: satEaseOut,
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(
@@ -430,8 +431,8 @@ class _OrderCard extends ConsumerWidget {
             ),
           ),
           AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
+            duration: satMotion(context, 200),
+            curve: satEaseOut,
             alignment: Alignment.topCenter,
             child: Column(
               children: [
@@ -627,7 +628,7 @@ class _ItemRowState extends State<_ItemRow>
     return AnimatedBuilder(
       animation: _flash,
       builder: (_, child) {
-        final t = 1 - Curves.easeOut.transform(_flash.value);
+        final t = 1 - satEaseOut.transform(_flash.value);
         return Material(
           color: Color.alphaBlend(sc.success.withValues(alpha: 0.35 * t), base),
           child: child,
@@ -662,7 +663,7 @@ class _ItemRowState extends State<_ItemRow>
               const SizedBox(width: Sp.s3),
               Expanded(
                 child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 160),
+                  duration: satMotion(context, 160),
                   opacity: cooked ? 0.55 : 1,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,17 +738,11 @@ class _CheckButtonState extends State<_CheckButton>
   // A confident pop (no elastic overshoot) when the cook marks an item done.
   late final Animation<double> _scale = TweenSequence<double>([
     TweenSequenceItem(
-      tween: Tween(
-        begin: 1.0,
-        end: 1.18,
-      ).chain(CurveTween(curve: Curves.easeOut)),
+      tween: Tween(begin: 1.0, end: 1.18).chain(CurveTween(curve: satEaseOut)),
       weight: 45,
     ),
     TweenSequenceItem(
-      tween: Tween(
-        begin: 1.18,
-        end: 1.0,
-      ).chain(CurveTween(curve: Curves.easeOut)),
+      tween: Tween(begin: 1.18, end: 1.0).chain(CurveTween(curve: satEaseOut)),
       weight: 55,
     ),
   ]).animate(_pop);
@@ -774,8 +769,8 @@ class _CheckButtonState extends State<_CheckButton>
     return ScaleTransition(
       scale: _scale,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
+        duration: satMotion(context, 180),
+        curve: satEaseOut,
         width: 34,
         height: 34,
         decoration: SatBox.d(
