@@ -13,6 +13,7 @@ import 'package:satset/ui/core/widgets/export_sheet.dart';
 import 'package:satset/ui/core/widgets/skeleton_card.dart';
 import 'package:satset/ui/features/admin/report_sections_view.dart';
 import '_common.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Admin → Reports. Owns the report **chrome** — range pills, server/zone/
 /// category filters, export, freshness — and delegates the five-section
@@ -95,7 +96,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: Sp.s4),
               child: Row(
                 children: [
                   Expanded(
@@ -138,7 +139,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 showExportSheet(context, ref, snapshot: snapshot, query: query),
             child: adminPill(context, 'Ekspor', on: false),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           _refreshButton(
             context,
             status.isLoading,
@@ -180,7 +181,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       tooltip: 'Muat ulang',
       icon: loading
           ? SizedBox(
-              width: 16,
+              width: Sp.s4,
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
@@ -231,12 +232,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return [
       if (status.hasError) ...[
         _errorBanner(context, status),
-        const SizedBox(height: 12),
+        const SizedBox(height: Sp.s3),
       ],
       _rangeRow(context, query),
-      const SizedBox(height: 12),
+      const SizedBox(height: Sp.s3),
       _filterRow(context, snapshot, query),
-      const SizedBox(height: 12),
+      const SizedBox(height: Sp.s3),
       if (snapshot == null)
         const ReportsSkeleton()
       else
@@ -260,7 +261,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Row(
         children: [
           Icon(Icons.error_outline, color: sc.warn, size: 18),
-          const SizedBox(width: 10),
+          const SizedBox(width: Sp.s2h),
           Expanded(
             child: Text(
               'Gagal memuat laporan',
@@ -296,7 +297,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 on: query.range == r,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
           ],
         ],
       ),
@@ -342,14 +343,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             (n) => _setServer(n.id.isEmpty ? null : n.id),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.s2),
         Expanded(
           child: _filterChip(context, 'Zona', zoneName, [
             const NamedIdDto(id: '', name: 'Semua zona'),
             ...zones,
           ], (n) => _setZone(n.id.isEmpty ? null : n.id)),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.s2),
         Expanded(
           child: _filterChip(
             context,
@@ -416,7 +417,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       },
       borderRadius: SatR.a(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
         decoration: SatBox.d(
           color: active ? sc.accentSoft : sc.bg2,
           border: SatB.all(color: active ? sc.accentBorder : sc.border0),
@@ -437,7 +438,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       color: sc.textLo,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: Sp.sHair),
                   Text(
                     value,
                     maxLines: 1,

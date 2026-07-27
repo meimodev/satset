@@ -1,0 +1,75 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; flex: 1 1 100%; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 18px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 10px; font-size: 12px; border-bottom: 1px solid var(--border0); vertical-align: top; }
+  th { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; }
+  td { color: var(--textMd); }
+  td:first-child { font-family: 'IBM Plex Mono', monospace; color: var(--textHi); font-size: 11px; white-space: nowrap; }
+  .curve { display: flex; gap: 18px; align-items: center; margin: 4px 0 22px; flex-wrap: wrap; }
+  .curve svg { background: var(--bg2); border: 1px solid var(--border0); border-radius: var(--r-md); }
+  .live { display: flex; gap: 10px; align-items: center; }
+  .glow {
+    width: 150px; padding: 10px 12px; border-radius: var(--r-lg);
+    background: var(--successSoft); border: 1px solid rgba(77,212,135,0.3);
+    font-size: 12px; font-weight: 500; color: var(--success);
+    animation: breathe 1.5s ease-in-out infinite alternate;
+  }
+  @keyframes breathe {
+    from { box-shadow: 0 0 8px 0 rgba(77,212,135,0.10); }
+    to   { box-shadow: 0 0 16px 0.5px rgba(77,212,135,0.24); }
+  }
+  @media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="stage" data-pal="dark">
+    <h3>satEaseOut</h3>
+    <p class="sub">Cubic(0.22, 1, 0.36, 1) · ≈ ease-out-quint · motion.dart</p>
+    <div class="curve">
+      <svg width="130" height="130" viewBox="0 0 100 100">
+        <path d="M0,100 C22,0 36,0 100,0" fill="none" stroke="#FF9233" stroke-width="2.5"/>
+        <line x1="0" y1="100" x2="100" y2="100" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+        <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+      </svg>
+      <div class="live">
+        <div class="glow">Siap · ×2</div>
+        <div class="spec" style="margin:0">Ready lines breathe on a 1500ms
+reverse-repeat glow — the one signal
+a waiter actively scans for.</div>
+      </div>
+    </div>
+
+    <table>
+      <tr><th>Duration</th><th>Where</th><th>What</th></tr>
+      <tr><td>90ms</td><td>TableCard press</td><td>Lembut scales to 0.97; brutal translates (3,3) into its own shadow</td></tr>
+      <tr><td>110ms</td><td>PressableScale / PressScale</td><td>~3% physical give on any tappable</td></tr>
+      <tr><td>220ms</td><td>_StatusChip morph</td><td>Fade + scale 0.85→1 on label change</td></tr>
+      <tr><td>280ms</td><td>Status cross-fade</td><td>Card fill / border / dot recolor</td></tr>
+      <tr><td>340ms</td><td>Reveal</td><td>Fade + 12px slide-up, 50ms stagger, capped at 10 steps</td></tr>
+      <tr><td>360ms</td><td>Block entrance</td><td>Conditional block sliding in (mark-served button)</td></tr>
+      <tr><td>1500ms</td><td>Shimmer / ready glow</td><td>Repeating; skeleton sweep and ready breathe</td></tr>
+      <tr><td>1s / 30s</td><td>Tickers</td><td>Table cards tick 1s; elapsed pills 30s (minute granularity)</td></tr>
+    </table>
+
+    <div class="spec">Transform and opacity only. Motion clarifies what changed; it never
+entertains and never costs a waiter time. No animation delays a confirmation.
+
+Every primitive collapses to its static final state when
+motionEnabled(context) is false — callers never branch on it.
+Reveal caps its cascade at index 10 so long lists get no sluggish tail.</div>
+  </div>
+</div>
+</body>
+</html>

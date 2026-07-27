@@ -7,6 +7,7 @@ import 'package:satset/data/services/fleet_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Per-venue management surface, opened from a Fleet console tile. Owns this
 /// venue's identity (name/address, cloud source of truth per ADR-0018),
@@ -198,7 +199,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
         children: [
           _sectionLabel(sc, 'IDENTITAS'),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           TextField(
             controller: _name,
             onChanged: (_) => setState(() {}),
@@ -207,19 +208,19 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               errorText: _nameValid ? null : 'Nama wajib diisi',
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           TextField(
             controller: _address,
             decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: Sp.s6),
           _sectionLabel(sc, 'TAGIHAN'),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           TextField(
             controller: _plan,
             decoration: const InputDecoration(labelText: 'Paket'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           DropdownButtonFormField<String>(
             initialValue: _billingStatus,
             decoration: const InputDecoration(labelText: 'Status tagihan'),
@@ -231,9 +232,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             onChanged: (x) =>
                 setState(() => _billingStatus = x ?? _billingStatus),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           _paidUntilRow(sc),
-          const SizedBox(height: 28),
+          const SizedBox(height: Sp.s6),
           _principalSection(
             sc,
             admins,
@@ -243,7 +244,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             addLabel: 'Tambah admin',
             emptyMsg: 'Belum ada admin untuk venue ini.',
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: Sp.s6),
           _principalSection(
             sc,
             admins,
@@ -253,7 +254,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             addLabel: 'Tambah pemilik',
             emptyMsg: 'Belum ada pemilik untuk venue ini.',
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: Sp.s8),
           _dangerZone(sc, [...venueAdmins, ...venueOwners]),
         ],
       ),
@@ -276,13 +277,13 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _sectionLabel(sc, label),
-        const SizedBox(height: 10),
+        const SizedBox(height: Sp.s2h),
         FleetPrimaryButton(
           label: addLabel,
           icon: Icons.person_add_alt_1,
           onTap: _busy ? null : () => _createPrincipalDialog(role),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: Sp.s3),
         if (all.hasError)
           Text(
             'Gagal memuat: ${fleetErrText(all.error!)}',
@@ -290,14 +291,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           )
         else if (loading)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: Sp.s5),
             child: Center(
               child: CircularProgressIndicator(color: sc.accentText),
             ),
           )
         else if (rows.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
             child: Text(
               emptyMsg,
               style: SatType.sans(size: 13, color: sc.textLo),
@@ -306,7 +307,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         else
           for (var i = 0; i < rows.length; i++) ...[
             _adminRow(sc, rows[i]),
-            if (i != rows.length - 1) const SizedBox(height: 8),
+            if (i != rows.length - 1) const SizedBox(height: Sp.s2),
           ],
       ],
     );
@@ -393,12 +394,12 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               controller: name,
               decoration: const InputDecoration(labelText: 'Nama'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             TextField(
               controller: email,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             TextField(
               controller: pw,
               decoration: const InputDecoration(labelText: 'Password awal'),
@@ -458,14 +459,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               color: sc.urgent,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Text(
             blocked
                 ? 'Hapus semua admin venue ini dulu sebelum menghapus venue.'
                 : 'Menghapus venue tidak dapat dibatalkan.',
             style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           Material(
             color: blocked || _busy ? sc.bg3 : sc.urgent,
             borderRadius: SatR.a(12),
@@ -473,7 +474,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               onTap: blocked || _busy ? null : _confirmDeleteVenue,
               borderRadius: SatR.a(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: Sp.s3),
                 alignment: Alignment.center,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -483,7 +484,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                       size: 18,
                       color: blocked || _busy ? sc.textLo : sc.bg0,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.s2),
                     Text(
                       'Hapus venue',
                       style: SatType.sans(
@@ -570,7 +571,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                   'Berlaku sampai (paidUntil)',
                   style: SatType.sans(size: 12, color: sc.textMd),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: Sp.sHair),
                 Text(
                   label,
                   style: SatType.sans(

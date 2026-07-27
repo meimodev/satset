@@ -16,6 +16,7 @@ import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/tables/view_models/floor_signals.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Ticks once per second to drive live elapsed-time updates on table cards.
 /// autoDispose so the stream stops when no card is watching it.
@@ -198,7 +199,7 @@ class _TableCardState extends ConsumerState<TableCard> {
             ],
           ),
           if (hold != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: Sp.s1),
             Text(
               hold.name,
               maxLines: 1,
@@ -211,7 +212,7 @@ class _TableCardState extends ConsumerState<TableCard> {
               ),
             ),
           ],
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -220,7 +221,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                 size: tablet ? 14 : 12,
                 color: sc.textMd,
               ),
-              const SizedBox(width: 3),
+              const SizedBox(width: Sp.sHair),
               Text(
                 '${table.pax}/${table.capacity}',
                 style: SatType.mono(
@@ -230,7 +231,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                 ),
               ),
               if (table.openAmount > 0) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
                 Expanded(
                   child: Text(
                     formatIDR(table.openAmount),
@@ -254,11 +255,11 @@ class _TableCardState extends ConsumerState<TableCard> {
             ],
           ),
           if (pills.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             Wrap(spacing: 5, runSpacing: 5, children: pills),
           ],
           const Spacer(),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Row(
             children: [
               AnimatedContainer(
@@ -275,7 +276,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                       : null,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               Expanded(
                 child: AnimatedDefaultTextStyle(
                   duration: xfade,
@@ -297,7 +298,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                 ),
               ),
               if (table.openedAt != null) ...[
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.s1h),
                 Text(
                   formatElapsedId(now.difference(table.openedAt!)),
                   style: SatType.mono(
@@ -307,7 +308,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                   ),
                 ),
               ] else if (hold != null) ...[
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.s1h),
                 Text(
                   _hhmm(hold.expectedAt),
                   style: SatType.mono(
@@ -320,11 +321,11 @@ class _TableCardState extends ConsumerState<TableCard> {
             ],
           ),
           if (next != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
             Row(
               children: [
                 Icon(Icons.event_outlined, size: 12, color: sc.textLo),
-                const SizedBox(width: 5),
+                const SizedBox(width: Sp.s1),
                 Expanded(
                   child: Text(
                     '${_hhmm(next.expectedAt)} · ${next.name}',
@@ -456,7 +457,7 @@ class _OwnerChip extends StatelessWidget {
     final brutal = SatShape.brutal;
     if (initials == null) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
         decoration: BoxDecoration(
           color: brutal ? sc.accent : sc.accentSoft,
           borderRadius: SatR.a(6),
@@ -505,7 +506,7 @@ class _StatePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final brutal = SatShape.brutal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
       decoration: BoxDecoration(
         color: brutal ? tone : tone.withValues(alpha: 0.15),
         borderRadius: SatR.a(6),
@@ -571,7 +572,7 @@ class _StaleBanner extends StatelessWidget {
                     ),
             ),
           ),
-          const SizedBox(width: 7),
+          const SizedBox(width: Sp.s1h),
           Expanded(
             child: Text(
               SatShape.caps(stale.label),

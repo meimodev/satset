@@ -9,6 +9,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Active Bawa pulang visits (ADR-0026), behind the floor head's second
 /// trigger. A sheet on both form factors — unlike the booking book there is
@@ -48,7 +49,7 @@ class _TakeawayList extends ConsumerWidget {
               decoration: SatBox.d(color: sc.border1, borderRadius: SatR.a(2)),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           Text(
             SatShape.caps(AppStrings.floorTakeaway),
             style: SatType.display(
@@ -57,10 +58,10 @@ class _TakeawayList extends ConsumerWidget {
               color: sc.textHi,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           if (visits.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.symmetric(vertical: Sp.s5),
               child: Text(
                 AppStrings.takeawayEmpty,
                 style: SatType.sans(size: 13, color: sc.textMd),
@@ -71,7 +72,7 @@ class _TakeawayList extends ConsumerWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: visits.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: Sp.s2),
                 itemBuilder: (_, i) => _TakeawayRow(
                   visit: visits[i],
                   onTap: () {
@@ -137,7 +138,7 @@ class _TakeawayRow extends ConsumerWidget {
                       letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: Sp.sHair),
                   Text(
                     [
                       if (visit.guestName != null &&
@@ -155,7 +156,7 @@ class _TakeawayRow extends ConsumerWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
               decoration: BoxDecoration(
                 color: SatShape.brutal
                     ? statusColor

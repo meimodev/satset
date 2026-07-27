@@ -6,6 +6,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class TabletShell extends StatelessWidget {
   final String activeTab;
@@ -89,12 +90,12 @@ class TabletSideRail extends StatelessWidget {
           right: BorderSide(color: sc.border0, width: SatShape.brutal ? 4 : 1),
         ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _Mark(),
-          const SizedBox(height: 22),
+          const SizedBox(height: Sp.s5),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -202,7 +203,7 @@ class _RailDiv extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s2),
       child: Container(
         width: 36,
         height: SatShape.brutal ? 3 : 1,
@@ -244,7 +245,7 @@ class _RailBtn extends StatelessWidget {
     final sc = context.sat;
     final isActive = active == id;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -278,7 +279,7 @@ class _RailBtn extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(icon, size: 22, color: _fg(sc, isActive)),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: Sp.sHair),
                     Text(
                       SatShape.caps(label),
                       // The active block's 3px rule eats 6px of the 56px
@@ -305,7 +306,7 @@ class _RailBtn extends StatelessWidget {
                     child: Container(
                       constraints: const BoxConstraints(minWidth: 16),
                       height: 16,
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
                       decoration: SatBox.d(
                         color: alert ? sc.success : sc.accent,
                         borderRadius: SatR.a(8),
@@ -347,14 +348,18 @@ class _AvatarBtn extends ConsumerWidget {
         ? user!.initials
         : '—';
     final base = Color(user?.avatarColorHex ?? 0xFFFF9233);
-    final dark = Color.alphaBlend(Colors.black.withValues(alpha: 0.32), base);
+    // Not `StaffAvatar`, deliberately: this one carries the brutal ink border,
+    // the active hard shadow and the outer selection ring, which would cost the
+    // shared widget four parameters for a single caller. It shares the tokens
+    // instead, so the swatch still matches the same person elsewhere.
+    final dark = darken(base);
     // ADR-0047 keeps status pips round because a radius token cannot reach
     // `BoxShape.circle`. The rail avatar is the one the source design squares
     // explicitly, and at 42px it reads as a nameplate rather than a pip.
     final shape = SatShape.brutal ? BoxShape.rectangle : BoxShape.circle;
     final border = SatShape.brutal ? null : const CircleBorder();
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.only(top: Sp.s3),
       child: Material(
         color: Colors.transparent,
         shape: border,
@@ -406,7 +411,7 @@ class _AvatarBtn extends ConsumerWidget {
                 style: SatType.mono(
                   size: 14,
                   weight: FontWeight.w600,
-                  color: Colors.white,
+                  color: onFill(base),
                 ),
               ),
             ),
@@ -451,7 +456,7 @@ class TabletSectionHead extends StatelessWidget {
                   ),
                 ),
                 if (sub != null) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: Sp.s1h),
                   Text(
                     sub!.toUpperCase(),
                     maxLines: 1,
@@ -483,7 +488,7 @@ class TabletCard extends StatelessWidget {
     this.header,
     this.headerTrailing,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.all(Sp.s5),
   });
 
   @override
@@ -516,7 +521,7 @@ class TabletCard extends StatelessWidget {
                 ?headerTrailing,
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
           ],
           child,
         ],
@@ -547,7 +552,7 @@ class TabletStatTile extends StatelessWidget {
         border: SatB.all(color: sc.border0),
         borderRadius: SatR.a(14),
       ),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(Sp.s3h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -561,7 +566,7 @@ class TabletStatTile extends StatelessWidget {
               color: valueColor ?? sc.textHi,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Text(
             label.toUpperCase(),
             style: SatType.mono(

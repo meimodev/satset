@@ -6,6 +6,7 @@ import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Device-local theme picker (ADR-0045). Lives on the Me screen rather than in
 /// `/settings` on purpose: `/settings` is gated on `editSettings`, and every
@@ -46,21 +47,21 @@ class _ThemeSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             Text(
               AppStrings.themeSheetTitle,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(color: sc.textHi),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: Sp.s1),
             Text(
               AppStrings.themeSheetSubtitle,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: sc.textLo),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
             for (final t in SatTheme.values)
               _ThemeRow(
                 theme: t,
@@ -93,7 +94,7 @@ class _ThemeRow extends StatelessWidget {
     final p = theme.colors;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Sp.s2),
       child: Material(
         color: selected ? sc.accentSoft : sc.bg2,
         borderRadius: SatR.a(14),
@@ -101,7 +102,7 @@ class _ThemeRow extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3h),
             decoration: SatBox.d(
               borderRadius: SatR.a(14),
               border: SatB.all(color: selected ? sc.accentBorder : sc.border1),
@@ -109,7 +110,7 @@ class _ThemeRow extends StatelessWidget {
             child: Row(
               children: [
                 _Swatch(bg: p.bg0, accent: p.accent, text: p.textHi),
-                const SizedBox(width: 14),
+                const SizedBox(width: Sp.s3h),
                 Expanded(
                   child: Text(
                     theme.label,
@@ -164,7 +165,7 @@ class _Swatch extends StatelessWidget {
             height: 12,
             decoration: SatBox.d(shape: BoxShape.circle, color: accent),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: Sp.s1),
           Container(
             width: 12,
             height: 3,

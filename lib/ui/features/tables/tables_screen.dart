@@ -22,6 +22,7 @@ import 'package:satset/ui/features/tables/widgets/guest_stepper_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/reservations_surface.dart';
 import 'package:satset/ui/features/tables/widgets/table_card.dart';
 import 'package:satset/ui/features/tables/widgets/takeaway_surface.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 // Animation tuning. Lively but professional. easeOutQuart per design tokens.
 const Curve _kEase = Curves.easeOutQuart;
@@ -217,7 +218,7 @@ class _FloorHead extends ConsumerWidget {
             Expanded(
               child: TabletSectionHead(title: title, sub: sub),
             ),
-            Padding(padding: const EdgeInsets.only(bottom: 14), child: actions),
+            Padding(padding: const EdgeInsets.only(bottom: Sp.s3h), child: actions),
           ],
         ),
       );
@@ -238,7 +239,7 @@ class _FloorHead extends ConsumerWidget {
               color: context.sat.textHi,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Sp.s1),
           Text(
             SatShape.caps(sub),
             style: SatType.mono(
@@ -247,7 +248,7 @@ class _FloorHead extends ConsumerWidget {
               letterSpacing: 0.44,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           actions,
         ],
       ),
@@ -282,8 +283,8 @@ class _FloorAction extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: compact ? 10 : 14,
-          vertical: compact ? 9 : 11,
+          horizontal: compact ? Sp.s2h : Sp.s3h,
+          vertical: compact ? Sp.s2 : Sp.s2h,
         ),
         decoration: SatBox.d(
           color: sc.bg2,
@@ -295,7 +296,7 @@ class _FloorAction extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: sc.textMd),
             if (!compact) ...[
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s1h),
               Text(
                 SatShape.caps(label),
                 style: SatType.sans(
@@ -305,7 +306,7 @@ class _FloorAction extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(width: 7),
+            const SizedBox(width: Sp.s1h),
             Text(
               '$count',
               style: SatType.mono(
@@ -315,9 +316,9 @@ class _FloorAction extends StatelessWidget {
               ),
             ),
             if (alert != null) ...[
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s1h),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: Sp.s1, vertical: Sp.sHair),
                 decoration: BoxDecoration(
                   color: sc.urgent,
                   borderRadius: SatR.a(5),
@@ -426,8 +427,8 @@ class _NewOrderButton extends ConsumerWidget {
         foregroundColor: sc.accentInk,
         elevation: 0,
         padding: EdgeInsets.symmetric(
-          horizontal: tablet ? 18 : 14,
-          vertical: tablet ? 14 : 11,
+          horizontal: tablet ? Sp.s4h : Sp.s3h,
+          vertical: tablet ? Sp.s3h : Sp.s2h,
         ),
         shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
       ),
@@ -471,7 +472,7 @@ class _ZoneRow extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: zones.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          separatorBuilder: (_, _) => const SizedBox(width: Sp.s2),
           itemBuilder: (_, i) {
             final z = zones[i];
             final isActive = active == z.id;
@@ -497,8 +498,8 @@ class _ZoneRow extends StatelessWidget {
                   duration: dur,
                   curve: _kEase,
                   padding: EdgeInsets.symmetric(
-                    horizontal: tablet ? 16 : 14,
-                    vertical: tablet ? 10 : 9,
+                    horizontal: tablet ? Sp.s4 : Sp.s3h,
+                    vertical: tablet ? Sp.s2h : Sp.s2,
                   ),
                   decoration: SatBox.d(
                     color: fill,
@@ -519,7 +520,7 @@ class _ZoneRow extends StatelessWidget {
                         ),
                         child: Text(SatShape.caps(z.name)),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: Sp.s2h),
                       AnimatedDefaultTextStyle(
                         duration: dur,
                         curve: _kEase,
@@ -686,7 +687,7 @@ class _EmptyZoneState extends State<_EmptyZone>
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
             Text(
               AppStrings.tablesEmptyZoneAddTableHint,
               textAlign: TextAlign.center,

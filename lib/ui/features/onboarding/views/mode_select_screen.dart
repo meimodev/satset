@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/ui/features/onboarding/view_models/mode_select_view_model.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class ModeSelectScreen extends ConsumerWidget {
   const ModeSelectScreen({super.key});
@@ -15,18 +16,18 @@ class ModeSelectScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(Sp.s6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: Sp.s6),
               Text(
                 'Pilih mode',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               const Text('Tablet ini akan jadi server atau klien?'),
-              const SizedBox(height: 24),
+              const SizedBox(height: Sp.s6),
               _ModeCard(
                 title: 'Server',
                 subtitle: 'Tablet ini host venue. Database lokal di sini.',
@@ -37,7 +38,7 @@ class ModeSelectScreen extends ConsumerWidget {
                         if (context.mounted) context.go('/pin');
                       },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Sp.s3),
               _ModeCard(
                 title: 'Klien',
                 subtitle:
@@ -50,7 +51,7 @@ class ModeSelectScreen extends ConsumerWidget {
                       },
               ),
               if (s.error != null) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: Sp.s4),
                 Text(
                   s.error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -80,12 +81,12 @@ class _ModeCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(Sp.s5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 4),
+              const SizedBox(height: Sp.s1),
               Text(subtitle),
             ],
           ),

@@ -1,0 +1,137 @@
+<!-- @dsCard group="Feedback" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ready alerts — banner, toast, offline grace</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 22px 0 8px; }
+
+  .banner {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; border-radius: var(--r-md);
+    background: var(--successSoft); border: var(--rule) solid rgba(77,212,135,0.3);
+    color: var(--success); font-size: 12px; font-weight: 500;
+  }
+  .banner svg { width: 14px; height: 14px; flex: none; }
+
+  .toast {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: var(--r-xl);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--success) 30%, var(--bg2)),
+                                        color-mix(in srgb, var(--success) 12%, var(--bg1)));
+    border: var(--rule) solid rgba(77,212,135,0.45);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.55);
+  }
+  [data-pal="neoKertas"] .toast, [data-pal="neoMidnight"] .toast { box-shadow: var(--lift); }
+  .toast-icon {
+    width: 38px; height: 38px; flex: none; border-radius: var(--r-md);
+    background: var(--success); color: var(--successInk);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .toast-icon svg { width: 18px; height: 18px; }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-body b { display: block; font-size: 13px; font-weight: 600; letter-spacing: -0.13px; color: #fff; }
+  .toast-body span { display: block; margin-top: 2px; font-family: var(--font-mono);
+                     font-size: 11px; letter-spacing: 0.3px; color: rgba(255,255,255,0.78); }
+  .toast-btn {
+    padding: 6px 12px; border-radius: var(--r-md);
+    background: rgba(255,255,255,0.18); color: #fff;
+    font-size: 12px; font-weight: 600; flex: none;
+  }
+
+  .grace {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-radius: var(--r-md);
+    background: var(--warnSoft); border: var(--rule) solid var(--warn);
+  }
+  .grace b { font-size: 12px; font-weight: 600; color: var(--warn); }
+  .grace span { font-family: var(--font-mono); font-size: 11px; color: var(--textMd); margin-left: auto; }
+
+  .offline {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 14px; border-radius: var(--r-md);
+    background: var(--urgentSoft); border: var(--rule) solid rgba(255,92,92,0.4);
+  }
+  .offline b { display: block; font-size: 12px; font-weight: 600; color: var(--urgent); }
+  .offline em { display: block; font-style: normal; margin-top: 3px; font-size: 12px; color: var(--textMd); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Ready &amp; degrade states</h3>
+    <p class="sub">ready_banner.dart · ready_toast.dart · admin_grace_banner.dart</p>
+
+    <h4>ReadyBanner — inline</h4>
+    <div class="banner">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.5 2.5 0 002.5-2.5h-5A2.5 2.5 0 0012 22zm7-6v-5a7 7 0 10-14 0v5l-2 2v1h18v-1z"/></svg>
+      Item siap diambil di pass — tandai disajikan di bawah
+    </div>
+
+    <h4>ReadyToast — transient</h4>
+    <div class="toast">
+      <div class="toast-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.5 2.5 0 002.5-2.5h-5A2.5 2.5 0 0012 22zm7-6v-5a7 7 0 10-14 0v5l-2 2v1h18v-1z"/></svg></div>
+      <div class="toast-body">
+        <b>Siap di pass · Nasi Goreng ×2</b>
+        <span>MEJA B5 · TERAS · SEKARANG</span>
+      </div>
+      <div class="toast-btn">Ambil</div>
+    </div>
+    <div class="spec">Mounted by AlertHost, never directly. Tap anywhere dismisses; "Ambil"
+navigates to the table. The green wash is derived from the palette's own
+`success` rather than a fixed pair of greens — under neonHijau a baked-in
+emerald would fight the accent sitting next to it.</div>
+
+    <h4>AdminGraceBanner — offline-stale countdown</h4>
+    <div class="grace">
+      <b>Server tidak terjangkau — mode darurat</b>
+      <span>4:12</span>
+    </div>
+
+    <h4>Connection lost</h4>
+    <div class="offline">
+      <div>
+        <b>Offline</b>
+        <em>Pesanan tersimpan di perangkat dan dikirim saat tersambung kembali.</em>
+      </div>
+    </div>
+
+    <div class="spec">Degrade loudly, fail safely. Offline, mid-reconnect and stale-cache states
+are first-class UI, not error dialogs — this app's whole promise is working
+when the network doesn't.
+
+Copy names the fact and the next action. No apology, no exclamation marks,
+no personality in error states: a waiter mid-rush needs the fact and what
+to do, not how the system feels about it.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal</h3>
+    <p class="sub">Slab fills, hard shadow instead of a soft drop</p>
+    <div class="banner">ITEM SIAP DIAMBIL DI PASS — TANDAI DISAJIKAN DI BAWAH</div>
+    <h4>Toast</h4>
+    <div class="toast">
+      <div class="toast-icon">!</div>
+      <div class="toast-body">
+        <b style="color:var(--textHi)">SIAP DI PASS · NASI GORENG ×2</b>
+        <span style="color:var(--textMd)">MEJA B5 · TERAS · SEKARANG</span>
+      </div>
+      <div class="toast-btn" style="background:var(--accent);color:var(--accentInk);border:3px solid var(--ink)">AMBIL</div>
+    </div>
+    <h4>Grace</h4>
+    <div class="grace"><b style="color:var(--textHi)">SERVER TIDAK TERJANGKAU</b><span>4:12</span></div>
+    <div class="spec">The 36px blurred drop shadow becomes the 3px hard offset — brutal does not
+blur. The gradient wash flattens to the palette's own successSoft slab.</div>
+  </div>
+
+</div>
+</body>
+</html>

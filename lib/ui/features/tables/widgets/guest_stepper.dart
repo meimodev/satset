@@ -3,6 +3,7 @@ import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class GuestStepper extends StatefulWidget {
   final int pax;
@@ -67,7 +68,7 @@ class _GuestStepperState extends State<GuestStepper> {
             AppStrings.a11yGuestDecrease,
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: size * 0.22),
+            padding: EdgeInsets.symmetric(horizontal: size * Sp.sHair),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,

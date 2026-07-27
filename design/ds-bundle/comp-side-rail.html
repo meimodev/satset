@@ -1,0 +1,132 @@
+<!-- @dsCard group="Chrome" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TabletSideRail</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 0; display: flex; }
+  .rail {
+    width: 76px; flex: none;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 14px 0;
+    background: var(--bg1);
+    border-right: 1px solid var(--border0);
+    min-height: 460px;
+  }
+  [data-pal="neoKertas"] .rail { background: var(--accent); border-right: 4px solid var(--ink); }
+  [data-pal="neoMidnight"] .rail { background: var(--bg1); border-right: 4px solid var(--ink); }
+  .mark {
+    width: 40px; height: 40px; border-radius: var(--r-md);
+    background: var(--accent); color: var(--accentInk);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 20px; font-weight: 700; letter-spacing: -0.8px;
+    margin-bottom: 22px;
+  }
+  [data-pal="neoKertas"] .mark { background: var(--ink); color: var(--accent);
+    font-family: var(--font-display); font-weight: 900; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  [data-pal="neoMidnight"] .mark { font-family: var(--font-display); font-weight: 900;
+    border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  .rbtn {
+    position: relative;
+    width: 56px; height: 56px; margin: 3px 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    border-radius: var(--r-lg);
+    color: var(--textLo);
+    font-size: 10px; font-weight: 500; letter-spacing: 0.2px;
+    text-transform: var(--caps);
+  }
+  .rbtn svg { width: 22px; height: 22px; }
+  .rbtn--on { background: var(--bg3); color: var(--textHi); }
+  [data-pal="neoKertas"] .rbtn { color: var(--ink); font-size: 9px; font-weight: 700; letter-spacing: 0.6px; }
+  [data-pal="neoKertas"] .rbtn--on { background: var(--bg1); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  [data-pal="neoMidnight"] .rbtn { color: var(--textMd); font-size: 9px; font-weight: 700; letter-spacing: 0.6px; }
+  [data-pal="neoMidnight"] .rbtn--on { background: var(--accent); color: var(--accentInk);
+    border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  .badge {
+    position: absolute; top: 6px; right: 6px;
+    min-width: 16px; height: 16px; padding: 0 5px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--r-sm); background: var(--accent); color: var(--accentInk);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  }
+  [data-pal="neoKertas"] .badge, [data-pal="neoMidnight"] .badge { border: 2px solid var(--ink); }
+  .badge--alert { background: var(--success); color: var(--successInk); }
+  .rdiv { width: 36px; height: 1px; background: var(--border0); margin: 8px 0; }
+  [data-pal="neoKertas"] .rdiv, [data-pal="neoMidnight"] .rdiv { height: 3px; }
+  .ravatar {
+    width: 42px; height: 42px; margin-top: auto;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: linear-gradient(135deg,#FFC04D,#a37b31);
+    font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: #fff;
+  }
+  [data-pal="neoKertas"] .ravatar, [data-pal="neoMidnight"] .ravatar {
+    border-radius: 0; background: #FFC04D; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  .canvas { flex: 1; padding: 22px 32px 32px; }
+  h3 { font-size: 32px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.05; margin: 0 0 6px; }
+  [data-pal="neoKertas"] h3, [data-pal="neoMidnight"] h3 { font-family: var(--font-display); font-weight: 900; line-height: 0.95; }
+  .sub { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.66px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex:1 1 100%">
+    <div class="rail">
+      <div class="mark">S</div>
+      <div class="rbtn rbtn--on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Meja</div>
+      <div class="rbtn"><span class="badge badge--alert">3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Pesanan</div>
+      <div class="rbtn"><span class="badge">2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="5" rx="1"/><path d="M6 8v13h12V8"/><path d="M9 12h6"/></svg>Mandiri</div>
+      <div class="rbtn"><span class="badge">7</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 18H5z"/><path d="M9 8h6M9 12h6"/></svg>Antrian</div>
+      <div class="rbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8V5h10v3M8 14h8"/></svg>Kasir</div>
+      <div class="rdiv"></div>
+      <div class="rbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9l2-5h12l2 5v11H4z"/><path d="M9 20v-6h6v6"/></svg>Venue</div>
+      <div class="ravatar">RH</div>
+    </div>
+    <div class="canvas">
+      <h3>Lantai</h3>
+      <p class="sub">24 meja · 9 terisi · 3 siap</p>
+      <div class="spec">76px wide, 56px square nav blocks, radius 14.
+Badges: accent by default, `success` when the count is an alert the waiter
+should act on (ready items). Min-width 16 so a two-digit count still fits.
+
+Rail order follows the shift, not the org chart: Meja → Pesanan → Mandiri →
+Antrian → Kasir, a rule, then Venue. The avatar pins to the bottom and routes
+to /me.
+
+Guest (Mandiri) and Kasir blocks are conditional — a venue that doesn't run
+guest ordering never sees the tab.</div>
+    </div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas" style="flex:1 1 100%">
+    <div class="rail">
+      <div class="mark">S</div>
+      <div class="rbtn rbtn--on">MEJA</div>
+      <div class="rbtn"><span class="badge badge--alert">3</span>PESANAN</div>
+      <div class="rbtn"><span class="badge">7</span>ANTRIAN</div>
+      <div class="rdiv"></div>
+      <div class="rbtn">VENUE</div>
+      <div class="ravatar">RH</div>
+    </div>
+    <div class="canvas">
+      <h3>LANTAI</h3>
+      <p class="sub">24 meja · 9 terisi · 3 siap</p>
+      <div class="spec">The paper skin fills the whole rail with the accent and lets the nav blocks
+read as cut-outs dropping to bg1; midnight keeps the surface and the active
+block rises to the accent instead. The rail's rule is 4px — heavier than a
+card's 3px.
+
+The mark always opposes the rail: ink block on the siren rail, siren block on
+the dark one. On paper the logo, not the rail, is the black slab.
+
+Labels are one line, sized to fit: the active block's 3px rule eats 6px of the
+56px tile, and uppercase at +0.06em ran "MANDIRI" onto two lines.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

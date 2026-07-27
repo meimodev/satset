@@ -11,6 +11,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 enum _CashierTab { aktif, riwayat }
 
@@ -100,7 +101,7 @@ class _TabToggle extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s2),
           decoration: SatBox.d(
             color: active ? sc.bg0 : Colors.transparent,
             borderRadius: SatR.a(9),
@@ -118,7 +119,7 @@ class _TabToggle extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(Sp.sHair),
       decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(12)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -169,7 +170,7 @@ class _PayableList extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
               sliver: SliverList.separated(
                 itemCount: bills.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: Sp.s2),
                 itemBuilder: (_, i) =>
                     Reveal(index: i, child: _PayableTile(bills[i])),
               ),
@@ -211,7 +212,7 @@ class _PayableTile extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(Sp.s3h),
             child: Row(
               children: [
                 Container(
@@ -239,7 +240,7 @@ class _PayableTile extends StatelessWidget {
                           ),
                         ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: Sp.s3),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,7 +259,7 @@ class _PayableTile extends StatelessWidget {
                           color: sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: Sp.sHair),
                       Text(
                         b.isTakeaway
                             ? (b.detached
@@ -292,13 +293,13 @@ class _PayableTile extends StatelessWidget {
                         color: settled ? sc.textLo : sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: Sp.s1),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 240),
                       curve: satEaseOut,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                        horizontal: Sp.s2,
+                        vertical: Sp.sHair,
                       ),
                       decoration: SatBox.d(
                         color: badgeColor.withValues(alpha: 0.15),
@@ -338,7 +339,7 @@ class _Empty extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(icon, size: 44, color: sc.textLo),
-        const SizedBox(height: 12),
+        const SizedBox(height: Sp.s3),
         Text(
           text,
           textAlign: TextAlign.center,

@@ -1,0 +1,79 @@
+<!-- @dsCard group="Status" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Status chip — ticket lifecycle</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 18px; }
+  .flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .arrow { color: var(--textDim); font-size: 11px; }
+  .grid { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; }
+  .grid span { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--textLo); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Status chip</h3>
+    <p class="sub">_StatusChip · order_line_card.dart · mono 10 / w600 / +1.0</p>
+    <div class="flow">
+      <span class="chip chip--sent">Terkirim</span><span class="arrow">→</span>
+      <span class="chip chip--prep">Diproses</span><span class="arrow">→</span>
+      <span class="chip chip--cooked">Matang</span><span class="arrow">→</span>
+      <span class="chip chip--ready">Siap</span><span class="arrow">→</span>
+      <span class="chip chip--served">Disajikan</span>
+    </div>
+    <div class="grid">
+      <span class="chip chip--sent">Terkirim</span><span>draft / acknowledged / sent → infoSoft on info</span>
+      <span class="chip chip--prep">Diproses</span><span>prep → warnSoft on warn</span>
+      <span class="chip chip--cooked">Matang</span><span>cooked → accentSoft on accentText</span>
+      <span class="chip chip--ready">Siap</span><span>ready → successSoft on success</span>
+      <span class="chip chip--served">Disajikan</span><span>served → bg3 on textLo (drops out of the ramp)</span>
+      <span class="chip chip--held">Ditahan</span><span>pendingReview / held → violetSoft on violet</span>
+      <span class="chip chip--voided">Dibatalkan</span><span>voided → urgentSoft on urgent</span>
+    </div>
+    <div class="spec">Padding 3/8, radius r-sm 6. Label is always uppercased.
+Morphs on change: 220ms fade + scale 0.85→1, satEaseOut.
+`served` deliberately loses its hue — a finished line should stop competing
+for attention. `voided` is the only red, and it is rare.</div>
+  </div>
+
+  <div class="stage" data-pal="light">
+    <h3>Light</h3>
+    <p class="sub">Same tokens, genuine contrast</p>
+    <div class="flow">
+      <span class="chip chip--sent">Terkirim</span>
+      <span class="chip chip--prep">Diproses</span>
+      <span class="chip chip--cooked">Matang</span>
+      <span class="chip chip--ready">Siap</span>
+      <span class="chip chip--served">Disajikan</span>
+      <span class="chip chip--voided">Dibatalkan</span>
+    </div>
+    <div class="spec">`cooked` uses accentText (A34B00) here, not the fill amber —
+FF9233 on a 14% amber tint is unreadable on paper.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal</h3>
+    <p class="sub">Square, full-saturation soft tokens as slabs</p>
+    <div class="flow">
+      <span class="chip chip--sent">Terkirim</span>
+      <span class="chip chip--prep">Diproses</span>
+      <span class="chip chip--cooked">Matang</span>
+      <span class="chip chip--ready">Siap</span>
+      <span class="chip chip--served">Disajikan</span>
+      <span class="chip chip--voided">Dibatalkan</span>
+    </div>
+    <div class="spec">The neo palettes' *Soft tokens are near-saturation blocks, not 14% tints,
+so a status chip reads as a poster panel from across the room.</div>
+  </div>
+
+</div>
+</body>
+</html>

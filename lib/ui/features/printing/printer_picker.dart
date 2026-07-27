@@ -23,6 +23,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 const _uuid = Uuid();
 
@@ -398,7 +399,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
             Row(
               children: [
                 Expanded(
@@ -413,7 +414,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                           color: sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: Sp.s1),
                       Text(
                         widget.job.subtitle,
                         style: SatType.sans(size: 13, color: sc.textLo),
@@ -423,7 +424,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                 ),
                 if (_scanning)
                   SizedBox(
-                    width: 16,
+                    width: Sp.s4,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -432,11 +433,11 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                   ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
 
             if (onlineEntries.isEmpty && offlineEntries.isEmpty && !_scanning)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 18),
+                padding: const EdgeInsets.symmetric(vertical: Sp.s4h),
                 child: Text(
                   'Tidak ada printer online. Tambah manual, atau pair printer Bluetooth di Pengaturan dulu.',
                   textAlign: TextAlign.center,
@@ -447,18 +448,18 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             for (final e in onlineEntries) _row(sc, e),
 
             if (offlineEntries.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: Sp.s1),
               _divider(sc, 'Offline'),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               for (final e in offlineEntries) _row(sc, e),
             ],
 
             if (_btReason != BtUnavailableReason.none) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: Sp.s1h),
               _btAffordance(sc),
             ],
 
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             _ghostBtn(
               sc,
               Icons.add_rounded,
@@ -467,10 +468,10 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             ),
 
             if (_busy) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: Sp.s3h),
               Center(
                 child: SizedBox(
-                  width: 22,
+                  width: Sp.s5,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
@@ -490,7 +491,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
       children: [
         Expanded(child: Divider(color: sc.border0)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
           child: Text(
             label,
             style: SatType.sans(
@@ -513,7 +514,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     return Opacity(
       opacity: e.online ? 1 : 0.5,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: Sp.s2),
         child: Material(
           color: sc.bg2,
           borderRadius: SatR.a(14),
@@ -521,11 +522,11 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             onTap: tappable ? () => _print(e) : null,
             borderRadius: SatR.a(14),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
               child: Row(
                 children: [
                   Icon(icon, size: 20, color: sc.textMd),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Sp.s3),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,11 +554,11 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                       color: e.online ? sc.success : sc.border2,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Sp.s2),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: Sp.s2,
+                      vertical: Sp.sHair,
                     ),
                     decoration: SatBox.d(
                       color: sc.bg1,
@@ -621,7 +622,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 18, color: sc.textMd),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               Text(
                 label,
                 style: SatType.sans(
@@ -730,7 +731,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                   decoration: const InputDecoration(labelText: 'Port'),
                   keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Sp.s3),
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'venue', label: Text('Venue')),

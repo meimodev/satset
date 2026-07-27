@@ -7,6 +7,7 @@ import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart'
     show LoginClock, SatBackButton;
 
@@ -72,7 +73,7 @@ class SatAppBar extends ConsumerWidget {
             children: [
               if (onBack != null) ...[
                 SatBackButton(onTap: onBack!),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
               ],
               const LoginClock(),
             ],
@@ -89,7 +90,7 @@ class SatAppBar extends ConsumerWidget {
 
     return Container(
       height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s6),
       decoration: SatBox.d(
         color: bg,
         border: Border(
@@ -107,7 +108,7 @@ class SatAppBar extends ConsumerWidget {
             children: [
               if (onBack != null) ...[
                 SatBackButton(onTap: onBack!),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
               ],
               const LoginClock(),
             ],
@@ -142,7 +143,7 @@ class _NetworkPill extends ConsumerWidget {
 
     return Container(
       height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
       decoration: SatBox.d(
         color: SatShape.brutal
             ? (SatShape.brutalPaper ? sc.bg1 : sc.bg2)
@@ -164,7 +165,7 @@ class _NetworkPill extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Text(
             label,
             style: SatType.mono(
@@ -194,7 +195,7 @@ class SatAppBarPill extends StatelessWidget {
     final fg = tint ?? sc.textMd;
     return Container(
       height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border1),
@@ -205,7 +206,7 @@ class SatAppBarPill extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 12, color: fg),
-            const SizedBox(width: 6),
+            const SizedBox(width: Sp.s1h),
           ],
           Text(
             label,

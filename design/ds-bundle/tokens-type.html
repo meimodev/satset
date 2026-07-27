@@ -1,0 +1,78 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Typography — two ramps</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  .r { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: baseline;
+       padding: 9px 0; border-bottom: 1px solid var(--border0); }
+  .r:last-child { border-bottom: 0; }
+  .k { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.5px;
+       color: var(--textLo); line-height: 1.5; }
+  .k em { display: block; font-style: normal; color: var(--textDim); }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Lembut ramp</h3>
+    <p class="sub">IBM Plex Sans + IBM Plex Mono · SatType._lembut</p>
+    <div class="r"><div class="k">displayLarge<em>38 / w600 / -0.76 / 1.05</em></div>
+      <div style="font-size:38px;font-weight:600;letter-spacing:-0.76px;line-height:1.05">Meja 12</div></div>
+    <div class="r"><div class="k">displayMedium<em>30 / w600 / -0.6</em></div>
+      <div style="font-size:30px;font-weight:600;letter-spacing:-0.6px;line-height:1.05">Pesanan</div></div>
+    <div class="r"><div class="k">headlineSmall<em>19 / w600 / -0.19</em></div>
+      <div style="font-size:19px;font-weight:600;letter-spacing:-0.19px">Nasi Goreng Kampung</div></div>
+    <div class="r"><div class="k">titleLarge<em>17 / w600 / -0.17</em></div>
+      <div style="font-size:17px;font-weight:600;letter-spacing:-0.17px">Ringkasan pesanan</div></div>
+    <div class="r"><div class="k">titleMedium<em>15 / w600 / -0.15</em></div>
+      <div style="font-size:15px;font-weight:600;letter-spacing:-0.15px">Es Teh Manis · Besar</div></div>
+    <div class="r"><div class="k">bodyLarge<em>15 / w400</em></div>
+      <div style="font-size:15px">Item siap diambil di pass.</div></div>
+    <div class="r"><div class="k">bodyMedium<em>14 / w400</em></div>
+      <div style="font-size:14px">Tanpa sambal, pedas sedang</div></div>
+    <div class="r"><div class="k">bodySmall<em>12 / w400 / textMd</em></div>
+      <div style="font-size:12px;color:var(--textMd)">Dikelola pengelola</div></div>
+    <div class="r"><div class="k">labelMedium<em>12 / w500 / textMd</em></div>
+      <div style="font-size:12px;font-weight:500;color:var(--textMd)">Kosong</div></div>
+    <div class="r"><div class="k">mono<em>11 / w500 / +0.04</em></div>
+      <div class="mono" style="font-size:11px;font-weight:500;letter-spacing:0.04em">14:32 · Rp 148.000 · ×3</div></div>
+    <div class="spec">Numerals, clocks, currency, elapsed labels and status codes are always mono —
+they are read as data, not prose. Names and copy are always sans.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal ramp</h3>
+    <p class="sub">Archivo Black + Archivo + DM Mono · SatType._brutal</p>
+    <div class="r"><div class="k">displayLarge<em>38 / Black / -0.38 / 0.95</em></div>
+      <div class="display" style="font-size:38px;letter-spacing:-0.38px">MEJA 12</div></div>
+    <div class="r"><div class="k">displayMedium<em>30 / Black / -0.30 / 0.95</em></div>
+      <div class="display" style="font-size:30px;letter-spacing:-0.3px">PESANAN</div></div>
+    <div class="r"><div class="k">headlineSmall<em>19 / Black / -0.19 / 0.98</em></div>
+      <div class="display" style="font-size:19px;letter-spacing:-0.19px;line-height:0.98">NASI GORENG KAMPUNG</div></div>
+    <div class="r"><div class="k">titleLarge<em>17 / w800 / -0.09</em></div>
+      <div style="font-size:17px;font-weight:800;letter-spacing:-0.09px">Ringkasan pesanan</div></div>
+    <div class="r"><div class="k">bodyMedium<em>14 / w500</em></div>
+      <div style="font-size:14px;font-weight:500">Tanpa sambal, pedas sedang</div></div>
+    <div class="r"><div class="k">labelLarge<em>14 / w700 / +0.28</em></div>
+      <div style="font-size:14px;font-weight:700;letter-spacing:0.28px">TANDAI DISAJIKAN</div></div>
+    <div class="r"><div class="k">labelMedium<em>12 / w700 / +1.20</em></div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:1.2px;color:var(--textMd)">TERISI</div></div>
+    <div class="r"><div class="k">labelSmall<em>11 / w700 / +1.54</em></div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.54px;color:var(--textMd)">SIAP DI PASS</div></div>
+    <div class="spec">Titles are Archivo Black set tight and nearly leading-less (0.95) so they read
+as stacked slabs; labels go the other way — 700 at +0.14em. Body copy keeps
+normal tracking: a waiter reads item names, they do not scan them as headings.
+Archivo Black is single-weight, so `weight` is ignored rather than smeared.</div>
+  </div>
+
+</div>
+</body>
+</html>

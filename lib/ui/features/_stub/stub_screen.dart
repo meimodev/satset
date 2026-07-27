@@ -3,6 +3,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class StubScreen extends StatelessWidget {
   final String title;
@@ -37,7 +38,7 @@ class StubScreen extends StatelessWidget {
               alignment: Alignment.center,
               child: Icon(icon, size: 32, color: sc.textMd),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: Sp.s5),
             Text(
               title,
               style: SatType.sans(
@@ -47,7 +48,7 @@ class StubScreen extends StatelessWidget {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             Text(
               subtitle ?? 'Segera hadir',
               style: SatType.sans(

@@ -13,6 +13,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 enum _StockFilter { all, low, negative, produced }
 
@@ -64,7 +65,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   child: IconButton(
                     tooltip: 'Tambah bahan',
                     icon: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(Sp.s1h),
                       decoration: SatBox.d(
                         color: sc.accentSoft,
                         shape: BoxShape.circle,
@@ -74,7 +75,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     onPressed: () => _editIngredient(null),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
               ],
               PressScale(
                 child: OutlinedButton.icon(
@@ -93,15 +94,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       color: _opname ? sc.urgent : sc.accentBorder,
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
+                      horizontal: Sp.s3h,
+                      vertical: Sp.s2,
                     ),
                     shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
                   ),
                 ),
               ),
               if (_opname) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
                 PressScale(
                   child: FilledButton.icon(
                     onPressed: _counts.isEmpty ? null : _submitOpname,
@@ -110,8 +111,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: sc.accent,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        horizontal: Sp.s4,
+                        vertical: Sp.s2,
                       ),
                       shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
                     ),
@@ -175,9 +176,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       firstCurve: satEaseOut,
                       secondCurve: satEaseOut,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Sp.s4),
                     _searchAndFilterBar(sc, list),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Sp.s4),
                     if (filtered.isEmpty)
                       _Message(
                         'Tidak ada bahan yang cocok dengan pencarian / filter.',
@@ -264,7 +265,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             children: [
               for (int i = 0; i < cards.length; i++) ...[
                 Expanded(child: cards[i]),
-                if (i < cards.length - 1) const SizedBox(width: 10),
+                if (i < cards.length - 1) const SizedBox(width: Sp.s2h),
               ],
             ],
           );
@@ -304,7 +305,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
             decoration: SatBox.d(
               color: active ? sc.bg3 : bg,
               borderRadius: SatR.a(14),
@@ -334,7 +335,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     Icon(icon, size: 16, color: color),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 Text(
                   value,
                   style: SatType.sans(
@@ -344,7 +345,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: Sp.sHair),
                 Text(sub, style: SatType.sans(size: 10, color: sc.textLo)),
               ],
             ),
@@ -357,7 +358,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   // ---------------------------------------------------------------- Opname Banner
   Widget _opnameBanner(SatColors sc) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s3),
       decoration: SatBox.d(
         color: sc.accentSoft,
         borderRadius: SatR.a(14),
@@ -366,7 +367,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(Sp.s2),
             decoration: SatBox.d(
               color: sc.accent.withValues(alpha: 0.15),
               shape: BoxShape.circle,
@@ -377,7 +378,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               color: sc.accentText,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.s3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +392,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     letterSpacing: 0.8,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: Sp.sHair),
                 Text(
                   'Ketik jumlah fisik di gudang saat ini. Selisih akan otomatis dihitung sebagai penyesuaian mutasi.',
                   style: SatType.sans(size: 12, color: sc.textMd),
@@ -400,7 +401,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             ),
           ),
           if (_counts.isNotEmpty) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 180),
               transitionBuilder: (child, anim) =>
@@ -408,8 +409,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               child: Container(
                 key: ValueKey(_counts.length),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: Sp.s2h,
+                  vertical: Sp.s1,
                 ),
                 decoration: SatBox.d(
                   color: sc.accent,
@@ -462,7 +463,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       : null,
                   filled: true,
                   fillColor: sc.bg2,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(vertical: Sp.s2h),
                   border: OutlineInputBorder(
                     borderRadius: SatR.a(12),
                     borderSide: SatB.side(color: sc.border1),
@@ -481,13 +482,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: Sp.s2h),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
               _filterChip(sc, _StockFilter.all, 'Semua (${list.length})'),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               _filterChip(
                 sc,
                 _StockFilter.low,
@@ -495,7 +496,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 highlightColor: lowCount > 0 ? sc.warn : null,
               ),
               if (negCount > 0) ...[
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.s1h),
                 _filterChip(
                   sc,
                   _StockFilter.negative,
@@ -503,7 +504,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   highlightColor: sc.urgent,
                 ),
               ],
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               _filterChip(
                 sc,
                 _StockFilter.produced,
@@ -533,7 +534,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
           decoration: SatBox.d(
             color: active
                 ? (highlightColor?.withValues(alpha: 0.15) ?? sc.accentSoft)
@@ -567,7 +568,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final physicalCount = _counts[i.id];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: Sp.s2h),
       decoration: SatBox.d(
         color: sc.bg2,
         borderRadius: SatR.a(14),
@@ -593,7 +594,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             ),
             Row(
               children: [
-                const SizedBox(width: 4),
+                const SizedBox(width: Sp.s1),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -614,7 +615,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               ),
                             ),
                             if (i.isProduced) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
                                 label: 'PRODUKSI',
@@ -623,7 +624,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               ),
                             ],
                             if (i.isLow && !negative) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
                                 label: 'MENIPIS',
@@ -632,7 +633,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               ),
                             ],
                             if (negative) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
                                 label: 'MINUS',
@@ -642,7 +643,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             ],
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: Sp.s2),
 
                         // Metrics Grid
                         Row(
@@ -660,7 +661,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                       letterSpacing: 0.6,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: Sp.sHair),
                                   Text(
                                     i.onHandLabel,
                                     style: SatType.mono(
@@ -686,7 +687,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                       letterSpacing: 0.6,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: Sp.sHair),
                                   Text(
                                     i.costMicro > 0
                                         ? formatIDR(
@@ -718,7 +719,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                       letterSpacing: 0.6,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: Sp.sHair),
                                   Text(
                                     i.lastReceivedAt == null
                                         ? '—'
@@ -740,14 +741,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
                         // Low stock threshold progress line
                         if (i.lowStockAt != null && i.lowStockAt! > 0) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: Sp.s2),
                           _stockLevelMeter(sc, i),
                         ],
 
                         // Recipe links — counting doesn't need them, and the row
                         // already grows a count field in opname mode.
                         if (!_opname) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: Sp.s2),
                           _RecipeLinkChips(
                             sc: sc,
                             madeFrom: i.madeFrom,
@@ -764,10 +765,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
                 // Right Actions / Opname Input
                 Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.only(right: Sp.s3),
                   child: _opname
                       ? SizedBox(
-                          width: 120,
+                          width: Sp.s12,
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -796,8 +797,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     borderSide: SatB.side(color: sc.border1),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 8,
+                                    horizontal: Sp.s2,
+                                    vertical: Sp.s2,
                                   ),
                                 ),
                                 onChanged: (t) {
@@ -814,7 +815,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 },
                               ),
                               if (physicalCount != null) ...[
-                                const SizedBox(height: 4),
+                                const SizedBox(height: Sp.s1),
                                 _varianceDeltaBadge(sc, i, physicalCount),
                               ],
                             ],
@@ -835,8 +836,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   foregroundColor: sc.accentText,
                                   side: SatB.side(color: sc.border1),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
+                                    horizontal: Sp.s2h,
+                                    vertical: Sp.s1h,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: SatR.a(8),
@@ -868,7 +869,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   child: Row(
                                     children: [
                                       Icon(Icons.add_shopping_cart, size: 16),
-                                      SizedBox(width: 10),
+                                      SizedBox(width: Sp.s2h),
                                       Text('Terima barang'),
                                     ],
                                   ),
@@ -879,7 +880,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     child: Row(
                                       children: [
                                         Icon(Icons.blender_outlined, size: 16),
-                                        SizedBox(width: 10),
+                                        SizedBox(width: Sp.s2h),
                                         Text('Produksi batch'),
                                       ],
                                     ),
@@ -889,7 +890,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   child: Row(
                                     children: [
                                       Icon(Icons.history, size: 16),
-                                      SizedBox(width: 10),
+                                      SizedBox(width: Sp.s2h),
                                       Text('Riwayat mutasi'),
                                     ],
                                   ),
@@ -899,7 +900,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   child: Row(
                                     children: [
                                       Icon(Icons.edit_outlined, size: 16),
-                                      SizedBox(width: 10),
+                                      SizedBox(width: Sp.s2h),
                                       Text('Ubah bahan'),
                                     ],
                                   ),
@@ -913,7 +914,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                         size: 16,
                                         color: sc.urgent,
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: Sp.s2h),
                                       Text(
                                         'Arsipkan',
                                         style: TextStyle(color: sc.urgent),
@@ -941,7 +942,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     IconData? icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
       decoration: SatBox.d(
         color: color.withValues(alpha: 0.12),
         borderRadius: SatR.a(6),
@@ -952,7 +953,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 10, color: color),
-            const SizedBox(width: 3),
+            const SizedBox(width: Sp.sHair),
           ],
           Text(
             label,
@@ -985,7 +986,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.s2),
         Text(
           'Batas min: ${formatQty(threshold, i.unit)}',
           style: SatType.mono(size: 9, color: sc.textLo),
@@ -1078,7 +1079,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
                 DropdownButton<StockUnit>(
                   value: unit,
                   items: [
@@ -1359,10 +1360,10 @@ class _Sheet extends StatelessWidget {
         border: SatB.all(color: sc.border1),
       ),
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        left: Sp.s6,
+        right: Sp.s6,
+        top: Sp.s3,
+        bottom: MediaQuery.of(context).viewInsets.bottom + Sp.s6,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -1380,7 +1381,7 @@ class _Sheet extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
 
             // Header
             Row(
@@ -1399,7 +1400,7 @@ class _Sheet extends StatelessWidget {
                         ),
                       ),
                       if (subtitle != null) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: Sp.sHair),
                         Text(
                           subtitle!,
                           style: SatType.sans(size: 12, color: sc.textLo),
@@ -1415,12 +1416,12 @@ class _Sheet extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
 
             // Children
             for (final c in children)
-              Padding(padding: const EdgeInsets.only(bottom: 12), child: c),
-            const SizedBox(height: 8),
+              Padding(padding: const EdgeInsets.only(bottom: Sp.s3), child: c),
+            const SizedBox(height: Sp.s2),
 
             // Primary Action Button
             PressScale(
@@ -1482,7 +1483,7 @@ class _LedgerSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Sp.s4),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1515,13 +1516,13 @@ class _LedgerSheet extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: Sp.s3h),
 
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 420),
                 child: async.when(
                   loading: () => const Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: EdgeInsets.all(Sp.s6),
                     child: Center(child: CircularProgressIndicator()),
                   ),
                   error: (e, _) =>
@@ -1542,12 +1543,12 @@ class _LedgerSheet extends ConsumerWidget {
                               index: i,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
+                                  vertical: Sp.s2h,
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.all(8),
+                                      padding: const EdgeInsets.all(Sp.s2),
                                       decoration: SatBox.d(
                                         color: positive
                                             ? sc.success.withValues(alpha: 0.1)
@@ -1564,7 +1565,7 @@ class _LedgerSheet extends ConsumerWidget {
                                             : sc.textLo,
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: Sp.s3),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -1578,7 +1579,7 @@ class _LedgerSheet extends ConsumerWidget {
                                               color: sc.textHi,
                                             ),
                                           ),
-                                          const SizedBox(height: 2),
+                                          const SizedBox(height: Sp.sHair),
                                           Text(
                                             [
                                               if (m.sourceLabel.isNotEmpty)
@@ -1643,12 +1644,12 @@ class _EmptyState extends StatelessWidget {
     final sc = context.sat;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Sp.s8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(Sp.s5),
               decoration: SatBox.d(
                 color: sc.bg2,
                 shape: BoxShape.circle,
@@ -1660,7 +1661,7 @@ class _EmptyState extends StatelessWidget {
                 color: sc.textLo,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Text(
               title,
               style: SatType.sans(
@@ -1669,13 +1670,13 @@ class _EmptyState extends StatelessWidget {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             Text(
               message,
               textAlign: TextAlign.center,
               style: SatType.sans(size: 13, color: sc.textLo),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: Sp.s5),
             PressScale(
               child: FilledButton.icon(
                 onPressed: onAction,
@@ -1684,8 +1685,8 @@ class _EmptyState extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: sc.accent,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                    horizontal: Sp.s5,
+                    vertical: Sp.s3,
                   ),
                   shape: RoundedRectangleBorder(borderRadius: SatR.a(12)),
                 ),
@@ -1708,14 +1709,14 @@ class _Message extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(Sp.s8),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
               Icon(icon, size: 28, color: color ?? sc.textLo),
-              const SizedBox(height: 10),
+              const SizedBox(height: Sp.s2h),
             ],
             Text(
               text,
@@ -1831,7 +1832,7 @@ class _RecipeLinkChips extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: Sp.sHair),
       decoration: SatBox.d(
         color: sc.bg3,
         borderRadius: SatR.a(6),

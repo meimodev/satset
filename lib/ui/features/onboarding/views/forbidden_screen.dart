@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class ForbiddenScreen extends StatelessWidget {
   const ForbiddenScreen({super.key});
@@ -12,9 +13,9 @@ class ForbiddenScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.lock_outline, size: 48),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             const Text('Akses tidak diizinkan'),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             FilledButton(
               onPressed: () => context.go('/tables'),
               child: const Text('Kembali'),

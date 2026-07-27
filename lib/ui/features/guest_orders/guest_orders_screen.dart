@@ -4,6 +4,8 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/guest_orders_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Staff review queue for guest self-orders (ADR-0028). Each pending batch
 /// shows the table + lines with one-tap Approve (→ kitchen) / Reject (→ void).
@@ -32,7 +34,7 @@ class GuestOrdersScreen extends ConsumerWidget {
                       color: sc.textHi,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: Sp.s2h),
                   if (batches.isNotEmpty)
                     _Badge(count: batches.length, color: sc.urgent),
                   const Spacer(),
@@ -65,7 +67,7 @@ class GuestOrdersScreen extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.qr_code_2, size: 48, color: sc.textDim),
-        const SizedBox(height: 12),
+        const SizedBox(height: Sp.s3),
         Text(
           'Belum ada pesanan mandiri',
           style: TextStyle(color: sc.textLo, fontSize: 15),
@@ -83,7 +85,7 @@ class _BatchCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: Sp.s3h),
       decoration: SatBox.d(
         color: sc.bg0,
         borderRadius: SatR.a(14),
@@ -97,7 +99,7 @@ class _BatchCard extends ConsumerWidget {
             child: Row(
               children: [
                 Icon(Icons.table_restaurant, size: 18, color: sc.accentText),
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
                 Text(
                   'Meja ${batch.tableLabel}',
                   style: TextStyle(
@@ -121,7 +123,7 @@ class _BatchCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 28,
+                    width: Sp.s6,
                     child: Text(
                       '${l.qty}×',
                       style: TextStyle(
@@ -161,7 +163,7 @@ class _BatchCard extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Row(
@@ -174,12 +176,12 @@ class _BatchCard extends ConsumerWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: sc.urgent,
                       side: SatB.side(color: sc.urgent),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: Sp.s3),
                     ),
                     child: const Text('Tolak'),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
                 Expanded(
                   flex: 2,
                   child: FilledButton(
@@ -188,7 +190,7 @@ class _BatchCard extends ConsumerWidget {
                         .approve(batch.visitId),
                     style: FilledButton.styleFrom(
                       backgroundColor: sc.success,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: Sp.s3),
                     ),
                     child: const Text('Setujui & Kirim ke Dapur'),
                   ),
@@ -216,14 +218,14 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
     decoration: SatBox.d(color: color, borderRadius: SatR.a(10)),
     child: Text(
       '$count',
-      style: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w700,
-        fontSize: 13,
+      style: SatType.sans(
+        size: 13,
+        weight: FontWeight.w700,
+        color: onFill(color),
       ),
     ),
   );

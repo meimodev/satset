@@ -30,11 +30,19 @@ void main() {
           '(status pill, owner chip) is onFill(), not a literal.',
     ),
     _Rule(
+      // The 6 left are two deliberate cases, both commented at the site: the
+      // QR quiet zone in zone_admin (themed to charcoal it stops scanning) and
+      // the payment-proof lightbox in cashier_bill (black chrome so the app's
+      // palette does not tint a photo being read for an amount). Left as a
+      // baseline rather than a file exemption, so genuine drift in those two
+      // files still trips the rule.
       name: 'Colors.white / Colors.black',
-      baseline: 34,
+      baseline: 6,
       pattern: RegExp(r'Colors\.(white|black)\b'),
       fix:
-          'use context.sat neutral ramp (bg0-bg4, textHi-textDim). '
+          'use context.sat neutral ramp (bg0-bg4, textHi-textDim), onFill() for '
+          'ink on a saturated fill, or satBarrier/satMediaScrim/satShadowInk '
+          'for dimming that must stay dark on every palette. '
           'Colors.transparent is allowed.',
     ),
     _Rule(

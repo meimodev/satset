@@ -9,6 +9,7 @@ import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'guest_stepper.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Result of the menu-first **Pesanan baru → assign to table** commit step.
 class AssignTableResult {
@@ -98,7 +99,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             Text(
               'Tetapkan ke meja',
               style: SatType.sans(
@@ -108,7 +109,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: Sp.s1),
             Text(
               'Atur tamu lalu pilih meja kosong',
               style: SatType.mono(
@@ -117,7 +118,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 letterSpacing: 0.44,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Row(
               children: [
                 Text(
@@ -139,7 +140,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
             TextField(
               controller: _guestCtrl,
               style: SatType.sans(size: 14, color: sc.textHi),
@@ -149,8 +150,8 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 filled: true,
                 fillColor: sc.bg2,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+                  horizontal: Sp.s3h,
+                  vertical: Sp.s3,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: SatR.a(12),
@@ -162,11 +163,11 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Flexible(
               child: targets.isEmpty
                   ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      padding: const EdgeInsets.symmetric(vertical: Sp.s8),
                       child: Text(
                         'Tidak ada meja kosong.',
                         textAlign: TextAlign.center,
@@ -209,7 +210,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
   Widget _targetTile(SatColors sc, VenueTable target) {
     final overCapacity = _pax > target.capacity;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
       child: Material(
         color: sc.bg2,
         borderRadius: SatR.a(12),
@@ -226,7 +227,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
           },
           borderRadius: SatR.a(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
             decoration: SatBox.d(
               border: SatB.all(color: sc.border0),
               borderRadius: SatR.a(12),
@@ -241,7 +242,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: Sp.s3),
                 Text(
                   'kapasitas ${target.capacity}',
                   style: SatType.sans(size: 12, color: sc.textMd),
@@ -249,7 +250,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 const Spacer(),
                 if (overCapacity)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: Sp.s2),
                     child: Icon(
                       Icons.warning_amber_rounded,
                       size: 16,

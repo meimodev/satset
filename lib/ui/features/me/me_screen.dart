@@ -25,6 +25,8 @@ import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/state/view_mode_view_model.dart';
+import 'package:satset/ui/core/widgets/staff_avatar.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class _ShiftMetrics {
   final String name;
@@ -315,7 +317,7 @@ class _MePhone extends StatelessWidget {
               forcePhone: forcePhone,
               onToggleLayout: onToggleLayout,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
               child: _Identity(m: m),
@@ -325,17 +327,17 @@ class _MePhone extends StatelessWidget {
               child: _EndShiftButton(onPressed: onEndShift),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _KpiGrid(m: m),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _PacingCard(m: m),
             ),
             const _SectionLabel(label: 'AKTIVITAS TERBARU'),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _ActivityCard(
                 audit: audit,
                 tableNames: tableNames,
@@ -402,7 +404,7 @@ class _MeTablet extends StatelessWidget {
                   forcePhone: forcePhone,
                   onTap: onToggleLayout,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
               ],
               _ThemeIconButton(theme: theme, onTap: onPickTheme),
             ],
@@ -420,16 +422,16 @@ class _MeTablet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _Identity(m: m, big: true, showShiftLine: false),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: Sp.s3h),
                       _EndShiftButton(onPressed: onEndShift),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: Sp.s3h),
                       _KpiGrid(m: m, columns: 4),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: Sp.s3),
                       _PacingCard(m: m, big: true),
                     ],
                   ),
                 ),
-                const SizedBox(width: 22),
+                const SizedBox(width: Sp.s5),
                 Expanded(
                   flex: 4,
                   child: _ActivityCard(
@@ -473,7 +475,7 @@ class _TopBar extends StatelessWidget {
           const Spacer(),
           if (showLayoutToggle) ...[
             _LayoutToggleButton(forcePhone: forcePhone, onTap: onToggleLayout),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
           ],
           _ThemeIconButton(theme: theme, onTap: onPickTheme),
         ],
@@ -599,37 +601,14 @@ class _Identity extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(sc.accentText),
               ),
             ),
-            Container(
-              width: size,
-              height: size,
-              decoration: SatBox.d(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(m.avatarColorHex ?? 0xFFFF9233),
-                    Color.alphaBlend(
-                      Colors.black.withValues(alpha: 0.36),
-                      Color(m.avatarColorHex ?? 0xFFFF9233),
-                    ),
-                  ],
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                m.initials,
-                style: SatType.mono(
-                  size: big ? 22 : 18,
-                  weight: FontWeight.w600,
-                  letterSpacing: 0.36,
-                  color: Colors.white,
-                ),
-              ),
+            StaffAvatar.raw(
+              initials: m.initials,
+              colorHex: m.avatarColorHex,
+              size: size,
             ),
           ],
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: Sp.s4),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,13 +622,13 @@ class _Identity extends StatelessWidget {
                   color: sc.textHi,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: Sp.sHair),
               Text(
                 m.roleLabel,
                 style: SatType.sans(size: 13, color: sc.textMd),
               ),
               if (showShiftLine) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 Text(
                   'MULAI ${m.shiftStart} · ${m.elapsedLabel.toUpperCase()} BERJALAN',
                   style: SatType.mono(
@@ -694,7 +673,7 @@ class _KpiGrid extends StatelessWidget {
         children: [
           for (var i = 0; i < items.length; i++) ...[
             Expanded(child: _KpiBox(kpi: items[i])),
-            if (i != items.length - 1) const SizedBox(width: 8),
+            if (i != items.length - 1) const SizedBox(width: Sp.s2),
           ],
         ],
       );
@@ -704,15 +683,15 @@ class _KpiGrid extends StatelessWidget {
         Row(
           children: [
             Expanded(child: _KpiBox(kpi: items[0])),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             Expanded(child: _KpiBox(kpi: items[1])),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Sp.s2),
         Row(
           children: [
             Expanded(child: _KpiBox(kpi: items[2])),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             Expanded(child: _KpiBox(kpi: items[3])),
           ],
         ),
@@ -780,7 +759,7 @@ class _KpiBox extends StatelessWidget {
               color: subColor,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Text(
             kpi.value,
             style: SatType.mono(
@@ -830,7 +809,7 @@ class _PacingCard extends StatelessWidget {
               color: sc.accentText,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: Sp.s3h),
           Expanded(
             child: Text(
               '$perHour tiket / jam',
@@ -874,7 +853,7 @@ class _ActivityCard extends StatelessWidget {
     final sc = context.sat;
     final inner = audit.isEmpty
         ? Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(Sp.s5),
             child: Text(
               'Belum ada entri audit. Pembatalan, comp, dan perubahan pasca-kirim muncul di sini.',
               style: SatType.sans(size: 13, color: sc.textLo, height: 1.5),
@@ -924,7 +903,7 @@ class _ActivityCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             inner,
           ],
         ),
@@ -1049,7 +1028,7 @@ class _AuditRow extends StatelessWidget {
       ),
     };
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1060,7 +1039,7 @@ class _AuditRow extends StatelessWidget {
             alignment: Alignment.center,
             child: Icon(icon, size: 14, color: fg),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.s3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1075,7 +1054,7 @@ class _AuditRow extends StatelessWidget {
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: Sp.sHair),
                 Text(
                   meta,
                   style: SatType.mono(
@@ -1101,7 +1080,7 @@ class _EndShiftButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return SizedBox(
-      height: 52,
+      height: Sp.s12,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: Icon(Icons.logout_rounded, size: 18, color: sc.textHi),

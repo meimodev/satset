@@ -7,6 +7,7 @@ import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// The report's ingredient view: what was used, what was thrown away, what the
 /// pantry is worth, and how far the counts drifted.
@@ -31,7 +32,7 @@ class ReportStockSection extends ConsumerWidget {
     final async = ref.watch(stockReportProvider((rangeFrom, rangeTo)));
     return async.when(
       loading: () => const SizedBox(
-        height: 90,
+        height: Sp.s12,
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       error: (e, _) => Text(
@@ -80,7 +81,7 @@ class ReportStockSection extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
             if (waste.isNotEmpty)
               _table(sc, 'Terbuang', waste, valueColor: sc.urgent),
             if (variance.isNotEmpty)
@@ -113,7 +114,7 @@ class ReportStockSection extends ConsumerWidget {
     String value,
     Color color,
   ) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
     decoration: SatBox.d(
       color: sc.bg2,
       borderRadius: SatR.a(10),
@@ -126,7 +127,7 @@ class ReportStockSection extends ConsumerWidget {
           label.toUpperCase(),
           style: SatType.mono(size: 9, color: sc.textLo, letterSpacing: 0.6),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: Sp.sHair),
         Text(
           value,
           style: SatType.sans(size: 14, weight: FontWeight.w600, color: color),
@@ -143,7 +144,7 @@ class ReportStockSection extends ConsumerWidget {
     String? empty,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: Sp.s4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -151,13 +152,13 @@ class ReportStockSection extends ConsumerWidget {
             title.toUpperCase(),
             style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.8),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           if (rows.isEmpty)
             Text(empty ?? '—', style: SatType.sans(size: 12, color: sc.textLo))
           else
             for (final row in rows)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: Sp.s1),
                 child: Row(
                   children: [
                     Expanded(
@@ -173,9 +174,9 @@ class ReportStockSection extends ConsumerWidget {
                       ),
                       style: SatType.mono(size: 11, color: sc.textLo),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Sp.s3),
                     SizedBox(
-                      width: 92,
+                      width: Sp.s12,
                       child: Text(
                         formatIDR(_int(row['value'])),
                         textAlign: TextAlign.right,

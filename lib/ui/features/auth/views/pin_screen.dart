@@ -14,6 +14,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 const _kEnterDur = Duration(milliseconds: 480);
 const _kMicroDur = Duration(milliseconds: 200);
@@ -163,7 +164,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
         backgroundColor: sc.bg0,
         body: Center(
           child: SizedBox(
-            width: 28,
+            width: Sp.s6,
             height: 28,
             child: CircularProgressIndicator(
               strokeWidth: 2,
@@ -290,7 +291,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _Reveal(child: _TabletBrand()),
-                      const SizedBox(height: 48),
+                      const SizedBox(height: Sp.s12),
                       _Reveal(
                         delay: const Duration(milliseconds: 80),
                         child: AnimatedSize(
@@ -383,7 +384,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _Reveal(child: brand),
-                              const SizedBox(height: 36),
+                              const SizedBox(height: Sp.s8),
                               _Reveal(
                                 delay: const Duration(milliseconds: 80),
                                 child: modeBlock,
@@ -391,7 +392,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                             ],
                           ),
                         ),
-                        const SizedBox(width: 48),
+                        const SizedBox(width: Sp.s12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -409,14 +410,14 @@ class _PinScreenState extends ConsumerState<PinScreen>
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 24),
+                        const SizedBox(height: Sp.s6),
                         _Reveal(child: brand),
-                        const SizedBox(height: 36),
+                        const SizedBox(height: Sp.s8),
                         _Reveal(
                           delay: const Duration(milliseconds: 80),
                           child: modeBlock,
                         ),
-                        const SizedBox(height: 26),
+                        const SizedBox(height: Sp.s6),
                         if (state.mode == SignInMode.admin)
                           _Reveal(
                             delay: const Duration(milliseconds: 140),
@@ -472,7 +473,7 @@ class _AdminAuthForm extends StatelessWidget {
           textInputAction: TextInputAction.next,
           errorText: emailError,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Sp.s3h),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -485,7 +486,7 @@ class _AdminAuthForm extends StatelessWidget {
                 color: sc.textLo,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
             TextField(
               controller: password,
               obscureText: !showPassword,
@@ -512,8 +513,8 @@ class _AdminAuthForm extends StatelessWidget {
                   ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+                  horizontal: Sp.s3h,
+                  vertical: Sp.s3,
                 ),
                 suffixIcon: IconButton(
                   tooltip: showPassword
@@ -532,11 +533,11 @@ class _AdminAuthForm extends StatelessWidget {
             ),
             if (pwHasError)
               Padding(
-                padding: const EdgeInsets.only(top: 6, left: 2),
+                padding: const EdgeInsets.only(top: Sp.s1h, left: Sp.sHair),
                 child: Row(
                   children: [
                     Icon(Icons.error_outline, size: 12, color: sc.urgent),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: Sp.s1h),
                     Text(
                       passwordError!,
                       style: SatType.sans(
@@ -550,13 +551,13 @@ class _AdminAuthForm extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Sp.s2),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: onForgotPassword,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
             ),
             child: Text(
               'Lupa password?',
@@ -568,14 +569,14 @@ class _AdminAuthForm extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Sp.s2),
         SizedBox(
-          height: 52,
+          height: Sp.s12,
           child: ElevatedButton.icon(
             onPressed: busy ? null : onSubmit,
             icon: busy
                 ? SizedBox(
-                    width: 16,
+                    width: Sp.s4,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -604,12 +605,12 @@ class _AdminAuthForm extends StatelessWidget {
           ),
         ),
         if (serverError != null) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline, size: 12, color: sc.urgent),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               Flexible(
                 child: Text(
                   serverError!,
@@ -639,7 +640,7 @@ class _ModeSwitcher extends StatelessWidget {
     final sc = context.sat;
     final isAdmin = mode == SignInMode.admin;
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(Sp.s1),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -677,7 +678,7 @@ class _ModeSwitcher extends StatelessWidget {
                       onTap: () => onChange(SignInMode.admin),
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: Sp.s1),
                   Expanded(
                     child: _modeTab(
                       context,
@@ -722,7 +723,7 @@ class _ModeSwitcher extends StatelessWidget {
                 color: Color.lerp(sc.textMd, sc.accentText, t),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: Sp.s2h),
             Expanded(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: active ? 1.0 : 0.0),
@@ -776,7 +777,7 @@ class _ServerList extends ConsumerWidget {
           ),
           child: servers.isEmpty
               ? Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(Sp.s4h),
                   child: Text(
                     'Mencari server di jaringan… atau pasangkan manual lewat QR.',
                     style: SatType.sans(size: 13, color: sc.textMd),
@@ -800,11 +801,11 @@ class _ServerList extends ConsumerWidget {
                 ),
         ),
         if (pairingError != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Row(
             children: [
               Icon(Icons.error_outline, size: 12, color: sc.urgent),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               Expanded(
                 child: Text(
                   pairingError!,
@@ -853,7 +854,7 @@ class _ServerRow extends StatelessWidget {
             child: Row(
               children: [
                 _PulseDot(color: dotColor, glow: dotShadow),
-                const SizedBox(width: 14),
+                const SizedBox(width: Sp.s3h),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -868,7 +869,7 @@ class _ServerRow extends StatelessWidget {
                           color: sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: Sp.sHair),
                       Text(
                         server.version == null
                             ? server.ipLine
@@ -884,7 +885,7 @@ class _ServerRow extends StatelessWidget {
                 ),
                 if (busy)
                   SizedBox(
-                    width: 22,
+                    width: Sp.s5,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -942,16 +943,16 @@ class _RestoreLoadingScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _TabletBrand(),
-              const SizedBox(height: 28),
+              const SizedBox(height: Sp.s6),
               SizedBox(
-                width: 24,
+                width: Sp.s6,
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: sc.accentText,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Sp.s4),
               Text(
                 'Memeriksa sesi…',
                 style: SatType.mono(
@@ -989,7 +990,7 @@ class _Brand extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: Sp.s2h),
         Text(
           'satset',
           style: SatType.sans(
@@ -1025,7 +1026,7 @@ class _TabletBrand extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: Sp.s3),
         Text(
           'satset',
           style: SatType.sans(
@@ -1073,7 +1074,7 @@ class _Field extends StatelessWidget {
             color: sc.textLo,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Sp.s1h),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
@@ -1097,18 +1098,18 @@ class _Field extends StatelessWidget {
               borderSide: SatB.side(color: hasError ? sc.urgent : sc.accent),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
+              horizontal: Sp.s3h,
+              vertical: Sp.s3,
             ),
           ),
         ),
         if (hasError)
           Padding(
-            padding: const EdgeInsets.only(top: 6, left: 2),
+            padding: const EdgeInsets.only(top: Sp.s1h, left: Sp.sHair),
             child: Row(
               children: [
                 Icon(Icons.error_outline, size: 12, color: sc.urgent),
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.s1h),
                 Text(
                   errorText!,
                   style: SatType.sans(
@@ -1191,7 +1192,7 @@ class _ServerReachabilityPill extends ConsumerWidget {
             boxShadow: [BoxShadow(color: v.glow, spreadRadius: 3)],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.s2),
         Text(
           v.label,
           style: SatType.mono(
@@ -1257,7 +1258,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                       boxShadow: [BoxShadow(color: v.glow, spreadRadius: 3)],
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: Sp.s3h),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1272,7 +1273,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                             color: sc.textHi,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: Sp.sHair),
                         Text(
                           server.version == null
                               ? server.ipLine
@@ -1283,7 +1284,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                             letterSpacing: 0.4,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: Sp.sHair),
                         Text(
                           v.label,
                           style: SatType.mono(

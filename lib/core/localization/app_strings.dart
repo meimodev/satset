@@ -255,4 +255,80 @@ class AppStrings {
   static const String a11yPickColor = 'Pilih warna';
   static const String a11yAddItem = 'Tambah item';
   static const String a11yTableLocked = 'Meja terkunci';
+
+  // Staf & akun (staff_screen). Layar ini sebelumnya ditulis penuh dalam bahasa
+  // Inggris — satu-satunya layar yang begitu. Istilah yang tetap dipakai apa
+  // adanya: PIN, admin, avatar. Itu sudah jadi kata pinjaman di dapur, dan
+  // menerjemahkannya justru bikin staf ragu.
+  static const String staffTitle = 'Staf & akun';
+  static const String staffTabPeople = 'Orang';
+  static const String staffTabRoles = 'Peran';
+  static const String staffTabPermissions = 'Izin';
+  static const String staffSearchHint = 'Cari nama';
+  static const String staffFilterAll = 'Semua';
+  static const String staffAdd = 'Tambah staf';
+  static const String staffAddPill = '+ Tambah staf';
+  static const String staffEmpty =
+      'Tidak ada staf yang cocok dengan filter ini';
+  static const String staffNewRolePill = '+ Peran baru';
+  static const String staffRoleBadgeAdmin = 'ADMIN';
+  static const String staffRoleColor = 'Warna peran';
+  static const String staffColor = 'Warna';
+  static const String staffAvatarColor = 'Warna avatar';
+  static const String staffMatrixTitle = 'Matriks peran × izin';
+  static const String staffMatrixHint =
+      'Ketuk sel untuk mengubah. Penjaga admin terakhir mencegah pencabutan '
+      'pemegang “Kelola staf” yang terakhir.';
+  static const String staffRole = 'Peran';
+  static const String staffNoRole = 'Tanpa peran';
+  static const String staffName = 'Nama';
+  static const String staffFullName = 'Nama lengkap';
+  static const String staffPinField = 'PIN (6 digit, unik)';
+  static const String staffPinReset = 'Atur ulang';
+  static const String staffPinUpdated = 'PIN diperbarui';
+  static const String staffSaveChanges = 'Simpan perubahan';
+  static const String staffNewRoleName = 'Nama peran baru';
+  static const String staffRenameRole = 'Ganti nama peran';
+  static const String staffDisable = 'Nonaktifkan';
+
+  // Penolakan. Menyebut apa yang menghalangi, bukan minta maaf — pengelola
+  // sedang di tengah shift dan butuh tahu langkah berikutnya.
+  static const String staffErrNameEmpty = 'Nama tidak boleh kosong';
+  static const String staffErrAdminBySuperOnly =
+      'Peran admin hanya bisa dibuat oleh super admin';
+  static const String staffErrAdminPromoteBlocked =
+      'Menaikkan ke peran admin tidak bisa dari sini';
+  static const String staffErrLastManageStaff =
+      'Tidak bisa mencabut peran terakhir yang punya “Kelola staf”';
+  static const String staffErrLastAdminRole =
+      'Tidak bisa menghapus peran admin terakhir';
+  static const String staffErrNeedNonAdminRole = 'Buat peran non-admin dulu';
+  static const String staffErrColorTaken =
+      'Warna avatar sudah dipakai akun lain';
+  static const String staffErrColorTakenShort = 'Warna juga dipakai akun lain';
+
+  // Konfirmasi. Judul menyebut sasaran, badan menyebut akibatnya — sebuah akun
+  // yang salah dihapus tidak bisa dibatalkan.
+  static const String staffChangeRoleTitle = 'Ganti peran?';
+  static const String staffDisableBody =
+      'Pengguna tidak bisa masuk lagi. Bisa diaktifkan kembali nanti.';
+  static const String staffDeleteBody =
+      'Akun dihapus permanen. Catatan audit lama tetap ada.';
+  static const String staffDeleteRoleBody =
+      'Izin yang melekat pada peran ini akan hilang.';
+
+  static String staffSubtitle(int members, int admins) =>
+      '$members anggota · $admins admin';
+  static String staffRolesCount(int n) => '$n peran khusus';
+  static String staffCapsCount(int held, int total) => '$held/$total izin';
+  static String staffMembersCount(int n) => '$n anggota';
+  static String staffCreated(String name, String pin) =>
+      '$name dibuat. PIN: $pin';
+  static String staffNewPin(String pin) => 'PIN baru: $pin';
+  static String staffRoleAdminSuffix(String name) => '$name (admin)';
+  static String staffDeleteRoleTitle(String name) => 'Hapus peran “$name”?';
+  static String staffChangeRoleBody(String name) =>
+      'Pindahkan $name ke peran lain. Izin berubah seketika.';
+  static String staffDisableTitle(String name) => 'Nonaktifkan $name?';
+  static String staffDeleteTitle(String name) => 'Hapus $name?';
 }

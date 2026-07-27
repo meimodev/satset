@@ -1,0 +1,91 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shape &amp; skin — lembut vs brutal</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 18px; }
+  .demo { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .box {
+    width: 96px; height: 72px;
+    background: var(--bg2);
+    border: var(--rule) solid var(--border0);
+    border-radius: var(--r-lg);
+    box-shadow: var(--lift);
+    display: flex; align-items: flex-end; padding: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--textLo);
+  }
+  .box--accent { background: var(--accent); color: var(--accentInk); border-color: var(--accentBorder); }
+  .box--dot { border-radius: 50%; width: 72px; }
+  .btn {
+    padding: 9px 14px; border-radius: var(--r-md);
+    background: var(--accent); color: var(--accentInk);
+    border: var(--rule) solid var(--accentBorder);
+    box-shadow: var(--lift);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+    text-transform: var(--caps); letter-spacing: 0.2px;
+  }
+  .btn--ghost { background: transparent; color: var(--accentText); border-color: var(--border1); box-shadow: none; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Lembut</h3>
+    <p class="sub">SatSkin.lembut · rounded, hairline, no shadow</p>
+    <div class="demo">
+      <div class="box">r-lg 14</div>
+      <div class="box" style="border-radius:var(--r-2xl)">r-2xl 22</div>
+      <div class="box box--dot">circle</div>
+    </div>
+    <div class="row"><span class="btn">Kirim ke dapur</span><span class="btn btn--ghost">Batal</span></div>
+    <div class="spec">SatR.a(n) passes the radius straight through.
+SatB.all() keeps the caller's 1px hairline on translucent border0.
+SatBox.d() adds no shadow. Cards are separated by tone, not by edge.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal — paper</h3>
+    <p class="sub">SatSkin.brutal · Brightness.light · ADR-0047</p>
+    <div class="demo">
+      <div class="box">r → 0</div>
+      <div class="box box--accent">accent slab</div>
+      <div class="box box--dot" style="border-radius:50%;box-shadow:none">pips stay round</div>
+    </div>
+    <div class="row"><span class="btn">Kirim ke dapur</span><span class="btn btn--ghost">Batal</span></div>
+    <div class="spec">Every radius collapses to 0. Every rule snaps to 3px solid ink —
+except a width:0 call site, which is a border switched *off*, not a thin one.
+SatBox.d() lifts a card onto a hard (3,3) un-blurred ink shadow, but only when
+it paints its own fill, has a border and a radius, and is rectangular:
+a borrowed-surface decoration would render as a solid ink slab with the
+content nowhere in sight. Wrong beats invisible.
+SatShape.caps() uppercases display and label copy — Indonesian has no
+casing rules this breaks.</div>
+  </div>
+
+  <div class="stage" data-pal="neoMidnight">
+    <h3>Brutal — midnight</h3>
+    <p class="sub">SatSkin.brutal · Brightness.dark</p>
+    <div class="demo">
+      <div class="box">bone rule</div>
+      <div class="box box--accent">accent slab</div>
+      <div class="box box--dot" style="border-radius:50%;box-shadow:none">pip</div>
+    </div>
+    <div class="row"><span class="btn">Kirim ke dapur</span><span class="btn btn--ghost">Batal</span></div>
+    <div class="spec">border* flips black → bone F2ECD8, so SatShape.ink and every hard shadow
+invert for free. Same skin, no second branch.
+
+Shape is picked by the palette, not toggled separately: siren yellow on cream
+only reads right with square corners and fat rules, and the reverse holds.
+One choice in the theme picker, no second setting to explain.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OrderLineCard — canonical sent line</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 16px; }
+
+  .line {
+    display: flex; gap: 12px; padding: 14px; margin-bottom: 6px;
+    background: var(--bg2);
+    border: var(--rule) solid var(--border0);
+    border-radius: var(--r-lg);
+    box-shadow: var(--lift);
+  }
+  .line--ready  { background: var(--successSoft); border-color: rgba(77,212,135,0.3);
+                  animation: breathe 1.5s ease-in-out infinite alternate; }
+  .line--cooked { background: var(--accentSoft);  border-color: rgba(255,146,51,0.3); }
+  .line--voided { background: var(--bg1); opacity: 0.5; }
+  @keyframes breathe {
+    from { box-shadow: 0 0 8px 0 rgba(77,212,135,0.10); }
+    to   { box-shadow: 0 0 16px 0.5px rgba(77,212,135,0.24); }
+  }
+  @media (prefers-reduced-motion: reduce) { .line--ready { animation: none; } }
+  [data-pal="neoKertas"] .line--ready, [data-pal="neoMidnight"] .line--ready { animation: none; box-shadow: var(--lift); }
+
+  .qty { width: 22px; flex: none; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--textMd); }
+  .body { flex: 1; min-width: 0; }
+  .name { font-size: 14px; font-weight: 500; letter-spacing: -0.14px; line-height: 1.25; color: var(--textHi); }
+  .line--voided .name { color: var(--textLo); text-decoration: line-through; }
+  .mods { font-size: 12px; line-height: 1.4; color: var(--textMd); margin-top: 3px; }
+  .void { font-size: 12px; line-height: 1.4; color: var(--urgent); margin-top: 3px; }
+  .foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .price { margin-left: auto; font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--textMd); }
+  .served-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; margin-top: 8px; padding: 8px;
+    background: var(--successSoft); color: var(--success);
+    border: var(--rule) solid rgba(77,212,135,0.4);
+    border-radius: var(--r-md);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.48px; text-transform: uppercase;
+  }
+  .served-btn svg { width: 14px; height: 14px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>OrderLineCard</h3>
+    <p class="sub">order_line_card.dart · ADR-0026 · table + takeaway detail share it</p>
+
+    <div class="line">
+      <div class="qty">×2</div>
+      <div class="body">
+        <div class="name">Nasi Goreng Kampung · Pedas</div>
+        <div class="row" style="gap:4px;margin-top:4px"><span class="tag tag--allergen">EG</span><span class="tag tag--allergen">SY</span></div>
+        <div class="mods">Telur mata sapi · Tanpa acar</div>
+        <div class="foot">
+          <span class="chip chip--prep">Diproses</span>
+          <span class="epill">8m</span>
+          <span class="avatar" style="width:18px;height:18px;font-size:7.6px;background:linear-gradient(135deg,#6DB5FF,#4574a3)">BD</span>
+          <span class="price">Rp 76.000</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="line line--ready">
+      <div class="qty">×1</div>
+      <div class="body">
+        <div class="name">Es Teh Manis · Besar</div>
+        <p class="note" style="margin:4px 0 0"><b>Instruksi khusus</b>Es sedikit</p>
+        <div class="foot">
+          <span class="chip chip--ready">Siap</span>
+          <span class="epill">3m</span>
+          <span class="avatar" style="width:18px;height:18px;font-size:7.6px;background:linear-gradient(135deg,#4DD487,#318856)">SW</span>
+          <span class="price">Rp 12.000</span>
+        </div>
+        <div class="served-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l6 6L20 6"/></svg>
+          Tandai disajikan
+        </div>
+      </div>
+    </div>
+
+    <div class="line line--cooked">
+      <div class="qty">×3</div>
+      <div class="body">
+        <div class="name">Ayam Bakar Madu</div>
+        <div class="foot">
+          <span class="chip chip--cooked">Matang</span>
+          <span class="epill epill--overdue">24m</span>
+          <span class="price">Rp 195.000</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="line line--voided">
+      <div class="qty">×1</div>
+      <div class="body">
+        <div class="name">Sate Ayam</div>
+        <div class="void">Dibatalkan · Salah input · disetujui oleh Rendra</div>
+        <div class="foot">
+          <span class="chip chip--voided">Dibatalkan</span>
+          <span class="epill">14:32</span>
+          <span class="price">Rp 45.000</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec">Padding 14, radius r-lg 14. Qty column is a fixed 22px so names align
+down the list regardless of quantity.
+
+Fill and border carry status: ready → successSoft, cooked → accentSoft,
+voided → bg1 at 50% opacity with a struck-through name, everything else → bg2.
+Ready lines breathe on a 1500ms glow; the mark-served button slides in
+underneath (360ms). Both collapse under reduced motion.
+
+Table-agnostic by design — it knows nothing of tables or locks. The host
+supplies onTap and onMarkServed and gates editing via readOnly, which is why
+takeaway detail can reuse it verbatim.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal</h3>
+    <p class="sub">Slab fills, 3px ink, hard shadow, no glow</p>
+    <div class="line">
+      <div class="qty">×2</div>
+      <div class="body">
+        <div class="name">NASI GORENG KAMPUNG · PEDAS</div>
+        <div class="foot">
+          <span class="chip chip--prep">Diproses</span>
+          <span class="epill">8M</span>
+          <span class="price">RP 76.000</span>
+        </div>
+      </div>
+    </div>
+    <div class="line line--ready">
+      <div class="qty">×1</div>
+      <div class="body">
+        <div class="name">ES TEH MANIS · BESAR</div>
+        <div class="foot">
+          <span class="chip chip--ready">Siap</span>
+          <span class="epill">3M</span>
+          <span class="price">RP 12.000</span>
+        </div>
+        <div class="served-btn">TANDAI DISAJIKAN</div>
+      </div>
+    </div>
+    <div class="spec">The breathe glow is a blurred shadow, which the brutal skin does not do —
+the successSoft slab already carries the signal at poster strength.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -3,6 +3,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/ready_alert_view_model.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class ReadyToast extends StatelessWidget {
   final ReadyAlert alert;
@@ -39,7 +40,7 @@ class ReadyToast extends StatelessWidget {
           border: SatB.all(color: sc.success.withValues(alpha: 0.45)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.55),
+              color: satShadowInk.withValues(alpha: 0.55),
               blurRadius: 36,
               offset: const Offset(0, 12),
             ),
@@ -58,7 +59,7 @@ class ReadyToast extends StatelessWidget {
                 color: sc.successInk,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: Sp.s3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,10 +70,10 @@ class ReadyToast extends StatelessWidget {
                       size: 13,
                       weight: FontWeight.w600,
                       letterSpacing: -0.13,
-                      color: Colors.white,
+                      color: sc.textHi,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: Sp.sHair),
                   Text(
                     alert.isTakeaway
                         ? [
@@ -83,7 +84,7 @@ class ReadyToast extends StatelessWidget {
                         : 'MEJA ${alert.tableLabel} · ${alert.zone.toUpperCase()} · SEKARANG',
                     style: SatType.mono(
                       size: 11,
-                      color: Colors.white.withValues(alpha: 0.78),
+                      color: sc.textMd,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -93,11 +94,11 @@ class ReadyToast extends StatelessWidget {
             TextButton(
               onPressed: onView,
               style: TextButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.18),
-                foregroundColor: Colors.white,
+                backgroundColor: sc.success.withValues(alpha: 0.18),
+                foregroundColor: sc.success,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: Sp.s3,
+                  vertical: Sp.s1h,
                 ),
                 shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
               ),
@@ -106,7 +107,7 @@ class ReadyToast extends StatelessWidget {
                 style: SatType.sans(
                   size: 12,
                   weight: FontWeight.w600,
-                  color: Colors.white,
+                  color: sc.success,
                 ),
               ),
             ),

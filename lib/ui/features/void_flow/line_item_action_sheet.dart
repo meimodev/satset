@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 // Canonical reason codes — must match the server taxonomy in
 // reports_routes.dart and the void_reason_code DB column (see ADR-0006).
@@ -46,7 +47,7 @@ void showLineItemActionSheet({
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: satBarrier,
     builder: (_) => DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.4,
@@ -224,7 +225,7 @@ class _Head extends StatelessWidget {
                 Row(
                   children: [
                     StatusChip(status: ticket.status),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.s2),
                     Flexible(
                       child: Text(
                         'MEJA $tableName · ${ticket.sentAt}',
@@ -237,7 +238,7 @@ class _Head extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 Text(
                   '×${ticket.qty} ${ticket.name}${ticket.variantName.isEmpty ? '' : ' · ${ticket.variantName}'}',
                   style: SatType.sans(
@@ -250,7 +251,7 @@ class _Head extends StatelessWidget {
                 ),
                 if (ticket.modifiers.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.only(top: Sp.s1),
                     child: Text(
                       ticket.modifiers.map((m) => m.display).join(' · '),
                       style: SatType.sans(
@@ -334,9 +335,9 @@ class _ActionList extends StatelessWidget {
         children: [
           for (final r in rows) ...[
             _ActionRow(item: r, onTap: () => onPick(r.id)),
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
           ],
-          const SizedBox(height: 60),
+          const SizedBox(height: Sp.s12),
           Text(
             'Tap luar sheet untuk batal.',
             style: SatType.sans(size: 11, color: sc.textLo),
@@ -408,7 +409,7 @@ class _ActionRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
           decoration: SatBox.d(
             borderRadius: SatR.a(14),
             border: SatB.all(color: border),
@@ -422,7 +423,7 @@ class _ActionRow extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Icon(item.icon, size: 18, color: iconFg),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: Sp.s3h),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,7 +437,7 @@ class _ActionRow extends StatelessWidget {
                         color: titleColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: Sp.sHair),
                     Text(
                       item.desc,
                       style: SatType.sans(
@@ -481,8 +482,8 @@ class _VoidReasonListState extends State<_VoidReasonList> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            margin: const EdgeInsets.only(bottom: Sp.s3h),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
             decoration: SatBox.d(
               color: sc.bg2,
               borderRadius: SatR.a(12),
@@ -492,7 +493,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.warning_amber_rounded, size: 14, color: sc.warn),
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
                 Expanded(
                   child: Text(
                     'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan. Refire mungkin lebih cocok untuk isu kualitas.',
@@ -508,7 +509,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
           ),
           for (final r in _voidReasons)
             Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: Sp.s1h),
               child: Material(
                 color: _pickedId == r['id'] ? sc.accentSoft : sc.bg2,
                 borderRadius: SatR.a(14),
@@ -517,8 +518,8 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                   borderRadius: SatR.a(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+                      horizontal: Sp.s3h,
+                      vertical: Sp.s3,
                     ),
                     decoration: SatBox.d(
                       borderRadius: SatR.a(14),
@@ -550,7 +551,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                               ? Icon(Icons.check, size: 14, color: sc.accentInk)
                               : null,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: Sp.s3),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,7 +564,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                                   color: sc.textHi,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: Sp.sHair),
                               Text(
                                 r['desc']!,
                                 style: SatType.sans(size: 11, color: sc.textMd),
@@ -579,7 +580,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
             ),
           if (_pickedId == 'other')
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: Sp.s1),
               child: TextField(
                 maxLength: 120,
                 onChanged: (v) => setState(() => _other = v),
@@ -601,9 +602,9 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 style: SatType.sans(size: 13, color: sc.textHi),
               ),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Sp.s4),
           SizedBox(
-            height: 52,
+            height: Sp.s12,
             child: ElevatedButton(
               onPressed: _canContinue
                   ? () {
@@ -635,7 +636,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                       color: sc.accentInk,
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: Sp.s1h),
                   Icon(Icons.delete_outline, size: 14, color: sc.accentInk),
                 ],
               ),
@@ -668,7 +669,7 @@ class _ConfirmedView extends StatelessWidget {
             alignment: Alignment.center,
             child: Icon(Icons.delete_outline, size: 46, color: sc.urgent),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Sp.s4),
           Text(
             'Item dibatalkan',
             style: SatType.sans(
@@ -678,7 +679,7 @@ class _ConfirmedView extends StatelessWidget {
               color: sc.textHi,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Text(
             'Tercatat: ×${ticket.qty} ${ticket.name} · atas nama kamu · terlihat di laporan',
             textAlign: TextAlign.center,

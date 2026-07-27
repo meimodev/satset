@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:satset/data/models/pair_dto.dart';
 import 'package:satset/ui/features/onboarding/view_models/pair_view_model.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class PairScreen extends ConsumerStatefulWidget {
   const PairScreen({super.key});
@@ -44,14 +45,14 @@ class _PairScreenState extends ConsumerState<PairScreen> {
       appBar: AppBar(title: const Text('Pairing')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(Sp.s6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
                 'Scan QR dari server tablet, atau isi manual jika multicast diblokir di WiFi:',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Sp.s4),
               TextField(
                 controller: _host,
                 decoration: const InputDecoration(labelText: 'Host (IP)'),
@@ -73,7 +74,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
                   labelText: 'Cert fingerprint (SHA-256)',
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Sp.s4),
               FilledButton(
                 onPressed: s.busy
                     ? null
@@ -89,7 +90,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
                 child: Text(s.busy ? 'Memasangkan…' : 'Pasangkan'),
               ),
               if (s.error != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: Sp.s3),
                 Text(
                   s.error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),

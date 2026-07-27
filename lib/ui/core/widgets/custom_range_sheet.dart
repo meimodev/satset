@@ -5,6 +5,7 @@ import 'package:satset/data/repositories/reports_repository.dart'
     show kCustomRangeMaxDays;
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Hand-rolled bottom sheet for the Reports "Custom" timeline chip. Picks an
 /// inclusive start/end **calendar date** (date-only; the server snaps each to
@@ -112,23 +113,23 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
                 color: sc.textLo,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Row(
               children: [
                 Expanded(
                   child: _field(context, 'Mulai', _from, () => _pick(true)),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: Sp.s3),
                 Expanded(
                   child: _field(context, 'Selesai', _to, () => _pick(false)),
                 ),
               ],
             ),
             if (err != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: Sp.s3),
               Text(err, style: SatType.sans(size: 12, color: sc.urgent)),
             ],
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s5),
             SizedBox(width: double.infinity, child: _applyButton(context)),
           ],
         ),
@@ -147,7 +148,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
         decoration: SatBox.d(
           color: set ? sc.accentSoft : sc.bg2,
           border: SatB.all(color: set ? sc.accentBorder : sc.border0),
@@ -165,7 +166,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
                 color: sc.textLo,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: Sp.sHair),
             Text(
               set ? _fmt(value) : 'Pilih',
               style: SatType.sans(

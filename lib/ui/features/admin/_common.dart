@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 export 'package:satset/ui/core/widgets/tablet_chrome.dart'
     show TabletCard, TabletStatTile;
@@ -44,12 +45,12 @@ class AdminEmbeddedStrip extends StatelessWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Sp.s1),
                 Row(
                   children: [
                     if (subLeading != null) ...[
                       subLeading!,
-                      const SizedBox(width: 6),
+                      const SizedBox(width: Sp.s1h),
                     ],
                     Flexible(
                       child: Text(
@@ -150,7 +151,7 @@ class SetTile extends StatelessWidget {
               color: sc.textLo,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Text(
             value,
             style: SatType.mono(
@@ -162,7 +163,7 @@ class SetTile extends StatelessWidget {
             ),
           ),
           if (sub != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
             Text(
               sub!,
               style: SatType.sans(size: 11, color: sc.textMd, height: 1.4),
@@ -200,7 +201,7 @@ class SetHero extends StatelessWidget {
         border: SatB.all(color: accent, width: 1.5),
         borderRadius: SatR.a(18),
       ),
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(Sp.s5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -213,7 +214,7 @@ class SetHero extends StatelessWidget {
               color: accent,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Sp.s1),
           Text(
             value,
             style: SatType.sans(
@@ -224,13 +225,13 @@ class SetHero extends StatelessWidget {
               color: accent,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Text(
             desc,
             style: SatType.sans(size: 13, color: sc.textMd, height: 1.5),
           ),
           if (meter.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Row(
               children: [
                 for (final on in meter) ...[
@@ -243,11 +244,11 @@ class SetHero extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (on != meter.last) const SizedBox(width: 4),
+                  if (on != meter.last) const SizedBox(width: Sp.s1),
                 ],
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             Text(
               'STATIONS · LIVE',
               style: SatType.mono(
@@ -278,7 +279,7 @@ class AdminRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s2h),
       decoration: SatBox.d(
         border: Border(
           bottom: last ? BorderSide.none : SatB.side(color: sc.border0),
@@ -287,7 +288,7 @@ class AdminRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 150,
+            width: Sp.s12,
             child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
           ),
           Expanded(child: value),
@@ -319,7 +320,7 @@ Widget adminPill(
   }
   return Container(
     height: 30,
-    padding: const EdgeInsets.symmetric(horizontal: 12),
+    padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
     alignment: Alignment.center,
     decoration: SatBox.d(
       color: bg,
@@ -347,7 +348,7 @@ Widget adminToggle(BuildContext context, {required bool on}) {
       duration: const Duration(milliseconds: 180),
       alignment: on ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
+        margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
         width: 14,
         height: 14,
         decoration: SatBox.d(

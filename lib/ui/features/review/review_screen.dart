@@ -24,6 +24,7 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'package:satset/ui/features/tables/widgets/assign_table_sheet.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
@@ -137,7 +138,7 @@ class ReviewScreen extends ConsumerWidget {
                         color: sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Sp.s1),
                     Text(
                       tableless
                           ? (_isTakeaway
@@ -210,8 +211,8 @@ class ReviewScreen extends ConsumerWidget {
                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 16,
+                              horizontal: Sp.s4h,
+                              vertical: Sp.s4,
                             ),
                             decoration: SatBox.d(
                               color: sc.bg2,
@@ -235,8 +236,8 @@ class ReviewScreen extends ConsumerWidget {
                                     value: formatIDR(taxAmount),
                                   ),
                                 Container(
-                                  margin: const EdgeInsets.only(top: 8),
-                                  padding: const EdgeInsets.only(top: 12),
+                                  margin: const EdgeInsets.only(top: Sp.s2),
+                                  padding: const EdgeInsets.only(top: Sp.s3),
                                   decoration: SatBox.d(
                                     border: Border(
                                       top: SatB.side(color: sc.border0),
@@ -278,7 +279,7 @@ class ReviewScreen extends ConsumerWidget {
                 ? 16 + l.padding.bottom
                 : 92 + l.padding.bottom,
             child: SizedBox(
-              height: 52,
+              height: Sp.s12,
               child: ElevatedButton(
                 onPressed: cart.isEmpty || reviewState.busy
                     ? null
@@ -402,7 +403,7 @@ class ReviewScreen extends ConsumerWidget {
                   children: [
                     if (reviewState.busy)
                       SizedBox(
-                        width: 16,
+                        width: Sp.s4,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
@@ -411,7 +412,7 @@ class ReviewScreen extends ConsumerWidget {
                       )
                     else
                       Icon(Icons.auto_awesome, size: 16, color: sc.accentInk),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: Sp.s2h),
                     Text(
                       reviewState.busy
                           ? 'Mengirim…'
@@ -426,7 +427,7 @@ class ReviewScreen extends ConsumerWidget {
                         color: sc.accentInk,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: Sp.s2h),
                     Text(
                       formatIDR(subtotal),
                       style: SatType.mono(
@@ -477,7 +478,7 @@ Future<_Commit?> _chooseCommit(BuildContext context) {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             Text(
               'Kirim pesanan ke',
               style: SatType.sans(
@@ -486,14 +487,14 @@ Future<_Commit?> _chooseCommit(BuildContext context) {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             _CommitTile(
               icon: Icons.table_restaurant_rounded,
               title: 'Meja (dine-in)',
               sub: 'Tetapkan ke meja kosong',
               onTap: () => Navigator.of(ctx).pop(_Commit.dineIn),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: Sp.s2h),
             _CommitTile(
               icon: Icons.shopping_bag_rounded,
               title: 'Bawa pulang',
@@ -529,7 +530,7 @@ class _CommitTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s3h),
           decoration: SatBox.d(
             border: SatB.all(color: sc.border0),
             borderRadius: SatR.a(14),
@@ -537,7 +538,7 @@ class _CommitTile extends StatelessWidget {
           child: Row(
             children: [
               Icon(icon, size: 22, color: sc.accentText),
-              const SizedBox(width: 14),
+              const SizedBox(width: Sp.s3h),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,7 +551,7 @@ class _CommitTile extends StatelessWidget {
                         color: sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: Sp.sHair),
                     Text(sub, style: SatType.sans(size: 12, color: sc.textMd)),
                   ],
                 ),
@@ -628,13 +629,13 @@ class _Pill extends StatelessWidget {
         break;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 11, color: fg),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           Flexible(
             child: Text(
               label,
@@ -680,7 +681,7 @@ class _CourseBlock extends StatelessWidget {
                     color: course.color(sc),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
                 Text(
                   course.name.toUpperCase(),
                   style: SatType.mono(
@@ -704,9 +705,9 @@ class _CourseBlock extends StatelessWidget {
           ),
           for (final c in items)
             Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: Sp.s1h),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(Sp.s3h),
                 decoration: SatBox.d(
                   color: sc.bg2,
                   borderRadius: SatR.a(14),
@@ -716,7 +717,7 @@ class _CourseBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 22,
+                      width: Sp.s5,
                       child: Text(
                         '×${c.qty}',
                         style: SatType.mono(
@@ -727,7 +728,7 @@ class _CourseBlock extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Sp.s3),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -747,7 +748,7 @@ class _CourseBlock extends StatelessWidget {
                           MenuTagBadges(itemId: c.itemId),
                           if (c.modifiers.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 3),
+                              padding: const EdgeInsets.only(top: Sp.sHair),
                               child: Text(
                                 c.modifiers.join(' · '),
                                 style: SatType.sans(
@@ -759,13 +760,13 @@ class _CourseBlock extends StatelessWidget {
                             ),
                           if (c.note.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.only(top: Sp.s1),
                               child: NoteLine(
                                 label: 'Instruksi khusus',
                                 text: c.note,
                               ),
                             ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: Sp.s2),
                           Row(
                             children: [
                               GestureDetector(
@@ -777,7 +778,7 @@ class _CourseBlock extends StatelessWidget {
                                       size: 12,
                                       color: sc.urgent,
                                     ),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(width: Sp.s1),
                                     Text(
                                       'Hapus',
                                       style: SatType.sans(
@@ -827,7 +828,7 @@ class _TotalsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Row(
         children: [
           Expanded(

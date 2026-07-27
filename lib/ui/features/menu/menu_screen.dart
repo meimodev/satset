@@ -20,6 +20,7 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'modifier_sheet.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   final String tableId;
@@ -88,7 +89,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const CircularProgressIndicator(),
-              const SizedBox(height: 12),
+              const SizedBox(height: Sp.s3),
               Text(
                 'Memuat menu…',
                 style: SatType.sans(size: 13, color: sc.textMd),
@@ -103,12 +104,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         backgroundColor: sc.bg0,
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(Sp.s6),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.cloud_off, size: 36, color: sc.urgent),
-                const SizedBox(height: 12),
+                const SizedBox(height: Sp.s3),
                 Text(
                   'Gagal memuat menu',
                   style: SatType.sans(
@@ -117,13 +118,13 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 Text(
                   '${menuStatus.error}',
                   textAlign: TextAlign.center,
                   style: SatType.sans(size: 12, color: sc.textLo),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: Sp.s3h),
                 OutlinedButton(
                   onPressed: () =>
                       ref.read(menuRepositoryProvider.notifier).refresh(),
@@ -181,7 +182,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: Sp.s3h),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +200,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                                   color: sc.textHi,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: Sp.sHair),
                               Text(
                                 widget.tableless
                                     ? (_isTakeaway
@@ -218,7 +219,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                         Container(
                           height: 36,
                           width: 200,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
                           decoration: SatBox.d(
                             color: sc.bg2,
                             border: SatB.all(color: sc.border0),
@@ -227,7 +228,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           child: Row(
                             children: [
                               Icon(Icons.search, size: 14, color: sc.textLo),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: Sp.s2),
                               Text(
                                 'Cari menu…',
                                 style: SatType.sans(size: 13, color: sc.textLo),
@@ -319,7 +320,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                         color: sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Sp.s1),
                     Text(
                       'KETUK UNTUK ATUR · TEKAN LAMA UNTUK TAMBAH DEFAULT',
                       style: SatType.mono(
@@ -335,7 +336,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Container(
                   height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
                   decoration: SatBox.d(
                     color: sc.bg2,
                     borderRadius: SatR.a(14),
@@ -344,7 +345,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                   child: Row(
                     children: [
                       Icon(Icons.search, size: 16, color: sc.textLo),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: Sp.s2h),
                       Text(
                         'Cari menu…',
                         style: SatType.sans(size: 14, color: sc.textLo),
@@ -357,7 +358,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 active: _cat,
                 onChange: (id) => setState(() => _cat = id),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               Expanded(
                 child: Center(
                   child: ConstrainedBox(
@@ -427,19 +428,19 @@ class _CatTabs extends ConsumerWidget {
     final sc = context.sat;
     final cats = ref.watch(menuCategoriesProvider);
     return SizedBox(
-      height: 36,
+      height: Sp.s8,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
         itemCount: cats.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        separatorBuilder: (_, _) => const SizedBox(width: Sp.s1h),
         itemBuilder: (_, i) {
           final c = cats[i];
           final isActive = active == c.id;
           return GestureDetector(
             onTap: () => onChange(c.id),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
               decoration: SatBox.d(
                 color: isActive ? sc.accentSoft : Colors.transparent,
                 borderRadius: SatR.a(999),
@@ -513,11 +514,11 @@ class _ItemCard extends ConsumerWidget {
                           top: 8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
+                              horizontal: Sp.s2,
+                              vertical: Sp.sHair,
                             ),
                             decoration: SatBox.d(
-                              color: Colors.black.withValues(alpha: 0.7),
+                              color: satMediaScrim,
                               borderRadius: SatR.a(999),
                             ),
                             child: Text(
@@ -539,7 +540,7 @@ class _ItemCard extends ConsumerWidget {
                               minWidth: 28,
                               minHeight: 28,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: Sp.s2),
                             decoration: SatBox.d(
                               color: sc.accent,
                               borderRadius: SatR.a(999),
@@ -579,7 +580,7 @@ class _ItemCard extends ConsumerWidget {
                             color: sc.textHi,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: Sp.s1h),
                         Text(
                           '${formatIDR(item.basePrice)}${item.variants.length > 1 ? '+' : ''}',
                           style: SatType.mono(
@@ -590,7 +591,7 @@ class _ItemCard extends ConsumerWidget {
                           ),
                         ),
                         if (item.allergens.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: Sp.s1),
                           TagBadgeRow(
                             ids: item.allergens,
                             tagsById: tagsById,
@@ -599,7 +600,7 @@ class _ItemCard extends ConsumerWidget {
                           ),
                         ],
                         if (item.dietary.isNotEmpty) ...[
-                          const SizedBox(height: 3),
+                          const SizedBox(height: Sp.sHair),
                           TagBadgeRow(
                             ids: item.dietary,
                             tagsById: tagsById,
@@ -643,7 +644,7 @@ class _CartFooter extends StatelessWidget {
             ? SatShape.hardShadow(5)
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: satShadowInk.withValues(alpha: 0.4),
                   blurRadius: 32,
                 ),
               ],
@@ -679,7 +680,7 @@ class _CartFooter extends StatelessWidget {
               foregroundColor: sc.accentInk,
               elevation: 0,
               minimumSize: const Size(0, 44),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s4h),
               shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
             ),
             child: Row(
@@ -693,7 +694,7 @@ class _CartFooter extends StatelessWidget {
                     color: sc.accentInk,
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.s1h),
                 Icon(Icons.chevron_right, size: 16, color: sc.accentInk),
               ],
             ),
@@ -767,7 +768,7 @@ class _TabletCartPane extends ConsumerWidget {
                     color: sc.textLo,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 Text(
                   count == 0 ? 'Keranjang kosong' : '$count item siap kirim',
                   style: SatType.sans(
@@ -778,7 +779,7 @@ class _TabletCartPane extends ConsumerWidget {
                   ),
                 ),
                 if (count > 0) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Sp.s1),
                   Text(
                     [
                       if (kit > 0) 'Dapur × $kit',
@@ -798,7 +799,7 @@ class _TabletCartPane extends ConsumerWidget {
             child: cart.isEmpty
                 ? Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(28),
+                      padding: const EdgeInsets.all(Sp.s6),
                       child: Text(
                         'Belum ada item di keranjang. Pilih dari menu di kiri.',
                         textAlign: TextAlign.center,
@@ -815,7 +816,7 @@ class _TabletCartPane extends ConsumerWidget {
                     children: [
                       for (final entry in byCourse.entries) ...[
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
                           child: Text(
                             entry.key.toUpperCase(),
                             style: SatType.mono(
@@ -828,8 +829,8 @@ class _TabletCartPane extends ConsumerWidget {
                         ),
                         for (final i in entry.value)
                           Container(
-                            margin: const EdgeInsets.only(bottom: 6),
-                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: Sp.s1h),
+                            padding: const EdgeInsets.all(Sp.s3),
                             decoration: SatBox.d(
                               color: sc.bg2,
                               border: SatB.all(color: sc.border0),
@@ -848,7 +849,7 @@ class _TabletCartPane extends ConsumerWidget {
                                         color: sc.textMd,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: Sp.s2),
                                     Expanded(
                                       child: Text(
                                         cart[i].variantName.isEmpty
@@ -867,8 +868,8 @@ class _TabletCartPane extends ConsumerWidget {
                                 if (cart[i].modifiers.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(
-                                      top: 4,
-                                      left: 22,
+                                      top: Sp.s1,
+                                      left: Sp.s5,
                                     ),
                                     child: Text(
                                       cart[i].modifiers.join(' · '),
@@ -879,7 +880,7 @@ class _TabletCartPane extends ConsumerWidget {
                                       ),
                                     ),
                                   ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: Sp.s2),
                                 Row(
                                   children: [
                                     GestureDetector(
@@ -893,7 +894,7 @@ class _TabletCartPane extends ConsumerWidget {
                                             size: 12,
                                             color: sc.urgent,
                                           ),
-                                          const SizedBox(width: 4),
+                                          const SizedBox(width: Sp.s1),
                                           Text(
                                             'Hapus',
                                             style: SatType.sans(
@@ -933,7 +934,7 @@ class _TabletCartPane extends ConsumerWidget {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: Sp.s3),
                     child: Column(
                       children: [
                         _totalRow(context, sc, 'Subtotal', formatIDR(subtotal)),
@@ -952,9 +953,9 @@ class _TabletCartPane extends ConsumerWidget {
                             formatIDR(breakdown.taxAmount),
                           ),
                         Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.only(top: Sp.s2),
                           child: Container(
-                            padding: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.only(top: Sp.s2),
                             decoration: SatBox.d(
                               border: Border(top: SatB.side(color: sc.border0)),
                             ),
@@ -1026,7 +1027,7 @@ class _TabletCartPane extends ConsumerWidget {
     String value,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
       child: Row(
         children: [
           Text(

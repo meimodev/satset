@@ -16,6 +16,7 @@ import 'package:satset/domain/models/modifier_group.dart';
 import 'package:satset/domain/models/ticket_modifier.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 const _uuid = Uuid();
 
@@ -29,11 +30,11 @@ Future<void> showModifierSheet({
     return showDialog(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: satBarrier,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: Sp.s10, vertical: Sp.s6),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ClipRRect(
@@ -60,7 +61,7 @@ Future<void> showModifierSheet({
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: satBarrier,
     builder: (_) => DraggableScrollableSheet(
       initialChildSize: 0.9,
       minChildSize: 0.5,
@@ -239,7 +240,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
           Expanded(
             child: SingleChildScrollView(
               controller: widget.scrollController,
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: Sp.s3),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -248,8 +249,8 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                     Container(
                       margin: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
+                        horizontal: Sp.s3,
+                        vertical: Sp.s2h,
                       ),
                       decoration: SatBox.d(
                         color: sc.bg2,
@@ -268,7 +269,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                             ),
                           if (widget.item.allergens.isNotEmpty &&
                               widget.item.dietary.isNotEmpty)
-                            const SizedBox(height: 8),
+                            const SizedBox(height: Sp.s2),
                           if (widget.item.allergens.isNotEmpty)
                             _TagLine(
                               icon: Icons.warning_amber_rounded,
@@ -391,7 +392,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                           ),
                           style: SatType.sans(size: 13, color: sc.textHi),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: Sp.s1),
                         Text(
                           '${_special.length} / 80 · tampil ke dapur',
                           style: SatType.mono(
@@ -440,7 +441,7 @@ class _TagLine extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 14, color: color),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.s2),
         Expanded(
           child: Text(
             text,
@@ -470,7 +471,7 @@ class _Head extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 64,
+            width: Sp.s12,
             height: 64,
             child: MenuPhoto(
               itemId: item.id,
@@ -479,7 +480,7 @@ class _Head extends StatelessWidget {
               borderRadius: SatR.a(14),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: Sp.s3h),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,7 +495,7 @@ class _Head extends StatelessWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Sp.s1),
                 Text(
                   item.description,
                   style: SatType.sans(size: 12, color: sc.textMd, height: 1.35),
@@ -541,7 +542,7 @@ class _ModGroup extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: Sp.s2h),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -598,7 +599,7 @@ class _ModOpt extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
       child: Opacity(
         opacity: soldOut ? 0.45 : 1,
         child: Material(
@@ -608,7 +609,7 @@ class _ModOpt extends StatelessWidget {
             onTap: soldOut ? null : onTap,
             borderRadius: SatR.a(14),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
               decoration: SatBox.d(
                 borderRadius: SatR.a(14),
                 border: SatB.all(
@@ -633,7 +634,7 @@ class _ModOpt extends StatelessWidget {
                         ? Icon(Icons.check, size: 14, color: sc.accentInk)
                         : null,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Sp.s3),
                   Expanded(
                     child: Text(
                       soldOut ? '$name · habis' : name,
@@ -679,7 +680,7 @@ class _CourseChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
         decoration: SatBox.d(
           color: selected ? sc.bg4 : sc.bg2,
           borderRadius: SatR.a(999),
@@ -696,7 +697,7 @@ class _CourseChip extends StatelessWidget {
                 color: course.color(sc),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             Text(
               course.name,
               style: SatType.sans(
@@ -745,7 +746,7 @@ class _Foot extends StatelessWidget {
         children: [
           Container(
             height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
             decoration: SatBox.d(
               color: sc.bg2,
               borderRadius: SatR.a(14),
@@ -755,7 +756,7 @@ class _Foot extends StatelessWidget {
               children: [
                 _StepperBtn(label: '−', onTap: onDec, disabled: qty <= 1),
                 SizedBox(
-                  width: 28,
+                  width: Sp.s6,
                   child: Text(
                     '$qty',
                     textAlign: TextAlign.center,
@@ -771,7 +772,7 @@ class _Foot extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.s3),
           Expanded(
             child: Opacity(
               opacity: valid ? 1 : 0.4,
@@ -800,7 +801,7 @@ class _Foot extends StatelessWidget {
                         ),
                       ),
                     if (valid) ...[
-                      const SizedBox(width: 10),
+                      const SizedBox(width: Sp.s2h),
                       Text(
                         totalLabel,
                         style: SatType.mono(
@@ -836,7 +837,7 @@ class _StepperBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return SizedBox(
-      width: 38,
+      width: Sp.s10,
       height: double.infinity,
       child: TextButton(
         onPressed: disabled ? null : onTap,

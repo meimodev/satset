@@ -33,6 +33,7 @@ import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -350,7 +351,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const CircularProgressIndicator(),
-              const SizedBox(height: 12),
+              const SizedBox(height: Sp.s3),
               Text(
                 'Memuat menu…',
                 style: SatType.sans(size: 13, color: sc.textMd),
@@ -365,12 +366,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         backgroundColor: sc.bg0,
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(Sp.s6),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.cloud_off, size: 36, color: sc.urgent),
-                const SizedBox(height: 10),
+                const SizedBox(height: Sp.s2h),
                 Text(
                   'Gagal memuat menu meja',
                   style: SatType.sans(
@@ -379,7 +380,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Sp.s3),
                 OutlinedButton(
                   onPressed: () =>
                       ref.read(menuRepositoryProvider.notifier).refresh(),
@@ -611,7 +612,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 children: [
                   if (canClose)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.only(bottom: Sp.s2h),
                       child: _CloseTableButton(
                         label: closeLabel,
                         onTap: onClose,
@@ -690,7 +691,7 @@ class _Header extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.s3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -703,7 +704,7 @@ class _Header extends ConsumerWidget {
                     color: sc.textMd,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: Sp.s2),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -715,13 +716,13 @@ class _Header extends ConsumerWidget {
                       onPlus: onPlusPax,
                       size: 32,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.s2),
                     _ContextTriggerBtn(
                       alertCount: alertCount,
                       onTap: onShowContext,
                     ),
                     if (elapsedStr != null) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Sp.s2),
                       _SeatedDurationChip(label: elapsedStr),
                     ],
                   ],
@@ -730,7 +731,7 @@ class _Header extends ConsumerWidget {
                         table.guestName!.trim().isNotEmpty) ||
                     (table.guestNotes != null &&
                         table.guestNotes!.trim().isNotEmpty)) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: Sp.s1h),
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
@@ -768,7 +769,7 @@ class _LiveSeatedChip extends ConsumerWidget {
     final label = formatElapsedId(DateTime.now().difference(openedAt));
     return Container(
       height: height,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
       decoration: SatBox.d(
         color: sc.bg3,
         borderRadius: SatR.a(height / 2),
@@ -778,7 +779,7 @@ class _LiveSeatedChip extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.access_time, size: height * 0.42, color: sc.textMd),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           Text(
             label,
             style: SatType.mono(
@@ -803,7 +804,7 @@ class _SeatedDurationChip extends StatelessWidget {
     final sc = context.sat;
     return Container(
       height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
       decoration: SatBox.d(
         color: sc.bg3,
         borderRadius: SatR.a(16),
@@ -813,7 +814,7 @@ class _SeatedDurationChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.access_time, size: 13, color: sc.textMd),
-          const SizedBox(width: 5),
+          const SizedBox(width: Sp.s1),
           Text(
             label,
             style: SatType.mono(
@@ -838,14 +839,14 @@ class _HPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
       decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
             Icon(icon, size: 12, color: sc.textMd),
-            const SizedBox(width: 6),
+            const SizedBox(width: Sp.s1h),
           ],
           Text(
             label,
@@ -876,7 +877,7 @@ class _ContextTriggerBtn extends StatelessWidget {
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
-          width: 32,
+          width: Sp.s8,
           height: 32,
           child: Stack(
             clipBehavior: Clip.none,
@@ -910,7 +911,7 @@ class _ContextTriggerBtn extends StatelessWidget {
                             minWidth: 16,
                             minHeight: 16,
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
                           decoration: SatBox.d(
                             color: sc.urgent,
                             shape: alertCount < 10
@@ -925,7 +926,7 @@ class _ContextTriggerBtn extends StatelessWidget {
                             style: SatType.mono(
                               size: 9,
                               weight: FontWeight.w700,
-                              color: Colors.white,
+                              color: onFill(sc.urgent),
                             ),
                           ),
                         ),
@@ -969,7 +970,7 @@ class _ContextSheet extends StatelessWidget {
           children: [
             Center(
               child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 10),
+                margin: const EdgeInsets.symmetric(vertical: Sp.s2h),
                 width: 36,
                 height: 4,
                 decoration: SatBox.d(
@@ -992,7 +993,7 @@ class _ContextSheet extends StatelessWidget {
                       color: sc.textHi,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Sp.s1),
                   Text(
                     'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
                     style: SatType.mono(
@@ -1055,7 +1056,7 @@ class _CourseBlock extends StatelessWidget {
                     color: course.color(sc),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
                 Text(
                   course.name.toUpperCase(),
                   style: SatType.mono(
@@ -1086,7 +1087,7 @@ class _CourseBlock extends StatelessWidget {
             ),
           if (allHeld && !readOnly)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: Sp.s1h),
               child: _FireButton(
                 label: 'Bakar ${course.name}',
                 onTap: onFireCourse,
@@ -1114,7 +1115,7 @@ class _FireButton extends StatelessWidget {
           backgroundColor: sc.accentSoft,
           foregroundColor: sc.accentText,
           side: SatB.side(color: sc.accentBorder, style: BorderStyle.solid),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
           shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
         ),
         icon: Icon(Icons.local_fire_department, size: 14, color: sc.accentText),
@@ -1190,7 +1191,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: const EdgeInsets.all(Sp.s6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1204,7 +1205,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                 color: sc.textMd,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             Text(
               'Meja ${widget.tableName} kosong',
               style: SatType.sans(
@@ -1213,12 +1214,12 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
             Text(
               'Tap untuk mulai melayani tamu',
               style: SatType.sans(size: 13, color: sc.textLo),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Sp.s6),
             Opacity(
               opacity: enabled ? 1 : 0.5,
               child: AnimatedBuilder(
@@ -1261,14 +1262,14 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                     borderRadius: SatR.a(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
-                        vertical: 16,
+                        horizontal: Sp.s6,
+                        vertical: Sp.s4,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.play_circle_fill, size: 22, color: fg),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: Sp.s2h),
                           Text(
                             'Mulai layani meja',
                             style: SatType.sans(
@@ -1342,7 +1343,7 @@ class _PrimaryIconButtonState extends State<_PrimaryIconButton> {
                 },
                 customBorder: const CircleBorder(),
                 child: SizedBox(
-                  width: 64,
+                  width: Sp.s12,
                   height: 64,
                   child: Icon(widget.icon, size: 28, color: fg),
                 ),
@@ -1376,7 +1377,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
       duration: reduced ? Duration.zero : _kPressIn,
       curve: _kEase,
       child: SizedBox(
-        height: 52,
+        height: Sp.s12,
         child: Material(
           color: sc.success,
           borderRadius: SatR.a(18),
@@ -1386,13 +1387,13 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
             onHighlightChanged: (h) => setState(() => _pressed = h),
             borderRadius: SatR.a(18),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s5),
               alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.check_circle, size: 20, color: sc.successInk),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: Sp.s2h),
                   Text(
                     widget.label,
                     style: SatType.sans(
@@ -1431,7 +1432,7 @@ class _LockedBanner extends StatelessWidget {
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2h),
         decoration: SatBox.d(
           color: sc.warnSoft,
           border: SatB.all(color: sc.warn.withValues(alpha: 0.35)),
@@ -1440,7 +1441,7 @@ class _LockedBanner extends StatelessWidget {
         child: Row(
           children: [
             Icon(Icons.lock_outline, size: 16, color: sc.warn),
-            const SizedBox(width: 10),
+            const SizedBox(width: Sp.s2h),
             Expanded(
               child: Text(
                 'Terkunci oleh $holderName$sinceLabel · hanya lihat',
@@ -1523,7 +1524,7 @@ class _TabletSplit extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  width: 560,
+                  width: Sp.s12,
                   child: Column(
                     children: [
                       Container(
@@ -1554,9 +1555,9 @@ class _TabletSplit extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 14),
+                                const SizedBox(width: Sp.s3h),
                                 Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.only(bottom: Sp.s2),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -1569,7 +1570,7 @@ class _TabletSplit extends StatelessWidget {
                                           color: sc.textMd,
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: Sp.s1h),
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -1582,7 +1583,7 @@ class _TabletSplit extends StatelessWidget {
                                             size: 36,
                                           ),
                                           if (table.openedAt != null) ...[
-                                            const SizedBox(width: 10),
+                                            const SizedBox(width: Sp.s2h),
                                             _LiveSeatedChip(
                                               openedAt: table.openedAt!,
                                               height: 36,
@@ -1600,7 +1601,7 @@ class _TabletSplit extends StatelessWidget {
                                     table.guestName!.trim().isNotEmpty) ||
                                 (table.guestNotes != null &&
                                     table.guestNotes!.trim().isNotEmpty)) ...[
-                              const SizedBox(height: 14),
+                              const SizedBox(height: Sp.s3h),
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
@@ -1639,7 +1640,7 @@ class _TabletSplit extends StatelessWidget {
                             : tickets.isEmpty
                             ? Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(28),
+                                  padding: const EdgeInsets.all(Sp.s6),
                                   child: Text(
                                     'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
                                     textAlign: TextAlign.center,
@@ -1694,7 +1695,7 @@ class _TabletSplit extends StatelessWidget {
                                     onTap: onClose,
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: Sp.s2h),
                               ],
                               Expanded(
                                 flex: canClose ? 1 : 1,
@@ -1720,7 +1721,7 @@ class _TabletSplit extends StatelessWidget {
                                               size: 18,
                                               color: sc.accentInk,
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(width: Sp.s2),
                                             Text(
                                               readOnly
                                                   ? 'Hanya lihat'
@@ -1777,7 +1778,7 @@ class _TabletSplit extends StatelessWidget {
       border = sc.success.withValues(alpha: 0.3);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
       decoration: SatBox.d(
         color: bg,
         border: SatB.all(color: border),
@@ -1865,15 +1866,15 @@ class _ContextPane extends ConsumerWidget {
                 'Total item',
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             Expanded(
               child: _stat(context, sc, sent.toString(), 'Dalam proses'),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             Expanded(child: _stat(context, sc, served.toString(), 'Disajikan')),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: Sp.s4),
         _card(
           context,
           sc,
@@ -1888,9 +1889,9 @@ class _ContextPane extends ConsumerWidget {
                   children: [
                     for (final note in guestNotes)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.only(bottom: Sp.s1h),
                         child: Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(Sp.s3),
                           decoration: SatBox.d(
                             color: sc.bg2,
                             border: SatB.all(color: sc.border0),
@@ -1905,7 +1906,7 @@ class _ContextPane extends ConsumerWidget {
                   ],
                 ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Sp.s3h),
         _card(
           context,
           sc,
@@ -1922,8 +1923,8 @@ class _ContextPane extends ConsumerWidget {
                     for (final a in allergens)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
+                          horizontal: Sp.s2h,
+                          vertical: Sp.s1,
                         ),
                         decoration: SatBox.d(
                           color: sc.urgentSoft,
@@ -1944,7 +1945,7 @@ class _ContextPane extends ConsumerWidget {
                   ],
                 ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Sp.s3h),
         _card(
           context,
           sc,
@@ -1965,7 +1966,7 @@ class _ContextPane extends ConsumerWidget {
                 ),
               ),
               if (canMove) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 _quickAction(
                   context,
                   sc,
@@ -2003,7 +2004,7 @@ class _ContextPane extends ConsumerWidget {
                   color: sc.textHi,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: Sp.s1),
               Text(
                 'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
                 style: SatType.mono(
@@ -2027,7 +2028,7 @@ class _ContextPane extends ConsumerWidget {
 
   Widget _stat(BuildContext context, SatColors sc, String v, String l) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(Sp.s3h),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -2046,7 +2047,7 @@ class _ContextPane extends ConsumerWidget {
               color: sc.textHi,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Text(
             l.toUpperCase(),
             style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.6),
@@ -2058,7 +2059,7 @@ class _ContextPane extends ConsumerWidget {
 
   Widget _card(BuildContext context, SatColors sc, String head, Widget child) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(Sp.s4h),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -2076,7 +2077,7 @@ class _ContextPane extends ConsumerWidget {
               color: sc.textLo,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           child,
         ],
       ),
@@ -2107,7 +2108,7 @@ class _ContextPane extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 14, color: accent ? sc.accentText : sc.textMd),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               Text(
                 label.toUpperCase(),
                 style: SatType.sans(

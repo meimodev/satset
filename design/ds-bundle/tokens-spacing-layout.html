@@ -1,0 +1,64 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spacing &amp; layout</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; flex: 1 1 100%; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 18px; }
+  .steps { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .step { text-align: center; }
+  .step i { display: block; background: var(--accent); border-radius: 2px; height: 26px; }
+  .step b { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+            color: var(--textLo); margin-top: 6px; letter-spacing: 0.4px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { text-align: left; padding: 8px 10px; font-size: 12px; border-bottom: 1px solid var(--border0); }
+  th { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; }
+  td { color: var(--textMd); }
+  td:first-child { font-family: 'IBM Plex Mono', monospace; color: var(--textHi); font-size: 11px; }
+  .bad { color: var(--urgent); }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="stage" data-pal="dark">
+    <h3>Spacing scale</h3>
+    <p class="sub">Sp.s1 … Sp.s12 · spacing.dart</p>
+    <div class="steps">
+      <div class="step"><i style="width:4px"></i><b>s1 · 4</b></div>
+      <div class="step"><i style="width:8px"></i><b>s2 · 8</b></div>
+      <div class="step"><i style="width:12px"></i><b>s3 · 12</b></div>
+      <div class="step"><i style="width:16px"></i><b>s4 · 16</b></div>
+      <div class="step"><i style="width:20px"></i><b>s5 · 20</b></div>
+      <div class="step"><i style="width:24px"></i><b>s6 · 24</b></div>
+      <div class="step"><i style="width:32px"></i><b>s8 · 32</b></div>
+      <div class="step"><i style="width:40px"></i><b>s10 · 40</b></div>
+      <div class="step"><i style="width:48px"></i><b>s12 · 48</b></div>
+    </div>
+    <div class="spec">Off-scale values (<span class="bad">6, 10, 14, 18</span>) are drift — snap to the nearest step.
+Guarded by test/design_tokens_test.dart, which ratchets against hardcoded
+colors, off-scale spacing, and literal radii.</div>
+
+    <h3 style="margin-top:32px">Breakpoints</h3>
+    <p class="sub">SatBreak · layout.dart · context.layout</p>
+    <table>
+      <tr><th>Break</th><th>Width</th><th>Gutter</th><th>Content max</th><th>Shell</th></tr>
+      <tr><td>compact</td><td>&lt; 600</td><td>16</td><td>∞</td><td>Phone — floating tab bar</td></tr>
+      <tr><td>medium</td><td>600–904</td><td>20</td><td>760</td><td>Phone; side rail in landscape</td></tr>
+      <tr><td>expanded</td><td>905–1023</td><td>24</td><td>1120</td><td>Side rail</td></tr>
+      <tr><td>tablet</td><td>≥ 1024</td><td>32</td><td>∞</td><td>TabletShell — 76px rail + 64h bar</td></tr>
+    </table>
+    <div class="spec">sideRailWidth: 76 (tablet) / 96 (expanded) / 80 (medium landscape).
+bottomInset: safe area + 92 on phone (clears the floating tab bar), + 16 with a rail.
+gridCount clamps to 2–6 columns; tablet always renders 4.
+Portrait and tablet layouts are both live — check tablet_chrome.dart when
+adding shell-level UI.</div>
+  </div>
+</div>
+</body>
+</html>

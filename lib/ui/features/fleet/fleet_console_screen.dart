@@ -9,6 +9,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 import 'package:satset/ui/features/fleet/venue_edit_screen.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// The super admin's cloud control plane. Reads venues live from Firestore;
 /// every mutation goes through a Cloud Function. Lives outside the app shell (a
@@ -71,7 +72,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
             if (_busy)
               LinearProgressIndicator(minHeight: 2, color: sc.accentText)
             else
-              const SizedBox(height: 2),
+              const SizedBox(height: Sp.sHair),
             Expanded(child: _venueList(sc, venues)),
           ],
         ),
@@ -106,7 +107,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                 onTap: _busy ? null : _createVenueDialog,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
             if (sorted.isEmpty)
               _empty(sc, 'Belum ada venue.')
             else
@@ -116,7 +117,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                   animKey: sorted[i].id,
                   child: _venueTile(sc, sorted[i]),
                 ),
-                if (i != sorted.length - 1) const SizedBox(height: 10),
+                if (i != sorted.length - 1) const SizedBox(height: Sp.s2h),
               ],
           ],
         );
@@ -216,7 +217,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
               controller: name,
               decoration: const InputDecoration(labelText: 'Nama venue'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             TextField(
               controller: addr,
               decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
@@ -271,7 +272,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   // ── Small pieces ───────────────────────────────────────────────────────────
 
   Widget _empty(SatColors sc, String msg) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 48),
+    padding: const EdgeInsets.symmetric(vertical: Sp.s12),
     child: Center(
       child: Text(msg, style: SatType.sans(size: 14, color: sc.textLo)),
     ),
@@ -279,7 +280,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
 
   Widget _errorBox(SatColors sc, Object e) => Center(
     child: Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Sp.s6),
       child: Text(
         'Gagal memuat fleet:\n${fleetErrText(e)}',
         textAlign: TextAlign.center,

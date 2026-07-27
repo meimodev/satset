@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Sweeps a soft highlight across its child while content loads. Collapses to a
 /// static block under reduced-motion.
@@ -98,12 +99,12 @@ class SkeletonCard extends StatelessWidget {
       ),
       child: Shimmer(
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(Sp.s4h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: const [
               SkeletonBox(width: 140, height: 14),
-              SizedBox(height: 8),
+              SizedBox(height: Sp.s2),
               SkeletonBox(width: 90, height: 10),
             ],
           ),
@@ -121,7 +122,7 @@ class ReportsSkeleton extends StatelessWidget {
   Widget _card(BuildContext context, {required Widget child}) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(Sp.s4h),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -136,7 +137,7 @@ class ReportsSkeleton extends StatelessWidget {
     final sc = context.sat;
     Widget tile() => Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Sp.s4),
         decoration: SatBox.d(
           color: sc.bg2,
           border: SatB.all(color: sc.border0),
@@ -146,9 +147,9 @@ class ReportsSkeleton extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             SkeletonBox(width: 44, height: 9),
-            SizedBox(height: 12),
+            SizedBox(height: Sp.s3),
             SkeletonBox(width: 70, height: 20),
-            SizedBox(height: 8),
+            SizedBox(height: Sp.s2),
             SkeletonBox(width: 54, height: 9),
           ],
         ),
@@ -161,11 +162,11 @@ class ReportsSkeleton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SkeletonBox(width: 160, height: 14),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           const SkeletonBox(width: 100, height: 10),
-          const SizedBox(height: 18),
+          const SizedBox(height: Sp.s4h),
           SizedBox(
-            height: 110,
+            height: Sp.s12,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -173,7 +174,7 @@ class ReportsSkeleton extends StatelessWidget {
                   Expanded(
                     child: SkeletonBox(height: 30.0 + (i % 4) * 22, radius: 3),
                   ),
-                  if (i != 8) const SizedBox(width: 6),
+                  if (i != 8) const SizedBox(width: Sp.s1h),
                 ],
               ],
             ),
@@ -189,17 +190,17 @@ class ReportsSkeleton extends StatelessWidget {
           Row(
             children: [
               tile(),
-              const SizedBox(width: 12),
+              const SizedBox(width: Sp.s3),
               tile(),
-              const SizedBox(width: 12),
+              const SizedBox(width: Sp.s3),
               tile(),
-              const SizedBox(width: 12),
+              const SizedBox(width: Sp.s3),
               tile(),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           chart(),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           chart(),
         ],
       ),

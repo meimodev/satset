@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 void safePop(BuildContext context, {String fallback = '/tables'}) {
   final router = GoRouter.of(context);
@@ -78,7 +79,7 @@ class _LoginClockState extends ConsumerState<LoginClock> {
       children: [
         // Current Time Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
           decoration: SatBox.d(
             color: badgeBg,
             border: badgeBorder,
@@ -88,7 +89,7 @@ class _LoginClockState extends ConsumerState<LoginClock> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.access_time_filled_rounded, size: 13, color: fg),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               Text(
                 currentTime,
                 style: SatType.mono(
@@ -101,10 +102,10 @@ class _LoginClockState extends ConsumerState<LoginClock> {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.s2),
         // Elapsed Time Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
           decoration: SatBox.d(
             color: badgeBg,
             border: badgeBorder,
@@ -114,7 +115,7 @@ class _LoginClockState extends ConsumerState<LoginClock> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.timer_outlined, size: 13, color: fg),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               Text(
                 elapsed,
                 style: SatType.mono(

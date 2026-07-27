@@ -14,6 +14,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class ZoneAdminScreen extends ConsumerStatefulWidget {
   const ZoneAdminScreen({super.key});
@@ -95,18 +96,18 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
 
   Widget _emptyZone(BuildContext context, SatColors sc, Zone zone) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Sp.s6),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.table_restaurant_outlined, size: 40, color: sc.textDim),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             Text(
               '${AppStrings.zoneAdminEmptyZone} ${zone.name}',
               style: SatType.sans(size: 14, color: sc.textMd),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             _FilledBtn(
               label: AppStrings.zoneAdminAddTable,
               icon: Icons.add,
@@ -121,12 +122,12 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
   Widget _noZones(BuildContext context, SatColors sc, bool canManage) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Sp.s8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.layers_outlined, size: 44, color: sc.textDim),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
             Text(
               AppStrings.zoneAdminNoZones,
               style: SatType.sans(
@@ -135,7 +136,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
             Text(
               canManage
                   ? AppStrings.zoneAdminNoZonesCreate
@@ -144,7 +145,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
               style: SatType.sans(size: 13, color: sc.textMd),
             ),
             if (canManage) ...[
-              const SizedBox(height: 18),
+              const SizedBox(height: Sp.s4h),
               _FilledBtn(
                 label: AppStrings.zoneAdminAddZone,
                 onTap: () => _showZones(context),
@@ -198,7 +199,7 @@ class _Header extends StatelessWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: Sp.sHair),
                 Text(
                   sub.toUpperCase(),
                   style: SatType.mono(
@@ -233,7 +234,7 @@ class _LockedPill extends StatelessWidget {
     final sc = context.sat;
     return Container(
       height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -242,7 +243,7 @@ class _LockedPill extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.lock_outline, size: 14, color: sc.textDim),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           Text(
             label,
             style: SatType.sans(
@@ -286,7 +287,7 @@ class _ZoneBar extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.fromLTRB(16, 13, 8, 13),
               itemCount: zones.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: Sp.s2),
               itemBuilder: (ctx, i) {
                 final z = zones[i];
                 final count = tables.where((t) => t.zoneId == z.id).length;
@@ -352,12 +353,12 @@ class _ZoneChip extends StatelessWidget {
               ),
               child: Icon(zone.icon, size: 15, color: zone.color),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             Text(
               zone.name,
               style: SatType.sans(size: 13, weight: FontWeight.w600, color: fg),
             ),
-            const SizedBox(width: 7),
+            const SizedBox(width: Sp.s1h),
             Text(
               '$count',
               style: SatType.mono(
@@ -391,7 +392,7 @@ class _TableRow extends StatelessWidget {
     final nameColor = inactive ? sc.textLo : sc.textHi;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Sp.s2),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -406,7 +407,7 @@ class _TableRow extends StatelessWidget {
               ReorderableDragStartListener(
                 index: index,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
                   child: Icon(
                     Icons.drag_indicator,
                     size: 22,
@@ -414,7 +415,7 @@ class _TableRow extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: Sp.s2h),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +431,7 @@ class _TableRow extends StatelessWidget {
                         color: nameColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: Sp.sHair),
                     Text(
                       '${table.capacity} kursi',
                       style: SatType.mono(
@@ -445,8 +446,8 @@ class _TableRow extends StatelessWidget {
               if (inactive)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 4,
+                    horizontal: Sp.s2,
+                    vertical: Sp.s1,
                   ),
                   decoration: SatBox.d(
                     color: sc.urgentSoft,
@@ -461,7 +462,7 @@ class _TableRow extends StatelessWidget {
                     ),
                   ),
                 ),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               Icon(Icons.chevron_right, size: 20, color: sc.textDim),
             ],
           ),
@@ -578,20 +579,20 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
         children: [
           _label(sc, AppStrings.zoneAdminTableName),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           _SatField(controller: _name, hint: 'mis. T7, Booth A'),
-          const SizedBox(height: 20),
+          const SizedBox(height: Sp.s5),
           _label(sc, AppStrings.zoneAdminMaxCapacity),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           _Stepper(
             value: _capacity,
             min: 1,
             max: 20,
             onChanged: (v) => setState(() => _capacity = v),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Sp.s5),
           _label(sc, AppStrings.zoneAdminZonePill),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -607,7 +608,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
             ],
           ),
           if (!_isNew) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: Sp.s5),
             _ActiveRow(
               active: _active,
               onChanged: (v) => setState(() => _active = v),
@@ -617,7 +618,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
               ref.watch(
                 venueSettingsProvider.select((s) => s.guestOrderingEnabled),
               )) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             _GuestOrderRow(
               enabled: _guestOrdering,
               onChanged: (v) => setState(() => _guestOrdering = v),
@@ -632,7 +633,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
         children: [
           if (!_isNew) ...[
             _DangerBtn(label: AppStrings.delete, onTap: _delete),
-            const SizedBox(width: 10),
+            const SizedBox(width: Sp.s2h),
           ],
           Expanded(
             child: _FilledBtn(
@@ -668,7 +669,7 @@ class _ActiveRow extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(!active),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s3h),
         decoration: SatBox.d(
           color: sc.bg2,
           border: SatB.all(color: sc.border1),
@@ -688,7 +689,7 @@ class _ActiveRow extends StatelessWidget {
                       color: sc.textHi,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: Sp.sHair),
                   Text(
                     AppStrings.zoneAdminTableActiveSub,
                     style: SatType.sans(size: 12, color: sc.textMd),
@@ -729,11 +730,11 @@ class _GuestOrderRow extends StatelessWidget {
             onTap: () => onChanged(!enabled),
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s3h),
               child: Row(
                 children: [
                   Icon(Icons.qr_code_2, size: 18, color: sc.accentText),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: Sp.s2h),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,7 +747,7 @@ class _GuestOrderRow extends StatelessWidget {
                             color: sc.textHi,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: Sp.sHair),
                         Text(
                           AppStrings.zoneAdminGuestOrderingSub,
                           style: SatType.sans(size: 12, color: sc.textMd),
@@ -765,13 +766,13 @@ class _GuestOrderRow extends StatelessWidget {
               onTap: onShowQr,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: Sp.s4,
+                  vertical: Sp.s3,
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.qr_code, size: 16, color: sc.accentText),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.s2),
                     Text(
                       AppStrings.zoneAdminShowQr,
                       style: SatType.sans(
@@ -803,7 +804,7 @@ class _QrDialog extends ConsumerWidget {
       backgroundColor: sc.bg1,
       shape: RoundedRectangleBorder(borderRadius: SatR.a(20)),
       child: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(Sp.s5),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -815,10 +816,10 @@ class _QrDialog extends ConsumerWidget {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             net.when(
               loading: () => const Padding(
-                padding: EdgeInsets.all(40),
+                padding: EdgeInsets.all(Sp.s10),
                 child: CircularProgressIndicator(),
               ),
               error: (_, _) => _warn(sc, 'Gagal mendeteksi alamat server.'),
@@ -835,8 +836,12 @@ class _QrDialog extends ConsumerWidget {
                 return Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(Sp.s3h),
                       decoration: SatBox.d(
+                        // Not a token, and not drift: a QR code needs a light
+                        // quiet zone with full contrast against its modules.
+                        // Themed to charcoal it stops scanning, and this one is
+                        // read by a guest's own phone camera.
                         color: Colors.white,
                         borderRadius: SatR.a(14),
                       ),
@@ -846,13 +851,13 @@ class _QrDialog extends ConsumerWidget {
                         backgroundColor: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Sp.s3),
                     SelectableText(
                       url,
                       textAlign: TextAlign.center,
                       style: SatType.mono(size: 12, color: sc.textMd),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Sp.s3),
                     _warn(
                       sc,
                       'PENTING: cetak ulang QR jika alamat di atas berubah — '
@@ -863,7 +868,7 @@ class _QrDialog extends ConsumerWidget {
                 );
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -883,7 +888,7 @@ class _QrDialog extends ConsumerWidget {
   Widget _warn(SatColors sc, String text, {bool warn = false}) {
     final c = warn ? sc.warn : sc.urgent;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(Sp.s3),
       decoration: SatBox.d(
         color: c.withValues(alpha: 0.12),
         border: SatB.all(color: c.withValues(alpha: 0.5)),
@@ -897,7 +902,7 @@ class _QrDialog extends ConsumerWidget {
             size: 17,
             color: c,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: Sp.s2h),
           Expanded(
             child: Text(
               text,
@@ -1001,7 +1006,7 @@ class _ZoneRow extends StatelessWidget {
     final sc = context.sat;
     final locked = tableCount > 0;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: Sp.s2),
       padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
       decoration: SatBox.d(
         color: sc.bg2,
@@ -1013,7 +1018,7 @@ class _ZoneRow extends StatelessWidget {
           ReorderableDragStartListener(
             index: index,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
               child: Icon(Icons.drag_indicator, size: 20, color: sc.textDim),
             ),
           ),
@@ -1026,7 +1031,7 @@ class _ZoneRow extends StatelessWidget {
             ),
             child: Icon(zone.icon, size: 20, color: zone.color),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.s3),
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -1042,7 +1047,7 @@ class _ZoneRow extends StatelessWidget {
                       color: sc.textHi,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: Sp.sHair),
                   Text(
                     '$tableCount meja',
                     style: SatType.mono(
@@ -1056,7 +1061,7 @@ class _ZoneRow extends StatelessWidget {
             ),
           ),
           _IconBtn(icon: Icons.tune, onTap: onEdit),
-          const SizedBox(width: 4),
+          const SizedBox(width: Sp.s1),
           _IconBtn(
             icon: Icons.delete_outline,
             danger: !locked,
@@ -1152,17 +1157,17 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
         children: [
           _ZonePreview(name: _name.text, color: _color, icon: _icon),
-          const SizedBox(height: 20),
+          const SizedBox(height: Sp.s5),
           _fieldLabel(sc, 'Nama zona'),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           _SatField(
             controller: _name,
             hint: 'mis. Teras, Bar',
             onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Sp.s5),
           _fieldLabel(sc, 'Warna'),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -1175,9 +1180,9 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Sp.s5),
           _fieldLabel(sc, 'Ikon'),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -1192,7 +1197,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
             ],
           ),
           if (!_isNew) ...[
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s5),
             _MetaRow(tableCount: widget.tableCount),
           ],
         ],
@@ -1201,7 +1206,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
         children: [
           if (!_isNew) ...[
             _DangerBtn(label: AppStrings.delete, onTap: _delete),
-            const SizedBox(width: 10),
+            const SizedBox(width: Sp.s2h),
           ],
           Expanded(
             child: _FilledBtn(
@@ -1258,7 +1263,7 @@ class _ZonePreview extends StatelessWidget {
             ),
             child: Icon(icon, size: 24, color: color),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: Sp.s3h),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1273,7 +1278,7 @@ class _ZonePreview extends StatelessWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: Sp.sHair),
                 Text(
                   'PRATINJAU',
                   style: SatType.mono(
@@ -1374,7 +1379,7 @@ class _MetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border1),
@@ -1383,7 +1388,7 @@ class _MetaRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.table_restaurant_outlined, size: 18, color: sc.textMd),
-          const SizedBox(width: 10),
+          const SizedBox(width: Sp.s2h),
           Expanded(
             child: Text(
               tableCount == 0
@@ -1423,7 +1428,7 @@ class _SheetShell extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Container(
             width: 38,
             height: 4,
@@ -1447,7 +1452,7 @@ class _SheetShell extends StatelessWidget {
                         ),
                       ),
                       if (subtitle != null) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: Sp.sHair),
                         Text(
                           subtitle!.toUpperCase(),
                           style: SatType.mono(
@@ -1487,13 +1492,13 @@ Future<void> _present(BuildContext context, Widget child) {
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: satBarrier,
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        left: 8,
-        right: 8,
-        top: 60,
+        left: Sp.s2,
+        right: Sp.s2,
+        top: Sp.s12,
       ),
       child: child,
     ),
@@ -1524,7 +1529,7 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(child: _sheetHandle(sc)),
-              const SizedBox(height: 18),
+              const SizedBox(height: Sp.s4h),
               Text(
                 title,
                 style: SatType.sans(
@@ -1533,12 +1538,12 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
                   color: sc.textHi,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               Text(
                 message,
                 style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: Sp.s4h),
               Row(
                 children: [
                   Expanded(
@@ -1548,7 +1553,7 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
                       onTap: () => Navigator.of(ctx).pop(false),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: Sp.s2h),
                   Expanded(
                     child: _DangerBtn(
                       label: AppStrings.delete,
@@ -1591,8 +1596,8 @@ class _SatField extends StatelessWidget {
         filled: true,
         fillColor: sc.bg2,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 13,
+          horizontal: Sp.s3h,
+          vertical: Sp.s3,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: SatR.a(12),
@@ -1628,7 +1633,7 @@ class _Stepper extends StatelessWidget {
         border: SatB.all(color: sc.border1),
         borderRadius: SatR.a(12),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1h),
       child: Row(
         children: [
           _stepBtn(
@@ -1699,7 +1704,7 @@ class _SelectChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 130),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
         decoration: SatBox.d(
           color: selected ? c.withValues(alpha: 0.18) : sc.bg2,
           border: SatB.all(
@@ -1712,7 +1717,7 @@ class _SelectChip extends StatelessWidget {
           children: [
             if (icon != null) ...[
               Icon(icon, size: 14, color: selected ? c : sc.textMd),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
             ],
             Text(
               label,
@@ -1749,7 +1754,7 @@ class _Switch extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         alignment: on ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
-          margin: const EdgeInsets.all(2),
+          margin: const EdgeInsets.all(Sp.sHair),
           width: 20,
           height: 20,
           decoration: SatBox.d(
@@ -1781,7 +1786,7 @@ class _FilledBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
         decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(999)),
         child: Row(
           mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
@@ -1789,7 +1794,7 @@ class _FilledBtn extends StatelessWidget {
           children: [
             if (icon != null) ...[
               Icon(icon, size: 17, color: sc.accentInk),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
             ],
             Text(
               label,
@@ -1825,7 +1830,7 @@ class _GhostBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
         decoration: SatBox.d(
           color: sc.bg2,
           border: SatB.all(color: sc.border1),
@@ -1837,7 +1842,7 @@ class _GhostBtn extends StatelessWidget {
           children: [
             if (icon != null) ...[
               Icon(icon, size: 16, color: sc.textMd),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
             ],
             Text(
               label,
@@ -1871,7 +1876,7 @@ class _DangerBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
         alignment: Alignment.center,
         decoration: SatBox.d(
           color: sc.urgentSoft,

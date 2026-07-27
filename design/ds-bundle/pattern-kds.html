@@ -1,0 +1,170 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KDS — kitchen board, read at 1–2 m</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 20px 24px 28px; }
+  .head { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
+  .head h3 { flex: 1; font-size: 32px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.05; margin: 0; }
+  [data-pal="neoMidnight"] .head h3 { font-family: var(--font-display); font-weight: 900; line-height: 0.95; }
+  .head p { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.66px;
+            text-transform: uppercase; color: var(--textLo); margin: 6px 0 0; }
+  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+
+  .kc {
+    display: flex; flex-direction: column;
+    background: var(--bg2); border: var(--rule) solid var(--border0);
+    border-radius: var(--r-xl); box-shadow: var(--lift); overflow: hidden;
+  }
+  .kc-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px; background: var(--bg3);
+    border-bottom: var(--rule) solid var(--border0);
+  }
+  .kc-table { flex: 1; font-family: var(--font-mono); font-size: 20px; font-weight: 600;
+              letter-spacing: -0.4px; color: var(--textHi); }
+  [data-pal="neoMidnight"] .kc-table { font-family: var(--font-display); font-weight: 900; }
+  .kc-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .kl { display: flex; gap: 10px; }
+  .kl-qty { width: 26px; flex: none; font-family: var(--font-mono); font-size: 18px; font-weight: 600; color: var(--accent); }
+  .kl-name { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; line-height: 1.2; color: var(--textHi); }
+  .kl-mods { font-size: 14px; line-height: 1.35; color: var(--textMd); margin-top: 3px; }
+  .kl-warn { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px;
+             padding: 3px 7px; border-radius: var(--r-sm);
+             background: var(--urgentSoft); color: var(--urgent);
+             font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
+  .kc-foot { display: flex; gap: 8px; padding: 0 14px 14px; }
+  .kbtn { flex: 1; padding: 11px; border-radius: var(--r-md); text-align: center;
+          font-size: 14px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
+  .kbtn--go { background: var(--accent); color: var(--accentInk); box-shadow: var(--lift); }
+  .kbtn--done { background: var(--successSoft); color: var(--success);
+                border: var(--rule) solid rgba(77,212,135,0.4); }
+  .kc--late { border-color: rgba(255,92,92,0.5); }
+  .kc--late .kc-head { background: var(--urgentSoft); }
+  .kc--fire { border-color: var(--accentBorder); }
+  .kc--fire .kc-head { background: var(--accentSoft); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex:1 1 100%">
+    <div class="head">
+      <div><h3>Antrian</h3><p>7 tiket aktif · target saji 15 menit</p></div>
+      <span class="netpill"><i class="dot dot--live"></i>LIVE · LAN</span>
+    </div>
+    <div class="board">
+
+      <div class="kc kc--fire">
+        <div class="kc-head">
+          <span class="kc-table">A2</span>
+          <span class="chip chip--sent">Terkirim</span>
+          <span class="epill">2m</span>
+        </div>
+        <div class="kc-body">
+          <div class="kl"><span class="kl-qty">×2</span>
+            <div><div class="kl-name">Nasi Goreng Kampung</div>
+              <div class="kl-mods">Pedas · Telur mata sapi · Tanpa acar</div>
+              <span class="kl-warn">ALERGI TELUR DI MEJA</span></div></div>
+          <div class="kl"><span class="kl-qty">×1</span>
+            <div><div class="kl-name">Ayam Bakar Madu</div></div></div>
+        </div>
+        <div class="kc-foot"><div class="kbtn kbtn--go">Mulai</div></div>
+      </div>
+
+      <div class="kc">
+        <div class="kc-head">
+          <span class="kc-table">B1</span>
+          <span class="chip chip--prep">Diproses</span>
+          <span class="epill">9m</span>
+        </div>
+        <div class="kc-body">
+          <div class="kl"><span class="kl-qty">×3</span>
+            <div><div class="kl-name">Sate Ayam</div>
+              <div class="kl-mods">Bumbu kacang pisah</div></div></div>
+        </div>
+        <div class="kc-foot"><div class="kbtn kbtn--done">Matang</div></div>
+      </div>
+
+      <div class="kc kc--late">
+        <div class="kc-head">
+          <span class="kc-table">C4</span>
+          <span class="chip chip--prep">Diproses</span>
+          <span class="epill epill--overdue">24m</span>
+        </div>
+        <div class="kc-body">
+          <div class="kl"><span class="kl-qty">×1</span>
+            <div><div class="kl-name">Ikan Bakar Rica</div>
+              <div class="kl-mods">Level 3</div></div></div>
+          <div class="kl"><span class="kl-qty">×2</span>
+            <div><div class="kl-name">Cah Kangkung</div></div></div>
+        </div>
+        <div class="kc-foot"><div class="kbtn kbtn--done">Matang</div></div>
+      </div>
+
+      <div class="kc">
+        <div class="kc-head">
+          <span class="kc-table">Bawa pulang</span>
+          <span class="epill">4m</span>
+        </div>
+        <div class="kc-body">
+          <div class="kl"><span class="kl-qty">×1</span>
+            <div><div class="kl-name">Nasi Campur</div>
+              <div class="kl-mods">Dibungkus</div></div></div>
+        </div>
+        <div class="kc-foot"><div class="kbtn kbtn--go">Mulai</div></div>
+      </div>
+
+    </div>
+
+    <div class="spec">Read-at-distance beats touch density. Item names run 17px (vs 14 on the
+waiter's phone), quantities 18 in accent, modifiers 14 — all a step up from
+every other surface, because this screen is read from 1–2 m, often through
+steam, and frequently never touched.
+
+Allergen warnings promote from a 14px badge to full text: on the line the
+kitchen must not misread, a two-letter code is not enough.
+
+The elapsed pill drives the whole board — a ticket past the venue's
+prepTargetMins escalates to urgent on both the pill and the card border, so
+the kitchen and the floor are looking at the same clock.
+
+Course colours carry through from the waiter's screen: one hue vocabulary,
+learned once, never re-mapped per screen.</div>
+  </div>
+
+  <div class="stage" data-pal="neoMidnight" style="flex:1 1 100%">
+    <div class="head">
+      <div><h3>ANTRIAN</h3><p>7 tiket aktif · target saji 15 menit</p></div>
+    </div>
+    <div class="board">
+      <div class="kc kc--fire">
+        <div class="kc-head"><span class="kc-table">A2</span><span class="chip chip--sent">Terkirim</span><span class="epill">2M</span></div>
+        <div class="kc-body">
+          <div class="kl"><span class="kl-qty">×2</span>
+            <div><div class="kl-name">NASI GORENG KAMPUNG</div>
+              <div class="kl-mods">Pedas · Telur mata sapi</div>
+              <span class="kl-warn">ALERGI TELUR DI MEJA</span></div></div>
+        </div>
+        <div class="kc-foot"><div class="kbtn kbtn--go">Mulai</div></div>
+      </div>
+      <div class="kc kc--late">
+        <div class="kc-head"><span class="kc-table">C4</span><span class="chip chip--prep">Diproses</span><span class="epill epill--overdue">24M</span></div>
+        <div class="kc-body">
+          <div class="kl"><span class="kl-qty">×1</span>
+            <div><div class="kl-name">IKAN BAKAR RICA</div><div class="kl-mods">Level 3</div></div></div>
+        </div>
+        <div class="kc-foot"><div class="kbtn kbtn--done">Matang</div></div>
+      </div>
+    </div>
+    <div class="spec">Neo Tengah Malam is the palette this screen was designed for: a dim line,
+bone rules that hold their edge through steam, and semantic fills strong
+enough to read as blocks rather than tints.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -18,6 +18,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 const _methodLabels = {
   'tunai': 'Tunai',
@@ -189,7 +190,7 @@ class CashierBillScreen extends ConsumerWidget {
               'Sisa ${formatIDR(outstanding)} akan dicatat sebagai '
               'kerugian (tak tertagih). Perlu persetujuan manajer.',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             TextField(
               controller: ctrl,
               autofocus: true,
@@ -262,7 +263,7 @@ class _BillBody extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
             children: [
               rv(_TotalsCard(bill)),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               rv(
                 _TopActions(
                   bill: bill,
@@ -272,23 +273,23 @@ class _BillBody extends StatelessWidget {
                 ),
               ),
               if (bill.detached) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: Sp.s2h),
                 rv(const _DetachedBanner()),
               ],
-              const SizedBox(height: 14),
+              const SizedBox(height: Sp.s3h),
               if (bill.receipts.isEmpty)
                 rv(_ModeChooser(bill: bill, run: run, repo: repo)),
               if (bill.mode == 'itemized' &&
                   bill.receipts.isNotEmpty &&
                   !bill.fullyAssigned) ...[
                 rv(_UnassignedBanner(bill: bill)),
-                const SizedBox(height: 10),
+                const SizedBox(height: Sp.s2h),
               ],
               rv(_LinesSection(bill: bill, run: run, repo: repo)),
-              const SizedBox(height: 14),
+              const SizedBox(height: Sp.s3h),
               ...bill.receipts.map(
                 (r) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: Sp.s2h),
                   child: rv(
                     _ReceiptCard(
                       bill: bill,
@@ -328,7 +329,7 @@ class _UnassignedBanner extends StatelessWidget {
     final sc = context.sat;
     final n = bill.lines.fold<int>(0, (s, l) => s + l.unassignedUnits);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: sc.warn.withValues(alpha: 0.12),
         borderRadius: SatR.a(10),
@@ -337,7 +338,7 @@ class _UnassignedBanner extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.error_outline_rounded, size: 18, color: sc.warn),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
               '$n item belum diatur ke struk',
@@ -361,7 +362,7 @@ class _TotalsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     Widget row(String k, int v, {bool strong = false, Color? color}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -387,7 +388,7 @@ class _TotalsCard extends StatelessWidget {
       ),
     );
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(Sp.s3h),
       decoration: SatBox.d(color: sc.bg1, borderRadius: SatR.a(14)),
       child: Column(
         children: [
@@ -428,7 +429,7 @@ class _ModeChooser extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: Sp.s3h),
       child: Row(
         children: [
           Expanded(
@@ -447,7 +448,7 @@ class _ModeChooser extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Expanded(
             child: _BigBtn(
               icon: Icons.call_split_rounded,
@@ -461,7 +462,7 @@ class _ModeChooser extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Expanded(
             child: _BigBtn(
               icon: Icons.safety_divider_rounded,
@@ -589,7 +590,7 @@ class _LinesSection extends StatelessWidget {
 
     return Container(
       decoration: SatBox.d(color: sc.bg1, borderRadius: SatR.a(14)),
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
       child: Column(children: children),
     );
   }
@@ -653,10 +654,10 @@ class _LinesSection extends StatelessWidget {
       isScrollControlled: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 12,
-          left: 16,
-          right: 16,
-          top: 16,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s3,
+          left: Sp.s4,
+          right: Sp.s4,
+          top: Sp.s4,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -670,12 +671,12 @@ class _LinesSection extends StatelessWidget {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: Sp.s1),
             Text(
               '${line.qty} unit total · ${line.unassignedUnits} belum diatur',
               style: SatType.sans(size: 11.5, color: sc.textLo),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             ...bill.receipts.where((r) => r.mode != 'even').map((r) {
               final current = r.lines
                   .where((x) => x.ticketId == line.ticketId)
@@ -721,7 +722,7 @@ class _AssignRowState extends State<_AssignRow> {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Row(
         children: [
           Expanded(
@@ -753,7 +754,7 @@ class _AssignRowState extends State<_AssignRow> {
             icon: const Icon(Icons.add_circle_outline, size: 22),
             onPressed: v < widget.max ? () => setState(() => v++) : null,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: Sp.s1),
           FilledButton(
             onPressed: () => widget.onChanged(v),
             child: const Text('Simpan'),
@@ -803,7 +804,7 @@ class _ReceiptCard extends ConsumerWidget {
         borderRadius: SatR.a(14),
         border: SatB.all(color: paid ? sc.success : sc.border0),
       ),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(Sp.s3h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -822,7 +823,7 @@ class _ReceiptCard extends ConsumerWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 280),
                 curve: satEaseOut,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
                 decoration: SatBox.d(
                   color: (paid ? sc.success : sc.warn).withValues(alpha: 0.15),
                   borderRadius: SatR.a(6),
@@ -841,7 +842,7 @@ class _ReceiptCard extends ConsumerWidget {
             ],
           ),
           if (showItems) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             for (final rl in r.lines)
               _ReceiptItemRow(
                 receipt: r,
@@ -855,11 +856,11 @@ class _ReceiptCard extends ConsumerWidget {
                 repo: repo,
               ),
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: Sp.s1h),
               child: Divider(height: 1, color: sc.border0),
             ),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -876,7 +877,7 @@ class _ReceiptCard extends ConsumerWidget {
           ),
           if (r.paidNet != 0)
             Padding(
-              padding: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.only(top: Sp.sHair),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -893,7 +894,7 @@ class _ReceiptCard extends ConsumerWidget {
             ),
           for (final p in r.payments)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: Sp.s1),
               child: Row(
                 children: [
                   Icon(
@@ -901,13 +902,13 @@ class _ReceiptCard extends ConsumerWidget {
                     size: 13,
                     color: p.isRefund ? sc.warn : sc.success,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: Sp.s1h),
                   Text(
                     _methodLabels[p.method] ?? p.method,
                     style: SatType.sans(size: 11, color: sc.textLo),
                   ),
                   if (p.hasPhoto) ...[
-                    const SizedBox(width: 6),
+                    const SizedBox(width: Sp.s1h),
                     PaymentProofThumb(
                       paymentId: p.id,
                       history: false,
@@ -925,7 +926,7 @@ class _ReceiptCard extends ConsumerWidget {
                 ],
               ),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Wrap(
             spacing: 8,
             runSpacing: 6,
@@ -1084,10 +1085,10 @@ class _ReceiptCard extends ConsumerWidget {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-              left: 16,
-              right: 16,
-              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s4,
+              left: Sp.s4,
+              right: Sp.s4,
+              top: Sp.s4,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1101,7 +1102,7 @@ class _ReceiptCard extends ConsumerWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Sp.s3),
                 Wrap(
                   spacing: 8,
                   children: _methodLabels.entries
@@ -1114,7 +1115,7 @@ class _ReceiptCard extends ConsumerWidget {
                       )
                       .toList(),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Sp.s3),
                 TextField(
                   controller: amountCtl,
                   keyboardType: TextInputType.number,
@@ -1126,7 +1127,7 @@ class _ReceiptCard extends ConsumerWidget {
                   ),
                 ),
                 if (!refund && method == 'tunai') ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Sp.s2),
                   TextField(
                     controller: tenderedCtl,
                     keyboardType: TextInputType.number,
@@ -1152,7 +1153,7 @@ class _ReceiptCard extends ConsumerWidget {
                     child: tendered > 0
                         ? Padding(
                             key: ValueKey(change >= 0),
-                            padding: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.only(top: Sp.s2),
                             child: Text(
                               change >= 0
                                   ? 'Kembalian ${formatIDR(change)}'
@@ -1168,7 +1169,7 @@ class _ReceiptCard extends ConsumerWidget {
                   ),
                 ],
                 if (needsPhoto) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Sp.s3),
                   Text(
                     'Foto bukti (wajib)',
                     style: SatType.sans(
@@ -1177,7 +1178,7 @@ class _ReceiptCard extends ConsumerWidget {
                       color: sc.textLo,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Sp.s2),
                   Row(
                     children: [
                       if (photoBytes != null)
@@ -1190,7 +1191,7 @@ class _ReceiptCard extends ConsumerWidget {
                             fit: BoxFit.cover,
                           ),
                         ),
-                      if (photoBytes != null) const SizedBox(width: 12),
+                      if (photoBytes != null) const SizedBox(width: Sp.s3),
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: shootPhoto,
@@ -1206,7 +1207,7 @@ class _ReceiptCard extends ConsumerWidget {
                     ],
                   ),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: Sp.s4),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -1324,7 +1325,7 @@ class _ReceiptItemRow extends ConsumerWidget {
     return InkWell(
       onTap: canDiscount ? onTap : null,
       child: Padding(
-        padding: const EdgeInsets.only(top: 2),
+        padding: const EdgeInsets.only(top: Sp.sHair),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1342,7 +1343,7 @@ class _ReceiptItemRow extends ConsumerWidget {
             ),
             if (existing != null)
               Padding(
-                padding: const EdgeInsets.only(left: 12, top: 1),
+                padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
                 child: Row(
                   children: [
                     Expanded(
@@ -1496,7 +1497,7 @@ class _TopActions extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: sc.textHi,
               side: SatB.side(color: sc.border0),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: Sp.s3),
             ),
             icon: const Icon(Icons.receipt_long_outlined, size: 18),
             label: Text(
@@ -1506,9 +1507,9 @@ class _TopActions extends StatelessWidget {
             onPressed: () => printDoc(null),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.s2),
         SizedBox(
-          height: 46,
+          height: Sp.s12,
           width: 46,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
@@ -1540,7 +1541,7 @@ class _DetachedBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: sc.warn.withValues(alpha: 0.10),
         borderRadius: SatR.a(12),
@@ -1548,7 +1549,7 @@ class _DetachedBanner extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.event_seat_outlined, size: 16, color: sc.warn),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
               'Meja sudah ditutup waiter — tagihan belum lunas',
@@ -1584,11 +1585,11 @@ class _BigBtn extends StatelessWidget {
           borderRadius: SatR.a(12),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+            padding: const EdgeInsets.symmetric(vertical: Sp.s3h, horizontal: Sp.s1h),
             child: Column(
               children: [
                 Icon(icon, size: 22, color: sc.textHi),
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 Text(
                   label,
                   textAlign: TextAlign.center,
@@ -1627,7 +1628,7 @@ class _SmallBtn extends StatelessWidget {
           borderRadius: SatR.a(9),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
             child: Text(
               label,
               style: SatType.sans(
@@ -1747,7 +1748,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
     if (multiBatch) {
       out.add(
         Padding(
-          padding: const EdgeInsets.only(top: 6, bottom: 2),
+          padding: const EdgeInsets.only(top: Sp.s1h, bottom: Sp.sHair),
           child: Text(
             'PESANAN $batchNo · $key',
             style: SatType.sans(
@@ -1764,7 +1765,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
       final hasNote = l.note?.trim().isNotEmpty == true;
       out.add(
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s1),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1774,7 +1775,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                     '${l.qty}×',
                     style: SatType.mono(size: 13, color: sc.textLo),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Sp.s2),
                   Expanded(
                     child: Text(
                       '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
@@ -1789,7 +1790,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
               ),
               for (final m in l.modifiers)
                 Padding(
-                  padding: const EdgeInsets.only(left: 28, top: 1),
+                  padding: const EdgeInsets.only(left: Sp.s6, top: Sp.sHair),
                   child: Text(
                     '${m.display}'
                     '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
@@ -1798,7 +1799,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                 ),
               if (hasNote)
                 Padding(
-                  padding: const EdgeInsets.only(left: 28, top: 1),
+                  padding: const EdgeInsets.only(left: Sp.s6, top: Sp.sHair),
                   child: Text(
                     'Catatan: ${l.note!.trim()}',
                     style: SatType.sans(size: 11, color: sc.textLo),
@@ -1902,7 +1903,7 @@ class _HistoryEmpty extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.history_toggle_off_rounded, size: 44, color: sc.textLo),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           Text(
             'Belum ada tagihan 7 hari terakhir.',
             textAlign: TextAlign.center,
@@ -1928,11 +1929,11 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (tables.length <= 1) return const SizedBox(height: 4);
+    if (tables.length <= 1) return const SizedBox(height: Sp.s1);
     final entries = tables.entries.toList()
       ..sort((a, b) => (a.value ?? '').compareTo(b.value ?? ''));
     return SizedBox(
-      height: 52,
+      height: Sp.s12,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
@@ -1944,7 +1945,7 @@ class _FilterBar extends StatelessWidget {
           ),
           for (final e in entries)
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.only(left: Sp.s2),
               child: _FilterChip(
                 label: 'Meja ${e.value ?? '—'}',
                 active: selected == e.key,
@@ -1978,7 +1979,7 @@ class _FilterChip extends StatelessWidget {
           borderRadius: SatR.a(20),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
             alignment: Alignment.center,
             decoration: SatBox.d(
               borderRadius: SatR.a(20),
@@ -2031,7 +2032,7 @@ class _DayGroupedList extends StatelessWidget {
         return Reveal(
           index: i,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: Sp.s2),
             child: _PastBillTile(it as PastBillSummary, showTableChip: true),
           ),
         );
@@ -2149,7 +2150,7 @@ class PastBillsScreen extends ConsumerWidget {
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
                 itemCount: rows.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: Sp.s2),
                 itemBuilder: (_, i) =>
                     Reveal(index: i, child: _PastBillTile(rows[i])),
               ),
@@ -2183,15 +2184,15 @@ class _PastBillTile extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(Sp.s3h),
             child: Row(
               children: [
                 if (b.isTakeaway) ...[
                   const _TakeawayChip(),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Sp.s3),
                 ] else if (showTableChip) ...[
                   _TableChip(b.tableLabel),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Sp.s3),
                 ],
                 Expanded(
                   child: Column(
@@ -2211,7 +2212,7 @@ class _PastBillTile extends StatelessWidget {
                           color: sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: Sp.sHair),
                       Text(
                         b.isTakeaway
                             ? '${_shortWhen(b.closedAt)} · ${b.ticketCount} item'
@@ -2233,7 +2234,7 @@ class _PastBillTile extends StatelessWidget {
                       ),
                     ),
                     if (b.isWriteOff) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: Sp.s1),
                       Text(
                         'tak tertagih ${formatIDR(b.lossAmount)}',
                         style: SatType.sans(
@@ -2302,15 +2303,15 @@ class PastBillDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
             children: [
               _TotalsCard(bill),
-              const SizedBox(height: 14),
+              const SizedBox(height: Sp.s3h),
               ..._pastLineWidgets(context, bill),
               if (bill.receipts.isNotEmpty) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: Sp.s3h),
                 ...bill.receipts
                     .expand((r) => r.payments)
                     .map(
                       (p) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -2325,7 +2326,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 if (p.hasPhoto) ...[
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: Sp.s2),
                                   PaymentProofThumb(
                                     paymentId: p.id,
                                     history: true,
@@ -2415,6 +2416,9 @@ class _ProofViewer extends StatelessWidget {
   final Uint8List bytes;
   const _ProofViewer(this.bytes);
 
+  // A lightbox, not a themed screen: black chrome is what stops the room's
+  // lighting and the app's palette from tinting a photo the cashier is
+  // inspecting for a transfer amount. Same reasoning as receipt_preview.
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.black,

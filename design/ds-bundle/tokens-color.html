@@ -1,0 +1,167 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color — six palettes</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .pal { padding: 20px 24px 24px; background: var(--bg0); color: var(--textHi); font-family: var(--font-sans); }
+  .pal h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .pal p  { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+            text-transform: uppercase; color: var(--textLo); margin: 0 0 16px; }
+  .ramp { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
+  .sem  { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .sw { border-radius: var(--r-sm); border: var(--rule) solid var(--border0); overflow: hidden; }
+  .sw i { display: block; height: 40px; }
+  .sw b { display: block; padding: 5px 6px; font-family: 'IBM Plex Mono', monospace;
+          font-size: 8px; font-weight: 500; letter-spacing: 0.3px; color: var(--textLo); background: var(--bg1); }
+  .text-ramp { display: flex; gap: 14px; align-items: baseline; margin: 12px 0 10px; flex-wrap: wrap; }
+  .text-ramp span { font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="pal" data-pal="dark" style="flex:1 1 100%">
+    <h3>Dark — the real default</h3>
+    <p>SatColors.dark · lembut skin · restaurants run dim</p>
+    <div class="ramp">
+      <div class="sw"><i style="background:var(--bg0)"></i><b>bg0 0D0E10</b></div>
+      <div class="sw"><i style="background:var(--bg1)"></i><b>bg1 15171A</b></div>
+      <div class="sw"><i style="background:var(--bg2)"></i><b>bg2 1C1F23</b></div>
+      <div class="sw"><i style="background:var(--bg3)"></i><b>bg3 24282D</b></div>
+      <div class="sw"><i style="background:var(--bg4)"></i><b>bg4 2E333A</b></div>
+    </div>
+    <div class="text-ramp">
+      <span style="color:var(--textHi)">textHi F4F3EE</span>
+      <span style="color:var(--textMd)">textMd B6B2A6</span>
+      <span style="color:var(--textLo)">textLo 7E7A70</span>
+      <span style="color:var(--textDim)">textDim 565249</span>
+    </div>
+    <div class="sem">
+      <div class="sw"><i style="background:var(--accent)"></i><b>accent FF9233</b></div>
+      <div class="sw"><i style="background:var(--success)"></i><b>success 4DD487</b></div>
+      <div class="sw"><i style="background:var(--warn)"></i><b>warn FFC04D</b></div>
+      <div class="sw"><i style="background:var(--urgent)"></i><b>urgent FF5C5C</b></div>
+      <div class="sw"><i style="background:var(--info)"></i><b>info 6DB5FF</b></div>
+      <div class="sw"><i style="background:var(--violet)"></i><b>violet C08AFF</b></div>
+    </div>
+    <div class="spec">Soft variants are the same hue at 14% alpha (0x24) — chip and card fills.
+accentBorder is 35% (0x59). border0/1/2 = white at 6% / 10% / 16%.</div>
+  </div>
+
+  <div class="pal" data-pal="light">
+    <h3>Light — first-class, not a fallback</h3>
+    <p>SatColors.light · warm cream · terrace + daylight service</p>
+    <div class="ramp">
+      <div class="sw"><i style="background:var(--bg0)"></i><b>F6F4EF</b></div>
+      <div class="sw"><i style="background:var(--bg1)"></i><b>FFFFFF</b></div>
+      <div class="sw"><i style="background:var(--bg2)"></i><b>FAF8F3</b></div>
+      <div class="sw"><i style="background:var(--bg3)"></i><b>EFECE4</b></div>
+      <div class="sw"><i style="background:var(--bg4)"></i><b>E3DFD4</b></div>
+    </div>
+    <div class="sem">
+      <div class="sw"><i style="background:var(--accent)"></i><b>fill FF9233</b></div>
+      <div class="sw"><i style="background:var(--accentText)"></i><b>ink A34B00</b></div>
+      <div class="sw"><i style="background:var(--success)"></i><b>4DD487</b></div>
+      <div class="sw"><i style="background:var(--warn)"></i><b>FFC04D</b></div>
+      <div class="sw"><i style="background:var(--urgent)"></i><b>FF5C5C</b></div>
+      <div class="sw"><i style="background:var(--info)"></i><b>6DB5FF</b></div>
+    </div>
+    <div class="spec">Amber is 8:1 on charcoal but 2.2:1 on paper. `accentText` burns it
+down to A34B00 for foreground use; fills keep FF9233 in both.</div>
+  </div>
+
+  <div class="pal" data-pal="neonHijau">
+    <h3>Neon Hijau</h3>
+    <p>Pure black · hue-neutral grey ramp · ADR-0045</p>
+    <div class="ramp">
+      <div class="sw"><i style="background:var(--bg0)"></i><b>000000</b></div>
+      <div class="sw"><i style="background:var(--bg1)"></i><b>0B0B0B</b></div>
+      <div class="sw"><i style="background:var(--bg2)"></i><b>131313</b></div>
+      <div class="sw"><i style="background:var(--bg3)"></i><b>1C1C1C</b></div>
+      <div class="sw"><i style="background:var(--bg4)"></i><b>262626</b></div>
+    </div>
+    <div class="sem">
+      <div class="sw"><i style="background:var(--accent)"></i><b>B6FF3D</b></div>
+      <div class="sw"><i style="background:var(--success)"></i><b>2FA35F</b></div>
+      <div class="sw"><i style="background:var(--warn)"></i><b>FFC04D</b></div>
+      <div class="sw"><i style="background:var(--urgent)"></i><b>FF5C5C</b></div>
+      <div class="sw"><i style="background:var(--info)"></i><b>6DB5FF</b></div>
+      <div class="sw"><i style="background:var(--violet)"></i><b>C08AFF</b></div>
+    </div>
+    <div class="spec">`success` retuned to deep emerald: the accent owns bright green here,
+and two greens on a KDS card at 1–2 m is the collision this must not ship.</div>
+  </div>
+
+  <div class="pal" data-pal="indigoTerang">
+    <h3>Indigo Terang</h3>
+    <p>Cool paper · told apart from `light` at a glance</p>
+    <div class="ramp">
+      <div class="sw"><i style="background:var(--bg0)"></i><b>F4F5F8</b></div>
+      <div class="sw"><i style="background:var(--bg1)"></i><b>FFFFFF</b></div>
+      <div class="sw"><i style="background:var(--bg2)"></i><b>FAFBFD</b></div>
+      <div class="sw"><i style="background:var(--bg3)"></i><b>E9EBF1</b></div>
+      <div class="sw"><i style="background:var(--bg4)"></i><b>DCDFE8</b></div>
+    </div>
+    <div class="sem">
+      <div class="sw"><i style="background:var(--accent)"></i><b>3538CD</b></div>
+      <div class="sw"><i style="background:var(--success)"></i><b>4DD487</b></div>
+      <div class="sw"><i style="background:var(--warn)"></i><b>FFC04D</b></div>
+      <div class="sw"><i style="background:var(--urgent)"></i><b>FF5C5C</b></div>
+      <div class="sw"><i style="background:var(--info)"></i><b>0891B2</b></div>
+      <div class="sw"><i style="background:var(--violet)"></i><b>C08AFF</b></div>
+    </div>
+    <div class="spec">`info` shifts to cyan so the indigo accent is the only blue
+that means "primary".</div>
+  </div>
+
+  <div class="pal" data-pal="neoKertas">
+    <h3>Neo Kertas</h3>
+    <p>Neo-brutal paper · siren yellow · solid black rules</p>
+    <div class="ramp">
+      <div class="sw"><i style="background:var(--bg0)"></i><b>E9E2CE</b></div>
+      <div class="sw"><i style="background:var(--bg1)"></i><b>FFFCF2</b></div>
+      <div class="sw"><i style="background:var(--bg2)"></i><b>FFFFFF</b></div>
+      <div class="sw"><i style="background:var(--bg3)"></i><b>F1EADA</b></div>
+      <div class="sw"><i style="background:var(--bg4)"></i><b>E2D9C0</b></div>
+    </div>
+    <div class="sem">
+      <div class="sw"><i style="background:var(--accent)"></i><b>FFE600</b></div>
+      <div class="sw"><i style="background:var(--accentText)"></i><b>ink 6B5A00</b></div>
+      <div class="sw"><i style="background:var(--success)"></i><b>00B84A</b></div>
+      <div class="sw"><i style="background:var(--warn)"></i><b>FF8A00</b></div>
+      <div class="sw"><i style="background:var(--urgent)"></i><b>FF1E0D</b></div>
+      <div class="sw"><i style="background:var(--info)"></i><b>0B3BFF</b></div>
+    </div>
+    <div class="spec">No translucency anywhere — the skin draws structure with 3px ink,
+not tonal steps. Semantic hues are full-saturation fills, not 14% tints.
+Siren yellow is 1.3:1 on white: fill only, never foreground.</div>
+  </div>
+
+  <div class="pal" data-pal="neoMidnight">
+    <h3>Neo Tengah Malam</h3>
+    <p>Same skin after dark · bone rules on near-black slabs</p>
+    <div class="ramp">
+      <div class="sw"><i style="background:var(--bg0)"></i><b>121118</b></div>
+      <div class="sw"><i style="background:var(--bg1)"></i><b>1A1922</b></div>
+      <div class="sw"><i style="background:var(--bg2)"></i><b>22212C</b></div>
+      <div class="sw"><i style="background:var(--bg3)"></i><b>2E2D3A</b></div>
+      <div class="sw"><i style="background:var(--bg4)"></i><b>3C3B4B</b></div>
+    </div>
+    <div class="sem">
+      <div class="sw"><i style="background:var(--accent)"></i><b>FFE600</b></div>
+      <div class="sw"><i style="background:var(--success)"></i><b>00E85C</b></div>
+      <div class="sw"><i style="background:var(--warn)"></i><b>FFA51F</b></div>
+      <div class="sw"><i style="background:var(--urgent)"></i><b>FF3B29</b></div>
+      <div class="sw"><i style="background:var(--info)"></i><b>4C7BFF</b></div>
+      <div class="sw"><i style="background:var(--violet)"></i><b>A85CFF</b></div>
+    </div>
+    <div class="spec">border* flips from black to bone F2ECD8, so every hard shadow
+inverts for free. Soft tints go darker than their base, not lighter.</div>
+  </div>
+
+</div>
+</body>
+</html>

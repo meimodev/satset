@@ -12,6 +12,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Everything that decides whether the floor beeps, in one destination.
 ///
@@ -36,17 +37,17 @@ class AlertsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: _ThresholdCard()),
-                const SizedBox(width: 14),
+                const SizedBox(width: Sp.s3h),
                 Expanded(child: _SoundCard()),
               ],
             ),
           )
         else ...[
           _ThresholdCard(),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           _SoundCard(),
         ],
-        const SizedBox(height: 14),
+        const SizedBox(height: Sp.s3h),
         const _DeviceMuteCard(),
       ],
     );
@@ -80,7 +81,7 @@ class _ScopeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(Sp.s5),
       decoration: SatBox.d(
         // Device-local config sits on a different surface so it never reads as
         // "one more venue setting".
@@ -104,7 +105,7 @@ class _ScopeCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
                 decoration: SatBox.d(
                   color: deviceScoped ? sc.bg3 : sc.bg1,
                   border: SatB.all(color: sc.border0),
@@ -120,7 +121,7 @@ class _ScopeCard extends StatelessWidget {
                       size: 11,
                       color: sc.textLo,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: Sp.s1),
                     Text(
                       scope.toUpperCase(),
                       style: SatType.mono(
@@ -136,13 +137,13 @@ class _ScopeCard extends StatelessWidget {
             ],
           ),
           if (hint != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.s1h),
             Text(
               hint!,
               style: SatType.sans(size: 12, color: sc.textLo, height: 1.4),
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           child,
         ],
       ),
@@ -249,7 +250,7 @@ class _ThresholdCard extends ConsumerWidget {
   }
 
   Widget _rule(SatColors sc) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 14),
+    padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
     child: Divider(height: 1, color: sc.border0),
   );
 }
@@ -286,7 +287,7 @@ class _MinutesRow extends StatelessWidget {
     final sc = context.sat;
     final on = enabled ?? true;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
       child: Row(
         children: [
           Expanded(
@@ -300,23 +301,23 @@ class _MinutesRow extends StatelessWidget {
                     color: on ? sc.textMd : sc.textLo,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: Sp.sHair),
                 Text(hint, style: SatType.sans(size: 11, color: sc.textLo)),
               ],
             ),
           ),
           if (onEnabledChanged != null) ...[
             Switch(value: on, onChanged: (v) => onEnabledChanged!(v)),
-            const SizedBox(width: 4),
+            const SizedBox(width: Sp.s1),
           ],
           _step(
             sc,
             Icons.remove,
             on && value > min ? () => onChanged(value - step) : null,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           SizedBox(
-            width: 66,
+            width: Sp.s12,
             child: Text(
               '$value min',
               textAlign: TextAlign.center,
@@ -327,7 +328,7 @@ class _MinutesRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           _step(
             sc,
             Icons.add,
@@ -450,7 +451,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     final id = resolveSoundId(event, _currentId(s, event));
     final preset = presetForId(id);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: Sp.s3),
       child: Row(
         children: [
           Expanded(
@@ -459,7 +460,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
           GestureDetector(
             onTap: () => _openPicker(sc, event),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
               decoration: SatBox.d(
                 color: sc.bg1,
                 border: SatB.all(color: sc.border0),
@@ -472,13 +473,13 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                     preset?.label ?? id,
                     style: SatType.sans(size: 12.5, color: sc.textHi),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: Sp.s1h),
                   Icon(Icons.expand_more, size: 16, color: sc.textLo),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           IconButton(
             visualDensity: VisualDensity.compact,
             onPressed: preset == null || preset.isSilent
@@ -519,7 +520,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
           ),
           child: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: Sp.s2),
             children: [
               for (final preset in alertSoundPresets)
                 ListTile(

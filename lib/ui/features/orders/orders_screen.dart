@@ -16,6 +16,7 @@ import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -137,7 +138,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       if (list.isEmpty) {
         return Center(
           child: Padding(
-            padding: EdgeInsets.all(grid ? 60 : 24),
+            padding: EdgeInsets.all(grid ? Sp.s12 : Sp.s6),
             child: Text(
               emptyMsg,
               textAlign: TextAlign.center,
@@ -231,7 +232,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.s1h),
                 Text(
                   '${active.length} BERJALAN · ${ready.length} SIAP DIAMBIL',
                   style: SatType.mono(
@@ -253,14 +254,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   active: _seg == 'ready',
                   onTap: () => setState(() => _seg = 'ready'),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
                 _TabletSeg(
                   label: 'Disiapkan',
                   count: active.length,
                   active: _seg == 'active',
                   onTap: () => setState(() => _seg = 'active'),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
                 _TabletSeg(
                   label: 'Selesai',
                   count: done.length,
@@ -297,7 +298,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: Sp.s1),
               Text(
                 '${active.length} aktif · ${ready.length} siap diambil',
                 style: SatType.mono(
@@ -366,7 +367,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.only(left: 2, bottom: 2),
+      padding: const EdgeInsets.only(left: Sp.sHair, bottom: Sp.sHair),
       child: Row(
         children: [
           Text(
@@ -378,7 +379,7 @@ class _SectionHeader extends StatelessWidget {
               color: sc.textMd,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Text(
             '$count',
             style: SatType.mono(size: 11, color: sc.textLo, letterSpacing: 0),
@@ -406,10 +407,10 @@ class _Segments extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: Sp.s10,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
         children: [
           _SegBtn(
             label: 'Siap',
@@ -417,14 +418,14 @@ class _Segments extends StatelessWidget {
             active: seg == 'ready',
             onTap: () => onChange('ready'),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           _SegBtn(
             label: 'Disiapkan',
             count: active,
             active: seg == 'active',
             onTap: () => onChange('active'),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           _SegBtn(
             label: 'Selesai',
             count: done,
@@ -455,7 +456,7 @@ class _SegBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
         decoration: SatBox.d(
           color: active ? sc.textHi : sc.bg2,
           borderRadius: SatR.a(999),
@@ -472,7 +473,7 @@ class _SegBtn extends StatelessWidget {
                 color: active ? sc.bg0 : sc.textMd,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             Text(
               '$count',
               style: SatType.mono(
@@ -508,7 +509,7 @@ class _OrderRow extends StatelessWidget {
     final border = isReady ? sc.success.withValues(alpha: 0.3) : sc.border0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
       child: Opacity(
         opacity: isVoided ? 0.55 : 1,
         child: Material(
@@ -518,7 +519,7 @@ class _OrderRow extends StatelessWidget {
             onTap: onTap,
             borderRadius: SatR.a(16),
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(Sp.s3h),
               decoration: SatBox.d(
                 borderRadius: SatR.a(16),
                 border: SatB.all(color: border),
@@ -532,8 +533,8 @@ class _OrderRow extends StatelessWidget {
                       maxWidth: 88,
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
+                      horizontal: Sp.s2h,
+                      vertical: Sp.s2,
                     ),
                     decoration: SatBox.d(
                       color: isReady
@@ -551,7 +552,7 @@ class _OrderRow extends StatelessWidget {
                             size: 13,
                             color: isReady ? sc.success : sc.textMd,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: Sp.s1),
                         ],
                         Flexible(
                           child: Text(
@@ -570,7 +571,7 @@ class _OrderRow extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Sp.s3),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,7 +609,7 @@ class _OrderRow extends StatelessWidget {
                         ),
                         if (t.modifiers.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(top: 3),
+                            padding: const EdgeInsets.only(top: Sp.sHair),
                             child: Text(
                               t.modifiers
                                       .take(2)
@@ -622,7 +623,7 @@ class _OrderRow extends StatelessWidget {
                               ),
                             ),
                           ),
-                        const SizedBox(height: 7),
+                        const SizedBox(height: Sp.s1h),
                         Wrap(
                           spacing: 8,
                           runSpacing: 4,
@@ -670,12 +671,12 @@ class _ServeButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.check_rounded, size: 14, color: sc.accentInk),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               Text(
                 'Sajikan',
                 style: SatType.sans(
@@ -710,7 +711,7 @@ class _TabletSeg extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s2h),
         decoration: SatBox.d(
           color: active ? sc.textHi : sc.bg2,
           border: SatB.all(color: active ? sc.textHi : sc.border0),
@@ -727,7 +728,7 @@ class _TabletSeg extends StatelessWidget {
                 color: active ? sc.bg0 : sc.textMd,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: Sp.s2h),
             Text(
               '$count',
               style: SatType.mono(

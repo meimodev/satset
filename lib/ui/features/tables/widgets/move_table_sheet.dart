@@ -10,6 +10,7 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Target picker for **Pindah meja** (move table, ADR-0019). Lists every empty
 /// (`available` + `active`) table grouped by zone; tapping one transfers the
@@ -85,7 +86,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             Text(
               'Pindahkan meja ${source.displayName}',
               style: SatType.sans(
@@ -95,7 +96,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: Sp.s1),
             Text(
               'Pilih meja kosong tujuan · ${source.pax} tamu',
               style: SatType.mono(
@@ -104,11 +105,11 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                 letterSpacing: 0.44,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Flexible(
               child: targets.isEmpty
                   ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      padding: const EdgeInsets.symmetric(vertical: Sp.s8),
                       child: Text(
                         'Tidak ada meja kosong untuk dituju.',
                         textAlign: TextAlign.center,
@@ -157,7 +158,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
   Widget _targetTile(SatColors sc, VenueTable target, VenueTable source) {
     final overCapacity = source.pax > target.capacity;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
       child: Material(
         color: sc.bg2,
         borderRadius: SatR.a(12),
@@ -165,7 +166,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
           onTap: _moving ? null : () => _confirmAndMove(target, source),
           borderRadius: SatR.a(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
             decoration: SatBox.d(
               border: SatB.all(color: sc.border0),
               borderRadius: SatR.a(12),
@@ -180,7 +181,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: Sp.s3),
                 Text(
                   'kapasitas ${target.capacity}',
                   style: SatType.sans(size: 12, color: sc.textMd),
@@ -188,7 +189,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                 const Spacer(),
                 if (overCapacity)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: Sp.s2),
                     child: Icon(
                       Icons.warning_amber_rounded,
                       size: 16,

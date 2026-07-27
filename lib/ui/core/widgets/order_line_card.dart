@@ -14,6 +14,7 @@ import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// The canonical order-line card — one sent [Ticket] rendered with its full
 /// context: qty, name/variant, allergen/diet badges, modifiers, item note,
@@ -107,7 +108,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
         : (isCooked ? sc.accent.withValues(alpha: 0.3) : sc.border0);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
       child: AnimatedOpacity(
         opacity: isVoided ? 0.5 : 1,
         duration: reduced ? Duration.zero : _kStatusXfade,
@@ -145,12 +146,12 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
               onTap: readOnly ? null : onTap,
               borderRadius: SatR.a(14),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(Sp.s3h),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 22,
+                      width: Sp.s5,
                       child: Text(
                         '×${ticket.qty}',
                         style: SatType.mono(
@@ -161,7 +162,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Sp.s3),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +188,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                           if (!isVoided) MenuTagBadges(itemId: ticket.itemId),
                           if (ticket.modifiers.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 3),
+                              padding: const EdgeInsets.only(top: Sp.sHair),
                               child: Text(
                                 ticket.modifiers
                                     .map((m) => m.display)
@@ -202,7 +203,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                           if (ticket.note != null &&
                               ticket.note!.trim().isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.only(top: Sp.s1),
                               child: NoteLine(
                                 label: 'Instruksi khusus',
                                 text: ticket.note!,
@@ -210,7 +211,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                             ),
                           if (ticket.voidReason != null)
                             Padding(
-                              padding: const EdgeInsets.only(top: 3),
+                              padding: const EdgeInsets.only(top: Sp.sHair),
                               child: Text(
                                 'Dibatalkan · ${ticket.voidReason} · disetujui oleh ${ticket.voidApprovedBy ?? ''}',
                                 style: SatType.sans(
@@ -220,11 +221,11 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                                 ),
                               ),
                             ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: Sp.s2),
                           Row(
                             children: [
                               StatusChip(status: ticket.status),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: Sp.s2),
                               ElapsedPill(
                                 sentAtTime: ticket.sentAtTime,
                                 sentAtClock: ticket.sentAt,
@@ -233,7 +234,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                                     ticket.status == TicketStatus.served,
                               ),
                               if (orderer != null) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: Sp.s2),
                                 StaffAvatar(actor: orderer, size: 18),
                               ],
                               const Spacer(),
@@ -251,7 +252,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                           if (isReady && !readOnly)
                             Reveal(
                               child: Padding(
-                                padding: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.only(top: Sp.s2),
                                 child: _SmallSuccessButton(
                                   label: 'Tandai disajikan',
                                   icon: Icons.check,
@@ -294,7 +295,7 @@ class _SmallSuccessButton extends StatelessWidget {
           backgroundColor: sc.successSoft,
           foregroundColor: sc.success,
           side: SatB.side(color: sc.success.withValues(alpha: 0.4)),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
           shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
         ),
         icon: Icon(icon, size: 14, color: sc.success),

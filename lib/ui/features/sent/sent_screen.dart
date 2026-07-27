@@ -8,6 +8,7 @@ import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class SentScreen extends ConsumerStatefulWidget {
   final String tableId;
@@ -59,7 +60,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
       backgroundColor: sc.bg0,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -78,7 +79,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
                   weight: 800,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: Sp.s6),
               Text(
                 'Terkirim',
                 style: SatType.sans(
@@ -88,13 +89,13 @@ class _SentScreenState extends ConsumerState<SentScreen>
                   color: sc.textHi,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               Text(
                 'Pesanan Meja $name sudah live di display dapur dan bar.',
                 textAlign: TextAlign.center,
                 style: SatType.sans(size: 14, color: sc.textMd),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: Sp.s6),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -104,7 +105,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
                     _StationChip(name: widget.stations[i], done: _progress > i),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Sp.s4),
               Text(
                 'LAN P50 ${_latency}MS · CLOUD QUEUED',
                 style: SatType.mono(
@@ -114,7 +115,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 ),
               ),
               if (table != null) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: Sp.s6),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.receipt_long_rounded, size: 18),
                   label: const Text('Cetak struk'),
@@ -148,7 +149,7 @@ class _StationChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: sc.bg2,
         borderRadius: SatR.a(14),
@@ -169,7 +170,7 @@ class _StationChip extends StatelessWidget {
                   child: Icon(Icons.check, size: 11, color: sc.successInk),
                 )
               : SizedBox(
-                  width: 18,
+                  width: Sp.s4h,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
@@ -177,7 +178,7 @@ class _StationChip extends StatelessWidget {
                     backgroundColor: sc.border2,
                   ),
                 ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Text(
             name,
             style: SatType.sans(

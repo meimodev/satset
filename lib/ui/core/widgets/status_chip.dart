@@ -5,6 +5,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// The ticket-status pill. One vocabulary of colour per [TicketStatus], used
 /// on the line card, the orders board and the void sheet — a waiter learns
@@ -26,7 +27,7 @@ class StatusChip extends StatelessWidget {
     return AnimatedContainer(
       duration: animate ? _morph : Duration.zero,
       curve: satEaseOut,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: AnimatedSwitcher(
         duration: animate ? _morph : Duration.zero,

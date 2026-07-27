@@ -5,6 +5,7 @@ import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Shared visual language for the Fleet console + venue editor, so the two
 /// surfaces read as one system. Venue tiles and admin rows are the same
@@ -40,7 +41,7 @@ import 'package:satset/ui/core/widgets/anim.dart';
 /// A pill carrying one fleet signal (billing, offline, lockout-risk). Status is
 /// deliberately *not* a pill — it lives in the tile's leading tint.
 Widget fleetPill(SatColors sc, String text, Color fg, Color bg) => Container(
-  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+  padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
   decoration: SatBox.d(color: bg, borderRadius: SatR.a(8)),
   child: Text(
     text,
@@ -115,7 +116,7 @@ class FleetTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 4),
+                  padding: const EdgeInsets.only(top: Sp.s1),
                   child: Text(
                     title,
                     style: SatType.sans(
@@ -127,7 +128,7 @@ class FleetTile extends StatelessWidget {
                   ),
                 ),
                 if (sub != null) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: Sp.sHair),
                   Text(
                     sub!,
                     maxLines: 2,
@@ -138,13 +139,13 @@ class FleetTile extends StatelessWidget {
                   ),
                 ],
                 if (pills.isNotEmpty) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: Sp.s2h),
                   Wrap(spacing: 8, runSpacing: 8, children: pills),
                 ],
               ],
             ),
           ),
-          if (trailing != null) ...[const SizedBox(width: 4), trailing!],
+          if (trailing != null) ...[const SizedBox(width: Sp.s1), trailing!],
         ],
       ),
     );
@@ -231,7 +232,7 @@ class FleetHeader extends StatelessWidget {
         Row(
           children: [
             Icon(icon, size: 14, color: sc.accentText),
-            const SizedBox(width: 6),
+            const SizedBox(width: Sp.s1h),
             Expanded(
               child: Text(
                 kicker,
@@ -246,7 +247,7 @@ class FleetHeader extends StatelessWidget {
             ?trailing,
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: Sp.s1),
         Text(
           title,
           style: SatType.sans(
@@ -287,14 +288,14 @@ class FleetPrimaryButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s3),
           alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (busy)
                 SizedBox(
-                  width: 15,
+                  width: Sp.s3h,
                   height: 15,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
@@ -303,7 +304,7 @@ class FleetPrimaryButton extends StatelessWidget {
                 )
               else
                 Icon(icon, size: 18, color: onTap == null ? sc.textLo : sc.bg0),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               Text(
                 label,
                 style: SatType.sans(

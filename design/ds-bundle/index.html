@@ -1,0 +1,78 @@
+<!-- @dsCard group="Brand" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SatSet — Design System</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  body { background: #0D0E10; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 48px 24px 72px; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  h1 { font-size: 38px; font-weight: 600; letter-spacing: -0.76px; line-height: 1.05; margin: 0 0 12px; color: #F4F3EE; }
+  .lede { font-size: 15px; line-height: 1.6; color: #B6B2A6; max-width: 56ch; margin: 0 0 40px; }
+  h2 { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+       text-transform: uppercase; color: #7E7A70; margin: 40px 0 14px; }
+  ul { margin: 0; padding-left: 18px; color: #B6B2A6; font-size: 14px; line-height: 1.75; }
+  ul b { color: #F4F3EE; font-weight: 600; }
+  .mark { width: 56px; height: 56px; border-radius: 14px; background: #FF9233; color: #160D04;
+          display: flex; align-items: center; justify-content: center;
+          font-family: 'IBM Plex Mono', monospace; font-size: 28px; font-weight: 700; letter-spacing: -1px; margin-bottom: 24px; }
+  .swatches { display: flex; gap: 0; border-radius: 14px; overflow: hidden; margin: 8px 0 0; }
+  .swatches div { flex: 1; height: 44px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .tile { background: #1C1F23; border: 1px solid rgba(255,255,255,0.059); border-radius: 14px; padding: 14px; }
+  .tile b { display: block; font-size: 13px; font-weight: 600; color: #F4F3EE; margin-bottom: 4px; }
+  .tile span { font-size: 12px; line-height: 1.45; color: #7E7A70; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mark">S</div>
+  <h1>SatSet</h1>
+  <p class="lede">LAN restaurant ordering, Android-only, offline-first. One APK runs as Server or Client,
+  paired over Wi-Fi. This system is transcribed from <code>lib/ui/core/design/</code> — the Dart tokens are
+  the source of truth; these pages mirror them.</p>
+
+  <h2>Thesis</h2>
+  <p class="lede" style="margin-bottom:0">Sharp, warm, dependable. Amber <b style="color:#FF9233">#FF9233</b>
+  on charcoal — an instrument panel that doesn't feel cold, in a business that is fundamentally about hospitality.</p>
+  <div class="swatches">
+    <div style="background:#0D0E10"></div><div style="background:#1C1F23"></div><div style="background:#2E333A"></div>
+    <div style="background:#FF9233"></div><div style="background:#4DD487"></div><div style="background:#FFC04D"></div>
+    <div style="background:#FF5C5C"></div><div style="background:#6DB5FF"></div><div style="background:#C08AFF"></div>
+  </div>
+
+  <h2>Who uses it</h2>
+  <ul>
+    <li><b>Waiter</b> — phone, one-handed, walking. Half-second glances. Busiest, least forgiving context.</li>
+    <li><b>Kitchen</b> — tablet KDS on a hot line, read at 1–2 m, often never touched.</li>
+    <li><b>Cashier</b> — settling and splitting. Accuracy over speed.</li>
+    <li><b>Owner / admin</b> — menu, staff, reports. Seated, not rushed.</li>
+    <li><b>Guest</b> — own phone, web SPA, zero training, one-shot use.</li>
+  </ul>
+
+  <h2>Principles</h2>
+  <ul>
+    <li><b>Glanceable beats dense.</b> When density and legibility conflict, legibility wins.</li>
+    <li><b>Color is signal, not decoration.</b> <code>urgent</code> earns its red by being rare.</li>
+    <li><b>State must be unambiguous.</b> Pair every state with text, shape, or position — never color alone.</li>
+    <li><b>Both themes, both real.</b> Six palettes ship. Never hardcode a <code>Color</code>.</li>
+    <li><b>Quiet motion, honest feedback.</b> Transform + opacity only; reduced motion yields the final state instantly.</li>
+    <li><b>Degrade loudly, fail safely.</b> Offline and stale-cache states are first-class UI.</li>
+  </ul>
+
+  <h2>Not this</h2>
+  <div class="grid">
+    <div class="tile"><b>Legacy Windows POS</b><span>Gray gradients, beveled buttons, 2005 enterprise chrome. This is what's being replaced.</span></div>
+    <div class="tile"><b>Stock Material 3</b><span>No purple seed. <code>useMaterial3</code> is a substrate, fully overridden.</span></div>
+    <div class="tile"><b>Food-delivery app</b><span>No hero photography, gradients, promo banners, gamification. Staff tools, not a storefront.</span></div>
+  </div>
+
+  <h2>Language</h2>
+  <p class="lede">UI copy is Bahasa Indonesia — <i>kosong</i>, <i>terisi</i>, <i>habis</i>, <i>Siap di pass</i>.
+  All strings route through <code>lib/core/localization/app_strings.dart</code>. Voice is direct and unfussy:
+  state what happened, not how the system feels about it. No exclamation marks, no apology copy.</p>
+</div>
+</body>
+</html>

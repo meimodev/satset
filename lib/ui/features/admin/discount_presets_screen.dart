@@ -20,6 +20,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class DiscountPresetsScreen extends ConsumerWidget {
   const DiscountPresetsScreen({super.key});
@@ -53,12 +54,12 @@ class DiscountPresetsScreen extends ConsumerWidget {
                         'angka diskon sendiri.',
                         style: SatType.sans(size: 12, color: sc.textLo),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Sp.s4),
                       if (order.isNotEmpty) ...[
                         _SectionLabel('Seluruh pesanan', sc: sc),
                         for (final p in order)
                           _PresetTile(preset: p, repo: repo, sc: sc),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: Sp.s5),
                       ],
                       if (line.isNotEmpty) ...[
                         _SectionLabel('Per item', sc: sc),
@@ -80,7 +81,7 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text, {required this.sc});
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
+    padding: const EdgeInsets.only(bottom: Sp.s1h),
     child: Text(
       text.toUpperCase(),
       style: SatType.mono(
@@ -99,12 +100,12 @@ class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
     child: Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(Sp.s8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.sell_outlined, size: 40, color: sc.textLo),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           Text(
             'Belum ada preset diskon',
             style: SatType.sans(
@@ -113,7 +114,7 @@ class _Empty extends StatelessWidget {
               color: sc.textHi,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Text(
             'Buat preset agar kasir bisa memberi diskon tanpa mengetik '
             'angka sendiri.',
@@ -140,7 +141,7 @@ class _PresetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = preset;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: Sp.s2),
       decoration: SatBox.d(
         color: sc.bg1,
         borderRadius: SatR.a(12),
@@ -160,7 +161,7 @@ class _PresetTile extends StatelessWidget {
               ),
             ),
             if (!p.active) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               Text(
                 'nonaktif',
                 style: SatType.sans(size: 10.5, color: sc.textLo),
@@ -252,7 +253,7 @@ Future<void> _edit(
                   color: sc.textHi,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Sp.s3),
               TextField(
                 controller: nameCtrl,
                 decoration: const InputDecoration(
@@ -261,7 +262,7 @@ Future<void> _edit(
                   border: OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Sp.s3),
               // Scope is what stops a fixed whole-bill amount landing on one
               // cheap line — the cashier's picker filters on it.
               SegmentedButton<String>(
@@ -272,7 +273,7 @@ Future<void> _edit(
                 selected: {scope},
                 onSelectionChanged: (v) => setState(() => scope = v.first),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: Sp.s2h),
               SegmentedButton<String>(
                 segments: const [
                   ButtonSegment(value: 'percent', label: Text('Persen')),
@@ -281,7 +282,7 @@ Future<void> _edit(
                 selected: {kind},
                 onSelectionChanged: (v) => setState(() => kind = v.first),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Sp.s3),
               TextField(
                 controller: valueCtrl,
                 keyboardType: TextInputType.number,
@@ -292,7 +293,7 @@ Future<void> _edit(
                   errorText: error,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
@@ -306,7 +307,7 @@ Future<void> _edit(
                 value: active,
                 onChanged: (v) => setState(() => active = v),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(

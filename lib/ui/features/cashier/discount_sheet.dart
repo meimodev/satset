@@ -21,6 +21,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// What the caller wants to discount: a whole receipt, or one of its lines.
 class DiscountTarget {
@@ -102,14 +103,14 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
                 color: sc.textHi,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: Sp.sHair),
             Text(
               target.isLine
                   ? 'Berlaku untuk item ini'
                   : 'Berlaku seluruh struk',
               style: SatType.sans(size: 12, color: sc.textLo),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             Flexible(
               child: ListView.separated(
                 shrinkWrap: true,
@@ -187,7 +188,7 @@ Future<String?> _askApproverPin(BuildContext context) async {
             'Diskon perlu disetujui manajer. Minta manajer memasukkan PIN.',
             style: SatType.sans(size: 12.5, color: sc.textLo),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           TextField(
             controller: ctrl,
             autofocus: true,

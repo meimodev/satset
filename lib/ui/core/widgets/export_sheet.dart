@@ -20,6 +20,7 @@ import 'package:satset/data/repositories/staff_report_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// What an export covers. All kinds share one sheet and one **Ekspor** entry
 /// (ADR-0030 / ADR-0031 / ADR-0032); the user picks the kind via the **Jenis**
@@ -220,9 +221,9 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                 color: sc.textLo,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             _label(context, 'Jenis'),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -231,19 +232,19 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
               ],
             ),
             if (_kind.needsSnapshot && widget.reportsSnapshot == null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               Text(
                 'Laporan belum siap — buka laporan dulu agar bisa diekspor.',
                 style: SatType.sans(size: 11.5, color: sc.textLo),
               ),
             ],
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             _label(context, 'Periode'),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             _periodPill(context),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             _label(context, 'Format'),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             Row(
               children: [
                 for (final f in ExportFormat.values) ...[
@@ -253,15 +254,15 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                     on: _format == f,
                     onTap: _busy ? null : () => setState(() => _format = f),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Sp.s2),
                 ],
               ],
             ),
             if (_error != null) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: Sp.s3h),
               Text(_error!, style: SatType.sans(size: 12, color: sc.urgent)),
             ],
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s5),
             SizedBox(width: double.infinity, child: _exportButton(context)),
           ],
         ),
@@ -285,14 +286,14 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    width: 16,
+                    width: Sp.s4,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation(sc.accentText),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: Sp.s2h),
                   Text(
                     'Menyiapkan…',
                     style: SatType.sans(
@@ -321,7 +322,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
     final sc = context.sat;
     return Container(
       height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
       alignment: Alignment.center,
       decoration: SatBox.d(
         color: sc.accentSoft,
@@ -375,7 +376,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
           alignment: Alignment.center,
           decoration: SatBox.d(
             color: on ? sc.accentSoft : sc.bg3,

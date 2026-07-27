@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Shared 30s heartbeat for live elapsed pills. autoDispose so the stream
 /// stops whenever no pill is mounted. 30s keeps minute-granularity labels
@@ -85,13 +86,13 @@ class ElapsedPill extends ConsumerWidget {
     required Color bg,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 11, color: fg),
-          const SizedBox(width: 4),
+          const SizedBox(width: Sp.s1),
           Text(
             label,
             style: SatType.mono(

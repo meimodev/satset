@@ -11,6 +11,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/report_sections_view.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Read-only, off-site report view for an [[Owner]] (ADR-0036). Diverts here at
 /// login (`role == 'owner'`), reads the host-published snapshot from
@@ -112,7 +113,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Sp.s1),
           Row(
             children: [
               Container(
@@ -123,7 +124,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s1h),
               Flexible(
                 child: Text(
                   _freshnessLine(report, pending),
@@ -136,7 +137,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           _rangeToggle(context),
         ],
       ),
@@ -146,7 +147,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   Widget _rangeToggle(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(Sp.s1),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -160,8 +161,8 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                 onTap: () => setState(() => _range = key),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(vertical: 9),
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(vertical: Sp.s2),
+                  margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
                   alignment: Alignment.center,
                   decoration: SatBox.d(
                     color: _range == key ? sc.bg4 : Colors.transparent,
@@ -220,12 +221,12 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
     final sc = context.sat;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Sp.s8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: sc.textLo, size: 36),
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             Text(
               text,
               textAlign: TextAlign.center,

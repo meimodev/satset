@@ -11,6 +11,7 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'guest_stepper.dart';
 import 'move_table_sheet.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 Future<void> showGuestStepperSheet({
   required BuildContext context,
@@ -63,7 +64,7 @@ class _GuestStepperSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             Row(
               children: [
                 Text(
@@ -75,14 +76,14 @@ class _GuestStepperSheet extends ConsumerWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
                 Text(
                   'Atur jumlah tamu',
                   style: SatType.sans(size: 13, color: sc.textMd),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Sp.s4),
             Center(
               child: GuestStepper(
                 pax: table.pax,
@@ -97,10 +98,10 @@ class _GuestStepperSheet extends ConsumerWidget {
                     .incrementPax(table.id, userId: actorId),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: Sp.s3h),
             if (!canEdit)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.only(top: Sp.s1),
                 child: Text(
                   'Hanya pelayan yang bisa mengubah jumlah tamu.',
                   textAlign: TextAlign.center,
@@ -111,10 +112,10 @@ class _GuestStepperSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Sp.s4h),
             if (canMove) ...[
               SizedBox(
-                height: 48,
+                height: Sp.s12,
                 child: FilledButton.icon(
                   onPressed: () async {
                     final targetId = await showMoveTableSheet(
@@ -141,10 +142,10 @@ class _GuestStepperSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: Sp.s2h),
             ],
             SizedBox(
-              height: 48,
+              height: Sp.s12,
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: OutlinedButton.styleFrom(

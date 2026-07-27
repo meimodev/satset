@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/admin_grace.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Shell-level warning shown on a Server-mode device that has gone
 /// offline-stale: it counts down the [AdminGrace] before the embedded server
@@ -27,7 +28,7 @@ class AdminGraceBanner extends ConsumerWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: bg,
         borderRadius: SatR.a(12),
@@ -40,7 +41,7 @@ class AdminGraceBanner extends ConsumerWidget {
             size: 16,
             color: fg,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
               _message(grace.remaining),

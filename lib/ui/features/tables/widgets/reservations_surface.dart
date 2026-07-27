@@ -13,6 +13,7 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// The booking book (ADR-0048). One content widget, two containers: a right-side
 /// drawer on tablet — the source design's idiom for a surface you read *against*
@@ -37,7 +38,7 @@ Future<void> openReservationsSurface(
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 10),
+              const SizedBox(height: Sp.s2h),
               Container(
                 width: 40,
                 height: 4,
@@ -178,7 +179,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                         color: sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Sp.s1),
                     Text(
                       '${today.length} booking · $covers tamu',
                       style: SatType.mono(
@@ -199,10 +200,10 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
           ),
         ),
         SizedBox(
-          height: 40,
+          height: Sp.s10,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s5),
             children: [
               for (final f in _RvFilter.values) ...[
                 _FilterChip(
@@ -217,7 +218,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                   active: _filter == f,
                   onTap: () => setState(() => _filter = f),
                 ),
-                if (f != _RvFilter.values.last) const SizedBox(width: 6),
+                if (f != _RvFilter.values.last) const SizedBox(width: Sp.s1h),
               ],
             ],
           ),
@@ -226,7 +227,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
           child: list.isEmpty
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(Sp.s6),
                     child: Text(
                       AppStrings.reservationEmptyFilter,
                       textAlign: TextAlign.center,
@@ -237,7 +238,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                   itemCount: list.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: Sp.s2),
                   itemBuilder: (_, i) => _ReservationRow(
                     reservation: list[i],
                     late: _isLate(list[i], grace, now),
@@ -281,7 +282,7 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         // Tight: five of these have to fit the drawer's 480px without the last
         // one hanging half off the edge.
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s2),
         decoration: SatBox.d(
           color: fill,
           borderRadius: SatR.a(999),
@@ -298,7 +299,7 @@ class _FilterChip extends StatelessWidget {
                 color: fg,
               ),
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: Sp.s1),
             Text(
               '$count',
               style: SatType.mono(
@@ -361,7 +362,7 @@ class _ReservationRow extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 52,
+                width: Sp.s12,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -375,7 +376,7 @@ class _ReservationRow extends ConsumerWidget {
                               color: sc.textHi,
                             ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: Sp.sHair),
                     Text(
                       _relative(r, late),
                       style: SatType.mono(
@@ -387,7 +388,7 @@ class _ReservationRow extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: Sp.s2h),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +401,7 @@ class _ReservationRow extends ConsumerWidget {
                         color: sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: Sp.sHair),
                     Text(
                       [
                         '${r.partySize} tamu',
@@ -418,7 +419,7 @@ class _ReservationRow extends ConsumerWidget {
                       ),
                     ),
                     if (r.notes != null && r.notes!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: Sp.s1),
                       Text(
                         r.notes!.trim(),
                         maxLines: 2,
@@ -429,14 +430,14 @@ class _ReservationRow extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               _Tag(label: statusLabel, tone: statusTone),
             ],
           ),
           if (r.status == ReservationStatus.pending) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             SeatPicker(reservation: r),
-            const SizedBox(height: 10),
+            const SizedBox(height: Sp.s2h),
             Row(
               children: [
                 Expanded(
@@ -447,7 +448,7 @@ class _ReservationRow extends ConsumerWidget {
                     child: Text(AppStrings.reservationActionNoShow),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Sp.s2),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
@@ -459,7 +460,7 @@ class _ReservationRow extends ConsumerWidget {
               ],
             ),
           ] else if (r.status != ReservationStatus.seated) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: Sp.s2h),
             OutlinedButton(
               onPressed: () async {
                 await n.updateStatus(r.id, ReservationStatus.pending);
@@ -492,7 +493,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final brutal = SatShape.brutal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
       decoration: BoxDecoration(
         color: brutal ? tone : tone.withValues(alpha: 0.15),
         borderRadius: SatR.a(6),
@@ -559,14 +560,14 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
             color: sc.textLo,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Sp.s2),
         if (zones.length > 1)
           SizedBox(
-            height: 32,
+            height: Sp.s8,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: zones.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              separatorBuilder: (_, _) => const SizedBox(width: Sp.s1h),
               itemBuilder: (_, i) {
                 final z = zones[i];
                 final isActive = z.id == activeZoneId;
@@ -574,7 +575,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                   onTap: () => setState(() => _zoneId = z.id),
                   child: Container(
                     alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
                     decoration: SatBox.d(
                       color: isActive
                           ? (SatShape.brutal ? sc.accent : sc.textHi)
@@ -597,7 +598,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
               },
             ),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Sp.s2),
         if (available.isEmpty)
           Text(
             'Tidak ada meja kapasitas ≥ ${r.partySize} di zona ini.',
@@ -605,18 +606,18 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
           )
         else
           SizedBox(
-            height: 36,
+            height: Sp.s8,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: available.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              separatorBuilder: (_, _) => const SizedBox(width: Sp.s1h),
               itemBuilder: (_, i) {
                 final t = available[i];
                 return GestureDetector(
                   onTap: () => _seat(context, t),
                   child: Container(
                     alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
                     decoration: SatBox.d(
                       color: sc.bg3,
                       border: SatB.all(color: sc.border1),
@@ -633,7 +634,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                             color: sc.textHi,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: Sp.s1h),
                         Icon(Icons.person_outline, size: 11, color: sc.textLo),
                         Text(
                           '${t.capacity}',
@@ -718,10 +719,10 @@ Future<void> openCreateReservationSheet(
         builder: (ctx, setLocal) {
           return Padding(
             padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 16,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              left: Sp.s5,
+              right: Sp.s5,
+              top: Sp.s4,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s5,
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -738,7 +739,7 @@ Future<void> openCreateReservationSheet(
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: Sp.s3h),
                   Text(
                     SatShape.caps('Reservasi baru'),
                     style: SatType.display(
@@ -747,12 +748,12 @@ Future<void> openCreateReservationSheet(
                       color: sc.textHi,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Sp.s4),
                   TextField(
                     controller: nameCtl,
                     decoration: const InputDecoration(labelText: 'Nama tamu'),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: Sp.s2h),
                   TextField(
                     controller: phoneCtl,
                     keyboardType: TextInputType.phone,
@@ -760,7 +761,7 @@ Future<void> openCreateReservationSheet(
                       labelText: 'No. HP (opsional)',
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: Sp.s2h),
                   Row(
                     children: [
                       Text(
@@ -776,7 +777,7 @@ Future<void> openCreateReservationSheet(
                         icon: const Icon(Icons.remove_circle_outline),
                       ),
                       SizedBox(
-                        width: 32,
+                        width: Sp.s8,
                         child: Center(
                           child: Text(
                             '$party',
@@ -795,7 +796,7 @@ Future<void> openCreateReservationSheet(
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Sp.s2),
                   Row(
                     children: [
                       Expanded(
@@ -823,7 +824,7 @@ Future<void> openCreateReservationSheet(
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Sp.s2),
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.schedule, size: 16),
@@ -852,7 +853,7 @@ Future<void> openCreateReservationSheet(
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: Sp.s3h),
                   // Pre-assigning a table is what makes the floor card read
                   // "Dipesan" before the guest arrives — without it a booking is
                   // invisible on the grid until someone seats it (ADR-0048).
@@ -866,7 +867,7 @@ Future<void> openCreateReservationSheet(
                       tableId = t;
                     }),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: Sp.s2h),
                   TextField(
                     controller: notesCtl,
                     maxLines: 2,
@@ -874,7 +875,7 @@ Future<void> openCreateReservationSheet(
                       labelText: 'Catatan (opsional)',
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: Sp.s4h),
                   FilledButton(
                     onPressed: () async {
                       final name = nameCtl.text.trim();
@@ -953,7 +954,7 @@ class _TablePicker extends StatelessWidget {
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
             decoration: SatBox.d(
               color: active
                   ? (SatShape.brutal ? sc.accent : sc.textHi)
@@ -986,14 +987,14 @@ class _TablePicker extends StatelessWidget {
             color: sc.textLo,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Sp.s2),
         if (zones.length > 1)
           SizedBox(
-            height: 34,
+            height: Sp.s8,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: zones.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              separatorBuilder: (_, _) => const SizedBox(width: Sp.s1h),
               itemBuilder: (_, i) => chip(
                 zones[i].name,
                 zones[i].id == activeZone,
@@ -1001,13 +1002,13 @@ class _TablePicker extends StatelessWidget {
               ),
             ),
           ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Sp.s1h),
         SizedBox(
-          height: 34,
+          height: Sp.s8,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: free.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(width: 6),
+            separatorBuilder: (_, _) => const SizedBox(width: Sp.s1h),
             itemBuilder: (_, i) {
               if (i == 0) {
                 return chip(

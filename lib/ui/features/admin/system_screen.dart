@@ -24,6 +24,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class SystemScreen extends ConsumerStatefulWidget {
   const SystemScreen({super.key});
@@ -86,7 +87,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               flex: 2,
               child: _SystemHero(ping: ping, wsState: wsState, status: status),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: Sp.s3),
             Expanded(
               child: SetTile(
                 label: 'KDS Online',
@@ -94,7 +95,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                 sub: kdsCount == 0 ? 'Belum ada stasiun' : 'Stasiun aktif',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: Sp.s3),
             Expanded(
               child: SetTile(
                 label: 'Tablet Pair',
@@ -104,7 +105,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                     : 'Perangkat aktif',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: Sp.s3),
             Expanded(
               child: SetTile(
                 label: 'Antrian',
@@ -117,21 +118,21 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           ],
         ),
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: Sp.s3h),
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(child: _serverCard(context, sc)),
-          const SizedBox(width: 14),
+          const SizedBox(width: Sp.s3h),
           Expanded(child: _printersCard(context, sc)),
         ],
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: Sp.s3h),
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(child: _devicesCard(context, sc)),
-          const SizedBox(width: 14),
+          const SizedBox(width: Sp.s3h),
           Expanded(child: _opsCard(context, sc)),
         ],
       ),
@@ -273,7 +274,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             onTap: () => _discoverPrinters(context),
             child: adminPill(context, 'Cari'),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           GestureDetector(
             onTap: () => _showAddPrinterSheet(context),
             child: adminPill(context, '+ Printer'),
@@ -314,7 +315,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             },
             child: adminPill(context, 'Test'),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           adminPill(context, online ? 'Online' : 'Offline', on: online),
         ],
       ),
@@ -404,7 +405,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               onTap: () => _confirmRevoke(d),
               child: adminPill(context, 'Revoke'),
             ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           adminPill(context, pillLabel, on: d.sessionActive && !d.revoked),
         ],
       ),
@@ -463,7 +464,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     Widget? trailing,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(Sp.s5),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -493,10 +494,10 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                   color: sc.textLo,
                 ),
               ),
-              if (trailing != null) ...[const SizedBox(width: 10), trailing],
+              if (trailing != null) ...[const SizedBox(width: Sp.s2h), trailing],
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           ...rows,
         ],
       ),
@@ -617,7 +618,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: EdgeInsets.only(bottom: last ? 0 : 8),
+        margin: EdgeInsets.only(bottom: last ? Sp.sHair : Sp.s2),
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         decoration: SatBox.d(
           color: sc.bg2,
@@ -638,7 +639,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                       color: sc.textHi,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: Sp.sHair),
                   Text(value, style: SatType.sans(size: 12, color: sc.textMd)),
                 ],
               ),
@@ -740,11 +741,11 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         content: Row(
           children: [
             SizedBox(
-              width: 22,
+              width: Sp.s5,
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 16),
+            SizedBox(width: Sp.s4),
             Text('Mencari printer…'),
           ],
         ),
@@ -816,7 +817,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                 decoration: const InputDecoration(labelText: 'Port'),
                 keyboardType: TextInputType.number,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               DropdownButton<String>(
                 value: kind,
                 items: const [
@@ -915,7 +916,7 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
           const Text(
             'WS clients akan disconnect ~1-3 detik. Masukkan PIN untuk konfirmasi.',
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           TextField(
             controller: _ctl,
             obscureText: true,

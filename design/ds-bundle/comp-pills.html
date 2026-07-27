@@ -1,0 +1,93 @@
+<!-- @dsCard group="Status" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pills — elapsed, network, state</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Pills</h3>
+    <p class="sub">elapsed_pill.dart · sat_app_bar.dart · table_card.dart</p>
+
+    <h4>ElapsedPill — time since sent</h4>
+    <div class="row">
+      <span class="epill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>&lt;1m</span>
+      <span class="epill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>8m</span>
+      <span class="epill epill--overdue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4M9 2h6"/></svg>23m</span>
+      <span class="epill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>14:32</span>
+    </div>
+    <div class="spec">Minute granularity only — "&lt;1m", "8m", "1j 5m". No seconds: the 30s
+shared ticker would make a seconds field jitter.
+Escalates to urgent at the venue's configurable prepTargetMins (ADR-0013),
+so the board agrees with the floor and the audio alert.
+Terminal lines (served / voided) have no end stamp, so the pill freezes to
+the static sent clock rather than an ever-growing number.</div>
+
+    <h4>Network pill — connection state</h4>
+    <div class="row">
+      <span class="netpill"><i class="dot dot--live"></i>LIVE · LAN</span>
+      <span class="netpill"><i class="dot dot--wait"></i>MENGHUBUNGKAN…</span>
+      <span class="netpill"><i class="dot dot--off"></i>OFFLINE</span>
+    </div>
+    <div class="spec">"· LAN" appears for admins only. Height 30, radius pill, mono 11 / w700.
+The dot's glow is a 3px spread of the matching soft token — zero blur.
+This app's whole promise is working when the network doesn't, so
+connection state is permanent chrome, never a transient toast.</div>
+
+    <h4>SatAppBarPill — trailing slot</h4>
+    <div class="row">
+      <span class="barpill">T+0:45</span>
+      <span class="barpill">4 TAMU</span>
+      <span class="barpill" style="color:var(--warn)">2 MENUNGGU</span>
+    </div>
+
+    <h4>State pills — money &amp; service (table card)</h4>
+    <div class="row">
+      <span class="statepill" style="background:rgba(255,92,92,0.15);color:var(--urgent)">Belum disapa</span>
+      <span class="statepill" style="background:rgba(255,192,77,0.15);color:var(--warn)">Diam</span>
+      <span class="statepill" style="background:rgba(77,212,135,0.15);color:var(--success)">Lunas</span>
+      <span class="statepill" style="background:rgba(109,181,255,0.15);color:var(--info)">Sebagian</span>
+    </div>
+    <div class="spec">Outlined 15% tints under lembut. Under brutal they become solid fills with
+a 2px ink rule and luminance-picked ink — the neo skin has no tints, only blocks.</div>
+  </div>
+
+  <div class="stage" data-pal="neoMidnight">
+    <h3>Brutal</h3>
+    <p class="sub">Square, ink-ruled, fills not tints</p>
+    <h4>Elapsed</h4>
+    <div class="row">
+      <span class="epill">8M</span>
+      <span class="epill epill--overdue">23M</span>
+      <span class="epill">14:32</span>
+    </div>
+    <h4>Network</h4>
+    <div class="row">
+      <span class="netpill"><i class="dot dot--live"></i>LIVE · LAN</span>
+      <span class="netpill"><i class="dot dot--off"></i>OFFLINE</span>
+    </div>
+    <h4>State</h4>
+    <div class="row">
+      <span class="statepill" style="background:var(--urgent);color:#fff;border:2px solid var(--ink)">BELUM DISAPA</span>
+      <span class="statepill" style="background:var(--success);color:#0B0B0F;border:2px solid var(--ink)">LUNAS</span>
+    </div>
+    <div class="spec">Status pips stay circular under brutal — a radius token cannot reach
+BoxShape.circle, and a 7px dot squared reads as a glitch, not a decision.</div>
+  </div>
+
+</div>
+</body>
+</html>

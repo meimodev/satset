@@ -21,6 +21,7 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:uuid/uuid.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Full sectioned editor for one menu item.
 /// Used in tablet right pane and phone full-screen route.
@@ -300,7 +301,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: Sp.s4h),
                 Text(
                   'Hapus item?',
                   style: SatType.sans(
@@ -309,12 +310,12 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: Sp.s2),
                 Text(
                   'Item "${_draft.name}" akan dihapus dari menu.',
                   style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: Sp.s4h),
                 Row(
                   children: [
                     Expanded(
@@ -323,7 +324,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                         child: const Text('Batal'),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: Sp.s2h),
                     Expanded(
                       child: FilledButton(
                         style: FilledButton.styleFrom(
@@ -386,7 +387,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                       _recipeSection(sc, readOnly),
                       _tagsSection(sc, readOnly),
                     ].indexed) ...[
-                      if (i > 0) const SizedBox(height: 18),
+                      if (i > 0) const SizedBox(height: Sp.s4h),
                       // Cascade sections in on load; animKey carries the draft
                       // id so the stagger replays when a new item is selected.
                       Reveal(
@@ -422,7 +423,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Row(
             children: [
               _photoSlot(sc, readOnly),
-              const SizedBox(width: 16),
+              const SizedBox(width: Sp.s4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -434,7 +435,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                       error: _errorIfBlank(_name.text),
                       onChanged: (_) => setState(() {}),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: Sp.s2h),
                     _input(
                       _desc,
                       'Deskripsi singkat',
@@ -446,9 +447,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           _label('Kategori'),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -522,9 +523,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               right: 0,
               bottom: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
                 decoration: SatBox.d(
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: satMediaScrim,
                   borderRadius: BorderRadius.only(
                     topLeft: SatR.c(8),
                     bottomRight: SatR.c(13),
@@ -536,7 +537,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     size: 8,
                     weight: FontWeight.w600,
                     letterSpacing: 1.0,
-                    color: Colors.white,
+                    color: onFill(satMediaScrim),
                   ),
                 ),
               ),
@@ -559,13 +560,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: Sp.s3),
             Container(
               width: 40,
               height: 4,
               decoration: SatBox.d(color: sc.border1, borderRadius: SatR.a(2)),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
             ListTile(
               leading: Icon(Icons.photo_library_outlined, color: sc.textMd),
               title: const Text('Pilih dari galeri'),
@@ -598,7 +599,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   _commitPhotoIfExisting();
                 },
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Sp.s2),
           ],
         ),
       ),
@@ -693,7 +694,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   onChanged: (_) => setState(() {}),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: Sp.s3),
               Expanded(
                 child: _input(
                   _prep,
@@ -708,7 +709,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           Row(
             children: [
               Expanded(
@@ -726,18 +727,18 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   onChanged: (_) => setState(() {}),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: Sp.s3),
               Expanded(child: _marginPreview(sc)),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           _subhead(
             'Varian ukuran',
             trailing: readOnly
                 ? null
                 : _ghostButton('+ Varian', onTap: _addVariant),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           ExpandFade(
             child: _realVariants.isEmpty
                 ? Text(
@@ -767,7 +768,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Widget _variantRow(SatColors sc, int idx, bool readOnly) {
     final v = _draft.variants[idx];
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Sp.s2),
       child: Row(
         children: [
           Expanded(
@@ -787,9 +788,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               }),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: Sp.s2h),
           SizedBox(
-            width: 140,
+            width: Sp.s12,
             child: TextField(
               controller: _ctrl(
                 'v:${v.id}:price',
@@ -876,7 +877,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Widget _modifierGroupCard(SatColors sc, int gi, bool readOnly) {
     final g = _draft.modifierGroups[gi];
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: Sp.s3),
       decoration: SatBox.d(
         border: SatB.all(color: sc.border1),
         borderRadius: SatR.a(12),
@@ -919,7 +920,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Row(
             children: [
               _toggleChip(
@@ -935,7 +936,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                         _patch(_draft.copyWith(modifierGroups: next));
                       },
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               _toggleChip(
                 label: 'Pilih banyak',
                 on: g.multi,
@@ -951,7 +952,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.s2h),
           AnimatedReflow(
             child: Column(
               children: [
@@ -991,7 +992,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final g = _draft.modifierGroups[gi];
     final o = g.options[oi];
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
       child: Row(
         children: [
           Expanded(
@@ -1011,7 +1012,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               }),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           SizedBox(
             // Wide enough for the 'Rp ' prefix plus a signed five-digit delta.
             width: 140,
@@ -1128,7 +1129,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       title: 'Resep',
       child: pantry.when(
         loading: () => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: Sp.s3),
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         error: (e, _) => Text(
@@ -1178,7 +1179,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Sp.s2),
         Text(
           isVariant
               ? 'Resep varian menggantikan resep dasar sepenuhnya. Kosong = ikut resep dasar.'
@@ -1187,7 +1188,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               : 'Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.',
           style: SatType.sans(size: 11, color: sc.textLo),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: Sp.s2h),
         if (lines.isEmpty)
           Text(
             'Belum ada bahan pada resep ini.',
@@ -1196,7 +1197,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         for (var i = 0; i < lines.length; i++)
           _recipeLineRow(sc, readOnly, pantry, byId, lines, i),
         if (!readOnly) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -1230,7 +1231,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final ctrlKey = 'recipe-$_recipeScope-$i';
     final ctrl = _ctrl(ctrlKey, _trimNum(ing.unit.fromBase(line.qty)));
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Sp.s2),
       child: Row(
         children: [
           Expanded(
@@ -1267,7 +1268,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Sp.s2),
           Expanded(
             flex: 2,
             child: TextField(
@@ -1328,7 +1329,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _label('Alergen'),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -1347,9 +1348,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           _label('Diet'),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -1396,7 +1397,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ),
           ),
           adminToggle(context, on: !_draft.isSoldOut),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           TextButton(
             onPressed: auto
                 ? null
@@ -1417,7 +1418,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final out = _draft.isSoldOut;
     final tone = out ? sc.urgent : sc.success;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
       decoration: SatBox.d(
         color: tone.withValues(alpha: 0.14),
         borderRadius: SatR.a(6),
@@ -1471,7 +1472,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       hintStyle: SatType.sans(size: 13, color: sc.textLo),
       filled: true,
       fillColor: sc.bg2,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       border: OutlineInputBorder(
         borderRadius: SatR.a(10),
         borderSide: SatB.side(color: sc.border1),
@@ -1547,7 +1548,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 240),
       curve: satEaseOut,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: tone.withValues(alpha: 0.08),
         border: SatB.all(color: tone.withValues(alpha: 0.3)),
@@ -1565,7 +1566,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               color: sc.textLo,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Sp.s1),
           AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 240),
             style: SatType.sans(size: 18, weight: FontWeight.w600, color: tone),
@@ -1577,7 +1578,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   )
                 : const Text('—'),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: Sp.sHair),
           Text(
             hasData ? 'Rp $marginRp · $hint' : hint,
             style: SatType.sans(size: 11, color: sc.textMd),
@@ -1622,7 +1623,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
           decoration: SatBox.d(
             color: selected ? sc.accentSoft : sc.bg2,
             border: SatB.all(color: selected ? sc.accentBorder : sc.border1),
@@ -1655,7 +1656,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
           decoration: SatBox.d(
             color: on ? sc.successSoft : sc.bg2,
             border: SatB.all(color: on ? sc.success : sc.border1),
@@ -1674,7 +1675,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
                 style: SatType.sans(
@@ -1696,7 +1697,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     return TextButton(
       onPressed: onTap,
       style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
         foregroundColor: sc.accentText,
       ),
       child: Text(
@@ -1746,7 +1747,7 @@ class _Section extends StatelessWidget {
               ?trailing,
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           child,
         ],
       ),
@@ -1789,11 +1790,11 @@ class _Header extends StatelessWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Sp.s1),
                 Row(
                   children: [
                     ?badge,
-                    if (badge != null && sub != null) const SizedBox(width: 8),
+                    if (badge != null && sub != null) const SizedBox(width: Sp.s2),
                     if (sub != null)
                       Flexible(
                         child: Text(
@@ -1926,8 +1927,8 @@ class _FooterState extends State<_Footer> {
                 foregroundColor: sc.accentInk,
                 disabledBackgroundColor: done ? sc.success : sc.accent,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 12,
+                  horizontal: Sp.s5,
+                  vertical: Sp.s3,
                 ),
                 shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
               ),

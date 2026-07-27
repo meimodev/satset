@@ -1,0 +1,200 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Floor grid — /tables</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 0; }
+  .phone { max-width: 400px; margin: 0 auto; min-height: 720px; display: flex; flex-direction: column; position: relative; }
+  .bar { display: flex; align-items: center; justify-content: space-between;
+         padding: 22px 16px 10px; border-bottom: var(--rule) solid var(--border0); }
+  [data-pal="neoKertas"] .bar { background: var(--accent); border-bottom-color: var(--ink); }
+  .clock { font-family: var(--font-mono); font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: var(--textHi); }
+  [data-pal="neoKertas"] .clock { color: var(--ink); }
+  [data-pal="neoKertas"] .netpill { background: var(--bg1); }
+  .scroll { flex: 1; padding: 16px 16px 108px; }
+  .h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.05; margin: 0 0 6px; }
+  [data-pal="neoKertas"] .h1 { font-family: var(--font-display); font-weight: 900; line-height: 0.95; }
+  .meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.66px;
+          text-transform: uppercase; color: var(--textLo); margin: 0 0 16px; }
+  .zones { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .zchip { padding: 6px 11px; border-radius: var(--r-pill); background: var(--bg2);
+           border: var(--rule) solid var(--border1); font-size: 12px; font-weight: 500;
+           color: var(--textMd); text-transform: var(--caps); }
+  .zchip--on { background: var(--accentSoft); border-color: var(--accentBorder); color: var(--accentText); }
+  [data-pal="neoKertas"] .zchip--on { background: var(--accent); color: var(--accentInk); box-shadow: 3px 3px 0 var(--ink); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .tc { display: flex; flex-direction: column; min-height: 146px;
+        background: var(--bg2); border: var(--rule) solid var(--border0);
+        border-radius: var(--r-2xl); box-shadow: var(--lift); overflow: hidden; }
+  [data-pal="neoKertas"] .tc { box-shadow: 5px 5px 0 var(--ink); }
+  .tc-body { flex: 1; display: flex; flex-direction: column; padding: 16px 14px 3px; }
+  .tc-top { display: flex; align-items: flex-start; gap: 6px; }
+  .tnum { flex: 1; font-family: var(--font-mono); font-size: 26px; font-weight: 500;
+          letter-spacing: -0.52px; line-height: 1; color: var(--textHi); }
+  [data-pal="neoKertas"] .tnum { font-family: var(--font-display); font-weight: 900; }
+  .pax { display: flex; align-items: baseline; gap: 6px; margin-top: 6px;
+         font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.44px; color: var(--textMd); }
+  .tc-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .tc-status { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
+  .sdot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--textDim); }
+  [data-pal="neoKertas"] .sdot { border: 2px solid var(--ink); }
+  .slabel { flex: 1; font-size: 12px; font-weight: 500; letter-spacing: -0.12px; color: var(--textMd);
+            text-transform: var(--caps); }
+  .elapsed { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.44px; color: var(--textLo); }
+  .tc-pad { height: 14px; }
+  .owner { padding: 3px 6px; border-radius: var(--r-sm); background: var(--accentSoft);
+           border: var(--rule) solid var(--accentBorder); font-size: 9px; font-weight: 700;
+           letter-spacing: 1px; color: var(--accentText); text-transform: var(--caps); }
+  .owner-other { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+                 background: var(--bg1); border: var(--rule) solid var(--border1); border-radius: var(--r-sm);
+                 font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--textMd); }
+  .stale { display: flex; align-items: center; gap: 7px; padding: 7px 14px;
+           background: var(--warn); color: #0B0B0F; }
+  .stale--crit { background: var(--urgent); color: #fff; }
+  .stale i { width: 15px; height: 15px; flex: none; display: flex; align-items: center; justify-content: center;
+             border: 1px solid currentColor; border-radius: var(--r-sm); font-style: normal;
+             font-size: 10px; font-weight: 800; }
+  .stale span { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; line-height: 1.2; text-transform: var(--caps); }
+
+  .tabbar { position: absolute; left: 16px; right: 16px; bottom: 16px;
+            display: flex; gap: 4px; padding: 6px; background: var(--scrim);
+            border: var(--rule) solid var(--border1); border-radius: var(--r-pill); box-shadow: var(--lift); }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+         padding: 8px 4px; border-radius: var(--r-pill); font-size: 10px; font-weight: 500;
+         color: var(--textLo); text-transform: var(--caps); }
+  .tab svg { width: 20px; height: 20px; }
+  .tab--on { background: var(--bg3); color: var(--textHi); }
+  [data-pal="neoKertas"] .tab--on { background: var(--accent); color: var(--accentInk);
+    border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <div class="phone">
+      <div class="bar">
+        <span class="clock">19:42</span>
+        <span class="netpill"><i class="dot dot--live"></i>LIVE</span>
+      </div>
+      <div class="scroll">
+        <h1 class="h1">Lantai</h1>
+        <p class="meta">24 meja · 9 terisi · 3 siap</p>
+        <div class="zones">
+          <span class="zchip zchip--on">Semua</span>
+          <span class="zchip">Indoor</span>
+          <span class="zchip">Teras</span>
+          <span class="zchip">VIP</span>
+        </div>
+        <div class="grid">
+          <div class="tc"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">A1</div></div>
+            <div class="pax">0/4</div>
+            <div class="tc-status"><i class="sdot"></i><span class="slabel">Kosong</span></div>
+            <div class="tc-pad"></div></div></div>
+
+          <div class="tc" style="background:var(--successSoft);border-color:rgba(77,212,135,0.5)">
+            <div class="tc-body">
+            <div class="tc-top"><div class="tnum" style="color:var(--success)">A2</div><span class="owner">Punya saya</span></div>
+            <div class="pax">4/4 <span>Rp 412.000</span></div>
+            <div class="tc-status"><i class="sdot" style="background:var(--success)"></i>
+              <span class="slabel" style="color:var(--success);font-weight:600">Siap ×2</span><span class="elapsed">1j 12m</span></div>
+            <div class="tc-pad"></div></div></div>
+
+          <div class="tc" style="background:var(--bg3)"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">A3</div><span class="owner-other">BD</span></div>
+            <div class="pax">2/2 <span>Rp 96.000</span></div>
+            <div class="tc-pills"><span class="statepill" style="background:rgba(109,181,255,0.15);color:var(--info)">Sebagian</span></div>
+            <div class="tc-status"><i class="sdot" style="background:var(--info)"></i>
+              <span class="slabel" style="color:var(--info)">Terisi</span><span class="elapsed">42m</span></div>
+            <div class="tc-pad"></div></div></div>
+
+          <div class="tc" style="background:var(--bg3);border-color:var(--warnSoft)"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">B1</div></div>
+            <div class="pax">3/4 <span>Rp 148.000</span></div>
+            <div class="tc-status"><i class="sdot" style="background:var(--warn)"></i>
+              <span class="slabel" style="color:var(--warn)">Pesanan masuk</span><span class="elapsed">6m</span></div>
+            <div class="tc-pad"></div></div></div>
+
+          <div class="tc" style="background:var(--bg3)">
+            <div class="tc-body">
+              <div class="tc-top"><div class="tnum">B2</div><span class="owner-other">SW</span></div>
+              <div class="pax">2/4 <span>Rp 64.000</span></div>
+              <div class="tc-pills"><span class="statepill" style="background:rgba(255,192,77,0.15);color:var(--warn)">Diam</span></div>
+              <div class="tc-status"><i class="sdot" style="background:var(--info)"></i>
+                <span class="slabel" style="color:var(--info)">Terisi</span><span class="elapsed">1j 48m</span></div>
+            </div>
+            <div class="stale"><i>!</i><span>Diam 22 menit — sapa meja</span></div>
+          </div>
+
+          <div class="tc"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">B3</div></div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:-0.1px;color:var(--textHi);margin-top:4px">Ibu Sari</div>
+            <div class="pax">0/6</div>
+            <div class="tc-status"><i class="sdot"></i><span class="slabel">Dipesan</span><span class="elapsed">19:30</span></div>
+            <div class="tc-pad"></div></div></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab tab--on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Meja</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6"/></svg>Pesanan</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 18H5z"/></svg>Antrian</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9l2-5h12l2 5v11H4z"/></svg>Venue</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <div class="phone">
+      <div class="bar">
+        <span class="clock">19:42</span>
+        <span class="netpill"><i class="dot dot--live"></i>LIVE</span>
+      </div>
+      <div class="scroll">
+        <h1 class="h1">LANTAI</h1>
+        <p class="meta">24 meja · 9 terisi · 3 siap</p>
+        <div class="zones">
+          <span class="zchip zchip--on">Semua</span>
+          <span class="zchip">Indoor</span>
+          <span class="zchip">Teras</span>
+        </div>
+        <div class="grid">
+          <div class="tc"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">A1</div></div>
+            <div class="pax">0/4</div>
+            <div class="tc-status"><i class="sdot"></i><span class="slabel">Kosong</span></div>
+            <div class="tc-pad"></div></div></div>
+          <div class="tc" style="background:var(--successSoft)"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">A2</div></div>
+            <div class="pax">4/4</div>
+            <div class="tc-status"><i class="sdot" style="background:var(--success)"></i>
+              <span class="slabel" style="color:var(--textHi);font-weight:700;font-size:11px;letter-spacing:0.66px">Siap ×2</span></div>
+            <div class="tc-pad"></div></div></div>
+          <div class="tc" style="background:var(--infoSoft)"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">A3</div></div>
+            <div class="pax">2/2</div>
+            <div class="tc-status"><i class="sdot" style="background:var(--info)"></i>
+              <span class="slabel" style="color:var(--textHi);font-weight:700;font-size:11px;letter-spacing:0.66px">Terisi</span></div>
+            <div class="tc-pad"></div></div></div>
+          <div class="tc" style="background:var(--warnSoft)"><div class="tc-body">
+            <div class="tc-top"><div class="tnum">B1</div></div>
+            <div class="pax">3/4</div>
+            <div class="tc-status"><i class="sdot" style="background:var(--warn)"></i>
+              <span class="slabel" style="color:var(--textHi);font-weight:700;font-size:11px;letter-spacing:0.66px">Pesanan masuk</span></div>
+            <div class="tc-pad"></div></div></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab tab--on">MEJA</div><div class="tab">PESANAN</div>
+        <div class="tab">ANTRIAN</div><div class="tab">VENUE</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

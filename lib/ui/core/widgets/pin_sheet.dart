@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 const int kPinLength = 6;
 
@@ -169,7 +170,7 @@ class _PinSheetState extends State<_PinSheet>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Sp.s4),
                     Text(
                       widget.title,
                       textAlign: TextAlign.center,
@@ -180,28 +181,28 @@ class _PinSheetState extends State<_PinSheet>
                         color: sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Sp.s1),
                     Text(
                       widget.subtitle,
                       textAlign: TextAlign.center,
                       style: SatType.sans(size: 12, color: sc.textMd),
                     ),
                     if (widget.statusSlot != null) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: Sp.s2h),
                       Center(child: widget.statusSlot!),
                     ],
-                    const SizedBox(height: 22),
+                    const SizedBox(height: Sp.s5),
                     _PinDots(pin: _pin, shake: _shake),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Sp.s3),
                     _PinHelper(
                       pinLength: _pin.length,
                       busy: _busy,
                       error: _error,
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: Sp.s4h),
                     _Pad(onPress: _onDigit, enabled: !_busy),
                     if (kDebugMode && widget.debugCreds != null) ...[
-                      const SizedBox(height: 14),
+                      const SizedBox(height: Sp.s3h),
                       _DebugCredsHint(creds: widget.debugCreds!),
                     ],
                   ],
@@ -293,7 +294,7 @@ class _PinHelper extends StatelessWidget {
     final empty = pinLength == 0;
     final complete = pinLength >= kPinLength;
     if (empty && !busy && !complete) {
-      return const SizedBox(height: 14);
+      return const SizedBox(height: Sp.s3h);
     }
     final text = busy || complete
         ? 'Memverifikasi...'
@@ -414,7 +415,7 @@ class _DebugCredsHint extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               Text(
                 'DEBUG · SEEDED PINS',
                 style: SatType.mono(
@@ -426,9 +427,9 @@ class _DebugCredsHint extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.s2),
           for (var i = 0; i < creds.entries.length; i++) ...[
-            if (i > 0) const SizedBox(height: 4),
+            if (i > 0) const SizedBox(height: Sp.s1),
             _DebugCredRow(
               label: creds.entries[i].pin,
               value: '${creds.entries[i].name} · ${creds.entries[i].role}',
@@ -460,11 +461,11 @@ class _DebugCredRow extends StatelessWidget {
       },
       borderRadius: SatR.a(6),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
         child: Row(
           children: [
             SizedBox(
-              width: 76,
+              width: Sp.s12,
               child: Text(
                 label,
                 style: SatType.mono(

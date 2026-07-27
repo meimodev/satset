@@ -33,6 +33,8 @@ Never hardcode a `Color`, a spacing number, or a curve. Go through these.
 | `SatType` | `typography.dart` | Every text style. |
 | `satEaseOut`, `motionEnabled(context)` | `motion.dart` | Every animation. One curve app-wide. Re-exported by `anim.dart`, so a screen using both needs one import. Prefer the `anim.dart` primitives below over raw `AnimatedFoo`. |
 | `onFill(Color)` | `colors.dart` | Ink for text on a *saturated* fill (status pill, owner chip, brutal badge). Luminance-derived, so it stays correct on every palette. Never a literal near-black. |
+| `darken(Color, [amount])` | `colors.dart` | Far end of an avatar/badge gradient. Blends toward black so a saturated hue keeps its identity. |
+| `satBarrier`, `satMediaScrim`, `satShadowInk` | `colors.dart` | Dimming and shadow that must stay dark on *both* themes — modal barrier, label-over-photo scrim, ambient shadow. Not `sc.scrim`: that token is an opaque blend base and paints the layer underneath out entirely. |
 | `context.layout` | `layout.dart` | Phone/tablet breakpoints, `useTabletShell`. |
 | `courseVisual`, `roleVisual`, `zoneVisual` | `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart` | Course/role/zone color + icon. One hue vocabulary — don't re-map. |
 | `format.dart` | `format.dart` | Currency, time, duration formatting. |
@@ -103,7 +105,7 @@ All collapse to a static final frame under reduced motion. Callers never branch 
 | `TagBadgeRow` | `tag_badge_row.dart` | One wrapping row of 2-char code badges, caller passes the kind color. |
 | `MenuTagBadges` | `tag_badge_row.dart` | Allergen (red) + diet (blue) stack, live-resolved from the menu by `itemId` (ADR-0012). Prefer this over `TagBadgeRow` on line items. |
 | `MenuPhoto` | `menu_photo.dart` | Menu item photo or initials fallback. Fills parent, `BoxFit.cover`. Never a broken image (ADR-0014). |
-| `StaffAvatar` | `staff_avatar.dart` | Initials avatar in the account's own color. `mine: true` rings it accent. Same person = same swatch everywhere. |
+| `StaffAvatar` | `staff_avatar.dart` | Initials avatar in the account's own color. `mine: true` rings it accent. `fallbackColor:` for an account with no colour yet (staff admin passes the role's). `.raw()` when you hold a view-model row rather than an `AppUser`. **Same person = same swatch everywhere** — three screens used to inline their own, with different darkening and glyph weight, so the same waiter looked like two people between the rail and the list. |
 | `ReadyBanner` | `ready_banner.dart` | Inline ready notice. |
 | `ReadyToast` | `ready_toast.dart` | Transient ready alert with view/dismiss. Mounted by `AlertHost` — don't mount directly. |
 

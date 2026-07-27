@@ -505,3 +505,25 @@ const Color _inkOnLight = Color(0xFF0B0B0F);
 // Add an explicit `*Ink` token the day one of them looks wrong.
 Color onFill(Color c) =>
     c.computeLuminance() > 0.45 ? _inkOnLight : const Color(0xFFFFFFFF);
+
+/// A darker sibling of [c], for the far end of an avatar/badge gradient.
+/// Blends toward black rather than reducing lightness so a saturated hue keeps
+/// its identity instead of going muddy.
+Color darken(Color c, [double amount = 0.36]) =>
+    Color.alphaBlend(_inkOnLight.withValues(alpha: amount), c);
+
+/// Dimming for a modal barrier. Deliberately not `scrim` — that token is an
+/// *opaque* base for translucent surfaces to blend against, so using it here
+/// paints the layer underneath out entirely. This one dims, and it dims dark on
+/// every palette: a barrier that lightened on the light theme would stop
+/// reading as "the thing behind is out of reach".
+const Color satBarrier = Color(0x80000000);
+
+/// Dimming laid over photography so a label stays legible whatever the image
+/// does. Heavier than [satBarrier] — it competes with detail, not flat colour.
+const Color satMediaScrim = Color(0xB3000000);
+
+/// Ambient shadow colour for lifted surfaces on the soft skin. The brutal skin
+/// uses `SatShape.hardShadow` instead. Opacity belongs to the caller: a floating
+/// tab bar sits higher than a chip and casts accordingly.
+const Color satShadowInk = Color(0xFF000000);

@@ -1,0 +1,87 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Course, role &amp; zone visuals</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 18px; }
+  .courses { display: flex; flex-direction: column; gap: 8px; }
+  .course {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; background: var(--bg2);
+    border: var(--rule) solid var(--border0);
+    border-left: 4px solid var(--c);
+    border-radius: var(--r-md);
+    box-shadow: var(--lift);
+  }
+  [data-pal="neoKertas"] .course, [data-pal="neoMidnight"] .course { border-left-width: 10px; }
+  .course b { font-size: 14px; font-weight: 600; letter-spacing: -0.14px; color: var(--textHi);
+              text-transform: var(--caps); }
+  .course span { margin-left: auto; font-family: var(--font-mono); font-size: 10px;
+                 letter-spacing: 0.6px; color: var(--textLo); }
+  .zones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .zone {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: var(--r-pill);
+    background: var(--bg2); border: var(--rule) solid var(--border1);
+    font-size: 12px; font-weight: 500; color: var(--textMd);
+  }
+  .zone i { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Course colors</h3>
+    <p class="sub">course_visuals.dart · aliases of the semantic set</p>
+    <div class="courses">
+      <div class="course" style="--c:var(--cDrinks)"><b>Minuman</b><span>cDrinks = info</span></div>
+      <div class="course" style="--c:var(--cStarters)"><b>Pembuka</b><span>cStarters = warn</span></div>
+      <div class="course" style="--c:var(--cMains)"><b>Utama</b><span>cMains = success</span></div>
+      <div class="course" style="--c:var(--cMains)"><b>Pendamping</b><span>sides → cMains</span></div>
+      <div class="course" style="--c:var(--cDesserts)"><b>Penutup</b><span>cDesserts = violet</span></div>
+      <div class="course" style="--c:var(--cFire)"><b>Fire now</b><span>cFire = accent</span></div>
+    </div>
+    <div class="spec">Course colors alias the semantic set deliberately — one hue vocabulary,
+learned once. Don't re-map them per screen.</div>
+
+    <h3 style="margin-top:28px">Zones</h3>
+    <p class="sub">zone_visuals.dart · colorHex + iconKey, admin-editable</p>
+    <div class="zones">
+      <div class="zone"><i style="background:#6DB5FF"></i>Indoor</div>
+      <div class="zone"><i style="background:#4DD487"></i>Teras</div>
+      <div class="zone"><i style="background:#C08AFF"></i>VIP</div>
+      <div class="zone"><i style="background:#FFC04D"></i>Bar</div>
+      <div class="zone"><i style="background:#FF5C5C"></i>Rooftop</div>
+    </div>
+    <div class="spec">Zone color and icon are venue data, not tokens — the admin picks from
+ZonePresets. Icon keys map to Material outlined glyphs
+(tableRestaurant, deck, park, localBar, weekend, balcony, roofing,
+eventSeat, window, umbrella, celebration, storefront).
+Roles carry their own colorHex the same way.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Same vocabulary, brutal skin</h3>
+    <p class="sub">Full-saturation fills, 10px ink rule, no tints</p>
+    <div class="courses">
+      <div class="course" style="--c:var(--cDrinks)"><b>Minuman</b><span>0B3BFF</span></div>
+      <div class="course" style="--c:var(--cStarters)"><b>Pembuka</b><span>FF8A00</span></div>
+      <div class="course" style="--c:var(--cMains)"><b>Utama</b><span>00B84A</span></div>
+      <div class="course" style="--c:var(--cDesserts)"><b>Penutup</b><span>8A1FFF</span></div>
+      <div class="course" style="--c:var(--cFire)"><b>Fire now</b><span>FF1E0D</span></div>
+    </div>
+    <div class="spec">Fire is the one course that borrows `urgent` rather than `accent` here:
+siren yellow is the skin's default surface colour, so it can no longer
+carry "fire this now" on its own.</div>
+  </div>
+
+</div>
+</body>
+</html>

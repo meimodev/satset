@@ -1,0 +1,253 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TableCard — the floor grid unit</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+
+  .tc {
+    display: flex; flex-direction: column;
+    min-height: 150px;
+    background: var(--bg2);
+    border: var(--rule) solid var(--border0);
+    border-radius: var(--r-2xl);
+    box-shadow: var(--lift);
+    overflow: hidden;
+  }
+  [data-pal="neoKertas"] .tc, [data-pal="neoMidnight"] .tc { box-shadow: 5px 5px 0 var(--ink); }
+  .tc-body { flex: 1; display: flex; flex-direction: column; padding: 16px 14px 3px; }
+  .tc-top { display: flex; align-items: flex-start; gap: 8px; }
+  .tnum { flex: 1; font-family: var(--font-mono); font-size: 26px; font-weight: 500;
+          letter-spacing: -0.52px; line-height: 1; color: var(--textHi); }
+  [data-pal="neoKertas"] .tnum, [data-pal="neoMidnight"] .tnum {
+    font-family: var(--font-display); font-weight: 900; }
+  .pax { display: flex; align-items: center; gap: 3px; margin-top: 6px;
+         font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.44px; color: var(--textMd); }
+  .pax svg { width: 12px; height: 12px; }
+  .money { margin-left: 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+           letter-spacing: 0.24px; color: var(--textMd); }
+  .tc-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .tc-status { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
+  .sdot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--textDim); }
+  [data-pal="neoKertas"] .sdot, [data-pal="neoMidnight"] .sdot { border: 2px solid var(--ink); }
+  .slabel { flex: 1; font-size: 12px; font-weight: 500; letter-spacing: -0.12px; line-height: 1.15; color: var(--textMd);
+            text-transform: var(--caps); }
+  .elapsed { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.44px; color: var(--textLo); }
+  .tc-pad { height: 14px; }
+
+  .owner {
+    padding: 3px 6px; border-radius: var(--r-sm);
+    background: var(--accentSoft); border: var(--rule) solid var(--accentBorder);
+    font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--accentText);
+    text-transform: var(--caps);
+  }
+  .owner-other {
+    width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+    background: var(--bg1); border: var(--rule) solid var(--border1); border-radius: var(--r-sm);
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--textMd);
+  }
+  .stale {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 14px; background: var(--warn); color: #0B0B0F;
+  }
+  .stale--crit { background: var(--urgent); color: #fff; }
+  .stale i {
+    width: 15px; height: 15px; flex: none; display: flex; align-items: center; justify-content: center;
+    border: 1px solid currentColor; border-radius: var(--r-sm);
+    font-style: normal; font-size: 10px; font-weight: 800; line-height: 1.1;
+  }
+  .stale span { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; line-height: 1.2;
+                text-transform: var(--caps); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex:1 1 100%">
+    <h3>TableCard</h3>
+    <p class="sub">features/tables/widgets/table_card.dart · ADR-0048</p>
+    <div class="grid">
+
+      <div class="tc">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">A1</div></div>
+          <div class="pax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>0/4</div>
+          <div class="tc-status">
+            <i class="sdot"></i><span class="slabel">Kosong</span>
+          </div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+
+      <div class="tc" style="background:var(--bg3)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">A2</div><span class="owner">Punya saya</span></div>
+          <div class="pax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>3/4<span class="money">Rp 248.000</span></div>
+          <div class="tc-pills"><span class="statepill" style="background:rgba(109,181,255,0.15);color:var(--info)">Sebagian</span></div>
+          <div class="tc-status">
+            <i class="sdot" style="background:var(--info)"></i>
+            <span class="slabel" style="color:var(--info)">Terisi</span>
+            <span class="elapsed">42m</span>
+          </div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+
+      <div class="tc" style="background:var(--bg3);border-color:var(--warnSoft)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">B4</div><span class="owner-other">BD</span></div>
+          <div class="pax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>2/2<span class="money">Rp 96.000</span></div>
+          <div class="tc-status">
+            <i class="sdot" style="background:var(--warn)"></i>
+            <span class="slabel" style="color:var(--warn)">Pesanan masuk</span>
+            <span class="elapsed">6m</span>
+          </div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+
+      <div class="tc" style="background:var(--successSoft);border-color:rgba(77,212,135,0.5)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum" style="color:var(--success)">B5</div><span class="owner">Punya saya</span></div>
+          <div class="pax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>4/6<span class="money">Rp 412.000</span></div>
+          <div class="tc-status">
+            <i class="sdot" style="background:var(--success)"></i>
+            <span class="slabel" style="color:var(--success);font-weight:600">Siap ×2</span>
+            <span class="elapsed">1j 12m</span>
+          </div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+
+      <div class="tc" style="background:var(--bg3)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">C1</div><span class="owner-other">SW</span></div>
+          <div class="pax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>2/4<span class="money">Rp 64.000</span></div>
+          <div class="tc-pills"><span class="statepill" style="background:rgba(255,192,77,0.15);color:var(--warn)">Diam</span></div>
+          <div class="tc-status">
+            <i class="sdot" style="background:var(--info)"></i>
+            <span class="slabel" style="color:var(--info)">Terisi</span>
+            <span class="elapsed">1j 48m</span>
+          </div>
+        </div>
+        <div class="stale"><i>!</i><span>Diam 22 menit — sapa meja</span></div>
+      </div>
+
+      <div class="tc">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">C2</div></div>
+          <div style="font-size:12px;font-weight:600;letter-spacing:-0.1px;color:var(--textHi);margin-top:4px">Ibu Sari</div>
+          <div class="pax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>0/6</div>
+          <div class="tc-status">
+            <i class="sdot" style="background:var(--textDim)"></i>
+            <span class="slabel">Dipesan</span>
+            <span class="elapsed">19:30</span>
+          </div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+
+      <div class="tc" style="background:var(--bg3)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">C4</div><span class="owner-other">NL</span></div>
+          <div class="pax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>5/6<span class="money">Rp 780.000</span></div>
+          <div class="tc-pills">
+            <span class="statepill" style="background:rgba(255,92,92,0.15);color:var(--urgent)">Belum disapa</span>
+          </div>
+          <div class="tc-status">
+            <i class="sdot" style="background:var(--info)"></i>
+            <span class="slabel" style="color:var(--info)">Terisi</span>
+            <span class="elapsed">12m</span>
+          </div>
+        </div>
+        <div class="stale stale--crit"><i>!</i><span>Belum disapa 12 menit</span></div>
+      </div>
+
+    </div>
+
+    <div class="spec">Reads six independent signals — status, money, service state, ownership,
+bookings and staleness — and lays them out so the worst one is what a waiter
+sees first. Everything below the pax row is conditional, so a quiet table
+stays a number and a status and nothing else.
+
+Table number: mono 26 (phone) / 36 (tablet), scaled down to fit rather than
+ellipsised. Radius 22 phone / 20 tablet. Ticks once per second.
+
+Ownership: "Punya saya" as an accent chip on your own tables, the other
+waiter's initials as a neutral nameplate otherwise. Your own tables also take
+an accentBorder under lembut.
+
+The stale banner runs edge to edge across the foot and names the overrun and
+the action — never just a colour. Its foreground is picked by luminance:
+white on `warn` amber is ~2:1 and fails AA, and this is the one thing on the
+card that must be readable at a glance.
+
+All text nodes are merged into one semantics node — without it TalkBack reads
+a card as four unrelated stops. Merged, one swipe announces
+"Meja 4, terisi, Punya saya" in visual order.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas" style="flex:1 1 100%">
+    <h3>Brutal — paper</h3>
+    <p class="sub">Semantic softs as full slabs, 5px hard shadow</p>
+    <div class="grid">
+      <div class="tc">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">A1</div></div>
+          <div class="pax">0/4</div>
+          <div class="tc-status"><i class="sdot"></i><span class="slabel">Kosong</span></div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+      <div class="tc" style="background:var(--infoSoft)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">A2</div>
+            <span class="owner" style="background:var(--accent);color:var(--accentInk);box-shadow:2px 2px 0 var(--ink)">Punya saya</span></div>
+          <div class="pax">3/4<span class="money display" style="font-size:12px">Rp 248.000</span></div>
+          <div class="tc-status"><i class="sdot" style="background:var(--info)"></i>
+            <span class="slabel" style="color:var(--textHi);font-weight:700;letter-spacing:0.66px;font-size:11px">Terisi</span>
+            <span class="elapsed">42m</span></div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+      <div class="tc" style="background:var(--successSoft)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">B5</div></div>
+          <div class="pax">4/6<span class="money display" style="font-size:12px">Rp 412.000</span></div>
+          <div class="tc-status"><i class="sdot" style="background:var(--success)"></i>
+            <span class="slabel" style="color:var(--textHi);font-weight:700;letter-spacing:0.66px;font-size:11px">Siap ×2</span>
+            <span class="elapsed">1j 12m</span></div>
+          <div class="tc-pad"></div>
+        </div>
+      </div>
+      <div class="tc" style="background:var(--bg2);box-shadow:5px 5px 0 var(--urgent), 8px 8px 0 var(--ink)">
+        <div class="tc-body">
+          <div class="tc-top"><div class="tnum">C4</div></div>
+          <div class="pax">5/6</div>
+          <div class="tc-pills"><span class="statepill" style="background:var(--urgent);color:#fff;border:2px solid var(--ink)">Belum disapa</span></div>
+          <div class="tc-status"><i class="sdot" style="background:var(--info)"></i>
+            <span class="slabel" style="color:var(--textHi);font-weight:700;letter-spacing:0.66px;font-size:11px">Terisi</span></div>
+        </div>
+        <div class="stale stale--crit" style="border-top:3px solid var(--ink)"><i>!</i><span>Belum disapa 12 menit</span></div>
+      </div>
+    </div>
+    <div class="spec">Brutal paints the semantic *soft* token as a full slab — its softs are
+near-saturation blocks, where lembut's are 14% tints meant to sit behind a
+border. Status text stays ink on the slab: the fill already carries the
+signal, and green-on-green fails contrast.
+
+Crit cards sit on a doubled shadow — a red slab behind the ink one — so a
+screen of black-edged cards still has one that reads as lifted further.
+Pressing translates the card 3px into its own shadow instead of scaling.</div>
+  </div>
+
+</div>
+</body>
+</html>

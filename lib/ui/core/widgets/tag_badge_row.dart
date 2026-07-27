@@ -5,6 +5,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/menu_tag.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// One wrapping row of 2-char code badges, kind-coloured. Used on the menu
 /// item card and on line items (review + table detail). Allergens render
@@ -95,7 +96,7 @@ class MenuTagBadges extends ConsumerWidget {
             ),
           if (dietary.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(top: allergens.isNotEmpty ? 3 : 0),
+              padding: EdgeInsets.only(top: allergens.isNotEmpty ? Sp.sHair : Sp.sHair),
               child: Row(
                 children: [
                   TagBadgeRow(

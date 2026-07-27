@@ -1,0 +1,104 @@
+<!-- @dsCard group="Feedback" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Loading skeletons</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 22px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+
+  .shimmer { position: relative; overflow: hidden; }
+  .shimmer::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 35%, var(--bg4) 50%, transparent 65%);
+    opacity: 0.55;
+    transform: translateX(-150%);
+    animation: sweep 1.5s linear infinite;
+  }
+  @keyframes sweep { to { transform: translateX(150%); } }
+  @media (prefers-reduced-motion: reduce) { .shimmer::after { animation: none; opacity: 0; } }
+
+  .sbox { background: var(--bg3); border-radius: var(--r-sm); }
+  .scard {
+    padding: 18px; background: var(--bg2);
+    border: var(--rule) solid var(--border0); border-radius: var(--r-xl);
+    box-shadow: var(--lift);
+  }
+  .stiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+  .stile { padding: 16px; background: var(--bg2); border: var(--rule) solid var(--border0);
+           border-radius: var(--r-lg); box-shadow: var(--lift); }
+  .sbars { display: flex; align-items: flex-end; gap: 6px; height: 110px; margin-top: 18px; }
+  .sbars .sbox { flex: 1; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark" style="flex:1 1 100%">
+    <h3>Skeletons</h3>
+    <p class="sub">skeleton_card.dart · Shimmer / SkeletonBox / SkeletonCard / ReportsSkeleton</p>
+
+    <h4>SkeletonCard</h4>
+    <div class="scard shimmer" style="height:120px">
+      <div class="sbox" style="width:140px;height:14px"></div>
+      <div class="sbox" style="width:90px;height:10px;margin-top:8px"></div>
+    </div>
+
+    <h4>ReportsSkeleton — echoes the layout that's about to appear</h4>
+    <div class="shimmer">
+      <div class="stiles">
+        <div class="stile">
+          <div class="sbox" style="width:44px;height:9px"></div>
+          <div class="sbox" style="width:70px;height:20px;margin-top:12px"></div>
+          <div class="sbox" style="width:54px;height:9px;margin-top:8px"></div>
+        </div>
+        <div class="stile">
+          <div class="sbox" style="width:44px;height:9px"></div>
+          <div class="sbox" style="width:70px;height:20px;margin-top:12px"></div>
+          <div class="sbox" style="width:54px;height:9px;margin-top:8px"></div>
+        </div>
+        <div class="stile">
+          <div class="sbox" style="width:44px;height:9px"></div>
+          <div class="sbox" style="width:70px;height:20px;margin-top:12px"></div>
+          <div class="sbox" style="width:54px;height:9px;margin-top:8px"></div>
+        </div>
+        <div class="stile">
+          <div class="sbox" style="width:44px;height:9px"></div>
+          <div class="sbox" style="width:70px;height:20px;margin-top:12px"></div>
+          <div class="sbox" style="width:54px;height:9px;margin-top:8px"></div>
+        </div>
+      </div>
+      <div class="scard">
+        <div class="sbox" style="width:160px;height:14px"></div>
+        <div class="sbox" style="width:100px;height:10px;margin-top:8px"></div>
+        <div class="sbars">
+          <div class="sbox" style="height:30px"></div><div class="sbox" style="height:52px"></div>
+          <div class="sbox" style="height:74px"></div><div class="sbox" style="height:96px"></div>
+          <div class="sbox" style="height:30px"></div><div class="sbox" style="height:52px"></div>
+          <div class="sbox" style="height:74px"></div><div class="sbox" style="height:96px"></div>
+          <div class="sbox" style="height:30px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec">A 1500ms highlight sweeps left to right across the whole subtree — one
+Shimmer wraps many boxes, not one per box.
+
+Loading state echoes the layout that's about to appear: compose SkeletonBox
+into a screen-shaped skeleton rather than dropping a CircularProgressIndicator
+in the middle of an empty page. A waiter should recognise the screen before
+the data lands.
+
+Under reduced motion the sweep is dropped entirely and the blocks render flat.</div>
+  </div>
+
+</div>
+</body>
+</html>

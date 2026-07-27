@@ -19,6 +19,7 @@ import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -176,13 +177,13 @@ class _FloatingTabBar extends StatelessWidget {
             ? SatShape.hardShadow(5)
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: satShadowInk.withValues(alpha: 0.4),
                   blurRadius: 30,
                   offset: const Offset(0, 10),
                 ),
               ],
       ),
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(Sp.s1),
       child: Row(
         children: [
           _Tab(
@@ -280,7 +281,7 @@ class _Tab extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, size: 20, color: active ? sc.textHi : sc.textLo),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: Sp.sHair),
                   Text(
                     label,
                     style: SatType.sans(
@@ -302,7 +303,7 @@ class _Tab extends StatelessWidget {
                     minWidth: 16,
                     minHeight: 16,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
                   decoration: SatBox.d(
                     color: badgeAlert ? sc.success : sc.accent,
                     borderRadius: SatR.a(8),

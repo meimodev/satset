@@ -17,6 +17,7 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/features/void_flow/line_item_action_sheet.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Takeaway (Bawa pulang) detail — the visit-keyed home for one takeaway order.
 /// Mirrors the table detail minus lock/seat: shows lines, lets the waiter add
@@ -85,7 +86,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Sp.s1),
                 Text(
                   [
                     if (guest != null && guest.isNotEmpty) guest.toUpperCase(),
@@ -253,7 +254,7 @@ class _Footer extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           Row(
             children: [
               if (!handedOver)
@@ -270,7 +271,7 @@ class _Footer extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (!handedOver) const SizedBox(width: 10),
+              if (!handedOver) const SizedBox(width: Sp.s2h),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onPrint,
@@ -287,7 +288,7 @@ class _Footer extends StatelessWidget {
             ],
           ),
           if (!handedOver) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: Sp.s2h),
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -295,7 +296,7 @@ class _Footer extends StatelessWidget {
                 onPressed: onHandover,
                 icon: busy
                     ? const SizedBox(
-                        width: 16,
+                        width: Sp.s4,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
@@ -310,7 +311,7 @@ class _Footer extends StatelessWidget {
             ),
             if (onHandover == null && !busy)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: Sp.s2),
                 child: Text(
                   'Bisa diserahkan setelah semua item siap/disajikan.',
                   textAlign: TextAlign.center,
@@ -323,7 +324,7 @@ class _Footer extends StatelessWidget {
               ),
           ] else
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: Sp.s1),
               child: Text(
                 'Sudah diserahkan ke tamu.',
                 style: SatType.sans(size: 12, color: sc.textMd),

@@ -15,6 +15,7 @@ import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// One kitchen order card: the kitchen-station tickets a table sent together.
 class _KOrder {
@@ -242,7 +243,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
                       itemCount: orders.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: Sp.s3),
                       itemBuilder: (_, i) => _CardEntrance(
                         key: ValueKey(
                           '${orders[i].tableId}|${orders[i].sentAt}',
@@ -264,7 +265,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
       topTrailing: filter,
       children: [
         if (orders.isEmpty)
-          const SizedBox(height: 360, child: _EmptyQueue())
+          const SizedBox(height: Sp.s12, child: _EmptyQueue())
         else
           Wrap(
             spacing: 16,
@@ -272,7 +273,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
             children: [
               for (final o in orders)
                 SizedBox(
-                  width: 360,
+                  width: Sp.s12,
                   child: _CardEntrance(
                     key: ValueKey('${o.tableId}|${o.sentAt}'),
                     animate: !reduceMotion,
@@ -301,7 +302,7 @@ class _CompletedFilter extends StatelessWidget {
         onTap: () => onChanged(!value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
           decoration: SatBox.d(
             color: value ? sc.success.withValues(alpha: 0.14) : sc.bg2,
             border: SatB.all(
@@ -319,7 +320,7 @@ class _CompletedFilter extends StatelessWidget {
                 size: 18,
                 color: value ? sc.success : sc.textMd,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.s2),
               Text(
                 'Tampilkan order selesai',
                 style: SatType.sans(
@@ -382,8 +383,8 @@ class _OrderCard extends ConsumerWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
-                    vertical: 6,
+                    horizontal: Sp.s2h,
+                    vertical: Sp.s1h,
                   ),
                   decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(9)),
                   child: Text(
@@ -396,7 +397,7 @@ class _OrderCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
                 Text(
                   '${order.done}/${order.total} selesai',
                   style: SatType.sans(
@@ -460,7 +461,7 @@ class _AgePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.s1),
       decoration: SatBox.d(
         color: color.withValues(alpha: 0.14),
         borderRadius: SatR.a(999),
@@ -469,7 +470,7 @@ class _AgePill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _PulseDot(color: color, pulse: age.inMinutes >= 10),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           Text(
             formatElapsedId(age),
             style: SatType.mono(
@@ -479,7 +480,7 @@ class _AgePill extends StatelessWidget {
               color: color,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.s1h),
           Text(
             sentAt,
             style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.4),
@@ -642,8 +643,8 @@ class _ItemRowState extends State<_ItemRow>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                margin: const EdgeInsets.only(top: 1),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                margin: const EdgeInsets.only(top: Sp.sHair),
+                padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
                 decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(6)),
                 child: Text(
                   '×${ticket.qty}',
@@ -655,7 +656,7 @@ class _ItemRowState extends State<_ItemRow>
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: Sp.s3),
               Expanded(
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 160),
@@ -683,7 +684,7 @@ class _ItemRowState extends State<_ItemRow>
                       ),
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 3),
+                          padding: const EdgeInsets.only(top: Sp.sHair),
                           child: Text(
                             ticket.modifiers.map((m) => m.display).join(' · '),
                             style: SatType.sans(
@@ -695,7 +696,7 @@ class _ItemRowState extends State<_ItemRow>
                         ),
                       if (ticket.note != null && ticket.note!.trim().isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 5),
+                          padding: const EdgeInsets.only(top: Sp.s1),
                           child: NoteLine(
                             label: 'Instruksi khusus',
                             text: ticket.note!,
@@ -705,7 +706,7 @@ class _ItemRowState extends State<_ItemRow>
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: Sp.s3),
               _CheckButton(cooked: cooked),
             ],
           ),
@@ -840,7 +841,7 @@ class _EmptyQueueState extends State<_EmptyQueue>
             },
             child: Icon(Icons.restaurant_rounded, size: 40, color: sc.textDim),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Sp.s3h),
           Text(
             'Antrian masak kosong',
             style: SatType.sans(
@@ -849,7 +850,7 @@ class _EmptyQueueState extends State<_EmptyQueue>
               color: sc.textMd,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Text(
             'Semua pesanan dapur sudah selesai dimasak.',
             style: SatType.sans(size: 13, color: sc.textLo),

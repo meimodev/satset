@@ -1,0 +1,239 @@
+/* SatSet design system — token layer transcribed from lib/ui/core/design/.
+   Source of truth is Dart; this file mirrors it. Update both together. */
+
+/* ── Palette: dark (default, SatColors.dark) ───────────────────────────── */
+[data-pal] {
+  --bg0: #0D0E10; --bg1: #15171A; --bg2: #1C1F23; --bg3: #24282D; --bg4: #2E333A;
+  --border0: rgba(255,255,255,0.059); --border1: rgba(255,255,255,0.102); --border2: rgba(255,255,255,0.161);
+  --textHi: #F4F3EE; --textMd: #B6B2A6; --textLo: #7E7A70; --textDim: #565249;
+  --accent: #FF9233; --accentText: #FF9233;
+  --accentSoft: rgba(255,146,51,0.141); --accentBorder: rgba(255,146,51,0.349); --accentInk: #160D04;
+  --success: #4DD487; --successSoft: rgba(77,212,135,0.141); --successInk: #0A0A0A;
+  --warn: #FFC04D; --warnSoft: rgba(255,192,77,0.141);
+  --urgent: #FF5C5C; --urgentSoft: rgba(255,92,92,0.141);
+  --info: #6DB5FF; --infoSoft: rgba(109,181,255,0.141);
+  --violet: #C08AFF; --violetSoft: rgba(192,138,255,0.141);
+  --scrim: #1C1F23;
+  --cDrinks: var(--info); --cStarters: var(--warn); --cMains: var(--success);
+  --cDesserts: var(--violet); --cFire: var(--accent);
+
+  /* shape — lembut skin */
+  --ink: transparent;
+  --rule: 1px;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px; --r-2xl: 22px; --r-pill: 999px;
+  --lift: none;
+  --caps: none;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-display: var(--font-sans);
+  --display-weight: 600;
+  --display-lh: 1.05;
+}
+
+[data-pal="light"] {
+  --bg0: #F6F4EF; --bg1: #FFFFFF; --bg2: #FAF8F3; --bg3: #EFECE4; --bg4: #E3DFD4;
+  --border0: rgba(0,0,0,0.051); --border1: rgba(0,0,0,0.090); --border2: rgba(0,0,0,0.161);
+  --textHi: #1A1A18; --textMd: #55514A; --textLo: #87837A; --textDim: #B6B2A6;
+  --accentText: #A34B00;
+  --scrim: #FFFFFF;
+}
+
+[data-pal="neonHijau"] {
+  --bg0: #000000; --bg1: #0B0B0B; --bg2: #131313; --bg3: #1C1C1C; --bg4: #262626;
+  --textHi: #F2F2F0; --textMd: #ADADA8; --textLo: #78786F; --textDim: #4F4F4A;
+  --accent: #B6FF3D; --accentText: #B6FF3D;
+  --accentSoft: rgba(182,255,61,0.141); --accentBorder: rgba(182,255,61,0.349); --accentInk: #0A1400;
+  --success: #2FA35F; --successSoft: rgba(47,163,95,0.141);
+  --scrim: #131313;
+  --cMains: #2FA35F; --cFire: #B6FF3D;
+}
+
+[data-pal="indigoTerang"] {
+  --bg0: #F4F5F8; --bg1: #FFFFFF; --bg2: #FAFBFD; --bg3: #E9EBF1; --bg4: #DCDFE8;
+  --border0: rgba(0,0,0,0.051); --border1: rgba(0,0,0,0.090); --border2: rgba(0,0,0,0.161);
+  --textHi: #16181D; --textMd: #4B4F5A; --textLo: #7C818E; --textDim: #AAAEB9;
+  --accent: #3538CD; --accentText: #3538CD;
+  --accentSoft: rgba(53,56,205,0.102); --accentBorder: rgba(53,56,205,0.349); --accentInk: #FFFFFF;
+  --info: #0891B2; --infoSoft: rgba(8,145,178,0.141);
+  --scrim: #FFFFFF;
+  --cDrinks: #0891B2; --cFire: #3538CD;
+}
+
+/* ── Neo-brutal skin (ADR-0047): square corners, 3px ink rules, hard shadow ─ */
+[data-pal="neoKertas"], [data-pal="neoMidnight"] {
+  --rule: 3px;
+  --r-sm: 0; --r-md: 0; --r-lg: 0; --r-xl: 0; --r-2xl: 0; --r-pill: 0;
+  --lift: 3px 3px 0 0 var(--ink);
+  --caps: uppercase;
+  --font-sans: 'Archivo', system-ui, -apple-system, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-display: 'Archivo Black', 'Archivo', system-ui, sans-serif;
+  --display-weight: 900;
+  --display-lh: 0.95;
+}
+
+[data-pal="neoKertas"] {
+  --bg0: #E9E2CE; --bg1: #FFFCF2; --bg2: #FFFFFF; --bg3: #F1EADA; --bg4: #E2D9C0;
+  --ink: #000000; --border0: #000000; --border1: #000000; --border2: #000000;
+  --textHi: #000000; --textMd: #2E2C27; --textLo: #5F5B51; --textDim: #8E897C;
+  --accent: #FFE600; --accentText: #6B5A00;
+  --accentSoft: #FFF27A; --accentBorder: #000000; --accentInk: #000000;
+  --success: #00B84A; --successSoft: #7DFFAE; --successInk: #0A0A0A;
+  --warn: #FF8A00; --warnSoft: #FFD24D;
+  --urgent: #FF1E0D; --urgentSoft: #FFAEA6;
+  --info: #0B3BFF; --infoSoft: #A8C0FF;
+  --violet: #8A1FFF; --violetSoft: #D6B3FF;
+  --scrim: #FFFCF2;
+  --cDrinks: #0B3BFF; --cStarters: #FF8A00; --cMains: #00B84A;
+  --cDesserts: #8A1FFF; --cFire: #FF1E0D;
+}
+
+[data-pal="neoMidnight"] {
+  --bg0: #121118; --bg1: #1A1922; --bg2: #22212C; --bg3: #2E2D3A; --bg4: #3C3B4B;
+  --ink: #F2ECD8; --border0: #F2ECD8; --border1: #F2ECD8; --border2: #F2ECD8;
+  --textHi: #FFFDF2; --textMd: #CDC7B6; --textLo: #9B9584; --textDim: #6C6759;
+  --accent: #FFE600; --accentText: #FFE600;
+  --accentSoft: #4A4200; --accentBorder: #F2ECD8; --accentInk: #0B0B0F;
+  --success: #00E85C; --successSoft: #0B4F27; --successInk: #0B0B0F;
+  --warn: #FFA51F; --warnSoft: #4E3200;
+  --urgent: #FF3B29; --urgentSoft: #5A0F09;
+  --info: #4C7BFF; --infoSoft: #14235E;
+  --violet: #A85CFF; --violetSoft: #33115E;
+  --scrim: #1A1922;
+  --cDrinks: #4C7BFF; --cStarters: #FFA51F; --cMains: #00E85C;
+  --cDesserts: #A85CFF; --cFire: #FF3B29;
+}
+
+/* ── Page chrome for the preview cards themselves ──────────────────────── */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: #0D0E10;
+  color: #F4F3EE;
+}
+.sheet { display: flex; flex-wrap: wrap; gap: 0; }
+.stage {
+  flex: 1 1 340px;
+  min-width: 300px;
+  background: var(--bg0);
+  color: var(--textHi);
+  font-family: var(--font-sans);
+  padding: 20px;
+}
+.stage-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--textLo); margin: 0 0 14px;
+}
+.spec {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; line-height: 1.6; color: var(--textLo);
+  margin-top: 14px; white-space: pre-wrap;
+}
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── Shared component primitives (mirrors the Flutter widgets) ─────────── */
+
+/* Sp scale: 4 8 12 16 20 24 32 40 48 */
+
+.sat-card {
+  background: var(--bg2);
+  border: var(--rule) solid var(--border0);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift);
+}
+
+/* _StatusChip — order_line_card.dart */
+.chip {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.chip--sent    { background: var(--infoSoft);    color: var(--info); }
+.chip--prep    { background: var(--warnSoft);    color: var(--warn); }
+.chip--cooked  { background: var(--accentSoft);  color: var(--accentText); }
+.chip--ready   { background: var(--successSoft); color: var(--success); }
+.chip--served  { background: var(--bg3);         color: var(--textLo); }
+.chip--held    { background: var(--violetSoft);  color: var(--violet); }
+.chip--voided  { background: var(--urgentSoft);  color: var(--urgent); }
+
+/* ElapsedPill — elapsed_pill.dart */
+.epill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 7px; border-radius: var(--r-sm);
+  background: var(--bg3);
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.4px;
+  color: var(--textLo);
+}
+.epill--overdue { background: var(--urgentSoft); color: var(--urgent); }
+.epill svg { width: 11px; height: 11px; }
+
+/* Network pill — sat_app_bar.dart */
+.netpill {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 10px;
+  background: var(--bg2);
+  border: var(--rule) solid var(--border1);
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+  color: var(--textHi);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; }
+.dot--live { background: var(--success); box-shadow: 0 0 0 3px var(--successSoft); }
+.dot--wait { background: var(--warn);    box-shadow: 0 0 0 3px var(--warnSoft); }
+.dot--off  { background: var(--urgent);  box-shadow: 0 0 0 3px var(--urgentSoft); }
+
+/* SatAppBarPill */
+.barpill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px;
+  background: var(--bg2);
+  border: var(--rule) solid var(--border1);
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500; letter-spacing: 0.6px;
+  color: var(--textMd);
+}
+
+/* _StatePill — table_card.dart */
+.statepill {
+  padding: 3px 6px; border-radius: var(--r-sm);
+  font-family: var(--font-sans);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
+  text-transform: var(--caps);
+}
+
+/* StaffAvatar — staff_avatar.dart */
+.avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-mono); font-weight: 700; color: #fff;
+  letter-spacing: 0.2px;
+}
+
+/* Tag badges — tag_badge_row.dart */
+.tag {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: var(--r-sm);
+  font-family: var(--font-mono); font-size: 8px; font-weight: 600;
+}
+.tag--allergen { background: var(--urgentSoft); color: var(--urgent); }
+.tag--diet     { background: var(--infoSoft);   color: var(--info); }
+
+/* NoteLine — note_line.dart */
+.note { font-family: var(--font-sans); font-size: 13px; line-height: 1.35; color: var(--textMd); }
+.note b { font-size: 12px; font-weight: 600; color: var(--textLo); margin-right: 8px; }
+
+.mono { font-family: var(--font-mono); }
+.display {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  line-height: var(--display-lh);
+}

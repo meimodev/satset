@@ -15,6 +15,7 @@ import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/features/admin/menu_admin_item_editor.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 
 /// Two-tier menu admin screen.
 /// - Tablet: master-detail (item list left, editor right).
@@ -66,9 +67,9 @@ class _TabletLayout extends ConsumerWidget {
                       ref.read(menuAdminSelectedItemIdProvider.notifier).state =
                           null,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.s2h),
               ],
-              if (admin) ...[const _TabSwitcher(), const SizedBox(width: 10)],
+              if (admin) ...[const _TabSwitcher(), const SizedBox(width: Sp.s2h)],
               _RoleBadge(perm: perm),
             ],
           ),
@@ -210,12 +211,12 @@ class _EmptyDetail extends StatelessWidget {
     return Container(
       color: sc.bg1,
       alignment: Alignment.center,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(Sp.s8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.restaurant_menu, size: 48, color: sc.textLo),
-          const SizedBox(height: 12),
+          const SizedBox(height: Sp.s3),
           Text(
             staff
                 ? 'Pilih item untuk lihat detail'
@@ -223,7 +224,7 @@ class _EmptyDetail extends StatelessWidget {
             style: SatType.sans(size: 14, color: sc.textMd),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: Sp.s1h),
           Text(
             staff
                 ? 'Mode staf: hanya tandai habis. Edit penuh hanya admin.'
@@ -274,7 +275,7 @@ class _PhoneLayout extends ConsumerWidget {
                           color: sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: Sp.sHair),
                       Text(
                         '${counts.total} item · ${counts.soldOut} tidak tersedia',
                         style: SatType.mono(
@@ -364,8 +365,8 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
                 prefixIcon: Icon(Icons.search, size: 18, color: sc.textLo),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 10,
+                  horizontal: Sp.s1,
+                  vertical: Sp.s2h,
                 ),
                 filled: true,
                 fillColor: sc.bg2,
@@ -385,7 +386,7 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
             ),
           ),
           if (!isTab && perm == MenuPermission.admin) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.s2),
             _PrimaryButton(
               label: '+ Item',
               onTap: () => context.push('/menuadm/new'),
@@ -413,7 +414,7 @@ class _CategoryRail extends ConsumerWidget {
 
     return Container(
       height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
       decoration: SatBox.d(
         border: Border(bottom: SatB.side(color: sc.border0)),
       ),
@@ -446,7 +447,7 @@ class _CategoryRail extends ConsumerWidget {
   ) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1, vertical: Sp.s2h),
       child: PressScale(
         pressedScale: 0.93,
         child: GestureDetector(
@@ -455,7 +456,7 @@ class _CategoryRail extends ConsumerWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
             decoration: SatBox.d(
               color: on ? sc.accentSoft : sc.bg2,
               border: SatB.all(color: on ? sc.accentBorder : sc.border1),
@@ -473,7 +474,7 @@ class _CategoryRail extends ConsumerWidget {
                   ),
                   child: Text(name),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.s1h),
                 AnimatedCount(
                   value: n,
                   builder: (_, v) => Text(
@@ -509,7 +510,7 @@ class _ItemList extends ConsumerWidget {
     final Widget body = items.isEmpty
         ? Center(
             child: Padding(
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(Sp.s6),
               child: Text(
                 'Tidak ada item cocok.',
                 style: SatType.sans(size: 13, color: sc.textLo),
@@ -553,7 +554,7 @@ class _ItemRow extends ConsumerWidget {
     final tagsById = ref.watch(menuTagsByIdProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1, horizontal: Sp.sHair),
       child: PressScale(
         pressedScale: 0.985,
         child: Material(
@@ -588,7 +589,7 @@ class _ItemRow extends ConsumerWidget {
               child: Row(
                 children: [
                   _thumb(sc),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Sp.s3),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,7 +611,7 @@ class _ItemRow extends ConsumerWidget {
                                 decorationColor: sc.textLo,
                               ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: Sp.sHair),
                         Row(
                           children: [
                             Text(
@@ -661,7 +662,7 @@ class _ItemRow extends ConsumerWidget {
                         if (!compact &&
                             (item.allergens.isNotEmpty ||
                                 item.dietary.isNotEmpty)) ...[
-                          const SizedBox(height: 5),
+                          const SizedBox(height: Sp.s1),
                           Wrap(
                             spacing: 3,
                             runSpacing: 3,
@@ -686,7 +687,7 @@ class _ItemRow extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Sp.s2),
                   _StatusToggle(item: item, perm: perm),
                   if (compact)
                     Icon(Icons.chevron_right, color: sc.textLo, size: 18),
@@ -721,7 +722,7 @@ class _ItemRow extends ConsumerWidget {
 
   Widget _miniBadge(SatColors sc, String t, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1, vertical: Sp.sHair),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
       child: Text(
         t,
@@ -761,7 +762,7 @@ class _StatusToggle extends ConsumerWidget {
           duration: const Duration(milliseconds: 220),
           curve: satEaseOut,
           height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
           alignment: Alignment.center,
           decoration: SatBox.d(
             color: out ? sc.urgentSoft : sc.successSoft,
@@ -780,7 +781,7 @@ class _StatusToggle extends ConsumerWidget {
                 height: 6,
                 decoration: SatBox.d(color: fg, shape: BoxShape.circle),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.s1h),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 switchInCurve: satEaseOut,
@@ -823,7 +824,7 @@ class _PrimaryButton extends StatelessWidget {
           borderRadius: SatR.a(10),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
             child: Text(
               label,
               style: SatType.sans(
@@ -855,7 +856,7 @@ class _TabSwitcher extends ConsumerWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s1h),
             decoration: SatBox.d(
               color: on ? sc.accent : Colors.transparent,
               borderRadius: SatR.a(8),
@@ -875,7 +876,7 @@ class _TabSwitcher extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(Sp.sHair),
       decoration: SatBox.d(
         color: sc.bg3,
         border: SatB.all(color: sc.border1),
@@ -921,7 +922,7 @@ class _CategoriesPanel extends ConsumerWidget {
               final n = counts[c.id] ?? 0;
               return Padding(
                 key: ValueKey(c.id),
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: Sp.s2),
                 child: Reveal(
                   index: i.clamp(0, 11),
                   animKey: 'cat:${c.id}',
@@ -942,7 +943,7 @@ class _CategoriesPanel extends ConsumerWidget {
                             color: sc.textLo,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: Sp.s2h),
                         Expanded(
                           child: Text(
                             c.name,
@@ -1103,7 +1104,7 @@ class _TagsPanel extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         _group(context, ref, 'Alergen', MenuTagKind.allergen, allergens),
-        const SizedBox(height: 20),
+        const SizedBox(height: Sp.s5),
         _group(context, ref, 'Diet', MenuTagKind.diet, diets),
       ],
     );
@@ -1122,7 +1123,7 @@ class _TagsPanel extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          padding: const EdgeInsets.only(left: Sp.s1, bottom: Sp.s2),
           child: Text(
             title,
             style: SatType.sans(
@@ -1135,7 +1136,7 @@ class _TagsPanel extends ConsumerWidget {
         for (final (i, t) in tags.indexed)
           Padding(
             key: ValueKey(t.id),
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: Sp.s2),
             child: Reveal(
               index: i.clamp(0, 11),
               animKey: 'tag:${t.id}',
@@ -1150,8 +1151,8 @@ class _TagsPanel extends ConsumerWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: Sp.s1h,
+                        vertical: Sp.sHair,
                       ),
                       decoration: SatBox.d(
                         color: tint.withValues(alpha: 0.12),
@@ -1167,7 +1168,7 @@ class _TagsPanel extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: Sp.s2h),
                     Expanded(
                       child: Text(
                         t.name,
@@ -1284,7 +1285,7 @@ class _TagsPanel extends ConsumerWidget {
                 style: SatType.sans(size: 14, color: sc.textHi),
                 decoration: const InputDecoration(labelText: 'Nama'),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Sp.s2),
               TextField(
                 controller: codeCtrl,
                 maxLength: 3,
@@ -1326,7 +1327,7 @@ class _RoleBadge extends StatelessWidget {
     final sc = context.sat;
     final isAdmin = perm == MenuPermission.admin;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
       decoration: SatBox.d(
         color: isAdmin ? sc.accentSoft : sc.bg3,
         border: SatB.all(color: isAdmin ? sc.accentBorder : sc.border1),

@@ -1,0 +1,102 @@
+<!-- @dsCard group="Content" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tag badges, avatars, note line</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.17px; margin: 0 0 2px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.6px;
+         text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  h4 { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.2px;
+       text-transform: uppercase; color: var(--textLo); font-weight: 500; margin: 20px 0 8px; }
+  h4:first-of-type { margin-top: 0; }
+  .item { font-size: 14px; font-weight: 500; letter-spacing: -0.14px; color: var(--textHi); margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <h3>Tag badges</h3>
+    <p class="sub">TagBadgeRow / MenuTagBadges · tag_badge_row.dart</p>
+    <div class="item">Nasi Goreng Seafood</div>
+    <div class="col" style="gap:3px">
+      <div class="row" style="gap:4px">
+        <span class="tag tag--allergen">SF</span>
+        <span class="tag tag--allergen">EG</span>
+        <span class="tag tag--allergen">SY</span>
+      </div>
+      <div class="row" style="gap:4px">
+        <span class="tag tag--diet">HL</span>
+        <span class="tag tag--diet">GF</span>
+      </div>
+    </div>
+    <div class="spec">14×14 squares, radius 4, mono 8 / w600. Allergens red, diet blue —
+colour is kind-derived, passed by the caller, never per-tag.
+Live-resolved from the menu snapshot by itemId: tags are not frozen onto
+sent lines (ADR-0012), so editing an item updates every board instantly.
+Shrinks to nothing when the item has no tags or no longer resolves.
+Suppressed on voided lines by simply not mounting it.</div>
+
+    <h4>StaffAvatar</h4>
+    <div class="row" style="gap:10px">
+      <span class="avatar" style="width:18px;height:18px;font-size:7.6px;background:linear-gradient(135deg,#FF9233,#a35c1f)">AR</span>
+      <span class="avatar" style="width:22px;height:22px;font-size:9.2px;background:linear-gradient(135deg,#6DB5FF,#4574a3)">BD</span>
+      <span class="avatar" style="width:22px;height:22px;font-size:9.2px;background:linear-gradient(135deg,#4DD487,#318856)">SW</span>
+      <span class="avatar" style="width:22px;height:22px;font-size:9.2px;background:linear-gradient(135deg,#C08AFF,#7a58a3);box-shadow:0 0 0 2px var(--accent)">NL</span>
+      <span class="avatar" style="width:46px;height:46px;font-size:14px;background:linear-gradient(135deg,#FFC04D,#a37b31)">RH</span>
+    </div>
+    <div class="spec">Initials over the account's own avatarColorHex, gradient to a 36%-black
+blend. Same person = same swatch on the floor grid, the Pesanan board and
+every line item. `mine: true` rings it accent (fourth above).
+Fallback for legacy rows is the accent amber.</div>
+
+    <h4>NoteLine</h4>
+    <p class="note"><b>Catatan</b>Alergi udang, tolong dipisah piringnya</p>
+    <p class="note" style="margin-top:8px"><b>Instruksi khusus</b>Tanpa sambal, pedas sedang</p>
+    <div class="spec">Reference text the staff jotted down, not an alert. Never urgent-coloured,
+never loud iconography. Label is textLo 12 / w600, body is textMd 13 / 1.35.
+Shared by table detail, review, the Pesanan board and the KDS.</div>
+
+    <h4>MenuPhoto fallback</h4>
+    <div class="row" style="gap:10px">
+      <span style="width:64px;height:64px;border-radius:var(--r-lg);background:linear-gradient(135deg,var(--bg3),var(--bg4));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;letter-spacing:-0.4px;color:var(--textMd)">NG</span>
+      <span style="width:64px;height:64px;border-radius:var(--r-lg);background:linear-gradient(135deg,var(--bg3),var(--bg4));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;letter-spacing:-0.4px;color:var(--textMd)">ET</span>
+      <span style="width:64px;height:64px;border-radius:var(--r-lg);background:linear-gradient(135deg,var(--bg3),var(--bg4));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;letter-spacing:-0.4px;color:var(--textMd)">?</span>
+    </div>
+    <div class="spec">Initials from the first two words. Shows while loading, on error, and when
+photoRev is 0 — never a broken image or an empty box (ADR-0014).
+Same widget serves the 1.15:1 customer card banner and the admin square.</div>
+  </div>
+
+  <div class="stage" data-pal="neoKertas">
+    <h3>Brutal</h3>
+    <p class="sub">Squared badges; avatars keep their circle except in the rail</p>
+    <div class="item">NASI GORENG SEAFOOD</div>
+    <div class="col" style="gap:3px">
+      <div class="row" style="gap:4px">
+        <span class="tag tag--allergen">SF</span><span class="tag tag--allergen">EG</span>
+      </div>
+      <div class="row" style="gap:4px">
+        <span class="tag tag--diet">HL</span><span class="tag tag--diet">GF</span>
+      </div>
+    </div>
+    <h4>Avatars</h4>
+    <div class="row" style="gap:10px">
+      <span class="avatar" style="width:22px;height:22px;font-size:9.2px;background:#6DB5FF">BD</span>
+      <span class="avatar" style="width:42px;height:42px;font-size:14px;background:#FFC04D;border-radius:0;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink)">RH</span>
+    </div>
+    <div class="spec">The rail avatar is the one the source design squares explicitly — at 42px it
+reads as a nameplate rather than a pip, so it takes the ink rule and the
+hard shadow. Line-item avatars stay round. Brutal also drops the gradient:
+flat fill only.</div>
+    <h4>Note</h4>
+    <p class="note"><b>CATATAN</b>Alergi udang, tolong dipisah piringnya</p>
+  </div>
+
+</div>
+</body>
+</html>

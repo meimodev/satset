@@ -1,0 +1,221 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Table detail — /table/:id</title>
+<link rel="stylesheet" href="ds.css">
+<style>
+  .stage { padding: 0; }
+  .phone { max-width: 400px; margin: 0 auto; min-height: 760px; display: flex; flex-direction: column; position: relative; }
+  .bar { display: flex; align-items: center; justify-content: space-between;
+         padding: 22px 16px 10px; border-bottom: var(--rule) solid var(--border0); }
+  .clock { font-family: var(--font-mono); font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: var(--textHi); }
+  .back { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+          background: var(--bg2); border: var(--rule) solid var(--border1); border-radius: var(--r-md);
+          color: var(--textMd); box-shadow: var(--lift); margin-right: 10px; }
+  .back svg { width: 16px; height: 16px; }
+  .scroll { flex: 1; padding: 16px 16px 110px; }
+  .head { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 4px; }
+  .h1 { flex: 1; font-size: 30px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.05; margin: 0; }
+  .meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.66px;
+          text-transform: uppercase; color: var(--textLo); margin: 0 0 14px; }
+  .course-head {
+    display: flex; align-items: center; gap: 8px; margin: 18px 0 8px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--textLo);
+  }
+  .course-head i { width: 8px; height: 8px; border-radius: 2px; }
+  .course-head b { margin-left: auto; font-weight: 500; color: var(--textDim); }
+
+  .line { display: flex; gap: 12px; padding: 14px; margin-bottom: 6px;
+          background: var(--bg2); border: var(--rule) solid var(--border0);
+          border-radius: var(--r-lg); box-shadow: var(--lift); }
+  .line--ready { background: var(--successSoft); border-color: rgba(77,212,135,0.3); }
+  .line--voided { background: var(--bg1); opacity: 0.5; }
+  .qty { width: 22px; flex: none; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--textMd); }
+  .body { flex: 1; min-width: 0; }
+  .name { font-size: 14px; font-weight: 500; letter-spacing: -0.14px; line-height: 1.25; color: var(--textHi); }
+  .line--voided .name { color: var(--textLo); text-decoration: line-through; }
+  .mods { font-size: 12px; line-height: 1.4; color: var(--textMd); margin-top: 3px; }
+  .foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .price { margin-left: auto; font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--textMd); }
+  .served-btn { display: flex; align-items: center; justify-content: center; gap: 6px;
+                width: 100%; margin-top: 8px; padding: 8px;
+                background: var(--successSoft); color: var(--success);
+                border: var(--rule) solid rgba(77,212,135,0.4); border-radius: var(--r-md);
+                font-size: 12px; font-weight: 600; letter-spacing: 0.48px; text-transform: uppercase; }
+  .banner { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 12px;
+            border-radius: var(--r-md); background: var(--successSoft);
+            border: var(--rule) solid rgba(77,212,135,0.3); color: var(--success);
+            font-size: 12px; font-weight: 500; }
+
+  .footer {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 14px 16px 20px; background: var(--scrim);
+    border-top: var(--rule) solid var(--border1);
+  }
+  .totals { display: flex; align-items: baseline; margin-bottom: 10px; }
+  .totals span { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.6px;
+                 text-transform: uppercase; color: var(--textLo); }
+  .totals b { margin-left: auto; font-family: var(--font-mono); font-size: 20px; font-weight: 600;
+              letter-spacing: -0.4px; color: var(--textHi); }
+  .actions { display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 13px; border-radius: var(--r-md); text-align: center;
+         font-size: 14px; font-weight: 600; letter-spacing: -0.14px; }
+  .btn--primary { background: var(--accent); color: var(--accentInk); box-shadow: var(--lift); }
+  .btn--ghost { background: var(--bg2); border: var(--rule) solid var(--border1); color: var(--textHi); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="stage" data-pal="dark">
+    <div class="phone">
+      <div class="bar">
+        <div class="row" style="gap:0">
+          <span class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></span>
+          <span class="clock">19:47</span>
+        </div>
+        <div class="row">
+          <span class="barpill">T+1:12</span>
+          <span class="netpill"><i class="dot dot--live"></i>LIVE</span>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="head">
+          <h1 class="h1">Meja A2</h1>
+          <span class="statepill" style="background:rgba(255,146,51,0.14);border:1px solid var(--accentBorder);color:var(--accentText)">Punya saya</span>
+        </div>
+        <p class="meta">Teras · 4/4 tamu · dibuka 18:35</p>
+
+        <div class="banner">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;flex:none"><path d="M12 22a2.5 2.5 0 002.5-2.5h-5A2.5 2.5 0 0012 22zm7-6v-5a7 7 0 10-14 0v5l-2 2v1h18v-1z"/></svg>
+          Item siap diambil di pass — tandai disajikan di bawah
+        </div>
+
+        <p class="note"><b>Catatan</b>Ulang tahun — tolong lilin di penutup</p>
+
+        <div class="course-head"><i style="background:var(--cDrinks)"></i>Minuman<b>2 item</b></div>
+        <div class="line line--ready">
+          <div class="qty">×1</div>
+          <div class="body">
+            <div class="name">Es Teh Manis · Besar</div>
+            <p class="note" style="margin:4px 0 0"><b>Instruksi khusus</b>Es sedikit</p>
+            <div class="foot">
+              <span class="chip chip--ready">Siap</span><span class="epill">3m</span>
+              <span class="avatar" style="width:18px;height:18px;font-size:7.6px;background:linear-gradient(135deg,#4DD487,#318856)">SW</span>
+              <span class="price">Rp 12.000</span>
+            </div>
+            <div class="served-btn">Tandai disajikan</div>
+          </div>
+        </div>
+        <div class="line">
+          <div class="qty">×1</div>
+          <div class="body">
+            <div class="name">Jus Alpukat</div>
+            <div class="foot">
+              <span class="chip chip--served">Disajikan</span><span class="epill">18:41</span>
+              <span class="price">Rp 28.000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-head"><i style="background:var(--cMains)"></i>Utama<b>3 item</b></div>
+        <div class="line">
+          <div class="qty">×2</div>
+          <div class="body">
+            <div class="name">Nasi Goreng Kampung · Pedas</div>
+            <div class="row" style="gap:4px;margin-top:4px"><span class="tag tag--allergen">EG</span><span class="tag tag--allergen">SY</span><span class="tag tag--diet">HL</span></div>
+            <div class="mods">Telur mata sapi · Tanpa acar</div>
+            <div class="foot">
+              <span class="chip chip--prep">Diproses</span><span class="epill">8m</span>
+              <span class="avatar" style="width:18px;height:18px;font-size:7.6px;background:linear-gradient(135deg,#6DB5FF,#4574a3)">BD</span>
+              <span class="price">Rp 76.000</span>
+            </div>
+          </div>
+        </div>
+        <div class="line">
+          <div class="qty">×1</div>
+          <div class="body">
+            <div class="name">Ayam Bakar Madu</div>
+            <div class="foot">
+              <span class="chip chip--cooked">Matang</span><span class="epill epill--overdue">24m</span>
+              <span class="price">Rp 65.000</span>
+            </div>
+          </div>
+        </div>
+        <div class="line line--voided">
+          <div class="qty">×1</div>
+          <div class="body">
+            <div class="name">Sate Ayam</div>
+            <div style="font-size:12px;line-height:1.4;color:var(--urgent);margin-top:3px">Dibatalkan · Salah input · disetujui oleh Rendra</div>
+            <div class="foot">
+              <span class="chip chip--voided">Dibatalkan</span><span class="epill">19:02</span>
+              <span class="price">Rp 45.000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="totals"><span>5 item · belum termasuk pajak</span><b>Rp 181.000</b></div>
+        <div class="actions">
+          <div class="btn btn--ghost">Bayar</div>
+          <div class="btn btn--primary">Tambah pesanan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" data-pal="light">
+    <div class="phone">
+      <div class="bar">
+        <div class="row" style="gap:0">
+          <span class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></span>
+          <span class="clock">19:47</span>
+        </div>
+        <span class="netpill"><i class="dot dot--live"></i>LIVE</span>
+      </div>
+      <div class="scroll">
+        <div class="head"><h1 class="h1">Meja A2</h1></div>
+        <p class="meta">Teras · 4/4 tamu · dibuka 18:35</p>
+        <div class="course-head"><i style="background:var(--cDrinks)"></i>Minuman<b>2 item</b></div>
+        <div class="line line--ready">
+          <div class="qty">×1</div>
+          <div class="body">
+            <div class="name">Es Teh Manis · Besar</div>
+            <div class="foot"><span class="chip chip--ready">Siap</span><span class="epill">3m</span><span class="price">Rp 12.000</span></div>
+            <div class="served-btn">Tandai disajikan</div>
+          </div>
+        </div>
+        <div class="course-head"><i style="background:var(--cMains)"></i>Utama<b>3 item</b></div>
+        <div class="line">
+          <div class="qty">×2</div>
+          <div class="body">
+            <div class="name">Nasi Goreng Kampung · Pedas</div>
+            <div class="mods">Telur mata sapi · Tanpa acar</div>
+            <div class="foot"><span class="chip chip--prep">Diproses</span><span class="epill">8m</span><span class="price">Rp 76.000</span></div>
+          </div>
+        </div>
+        <div class="line">
+          <div class="qty">×1</div>
+          <div class="body">
+            <div class="name">Ayam Bakar Madu</div>
+            <div class="foot"><span class="chip chip--cooked">Matang</span><span class="epill epill--overdue">24m</span><span class="price">Rp 65.000</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="totals"><span>5 item · belum termasuk pajak</span><b>Rp 181.000</b></div>
+        <div class="actions">
+          <div class="btn btn--ghost">Bayar</div>
+          <div class="btn btn--primary">Tambah pesanan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
