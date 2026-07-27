@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -203,9 +204,9 @@ class CashierBillScreen extends ConsumerWidget {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(c),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -756,9 +757,9 @@ class _AssignRowState extends State<_AssignRow> {
             onPressed: v < widget.max ? () => setState(() => v++) : null,
           ),
           const SizedBox(width: Sp.s1),
-          FilledButton(
-            onPressed: () => widget.onChanged(v),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => widget.onChanged(v),
           ),
         ],
       ),
@@ -1701,9 +1702,9 @@ Future<int?> _askInt(BuildContext context, String title, {int initial = 2}) {
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(ctx),
         ),
         FilledButton(
           onPressed: () =>

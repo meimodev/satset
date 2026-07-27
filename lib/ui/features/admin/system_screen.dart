@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -720,13 +721,13 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         title: const Text('Revoke device?'),
         content: Text('${d.label} akan kehilangan sesi.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.of(context).pop(false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Revoke'),
+          SatButton.primary(
+            label: 'Revoke',
+            onTap: () => Navigator.of(context).pop(true),
           ),
         ],
       ),
@@ -833,13 +834,13 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Batal'),
+            SatButton.ghost(
+              label: AppStrings.cancel,
+              onTap: () => Navigator.of(ctx).pop(false),
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Tambah'),
+            SatButton.primary(
+              label: AppStrings.add,
+              onTap: () => Navigator.of(ctx).pop(true),
             ),
           ],
         ),

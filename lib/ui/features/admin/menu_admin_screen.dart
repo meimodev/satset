@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1093,9 +1094,9 @@ class _CategoriesPanel extends ConsumerWidget {
           onSubmitted: (t) => Navigator.pop(ctx, t),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
@@ -1315,9 +1316,9 @@ class _TagsPanel extends ConsumerWidget {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
           FilledButton(
             onPressed: () {

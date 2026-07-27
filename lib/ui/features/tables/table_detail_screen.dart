@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -381,10 +382,10 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: Sp.s3),
-                OutlinedButton(
-                  onPressed: () =>
+                SatButton.outline(
+                  label: 'Coba lagi',
+                  onTap: () =>
                       ref.read(menuRepositoryProvider.notifier).refresh(),
-                  child: const Text('Coba lagi'),
                 ),
               ],
             ),
@@ -430,14 +431,14 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 : 'Semua tiket telah selesai. Kosongkan meja ${table.displayName} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop('cancel'),
-              child: const Text('Batal'),
+            SatButton.ghost(
+              label: AppStrings.cancel,
+              onTap: () => Navigator.of(ctx).pop('cancel'),
             ),
             if (!isEmptyClose)
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop('print'),
-                child: const Text('Cetak struk'),
+              SatButton.ghost(
+                label: 'Cetak struk',
+                onTap: () => Navigator.of(ctx).pop('print'),
               ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop('close'),

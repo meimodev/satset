@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -253,9 +255,9 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         title: Text(title, style: SatType.sans(size: 17, color: sc.textHi)),
         content: Text(body, style: SatType.sans(size: 14, color: sc.textMd)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: sc.urgent),
