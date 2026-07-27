@@ -158,7 +158,7 @@ class TabletSideRail extends StatelessWidget {
                     route: '/venue',
                     active: active,
                   ),
-                  // Widget book (ADR-0049). `kDebugMode` is a const, so the
+                  // Widget book (ADR-0054). `kDebugMode` is a const, so the
                   // divider and the button are both gone from a release build.
                   // Pushed rather than gone-to: the book is a detour, and back
                   // should land you on the tab you left.

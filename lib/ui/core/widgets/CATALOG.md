@@ -6,7 +6,7 @@ screen. Private widgets are how three `StatusChip`s and two `SectionLabel`s happ
 
 Not auto-generated. When you add, rename, or delete a shared widget, edit this file in
 the same commit — **and add a matching entry to the widget book** (`lib/ui/features/_book/
-book_entries.dart`, ADR-0049). Guard: `test/design_tokens_test.dart`.
+book_entries.dart`, ADR-0054). Guard: `test/design_tokens_test.dart`.
 
 **See the widgets, don't just read about them.** In a debug build, `/book` renders every
 widget on this page in all of its states — reachable from the "Book" item at the foot of

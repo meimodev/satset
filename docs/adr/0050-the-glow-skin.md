@@ -187,7 +187,7 @@ Glow specifies `:active { transform: scale(0.97) }` on buttons, zone tabs and
 segments. That is a new primitive — `SatPressScale` in `core/widgets/`, taking
 its duration from `satMotion` so reduced motion collapses it to the final state
 per ADR-0044's rule. It carries a CATALOG.md row and a widget-book entry, as
-ADR-0049 requires of any shared widget.
+ADR-0054 requires of any shared widget.
 
 The hover lift (`translateY(-2px)`) is **not** ported. These are touch tablets
 and phones; there is no hover.

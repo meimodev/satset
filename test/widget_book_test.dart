@@ -17,7 +17,7 @@ void main() {
     tester,
   ) async {
     expect(entries, isNotEmpty);
-    // AlertHost is deliberately note-only (ADR-0049). Everything else must
+    // AlertHost is deliberately note-only (ADR-0054). Everything else must
     // render something.
     final empty = entries
         .where((e) => e.states.isEmpty)

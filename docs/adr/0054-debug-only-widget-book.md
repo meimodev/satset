@@ -1,4 +1,4 @@
-# ADR-0049 — The widget book is a debug-only route, not a second app
+# ADR-0054 — The widget book is a debug-only route, not a second app
 
 ## Status
 
