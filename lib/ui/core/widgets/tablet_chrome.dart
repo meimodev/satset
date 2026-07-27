@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -150,6 +151,21 @@ class TabletSideRail extends StatelessWidget {
                     route: '/venue',
                     active: active,
                   ),
+                  // Widget book (ADR-0049). `kDebugMode` is a const, so the
+                  // divider and the button are both gone from a release build.
+                  // Pushed rather than gone-to: the book is a detour, and back
+                  // should land you on the tab you left.
+                  if (kDebugMode) ...[
+                    _RailDiv(),
+                    _RailBtn(
+                      id: 'book',
+                      label: 'Book',
+                      icon: Icons.widgets_outlined,
+                      route: '/book',
+                      active: active,
+                      push: true,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -221,6 +237,10 @@ class _RailBtn extends StatelessWidget {
   final String active;
   final int badge;
   final bool alert;
+
+  /// Push instead of go — for a destination outside the shell that you are
+  /// meant to come back from.
+  final bool push;
   const _RailBtn({
     required this.id,
     required this.label,
@@ -229,6 +249,7 @@ class _RailBtn extends StatelessWidget {
     required this.active,
     this.badge = 0,
     this.alert = false,
+    this.push = false,
   });
 
   /// On paper the rail is the accent itself, so both states sit on a bright
@@ -249,7 +270,7 @@ class _RailBtn extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.go(route),
+          onTap: () => push ? context.push(route) : context.go(route),
           borderRadius: SatR.a(14),
           child: Container(
             width: 56,

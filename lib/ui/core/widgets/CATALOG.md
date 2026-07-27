@@ -5,7 +5,15 @@
 screen. Private widgets are how three `StatusChip`s and two `SectionLabel`s happened.
 
 Not auto-generated. When you add, rename, or delete a shared widget, edit this file in
-the same commit. Guard: `test/design_tokens_test.dart`.
+the same commit — **and add a matching entry to the widget book** (`lib/ui/features/_book/
+book_entries.dart`, ADR-0049). Guard: `test/design_tokens_test.dart`.
+
+**See the widgets, don't just read about them.** In a debug build, `/book` renders every
+widget on this page in all of its states — reachable from the "Book" item at the foot of
+the tablet rail, or the "Widget book" button on the sign-in screen when unpaired. Per-entry coverage rule: every enum value, every
+meaningful boolean, plus one stress state (longest realistic name, ×99, six modifiers,
+two-line note). The stage flips theme/skin, 1.0×/1.3× text scale, reduced motion, and
+phone/tablet width.
 
 ---
 
