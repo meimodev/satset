@@ -46,14 +46,6 @@ void main() {
           'Colors.transparent is allowed.',
     ),
     _Rule(
-      name: 'off-scale spacing literal',
-      // 654, not the 622 this rule used to report: the old per-line scan could
-      // not see a call the formatter had wrapped, so 32 sites were invisible.
-      baseline: 654,
-      pattern: _offScaleSpacing,
-      fix: 'use Sp.s1..Sp.s12 (4/8/12/16/20/24/32/40/48) — design/spacing.dart',
-    ),
-    _Rule(
       name: 'raw BorderRadius.circular(n)',
       baseline: 0,
       pattern: RegExp(r'BorderRadius\.circular\(\s*\d'),
@@ -183,6 +175,49 @@ void main() {
     }
   });
 
+  // Spacing. The scale now carries half-steps (6/10/14/18) and a 2px hair gap,
+  // because those were already in the code 428 times before they had names —
+  // so every value a component legitimately wants has a token, and a raw number
+  // here is drift rather than a gap in the scale.
+  //
+  // Counts whole-argument literals only: `EdgeInsets.only(top: 6)` is spacing,
+  // but the `6` inside `EdgeInsets.only(bottom: inset * 6)` is arithmetic. An
+  // earlier regex version did not draw that line and rewrote layout dimensions
+  // (a 560px panel width became 48) — hence the argument parser.
+  test('no new: raw spacing literal', () {
+    const baseline = 181;
+    final hits = <String>[];
+    for (final file in files) {
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'EdgeInsets\.(?:all|symmetric|only)\(',
+      ).allMatches(src)) {
+        final body = _callBody(src, m.start);
+        if (body.length < 2) continue;
+        for (final arg in _splitArgs(body.substring(1, body.length - 1))) {
+          if (_bareNumberArg.hasMatch(arg)) {
+            hits.add('${file.path}:${_lineOf(src, m.start)}  ${arg.trim()}');
+          }
+        }
+      }
+      for (final m in RegExp(
+        r'SizedBox\(\s*(?:width|height):\s*(\d+)\s*[,)]',
+      ).allMatches(src)) {
+        hits.add('${file.path}:${_lineOf(src, m.start)}  ${m.group(1)}');
+      }
+    }
+    if (hits.length > baseline) {
+      fail(
+        'raw spacing literals: ${hits.length}, baseline $baseline '
+        '(+${hits.length - baseline} new).\nUse Sp — design/spacing.dart '
+        '(2/4/6/8/10/12/14/16/18/20/24/32/40/48).\n\n${hits.join('\n')}',
+      );
+    }
+    if (hits.length < baseline) {
+      fail('dropped to ${hits.length} — set baseline to ${hits.length}.');
+    }
+  });
+
   for (final rule in rules) {
     test('no new: ${rule.name}', () {
       final hits = <String>[];
@@ -217,19 +252,40 @@ void main() {
   }
 }
 
-/// Spacing literals that are not on the `Sp` scale.
-///
-/// Matches the numeric argument of `SizedBox(width:/height:)` and any
-/// `EdgeInsets.*`, then rejects only the off-scale values — on-scale literals
-/// are still drift, but flagging all ~1100 of them makes the ratchet useless
-/// as a signal. Off-scale (6, 10, 14, 18, 22...) is where the real damage is:
-/// those cannot be expressed with a token at all.
-final _offScaleSpacing = RegExp(
-  r'(?:SizedBox\(\s*(?:width|height):\s*|EdgeInsets\.(?:all|symmetric|only)\('
-  r'(?:[a-zA-Z]+:\s*)?)'
-  r'(?!(?:4|8|12|16|20|24|32|40|48)\b)'
-  r'\d+(?:\.\d+)?',
-);
+/// An argument that is *entirely* a number — `12` or `top: 12`, but not
+/// `top: inset * 12` and not `top: kPad`.
+final _bareNumberArg = RegExp(r'^\s*(?:[A-Za-z_]\w*\s*:\s*)?\d+\s*$');
+
+/// Top-level comma split of a call body, ignoring commas nested inside
+/// brackets or string literals.
+List<String> _splitArgs(String body) {
+  final parts = <String>[];
+  var depth = 0;
+  String? inString;
+  final buf = StringBuffer();
+  for (final ch in body.split('')) {
+    if (inString != null) {
+      buf.write(ch);
+      if (ch == inString) inString = null;
+      continue;
+    }
+    if (ch == '"' || ch == "'") {
+      inString = ch;
+      buf.write(ch);
+      continue;
+    }
+    if (ch == '(' || ch == '[' || ch == '{') depth++;
+    if (ch == ')' || ch == ']' || ch == '}') depth--;
+    if (ch == ',' && depth == 0) {
+      parts.add(buf.toString());
+      buf.clear();
+      continue;
+    }
+    buf.write(ch);
+  }
+  if (buf.toString().trim().isNotEmpty) parts.add(buf.toString());
+  return parts;
+}
 
 /// Files that legitimately own literal values. Keep this list short and make
 /// every entry argue for itself — an exemption is permanent, a baseline is not.

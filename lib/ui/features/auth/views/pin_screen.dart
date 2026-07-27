@@ -164,7 +164,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
         backgroundColor: sc.bg0,
         body: Center(
           child: SizedBox(
-            width: Sp.s6,
+            width: 28,
             height: 28,
             child: CircularProgressIndicator(
               strokeWidth: 2,
@@ -384,7 +384,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _Reveal(child: brand),
-                              const SizedBox(height: Sp.s8),
+                              const SizedBox(height: 36),
                               _Reveal(
                                 delay: const Duration(milliseconds: 80),
                                 child: modeBlock,
@@ -412,12 +412,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
                       children: [
                         const SizedBox(height: Sp.s6),
                         _Reveal(child: brand),
-                        const SizedBox(height: Sp.s8),
+                        const SizedBox(height: 36),
                         _Reveal(
                           delay: const Duration(milliseconds: 80),
                           child: modeBlock,
                         ),
-                        const SizedBox(height: Sp.s6),
+                        const SizedBox(height: 26),
                         if (state.mode == SignInMode.admin)
                           _Reveal(
                             delay: const Duration(milliseconds: 140),
@@ -571,7 +571,7 @@ class _AdminAuthForm extends StatelessWidget {
         ),
         const SizedBox(height: Sp.s2),
         SizedBox(
-          height: Sp.s12,
+          height: 52,
           child: ElevatedButton.icon(
             onPressed: busy ? null : onSubmit,
             icon: busy
@@ -885,7 +885,7 @@ class _ServerRow extends StatelessWidget {
                 ),
                 if (busy)
                   SizedBox(
-                    width: Sp.s5,
+                    width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -943,7 +943,7 @@ class _RestoreLoadingScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _TabletBrand(),
-              const SizedBox(height: Sp.s6),
+              const SizedBox(height: 28),
               SizedBox(
                 width: Sp.s6,
                 height: 24,
@@ -1284,7 +1284,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                             letterSpacing: 0.4,
                           ),
                         ),
-                        const SizedBox(height: Sp.sHair),
+                        const SizedBox(height: 3),
                         Text(
                           v.label,
                           style: SatType.mono(

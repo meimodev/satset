@@ -34,7 +34,10 @@ Future<void> showModifierSheet({
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: Sp.s10, vertical: Sp.s6),
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: Sp.s10,
+          vertical: Sp.s6,
+        ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ClipRRect(
@@ -471,7 +474,7 @@ class _Head extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: Sp.s12,
+            width: 64,
             height: 64,
             child: MenuPhoto(
               itemId: item.id,
@@ -609,7 +612,10 @@ class _ModOpt extends StatelessWidget {
             onTap: soldOut ? null : onTap,
             borderRadius: SatR.a(14),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s3h,
+                vertical: Sp.s3,
+              ),
               decoration: SatBox.d(
                 borderRadius: SatR.a(14),
                 border: SatB.all(
@@ -680,7 +686,7 @@ class _CourseChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 9),
         decoration: SatBox.d(
           color: selected ? sc.bg4 : sc.bg2,
           borderRadius: SatR.a(999),
@@ -756,7 +762,7 @@ class _Foot extends StatelessWidget {
               children: [
                 _StepperBtn(label: '−', onTap: onDec, disabled: qty <= 1),
                 SizedBox(
-                  width: Sp.s6,
+                  width: 28,
                   child: Text(
                     '$qty',
                     textAlign: TextAlign.center,
@@ -837,7 +843,7 @@ class _StepperBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return SizedBox(
-      width: Sp.s10,
+      width: 38,
       height: double.infinity,
       child: TextButton(
         onPressed: disabled ? null : onTap,

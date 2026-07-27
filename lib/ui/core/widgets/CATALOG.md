@@ -28,7 +28,7 @@ Never hardcode a `Color`, a spacing number, or a curve. Go through these.
 | Token | File | Use for |
 |---|---|---|
 | `context.sat` → `SatColors` | `colors.dart` | Every color. Neutral ramp `bg0`–`bg4`, `border0`–`border2`, `textHi`→`textDim`; semantic `accent`, `success`, `warn`, `urgent`, `info`, `violet`. |
-| `Sp.s1`…`Sp.s12` | `spacing.dart` | Every gap and pad. 4/8/12/16/20/24/32/40/48. Off-scale values (6, 10, 14, 18) are drift — snap to the nearest step. |
+| `Sp.sHair`, `Sp.s1`…`Sp.s12` | `spacing.dart` | Every gap and pad. 2/4/6/8/10/12/14/16/18/20/24/32/40/48 — a 4px grid with half-steps below 20, because a chip with 10px type has no room for an 8px inset and 12 makes it read as a button. `sHair` (2) is for stacked text that belongs together, not for layout. Above 20 the grid is pure. |
 | `SatR` | `skin.dart` | Every corner radius. Skin-aware (ADR-0047) — a raw `BorderRadius.circular(n)` ignores the active skin. |
 | `SatType` | `typography.dart` | Every text style. |
 | `satEaseOut`, `motionEnabled(context)` | `motion.dart` | Every animation. One curve app-wide. Re-exported by `anim.dart`, so a screen using both needs one import. Prefer the `anim.dart` primitives below over raw `AnimatedFoo`. |

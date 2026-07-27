@@ -530,12 +530,12 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           textAlign: TextAlign.right,
           style: SatType.sans(size: 13, color: sc.textHi, height: 1.4),
         ),
-        const SizedBox(height: Sp.sHair),
+        const SizedBox(height: 3),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.lock_outline_rounded, size: 10, color: sc.textLo),
-            const SizedBox(width: Sp.sHair),
+            const SizedBox(width: 3),
             Text(
               AppStrings.venueSettingsManagedBySuperAdmin,
               style: SatType.sans(size: 10, color: sc.textLo),
@@ -707,7 +707,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
         decoration: SatBox.d(
           color: c.withValues(alpha: 0.10),
           border: SatB.all(color: c.withValues(alpha: 0.4)),
@@ -888,7 +888,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: EdgeInsets.only(bottom: last ? Sp.sHair : Sp.s2),
+        margin: EdgeInsets.only(bottom: last ? 0 : 8),
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         decoration: SatBox.d(
           color: sc.bg2,
@@ -1151,7 +1151,7 @@ class _PajakLayananCard extends ConsumerWidget {
     return Row(
       children: [
         SizedBox(
-          width: Sp.s12,
+          width: 150,
           child: Text(
             'Tipe biaya',
             style: SatType.sans(size: 13, color: sc.textMd),
@@ -1182,7 +1182,10 @@ class _PajakLayananCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () => onPick(value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s3h,
+          vertical: Sp.s2,
+        ),
         decoration: SatBox.d(
           color: on ? sc.accentSoft : sc.bg3,
           border: SatB.all(color: on ? sc.accentBorder : sc.border1),
@@ -1215,7 +1218,7 @@ class _PajakLayananCard extends ConsumerWidget {
     return Row(
       children: [
         SizedBox(
-          width: Sp.s12,
+          width: 150,
           child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
         ),
         Expanded(
@@ -1278,7 +1281,7 @@ class _PajakLayananCard extends ConsumerWidget {
     return Row(
       children: [
         SizedBox(
-          width: Sp.s12,
+          width: 150,
           child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
         ),
         Expanded(
@@ -1548,7 +1551,7 @@ class _ReportsHourCard extends ConsumerWidget {
           Row(
             children: [
               SizedBox(
-                width: Sp.s12,
+                width: 200,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

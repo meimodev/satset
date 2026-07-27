@@ -494,7 +494,10 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                   color: sc.textLo,
                 ),
               ),
-              if (trailing != null) ...[const SizedBox(width: Sp.s2h), trailing],
+              if (trailing != null) ...[
+                const SizedBox(width: Sp.s2h),
+                trailing,
+              ],
             ],
           ),
           const SizedBox(height: Sp.s2h),
@@ -618,7 +621,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: EdgeInsets.only(bottom: last ? Sp.sHair : Sp.s2),
+        margin: EdgeInsets.only(bottom: last ? 0 : 8),
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         decoration: SatBox.d(
           color: sc.bg2,
@@ -741,7 +744,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         content: Row(
           children: [
             SizedBox(
-              width: Sp.s5,
+              width: 22,
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),

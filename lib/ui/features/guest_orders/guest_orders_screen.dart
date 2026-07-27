@@ -123,7 +123,7 @@ class _BatchCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: Sp.s6,
+                    width: 28,
                     child: Text(
                       '${l.qty}×',
                       style: TextStyle(

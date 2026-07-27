@@ -41,7 +41,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 /// A pill carrying one fleet signal (billing, offline, lockout-risk). Status is
 /// deliberately *not* a pill — it lives in the tile's leading tint.
 Widget fleetPill(SatColors sc, String text, Color fg, Color bg) => Container(
-  padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
+  padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: 3),
   decoration: SatBox.d(color: bg, borderRadius: SatR.a(8)),
   child: Text(
     text,
@@ -128,7 +128,7 @@ class FleetTile extends StatelessWidget {
                   ),
                 ),
                 if (sub != null) ...[
-                  const SizedBox(height: Sp.sHair),
+                  const SizedBox(height: 3),
                   Text(
                     sub!,
                     maxLines: 2,
@@ -288,14 +288,14 @@ class FleetPrimaryButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: Sp.s3),
+          padding: const EdgeInsets.symmetric(vertical: 13),
           alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (busy)
                 SizedBox(
-                  width: Sp.s3h,
+                  width: 15,
                   height: 15,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,

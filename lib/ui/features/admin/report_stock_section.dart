@@ -32,7 +32,7 @@ class ReportStockSection extends ConsumerWidget {
     final async = ref.watch(stockReportProvider((rangeFrom, rangeTo)));
     return async.when(
       loading: () => const SizedBox(
-        height: Sp.s12,
+        height: 90,
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       error: (e, _) => Text(
@@ -176,7 +176,7 @@ class ReportStockSection extends ConsumerWidget {
                     ),
                     const SizedBox(width: Sp.s3),
                     SizedBox(
-                      width: Sp.s12,
+                      width: 92,
                       child: Text(
                         formatIDR(_int(row['value'])),
                         textAlign: TextAlign.right,

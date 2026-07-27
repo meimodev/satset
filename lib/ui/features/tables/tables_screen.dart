@@ -218,7 +218,10 @@ class _FloorHead extends ConsumerWidget {
             Expanded(
               child: TabletSectionHead(title: title, sub: sub),
             ),
-            Padding(padding: const EdgeInsets.only(bottom: Sp.s3h), child: actions),
+            Padding(
+              padding: const EdgeInsets.only(bottom: Sp.s3h),
+              child: actions,
+            ),
           ],
         ),
       );
@@ -283,8 +286,8 @@ class _FloorAction extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: compact ? Sp.s2h : Sp.s3h,
-          vertical: compact ? Sp.s2 : Sp.s2h,
+          horizontal: compact ? 10 : 14,
+          vertical: compact ? 9 : 11,
         ),
         decoration: SatBox.d(
           color: sc.bg2,
@@ -296,7 +299,7 @@ class _FloorAction extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: sc.textMd),
             if (!compact) ...[
-              const SizedBox(width: Sp.s1h),
+              const SizedBox(width: 7),
               Text(
                 SatShape.caps(label),
                 style: SatType.sans(
@@ -306,7 +309,7 @@ class _FloorAction extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(width: Sp.s1h),
+            const SizedBox(width: 7),
             Text(
               '$count',
               style: SatType.mono(
@@ -316,9 +319,12 @@ class _FloorAction extends StatelessWidget {
               ),
             ),
             if (alert != null) ...[
-              const SizedBox(width: Sp.s1h),
+              const SizedBox(width: 7),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: Sp.s1, vertical: Sp.sHair),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 5,
+                  vertical: Sp.sHair,
+                ),
                 decoration: BoxDecoration(
                   color: sc.urgent,
                   borderRadius: SatR.a(5),
@@ -427,8 +433,8 @@ class _NewOrderButton extends ConsumerWidget {
         foregroundColor: sc.accentInk,
         elevation: 0,
         padding: EdgeInsets.symmetric(
-          horizontal: tablet ? Sp.s4h : Sp.s3h,
-          vertical: tablet ? Sp.s3h : Sp.s2h,
+          horizontal: tablet ? 18 : 14,
+          vertical: tablet ? 14 : 11,
         ),
         shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
       ),
@@ -498,8 +504,8 @@ class _ZoneRow extends StatelessWidget {
                   duration: dur,
                   curve: _kEase,
                   padding: EdgeInsets.symmetric(
-                    horizontal: tablet ? Sp.s4 : Sp.s3h,
-                    vertical: tablet ? Sp.s2h : Sp.s2,
+                    horizontal: tablet ? 16 : 14,
+                    vertical: tablet ? 10 : 9,
                   ),
                   decoration: SatBox.d(
                     color: fill,

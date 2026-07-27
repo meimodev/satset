@@ -213,7 +213,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             controller: _address,
             decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
           ),
-          const SizedBox(height: Sp.s6),
+          const SizedBox(height: 28),
           _sectionLabel(sc, 'TAGIHAN'),
           const SizedBox(height: Sp.s2h),
           TextField(
@@ -234,7 +234,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           ),
           const SizedBox(height: Sp.s3h),
           _paidUntilRow(sc),
-          const SizedBox(height: Sp.s6),
+          const SizedBox(height: 28),
           _principalSection(
             sc,
             admins,
@@ -244,7 +244,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             addLabel: 'Tambah admin',
             emptyMsg: 'Belum ada admin untuk venue ini.',
           ),
-          const SizedBox(height: Sp.s6),
+          const SizedBox(height: 28),
           _principalSection(
             sc,
             admins,

@@ -113,7 +113,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 }),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(vertical: Sp.s2),
+                  padding: const EdgeInsets.symmetric(vertical: 9),
                   margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
                   decoration: SatBox.d(
                     color: _on.contains(s) ? sc.bg4 : Colors.transparent,
@@ -223,7 +223,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
   Widget _loadingChip(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: 9),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border1),
@@ -240,14 +240,14 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: Sp.s3,
+            width: 13,
             height: 13,
             child: CircularProgressIndicator(
               strokeWidth: 1.8,
               valueColor: AlwaysStoppedAnimation(sc.accentText),
             ),
           ),
-          const SizedBox(width: Sp.s2),
+          const SizedBox(width: 9),
           Text(
             'Memperbarui…',
             style: SatType.sans(
@@ -604,7 +604,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: Sp.s12,
+            height: 130,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -623,7 +623,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                               color: sc.bg4,
                               radius: BorderRadius.vertical(top: SatR.c(2)),
                             ),
-                            const SizedBox(width: Sp.sHair),
+                            const SizedBox(width: 3),
                             GrowBarV(
                               width: 9,
                               height: 100 * pairs[i].thisWeek / maxVal,
@@ -707,7 +707,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       sub:
           'Puncak ${hours[peakIdx]}:00 — ${(int.parse(hours[peakIdx]) + 1).toString().padLeft(2, '0')}:00',
       child: SizedBox(
-        height: Sp.s12,
+        height: 130,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -819,7 +819,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s2h,
+          vertical: Sp.s1h,
+        ),
         decoration: SatBox.d(
           color: sc.bg3,
           border: SatB.all(color: sc.border1),
@@ -994,7 +997,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Indeks upsell pelayan',
         sub: 'Belum ada data',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     final positive = rows.where((r) => r.rate > 0).toList();
@@ -1189,7 +1192,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Attach rate modifier',
         sub: '% order pakai modifier',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     return _card(
@@ -1380,7 +1383,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Bauran kategori (WoW)',
         sub: 'Belum ada data',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     final palette = [sc.accent, sc.info, sc.success, sc.violet, sc.warn];
@@ -1453,7 +1456,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           const SizedBox(height: Sp.s3h),
           for (var i = 0; i < cats.length; i++)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
+              padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(
                 children: [
                   Container(
@@ -1499,7 +1502,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final color = up ? sc.success : sc.warn;
     final txt = '${up ? '+' : ''}${pct.toStringAsFixed(1)}pp';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.s1h,
+        vertical: Sp.sHair,
+      ),
       decoration: SatBox.d(
         color: color.withValues(alpha: 0.12),
         borderRadius: SatR.a(4),
@@ -1523,7 +1529,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Pasangan keranjang',
         sub: 'Item paling sering dipesan bersama',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     return _card(
@@ -1732,7 +1738,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Kecepatan layanan',
         sub: 'Belum ada item siap/disajikan',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     // SLA color: green when most plates beat the target, amber mid, red poor.
@@ -1819,7 +1825,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             const SizedBox(height: Sp.s2),
             for (final it in s.slowItems)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: Sp.s1),
+                padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1853,7 +1859,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: Sp.s1),
+                    const SizedBox(height: 5),
                     AnimatedBarFill(
                       factor: it.avgPrepMin / maxAvg,
                       color: sc.info,
@@ -1875,7 +1881,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Peak-hour heatmap',
         sub: '7 hari · jam 11—22',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
@@ -1911,7 +1917,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               const SizedBox(height: Sp.s1),
               for (var r = 0; r < grid.length && r < days.length; r++)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
+                  padding: const EdgeInsets.symmetric(vertical: 1),
                   child: Row(
                     children: [
                       SizedBox(
@@ -1927,7 +1933,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       ),
                       for (var col = 0; col < grid[r].length && col < 12; col++)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Sp.sHair),
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
                           child: Container(
                             width: cell - 2,
                             height: cell - 2,
@@ -2084,7 +2090,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Alasan void & comp',
         sub: 'Belum ada void',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     final total = rows.fold<int>(0, (s, r) => s + r.count);
@@ -2159,7 +2165,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         context,
         'Void per pelayan',
         sub: 'Belum ada void',
-        child: const SizedBox(height: Sp.s8),
+        child: const SizedBox(height: 30),
       );
     }
     final total = rows.fold<int>(0, (s, r) => s + r.count);
@@ -2233,7 +2239,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
   Widget _emptyState(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.all(Sp.s6),
+      padding: const EdgeInsets.all(28),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0, style: BorderStyle.solid),
@@ -2303,7 +2309,7 @@ class _MiniStatRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label, style: SatType.sans(size: 12, color: sc.textMd)),
-                const SizedBox(height: Sp.sHair),
+                const SizedBox(height: 1),
                 Text(sub, style: SatType.sans(size: 11, color: sc.textLo)),
               ],
             ),

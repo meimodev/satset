@@ -523,7 +523,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               right: 0,
               bottom: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s1h,
+                  vertical: Sp.sHair,
+                ),
                 decoration: SatBox.d(
                   color: satMediaScrim,
                   borderRadius: BorderRadius.only(
@@ -790,7 +793,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           const SizedBox(width: Sp.s2h),
           SizedBox(
-            width: Sp.s12,
+            width: 140,
             child: TextField(
               controller: _ctrl(
                 'v:${v.id}:price',
@@ -1418,7 +1421,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final out = _draft.isSoldOut;
     final tone = out ? sc.urgent : sc.success;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: 3),
       decoration: SatBox.d(
         color: tone.withValues(alpha: 0.14),
         borderRadius: SatR.a(6),
@@ -1472,7 +1475,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       hintStyle: SatType.sans(size: 13, color: sc.textLo),
       filled: true,
       fillColor: sc.bg2,
-      contentPadding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: Sp.s3,
+        vertical: Sp.s2h,
+      ),
       border: OutlineInputBorder(
         borderRadius: SatR.a(10),
         borderSide: SatB.side(color: sc.border1),
@@ -1623,7 +1629,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
+          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
           decoration: SatBox.d(
             color: selected ? sc.accentSoft : sc.bg2,
             border: SatB.all(color: selected ? sc.accentBorder : sc.border1),
@@ -1656,7 +1662,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s2h,
+            vertical: Sp.s1h,
+          ),
           decoration: SatBox.d(
             color: on ? sc.successSoft : sc.bg2,
             border: SatB.all(color: on ? sc.success : sc.border1),
@@ -1697,7 +1706,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     return TextButton(
       onPressed: onTap,
       style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s2h,
+          vertical: Sp.s1,
+        ),
         foregroundColor: sc.accentText,
       ),
       child: Text(
@@ -1794,7 +1806,8 @@ class _Header extends StatelessWidget {
                 Row(
                   children: [
                     ?badge,
-                    if (badge != null && sub != null) const SizedBox(width: Sp.s2),
+                    if (badge != null && sub != null)
+                      const SizedBox(width: Sp.s2),
                     if (sub != null)
                       Flexible(
                         child: Text(
@@ -1927,7 +1940,7 @@ class _FooterState extends State<_Footer> {
                 foregroundColor: sc.accentInk,
                 disabledBackgroundColor: done ? sc.success : sc.accent,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s5,
+                  horizontal: 22,
                   vertical: Sp.s3,
                 ),
                 shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),

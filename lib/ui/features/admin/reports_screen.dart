@@ -417,7 +417,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       },
       borderRadius: SatR.a(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s3,
+          vertical: Sp.s2h,
+        ),
         decoration: SatBox.d(
           color: active ? sc.accentSoft : sc.bg2,
           border: SatB.all(color: active ? sc.accentBorder : sc.border0),

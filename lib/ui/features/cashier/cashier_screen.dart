@@ -101,7 +101,10 @@ class _TabToggle extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s4,
+            vertical: Sp.s2,
+          ),
           decoration: SatBox.d(
             color: active ? sc.bg0 : Colors.transparent,
             borderRadius: SatR.a(9),
@@ -119,7 +122,7 @@ class _TabToggle extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(Sp.sHair),
+      padding: const EdgeInsets.all(3),
       decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(12)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -259,7 +262,7 @@ class _PayableTile extends StatelessWidget {
                           color: sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: Sp.sHair),
+                      const SizedBox(height: 3),
                       Text(
                         b.isTakeaway
                             ? (b.detached
@@ -293,7 +296,7 @@ class _PayableTile extends StatelessWidget {
                         color: settled ? sc.textLo : sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: Sp.s1),
+                    const SizedBox(height: 5),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 240),
                       curve: satEaseOut,

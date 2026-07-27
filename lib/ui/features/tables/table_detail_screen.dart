@@ -814,7 +814,7 @@ class _SeatedDurationChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.access_time, size: 13, color: sc.textMd),
-          const SizedBox(width: Sp.s1),
+          const SizedBox(width: 5),
           Text(
             label,
             style: SatType.mono(
@@ -839,7 +839,7 @@ class _HPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
       decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -911,7 +911,9 @@ class _ContextTriggerBtn extends StatelessWidget {
                             minWidth: 16,
                             minHeight: 16,
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Sp.s1,
+                          ),
                           decoration: SatBox.d(
                             color: sc.urgent,
                             shape: alertCount < 10
@@ -1191,7 +1193,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(Sp.s6),
+        padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1262,7 +1264,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                     borderRadius: SatR.a(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: Sp.s6,
+                        horizontal: 28,
                         vertical: Sp.s4,
                       ),
                       child: Row(
@@ -1343,7 +1345,7 @@ class _PrimaryIconButtonState extends State<_PrimaryIconButton> {
                 },
                 customBorder: const CircleBorder(),
                 child: SizedBox(
-                  width: Sp.s12,
+                  width: 64,
                   height: 64,
                   child: Icon(widget.icon, size: 28, color: fg),
                 ),
@@ -1377,7 +1379,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
       duration: reduced ? Duration.zero : _kPressIn,
       curve: _kEase,
       child: SizedBox(
-        height: Sp.s12,
+        height: 52,
         child: Material(
           color: sc.success,
           borderRadius: SatR.a(18),
@@ -1387,7 +1389,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
             onHighlightChanged: (h) => setState(() => _pressed = h),
             borderRadius: SatR.a(18),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s5),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1432,7 +1434,10 @@ class _LockedBanner extends StatelessWidget {
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2h),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s3h,
+          vertical: Sp.s2h,
+        ),
         decoration: SatBox.d(
           color: sc.warnSoft,
           border: SatB.all(color: sc.warn.withValues(alpha: 0.35)),
@@ -1524,7 +1529,7 @@ class _TabletSplit extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  width: Sp.s12,
+                  width: 560,
                   child: Column(
                     children: [
                       Container(
@@ -1640,7 +1645,7 @@ class _TabletSplit extends StatelessWidget {
                             : tickets.isEmpty
                             ? Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(Sp.s6),
+                                  padding: const EdgeInsets.all(28),
                                   child: Text(
                                     'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
                                     textAlign: TextAlign.center,
@@ -1778,7 +1783,7 @@ class _TabletSplit extends StatelessWidget {
       border = sc.success.withValues(alpha: 0.3);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
       decoration: SatBox.d(
         color: bg,
         border: SatB.all(color: border),
@@ -1924,7 +1929,7 @@ class _ContextPane extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: Sp.s2h,
-                          vertical: Sp.s1,
+                          vertical: 5,
                         ),
                         decoration: SatBox.d(
                           color: sc.urgentSoft,

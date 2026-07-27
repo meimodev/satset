@@ -265,7 +265,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
       topTrailing: filter,
       children: [
         if (orders.isEmpty)
-          const SizedBox(height: Sp.s12, child: _EmptyQueue())
+          const SizedBox(height: 360, child: _EmptyQueue())
         else
           Wrap(
             spacing: 16,
@@ -273,7 +273,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
             children: [
               for (final o in orders)
                 SizedBox(
-                  width: Sp.s12,
+                  width: 360,
                   child: _CardEntrance(
                     key: ValueKey('${o.tableId}|${o.sentAt}'),
                     animate: !reduceMotion,
@@ -302,7 +302,10 @@ class _CompletedFilter extends StatelessWidget {
         onTap: () => onChanged(!value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s3,
+            vertical: Sp.s2,
+          ),
           decoration: SatBox.d(
             color: value ? sc.success.withValues(alpha: 0.14) : sc.bg2,
             border: SatB.all(
@@ -383,7 +386,7 @@ class _OrderCard extends ConsumerWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: Sp.s2h,
+                    horizontal: 11,
                     vertical: Sp.s1h,
                   ),
                   decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(9)),
@@ -461,7 +464,7 @@ class _AgePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.s1),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: SatBox.d(
         color: color.withValues(alpha: 0.14),
         borderRadius: SatR.a(999),
@@ -643,8 +646,8 @@ class _ItemRowState extends State<_ItemRow>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                margin: const EdgeInsets.only(top: Sp.sHair),
-                padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
+                margin: const EdgeInsets.only(top: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(6)),
                 child: Text(
                   '×${ticket.qty}',
@@ -684,7 +687,7 @@ class _ItemRowState extends State<_ItemRow>
                       ),
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: Sp.sHair),
+                          padding: const EdgeInsets.only(top: 3),
                           child: Text(
                             ticket.modifiers.map((m) => m.display).join(' · '),
                             style: SatType.sans(
@@ -696,7 +699,7 @@ class _ItemRowState extends State<_ItemRow>
                         ),
                       if (ticket.note != null && ticket.note!.trim().isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: Sp.s1),
+                          padding: const EdgeInsets.only(top: 5),
                           child: NoteLine(
                             label: 'Instruksi khusus',
                             text: ticket.note!,

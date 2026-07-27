@@ -201,7 +201,7 @@ class SetHero extends StatelessWidget {
         border: SatB.all(color: accent, width: 1.5),
         borderRadius: SatR.a(18),
       ),
-      padding: const EdgeInsets.all(Sp.s5),
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -288,7 +288,7 @@ class AdminRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: Sp.s12,
+            width: 150,
             child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
           ),
           Expanded(child: value),

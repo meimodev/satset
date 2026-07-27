@@ -151,7 +151,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: Sp.s5,
+                      width: 22,
                       child: Text(
                         '×${ticket.qty}',
                         style: SatType.mono(
@@ -188,7 +188,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                           if (!isVoided) MenuTagBadges(itemId: ticket.itemId),
                           if (ticket.modifiers.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: Sp.sHair),
+                              padding: const EdgeInsets.only(top: 3),
                               child: Text(
                                 ticket.modifiers
                                     .map((m) => m.display)
@@ -211,7 +211,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                             ),
                           if (ticket.voidReason != null)
                             Padding(
-                              padding: const EdgeInsets.only(top: Sp.sHair),
+                              padding: const EdgeInsets.only(top: 3),
                               child: Text(
                                 'Dibatalkan · ${ticket.voidReason} · disetujui oleh ${ticket.voidApprovedBy ?? ''}',
                                 style: SatType.sans(

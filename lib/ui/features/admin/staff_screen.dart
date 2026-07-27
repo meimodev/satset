@@ -400,10 +400,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 // Header
                 Row(
                   children: [
-                    SizedBox(width: Sp.s12, child: _h(AppStrings.staffRole)),
+                    SizedBox(width: 160, child: _h(AppStrings.staffRole)),
                     for (final g in CapabilityGroup.values) ...[
                       for (final c in grouped[g]!)
-                        SizedBox(width: Sp.s12, child: _h(c.label)),
+                        SizedBox(width: 110, child: _h(c.label)),
                     ],
                   ],
                 ),
@@ -417,7 +417,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     child: Row(
                       children: [
                         SizedBox(
-                          width: Sp.s12,
+                          width: 160,
                           child: Row(
                             children: [
                               Container(
@@ -444,7 +444,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                         ),
                         for (final g in CapabilityGroup.values) ...[
                           for (final c in grouped[g]!)
-                            SizedBox(width: Sp.s12, child: _capCell(r, c)),
+                            SizedBox(width: 110, child: _capCell(r, c)),
                         ],
                       ],
                     ),
@@ -749,7 +749,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   Widget _tagBadge(BuildContext context, String t, Color fg, Color bg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.s1h,
+        vertical: Sp.sHair,
+      ),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(5)),
       child: Text(
         t,

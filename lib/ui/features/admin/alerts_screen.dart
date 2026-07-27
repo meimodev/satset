@@ -105,7 +105,10 @@ class _ScopeCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s2,
+                  vertical: 3,
+                ),
                 decoration: SatBox.d(
                   color: deviceScoped ? sc.bg3 : sc.bg1,
                   border: SatB.all(color: sc.border0),
@@ -317,7 +320,7 @@ class _MinutesRow extends StatelessWidget {
           ),
           const SizedBox(width: Sp.s2),
           SizedBox(
-            width: Sp.s12,
+            width: 66,
             child: Text(
               '$value min',
               textAlign: TextAlign.center,
@@ -460,7 +463,10 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
           GestureDetector(
             onTap: () => _openPicker(sc, event),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s3,
+                vertical: Sp.s2,
+              ),
               decoration: SatBox.d(
                 color: sc.bg1,
                 border: SatB.all(color: sc.border0),

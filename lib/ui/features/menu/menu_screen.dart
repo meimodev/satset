@@ -219,7 +219,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                         Container(
                           height: 36,
                           width: 200,
-                          padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Sp.s3,
+                          ),
                           decoration: SatBox.d(
                             color: sc.bg2,
                             border: SatB.all(color: sc.border0),
@@ -428,7 +430,7 @@ class _CatTabs extends ConsumerWidget {
     final sc = context.sat;
     final cats = ref.watch(menuCategoriesProvider);
     return SizedBox(
-      height: Sp.s8,
+      height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -440,7 +442,10 @@ class _CatTabs extends ConsumerWidget {
           return GestureDetector(
             onTap: () => onChange(c.id),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s3h,
+                vertical: Sp.s2,
+              ),
               decoration: SatBox.d(
                 color: isActive ? sc.accentSoft : Colors.transparent,
                 borderRadius: SatR.a(999),
@@ -515,7 +520,7 @@ class _ItemCard extends ConsumerWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: Sp.s2,
-                              vertical: Sp.sHair,
+                              vertical: 3,
                             ),
                             decoration: SatBox.d(
                               color: satMediaScrim,
@@ -540,7 +545,9 @@ class _ItemCard extends ConsumerWidget {
                               minWidth: 28,
                               minHeight: 28,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: Sp.s2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Sp.s2,
+                            ),
                             decoration: SatBox.d(
                               color: sc.accent,
                               borderRadius: SatR.a(999),
@@ -600,7 +607,7 @@ class _ItemCard extends ConsumerWidget {
                           ),
                         ],
                         if (item.dietary.isNotEmpty) ...[
-                          const SizedBox(height: Sp.sHair),
+                          const SizedBox(height: 3),
                           TagBadgeRow(
                             ids: item.dietary,
                             tagsById: tagsById,
@@ -799,7 +806,7 @@ class _TabletCartPane extends ConsumerWidget {
             child: cart.isEmpty
                 ? Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(Sp.s6),
+                      padding: const EdgeInsets.all(28),
                       child: Text(
                         'Belum ada item di keranjang. Pilih dari menu di kiri.',
                         textAlign: TextAlign.center,
@@ -869,7 +876,7 @@ class _TabletCartPane extends ConsumerWidget {
                                   Padding(
                                     padding: const EdgeInsets.only(
                                       top: Sp.s1,
-                                      left: Sp.s5,
+                                      left: 22,
                                     ),
                                     child: Text(
                                       cart[i].modifiers.join(' · '),
@@ -1027,7 +1034,7 @@ class _TabletCartPane extends ConsumerWidget {
     String value,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Text(

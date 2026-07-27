@@ -279,7 +279,7 @@ class ReviewScreen extends ConsumerWidget {
                 ? 16 + l.padding.bottom
                 : 92 + l.padding.bottom,
             child: SizedBox(
-              height: Sp.s12,
+              height: 52,
               child: ElevatedButton(
                 onPressed: cart.isEmpty || reviewState.busy
                     ? null
@@ -530,7 +530,10 @@ class _CommitTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s3h),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s4,
+            vertical: Sp.s3h,
+          ),
           decoration: SatBox.d(
             border: SatB.all(color: sc.border0),
             borderRadius: SatR.a(14),
@@ -629,7 +632,7 @@ class _Pill extends StatelessWidget {
         break;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -717,7 +720,7 @@ class _CourseBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: Sp.s5,
+                      width: 22,
                       child: Text(
                         '×${c.qty}',
                         style: SatType.mono(
@@ -748,7 +751,7 @@ class _CourseBlock extends StatelessWidget {
                           MenuTagBadges(itemId: c.itemId),
                           if (c.modifiers.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: Sp.sHair),
+                              padding: const EdgeInsets.only(top: 3),
                               child: Text(
                                 c.modifiers.join(' · '),
                                 style: SatType.sans(

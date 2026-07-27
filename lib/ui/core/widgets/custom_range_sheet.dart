@@ -129,7 +129,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
               const SizedBox(height: Sp.s3),
               Text(err, style: SatType.sans(size: 12, color: sc.urgent)),
             ],
-            const SizedBox(height: Sp.s5),
+            const SizedBox(height: 22),
             SizedBox(width: double.infinity, child: _applyButton(context)),
           ],
         ),
@@ -148,7 +148,10 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s3,
+          vertical: Sp.s2h,
+        ),
         decoration: SatBox.d(
           color: set ? sc.accentSoft : sc.bg2,
           border: SatB.all(color: set ? sc.accentBorder : sc.border0),

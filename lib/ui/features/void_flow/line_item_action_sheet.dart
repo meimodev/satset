@@ -337,7 +337,7 @@ class _ActionList extends StatelessWidget {
             _ActionRow(item: r, onTap: () => onPick(r.id)),
             const SizedBox(height: Sp.s1h),
           ],
-          const SizedBox(height: Sp.s12),
+          const SizedBox(height: 60),
           Text(
             'Tap luar sheet untuk batal.',
             style: SatType.sans(size: 11, color: sc.textLo),
@@ -409,7 +409,10 @@ class _ActionRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s3h,
+            vertical: Sp.s3,
+          ),
           decoration: SatBox.d(
             borderRadius: SatR.a(14),
             border: SatB.all(color: border),
@@ -483,7 +486,10 @@ class _VoidReasonListState extends State<_VoidReasonList> {
         children: [
           Container(
             margin: const EdgeInsets.only(bottom: Sp.s3h),
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3,
+              vertical: Sp.s2h,
+            ),
             decoration: SatBox.d(
               color: sc.bg2,
               borderRadius: SatR.a(12),
@@ -604,7 +610,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
             ),
           const SizedBox(height: Sp.s4),
           SizedBox(
-            height: Sp.s12,
+            height: 52,
             child: ElevatedButton(
               onPressed: _canContinue
                   ? () {

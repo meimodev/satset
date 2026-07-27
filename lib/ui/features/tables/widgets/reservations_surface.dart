@@ -282,7 +282,7 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         // Tight: five of these have to fit the drawer's 480px without the last
         // one hanging half off the edge.
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s2),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 9),
         decoration: SatBox.d(
           color: fill,
           borderRadius: SatR.a(999),
@@ -299,7 +299,7 @@ class _FilterChip extends StatelessWidget {
                 color: fg,
               ),
             ),
-            const SizedBox(width: Sp.s1),
+            const SizedBox(width: 5),
             Text(
               '$count',
               style: SatType.mono(
@@ -362,7 +362,7 @@ class _ReservationRow extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: Sp.s12,
+                width: 52,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -401,7 +401,7 @@ class _ReservationRow extends ConsumerWidget {
                         color: sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: Sp.sHair),
+                    const SizedBox(height: 3),
                     Text(
                       [
                         '${r.partySize} tamu',
@@ -493,7 +493,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final brutal = SatShape.brutal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: 3),
       decoration: BoxDecoration(
         color: brutal ? tone : tone.withValues(alpha: 0.15),
         borderRadius: SatR.a(6),
@@ -606,7 +606,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
           )
         else
           SizedBox(
-            height: Sp.s8,
+            height: 36,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: available.length,
@@ -722,7 +722,7 @@ Future<void> openCreateReservationSheet(
               left: Sp.s5,
               right: Sp.s5,
               top: Sp.s4,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s5,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -954,7 +954,7 @@ class _TablePicker extends StatelessWidget {
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
             decoration: SatBox.d(
               color: active
                   ? (SatShape.brutal ? sc.accent : sc.textHi)
@@ -990,7 +990,7 @@ class _TablePicker extends StatelessWidget {
         const SizedBox(height: Sp.s2),
         if (zones.length > 1)
           SizedBox(
-            height: Sp.s8,
+            height: 34,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: zones.length,
@@ -1004,7 +1004,7 @@ class _TablePicker extends StatelessWidget {
           ),
         const SizedBox(height: Sp.s1h),
         SizedBox(
-          height: Sp.s8,
+          height: 34,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: free.length + 1,

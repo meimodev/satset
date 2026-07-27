@@ -191,7 +191,7 @@ class _PinSheetState extends State<_PinSheet>
                       const SizedBox(height: Sp.s2h),
                       Center(child: widget.statusSlot!),
                     ],
-                    const SizedBox(height: Sp.s5),
+                    const SizedBox(height: 22),
                     _PinDots(pin: _pin, shake: _shake),
                     const SizedBox(height: Sp.s3),
                     _PinHelper(
@@ -465,7 +465,7 @@ class _DebugCredRow extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: Sp.s12,
+              width: 76,
               child: Text(
                 label,
                 style: SatType.mono(

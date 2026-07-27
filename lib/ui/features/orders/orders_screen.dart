@@ -138,7 +138,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       if (list.isEmpty) {
         return Center(
           child: Padding(
-            padding: EdgeInsets.all(grid ? Sp.s12 : Sp.s6),
+            padding: EdgeInsets.all(grid ? 60 : 24),
             child: Text(
               emptyMsg,
               textAlign: TextAlign.center,
@@ -407,7 +407,7 @@ class _Segments extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: Sp.s10,
+      height: 42,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -456,7 +456,7 @@ class _SegBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: 9),
         decoration: SatBox.d(
           color: active ? sc.textHi : sc.bg2,
           borderRadius: SatR.a(999),
@@ -609,7 +609,7 @@ class _OrderRow extends StatelessWidget {
                         ),
                         if (t.modifiers.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(top: Sp.sHair),
+                            padding: const EdgeInsets.only(top: 3),
                             child: Text(
                               t.modifiers
                                       .take(2)
@@ -623,7 +623,7 @@ class _OrderRow extends StatelessWidget {
                               ),
                             ),
                           ),
-                        const SizedBox(height: Sp.s1h),
+                        const SizedBox(height: 7),
                         Wrap(
                           spacing: 8,
                           runSpacing: 4,
@@ -671,7 +671,10 @@ class _ServeButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s3,
+            vertical: Sp.s2,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -711,7 +714,10 @@ class _TabletSeg extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s2h),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s4,
+          vertical: Sp.s2h,
+        ),
         decoration: SatBox.d(
           color: active ? sc.textHi : sc.bg2,
           border: SatB.all(color: active ? sc.textHi : sc.border0),

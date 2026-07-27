@@ -166,7 +166,7 @@ class ReportsSkeleton extends StatelessWidget {
           const SkeletonBox(width: 100, height: 10),
           const SizedBox(height: Sp.s4h),
           SizedBox(
-            height: Sp.s12,
+            height: 110,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

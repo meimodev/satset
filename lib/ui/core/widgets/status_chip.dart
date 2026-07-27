@@ -27,7 +27,7 @@ class StatusChip extends StatelessWidget {
     return AnimatedContainer(
       duration: animate ? _morph : Duration.zero,
       curve: satEaseOut,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: 3),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: AnimatedSwitcher(
         duration: animate ? _morph : Duration.zero,

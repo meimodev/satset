@@ -227,7 +227,10 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
           },
           borderRadius: SatR.a(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3h,
+              vertical: Sp.s3,
+            ),
             decoration: SatBox.d(
               border: SatB.all(color: sc.border0),
               borderRadius: SatR.a(12),

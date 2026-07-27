@@ -199,7 +199,7 @@ class _Header extends StatelessWidget {
                     color: sc.textHi,
                   ),
                 ),
-                const SizedBox(height: Sp.sHair),
+                const SizedBox(height: 3),
                 Text(
                   sub.toUpperCase(),
                   style: SatType.mono(
@@ -358,7 +358,7 @@ class _ZoneChip extends StatelessWidget {
               zone.name,
               style: SatType.sans(size: 13, weight: FontWeight.w600, color: fg),
             ),
-            const SizedBox(width: Sp.s1h),
+            const SizedBox(width: 7),
             Text(
               '$count',
               style: SatType.mono(
@@ -446,7 +446,7 @@ class _TableRow extends StatelessWidget {
               if (inactive)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: Sp.s2,
+                    horizontal: 9,
                     vertical: Sp.s1,
                   ),
                   decoration: SatBox.d(
@@ -669,7 +669,10 @@ class _ActiveRow extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(!active),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s3h),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s4,
+          vertical: Sp.s3h,
+        ),
         decoration: SatBox.d(
           color: sc.bg2,
           border: SatB.all(color: sc.border1),
@@ -730,7 +733,10 @@ class _GuestOrderRow extends StatelessWidget {
             onTap: () => onChanged(!enabled),
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s3h),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s4,
+                vertical: Sp.s3h,
+              ),
               child: Row(
                 children: [
                   Icon(Icons.qr_code_2, size: 18, color: sc.accentText),
@@ -804,7 +810,7 @@ class _QrDialog extends ConsumerWidget {
       backgroundColor: sc.bg1,
       shape: RoundedRectangleBorder(borderRadius: SatR.a(20)),
       child: Padding(
-        padding: const EdgeInsets.all(Sp.s5),
+        padding: const EdgeInsets.all(22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1197,7 +1203,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
             ],
           ),
           if (!_isNew) ...[
-            const SizedBox(height: Sp.s5),
+            const SizedBox(height: 22),
             _MetaRow(tableCount: widget.tableCount),
           ],
         ],
@@ -1498,7 +1504,7 @@ Future<void> _present(BuildContext context, Widget child) {
         bottom: MediaQuery.of(ctx).viewInsets.bottom,
         left: Sp.s2,
         right: Sp.s2,
-        top: Sp.s12,
+        top: 60,
       ),
       child: child,
     ),
@@ -1597,7 +1603,7 @@ class _SatField extends StatelessWidget {
         fillColor: sc.bg2,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: Sp.s3h,
-          vertical: Sp.s3,
+          vertical: 13,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: SatR.a(12),

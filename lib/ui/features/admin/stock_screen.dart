@@ -305,7 +305,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3h,
+              vertical: Sp.s3,
+            ),
             decoration: SatBox.d(
               color: active ? sc.bg3 : bg,
               borderRadius: SatR.a(14),
@@ -534,7 +537,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s3,
+            vertical: Sp.s1h,
+          ),
           decoration: SatBox.d(
             color: active
                 ? (highlightColor?.withValues(alpha: 0.15) ?? sc.accentSoft)
@@ -768,7 +774,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   padding: const EdgeInsets.only(right: Sp.s3),
                   child: _opname
                       ? SizedBox(
-                          width: Sp.s12,
+                          width: 120,
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -942,7 +948,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     IconData? icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.s1h,
+        vertical: Sp.sHair,
+      ),
       decoration: SatBox.d(
         color: color.withValues(alpha: 0.12),
         borderRadius: SatR.a(6),
@@ -953,7 +962,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 10, color: color),
-            const SizedBox(width: Sp.sHair),
+            const SizedBox(width: 3),
           ],
           Text(
             label,
@@ -1363,7 +1372,7 @@ class _Sheet extends StatelessWidget {
         left: Sp.s6,
         right: Sp.s6,
         top: Sp.s3,
-        bottom: MediaQuery.of(context).viewInsets.bottom + Sp.s6,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -1420,7 +1429,10 @@ class _Sheet extends StatelessWidget {
 
             // Children
             for (final c in children)
-              Padding(padding: const EdgeInsets.only(bottom: Sp.s3), child: c),
+              Padding(
+                padding: const EdgeInsets.only(bottom: Sp.s3),
+                child: c,
+              ),
             const SizedBox(height: Sp.s2),
 
             // Primary Action Button
@@ -1832,7 +1844,7 @@ class _RecipeLinkChips extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: 3),
       decoration: SatBox.d(
         color: sc.bg3,
         borderRadius: SatR.a(6),

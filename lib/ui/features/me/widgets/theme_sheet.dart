@@ -102,7 +102,10 @@ class _ThemeRow extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3h),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3h,
+              vertical: Sp.s3h,
+            ),
             decoration: SatBox.d(
               borderRadius: SatR.a(14),
               border: SatB.all(color: selected ? sc.accentBorder : sc.border1),
@@ -165,7 +168,7 @@ class _Swatch extends StatelessWidget {
             height: 12,
             decoration: SatBox.d(shape: BoxShape.circle, color: accent),
           ),
-          const SizedBox(width: Sp.s1),
+          const SizedBox(width: 5),
           Container(
             width: 12,
             height: 3,

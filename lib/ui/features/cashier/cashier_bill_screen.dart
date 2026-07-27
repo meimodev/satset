@@ -362,7 +362,7 @@ class _TotalsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     Widget row(String k, int v, {bool strong = false, Color? color}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -654,7 +654,7 @@ class _LinesSection extends StatelessWidget {
       isScrollControlled: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s3,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 12,
           left: Sp.s4,
           right: Sp.s4,
           top: Sp.s4,
@@ -823,7 +823,10 @@ class _ReceiptCard extends ConsumerWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 280),
                 curve: satEaseOut,
-                padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s2,
+                  vertical: Sp.sHair,
+                ),
                 decoration: SatBox.d(
                   color: (paid ? sc.success : sc.warn).withValues(alpha: 0.15),
                   borderRadius: SatR.a(6),
@@ -1085,7 +1088,7 @@ class _ReceiptCard extends ConsumerWidget {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s4,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
               left: Sp.s4,
               right: Sp.s4,
               top: Sp.s4,
@@ -1343,7 +1346,7 @@ class _ReceiptItemRow extends ConsumerWidget {
             ),
             if (existing != null)
               Padding(
-                padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
+                padding: const EdgeInsets.only(left: Sp.s3, top: 1),
                 child: Row(
                   children: [
                     Expanded(
@@ -1509,7 +1512,7 @@ class _TopActions extends StatelessWidget {
         ),
         const SizedBox(width: Sp.s2),
         SizedBox(
-          height: Sp.s12,
+          height: 46,
           width: 46,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
@@ -1585,7 +1588,10 @@ class _BigBtn extends StatelessWidget {
           borderRadius: SatR.a(12),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: Sp.s3h, horizontal: Sp.s1h),
+            padding: const EdgeInsets.symmetric(
+              vertical: Sp.s3h,
+              horizontal: Sp.s1h,
+            ),
             child: Column(
               children: [
                 Icon(icon, size: 22, color: sc.textHi),
@@ -1628,7 +1634,10 @@ class _SmallBtn extends StatelessWidget {
           borderRadius: SatR.a(9),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3h,
+              vertical: Sp.s2,
+            ),
             child: Text(
               label,
               style: SatType.sans(
@@ -1765,7 +1774,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
       final hasNote = l.note?.trim().isNotEmpty == true;
       out.add(
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: Sp.s1),
+          padding: const EdgeInsets.symmetric(vertical: 5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1790,7 +1799,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
               ),
               for (final m in l.modifiers)
                 Padding(
-                  padding: const EdgeInsets.only(left: Sp.s6, top: Sp.sHair),
+                  padding: const EdgeInsets.only(left: 28, top: 1),
                   child: Text(
                     '${m.display}'
                     '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
@@ -1799,7 +1808,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                 ),
               if (hasNote)
                 Padding(
-                  padding: const EdgeInsets.only(left: Sp.s6, top: Sp.sHair),
+                  padding: const EdgeInsets.only(left: 28, top: 1),
                   child: Text(
                     'Catatan: ${l.note!.trim()}',
                     style: SatType.sans(size: 11, color: sc.textLo),
@@ -1933,7 +1942,7 @@ class _FilterBar extends StatelessWidget {
     final entries = tables.entries.toList()
       ..sort((a, b) => (a.value ?? '').compareTo(b.value ?? ''));
     return SizedBox(
-      height: Sp.s12,
+      height: 52,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
@@ -2212,7 +2221,7 @@ class _PastBillTile extends StatelessWidget {
                           color: sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: Sp.sHair),
+                      const SizedBox(height: 3),
                       Text(
                         b.isTakeaway
                             ? '${_shortWhen(b.closedAt)} · ${b.ticketCount} item'
@@ -2311,7 +2320,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                     .expand((r) => r.payments)
                     .map(
                       (p) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: Sp.sHair),
+                        padding: const EdgeInsets.symmetric(vertical: 3),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [

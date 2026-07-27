@@ -138,7 +138,7 @@ class _TakeawayRow extends ConsumerWidget {
                       letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: Sp.sHair),
+                  const SizedBox(height: 3),
                   Text(
                     [
                       if (visit.guestName != null &&
@@ -156,7 +156,10 @@ class _TakeawayRow extends ConsumerWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.sHair),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s1h,
+                vertical: 3,
+              ),
               decoration: BoxDecoration(
                 color: SatShape.brutal
                     ? statusColor

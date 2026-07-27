@@ -69,7 +69,10 @@ class _TabletLayout extends ConsumerWidget {
                 ),
                 const SizedBox(width: Sp.s2h),
               ],
-              if (admin) ...[const _TabSwitcher(), const SizedBox(width: Sp.s2h)],
+              if (admin) ...[
+                const _TabSwitcher(),
+                const SizedBox(width: Sp.s2h),
+              ],
               _RoleBadge(perm: perm),
             ],
           ),
@@ -456,7 +459,10 @@ class _CategoryRail extends ConsumerWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s1h),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3,
+              vertical: Sp.s1h,
+            ),
             decoration: SatBox.d(
               color: on ? sc.accentSoft : sc.bg2,
               border: SatB.all(color: on ? sc.accentBorder : sc.border1),
@@ -510,7 +516,7 @@ class _ItemList extends ConsumerWidget {
     final Widget body = items.isEmpty
         ? Center(
             child: Padding(
-              padding: const EdgeInsets.all(Sp.s6),
+              padding: const EdgeInsets.all(28),
               child: Text(
                 'Tidak ada item cocok.',
                 style: SatType.sans(size: 13, color: sc.textLo),
@@ -554,7 +560,10 @@ class _ItemRow extends ConsumerWidget {
     final tagsById = ref.watch(menuTagsByIdProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Sp.s1, horizontal: Sp.sHair),
+      padding: const EdgeInsets.symmetric(
+        vertical: Sp.s1,
+        horizontal: Sp.sHair,
+      ),
       child: PressScale(
         pressedScale: 0.985,
         child: Material(
@@ -611,7 +620,7 @@ class _ItemRow extends ConsumerWidget {
                                 decorationColor: sc.textLo,
                               ),
                         ),
-                        const SizedBox(height: Sp.sHair),
+                        const SizedBox(height: 3),
                         Row(
                           children: [
                             Text(
@@ -662,7 +671,7 @@ class _ItemRow extends ConsumerWidget {
                         if (!compact &&
                             (item.allergens.isNotEmpty ||
                                 item.dietary.isNotEmpty)) ...[
-                          const SizedBox(height: Sp.s1),
+                          const SizedBox(height: 5),
                           Wrap(
                             spacing: 3,
                             runSpacing: 3,
@@ -722,7 +731,7 @@ class _ItemRow extends ConsumerWidget {
 
   Widget _miniBadge(SatColors sc, String t, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1, vertical: Sp.sHair),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
       child: Text(
         t,
@@ -824,7 +833,10 @@ class _PrimaryButton extends StatelessWidget {
           borderRadius: SatR.a(10),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3h,
+              vertical: 9,
+            ),
             child: Text(
               label,
               style: SatType.sans(
@@ -856,7 +868,10 @@ class _TabSwitcher extends ConsumerWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s1h),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3h,
+              vertical: 7,
+            ),
             decoration: SatBox.d(
               color: on ? sc.accent : Colors.transparent,
               borderRadius: SatR.a(8),
@@ -876,7 +891,7 @@ class _TabSwitcher extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(Sp.sHair),
+      padding: const EdgeInsets.all(3),
       decoration: SatBox.d(
         color: sc.bg3,
         border: SatB.all(color: sc.border1),

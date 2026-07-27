@@ -431,7 +431,7 @@ class _MeTablet extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: Sp.s5),
+                const SizedBox(width: 22),
                 Expanded(
                   flex: 4,
                   child: _ActivityCard(
@@ -1054,7 +1054,7 @@ class _AuditRow extends StatelessWidget {
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: Sp.sHair),
+                const SizedBox(height: 3),
                 Text(
                   meta,
                   style: SatType.mono(
@@ -1080,7 +1080,7 @@ class _EndShiftButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return SizedBox(
-      height: Sp.s12,
+      height: 52,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: Icon(Icons.logout_rounded, size: 18, color: sc.textHi),
