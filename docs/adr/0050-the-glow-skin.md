@@ -3,7 +3,9 @@
 ## Status
 
 Accepted. Extends ADR-0047 (skins carry shape alongside the palette) with a
-third skin, and amends ADR-0045's theme roster.
+third skin, and amends ADR-0045's theme roster. **Amended by ADR-0057** — the
+consequence below that "`SatTheme.fallback` stays `amberGelap`" no longer holds;
+it is now `neonTerang`.
 
 ## Context
 

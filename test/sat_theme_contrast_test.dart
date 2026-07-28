@@ -70,7 +70,10 @@ void main() {
     for (final t in SatTheme.values) {
       expect(SatTheme.fromKey(t.name), t);
     }
-    expect(SatTheme.fromKey(null), SatTheme.fallback);
-    expect(SatTheme.fromKey('satset.no_such_theme'), SatTheme.fallback);
+    // Named, not `SatTheme.fallback` — asserting the constant against itself
+    // cannot fail. Spelling the theme out locks the ADR-0057 decision, so
+    // flipping the default back is a red test rather than a silent change.
+    expect(SatTheme.fromKey(null), SatTheme.neonTerang);
+    expect(SatTheme.fromKey('satset.no_such_theme'), SatTheme.neonTerang);
   });
 }
