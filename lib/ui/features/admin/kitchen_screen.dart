@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -416,7 +417,7 @@ class _OrderCard extends ConsumerWidget {
             child: Column(
               children: [
                 for (var i = 0; i < order.tickets.length; i++)
-                  _ItemRow(
+                  _KdsItemRow(
                     ticket: order.tickets[i],
                     last: i == order.tickets.length - 1,
                     onTap: () => onToggle(order.tableId, order.tickets[i].id),
@@ -452,7 +453,7 @@ class _AgePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _PulseDot(color: color, pulse: age.inMinutes >= 10),
+          PulseDot(color: color, pulse: age.inMinutes >= 10),
           const SizedBox(width: Sp.s1h),
           Text(formatElapsedId(age), style: SatType.monoM(color: color)),
           const SizedBox(width: Sp.s1h),
@@ -465,84 +466,21 @@ class _AgePill extends StatelessWidget {
 
 /// Status dot that gently pulses while an order is overdue (≥10m), drawing the
 /// cook's eye to the most urgent ticket. Static (no repaint) otherwise.
-class _PulseDot extends StatefulWidget {
-  final Color color;
-  final bool pulse;
-  const _PulseDot({required this.color, required this.pulse});
-
-  @override
-  State<_PulseDot> createState() => _PulseDotState();
-}
-
-class _PulseDotState extends State<_PulseDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sync();
-  }
-
-  @override
-  void didUpdateWidget(covariant _PulseDot old) {
-    super.didUpdateWidget(old);
-    if (widget.pulse != old.pulse) _sync();
-  }
-
-  void _sync() {
-    final reduce = MediaQuery.of(context).disableAnimations;
-    if (widget.pulse && !reduce) {
-      if (!_c.isAnimating) _c.repeat(reverse: true);
-    } else {
-      _c.stop();
-      _c.value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dot = Container(
-      width: 6,
-      height: 6,
-      decoration: SatBox.d(color: widget.color, shape: BoxShape.circle),
-    );
-    if (!widget.pulse) return dot;
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, child) {
-        final t = Curves.easeInOut.transform(_c.value);
-        return Transform.scale(scale: 1 + t * 0.45, child: child);
-      },
-      child: dot,
-    );
-  }
-}
-
-class _ItemRow extends StatefulWidget {
+class _KdsItemRow extends StatefulWidget {
   final Ticket ticket;
   final bool last;
   final VoidCallback onTap;
-  const _ItemRow({
+  const _KdsItemRow({
     required this.ticket,
     required this.last,
     required this.onTap,
   });
 
   @override
-  State<_ItemRow> createState() => _ItemRowState();
+  State<_KdsItemRow> createState() => _ItemRowState();
 }
 
-class _ItemRowState extends State<_ItemRow>
+class _ItemRowState extends State<_KdsItemRow>
     with SingleTickerProviderStateMixin {
   // A brief green wash when an item is marked done — acknowledges the tap and
   // softens the row's jump to the bottom of the card (done items sink).
@@ -552,7 +490,7 @@ class _ItemRowState extends State<_ItemRow>
   );
 
   @override
-  void didUpdateWidget(covariant _ItemRow old) {
+  void didUpdateWidget(covariant _KdsItemRow old) {
     super.didUpdateWidget(old);
     final cooked = _isDone(widget.ticket.status);
     final wasCooked = _isDone(old.ticket.status);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -144,17 +145,18 @@ class _PayableList extends ConsumerWidget {
           else if (status.hasError && bills.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: _Empty(
+              child: SatEmpty(
                 icon: Icons.cloud_off_rounded,
-                text: 'Gagal memuat tagihan.\nTarik untuk coba lagi.',
+                title: 'Gagal memuat tagihan',
+                body: 'Tarik untuk coba lagi.',
               ),
             )
           else if (bills.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: _Empty(
+              child: SatEmpty(
                 icon: Icons.receipt_long_outlined,
-                text: 'Belum ada meja yang siap dibayar.',
+                title: 'Belum ada meja yang siap dibayar',
               ),
             )
           else
@@ -309,29 +311,6 @@ class _PayableTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _Empty({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 44, color: sc.textLo),
-        const SizedBox(height: Sp.s3),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: SatType.bodyM(color: sc.textLo),
-        ),
-      ],
     );
   }
 }

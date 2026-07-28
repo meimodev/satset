@@ -636,7 +636,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
   ) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _PhoneDetailScreen(title: title, builder: builder),
+        builder: (_) => _SystemPhoneDetail(title: title, builder: builder),
       ),
     );
   }
@@ -927,10 +927,10 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
 
 // ---- Phone detail wrapper (unchanged behavior) ----
 
-class _PhoneDetailScreen extends StatelessWidget {
+class _SystemPhoneDetail extends StatelessWidget {
   final String title;
   final Widget Function(BuildContext, SatColors) builder;
-  const _PhoneDetailScreen({required this.title, required this.builder});
+  const _SystemPhoneDetail({required this.title, required this.builder});
 
   @override
   Widget build(BuildContext context) {

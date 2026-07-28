@@ -238,14 +238,16 @@ void main() {
   // different `Reveal`s. Catalogued shared widgets are unique by construction,
   // so this only ever fires on a genuine second copy.
   //
-  // Not a ban. Most of the remaining 12 are same-name-different-thing —
-  // `_Header`, `_Empty`, `_Section`, `_Footer` are generic names over unrelated
-  // widgets, and merging them would yield a widget with the union of both APIs
-  // and the shape of neither. Two are worth a look when someone next touches
-  // them: `_CourseBlock` (table detail vs. review) and `_ZoneRow` (floor vs.
-  // zone admin) may be real copies.
-  test('no new: widget class name declared in 2+ files', () {
-    const baseline = 11;
+  // A ban since the sweep. The real copies were merged — two pulse dots, two
+  // empty states, two section labels, two sheet headers, and a second Reveal
+  // that had drifted to its own timing. The rest were generic names over
+  // unrelated widgets (`_Header` three times, `_Footer`, `_Section`), which
+  // merging would have turned into one widget with the union of both APIs and
+  // the shape of neither; those were renamed for what they actually are.
+  //
+  // The rule outlives the cleanup: a name colliding again is still the
+  // fingerprint of "rebuilt it because I couldn't see the existing one".
+  test('no widget class name declared in 2+ files', () {
     final byName = <String, List<String>>{};
     for (final file in files) {
       final src = file.readAsStringSync();
@@ -264,17 +266,14 @@ void main() {
     final report = dupes
         .map((e) => '${e.key} (${e.value.length})\n  ${e.value.join('\n  ')}')
         .join('\n');
-    if (dupes.length > baseline) {
-      fail(
-        'duplicated widget names: ${dupes.length}, baseline $baseline '
-        '(+${dupes.length - baseline} new).\nCheck '
-        'lib/ui/core/widgets/CATALOG.md before writing a new widget — if '
-        'something there is close, extend it.\n\n$report',
-      );
-    }
-    if (dupes.length < baseline) {
-      fail('dropped to ${dupes.length} — set baseline to ${dupes.length}.');
-    }
+    expect(
+      dupes,
+      isEmpty,
+      reason:
+          'Check lib/ui/core/widgets/CATALOG.md before writing a new widget — '
+          'if something there is close, extend it. If the two really are '
+          'different things, name them for what they are.\n\n$report',
+    );
   });
 
   // Reduced motion. A ban, not a baseline — every `AnimatedFoo` in lib/ui now

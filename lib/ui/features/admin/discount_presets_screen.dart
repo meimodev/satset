@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -47,7 +48,13 @@ class DiscountPresetsScreen extends ConsumerWidget {
           const SatAppBar(title: 'Diskon'),
           Expanded(
             child: presets.isEmpty
-                ? _Empty(sc: sc)
+                ? const SatEmpty(
+                    icon: Icons.sell_outlined,
+                    title: 'Belum ada preset diskon',
+                    body:
+                        'Buat preset agar kasir bisa memberi diskon tanpa '
+                        'mengetik angka sendiri.',
+                  )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                     children: [
@@ -58,13 +65,13 @@ class DiscountPresetsScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: Sp.s4),
                       if (order.isNotEmpty) ...[
-                        _SectionLabel('Seluruh pesanan', sc: sc),
+                        const SatSectionLabel('Seluruh pesanan'),
                         for (final p in order)
                           _PresetTile(preset: p, repo: repo, sc: sc),
                         const SizedBox(height: Sp.s5),
                       ],
                       if (line.isNotEmpty) ...[
-                        _SectionLabel('Per item', sc: sc),
+                        const SatSectionLabel('Per item'),
                         for (final p in line)
                           _PresetTile(preset: p, repo: repo, sc: sc),
                       ],
@@ -75,46 +82,6 @@ class DiscountPresetsScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  final SatColors sc;
-  const _SectionLabel(this.text, {required this.sc});
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: Sp.s1h),
-    child: Text(text.toUpperCase(), style: SatType.caption(color: sc.textLo)),
-  );
-}
-
-class _Empty extends StatelessWidget {
-  final SatColors sc;
-  const _Empty({required this.sc});
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(Sp.s8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.sell_outlined, size: 40, color: sc.textLo),
-          const SizedBox(height: Sp.s3),
-          Text(
-            'Belum ada preset diskon',
-            style: SatType.labelL(color: sc.textHi),
-          ),
-          const SizedBox(height: Sp.s1h),
-          Text(
-            'Buat preset agar kasir bisa memberi diskon tanpa mengetik '
-            'angka sendiri.',
-            textAlign: TextAlign.center,
-            style: SatType.bodyM(color: sc.textLo),
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 class _PresetTile extends StatelessWidget {

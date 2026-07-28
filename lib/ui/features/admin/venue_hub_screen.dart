@@ -19,7 +19,7 @@ import 'package:satset/ui/features/admin/alerts_screen.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
-class _Section {
+class _HubSection {
   final String label;
   final String sub;
   final IconData icon;
@@ -28,7 +28,7 @@ class _Section {
   final String Function(WidgetRef ref)? badgeBuilder;
   final bool Function(WidgetRef ref)? hasAlert;
 
-  const _Section({
+  const _HubSection({
     required this.label,
     required this.sub,
     required this.icon,
@@ -39,8 +39,8 @@ class _Section {
   });
 }
 
-final _sections = <_Section>[
-  _Section(
+final _sections = <_HubSection>[
+  _HubSection(
     label: AppStrings.venueHubSectionZona,
     sub: AppStrings.venueHubSectionZonaSub,
     icon: Icons.place_outlined,
@@ -52,7 +52,7 @@ final _sections = <_Section>[
       return '${t.length} meja · ${z.length} zona';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionMenu,
     sub: AppStrings.venueHubSectionMenuSub,
     icon: Icons.restaurant_menu_rounded,
@@ -64,7 +64,7 @@ final _sections = <_Section>[
       return '${m.length} item · ${c.length} kategori';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionStock,
     sub: AppStrings.venueHubSectionStockSub,
     icon: Icons.inventory_2_outlined,
@@ -80,7 +80,7 @@ final _sections = <_Section>[
       return s.any((i) => i.isLow);
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionVenue,
     sub: AppStrings.venueHubSectionVenueSub,
     icon: Icons.storefront_outlined,
@@ -93,7 +93,7 @@ final _sections = <_Section>[
       return 'Pajak $tax% · Service $svc%';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionAlerts,
     sub: AppStrings.venueHubSectionAlertsSub,
     icon: Icons.notifications_active_outlined,
@@ -101,7 +101,7 @@ final _sections = <_Section>[
     tint: (sc) => sc.urgent,
     badgeBuilder: (ref) => alertsSummary(ref.watch(venueSettingsProvider)),
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionSystem,
     sub: AppStrings.venueHubSectionSystemSub,
     icon: Icons.wifi_rounded,
@@ -113,7 +113,7 @@ final _sections = <_Section>[
       return 'LAN · ${cfg.baseUri.host}';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionStaff,
     sub: AppStrings.venueHubSectionStaffSub,
     icon: Icons.person_outline_rounded,
@@ -124,7 +124,7 @@ final _sections = <_Section>[
       return '${st.length} staf';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionReports,
     sub: AppStrings.venueHubSectionReportsSub,
     icon: Icons.auto_awesome_outlined,
@@ -611,7 +611,7 @@ class _BannerBtn extends StatelessWidget {
 }
 
 class _HubGrid extends StatelessWidget {
-  final List<_Section> sections;
+  final List<_HubSection> sections;
   final int seedOffset;
   final bool big;
   const _HubGrid({
@@ -650,7 +650,7 @@ class _HubGrid extends StatelessWidget {
 }
 
 class _PhoneHub extends StatelessWidget {
-  final List<_Section> sections;
+  final List<_HubSection> sections;
   final bool showSeed;
   final bool showDemo;
   const _PhoneHub({
@@ -713,7 +713,7 @@ class _PhoneHub extends StatelessWidget {
 }
 
 class _HubCard extends ConsumerWidget {
-  final _Section section;
+  final _HubSection section;
   final bool big;
   const _HubCard({required this.section, required this.big});
 

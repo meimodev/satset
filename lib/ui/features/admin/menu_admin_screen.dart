@@ -491,7 +491,7 @@ class _ItemList extends ConsumerWidget {
             itemBuilder: (_, i) => Reveal(
               index: i.clamp(0, 11),
               animKey: items[i].id,
-              child: _ItemRow(item: items[i], compact: compact),
+              child: _MenuItemRow(item: items[i], compact: compact),
             ),
           );
 
@@ -506,10 +506,10 @@ class _ItemList extends ConsumerWidget {
   }
 }
 
-class _ItemRow extends ConsumerWidget {
+class _MenuItemRow extends ConsumerWidget {
   final MenuItem item;
   final bool compact;
-  const _ItemRow({required this.item, required this.compact});
+  const _MenuItemRow({required this.item, required this.compact});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

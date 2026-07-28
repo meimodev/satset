@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -310,7 +311,10 @@ class _MePhone extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _PacingCard(m: m),
             ),
-            const _SectionLabel(label: 'AKTIVITAS TERBARU'),
+            const SatSectionLabel(
+              'Aktivitas terbaru',
+              padding: EdgeInsets.fromLTRB(Sp.s5, Sp.s6, Sp.s5, Sp.s2h),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _ActivityCard(
@@ -746,20 +750,6 @@ class _ActivityCard extends StatelessWidget {
         border: SatB.all(color: sc.border0),
       ),
       child: inner,
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
-      child: Text(label, style: SatType.monoS(color: sc.textLo)),
     );
   }
 }

@@ -114,7 +114,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                     ],
                   ),
           ),
-          _Footer(
+          _TakeawayFooter(
             sc: sc,
             total: total,
             handedOver: handedOver,
@@ -192,7 +192,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
   }
 }
 
-class _Footer extends StatelessWidget {
+class _TakeawayFooter extends StatelessWidget {
   final SatColors sc;
   final int total;
   final bool handedOver;
@@ -201,7 +201,7 @@ class _Footer extends StatelessWidget {
   final VoidCallback onAddItems;
   final VoidCallback? onPrint;
   final VoidCallback? onHandover;
-  const _Footer({
+  const _TakeawayFooter({
     required this.sc,
     required this.total,
     required this.handedOver,

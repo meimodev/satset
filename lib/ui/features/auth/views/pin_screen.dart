@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -19,7 +21,6 @@ import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
-import 'package:satset/ui/core/design/motion.dart';
 
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
@@ -273,8 +274,8 @@ class _PinScreenState extends ConsumerState<PinScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _Reveal(
-                        delay: const Duration(milliseconds: 120),
+                      Reveal(
+                        index: 2,
                         child: _AdminAuthForm(
                           email: _adminEmail,
                           password: _adminPassword,
@@ -308,10 +309,10 @@ class _PinScreenState extends ConsumerState<PinScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Reveal(child: _TabletBrand()),
+                      Reveal(child: _TabletBrand()),
                       const SizedBox(height: Sp.s12),
-                      _Reveal(
-                        delay: const Duration(milliseconds: 80),
+                      Reveal(
+                        index: 1,
                         child: AnimatedSize(
                           duration: satMotion(context, 280),
                           curve: satEaseOut,
@@ -401,12 +402,9 @@ class _PinScreenState extends ConsumerState<PinScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _Reveal(child: brand),
+                              Reveal(child: brand),
                               const SizedBox(height: Sp.s9),
-                              _Reveal(
-                                delay: const Duration(milliseconds: 80),
-                                child: modeBlock,
-                              ),
+                              Reveal(index: 1, child: modeBlock),
                             ],
                           ),
                         ),
@@ -416,10 +414,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               if (state.mode == SignInMode.admin)
-                                _Reveal(
-                                  delay: const Duration(milliseconds: 120),
-                                  child: wrappedAuthBody,
-                                ),
+                                Reveal(index: 2, child: wrappedAuthBody),
                             ],
                           ),
                         ),
@@ -429,18 +424,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: Sp.s6),
-                        _Reveal(child: brand),
+                        Reveal(child: brand),
                         const SizedBox(height: Sp.s9),
-                        _Reveal(
-                          delay: const Duration(milliseconds: 80),
-                          child: modeBlock,
-                        ),
+                        Reveal(index: 1, child: modeBlock),
                         const SizedBox(height: Sp.s7),
                         if (state.mode == SignInMode.admin)
-                          _Reveal(
-                            delay: const Duration(milliseconds: 140),
-                            child: wrappedAuthBody,
-                          ),
+                          Reveal(index: 3, child: wrappedAuthBody),
                       ],
                     ),
             ),
@@ -785,7 +774,7 @@ class _ServerRow extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
             child: Row(
               children: [
-                _PulseDot(color: dotColor, glow: dotShadow),
+                PulseDot(color: dotColor, glow: dotShadow, size: 8),
                 const SizedBox(width: Sp.s3h),
                 Expanded(
                   child: Column(
@@ -1128,106 +1117,6 @@ class _ConnectedServerCard extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Reveal extends StatefulWidget {
-  final Duration delay;
-  final Widget child;
-  const _Reveal({this.delay = Duration.zero, required this.child});
-
-  @override
-  State<_Reveal> createState() => _RevealState();
-}
-
-class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 480),
-    );
-    Future<void>.delayed(widget.delay, () {
-      if (mounted) _c.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, child) {
-        final t = satEaseOut.transform(_c.value);
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 14),
-            child: child,
-          ),
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
-
-class _PulseDot extends StatefulWidget {
-  final Color color;
-  final Color glow;
-  const _PulseDot({required this.color, required this.glow});
-
-  @override
-  State<_PulseDot> createState() => _PulseDotState();
-}
-
-class _PulseDotState extends State<_PulseDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final reduce = MediaQuery.disableAnimationsOf(context);
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final t = reduce ? 0.5 : Curves.easeInOut.transform(_c.value);
-        final spread = 2.0 + t * 2.5;
-        return Container(
-          width: 8,
-          height: 8,
-          decoration: SatBox.d(
-            shape: BoxShape.circle,
-            color: widget.color,
-            boxShadow: [BoxShadow(color: widget.glow, spreadRadius: spread)],
-          ),
-        );
-      },
     );
   }
 }

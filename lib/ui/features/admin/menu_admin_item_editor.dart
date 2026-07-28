@@ -358,7 +358,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: ClipRect(
         child: Column(
           children: [
-            _Header(
+            _EditorHeader(
               title: _isNew ? 'Item baru' : _draft.name,
               // 'Edit lengkap' carried no information; the availability badge
               // takes its place. Staff keep the sub line, since it's the only
@@ -395,7 +395,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
             ),
             if (!readOnly)
-              _Footer(onSave: _save, onDelete: _isNew ? null : _delete),
+              _EditorFooter(onSave: _save, onDelete: _isNew ? null : _delete),
           ],
         ),
       ),
@@ -409,7 +409,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     List<MenuCategory> cats,
     bool readOnly,
   ) {
-    return _Section(
+    return _EditorSection(
       title: 'Identitas',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -668,7 +668,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   Widget _pricingSection(SatColors sc, bool readOnly) {
-    return _Section(
+    return _EditorSection(
       title: 'Harga',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -818,7 +818,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   Widget _modifiersSection(SatColors sc, bool readOnly) {
-    return _Section(
+    return _EditorSection(
       title: 'Grup modifier',
       trailing: readOnly
           ? null
@@ -1096,7 +1096,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _recipeSection(SatColors sc, bool readOnly) {
     final pantry = ref.watch(ingredientsProvider);
-    return _Section(
+    return _EditorSection(
       title: 'Resep',
       child: pantry.when(
         loading: () => const Padding(
@@ -1286,7 +1286,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final allTags = ref.watch(menuTagsProvider);
     final allergens = menuTagsOfKind(allTags, MenuTagKind.allergen);
     final diets = menuTagsOfKind(allTags, MenuTagKind.diet);
-    return _Section(
+    return _EditorSection(
       title: 'Tag',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1339,7 +1339,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _availabilitySection(SatColors sc) {
     final auto = _draft.isAutoSoldOut;
-    return _Section(
+    return _EditorSection(
       title: 'Ketersediaan',
       child: Row(
         children: [
@@ -1616,11 +1616,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 }
 
-class _Section extends StatelessWidget {
+class _EditorSection extends StatelessWidget {
   final String title;
   final Widget child;
   final Widget? trailing;
-  const _Section({required this.title, required this.child, this.trailing});
+  const _EditorSection({
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1633,7 +1637,7 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _EditorHeader extends StatelessWidget {
   final String title;
 
   /// Null for admins — the availability badge takes the line instead. Staff
@@ -1641,7 +1645,12 @@ class _Header extends StatelessWidget {
   final String? sub;
   final Widget? badge;
   final VoidCallback? onClose;
-  const _Header({required this.title, this.sub, this.badge, this.onClose});
+  const _EditorHeader({
+    required this.title,
+    this.sub,
+    this.badge,
+    this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1695,18 +1704,18 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Footer extends StatefulWidget {
+class _EditorFooter extends StatefulWidget {
   final Future<bool> Function() onSave;
   final VoidCallback? onDelete;
-  const _Footer({required this.onSave, this.onDelete});
+  const _EditorFooter({required this.onSave, this.onDelete});
 
   @override
-  State<_Footer> createState() => _FooterState();
+  State<_EditorFooter> createState() => _FooterState();
 }
 
 enum _SaveState { idle, saving, done }
 
-class _FooterState extends State<_Footer> {
+class _FooterState extends State<_EditorFooter> {
   _SaveState _state = _SaveState.idle;
 
   Future<void> _run() async {

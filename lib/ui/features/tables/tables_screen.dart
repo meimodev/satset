@@ -79,7 +79,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final tablet = l.useTabletShell;
 
     final head = _FloorHead(tablet: tablet, title: zone.name, sub: subLine);
-    final zoneRow = _ZoneRow(
+    final zoneRow = _TablesZoneRow(
       tables: activeTables,
       zones: zones,
       active: activeZoneId,
@@ -411,13 +411,13 @@ class _NewOrderButton extends ConsumerWidget {
   }
 }
 
-class _ZoneRow extends StatelessWidget {
+class _TablesZoneRow extends StatelessWidget {
   final List<VenueTable> tables;
   final List<Zone> zones;
   final String active;
   final ValueChanged<String> onChange;
   final bool tablet;
-  const _ZoneRow({
+  const _TablesZoneRow({
     required this.tables,
     required this.zones,
     required this.active,

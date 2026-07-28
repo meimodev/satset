@@ -57,7 +57,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
       bottom: false,
       child: Column(
         children: [
-          _Header(
+          _ZoneAdminHeader(
             sub: '${tables.length} meja · ${zones.length} zona · $seats kursi',
             canManage: canManage,
             onManageZones: () => _showZones(context),
@@ -169,11 +169,11 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
+class _ZoneAdminHeader extends StatelessWidget {
   final String sub;
   final bool canManage;
   final VoidCallback onManageZones;
-  const _Header({
+  const _ZoneAdminHeader({
     required this.sub,
     required this.canManage,
     required this.onManageZones,
@@ -818,7 +818,7 @@ class _ZonesEditor extends ConsumerWidget {
               itemBuilder: (ctx, i) {
                 final z = zones[i];
                 final count = tables.where((t) => t.zoneId == z.id).length;
-                return _ZoneRow(
+                return _ZoneAdminRow(
                   key: ValueKey(z.id),
                   index: i,
                   zone: z,
@@ -858,13 +858,13 @@ class _ZonesEditor extends ConsumerWidget {
   }
 }
 
-class _ZoneRow extends StatelessWidget {
+class _ZoneAdminRow extends StatelessWidget {
   final int index;
   final Zone zone;
   final int tableCount;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  const _ZoneRow({
+  const _ZoneAdminRow({
     super.key,
     required this.index,
     required this.zone,

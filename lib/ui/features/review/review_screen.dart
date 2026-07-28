@@ -197,7 +197,7 @@ class ReviewScreen extends ConsumerWidget {
                           CourseId.fireNow,
                         ])
                           if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
-                            _CourseBlock(
+                            _ReviewCourseBlock(
                               course: Courses.byId(cid),
                               items: grouped[cid]!,
                               onRemove: (id) => ref
@@ -544,11 +544,11 @@ Future<String?> _askGuestName(BuildContext context) {
   );
 }
 
-class _CourseBlock extends StatelessWidget {
+class _ReviewCourseBlock extends StatelessWidget {
   final Course course;
   final List<CartItem> items;
   final void Function(String) onRemove;
-  const _CourseBlock({
+  const _ReviewCourseBlock({
     required this.course,
     required this.items,
     required this.onRemove,

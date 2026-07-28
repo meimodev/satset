@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
@@ -243,7 +244,10 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                 ),
               ),
             ),
-          _Head(item: widget.item, onClose: () => Navigator.of(context).pop()),
+          _ModifierHead(
+            item: widget.item,
+            onClose: () => Navigator.of(context).pop(),
+          ),
           Expanded(
             child: SingleChildScrollView(
               controller: widget.scrollController,
@@ -425,45 +429,33 @@ class _TagLine extends StatelessWidget {
   }
 }
 
-class _Head extends StatelessWidget {
+class _ModifierHead extends StatelessWidget {
   final MenuItem item;
   final VoidCallback onClose;
-  const _Head({required this.item, required this.onClose});
+  const _ModifierHead({required this.item, required this.onClose});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
-      child: Row(
+    return SatSheetHeader(
+      onClose: onClose,
+      padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s3, Sp.s3, Sp.s3h),
+      leading: SizedBox(
+        width: 64,
+        height: 64,
+        child: MenuPhoto(
+          itemId: item.id,
+          name: item.name,
+          photoRev: item.photoRev,
+          borderRadius: SatR.lg,
+        ),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 64,
-            height: 64,
-            child: MenuPhoto(
-              itemId: item.id,
-              name: item.name,
-              photoRev: item.photoRev,
-              borderRadius: SatR.a(14),
-            ),
-          ),
-          const SizedBox(width: Sp.s3h),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.name, style: SatType.h3(color: sc.textHi)),
-                const SizedBox(height: Sp.s1),
-                Text(item.description, style: SatType.bodyS(color: sc.textMd)),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: AppStrings.close,
-            onPressed: onClose,
-            icon: Icon(Icons.close, size: 18, color: sc.textMd),
-          ),
+          Text(item.name, style: SatType.h3(color: sc.textHi)),
+          const SizedBox(height: Sp.s1),
+          Text(item.description, style: SatType.bodyS(color: sc.textMd)),
         ],
       ),
     );

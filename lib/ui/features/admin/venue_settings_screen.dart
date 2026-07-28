@@ -852,7 +852,8 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
   ) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _PhoneDetailScreen(title: title, builder: builder),
+        builder: (_) =>
+            _VenueSettingsPhoneDetail(title: title, builder: builder),
       ),
     );
   }
@@ -1462,10 +1463,10 @@ class _ReportsHourCard extends ConsumerWidget {
   }
 }
 
-class _PhoneDetailScreen extends StatelessWidget {
+class _VenueSettingsPhoneDetail extends StatelessWidget {
   final String title;
   final Widget Function(BuildContext, SatColors) builder;
-  const _PhoneDetailScreen({required this.title, required this.builder});
+  const _VenueSettingsPhoneDetail({required this.title, required this.builder});
 
   @override
   Widget build(BuildContext context) {

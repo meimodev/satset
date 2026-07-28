@@ -526,7 +526,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           Column(
             children: [
               appBar,
-              _Header(
+              _TableDetailHeader(
                 table: table,
                 zoneName: zone.name,
                 canEditGuests: canEditGuests,
@@ -563,7 +563,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                     grouped[cid]!.isNotEmpty)
                                   Reveal(
                                     index: i,
-                                    child: _CourseBlock(
+                                    child: _DetailCourseBlock(
                                       course: Courses.byId(cid),
                                       items: grouped[cid]!,
                                       readOnly: readOnly,
@@ -625,7 +625,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
   }
 }
 
-/// Per-second tick used by the live elapsed pill in [_Header]. autoDispose so
+/// Per-second tick used by the live elapsed pill in [_TableDetailHeader]. autoDispose so
 /// the stream stops while no table_detail screen is mounted.
 final _detailElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   (ref) => Stream<DateTime>.periodic(
@@ -634,7 +634,7 @@ final _detailElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   ),
 );
 
-class _Header extends ConsumerWidget {
+class _TableDetailHeader extends ConsumerWidget {
   final VenueTable table;
   final String zoneName;
   final bool canEditGuests;
@@ -642,7 +642,7 @@ class _Header extends ConsumerWidget {
   final VoidCallback onPlusPax;
   final int alertCount;
   final VoidCallback onShowContext;
-  const _Header({
+  const _TableDetailHeader({
     required this.table,
     required this.zoneName,
     required this.canEditGuests,
@@ -905,7 +905,7 @@ class _ContextSheet extends StatelessWidget {
   }
 }
 
-class _CourseBlock extends StatelessWidget {
+class _DetailCourseBlock extends StatelessWidget {
   final Course course;
   final List<Ticket> items;
   final void Function(String) onMarkServed;
@@ -913,7 +913,7 @@ class _CourseBlock extends StatelessWidget {
   final void Function(Ticket) onTicketTap;
   final bool readOnly;
 
-  const _CourseBlock({
+  const _DetailCourseBlock({
     required this.course,
     required this.items,
     required this.onMarkServed,
@@ -1510,7 +1510,7 @@ class _TabletSplit extends StatelessWidget {
                                         grouped[cid]!.isNotEmpty)
                                       Reveal(
                                         index: i,
-                                        child: _CourseBlock(
+                                        child: _DetailCourseBlock(
                                           course: Courses.byId(cid),
                                           items: grouped[cid]!,
                                           readOnly: readOnly,

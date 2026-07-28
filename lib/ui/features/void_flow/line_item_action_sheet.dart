@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -165,7 +165,7 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
               decoration: SatBox.d(color: sc.textDim, borderRadius: SatR.a(4)),
             ),
           ),
-          _Head(
+          _LineActionHead(
             ticket: ticket,
             tableName:
                 widget.displayName ??
@@ -202,11 +202,11 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
   }
 }
 
-class _Head extends StatelessWidget {
+class _LineActionHead extends StatelessWidget {
   final Ticket ticket;
   final String tableName;
   final VoidCallback onClose;
-  const _Head({
+  const _LineActionHead({
     required this.ticket,
     required this.tableName,
     required this.onClose,
@@ -215,48 +215,37 @@ class _Head extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 8, 14),
-      child: Row(
+    return SatSheetHeader(
+      onClose: onClose,
+      padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s1h, Sp.s2, Sp.s3h),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    StatusChip(status: ticket.status),
-                    const SizedBox(width: Sp.s2),
-                    Flexible(
-                      child: Text(
-                        'MEJA $tableName · ${ticket.sentAt}',
-                        style: SatType.monoS(color: sc.textLo),
-                      ),
-                    ),
-                  ],
+          Row(
+            children: [
+              StatusChip(status: ticket.status),
+              const SizedBox(width: Sp.s2),
+              Flexible(
+                child: Text(
+                  'MEJA $tableName · ${ticket.sentAt}',
+                  style: SatType.monoS(color: sc.textLo),
                 ),
-                const SizedBox(height: Sp.s1h),
-                Text(
-                  '×${ticket.qty} ${ticket.name}${ticket.variantName.isEmpty ? '' : ' · ${ticket.variantName}'}',
-                  style: SatType.h3(color: sc.textHi),
-                ),
-                if (ticket.modifiers.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: Sp.s1),
-                    child: Text(
-                      ticket.modifiers.map((m) => m.display).join(' · '),
-                      style: SatType.bodyS(color: sc.textMd),
-                    ),
-                  ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.s1h),
+          Text(
+            '×${ticket.qty} ${ticket.name}${ticket.variantName.isEmpty ? '' : ' · ${ticket.variantName}'}',
+            style: SatType.h3(color: sc.textHi),
+          ),
+          if (ticket.modifiers.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: Sp.s1),
+              child: Text(
+                ticket.modifiers.map((m) => m.display).join(' · '),
+                style: SatType.bodyS(color: sc.textMd),
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: AppStrings.close,
-            onPressed: onClose,
-            icon: Icon(Icons.close, size: 18, color: sc.textMd),
-          ),
         ],
       ),
     );
