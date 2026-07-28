@@ -176,8 +176,9 @@ void main() {
       expect(SatShape.brightness, Brightness.dark);
       expect(SatShape.brutalPaper, isFalse);
 
-      // A soft light palette is not "paper" — brutalPaper gates shape, not hue.
-      SatTheme.indigoTerang.adopt();
+      // A light palette on a non-brutal skin is not "paper" — brutalPaper gates
+      // shape, not hue.
+      SatTheme.neonTerang.adopt();
       expect(SatShape.brightness, Brightness.light);
       expect(SatShape.brutalPaper, isFalse);
     });
@@ -193,7 +194,6 @@ void main() {
       const expected = {
         SatTheme.amberGelap: SatSkin.lembut,
         SatTheme.amberTerang: SatSkin.lembut,
-        SatTheme.indigoTerang: SatSkin.lembut,
         SatTheme.neoKertas: SatSkin.brutal,
         SatTheme.neoMidnight: SatSkin.brutal,
         SatTheme.neonGelap: SatSkin.glow,

@@ -213,50 +213,6 @@ class SatColors extends ThemeExtension<SatColors> {
     cFire: _accent,
   );
 
-  // ── Indigo Terang ─────────────────────────────────────────────────────────
-  // Cool paper rather than the warm cream of `light`, so the two light themes
-  // are told apart at a glance. `info` shifts to cyan (ADR-0045) so the indigo
-  // accent is the only blue that means "primary".
-  static const _indigoAccent = Color(0xFF3538CD);
-  static const _indigoInfo = Color(0xFF0891B2);
-
-  static const indigoTerang = SatColors(
-    bg0: Color(0xFFF4F5F8),
-    bg1: Color(0xFFFFFFFF),
-    bg2: Color(0xFFFAFBFD),
-    bg3: Color(0xFFE9EBF1),
-    bg4: Color(0xFFDCDFE8),
-    border0: Color(0x0D000000),
-    border1: Color(0x17000000),
-    border2: Color(0x29000000),
-    textHi: Color(0xFF16181D),
-    textMd: Color(0xFF4B4F5A),
-    textLo: Color(0xFF7C818E),
-    textDim: Color(0xFFAAAEB9),
-    accent: _indigoAccent,
-    accentText: _indigoAccent,
-    accentSoft: Color(0x1A3538CD),
-    accentBorder: Color(0x593538CD),
-    accentInk: Color(0xFFFFFFFF),
-    success: _success,
-    successSoft: Color(0x244DD487),
-    successInk: _onSuccessInk,
-    warn: _warn,
-    warnSoft: Color(0x24FFC04D),
-    urgent: _urgent,
-    urgentSoft: Color(0x24FF5C5C),
-    info: _indigoInfo,
-    infoSoft: Color(0x240891B2),
-    violet: _violet,
-    violetSoft: Color(0x24C08AFF),
-    scrim: Color(0xFFFFFFFF),
-    cDrinks: _indigoInfo,
-    cStarters: _warn,
-    cMains: _success,
-    cDesserts: _violet,
-    cFire: _indigoAccent,
-  );
-
   // ── Neo Kertas ────────────────────────────────────────────────────────────
   // Neo-brutalist paper. Cream ground, siren yellow, and every rule a solid
   // black line — the ramp carries no translucency at all, because the skin

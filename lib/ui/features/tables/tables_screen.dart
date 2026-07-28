@@ -11,7 +11,12 @@ import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
+import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/ui/core/widgets/elapsed_pill.dart';
+import 'package:satset/ui/core/widgets/pulse_dot.dart';
+import 'package:satset/ui/features/tables/view_models/floor_signals.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -197,6 +202,7 @@ class _FloorHead extends ConsumerWidget {
               ? '$late ${AppStrings.floorReservationsLateCount}'
               : null,
           compact: !tablet,
+          prominent: true,
           onTap: () => openReservationsSurface(context, tablet: tablet),
         ),
         _FloorAction(
@@ -258,6 +264,13 @@ class _FloorAction extends StatelessWidget {
   final int count;
   final String? alert;
   final bool compact;
+
+  /// The reservations trigger is the one action on this row the source design
+  /// actually specifies: a solid accent pill carrying its count in an obsidian
+  /// badge, which flips *whole* to `urgent` when a booking runs late rather
+  /// than growing a second red block beside itself. Takeaway and New Order
+  /// have no counterpart in the design and keep the neutral chip.
+  final bool prominent;
   final VoidCallback onTap;
   const _FloorAction({
     required this.icon,
@@ -266,12 +279,32 @@ class _FloorAction extends StatelessWidget {
     required this.compact,
     required this.onTap,
     this.alert,
+    this.prominent = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     final brutal = SatShape.brutal;
+    // Lembut has no poster idiom to borrow, so prominence there stays the
+    // neutral chip. The accent fill is a two-poster-skin device.
+    final loud = prominent && !SatShape.lembut;
+    final isLate = alert != null;
+
+    final Color fill = loud
+        ? (isLate ? sc.urgent : sc.accent)
+        : sc.bg2;
+    final Color ink = loud
+        ? (isLate ? sc.inkOn(sc.urgent) : sc.accentInk)
+        : sc.textHi;
+
+    // The count badge is an obsidian block in both Glow palettes, so it reads
+    // its own fill and ink from `slab` rather than from the button underneath
+    // it (ADR-0051). Lime on obsidian normally; white on obsidian when late,
+    // because lime on a red button is two accents fighting.
+    final badgeFill = sc.slab.bg0;
+    final badgeInk = isLate ? sc.slab.textHi : sc.slab.accent;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -281,44 +314,71 @@ class _FloorAction extends StatelessWidget {
           vertical: compact ? 9 : 11,
         ),
         decoration: SatBox.d(
-          color: sc.bg2,
-          borderRadius: SatR.a(12),
-          border: SatB.all(color: alert != null ? sc.urgent : sc.border0),
+          color: fill,
+          borderRadius: loud ? SatR.pill : SatR.a(12),
+          border: SatB.all(
+            color: loud ? fill : (isLate ? sc.urgent : sc.border0),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: sc.textMd),
+            Icon(icon, size: 16, color: loud ? ink : sc.textMd),
             if (!compact) ...[
               const SizedBox(width: Sp.s2),
               Text(
                 SatShape.caps(label),
-                style: (brutal
-                    ? SatType.labelS(color: sc.textHi)
-                    : SatType.bodyS(color: sc.textHi)),
+                style: loud
+                    ? SatType.labelM(color: ink)
+                    : (brutal
+                          ? SatType.labelS(color: sc.textHi)
+                          : SatType.bodyS(color: sc.textHi)),
               ),
             ],
             const SizedBox(width: Sp.s2),
-            Text('$count', style: SatType.monoM(color: sc.textMd)),
-            if (alert != null) ...[
-              const SizedBox(width: Sp.s2),
+            if (loud)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s1h,
-                  vertical: Sp.sHair,
+                constraints: const BoxConstraints(minWidth: 22),
+                height: 22,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
+                decoration: SatBox.d(
+                  color: badgeFill,
+                  borderRadius: SatR.pill,
                 ),
-                decoration: BoxDecoration(
-                  color: sc.urgent,
-                  borderRadius: SatR.a(5),
-                  border: brutal
-                      ? Border.all(color: SatShape.ink, width: 2)
-                      : null,
-                ),
-                child: Text(
+                child: Text('$count', style: SatType.caption(color: badgeInk)),
+              )
+            else
+              Text('$count', style: SatType.monoM(color: sc.textMd)),
+            if (isLate) ...[
+              const SizedBox(width: Sp.s2),
+              if (loud)
+                // The button is already urgent; the overrun rides on it at
+                // reduced opacity instead of stacking a second red block.
+                Text(
                   SatShape.caps(alert!),
-                  style: SatType.labelS(color: onFill(sc.urgent)),
+                  style: SatType.labelS(
+                    color: ink.withValues(alpha: 0.85),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Sp.s1h,
+                    vertical: Sp.sHair,
+                  ),
+                  decoration: BoxDecoration(
+                    color: sc.urgent,
+                    borderRadius: SatR.a(5),
+                    border: brutal
+                        ? Border.all(color: SatShape.ink, width: 2)
+                        : null,
+                  ),
+                  child: Text(
+                    SatShape.caps(alert!),
+                    style: SatType.labelS(color: onFill(sc.urgent)),
+                  ),
                 ),
-              ),
             ],
           ],
         ),
@@ -411,7 +471,15 @@ class _NewOrderButton extends ConsumerWidget {
   }
 }
 
-class _TablesZoneRow extends StatelessWidget {
+/// How many tables in one zone are stuck, split by tier. Crit outranks warn.
+class _ZoneAlarm {
+  final int crit;
+  final int warn;
+  const _ZoneAlarm(this.crit, this.warn);
+  bool get any => crit > 0 || warn > 0;
+}
+
+class _TablesZoneRow extends ConsumerWidget {
   final List<VenueTable> tables;
   final List<Zone> zones;
   final String active;
@@ -426,9 +494,51 @@ class _TablesZoneRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final brutal = SatShape.brutal;
+
+    // Each card already computes its own staleness, but a waiter standing in
+    // Teras cannot see that Lantai 2 has two tables screaming — so the strip
+    // re-derives the same signal one level up. A zone is a dozen or two tables
+    // and there are a handful of zones, so this is a cheap sweep.
+    //
+    // 30s ticker, not the card's 1s one: every threshold here is
+    // minute-granular, and rebuilding the whole strip once a second to move
+    // nothing is waste.
+    ref.watch(elapsedTickerProvider);
+    final now = SatClock.now();
+    final settings = ref.watch(venueSettingsProvider);
+    final ticketsByVisit = ref.watch(ticketsProvider);
+    final reservations = ref.watch(reservationsRepositoryProvider);
+    final dayStart = businessDayStart(now, settings.businessDayStartHour);
+
+    _ZoneAlarm alarmFor(String zoneId) {
+      var crit = 0;
+      var warn = 0;
+      for (final t in tables.where((t) => t.zoneId == zoneId)) {
+        final visitId = t.currentVisitId;
+        final lines = visitId == null
+            ? const <Ticket>[]
+            : (ticketsByVisit[visitId] ?? const <Ticket>[]);
+        final stale = staleFor(
+          table: t,
+          lines: lines,
+          hold: reservationHoldFor(t, reservations, now, dayStart: dayStart),
+          service: serviceStateFor(t, lines, settings, now),
+          s: settings,
+          now: now,
+        );
+        if (stale == null) continue;
+        if (stale.severity == StaleSeverity.crit) {
+          crit++;
+        } else {
+          warn++;
+        }
+      }
+      return _ZoneAlarm(crit, warn);
+    }
+
     final padH = tablet ? 32.0 : 16.0;
     final padV = tablet ? 12.0 : 10.0;
     return Padding(
@@ -449,13 +559,19 @@ class _TablesZoneRow extends StatelessWidget {
             final countLabel = ready > 0
                 ? '$ready siap'
                 : '${zoneTables.length}';
+            final alarm = alarmFor(z.id);
             final dur = motionEnabled(context) ? _kChipMorph : Duration.zero;
             // Both poster skins fill the selected chip with the accent and keep
             // ink on it — Glow's zone tabs are solid lime pills. Lembut inverts
             // to the text ramp as before.
+            //
+            // An unselected zone holding a crit warms its own ground, so the
+            // strip reads as "something is wrong over there" before you parse
+            // the number. Selection still wins the fill: the zone you are in
+            // is the one you are looking at.
             final fill = isActive
                 ? (SatShape.lembut ? sc.textHi : sc.accent)
-                : sc.bg2;
+                : (alarm.crit > 0 ? sc.urgentSoft : sc.bg2);
             final fg = isActive
                 ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
                 : sc.textMd;
@@ -490,16 +606,22 @@ class _TablesZoneRow extends StatelessWidget {
                         child: Text(SatShape.caps(z.name)),
                       ),
                       const SizedBox(width: Sp.s2h),
-                      AnimatedDefaultTextStyle(
-                        duration: dur,
-                        curve: satEaseOut,
-                        style: SatType.monoS(
-                          color: isActive
-                              ? fg.withValues(alpha: brutal ? 1 : 0.6)
-                              : sc.textLo,
+                      // The alarm *replaces* the count rather than sitting
+                      // beside it. "3 siap" and "2 stuck" compete for the same
+                      // glance, and only one of them is a thing to go do.
+                      if (alarm.any)
+                        _ZoneAlarmBadge(crit: alarm.crit, warn: alarm.warn)
+                      else
+                        AnimatedDefaultTextStyle(
+                          duration: dur,
+                          curve: satEaseOut,
+                          style: SatType.monoS(
+                            color: isActive
+                                ? fg.withValues(alpha: brutal ? 1 : 0.6)
+                                : sc.textLo,
+                          ),
+                          child: Text(countLabel),
                         ),
-                        child: Text(countLabel),
-                      ),
                     ],
                   ),
                 ),
@@ -507,6 +629,43 @@ class _TablesZoneRow extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// Escalation badge on a zone chip. Carries a live dot because a static red
+/// pill in a strip of red pills stops being seen — the movement is what pulls
+/// the eye across the room, and `PulseDot` holds at its midpoint under reduced
+/// motion rather than going dark.
+class _ZoneAlarmBadge extends StatelessWidget {
+  final int crit;
+  final int warn;
+  const _ZoneAlarmBadge({required this.crit, required this.warn});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final isCrit = crit > 0;
+    final tone = isCrit ? sc.urgent : sc.warn;
+    final ink = sc.inkOn(tone);
+    return Container(
+      constraints: const BoxConstraints(minWidth: 22),
+      height: 20,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
+      decoration: SatBox.d(color: tone, borderRadius: SatR.pill),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ponytail: one pulse period for both tiers. The source blips crit at
+          // 1.1s and warn at 2.2s; PulseDot has a single cycle, and the fill
+          // colour already separates the tiers. Split it only if the two ever
+          // appear side by side often enough for the rhythm to carry meaning.
+          PulseDot(color: ink),
+          const SizedBox(width: Sp.s1h),
+          Text('${isCrit ? crit : warn}', style: SatType.caption(color: ink)),
+        ],
       ),
     );
   }

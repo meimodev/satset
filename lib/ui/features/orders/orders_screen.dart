@@ -12,6 +12,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -43,6 +44,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       for (final v in ref.watch(takeawayVisitsProvider)) v.id: v,
     };
     final staff = ref.watch(staffRepositoryProvider);
+    final zones = ref.watch(zonesProvider);
     final venueName = ref.watch(
       venueSettingsProvider.select((s) => s.displayName),
     );
@@ -67,7 +69,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       final takeaway = table == null ? takeaways[key] : null;
       if (table == null && takeaway == null) return;
       final name = table?.displayName ?? takeaway!.label;
-      final zoneId = table?.zoneId ?? '';
+      // Resolved to a name here rather than carried as an id: the board is the
+      // one place a waiter reads lines from tables that are not theirs, and
+      // "Teras" is what tells them where to walk. Takeaway has no zone.
+      final zoneName = table == null
+          ? ''
+          : (zones.where((z) => z.id == table.zoneId).firstOrNull?.name ?? '');
       final pax = table?.pax ?? 0;
       for (final t in list) {
         final orderer = t.createdBy == null
@@ -78,7 +85,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ticket: t,
             tableId: table?.id ?? key,
             tableName: name,
-            zoneId: zoneId,
+            zoneName: zoneName,
             pax: pax,
             orderer: orderer,
             isTakeaway: takeaway != null,
@@ -263,24 +270,24 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             padding: const EdgeInsets.fromLTRB(32, 0, 32, 12),
             child: Row(
               children: [
-                _TabletSeg(
+                SatChip.select(
                   label: 'Siap diambil',
                   count: ready.length,
-                  active: _seg == 'ready',
+                  selected: _seg == 'ready',
                   onTap: () => setState(() => _seg = 'ready'),
                 ),
                 const SizedBox(width: Sp.s2),
-                _TabletSeg(
+                SatChip.select(
                   label: 'Disiapkan',
                   count: active.length,
-                  active: _seg == 'active',
+                  selected: _seg == 'active',
                   onTap: () => setState(() => _seg = 'active'),
                 ),
                 const SizedBox(width: Sp.s2),
-                _TabletSeg(
+                SatChip.select(
                   label: 'Selesai',
                   count: done.length,
-                  active: _seg == 'done',
+                  selected: _seg == 'done',
                   onTap: () => setState(() => _seg = 'done'),
                 ),
                 const Spacer(),
@@ -359,7 +366,7 @@ class _Row {
   final Ticket ticket;
   final String tableId;
   final String tableName;
-  final String zoneId;
+  final String zoneName;
   final int pax;
   final AppUser? orderer;
   final bool isTakeaway;
@@ -371,7 +378,7 @@ class _Row {
     required this.ticket,
     required this.tableId,
     required this.tableName,
-    required this.zoneId,
+    required this.zoneName,
     required this.pax,
     this.orderer,
     this.isTakeaway = false,
@@ -595,6 +602,11 @@ class _OrderRow extends StatelessWidget {
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
+                            if (row.zoneName.isNotEmpty)
+                              Text(
+                                row.zoneName,
+                                style: SatType.monoS(color: sc.textLo),
+                              ),
                             StatusChip(status: t.status),
                             ElapsedPill(
                               sentAtTime: t.sentAtTime,
@@ -628,50 +640,3 @@ class _OrderRow extends StatelessWidget {
   }
 }
 
-class _TabletSeg extends StatelessWidget {
-  final String label;
-  final int count;
-  final bool active;
-  final VoidCallback onTap;
-  const _TabletSeg({
-    required this.label,
-    required this.count,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Sp.s4,
-          vertical: Sp.s2h,
-        ),
-        decoration: SatBox.d(
-          color: active ? sc.textHi : sc.bg2,
-          border: SatB.all(color: active ? sc.textHi : sc.border0),
-          borderRadius: SatR.a(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: SatType.bodyM(color: active ? sc.bg0 : sc.textMd),
-            ),
-            const SizedBox(width: Sp.s2h),
-            Text(
-              '$count',
-              style: SatType.monoS(
-                color: active ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

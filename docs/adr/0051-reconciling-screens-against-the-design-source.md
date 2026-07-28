@@ -130,3 +130,173 @@ Hover (`translateY(-2px)`) is not ported. These are touch devices.
   the order flow. That is a known, bounded gap, not drift.
 - Every change here is skin-conditional. The other five themes render byte for
   byte as before, which is what let this land without a visual regression suite.
+
+## Amendment — `SatChip.select` fills with the accent, not the slab
+
+"Selected states become fills" above says zone tabs, category tabs and course
+chips fill "with the accent (or the slab)". The parenthesis was doing too much
+work. `SatChip.select` read it as *the slab*, and shipped every selected chip in
+the app on obsidian.
+
+The source design is not ambiguous. `glow.css` groups the segment and zone
+controls together on the accent:
+
+```css
+[data-skin="glow"] .zone-tab.active,
+[data-skin="glow"] .tab-zone-btn.active,
+[data-skin="glow"] .tab-seg.active { background: var(--lime); color: var(--obsidian); }
+```
+
+and reserves the obsidian slab for one control only:
+
+```css
+[data-skin="glow"] .cat-tab.active { background: var(--obsidian); color: #FFFFFF; }
+```
+
+The symptom was two controls the design styles identically rendering
+differently: the Meja zone row hand-rolls its chip and painted `sc.accent`,
+while the reservation filters went through `SatChip.select` and came out
+obsidian.
+
+**So: `SatChip.select` fills with `sc.accent` and takes `sc.accentInk` when
+selected under Glow.** The border collapses into the fill — Glow draws no rules,
+and the fill is already carrying the state. The obsidian slab stays where the
+design put it: the active menu category tab, which does not go through
+`SatChip`.
+
+This changes every filter row in the app — the KDS completed filter, the admin
+filters, the reservation filters — which is the point. They were the drift.
+
+### `SatTabs` too
+
+The first cut of this amendment named the Pesanan segments as one of the rows it
+fixed. That was wrong: the Pesanan scope switch is a `SatTabs`, not a
+`SatChip.select`, so it kept its obsidian fill and became the new odd one out —
+sitting on the same screen as a lime zone strip and a lime filter row, marking
+the same kind of state a different colour. Verified on device: Meja's zone strip
+and the reservation filters rendered lime while `Siap diambil` rendered black.
+
+`.tab-seg` in the rule above *is* the segmented strip. It was quoted as evidence
+here and then not applied. So `SatTabs` takes the same treatment: under Glow a
+selected tab fills `sc.accent` and inks `sc.accentInk`. The badge follows the
+label onto the fill rather than staying on `textLo`, which would leave a mid-grey
+number on lime.
+
+The black pill actually on screen turned out not to be either widget. Pesanan's
+tablet bucket strip was `_TabletSeg`, a private lookalike of `SatChip.select`
+that hardcoded `sc.textHi` as its fill and knew nothing about skins — so it
+stayed obsidian no matter what the shared controls did. It is deleted; the strip
+is a `SatChip.select` row like its phone counterpart.
+
+Worth flagging: `design_tokens_test.dart`'s "no private lookalikes of a shared
+control" ban did not catch `_TabletSeg`, and it was never allow-listed. The ban
+misses a lookalike that reaches for the neutral ramp instead of a semantic token.
+
+Non-Glow skins are untouched on both widgets — `bg3`/`bg4` and `textHi` as
+before.
+
+`sc.slab` keeps its other five readers from the table above, so the field still
+earns its place.
+
+## Amendment — the KDS ticket card
+
+§Scope above left "admin, KDS, cashier and the void flow" on the fall-through
+and said the reconciliation was "worth doing as its own pass". This is that
+pass, for the one card on that list that matters most: the kitchen ticket.
+
+### Composition lands on every skin; only the paint is Glow's
+
+The earlier amendments were entirely skin-conditional, which is what let them
+ship without a visual regression suite. This one is not, and deliberately. The
+source's head carries things the app's head simply did not have — the course,
+a TELAT tag, the arrival clock — and those are facts a cook needs under an
+amber palette exactly as much as under a lime one. Withholding them from five
+palettes to keep the diff conditional would be conditional formatting standing
+in for a decision.
+
+So: **composition everywhere, paint gated.** The head is a `bg3` band with a
+hairline under the neutral skins and an obsidian `sc.slab` under Glow — which
+is the source's own split, `rgba(0,0,0,0.25)` in the base CSS and
+`background: var(--obsidian)` in `glow.css`.
+
+Worth recording, because it was the stated reason for choosing this over the
+conditional route and it did not hold: the golden matrix did **not** move. It
+covers `core/widgets` in the two amber themes, and the kitchen screen is not in
+it. This work is still invisible to CI. Device verification remains the only
+check that sees it.
+
+### What the head became
+
+`[table] [course ×n] [TELAT] → [timer / masuk hh:mm]`
+
+- The table id is a numeral at `h3`, not a `bg3` chip. It is the first thing
+  read and the source sets it at 22px/800.
+- One course pill per distinct course in the group, flat `accent`, filled. The
+  source's ticket *is* a course, so its pill always has one honest value; the
+  app groups by send, and a waiter who fires drinks and mains together makes a
+  card that carries both. Naming them is information the cook did not get.
+  Never the per-course hue — those are tuned as ink on the page, and five of
+  them stacked on obsidian is the same muddiness the course dot hit above.
+- `_AgePill` is deleted. The timer is bare stacked numerals, `masuk 18:05`
+  beneath, and its ink runs **neutral → warn → urgent** rather than
+  **success → warn → urgent**. Glow paints the calm case `accent`, because
+  `textMd` on an obsidian slab is a mutter — that is the one place the source's
+  lime survives. Losing green-for-fine is the point: a ticket two minutes old is
+  not news, and spending a colour on the good case is how `urgent` stops being
+  read.
+- `PulseDot` gives way to a 1.4s opacity pulse on the numerals themselves, per
+  the source. Reduced motion collapses to full opacity, still red — the colour
+  is the signal, the pulse only makes it findable.
+
+### Tiers, and where the thresholds came from
+
+The warn tier moves from 5 to **7 minutes**, which is the source's
+`LATE_MIN × 0.7`. Late stays at 10. Under Glow each tier is a hard ring —
+`BoxShadow(spreadRadius: n, blurRadius: 0)` over `SatShape.lift`, the shape
+`TableCard` already gives a crit table — because Glow draws no rules and a
+fatter border is not available to it. The other skins get border colour and
+width, as before.
+
+Late also tints the whole card `urgentSoft`. The source has a dedicated
+`lateTint`; `urgentSoft` is the app's existing token for the same job and the
+reservation late row already made that substitution.
+
+The source's `is-done` card state and its SELESAI tag are **not** ported. Done
+cards sit behind a filter and are not what the screen is for.
+
+### The item row, and two shared controls
+
+Rows take the source's 3px left bar (`accent` while it is work, `success` once
+it is not), a 26px tick moved to the left, and the qty inline as `×2` before
+the name rather than as a chip. Row height stays at **60**, not the source's
+44: this screen is wall-mounted and read at 1–2 m, and 44 is a phone number.
+
+Two shared controls gained an axis rather than being forked — the `_TabletSeg`
+lesson from the amendment above:
+
+- **`SatChip.tag(filled: true)`** fills the hue and inks via `inkOn`. The source
+  separates a chosen option (`bg3`, muted) from a paid add-on (solid lime): one
+  changes how the dish is made, the other puts something extra on the plate. The
+  first cut of this ADR argued the accent *tint* was close enough. It is not —
+  at the same volume as the option beside it, the extra is the one that gets
+  forgotten. `neutral` ignores the flag; its tint is already flat `bg3`.
+- **`NoteLine(alert: true)`** renders the note as a filled `urgentSoft` block
+  with `textHi` ink. This contradicts that widget's own doc comment — "reference
+  text the staff jotted down, **not** an alert" — and the comment now carries
+  the exception and its reason. The same string is two things: at the table
+  "Alergi kacang" is a jotting, at the pass it decides whether the plate goes
+  out or into the bin. The note also stays at full opacity when the item is
+  ticked off, per the source, because it is still true afterwards.
+
+### Where fidelity was traded
+
+- **The progress bar stays.** The source has only a footed `3 / 4 siap` line at
+  11px. Both ship: the words for the cook standing at the card, the bar for
+  anyone reading it from across the room, where 11px is not a size.
+- **Tap does not toggle.** The source's item is a tap-to-toggle button. The app
+  keeps tap-hints-and-long-press-commits — an accidental brush must not advance
+  a ticket on a line — so the tick is an indicator, not a control, and only its
+  position was taken.
+- **`formatStationTimer` is new** rather than reusing `formatElapsedId`. A
+  ticket timer is compared against the ticket beside it, so it wants `8:42` and
+  a fixed shape, not the prose `8m 42d` the table and shift counters use.

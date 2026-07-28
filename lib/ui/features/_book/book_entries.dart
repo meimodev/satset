@@ -432,7 +432,9 @@ List<BookEntry> bookEntries() => [
     group: _gControls,
     note:
         'Two shapes: .tag states a fact, .select takes a tap. Selection is a '
-        'fill, never a tint — under Glow it becomes a slab (ADR-0051).',
+        'fill, never a tint — under Glow it becomes a slab (ADR-0051). '
+        '.tag(filled:) raises a fact that changes what someone does; neutral '
+        'ignores it.',
     states: [
       BookState(
         'tag — every hue',
@@ -485,6 +487,51 @@ List<BookEntry> bookEntries() => [
             label: 'Tidak tersedia untuk hari ini',
             hue: SatChipHue.urgent,
           ),
+        ),
+      ),
+      // Appended, not inserted: `control_golden_test` keys its baselines off
+      // state *position*, so slotting these in beside the other `.tag` states
+      // would re-baseline two files that did not change.
+      BookState(
+        'tag — filled, every hue',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          children: [
+            for (final h in SatChipHue.values)
+              SatChip.tag(label: h.name, hue: h, filled: true),
+          ],
+        ),
+      ),
+      // The comparison the axis rests on: on the KDS these sit on one line,
+      // one a chosen option and one a paid add-on. If the fill does not read
+      // louder than the tint at a glance it is not earning its place.
+      // `neutral` is here to show the no-op — a solid neutral is the tint it
+      // already was.
+      BookState(
+        'tag — tint vs fill, side by side',
+        (c, r) => const Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          children: [
+            SatChip.tag(label: 'Pedas sedang', size: SatChipSize.sm),
+            SatChip.tag(
+              label: '+ Telur',
+              hue: SatChipHue.accent,
+              size: SatChipSize.sm,
+            ),
+            SatChip.tag(
+              label: '+ Telur',
+              hue: SatChipHue.accent,
+              size: SatChipSize.sm,
+              filled: true,
+            ),
+            SatChip.tag(
+              label: 'neutral filled = no-op',
+              size: SatChipSize.sm,
+              filled: true,
+            ),
+          ],
         ),
       ),
     ],
@@ -1550,11 +1597,41 @@ List<BookEntry> bookEntries() => [
   BookEntry(
     name: 'NoteLine',
     group: _gContent,
+    note:
+        'Quiet reference text — never urgent-coloured. alert: is the one '
+        'exception, for the KDS ticket card: at the pass the note is a '
+        'constraint, not a jotting (ADR-0051).',
     states: [
       BookState('short', (c, r) => const NoteLine(text: 'Tanpa sambal.')),
       BookState(
         'custom label',
         (c, r) => const NoteLine(text: 'Alergi kacang.', label: 'Catatan tamu'),
+      ),
+      BookState(
+        'alert — KDS only',
+        (c, r) => const NoteLine(
+          text: 'Alergi kacang — tanpa garnish sate.',
+          label: 'Instruksi khusus',
+          alert: true,
+        ),
+      ),
+      // The comparison the exception rests on. If these read the same the
+      // flag is not doing anything and the doc comment's rule should just
+      // stand.
+      BookState(
+        'quiet vs alert, same string',
+        (c, r) => const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NoteLine(text: 'Tanpa telur.', label: 'Instruksi khusus'),
+            SizedBox(height: Sp.s2),
+            NoteLine(
+              text: 'Tanpa telur.',
+              label: 'Instruksi khusus',
+              alert: true,
+            ),
+          ],
+        ),
       ),
       BookState(
         'empty — renders nothing',
@@ -1563,6 +1640,10 @@ List<BookEntry> bookEntries() => [
       BookState(
         'stress — two-line note',
         (c, r) => const NoteLine(text: BookStubs.longNote),
+      ),
+      BookState(
+        'stress — two-line, alert',
+        (c, r) => const NoteLine(text: BookStubs.longNote, alert: true),
       ),
     ],
   ),

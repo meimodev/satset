@@ -531,7 +531,7 @@ A [[Void (item)|void]] returns stock **only if the line was still `sent`** (the 
 
 
 ### Tema (Theme)
-The whole look of the staff app — background ramp, accent, and semantic hues together — picked as one named unit, not assembled from a palette plus a light/dark switch. Seven ship today: **Neon Terang** (default), **Neon Gelap**, **Amber Gelap**, **Amber Terang**, **Indigo Terang**, **Neo Kertas**, **Neo Midnight**. Each declares its own brightness, so there is no separate dark-mode toggle and no OS-follow, and each carries a shape language alongside its colours — a theme is one choice, not a palette plus a style.
+The whole look of the staff app — background ramp, accent, and semantic hues together — picked as one named unit, not assembled from a palette plus a light/dark switch. Six ship today: **Amber Gelap**, **Amber Terang**, **Neon Gelap**, **Neon Terang** (default), **Neo Kertas**, **Neo Tengah Malam**. Each declares its own brightness, so there is no separate dark-mode toggle and no OS-follow, and each carries a shape language alongside its colours — a theme is one choice, not a palette plus a style.
 
 A theme is **device-local**: it lives in `SharedPreferences` on one handset, next to the audio-alert flag and that device's printers. It is deliberately neither per-user (shared hardware would re-theme on every shift change, destroying the muscle memory the app is built for) nor per-venue (the hot line tablet and the terrace phone want different palettes at the same moment). Staff pick by the light in the room they are standing in.
 
