@@ -31,6 +31,8 @@ flutter run
 flutter build apk --debug
 flutter test
 flutter test test/foo_test.dart
+flutter test --tags golden --run-skipped            # pixel lock on core/widgets
+flutter test --tags golden --run-skipped --update-goldens
 tool/codegen.sh                  # rebuild generated files
 ```
 
@@ -47,13 +49,14 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 **`lib/ui/`** — Flutter only.
 - `ui/core/design/` — tokens + theme: `colors.dart`, `typography.dart`, `spacing.dart`, `layout.dart`, `theme.dart`, plus `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart`, `format.dart`, `motion.dart`. Amber-on-charcoal palette: accent `#FF9233`, dark `bg0 #0D0E10`, light `bg0 #F6F4EF`. Fonts (IBM Plex Sans + IBM Plex Mono) via `google_fonts` — needs network on first launch. See §Design Context for the intent behind these.
 - `ui/core/state/` — cross-feature view-models (`theme_view_model.dart`, `view_mode_view_model.dart`, `ready_alert_view_model.dart`).
-- `ui/core/widgets/` — cross-feature chrome: `sat_app_bar.dart`, `satset_top_bar.dart`, `tablet_chrome.dart`, `ready_banner.dart`, `ready_toast.dart`. **`CATALOG.md` in that folder lists every shared widget and token — read it before writing a new widget, and update it in the same commit when you add or remove one.** Enforced by `test/design_tokens_test.dart` (ratcheting guard against hardcoded colors, off-scale spacing, and literal radii).
+- `ui/core/widgets/` — the shared vocabulary (ADR-0055): controls (`sat_button`, `sat_icon_button`, `sat_chip`, `sat_toggle`, `sat_stepper`, `sat_tabs`, `sat_field`, `sat_dropdown`, `sat_card`, `sat_empty`, `sat_sheet_header`, `pulse_dot`) plus chrome (`sat_app_bar`, `satset_top_bar`, `tablet_chrome`, `ready_banner`, `ready_toast`). **`CATALOG.md` in that folder lists every shared widget and token — read it before writing a new widget, and update it in the same commit when you add or remove one.** Enforced by `test/design_tokens_test.dart`, which is now all bans, no baselines: raw Material buttons, text inputs and dropdowns, literal type sizes, off-scale spacing, literal radii, hardcoded colours, roleless tap targets and duplicated widget class names all fail CI.
 - `ui/features/<area>/` — screens grouped by flow. Each feature owns `view_models/` and `views/` (or top-level screens + `widgets/`).
   - Order-taking: `tables/` → `menu/` (+ `modifier_sheet.dart`) → `review/` → `sent/` → `orders/`.
   - Admin: `admin/` (`venue_hub_screen`, `alerts_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
   - Onboarding: `onboarding/views/` (`mode_select_screen`, `pair_screen`, `forbidden_screen`).
   - Auth: `auth/views/pin_screen.dart`.
   - Other: `me/`, `void_flow/`, `shell/app_shell.dart`, `_stub/`.
+  - Debug: `_book/` — widget book (`book_screen`, `book_entries`, `book_stubs`), debug builds only. ADR-0054.
 
 **`lib/domain/`** — business logic, no Flutter imports.
 - `models/` — `venue_table`, `zone`, `menu_item`, `menu_category`, `modifier_group`, `ticket` (freezed), `course` (freezed), `cart_item`, `role` (freezed), `user`, `capability`, `app_mode`, `audit_entry`.
@@ -80,6 +83,7 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 - `/pair` — `PairScreen` (mDNS browse + QR scan).
 - `/pin` — `PinScreen` (carries inline mode-select + pair flow if unpaired).
 - `/forbidden` — capability-denied landing.
+- `/book` — **debug builds only** (`if (kDebugMode)`). Widget book: every `core/widgets/` widget in all its states against stub data, with theme/skin, text-scale, reduced-motion and phone/tablet toggles. In the pair-gate bypass set, so it works unpaired. Two entries: a debug button on `PinScreen` (pre-pairing) and a "Book" item at the foot of `TabletSideRail` (pushed, not `go`ne — back returns to your tab). Lives in `lib/ui/features/_book/`. See ADR-0054 — add an entry there in the same commit as a new shared widget.
 - `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
   - `/alerts` = alert config (thresholds + sounds + this-device mute), reached from the Venue hub. Gated `editSettings`.
 - **Outside the shell** (root-navigator pushes, full-page transitions):
@@ -96,7 +100,9 @@ Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageS
 
 ### Shell
 
-`AppShell` (`lib/ui/features/shell/app_shell.dart`) picks tablet (`TabletShell`) vs phone (custom `Scaffold` with `SatAppBar` + floating tab bar) based on `context.layout.useTabletShell` and the `forcePhoneViewProvider`. Table flow no longer lives under the shell, so AppShell no longer needs special-case bare-child branches.
+`AppShell` (`lib/ui/features/shell/app_shell.dart`) picks tablet (`TabletShell`) vs phone (custom `Scaffold` with `SatAppBar` + floating tab bar) based on `context.layout.useTabletShell` — hardware decides, there is no runtime override (ADR-0049 removed `forcePhoneViewProvider`). Table flow no longer lives under the shell, so AppShell no longer needs special-case bare-child branches.
+
+`MainActivity.onCreate` keeps the screen awake (`FLAG_KEEP_SCREEN_ON`, unconditional) and pins orientation from `smallestScreenWidthDp >= 600` — tablet landscape, phone portrait. Orientation is not reachable from Dart; changing it means editing Kotlin. See ADR-0049.
 
 ## Gotchas
 

@@ -142,6 +142,9 @@ The tables screen no longer reads `forcePhoneViewProvider`; layout comes from
 tablet-layout floor. Mismatched, not broken — a deliberate half-measure, since
 removing the toggle is not this change's job.
 
+> **Superseded by ADR-0049.** The provider, the toggle and the `app_shell`
+> branch are now gone; layout class comes from hardware alone.
+
 ## Consequences
 
 - `tables_screen.dart` drops from 968 to ~610 lines; the card, the two surfaces

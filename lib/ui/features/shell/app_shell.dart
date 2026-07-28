@@ -13,7 +13,6 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
-import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
 import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
@@ -37,14 +36,13 @@ class AppShell extends ConsumerWidget {
     final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
     final showGuest = ref.watch(authStateProvider).has(Capability.takeOrder);
     final guestCount = ref.watch(guestOrdersProvider).length;
-    final forcePhone = ref.watch(forcePhoneViewProvider);
     final zones = ref.watch(zonesProvider);
     final zoneName = zones.isEmpty ? '—' : zones.first.name;
     final venueName = ref.watch(
       venueSettingsProvider.select((s) => s.displayName),
     );
 
-    if (l.useTabletShell && !forcePhone) {
+    if (l.useTabletShell) {
       return ExitGuard(
         child: TabletShell(
           activeTab: activeTab,
@@ -173,15 +171,18 @@ class _FloatingTabBar extends StatelessWidget {
         color: SatShape.veil(sc.scrim, 0.92),
         borderRadius: SatR.a(22),
         border: SatB.all(color: sc.border1),
-        boxShadow: SatShape.brutal
-            ? SatShape.hardShadow(5)
-            : [
-                BoxShadow(
-                  color: satShadowInk.withValues(alpha: 0.4),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+        boxShadow: switch (SatShape.skin) {
+          SatSkin.brutal => SatShape.hardShadow(5),
+          // Floating chrome is exactly what Glow's larger lift is for.
+          SatSkin.glow => SatShape.liftLg,
+          SatSkin.lembut => [
+            BoxShadow(
+              color: satShadowInk.withValues(alpha: 0.4),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        },
       ),
       padding: const EdgeInsets.all(Sp.s1),
       child: Row(
@@ -230,8 +231,9 @@ class _FloatingTabBar extends StatelessWidget {
         ],
       ),
     );
-    // The brutal skin has no frosted glass — an opaque slab on a hard shadow.
-    if (SatShape.brutal) return bar;
+    // Neither the brutal nor the glow skin does frosted glass — an opaque slab
+    // on a shadow. Glow's has to fall outside the clip a blur would need.
+    if (!SatShape.lembut) return bar;
     return ClipRRect(
       borderRadius: SatR.a(22),
       child: BackdropFilter(
@@ -281,15 +283,10 @@ class _Tab extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, size: 20, color: active ? sc.textHi : sc.textLo),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: Sp.s1),
                   Text(
                     label,
-                    style: SatType.sans(
-                      size: 10,
-                      weight: FontWeight.w500,
-                      letterSpacing: 0.2,
-                      color: active ? sc.textHi : sc.textLo,
-                    ),
+                    style: SatType.bodyS(color: active ? sc.textHi : sc.textLo),
                   ),
                 ],
               ),
@@ -311,10 +308,7 @@ class _Tab extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     '$badge',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 0,
+                    style: SatType.caption(
                       color: badgeAlert ? sc.successInk : sc.accentInk,
                     ),
                   ),

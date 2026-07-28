@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -85,9 +88,16 @@ class TabletSideRail extends StatelessWidget {
         // The paper skin fills the whole rail with the accent and lets the
         // nav blocks read as cut-outs; midnight keeps the surface and inverts
         // the blocks instead. Same rule, heavier than a card's (neo.css §7).
+        // Glow keeps the plain surface panel and a hairline (glow.css §Rail).
         color: SatShape.brutalPaper ? sc.accent : sc.bg1,
         border: Border(
-          right: BorderSide(color: sc.border0, width: SatShape.brutal ? 4 : 1),
+          right: BorderSide(
+            color: sc.border0,
+            width: switch (SatShape.skin) {
+              SatSkin.brutal => 4,
+              SatSkin.lembut || SatSkin.glow => 1,
+            },
+          ),
         ),
       ),
       padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
@@ -95,7 +105,7 @@ class TabletSideRail extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _Mark(),
-          const SizedBox(height: 22),
+          const SizedBox(height: Sp.s6),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -150,6 +160,21 @@ class TabletSideRail extends StatelessWidget {
                     route: '/venue',
                     active: active,
                   ),
+                  // Widget book (ADR-0054). `kDebugMode` is a const, so the
+                  // divider and the button are both gone from a release build.
+                  // Pushed rather than gone-to: the book is a detour, and back
+                  // should land you on the tab you left.
+                  if (kDebugMode) ...[
+                    _RailDiv(),
+                    _RailBtn(
+                      id: 'book',
+                      label: 'Book',
+                      icon: Icons.widgets_outlined,
+                      route: '/book',
+                      active: active,
+                      push: true,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -168,12 +193,21 @@ class _Mark extends StatelessWidget {
     // The mark always opposes the rail: ink block on the siren rail, siren
     // block on the dark one. On paper that means the logo, not the rail, is
     // the black slab.
-    final onAccentRail = SatShape.brutalPaper;
+    //
+    // Glow does the same trick on the other axis. Its rail is a plain surface
+    // in both palettes, so the mark inverts across *brightness* instead: an
+    // obsidian slab carrying lime on the light one, a lime slab carrying
+    // obsidian on the dark (glow.css `.tab-mark` + its `glowNoir` override).
+    final onDarkSlab =
+        SatShape.brutalPaper || SatShape.glow && !SatShape.glowNoir;
+    final fill = SatShape.glow && !SatShape.glowNoir
+        ? sc.slab.bg0
+        : SatShape.ink;
     return Container(
       width: 40,
       height: 40,
       decoration: SatBox.d(
-        color: onAccentRail ? SatShape.ink : sc.accent,
+        color: onDarkSlab ? fill : sc.accent,
         borderRadius: SatR.a(12),
         border: SatShape.brutal ? SatB.all(color: SatShape.ink) : null,
         boxShadow: SatShape.brutal ? SatShape.hardShadow() : null,
@@ -181,18 +215,15 @@ class _Mark extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         'S',
-        style: SatShape.brutal
-            ? SatType.display(
-                size: 20,
-                letterSpacing: -0.8,
-                color: onAccentRail ? sc.accent : sc.accentInk,
-              )
-            : SatType.mono(
-                size: 20,
-                weight: FontWeight.w700,
-                letterSpacing: -0.8,
-                color: sc.accentInk,
-              ),
+        style: switch (SatShape.skin) {
+          SatSkin.brutal => SatType.h2(
+            color: onDarkSlab ? sc.accent : sc.accentInk,
+          ),
+          SatSkin.glow => SatType.h2(
+            color: onDarkSlab ? sc.accent : sc.accentInk,
+          ),
+          SatSkin.lembut => SatType.monoL(color: sc.accentInk),
+        },
       ),
     );
   }
@@ -206,7 +237,10 @@ class _RailDiv extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: Sp.s2),
       child: Container(
         width: 36,
-        height: SatShape.brutal ? 3 : 1,
+        height: switch (SatShape.skin) {
+          SatSkin.brutal => 3,
+          SatSkin.lembut || SatSkin.glow => 1,
+        },
         color: sc.border0,
       ),
     );
@@ -221,6 +255,10 @@ class _RailBtn extends StatelessWidget {
   final String active;
   final int badge;
   final bool alert;
+
+  /// Push instead of go — for a destination outside the shell that you are
+  /// meant to come back from.
+  final bool push;
   const _RailBtn({
     required this.id,
     required this.label,
@@ -229,15 +267,23 @@ class _RailBtn extends StatelessWidget {
     required this.active,
     this.badge = 0,
     this.alert = false,
+    this.push = false,
   });
 
   /// On paper the rail is the accent itself, so both states sit on a bright
   /// ground and take ink. On midnight the active block *is* the accent, so
-  /// only it flips to accent ink.
+  /// only it flips to accent ink. Glow behaves like midnight in both palettes:
+  /// the active tab is a solid lime pill, everything else reads off the rail.
   Color _fg(SatColors sc, bool isActive) {
-    if (!SatShape.brutal) return isActive ? sc.textHi : sc.textLo;
-    if (SatShape.brutalPaper) return SatShape.ink;
-    return isActive ? sc.accentInk : sc.textMd;
+    switch (SatShape.skin) {
+      case SatSkin.lembut:
+        return isActive ? sc.textHi : sc.textLo;
+      case SatSkin.brutal:
+        if (SatShape.brutalPaper) return SatShape.ink;
+        return isActive ? sc.accentInk : sc.textMd;
+      case SatSkin.glow:
+        return isActive ? sc.accentInk : sc.textMd;
+    }
   }
 
   @override
@@ -245,11 +291,11 @@ class _RailBtn extends StatelessWidget {
     final sc = context.sat;
     final isActive = active == id;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.go(route),
+          onTap: () => push ? context.push(route) : context.go(route),
           borderRadius: SatR.a(14),
           child: Container(
             width: 56,
@@ -259,11 +305,15 @@ class _RailBtn extends StatelessWidget {
             // accent. Idle tabs read straight off the rail, so their label
             // takes the rail's own ink rather than the ramp's dim greys.
             decoration: SatBox.d(
-              color: SatShape.brutal
-                  ? (isActive
-                        ? (SatShape.brutalPaper ? sc.bg1 : sc.accent)
-                        : Colors.transparent)
-                  : (isActive ? sc.bg3 : Colors.transparent),
+              color: switch (SatShape.skin) {
+                SatSkin.brutal when isActive =>
+                  SatShape.brutalPaper ? sc.bg1 : sc.accent,
+                // Glow's active tab is a filled lime pill, flat — the skin
+                // lifts cards, not chrome that is already part of the rail.
+                SatSkin.glow when isActive => sc.accent,
+                SatSkin.lembut when isActive => sc.bg3,
+                _ => Colors.transparent,
+              },
               borderRadius: SatR.a(14),
               border: SatShape.brutal && isActive
                   ? SatB.all(color: SatShape.ink)
@@ -289,11 +339,20 @@ class _RailBtn extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: SatType.sans(
-                        size: SatShape.brutal ? 9 : 10,
-                        weight: SatShape.brutal
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        letterSpacing: SatShape.brutal ? 0.6 : 0.2,
+                        // Glow sizes rail labels at 9px like brutal, but sets
+                        // them sentence-case at zero tracking — it has no
+                        // letterspaced-uppercase register to fall back on.
+                        size: SatShape.lembut ? 10 : 9,
+                        weight: switch (SatShape.skin) {
+                          SatSkin.brutal => FontWeight.w700,
+                          SatSkin.glow => FontWeight.w600,
+                          SatSkin.lembut => FontWeight.w500,
+                        },
+                        letterSpacing: switch (SatShape.skin) {
+                          SatSkin.brutal => 0.6,
+                          SatSkin.glow => 0,
+                          SatSkin.lembut => 0.2,
+                        },
                         color: _fg(sc, isActive),
                       ),
                     ),
@@ -306,7 +365,7 @@ class _RailBtn extends StatelessWidget {
                     child: Container(
                       constraints: const BoxConstraints(minWidth: 16),
                       height: 16,
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
                       decoration: SatBox.d(
                         color: alert ? sc.success : sc.accent,
                         borderRadius: SatR.a(8),
@@ -319,9 +378,7 @@ class _RailBtn extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '$badge',
-                        style: SatType.mono(
-                          size: 10,
-                          weight: FontWeight.w600,
+                        style: SatType.caption(
                           color: alert ? sc.successInk : sc.accentInk,
                         ),
                       ),
@@ -363,55 +420,66 @@ class _AvatarBtn extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         shape: border,
-        child: InkWell(
-          customBorder: border,
-          onTap: () => context.go('/me'),
-          child: Container(
-            width: 46,
-            height: 46,
-            decoration: SatBox.d(
-              shape: shape,
-              border: SatShape.brutal
-                  ? null
-                  : SatB.all(
-                      color: active ? sc.accentBorder : Colors.transparent,
-                      width: 2,
-                    ),
-              boxShadow: active
-                  ? (SatShape.brutal
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: sc.bg1,
-                              blurRadius: 0,
-                              spreadRadius: 3,
-                            ),
-                          ])
-                  : null,
-            ),
-            alignment: Alignment.center,
+        child: Semantics(
+          button: true,
+          label: AppStrings.tabSaya,
+          child: InkWell(
+            customBorder: border,
+            onTap: () => context.go('/me'),
             child: Container(
-              width: 42,
-              height: 42,
+              width: 46,
+              height: 46,
               decoration: SatBox.d(
                 shape: shape,
-                border: SatShape.brutal ? SatB.all(color: SatShape.ink) : null,
-                boxShadow: SatShape.brutal && active
-                    ? SatShape.hardShadow()
+                border: SatShape.brutal
+                    ? null
+                    : SatB.all(
+                        color: active ? sc.accentBorder : Colors.transparent,
+                        width: 2,
+                      ),
+                boxShadow: active
+                    ? (SatShape.brutal
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: sc.bg1,
+                                blurRadius: 0,
+                                spreadRadius: 3,
+                              ),
+                            ])
                     : null,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: SatShape.brutal ? [base, base] : [base, dark],
-                ),
               ),
               alignment: Alignment.center,
-              child: Text(
-                initials,
-                style: SatType.mono(
-                  size: 14,
-                  weight: FontWeight.w600,
-                  color: onFill(base),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: SatBox.d(
+                  shape: shape,
+                  border: SatShape.brutal
+                      ? SatB.all(color: SatShape.ink)
+                      : null,
+                  boxShadow: SatShape.brutal && active
+                      ? SatShape.hardShadow()
+                      : null,
+                  // Flat under both non-soft skins. Glow fills with solid colour
+                  // and separates with shadow; a gradient reads as a different
+                  // material entirely.
+                  //
+                  // The source design fills this disc with obsidian and sets the
+                  // initials in lime, dropping the per-user hue. Kept as the
+                  // user's own colour instead: the swatch identifying a person
+                  // has to match wherever else they appear, and the rail is where
+                  // you look to check who is signed in.
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: SatShape.lembut ? [base, dark] : [base, base],
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initials,
+                  style: SatType.monoM(color: onFill(base)),
                 ),
               ),
             ),
@@ -445,27 +513,14 @@ class TabletSectionHead extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: SatType.sans(
-                    size: 32,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.8,
-                    height: 1.05,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(title, style: SatType.h1(color: sc.textHi)),
                 if (sub != null) ...[
                   const SizedBox(height: Sp.s1h),
                   Text(
                     sub!.toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: SatType.mono(
-                      size: 11,
-                      color: sc.textLo,
-                      letterSpacing: 0.66,
-                    ),
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
               ],
@@ -510,12 +565,7 @@ class TabletCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     header!.toUpperCase(),
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.caption(color: sc.textLo),
                   ),
                 ),
                 ?headerTrailing,
@@ -556,26 +606,9 @@ class TabletStatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: SatType.mono(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.44,
-              height: 1,
-              color: valueColor ?? sc.textHi,
-            ),
-          ),
+          Text(value, style: SatType.monoL(color: valueColor ?? sc.textHi)),
           const SizedBox(height: Sp.s2),
-          Text(
-            label.toUpperCase(),
-            style: SatType.mono(
-              size: 10,
-              color: sc.textLo,
-              letterSpacing: 0.6,
-              weight: FontWeight.w500,
-            ),
-          ),
+          Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
         ],
       ),
     );

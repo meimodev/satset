@@ -9,9 +9,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/discount_dto.dart';
@@ -45,24 +48,30 @@ class DiscountPresetsScreen extends ConsumerWidget {
           const SatAppBar(title: 'Diskon'),
           Expanded(
             child: presets.isEmpty
-                ? _Empty(sc: sc)
+                ? const SatEmpty(
+                    icon: Icons.sell_outlined,
+                    title: 'Belum ada preset diskon',
+                    body:
+                        'Buat preset agar kasir bisa memberi diskon tanpa '
+                        'mengetik angka sendiri.',
+                  )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                     children: [
                       Text(
                         'Kasir memilih dari daftar ini — mereka tidak bisa mengetik '
                         'angka diskon sendiri.',
-                        style: SatType.sans(size: 12, color: sc.textLo),
+                        style: SatType.bodyS(color: sc.textLo),
                       ),
                       const SizedBox(height: Sp.s4),
                       if (order.isNotEmpty) ...[
-                        _SectionLabel('Seluruh pesanan', sc: sc),
+                        const SatSectionLabel('Seluruh pesanan'),
                         for (final p in order)
                           _PresetTile(preset: p, repo: repo, sc: sc),
                         const SizedBox(height: Sp.s5),
                       ],
                       if (line.isNotEmpty) ...[
-                        _SectionLabel('Per item', sc: sc),
+                        const SatSectionLabel('Per item'),
                         for (final p in line)
                           _PresetTile(preset: p, repo: repo, sc: sc),
                       ],
@@ -73,58 +82,6 @@ class DiscountPresetsScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  final SatColors sc;
-  const _SectionLabel(this.text, {required this.sc});
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: Sp.s1h),
-    child: Text(
-      text.toUpperCase(),
-      style: SatType.mono(
-        size: 9,
-        weight: FontWeight.w600,
-        letterSpacing: 1.4,
-        color: sc.textLo,
-      ),
-    ),
-  );
-}
-
-class _Empty extends StatelessWidget {
-  final SatColors sc;
-  const _Empty({required this.sc});
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(Sp.s8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.sell_outlined, size: 40, color: sc.textLo),
-          const SizedBox(height: Sp.s3),
-          Text(
-            'Belum ada preset diskon',
-            style: SatType.sans(
-              size: 15,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
-          ),
-          const SizedBox(height: Sp.s1h),
-          Text(
-            'Buat preset agar kasir bisa memberi diskon tanpa mengetik '
-            'angka sendiri.',
-            textAlign: TextAlign.center,
-            style: SatType.sans(size: 12.5, color: sc.textLo),
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 class _PresetTile extends StatelessWidget {
@@ -153,19 +110,12 @@ class _PresetTile extends StatelessWidget {
             Flexible(
               child: Text(
                 p.name,
-                style: SatType.sans(
-                  size: 13.5,
-                  weight: FontWeight.w600,
-                  color: p.active ? sc.textHi : sc.textLo,
-                ),
+                style: SatType.labelM(color: p.active ? sc.textHi : sc.textLo),
               ),
             ),
             if (!p.active) ...[
               const SizedBox(width: Sp.s2),
-              Text(
-                'nonaktif',
-                style: SatType.sans(size: 10.5, color: sc.textLo),
-              ),
+              Text('nonaktif', style: SatType.bodyS(color: sc.textLo)),
             ],
           ],
         ),
@@ -173,7 +123,7 @@ class _PresetTile extends StatelessWidget {
           p.isPercent
               ? '${(p.value / 100).toStringAsFixed(0)}%'
               : formatIDR(p.value),
-          style: SatType.sans(size: 12, color: sc.textLo),
+          style: SatType.bodyS(color: sc.textLo),
         ),
         trailing: IconButton(
           tooltip: AppStrings.delete,
@@ -188,13 +138,13 @@ class _PresetTile extends StatelessWidget {
                   'lama tidak berubah — nilainya sudah tersimpan di sana.',
                 ),
                 actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(c, false),
-                    child: const Text('Batal'),
+                  SatButton.ghost(
+                    label: AppStrings.cancel,
+                    onTap: () => Navigator.pop(c, false),
                   ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(c, true),
-                    child: const Text('Hapus'),
+                  SatButton.danger(
+                    label: AppStrings.delete,
+                    onTap: () => Navigator.pop(c, true),
                   ),
                 ],
               ),
@@ -247,20 +197,13 @@ Future<void> _edit(
             children: [
               Text(
                 existing == null ? 'Preset baru' : 'Ubah preset',
-                style: SatType.sans(
-                  size: 15,
-                  weight: FontWeight.w700,
-                  color: sc.textHi,
-                ),
+                style: SatType.labelL(color: sc.textHi),
               ),
               const SizedBox(height: Sp.s3),
-              TextField(
+              SatField.text(
                 controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Nama (tampil di struk)',
-                  hintText: 'Diskon Member',
-                  border: OutlineInputBorder(),
-                ),
+                label: 'Nama (tampil di struk)',
+                hint: 'Diskon Member',
               ),
               const SizedBox(height: Sp.s3),
               // Scope is what stops a fixed whole-bill amount landing on one
@@ -283,35 +226,40 @@ Future<void> _edit(
                 onSelectionChanged: (v) => setState(() => kind = v.first),
               ),
               const SizedBox(height: Sp.s3),
-              TextField(
+              SatField.number(
                 controller: valueCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  labelText: kind == 'percent' ? 'Persen (%)' : 'Nominal (Rp)',
-                  border: const OutlineInputBorder(),
-                  errorText: error,
-                ),
+                label: kind == 'percent' ? 'Persen (%)' : 'Nominal (Rp)',
+                hint: '',
+                errorText: error,
               ),
               const SizedBox(height: Sp.s2),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Aktif',
-                  style: SatType.sans(size: 13, color: sc.textHi),
-                ),
-                subtitle: Text(
-                  'Nonaktif menyembunyikan preset dari kasir',
-                  style: SatType.sans(size: 11.5, color: sc.textLo),
-                ),
-                value: active,
-                onChanged: (v) => setState(() => active = v),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Aktif', style: SatType.bodyM(color: sc.textHi)),
+                        Text(
+                          'Nonaktif menyembunyikan preset dari kasir',
+                          style: SatType.bodyS(color: sc.textLo),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SatToggle(
+                    value: active,
+                    semanticLabel: 'Aktif',
+                    onChanged: (v) => setState(() => active = v),
+                  ),
+                ],
               ),
               const SizedBox(height: Sp.s2),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
+                child: SatButton.primary(
+                  label: AppStrings.save,
+                  onTap: () async {
                     final name = nameCtrl.text.trim();
                     final raw = int.tryParse(valueCtrl.text.trim()) ?? 0;
                     // Percent is authored in whole %, stored in bps.
@@ -348,7 +296,6 @@ Future<void> _edit(
                     }
                     if (c.mounted) Navigator.pop(c);
                   },
-                  child: const Text('Simpan'),
                 ),
               ),
             ],

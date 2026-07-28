@@ -610,7 +610,7 @@ Four events — `newOrder`, `orderReady`, `voided`, `overdue` — each independe
 - Theme mode is a provider defaulting to dark.
 
 ### Responsive shells
-`AppShell` picks a tablet or phone layout from `context.layout.useTabletShell`, with a `forcePhoneViewProvider` override for testing phone layout on a tablet. The tablet shell is a 76 px icon side rail (Meja, Pesanan, Mandiri when guest ordering is on, Antrian, Kasir when permitted, Venue) with badge counts and a bottom user-avatar button; the phone shell uses a top bar plus a floating tab bar. Nearly every admin screen branches explicitly between `_tablet()` and `_phone()`.
+`AppShell` picks a tablet or phone layout from `context.layout.useTabletShell`. Hardware decides and there is no override: `MainActivity` pins orientation at launch from `smallestScreenWidthDp` — tablets landscape, phones portrait — and holds the screen awake for the whole session (ADR-0049). The tablet shell is a 76 px icon side rail (Meja, Pesanan, Mandiri when guest ordering is on, Antrian, Kasir when permitted, Venue) with badge counts and a bottom user-avatar button; the phone shell uses a top bar plus a floating tab bar. Nearly every admin screen branches explicitly between `_tablet()` and `_phone()`.
 
 Order-taking, takeaway and menu-editor routes deliberately live **outside** the shell so root-navigator pushes give full-page transitions.
 

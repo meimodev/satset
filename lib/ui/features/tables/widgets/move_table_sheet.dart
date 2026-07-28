@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -89,21 +91,12 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
             const SizedBox(height: Sp.s4h),
             Text(
               'Pindahkan meja ${source.displayName}',
-              style: SatType.sans(
-                size: 20,
-                weight: FontWeight.w600,
-                letterSpacing: -0.4,
-                color: sc.textHi,
-              ),
+              style: SatType.h2(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1),
             Text(
               'Pilih meja kosong tujuan · ${source.pax} tamu',
-              style: SatType.mono(
-                size: 11,
-                color: sc.textLo,
-                letterSpacing: 0.44,
-              ),
+              style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
             Flexible(
@@ -113,7 +106,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                       child: Text(
                         'Tidak ada meja kosong untuk dituju.',
                         textAlign: TextAlign.center,
-                        style: SatType.sans(size: 13, color: sc.textLo),
+                        style: SatType.bodyM(color: sc.textLo),
                       ),
                     )
                   : ListView(
@@ -143,12 +136,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
         padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
         child: Text(
           zone.name.toUpperCase(),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.2,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
       ),
       for (final t in inZone) _targetTile(sc, t, source),
@@ -178,16 +166,12 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
               children: [
                 Text(
                   target.displayName,
-                  style: SatType.mono(
-                    size: 18,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoL(color: sc.textHi),
                 ),
                 const SizedBox(width: Sp.s3),
                 Text(
                   'kapasitas ${target.capacity}',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),
                 if (overCapacity)
@@ -222,13 +206,13 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
               : 'Seluruh pesanan dan tamu pindah ke meja ${target.displayName}.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.of(ctx).pop(false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Pindahkan'),
+          SatButton.primary(
+            label: 'Pindahkan',
+            onTap: () => Navigator.of(ctx).pop(true),
           ),
         ],
       ),
@@ -257,7 +241,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
       };
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(msg, style: SatType.sans(color: sc.textHi)),
+          content: Text(msg, style: SatType.bodyM(color: sc.textHi)),
         ),
       );
     } catch (e) {

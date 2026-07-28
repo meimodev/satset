@@ -1,3 +1,5 @@
+import 'package:satset/core/time/sat_clock.dart';
+
 enum TableStatus { available, occupied, pending, ready }
 
 class VenueTable {
@@ -75,7 +77,7 @@ class VenueTable {
     if (userId != null && lockedBy == userId) return false;
     final exp = lockExpiresAt;
     if (exp == null) return false;
-    return exp.isAfter(now ?? DateTime.now());
+    return exp.isAfter(now ?? SatClock.now());
   }
 
   String get displayName =>

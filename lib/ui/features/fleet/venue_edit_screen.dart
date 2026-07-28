@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -129,7 +134,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   }
 
   Future<void> _pickPaidUntil() async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _paidUntil ?? now,
@@ -164,25 +169,11 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         backgroundColor: sc.bg0,
         elevation: 0,
         iconTheme: IconThemeData(color: sc.textHi),
-        title: Text(
-          'Edit venue',
-          style: SatType.sans(
-            size: 18,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
-        ),
+        title: Text('Edit venue', style: SatType.h3(color: sc.textHi)),
         actions: [
-          TextButton(
-            onPressed: _busy || !_nameValid ? null : _save,
-            child: Text(
-              'Simpan',
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w700,
-                color: _busy || !_nameValid ? sc.textLo : sc.accentText,
-              ),
-            ),
+          SatButton.ghost(
+            label: AppStrings.save,
+            onTap: _busy || !_nameValid ? null : _save,
           ),
         ],
         bottom: _busy
@@ -200,41 +191,38 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         children: [
           _sectionLabel(sc, 'IDENTITAS'),
           const SizedBox(height: Sp.s2h),
-          TextField(
+          SatField.text(
             controller: _name,
+            label: 'Nama venue',
+            hint: '',
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              labelText: 'Nama venue',
-              errorText: _nameValid ? null : 'Nama wajib diisi',
-            ),
+            errorText: _nameValid ? null : 'Nama wajib diisi',
           ),
           const SizedBox(height: Sp.s3h),
-          TextField(
+          SatField.text(
             controller: _address,
-            decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
+            label: 'Alamat',
+            hint: 'opsional',
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: Sp.s7),
           _sectionLabel(sc, 'TAGIHAN'),
           const SizedBox(height: Sp.s2h),
-          TextField(
-            controller: _plan,
-            decoration: const InputDecoration(labelText: 'Paket'),
-          ),
+          SatField.text(controller: _plan, label: 'Paket', hint: ''),
           const SizedBox(height: Sp.s3h),
-          DropdownButtonFormField<String>(
-            initialValue: _billingStatus,
-            decoration: const InputDecoration(labelText: 'Status tagihan'),
-            items: const [
-              DropdownMenuItem(value: 'trial', child: Text('trial')),
-              DropdownMenuItem(value: 'paid', child: Text('paid')),
-              DropdownMenuItem(value: 'overdue', child: Text('overdue')),
+          SatDropdown<String>(
+            value: _billingStatus,
+            label: 'Status tagihan',
+            options: const [
+              SatOption('trial', 'trial'),
+              SatOption('paid', 'paid'),
+              SatOption('overdue', 'overdue'),
             ],
             onChanged: (x) =>
                 setState(() => _billingStatus = x ?? _billingStatus),
           ),
           const SizedBox(height: Sp.s3h),
           _paidUntilRow(sc),
-          const SizedBox(height: 28),
+          const SizedBox(height: Sp.s7),
           _principalSection(
             sc,
             admins,
@@ -244,7 +232,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             addLabel: 'Tambah admin',
             emptyMsg: 'Belum ada admin untuk venue ini.',
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: Sp.s7),
           _principalSection(
             sc,
             admins,
@@ -287,7 +275,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         if (all.hasError)
           Text(
             'Gagal memuat: ${fleetErrText(all.error!)}',
-            style: SatType.sans(size: 12, color: sc.urgent),
+            style: SatType.bodyS(color: sc.urgent),
           )
         else if (loading)
           Padding(
@@ -299,10 +287,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         else if (rows.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
-            child: Text(
-              emptyMsg,
-              style: SatType.sans(size: 13, color: sc.textLo),
-            ),
+            child: Text(emptyMsg, style: SatType.bodyM(color: sc.textLo)),
           )
         else
           for (var i = 0; i < rows.length; i++) ...[
@@ -385,35 +370,26 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         backgroundColor: sc.bg1,
         title: Text(
           'Tambah $roleLabel · ${widget.venue.name}',
-          style: SatType.sans(size: 17, color: sc.textHi),
+          style: SatType.h3(color: sc.textHi),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Nama'),
-            ),
+            SatField.text(controller: name, label: 'Nama', hint: ''),
             const SizedBox(height: Sp.s3),
-            TextField(
-              controller: email,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
+            SatField.text(controller: email, label: 'Email', hint: ''),
             const SizedBox(height: Sp.s3),
-            TextField(
-              controller: pw,
-              decoration: const InputDecoration(labelText: 'Password awal'),
-            ),
+            SatField.text(controller: pw, label: 'Password awal', hint: ''),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx, false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => Navigator.pop(ctx, true),
           ),
         ],
       ),
@@ -450,21 +426,13 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ZONA BAHAYA',
-            style: SatType.mono(
-              size: 11,
-              weight: FontWeight.w700,
-              letterSpacing: 2,
-              color: sc.urgent,
-            ),
-          ),
+          Text('ZONA BAHAYA', style: SatType.caption(color: sc.urgent)),
           const SizedBox(height: Sp.s2h),
           Text(
             blocked
                 ? 'Hapus semua admin venue ini dulu sebelum menghapus venue.'
                 : 'Menghapus venue tidak dapat dibatalkan.',
-            style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+            style: SatType.bodyM(color: sc.textMd),
           ),
           const SizedBox(height: Sp.s3h),
           Material(
@@ -487,9 +455,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                     const SizedBox(width: Sp.s2),
                     Text(
                       'Hapus venue',
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w700,
+                      style: SatType.labelM(
                         color: blocked || _busy ? sc.textLo : sc.bg0,
                       ),
                     ),
@@ -519,35 +485,27 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(title, style: SatType.sans(size: 17, color: sc.textHi)),
-        content: Text(body, style: SatType.sans(size: 14, color: sc.textMd)),
+        title: Text(title, style: SatType.h3(color: sc.textHi)),
+        content: Text(body, style: SatType.bodyM(color: sc.textMd)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: sc.urgent),
-            onPressed: () {
+          SatButton.danger(
+            label: 'Lanjut',
+            onTap: () {
               Navigator.pop(ctx);
               onYes();
             },
-            child: const Text('Lanjut'),
           ),
         ],
       ),
     );
   }
 
-  Widget _sectionLabel(SatColors sc, String text) => Text(
-    text,
-    style: SatType.mono(
-      size: 11,
-      weight: FontWeight.w700,
-      letterSpacing: 2,
-      color: sc.accentText,
-    ),
-  );
+  Widget _sectionLabel(SatColors sc, String text) =>
+      Text(text, style: SatType.caption(color: sc.accentText));
 
   Widget _paidUntilRow(SatColors sc) {
     final p = _paidUntil;
@@ -569,17 +527,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               children: [
                 Text(
                   'Berlaku sampai (paidUntil)',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const SizedBox(height: Sp.sHair),
-                Text(
-                  label,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(label, style: SatType.labelL(color: sc.textHi)),
               ],
             ),
           ),
@@ -589,17 +540,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               icon: Icon(Icons.clear, color: sc.textLo, size: 20),
               onPressed: () => setState(() => _paidUntil = null),
             ),
-          TextButton(
-            onPressed: _pickPaidUntil,
-            child: Text(
-              'Pilih',
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w600,
-                color: sc.accentText,
-              ),
-            ),
-          ),
+          SatButton.ghost(label: 'Pilih', onTap: _pickPaidUntil),
         ],
       ),
     );

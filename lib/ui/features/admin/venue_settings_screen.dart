@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -315,19 +320,14 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
             child: Text(
               AppStrings.venueSettingsTitle,
-              style: SatType.sans(
-                size: 30,
-                weight: FontWeight.w600,
-                letterSpacing: -0.6,
-                color: sc.textHi,
-              ),
+              style: SatType.h1(color: sc.textHi),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Text(
               AppStrings.venueSettingsSubtitle,
-              style: SatType.sans(size: 13, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
           ),
           Expanded(
@@ -427,12 +427,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             alignment: Alignment.center,
             child: Text(
               _initials(s.displayName),
-              style: SatType.sans(
-                size: 22,
-                weight: FontWeight.w700,
-                letterSpacing: -0.4,
-                color: sc.bg1,
-              ),
+              style: SatType.h2(color: sc.bg1),
             ),
           ),
           const SizedBox(width: Sp.s4),
@@ -442,32 +437,22 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               children: [
                 Text(
                   'IDENTITAS RESTORAN',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.0,
-                    color: sc.textLo,
-                  ),
+                  style: SatType.caption(color: sc.textLo),
                 ),
                 const SizedBox(height: Sp.s2),
                 Text(
                   s.displayName.isEmpty ? '—' : s.displayName,
-                  style: SatType.sans(
-                    size: 26,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h2(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s1),
                 Text(
                   s.legalName.isEmpty ? 'Belum ada nama legal' : s.legalName,
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const SizedBox(height: Sp.s2h),
                 Text(
                   s.address.isEmpty ? 'Belum ada alamat' : s.address,
-                  style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
+                  style: SatType.bodyM(color: sc.textMd),
                 ),
               ],
             ),
@@ -528,17 +513,17 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         Text(
           value.isEmpty ? '—' : value,
           textAlign: TextAlign.right,
-          style: SatType.sans(size: 13, color: sc.textHi, height: 1.4),
+          style: SatType.bodyM(color: sc.textHi),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: Sp.s1),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.lock_outline_rounded, size: 10, color: sc.textLo),
-            const SizedBox(width: 3),
+            const SizedBox(width: Sp.s1),
             Text(
               AppStrings.venueSettingsManagedBySuperAdmin,
-              style: SatType.sans(size: 10, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
           ],
         ),
@@ -707,16 +692,13 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
         decoration: SatBox.d(
           color: c.withValues(alpha: 0.10),
           border: SatB.all(color: c.withValues(alpha: 0.4)),
           borderRadius: SatR.a(8),
         ),
-        child: Text(
-          label,
-          style: SatType.sans(size: 12, weight: FontWeight.w600, color: c),
-        ),
+        child: Text(label, style: SatType.labelS(color: c)),
       ),
     );
   }
@@ -798,34 +780,14 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     bool mono = false,
     TextInputType? inputType,
   }) {
-    final sc = context.sat;
-    return TextField(
+    return SatField.inline(
       controller: controller,
       focusNode: focus,
-      maxLines: multiline ? null : 1,
-      minLines: multiline ? 1 : 1,
-      keyboardType:
-          inputType ??
-          (multiline ? TextInputType.multiline : TextInputType.text),
-      textInputAction: multiline
-          ? TextInputAction.newline
-          : TextInputAction.done,
-      textAlign: TextAlign.right,
+      hint: hint,
+      multiline: multiline,
+      mono: mono,
+      keyboard: inputType,
       onSubmitted: onSubmit,
-      onTapOutside: (_) => focus.unfocus(),
-      inputFormatters: multiline
-          ? null
-          : [LengthLimitingTextInputFormatter(120)],
-      style: mono
-          ? SatType.mono(size: 12, color: sc.textHi)
-          : SatType.sans(size: 13, color: sc.textHi, height: 1.4),
-      decoration: InputDecoration(
-        isDense: true,
-        contentPadding: EdgeInsets.zero,
-        border: InputBorder.none,
-        hintText: hint,
-        hintStyle: SatType.sans(size: 13, color: sc.textLo),
-      ),
     );
   }
 
@@ -835,43 +797,12 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     required String tag,
     required List<Widget> rows,
   }) {
-    final sc = context.sat;
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
+    return SatCard.titled(
+      title: title,
+      tag: tag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
-              ),
-              Text(
-                tag,
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: Sp.s2h),
-          ...rows,
-        ],
+        children: [...rows],
       ),
     );
   }
@@ -901,16 +832,9 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text(label, style: SatType.labelM(color: sc.textHi)),
                   const SizedBox(height: Sp.sHair),
-                  Text(value, style: SatType.sans(size: 12, color: sc.textMd)),
+                  Text(value, style: SatType.bodyS(color: sc.textMd)),
                 ],
               ),
             ),
@@ -928,7 +852,8 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
   ) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _PhoneDetailScreen(title: title, builder: builder),
+        builder: (_) =>
+            _VenueSettingsPhoneDetail(title: title, builder: builder),
       ),
     );
   }
@@ -991,22 +916,10 @@ class _PajakLayananCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   AppStrings.venueSettingsSectionTax,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
               ),
-              Text(
-                'BIAYA',
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
+              Text('BIAYA', style: SatType.caption(color: sc.textLo)),
             ],
           ),
           const SizedBox(height: Sp.s3h),
@@ -1087,12 +1000,12 @@ class _PajakLayananCard extends ConsumerWidget {
                       'dihitung dari jumlah setelah diskon.'
                 : 'Pajak & layanan dihitung dari subtotal kotor, diskon '
                       'dipotong dari total akhir.',
-            style: SatType.sans(size: 11.5, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s1),
           Text(
             'Diskon per item selalu dihitung sebelum pajak.',
-            style: SatType.sans(size: 11, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s2h),
           // The catalogue itself lives on its own screen — it is list-shaped
@@ -1109,7 +1022,7 @@ class _PajakLayananCard extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'Preset diskon',
-                      style: SatType.sans(size: 13, color: sc.textHi),
+                      style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),
                   Icon(Icons.chevron_right, size: 18, color: sc.textLo),
@@ -1132,11 +1045,12 @@ class _PajakLayananCard extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: SatType.sans(size: 13, color: sc.textHi)),
+          child: Text(label, style: SatType.bodyM(color: sc.textHi)),
         ),
-        GestureDetector(
-          onTap: onToggle,
-          child: adminToggle(context, on: on),
+        SatToggle(
+          value: on,
+          semanticLabel: label,
+          onChanged: (_) => onToggle(),
         ),
       ],
     );
@@ -1152,10 +1066,7 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(
-            'Tipe biaya',
-            style: SatType.sans(size: 13, color: sc.textMd),
-          ),
+          child: Text('Tipe biaya', style: SatType.bodyM(color: sc.textMd)),
         ),
         Expanded(
           child: Row(
@@ -1193,11 +1104,7 @@ class _PajakLayananCard extends ConsumerWidget {
         ),
         child: Text(
           label,
-          style: SatType.sans(
-            size: 12,
-            weight: FontWeight.w600,
-            color: on ? sc.accentText : sc.textMd,
-          ),
+          style: SatType.labelS(color: on ? sc.accentText : sc.textMd),
         ),
       ),
     );
@@ -1219,7 +1126,7 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
+          child: Text(label, style: SatType.bodyM(color: sc.textMd)),
         ),
         Expanded(
           child: Row(
@@ -1244,11 +1151,7 @@ class _PajakLayananCard extends ConsumerWidget {
                 ),
                 child: Text(
                   _fmtPct(valueBps),
-                  style: SatType.mono(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoM(color: sc.textHi),
                 ),
               ),
               const SizedBox(width: Sp.s2h),
@@ -1282,7 +1185,7 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(label, style: SatType.sans(size: 13, color: sc.textMd)),
+          child: Text(label, style: SatType.bodyM(color: sc.textMd)),
         ),
         Expanded(
           child: Row(
@@ -1307,11 +1210,7 @@ class _PajakLayananCard extends ConsumerWidget {
                 ),
                 child: Text(
                   formatIDR(amount),
-                  style: SatType.mono(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoM(color: sc.textHi),
                 ),
               ),
               const SizedBox(width: Sp.s2h),
@@ -1327,23 +1226,17 @@ class _PajakLayananCard extends ConsumerWidget {
     );
   }
 
+  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
+  /// deriving it from the glyph is how every one of these gets named without
+  /// the call sites repeating it.
   Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
-    return GestureDetector(
+    return SatIconButton.outline(
+      icon: icon,
+      tooltip: icon == Icons.add
+          ? AppStrings.stepperIncrease
+          : AppStrings.stepperDecrease,
+      size: 36,
       onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: SatBox.d(
-          color: onTap == null ? sc.bg2 : sc.bg3,
-          border: SatB.all(color: sc.border1),
-          borderRadius: SatR.a(10),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: onTap == null ? sc.textDim : sc.textHi,
-        ),
-      ),
     );
   }
 }
@@ -1355,44 +1248,17 @@ class _GuestOrderingCard extends ConsumerWidget {
     final s = ref.watch(venueSettingsProvider);
     final n = ref.read(venueSettingsProvider.notifier);
     final net = ref.watch(guestNetInfoProvider);
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
+    return SatCard.titled(
+      title: AppStrings.venueSettingsSectionGuestOrdering,
+      tag: 'QR TAMU',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  AppStrings.venueSettingsSectionGuestOrdering,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
-              ),
-              Text(
-                'QR TAMU',
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: Sp.s1h),
           Text(
             'Tamu pindai QR di meja, pesan sendiri lewat web. Pesanan masuk '
             'antrian “Mandiri” untuk Anda setujui sebelum ke dapur.',
-            style: SatType.sans(size: 12, color: sc.textLo, height: 1.4),
+            style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s3h),
           Row(
@@ -1400,13 +1266,13 @@ class _GuestOrderingCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Aktifkan pesanan mandiri',
-                  style: SatType.sans(size: 13, color: sc.textHi),
+                  style: SatType.bodyM(color: sc.textHi),
                 ),
               ),
-              GestureDetector(
-                onTap: () =>
-                    n.patch(guestOrderingEnabled: !s.guestOrderingEnabled),
-                child: adminToggle(context, on: s.guestOrderingEnabled),
+              SatToggle(
+                value: s.guestOrderingEnabled,
+                semanticLabel: 'Pesan mandiri',
+                onChanged: (v) => n.patch(guestOrderingEnabled: v),
               ),
             ],
           ),
@@ -1440,18 +1306,16 @@ class _GuestOrderingCard extends ConsumerWidget {
             const SizedBox(height: Sp.s1h),
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => ref.invalidate(guestNetInfoProvider),
-                icon: Icon(Icons.refresh, size: 16, color: sc.accentText),
-                label: Text(
-                  'Cek ulang alamat',
-                  style: SatType.sans(size: 12, color: sc.accentText),
-                ),
+              child: SatButton.ghost(
+                icon: Icons.refresh,
+                label: 'Cek ulang alamat',
+                size: SatButtonSize.sm,
+                onTap: () => ref.invalidate(guestNetInfoProvider),
               ),
             ),
             Text(
               'Aktifkan per meja dari layar Atur zona untuk menampilkan QR.',
-              style: SatType.sans(size: 11, color: sc.textDim, height: 1.4),
+              style: SatType.bodyS(color: sc.textDim),
             ),
           ],
         ],
@@ -1471,7 +1335,7 @@ class _GuestOrderingCard extends ConsumerWidget {
         Icon(Icons.link, size: 15, color: sc.textLo),
         const SizedBox(width: Sp.s2),
         Expanded(
-          child: Text(text, style: SatType.mono(size: 12.5, color: color)),
+          child: Text(text, style: SatType.monoM(color: color)),
         ),
       ],
     ),
@@ -1496,10 +1360,7 @@ class _GuestOrderingCard extends ConsumerWidget {
           ),
           const SizedBox(width: Sp.s2h),
           Expanded(
-            child: Text(
-              text,
-              style: SatType.sans(size: 12, color: sc.textHi, height: 1.4),
-            ),
+            child: Text(text, style: SatType.bodyS(color: sc.textHi)),
           ),
         ],
       ),
@@ -1514,39 +1375,12 @@ class _ReportsHourCard extends ConsumerWidget {
     final s = ref.watch(venueSettingsProvider);
     final n = ref.read(venueSettingsProvider.notifier);
     final hour = s.businessDayStartHour;
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
+    return SatCard.titled(
+      title: AppStrings.venueSettingsSectionReports,
+      tag: 'LAPORAN',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  AppStrings.venueSettingsSectionReports,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
-              ),
-              Text(
-                'LAPORAN',
-                style: SatType.mono(
-                  size: 9,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: sc.textLo,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: Sp.s3h),
           Row(
             children: [
@@ -1557,12 +1391,12 @@ class _ReportsHourCard extends ConsumerWidget {
                   children: [
                     Text(
                       'Jam mulai hari kerja',
-                      style: SatType.sans(size: 13, color: sc.textMd),
+                      style: SatType.bodyM(color: sc.textMd),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
                       'Pengelompokan laporan "Hari ini"',
-                      style: SatType.sans(size: 11, color: sc.textLo),
+                      style: SatType.bodyS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -1590,11 +1424,7 @@ class _ReportsHourCard extends ConsumerWidget {
                       ),
                       child: Text(
                         '${hour.toString().padLeft(2, '0')}:00',
-                        style: SatType.mono(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.monoM(color: sc.textHi),
                       ),
                     ),
                     const SizedBox(width: Sp.s2h),
@@ -1618,31 +1448,25 @@ class _ReportsHourCard extends ConsumerWidget {
     );
   }
 
+  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
+  /// deriving it from the glyph is how every one of these gets named without
+  /// the call sites repeating it.
   Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
-    return GestureDetector(
+    return SatIconButton.outline(
+      icon: icon,
+      tooltip: icon == Icons.add
+          ? AppStrings.stepperIncrease
+          : AppStrings.stepperDecrease,
+      size: 36,
       onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: SatBox.d(
-          color: onTap == null ? sc.bg2 : sc.bg3,
-          border: SatB.all(color: sc.border1),
-          borderRadius: SatR.a(10),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: onTap == null ? sc.textDim : sc.textHi,
-        ),
-      ),
     );
   }
 }
 
-class _PhoneDetailScreen extends StatelessWidget {
+class _VenueSettingsPhoneDetail extends StatelessWidget {
   final String title;
   final Widget Function(BuildContext, SatColors) builder;
-  const _PhoneDetailScreen({required this.title, required this.builder});
+  const _VenueSettingsPhoneDetail({required this.title, required this.builder});
 
   @override
   Widget build(BuildContext context) {
@@ -1663,15 +1487,7 @@ class _PhoneDetailScreen extends StatelessWidget {
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),
                   Expanded(
-                    child: Text(
-                      title,
-                      style: SatType.sans(
-                        size: 22,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.4,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    child: Text(title, style: SatType.h2(color: sc.textHi)),
                   ),
                 ],
               ),

@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -51,7 +57,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
       bottom: false,
       child: Column(
         children: [
-          _Header(
+          _ZoneAdminHeader(
             sub: '${tables.length} meja · ${zones.length} zona · $seats kursi',
             canManage: canManage,
             onManageZones: () => _showZones(context),
@@ -106,10 +112,10 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
             const SizedBox(height: Sp.s3),
             Text(
               '${AppStrings.zoneAdminEmptyZone} ${zone.name}',
-              style: SatType.sans(size: 14, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
             const SizedBox(height: Sp.s4),
-            _FilledBtn(
+            SatButton.primary(
               label: AppStrings.zoneAdminAddTable,
               icon: Icons.add,
               onTap: () => _editTable(context, null, zone.id),
@@ -131,11 +137,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
             const SizedBox(height: Sp.s3h),
             Text(
               AppStrings.zoneAdminNoZones,
-              style: SatType.sans(
-                size: 18,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
+              style: SatType.h3(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1h),
             Text(
@@ -143,11 +145,11 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
                   ? AppStrings.zoneAdminNoZonesCreate
                   : AppStrings.zoneAdminNoZonesCreateRequest,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
             if (canManage) ...[
               const SizedBox(height: Sp.s4h),
-              _FilledBtn(
+              SatButton.primary(
                 label: AppStrings.zoneAdminAddZone,
                 onTap: () => _showZones(context),
               ),
@@ -167,11 +169,11 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
+class _ZoneAdminHeader extends StatelessWidget {
   final String sub;
   final bool canManage;
   final VoidCallback onManageZones;
-  const _Header({
+  const _ZoneAdminHeader({
     required this.sub,
     required this.canManage,
     required this.onManageZones,
@@ -193,66 +195,24 @@ class _Header extends StatelessWidget {
               children: [
                 Text(
                   AppStrings.zoneAdminTitle,
-                  style: SatType.sans(
-                    size: 24,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.4,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h2(color: sc.textHi),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  sub.toUpperCase(),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.6,
-                  ),
-                ),
+                const SizedBox(height: Sp.s1),
+                Text(sub.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
               ],
             ),
           ),
           if (canManage)
-            _GhostBtn(
+            SatButton.outline(
               icon: Icons.dashboard_customize_outlined,
               label: AppStrings.zoneAdminZonePill,
               onTap: onManageZones,
             )
           else
-            _LockedPill(label: AppStrings.zoneAdminZonePill),
-        ],
-      ),
-    );
-  }
-}
-
-class _LockedPill extends StatelessWidget {
-  final String label;
-  const _LockedPill({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(999),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.lock_outline, size: 14, color: sc.textDim),
-          const SizedBox(width: Sp.s1h),
-          Text(
-            label,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w600,
-              color: sc.textDim,
+            SatChip.tag(
+              label: AppStrings.zoneAdminZonePill,
+              icon: Icons.lock_outline,
             ),
-          ),
         ],
       ),
     );
@@ -292,8 +252,10 @@ class _ZoneBar extends StatelessWidget {
               itemBuilder: (ctx, i) {
                 final z = zones[i];
                 final count = tables.where((t) => t.zoneId == z.id).length;
-                return _ZoneChip(
-                  zone: z,
+                return SatChip.select(
+                  label: z.name,
+                  icon: z.icon,
+                  dot: z.color,
                   count: count,
                   selected: z.id == selectedId,
                   onTap: () => onSelect(z.id),
@@ -303,73 +265,13 @@ class _ZoneBar extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 14, 0),
-            child: _FilledBtn(
+            child: SatButton.primary(
               label: AppStrings.zoneAdminAddTable,
               icon: Icons.add,
               onTap: onAdd,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ZoneChip extends StatelessWidget {
-  final Zone zone;
-  final int count;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ZoneChip({
-    required this.zone,
-    required this.count,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final fg = selected ? zone.color : sc.textMd;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: satMotion(context, 140),
-        padding: const EdgeInsets.fromLTRB(8, 0, 14, 0),
-        decoration: SatBox.d(
-          color: selected ? zone.color.withValues(alpha: 0.14) : sc.bg2,
-          border: SatB.all(
-            color: selected ? zone.color.withValues(alpha: 0.55) : sc.border1,
-          ),
-          borderRadius: SatR.a(999),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 26,
-              height: 26,
-              decoration: SatBox.d(
-                color: zone.color.withValues(alpha: selected ? 0.22 : 0.16),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(zone.icon, size: 15, color: zone.color),
-            ),
-            const SizedBox(width: Sp.s2),
-            Text(
-              zone.name,
-              style: SatType.sans(size: 13, weight: FontWeight.w600, color: fg),
-            ),
-            const SizedBox(width: 7),
-            Text(
-              '$count',
-              style: SatType.mono(
-                size: 11,
-                weight: FontWeight.w600,
-                color: selected ? zone.color : sc.textLo,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -425,21 +327,12 @@ class _TableRow extends StatelessWidget {
                       table.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: SatType.sans(
-                        size: 15,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                        color: nameColor,
-                      ),
+                      style: SatType.labelL(color: nameColor),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
                       '${table.capacity} kursi',
-                      style: SatType.mono(
-                        size: 10,
-                        letterSpacing: 0.4,
-                        color: sc.textLo,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -447,7 +340,7 @@ class _TableRow extends StatelessWidget {
               if (inactive)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
+                    horizontal: Sp.s2h,
                     vertical: Sp.s1,
                   ),
                   decoration: SatBox.d(
@@ -456,11 +349,7 @@ class _TableRow extends StatelessWidget {
                   ),
                   child: Text(
                     AppStrings.inactive,
-                    style: SatType.sans(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      color: sc.urgent,
-                    ),
+                    style: SatType.labelS(color: sc.urgent),
                   ),
                 ),
               const SizedBox(width: Sp.s1h),
@@ -581,14 +470,15 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
         children: [
           _label(sc, AppStrings.zoneAdminTableName),
           const SizedBox(height: Sp.s2),
-          _SatField(controller: _name, hint: 'mis. T7, Booth A'),
+          SatField.text(controller: _name, hint: 'mis. T7, Booth A'),
           const SizedBox(height: Sp.s5),
           _label(sc, AppStrings.zoneAdminMaxCapacity),
           const SizedBox(height: Sp.s2),
-          _Stepper(
+          SatStepper(
             value: _capacity,
             min: 1,
             max: 20,
+            semanticLabel: AppStrings.zoneAdminMaxCapacity,
             onChanged: (v) => setState(() => _capacity = v),
           ),
           const SizedBox(height: Sp.s5),
@@ -599,10 +489,10 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
             runSpacing: 8,
             children: [
               for (final z in zones)
-                _SelectChip(
+                SatChip.select(
                   label: z.name,
                   icon: z.icon,
-                  tint: z.color,
+                  dot: z.color,
                   selected: z.id == _zoneId,
                   onTap: () => setState(() => _zoneId = z.id),
                 ),
@@ -633,13 +523,12 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
       footer: Row(
         children: [
           if (!_isNew) ...[
-            _DangerBtn(label: AppStrings.delete, onTap: _delete),
+            SatButton.danger(label: AppStrings.delete, onTap: _delete),
             const SizedBox(width: Sp.s2h),
           ],
           Expanded(
-            child: _FilledBtn(
+            child: SatButton.primary(
               label: _isNew ? AppStrings.zoneAdminAddTable : AppStrings.save,
-              expand: true,
               onTap: _save,
             ),
           ),
@@ -648,15 +537,8 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     );
   }
 
-  Widget _label(SatColors sc, String text) => Text(
-    text.toUpperCase(),
-    style: SatType.mono(
-      size: 10,
-      weight: FontWeight.w600,
-      letterSpacing: 1.0,
-      color: sc.textLo,
-    ),
-  );
+  Widget _label(SatColors sc, String text) =>
+      Text(text.toUpperCase(), style: SatType.caption(color: sc.textLo));
 }
 
 class _ActiveRow extends StatelessWidget {
@@ -687,21 +569,21 @@ class _ActiveRow extends StatelessWidget {
                 children: [
                   Text(
                     AppStrings.zoneAdminTableActive,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
+                    style: SatType.labelM(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.sHair),
                   Text(
                     AppStrings.zoneAdminTableActiveSub,
-                    style: SatType.sans(size: 12, color: sc.textMd),
+                    style: SatType.bodyS(color: sc.textMd),
                   ),
                 ],
               ),
             ),
-            _Switch(on: active),
+            SatToggle(
+              value: active,
+              semanticLabel: AppStrings.zoneAdminTableActive,
+              onChanged: (v) => onChanged(v),
+            ),
           ],
         ),
       ),
@@ -748,21 +630,21 @@ class _GuestOrderRow extends StatelessWidget {
                       children: [
                         Text(
                           AppStrings.zoneAdminGuestOrdering,
-                          style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.labelM(color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(
                           AppStrings.zoneAdminGuestOrderingSub,
-                          style: SatType.sans(size: 12, color: sc.textMd),
+                          style: SatType.bodyS(color: sc.textMd),
                         ),
                       ],
                     ),
                   ),
-                  _Switch(on: enabled),
+                  SatToggle(
+                    value: enabled,
+                    semanticLabel: AppStrings.zoneAdminGuestOrdering,
+                    onChanged: onChanged,
+                  ),
                 ],
               ),
             ),
@@ -782,11 +664,7 @@ class _GuestOrderRow extends StatelessWidget {
                     const SizedBox(width: Sp.s2),
                     Text(
                       AppStrings.zoneAdminShowQr,
-                      style: SatType.sans(
-                        size: 13,
-                        weight: FontWeight.w600,
-                        color: sc.accentText,
-                      ),
+                      style: SatType.labelM(color: sc.accentText),
                     ),
                   ],
                 ),
@@ -811,17 +689,13 @@ class _QrDialog extends ConsumerWidget {
       backgroundColor: sc.bg1,
       shape: RoundedRectangleBorder(borderRadius: SatR.a(20)),
       child: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(Sp.s6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'QR Meja ${table.displayName}',
-              style: SatType.sans(
-                size: 16,
-                weight: FontWeight.w700,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s4),
             net.when(
@@ -845,24 +719,20 @@ class _QrDialog extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(Sp.s3h),
                       decoration: SatBox.d(
-                        // Not a token, and not drift: a QR code needs a light
-                        // quiet zone with full contrast against its modules.
-                        // Themed to charcoal it stops scanning, and this one is
-                        // read by a guest's own phone camera.
-                        color: Colors.white,
+                        color: satQrQuiet,
                         borderRadius: SatR.a(14),
                       ),
                       child: QrImageView(
                         data: url,
                         size: 220,
-                        backgroundColor: Colors.white,
+                        backgroundColor: satQrQuiet,
                       ),
                     ),
                     const SizedBox(height: Sp.s3),
                     SelectableText(
                       url,
                       textAlign: TextAlign.center,
-                      style: SatType.mono(size: 12, color: sc.textMd),
+                      style: SatType.monoM(color: sc.textMd),
                     ),
                     const SizedBox(height: Sp.s3),
                     _warn(
@@ -878,12 +748,9 @@ class _QrDialog extends ConsumerWidget {
             const SizedBox(height: Sp.s4),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  AppStrings.close,
-                  style: SatType.sans(size: 14, color: sc.accentText),
-                ),
+              child: SatButton.ghost(
+                label: AppStrings.close,
+                onTap: () => Navigator.of(context).pop(),
               ),
             ),
           ],
@@ -911,10 +778,7 @@ class _QrDialog extends ConsumerWidget {
           ),
           const SizedBox(width: Sp.s2h),
           Expanded(
-            child: Text(
-              text,
-              style: SatType.sans(size: 12, color: sc.textHi, height: 1.4),
-            ),
+            child: Text(text, style: SatType.bodyS(color: sc.textHi)),
           ),
         ],
       ),
@@ -941,7 +805,7 @@ class _ZonesEditor extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: Text(
                 'Belum ada zona. Tambah zona pertama.',
-                style: SatType.sans(size: 13, color: sc.textMd),
+                style: SatType.bodyM(color: sc.textMd),
               ),
             )
           : ReorderableListView.builder(
@@ -953,7 +817,7 @@ class _ZonesEditor extends ConsumerWidget {
               itemBuilder: (ctx, i) {
                 final z = zones[i];
                 final count = tables.where((t) => t.zoneId == z.id).length;
-                return _ZoneRow(
+                return _ZoneAdminRow(
                   key: ValueKey(z.id),
                   index: i,
                   zone: z,
@@ -983,23 +847,22 @@ class _ZonesEditor extends ConsumerWidget {
                 );
               },
             ),
-      footer: _FilledBtn(
+      footer: SatButton.primary(
         label: AppStrings.zoneAdminAddZone,
         icon: Icons.add,
-        expand: true,
         onTap: () => _present(context, const _ZoneEditor()),
       ),
     );
   }
 }
 
-class _ZoneRow extends StatelessWidget {
+class _ZoneAdminRow extends StatelessWidget {
   final int index;
   final Zone zone;
   final int tableCount;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  const _ZoneRow({
+  const _ZoneAdminRow({
     super.key,
     required this.index,
     required this.zone,
@@ -1046,35 +909,37 @@ class _ZoneRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    zone.name,
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text(zone.name, style: SatType.labelM(color: sc.textHi)),
                   const SizedBox(height: Sp.sHair),
                   Text(
                     '$tableCount meja',
-                    style: SatType.mono(
-                      size: 10,
-                      letterSpacing: 0.4,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
               ),
             ),
           ),
-          _IconBtn(icon: Icons.tune, onTap: onEdit),
-          const SizedBox(width: Sp.s1),
-          _IconBtn(
-            icon: Icons.delete_outline,
-            danger: !locked,
-            muted: locked,
-            onTap: onDelete,
+          SatIconButton.outline(
+            icon: Icons.tune,
+            tooltip: AppStrings.a11yEdit,
+            size: 36,
+            onTap: onEdit,
           ),
+          const SizedBox(width: Sp.s1),
+          if (locked)
+            SatIconButton.outline(
+              icon: Icons.delete_outline,
+              tooltip: AppStrings.delete,
+              size: 36,
+              onTap: null,
+            )
+          else
+            SatIconButton.danger(
+              icon: Icons.delete_outline,
+              tooltip: AppStrings.delete,
+              size: 36,
+              onTap: onDelete,
+            ),
         ],
       ),
     );
@@ -1167,7 +1032,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
           const SizedBox(height: Sp.s5),
           _fieldLabel(sc, 'Nama zona'),
           const SizedBox(height: Sp.s2),
-          _SatField(
+          SatField.text(
             controller: _name,
             hint: 'mis. Teras, Bar',
             onChanged: (_) => setState(() {}),
@@ -1204,7 +1069,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
             ],
           ),
           if (!_isNew) ...[
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s6),
             _MetaRow(tableCount: widget.tableCount),
           ],
         ],
@@ -1212,13 +1077,12 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
       footer: Row(
         children: [
           if (!_isNew) ...[
-            _DangerBtn(label: AppStrings.delete, onTap: _delete),
+            SatButton.danger(label: AppStrings.delete, onTap: _delete),
             const SizedBox(width: Sp.s2h),
           ],
           Expanded(
-            child: _FilledBtn(
+            child: SatButton.primary(
               label: _isNew ? AppStrings.zoneAdminAddZone : AppStrings.save,
-              expand: true,
               onTap: _save,
             ),
           ),
@@ -1227,15 +1091,8 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
     );
   }
 
-  Widget _fieldLabel(SatColors sc, String text) => Text(
-    text.toUpperCase(),
-    style: SatType.mono(
-      size: 10,
-      weight: FontWeight.w600,
-      letterSpacing: 1.0,
-      color: sc.textLo,
-    ),
-  );
+  Widget _fieldLabel(SatColors sc, String text) =>
+      Text(text.toUpperCase(), style: SatType.caption(color: sc.textLo));
 }
 
 class _ZonePreview extends StatelessWidget {
@@ -1279,21 +1136,10 @@ class _ZonePreview extends StatelessWidget {
                   shown,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.sHair),
-                Text(
-                  'PRATINJAU',
-                  style: SatType.mono(
-                    size: 10,
-                    letterSpacing: 1.2,
-                    color: color,
-                  ),
-                ),
+                Text('PRATINJAU', style: SatType.monoS(color: color)),
               ],
             ),
           ),
@@ -1358,21 +1204,26 @@ class _IconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: satMotion(context, 130),
-        width: 46,
-        height: 46,
-        decoration: SatBox.d(
-          color: selected ? color.withValues(alpha: 0.18) : sc.bg2,
-          border: SatB.all(
-            color: selected ? color : sc.border1,
-            width: selected ? 1.4 : 1,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: AppStrings.zoneAdminIcon,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: satMotion(context, 130),
+          width: 46,
+          height: 46,
+          decoration: SatBox.d(
+            color: selected ? color.withValues(alpha: 0.18) : sc.bg2,
+            border: SatB.all(
+              color: selected ? color : sc.border1,
+              width: selected ? 1.4 : 1,
+            ),
+            borderRadius: SatR.a(12),
           ),
-          borderRadius: SatR.a(12),
+          child: Icon(icon, size: 22, color: selected ? color : sc.textMd),
         ),
-        child: Icon(icon, size: 22, color: selected ? color : sc.textMd),
       ),
     );
   }
@@ -1401,7 +1252,7 @@ class _MetaRow extends StatelessWidget {
               tableCount == 0
                   ? 'Belum ada meja di zona ini.'
                   : '$tableCount meja saat ini ada di zona ini.',
-              style: SatType.sans(size: 13, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
           ),
         ],
@@ -1449,31 +1300,21 @@ class _SheetShell extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          color: sc.textHi,
-                        ),
-                      ),
+                      Text(title, style: SatType.h3(color: sc.textHi)),
                       if (subtitle != null) ...[
                         const SizedBox(height: Sp.sHair),
                         Text(
                           subtitle!.toUpperCase(),
-                          style: SatType.mono(
-                            size: 10,
-                            letterSpacing: 0.8,
-                            color: sc.textLo,
-                          ),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
                     ],
                   ),
                 ),
-                _IconBtn(
+                SatIconButton.outline(
                   icon: Icons.close,
+                  tooltip: AppStrings.close,
+                  size: 36,
                   onTap: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -1537,34 +1378,22 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
             children: [
               Center(child: _sheetHandle(sc)),
               const SizedBox(height: Sp.s4h),
-              Text(
-                title,
-                style: SatType.sans(
-                  size: 16,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(title, style: SatType.labelL(color: sc.textHi)),
               const SizedBox(height: Sp.s2),
-              Text(
-                message,
-                style: SatType.sans(size: 13, color: sc.textMd, height: 1.4),
-              ),
+              Text(message, style: SatType.bodyM(color: sc.textMd)),
               const SizedBox(height: Sp.s4h),
               Row(
                 children: [
                   Expanded(
-                    child: _GhostBtn(
+                    child: SatButton.outline(
                       label: AppStrings.cancel,
-                      expand: true,
                       onTap: () => Navigator.of(ctx).pop(false),
                     ),
                   ),
                   const SizedBox(width: Sp.s2h),
                   Expanded(
-                    child: _DangerBtn(
+                    child: SatButton.danger(
                       label: AppStrings.delete,
-                      expand: true,
                       onTap: () => Navigator.of(ctx).pop(true),
                     ),
                   ),
@@ -1576,365 +1405,4 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
       );
     },
   );
-}
-
-class _SatField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final ValueChanged<String>? onChanged;
-  const _SatField({
-    required this.controller,
-    required this.hint,
-    this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      style: SatType.sans(size: 14, color: sc.textHi),
-      cursorColor: sc.accentText,
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: hint,
-        hintStyle: SatType.sans(size: 14, color: sc.textDim),
-        filled: true,
-        fillColor: sc.bg2,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: Sp.s3h,
-          vertical: 13,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: SatR.a(12),
-          borderSide: SatB.side(color: sc.border1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: SatR.a(12),
-          borderSide: SatB.side(color: sc.accentBorder),
-        ),
-      ),
-    );
-  }
-}
-
-class _Stepper extends StatelessWidget {
-  final int value;
-  final int min;
-  final int max;
-  final ValueChanged<int> onChanged;
-  const _Stepper({
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border1),
-        borderRadius: SatR.a(12),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1h),
-      child: Row(
-        children: [
-          _stepBtn(
-            sc,
-            Icons.remove,
-            value > min ? () => onChanged(value - 1) : null,
-          ),
-          Expanded(
-            child: Text(
-              '$value',
-              textAlign: TextAlign.center,
-              style: SatType.mono(
-                size: 18,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
-            ),
-          ),
-          _stepBtn(
-            sc,
-            Icons.add,
-            value < max ? () => onChanged(value + 1) : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 36,
-        decoration: SatBox.d(
-          color: onTap == null ? sc.bg3 : sc.bg4,
-          borderRadius: SatR.a(8),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: onTap == null ? sc.textDim : sc.textHi,
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectChip extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final Color? tint;
-  final bool selected;
-  final VoidCallback onTap;
-  const _SelectChip({
-    required this.label,
-    this.icon,
-    this.tint,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final c = tint ?? sc.accentText;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: satMotion(context, 130),
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
-        decoration: SatBox.d(
-          color: selected ? c.withValues(alpha: 0.18) : sc.bg2,
-          border: SatB.all(
-            color: selected ? c.withValues(alpha: 0.6) : sc.border1,
-          ),
-          borderRadius: SatR.a(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: selected ? c : sc.textMd),
-              const SizedBox(width: Sp.s1h),
-            ],
-            Text(
-              label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: selected ? c : sc.textMd,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Switch extends StatelessWidget {
-  final bool on;
-  const _Switch({required this.on});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return AnimatedContainer(
-      duration: satMotion(context, 160),
-      width: 44,
-      height: 26,
-      decoration: SatBox.d(
-        color: on ? sc.success : sc.bg3,
-        border: SatB.all(color: on ? sc.success : sc.border1),
-        borderRadius: SatR.a(999),
-      ),
-      child: AnimatedAlign(
-        duration: satMotion(context, 160),
-        alignment: on ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.all(Sp.sHair),
-          width: 20,
-          height: 20,
-          decoration: SatBox.d(
-            color: on ? sc.successInk : sc.textLo,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FilledBtn extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final bool expand;
-  final VoidCallback onTap;
-  const _FilledBtn({
-    required this.label,
-    this.icon,
-    this.expand = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
-        decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(999)),
-        child: Row(
-          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 17, color: sc.accentInk),
-              const SizedBox(width: Sp.s1h),
-            ],
-            Text(
-              label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w600,
-                color: sc.accentInk,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GhostBtn extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final bool expand;
-  final VoidCallback onTap;
-  const _GhostBtn({
-    required this.label,
-    this.icon,
-    this.expand = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
-        decoration: SatBox.d(
-          color: sc.bg2,
-          border: SatB.all(color: sc.border1),
-          borderRadius: SatR.a(999),
-        ),
-        child: Row(
-          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: sc.textMd),
-              const SizedBox(width: Sp.s1h),
-            ],
-            Text(
-              label,
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w600,
-                color: sc.textMd,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DangerBtn extends StatelessWidget {
-  final String label;
-  final bool expand;
-  final VoidCallback onTap;
-  const _DangerBtn({
-    required this.label,
-    this.expand = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
-        alignment: Alignment.center,
-        decoration: SatBox.d(
-          color: sc.urgentSoft,
-          border: SatB.all(color: sc.urgent),
-          borderRadius: SatR.a(999),
-        ),
-        child: Text(
-          label,
-          style: SatType.sans(
-            size: 13,
-            weight: FontWeight.w600,
-            color: sc.urgent,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final bool danger;
-  final bool muted;
-  final VoidCallback onTap;
-  const _IconBtn({
-    required this.icon,
-    this.danger = false,
-    this.muted = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final fg = danger
-        ? sc.urgent
-        : muted
-        ? sc.textDim
-        : sc.textMd;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: SatBox.d(
-          color: sc.bg2,
-          border: SatB.all(color: sc.border1),
-          borderRadius: SatR.a(10),
-        ),
-        child: Icon(icon, size: 18, color: fg),
-      ),
-    );
-  }
 }

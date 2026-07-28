@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -77,7 +79,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final tablet = l.useTabletShell;
 
     final head = _FloorHead(tablet: tablet, title: zone.name, sub: subLine);
-    final zoneRow = _ZoneRow(
+    final zoneRow = _TablesZoneRow(
       tables: activeTables,
       zones: zones,
       active: activeZoneId,
@@ -154,7 +156,7 @@ class _FloorHead extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final grace = ref.watch(venueSettingsProvider).reservationGraceMins;
     final start = DateTime(now.year, now.month, now.day);
     final end = start.add(const Duration(days: 1));
@@ -233,22 +235,12 @@ class _FloorHead extends ConsumerWidget {
         children: [
           Text(
             SatShape.caps(title),
-            style: SatType.display(
-              size: 30,
-              weight: FontWeight.w600,
-              letterSpacing: -0.6,
-              height: 1.05,
-              color: context.sat.textHi,
-            ),
+            style: SatType.h1(color: context.sat.textHi),
           ),
           const SizedBox(height: Sp.s1),
           Text(
             SatShape.caps(sub),
-            style: SatType.mono(
-              size: 11,
-              color: context.sat.textLo,
-              letterSpacing: 0.44,
-            ),
+            style: SatType.monoS(color: context.sat.textLo),
           ),
           const SizedBox(height: Sp.s3),
           actions,
@@ -298,30 +290,21 @@ class _FloorAction extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: sc.textMd),
             if (!compact) ...[
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s2),
               Text(
                 SatShape.caps(label),
-                style: SatType.sans(
-                  size: 12,
-                  weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                  color: sc.textHi,
-                ),
+                style: (brutal
+                    ? SatType.labelS(color: sc.textHi)
+                    : SatType.bodyS(color: sc.textHi)),
               ),
             ],
-            const SizedBox(width: 7),
-            Text(
-              '$count',
-              style: SatType.mono(
-                size: 12,
-                weight: FontWeight.w600,
-                color: sc.textMd,
-              ),
-            ),
+            const SizedBox(width: Sp.s2),
+            Text('$count', style: SatType.monoM(color: sc.textMd)),
             if (alert != null) ...[
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s2),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 5,
+                  horizontal: Sp.s1h,
                   vertical: Sp.sHair,
                 ),
                 decoration: BoxDecoration(
@@ -333,12 +316,7 @@ class _FloorAction extends StatelessWidget {
                 ),
                 child: Text(
                   SatShape.caps(alert!),
-                  style: SatType.sans(
-                    size: 9,
-                    weight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    color: onFill(sc.urgent),
-                  ),
+                  style: SatType.labelS(color: onFill(sc.urgent)),
                 ),
               ),
             ],
@@ -421,42 +399,25 @@ class _NewOrderButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    return FilledButton.icon(
-      onPressed: () {
+    return SatButton.primary(
+      label: 'Pesanan baru',
+      icon: Icons.add_rounded,
+      size: tablet ? SatButtonSize.lg : SatButtonSize.md,
+      onTap: () {
         startNewDraft(ref);
         context.push('/order/new');
       },
-      style: FilledButton.styleFrom(
-        backgroundColor: sc.accent,
-        foregroundColor: sc.accentInk,
-        elevation: 0,
-        padding: EdgeInsets.symmetric(
-          horizontal: tablet ? 18 : 14,
-          vertical: tablet ? 14 : 11,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-      ),
-      icon: const Icon(Icons.add_rounded, size: 18),
-      label: Text(
-        SatShape.caps('Pesanan baru'),
-        style: SatType.sans(
-          size: 13,
-          weight: FontWeight.w600,
-          color: sc.accentInk,
-        ),
-      ),
     );
   }
 }
 
-class _ZoneRow extends StatelessWidget {
+class _TablesZoneRow extends StatelessWidget {
   final List<VenueTable> tables;
   final List<Zone> zones;
   final String active;
   final ValueChanged<String> onChange;
   final bool tablet;
-  const _ZoneRow({
+  const _TablesZoneRow({
     required this.tables,
     required this.zones,
     required this.active,
@@ -489,10 +450,15 @@ class _ZoneRow extends StatelessWidget {
                 ? '$ready siap'
                 : '${zoneTables.length}';
             final dur = motionEnabled(context) ? _kChipMorph : Duration.zero;
-            // Brutal fills the selected chip with the accent and keeps ink on
-            // it; lembut inverts to the text ramp as before.
-            final fill = isActive ? (brutal ? sc.accent : sc.textHi) : sc.bg2;
-            final fg = isActive ? (brutal ? sc.accentInk : sc.bg0) : sc.textMd;
+            // Both poster skins fill the selected chip with the accent and keep
+            // ink on it — Glow's zone tabs are solid lime pills. Lembut inverts
+            // to the text ramp as before.
+            final fill = isActive
+                ? (SatShape.lembut ? sc.textHi : sc.accent)
+                : sc.bg2;
+            final fg = isActive
+                ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
+                : sc.textMd;
             return GestureDetector(
               onTap: () => onChange(z.id),
               child: AnimatedScale(
@@ -518,23 +484,19 @@ class _ZoneRow extends StatelessWidget {
                       AnimatedDefaultTextStyle(
                         duration: dur,
                         curve: satEaseOut,
-                        style: SatType.sans(
-                          size: 13,
-                          weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                          color: fg,
-                        ),
+                        style: (brutal
+                            ? SatType.labelM(color: fg)
+                            : SatType.bodyM(color: fg)),
                         child: Text(SatShape.caps(z.name)),
                       ),
                       const SizedBox(width: Sp.s2h),
                       AnimatedDefaultTextStyle(
                         duration: dur,
                         curve: satEaseOut,
-                        style: SatType.mono(
-                          size: 11,
+                        style: SatType.monoS(
                           color: isActive
                               ? fg.withValues(alpha: brutal ? 1 : 0.6)
                               : sc.textLo,
-                          letterSpacing: 0,
                         ),
                         child: Text(countLabel),
                       ),
@@ -685,22 +647,15 @@ class _EmptyZoneState extends State<_EmptyZone>
             Text(
               'Belum ada meja di ${widget.zoneName}',
               textAlign: TextAlign.center,
-              style: SatType.sans(
-                size: tablet ? 18 : 15,
-                weight: FontWeight.w600,
-                letterSpacing: -0.2,
-                color: sc.textHi,
-              ),
+              style: (tablet
+                  ? SatType.h3(color: sc.textHi)
+                  : SatType.labelL(color: sc.textHi)),
             ),
             const SizedBox(height: Sp.s1h),
             Text(
               AppStrings.tablesEmptyZoneAddTableHint,
               textAlign: TextAlign.center,
-              style: SatType.mono(
-                size: 11,
-                color: sc.textLo,
-                letterSpacing: 0.44,
-              ),
+              style: SatType.monoS(color: sc.textLo),
             ),
           ],
         ),

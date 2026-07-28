@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/app_strings.dart';
@@ -64,7 +68,7 @@ Future<void> openReservationsSurface(
     // to blend against, so using it here paints the floor out entirely. The
     // barrier dims, and it dims dark on every palette (neo.css §9 does the same
     // on both its light and dark skins).
-    barrierColor: Colors.black54,
+    barrierColor: satBarrier,
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (ctx, _, _) => Align(
       alignment: Alignment.centerRight,
@@ -116,7 +120,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final now = DateTime.now();
+    final now = SatClock.now();
     final grace = ref.watch(venueSettingsProvider).reservationGraceMins;
     final start = DateTime(now.year, now.month, now.day);
     final end = start.add(const Duration(days: 1));
@@ -173,21 +177,12 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                   children: [
                     Text(
                       SatShape.caps(AppStrings.floorReservationsBook),
-                      style: SatType.display(
-                        size: 22,
-                        weight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.h2(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.s1),
                     Text(
                       '${today.length} booking · $covers tamu',
-                      style: SatType.mono(
-                        size: 11,
-                        color: sc.textLo,
-                        letterSpacing: 0.66,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -207,7 +202,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
             padding: const EdgeInsets.symmetric(horizontal: Sp.s5),
             children: [
               for (final f in _RvFilter.values) ...[
-                _FilterChip(
+                SatChip.select(
                   label: switch (f) {
                     _RvFilter.waiting => AppStrings.reservationFilterWaiting,
                     _RvFilter.late => AppStrings.reservationFilterLate,
@@ -216,7 +211,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                     _RvFilter.all => AppStrings.reservationFilterAll,
                   },
                   count: pick(f).length,
-                  active: _filter == f,
+                  selected: _filter == f,
                   onTap: () => setState(() => _filter = f),
                 ),
                 if (f != _RvFilter.values.last) const SizedBox(width: Sp.s1h),
@@ -232,7 +227,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                     child: Text(
                       AppStrings.reservationEmptyFilter,
                       textAlign: TextAlign.center,
-                      style: SatType.sans(size: 13, color: sc.textMd),
+                      style: SatType.bodyM(color: sc.textMd),
                     ),
                   ),
                 )
@@ -248,70 +243,13 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: FilledButton.icon(
-            onPressed: () => openCreateReservationSheet(context, ref),
-            icon: const Icon(Icons.add, size: 18),
-            label: Text(SatShape.caps('Reservasi baru')),
+          child: SatButton.primary(
+            label: 'Reservasi baru',
+            icon: Icons.add,
+            onTap: () => openCreateReservationSheet(context, ref),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final int count;
-  final bool active;
-  final VoidCallback onTap;
-  const _FilterChip({
-    required this.label,
-    required this.count,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final brutal = SatShape.brutal;
-    // Brutal fills the selected chip with the accent; lembut inverts to textHi.
-    final fill = active ? (brutal ? sc.accent : sc.textHi) : sc.bg2;
-    final fg = active ? (brutal ? sc.accentInk : sc.bg0) : sc.textMd;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        // Tight: five of these have to fit the drawer's 480px without the last
-        // one hanging half off the edge.
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 9),
-        decoration: SatBox.d(
-          color: fill,
-          borderRadius: SatR.a(999),
-          border: SatB.all(color: active && !brutal ? sc.textHi : sc.border0),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              SatShape.caps(label),
-              style: SatType.sans(
-                size: 11.5,
-                weight: brutal ? FontWeight.w700 : FontWeight.w500,
-                color: fg,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '$count',
-              style: SatType.mono(
-                size: 11,
-                color: active ? fg : sc.textLo,
-                letterSpacing: 0,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -369,22 +307,17 @@ class _ReservationRow extends ConsumerWidget {
                   children: [
                     Text(
                       _hhmm(r.expectedAt),
-                      style: SatShape.brutal
-                          ? SatType.display(size: 16, color: sc.textHi)
-                          : SatType.mono(
-                              size: 15,
-                              weight: FontWeight.w600,
-                              color: sc.textHi,
-                            ),
+                      // Both poster skins set the booking hour as display type
+                      // — Glow's reservation rows lead on a heavy numeral, and
+                      // `display` ignores the weight under brutal anyway.
+                      style: SatShape.lembut
+                          ? SatType.monoM(color: sc.textHi)
+                          : SatType.labelL(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
                       _relative(r, late),
-                      style: SatType.mono(
-                        size: 10,
-                        color: late ? sc.urgent : sc.textLo,
-                        letterSpacing: 0.4,
-                      ),
+                      style: SatType.monoS(color: late ? sc.urgent : sc.textLo),
                     ),
                   ],
                 ),
@@ -394,15 +327,8 @@ class _ReservationRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      r.name,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
+                    Text(r.name, style: SatType.labelM(color: sc.textHi)),
+                    const SizedBox(height: Sp.s1),
                     Text(
                       [
                         '${r.partySize} tamu',
@@ -413,11 +339,7 @@ class _ReservationRow extends ConsumerWidget {
                         if (r.phone != null && r.phone!.trim().isNotEmpty)
                           r.phone!.trim(),
                       ].join(' · '),
-                      style: SatType.mono(
-                        size: 10,
-                        color: sc.textLo,
-                        letterSpacing: 0.4,
-                      ),
+                      style: SatType.monoS(color: sc.textLo),
                     ),
                     if (r.notes != null && r.notes!.trim().isNotEmpty) ...[
                       const SizedBox(height: Sp.s1),
@@ -425,7 +347,7 @@ class _ReservationRow extends ConsumerWidget {
                         r.notes!.trim(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(size: 12, color: sc.textMd),
+                        style: SatType.bodyS(color: sc.textMd),
                       ),
                     ],
                   ],
@@ -442,31 +364,31 @@ class _ReservationRow extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () async {
+                  child: SatButton.outline(
+                    label: AppStrings.reservationActionNoShow,
+                    onTap: () async {
                       await n.updateStatus(r.id, ReservationStatus.noShow);
                     },
-                    child: Text(AppStrings.reservationActionNoShow),
                   ),
                 ),
                 const SizedBox(width: Sp.s2),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () async {
+                  child: SatButton.outline(
+                    label: AppStrings.cancel,
+                    onTap: () async {
                       await n.updateStatus(r.id, ReservationStatus.cancelled);
                     },
-                    child: const Text(AppStrings.cancel),
                   ),
                 ),
               ],
             ),
           ] else if (r.status != ReservationStatus.seated) ...[
             const SizedBox(height: Sp.s2h),
-            OutlinedButton(
-              onPressed: () async {
+            SatButton.outline(
+              label: AppStrings.reservationActionRestore,
+              onTap: () async {
                 await n.updateStatus(r.id, ReservationStatus.pending);
               },
-              child: Text(AppStrings.reservationActionRestore),
             ),
           ],
         ],
@@ -476,7 +398,7 @@ class _ReservationRow extends ConsumerWidget {
 
   String _relative(Reservation r, bool late) {
     if (r.status == ReservationStatus.seated) return 'duduk';
-    final diff = r.expectedAt.difference(DateTime.now());
+    final diff = r.expectedAt.difference(SatClock.now());
     if (late) return '+${-diff.inMinutes} mnt';
     if (r.status == ReservationStatus.pending && diff.inMinutes <= 20) {
       return 'dalam ${diff.inMinutes} mnt';
@@ -494,7 +416,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final brutal = SatShape.brutal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1),
       decoration: BoxDecoration(
         color: brutal ? tone : tone.withValues(alpha: 0.15),
         borderRadius: SatR.a(6),
@@ -502,12 +424,7 @@ class _Tag extends StatelessWidget {
       ),
       child: Text(
         SatShape.caps(label),
-        style: SatType.sans(
-          size: 9,
-          weight: brutal ? FontWeight.w800 : FontWeight.w700,
-          letterSpacing: brutal ? 1.0 : 0.2,
-          color: brutal ? onFill(tone) : tone,
-        ),
+        style: SatType.labelS(color: brutal ? onFill(tone) : tone),
       ),
     );
   }
@@ -554,12 +471,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
       children: [
         Text(
           SatShape.caps('${AppStrings.reservationActionSeat} ke meja:'),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2),
         if (zones.length > 1)
@@ -579,18 +491,16 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                     padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
                     decoration: SatBox.d(
                       color: isActive
-                          ? (SatShape.brutal ? sc.accent : sc.textHi)
+                          ? (SatShape.lembut ? sc.textHi : sc.accent)
                           : sc.bg3,
                       border: SatB.all(color: sc.border0),
                       borderRadius: SatR.a(999),
                     ),
                     child: Text(
                       z.name,
-                      style: SatType.sans(
-                        size: 11,
-                        weight: FontWeight.w600,
+                      style: SatType.labelS(
                         color: isActive
-                            ? (SatShape.brutal ? sc.accentInk : sc.bg0)
+                            ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
                             : sc.textMd,
                       ),
                     ),
@@ -603,11 +513,11 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
         if (available.isEmpty)
           Text(
             'Tidak ada meja kapasitas ≥ ${r.partySize} di zona ini.',
-            style: SatType.sans(size: 12, color: sc.textMd),
+            style: SatType.bodyS(color: sc.textMd),
           )
         else
           SizedBox(
-            height: 36,
+            height: Sp.s9,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: available.length,
@@ -629,17 +539,13 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
                       children: [
                         Text(
                           t.displayName,
-                          style: SatType.mono(
-                            size: 12,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.monoM(color: sc.textHi),
                         ),
                         const SizedBox(width: Sp.s1h),
                         Icon(Icons.person_outline, size: 11, color: sc.textLo),
                         Text(
                           '${t.capacity}',
-                          style: SatType.mono(size: 10, color: sc.textLo),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
                     ),
@@ -702,7 +608,7 @@ Future<void> openCreateReservationSheet(
   final phoneCtl = TextEditingController();
   final notesCtl = TextEditingController();
   var party = 2;
-  final now = DateTime.now();
+  final now = SatClock.now();
   var expected = DateTime(now.year, now.month, now.day, 19, 0);
   String? zoneId;
   String? tableId;
@@ -743,31 +649,26 @@ Future<void> openCreateReservationSheet(
                   const SizedBox(height: Sp.s3h),
                   Text(
                     SatShape.caps('Reservasi baru'),
-                    style: SatType.display(
-                      size: 18,
-                      weight: FontWeight.w700,
-                      color: sc.textHi,
-                    ),
+                    style: SatType.h3(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.s4),
-                  TextField(
+                  SatField.text(
                     controller: nameCtl,
-                    decoration: const InputDecoration(labelText: 'Nama tamu'),
+                    label: 'Nama tamu',
+                    hint: '',
                   ),
                   const SizedBox(height: Sp.s2h),
-                  TextField(
+                  SatField.number(
                     controller: phoneCtl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'No. HP (opsional)',
-                    ),
+                    label: 'No. HP',
+                    hint: 'opsional',
                   ),
                   const SizedBox(height: Sp.s2h),
                   Row(
                     children: [
                       Text(
                         'Jumlah tamu',
-                        style: SatType.sans(size: 13, color: sc.textHi),
+                        style: SatType.bodyM(color: sc.textHi),
                       ),
                       const Spacer(),
                       IconButton(
@@ -782,11 +683,7 @@ Future<void> openCreateReservationSheet(
                         child: Center(
                           child: Text(
                             '$party',
-                            style: SatType.sans(
-                              size: 16,
-                              weight: FontWeight.w600,
-                              color: sc.textHi,
-                            ),
+                            style: SatType.labelL(color: sc.textHi),
                           ),
                         ),
                       ),
@@ -801,10 +698,10 @@ Future<void> openCreateReservationSheet(
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.calendar_today, size: 16),
-                          label: Text(_fmtDate(expected)),
-                          onPressed: () async {
+                        child: SatButton.outline(
+                          label: _fmtDate(expected),
+                          icon: Icons.calendar_today,
+                          onTap: () async {
                             final picked = await showDatePicker(
                               context: ctx,
                               initialDate: expected,
@@ -827,10 +724,10 @@ Future<void> openCreateReservationSheet(
                       ),
                       const SizedBox(width: Sp.s2),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.schedule, size: 16),
-                          label: Text(_hhmm(expected)),
-                          onPressed: () async {
+                        child: SatButton.outline(
+                          label: _hhmm(expected),
+                          icon: Icons.schedule,
+                          onTap: () async {
                             final picked = await showTimePicker(
                               context: ctx,
                               initialTime: TimeOfDay(
@@ -869,16 +766,16 @@ Future<void> openCreateReservationSheet(
                     }),
                   ),
                   const SizedBox(height: Sp.s2h),
-                  TextField(
+                  SatField.text(
                     controller: notesCtl,
+                    label: 'Catatan',
+                    hint: 'opsional',
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Catatan (opsional)',
-                    ),
                   ),
                   const SizedBox(height: Sp.s4h),
-                  FilledButton(
-                    onPressed: () async {
+                  SatButton.primary(
+                    label: 'Simpan reservasi',
+                    onTap: () async {
                       final name = nameCtl.text.trim();
                       if (name.isEmpty) return;
                       try {
@@ -906,7 +803,6 @@ Future<void> openCreateReservationSheet(
                         }
                       }
                     },
-                    child: const Text('Simpan reservasi'),
                   ),
                 ],
               ),
@@ -951,47 +847,41 @@ class _TablePicker extends StatelessWidget {
         )
         .toList();
 
-    Widget chip(String label, bool active, VoidCallback onTap) =>
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
-            decoration: SatBox.d(
-              color: active
-                  ? (SatShape.brutal ? sc.accent : sc.textHi)
-                  : sc.bg2,
-              border: SatB.all(color: sc.border0),
-              borderRadius: SatR.a(999),
-            ),
-            child: Text(
-              SatShape.caps(label),
-              style: SatType.sans(
-                size: 11.5,
-                weight: FontWeight.w600,
-                color: active
-                    ? (SatShape.brutal ? sc.accentInk : sc.bg0)
-                    : sc.textMd,
-              ),
-            ),
+    Widget chip(
+      String label,
+      bool active,
+      VoidCallback onTap,
+    ) => GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
+        decoration: SatBox.d(
+          color: active ? (SatShape.lembut ? sc.textHi : sc.accent) : sc.bg2,
+          border: SatB.all(color: sc.border0),
+          borderRadius: SatR.a(999),
+        ),
+        child: Text(
+          SatShape.caps(label),
+          style: SatType.labelS(
+            color: active
+                ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
+                : sc.textMd,
           ),
-        );
+        ),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           SatShape.caps('Zona & meja (opsional)'),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2),
         if (zones.length > 1)
           SizedBox(
-            height: 34,
+            height: Sp.s9,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: zones.length,
@@ -1005,7 +895,7 @@ class _TablePicker extends StatelessWidget {
           ),
         const SizedBox(height: Sp.s1h),
         SizedBox(
-          height: 34,
+          height: Sp.s9,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: free.length + 1,

@@ -4,6 +4,7 @@
 library;
 
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:satset/domain/models/ticket_modifier.dart';
 
@@ -128,7 +129,7 @@ class PastBillSummary {
     kind: j['kind'] as String? ?? 'dineIn',
     pax: _int(j['pax']),
     closedAt:
-        DateTime.tryParse(j['closedAt'] as String? ?? '') ?? DateTime.now(),
+        DateTime.tryParse(j['closedAt'] as String? ?? '') ?? SatClock.now(),
     netTotal: _int(j['netTotal']),
     lossAmount: _int(j['lossAmount']),
     ticketCount: _int(j['ticketCount']),
@@ -219,7 +220,7 @@ class BillPayment {
     isRefund: j['isRefund'] as bool? ?? false,
     tendered: (j['tendered'] as num?)?.toInt(),
     note: j['note'] as String?,
-    at: DateTime.tryParse(j['at'] as String? ?? '') ?? DateTime.now(),
+    at: DateTime.tryParse(j['at'] as String? ?? '') ?? SatClock.now(),
     hasPhoto: j['hasPhoto'] as bool? ?? false,
   );
 }

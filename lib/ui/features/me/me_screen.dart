@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'dart:math' as math;
@@ -24,7 +28,6 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
-import 'package:satset/ui/core/state/view_mode_view_model.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
@@ -177,7 +180,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final shiftStartedDt = DateTime.tryParse(shiftIso);
     var elapsed = shiftStartedDt == null
         ? Duration.zero
-        : DateTime.now().difference(shiftStartedDt);
+        : SatClock.now().difference(shiftStartedDt);
     if (elapsed.isNegative) elapsed = Duration.zero;
     final shiftStart = shiftIso.isEmpty ? '—' : formatClockId(shiftIso);
 
@@ -198,16 +201,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     void pickTheme() => showThemeSheet(context, ref);
 
-    // Phone/tablet layout toggle — only on the Server-mode host AND only on a
-    // tablet device (forcing phone-layout on a real phone is a no-op, so staff
-    // client phones never see it). `forcePhone` makes this tablet render the
-    // phone layout; the icon flips to offer the way back.
     final l = context.layout;
-    final forcePhone = ref.watch(forcePhoneViewProvider);
-    final isServerHost = ref.watch(serverRuntimeProvider) != null;
-    final showLayoutToggle = isServerHost && l.isTablet;
-    void toggleLayout() =>
-        ref.read(forcePhoneViewProvider.notifier).state = !forcePhone;
 
     Future<void> endShift() async {
       // Admin (Server mode): logout kills the embedded server — every staff
@@ -231,13 +225,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         'sampai admin masuk lagi.',
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Batal'),
+              SatButton.ghost(
+                label: AppStrings.cancel,
+                onTap: () => Navigator.pop(ctx, false),
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Keluar & matikan'),
+              SatButton.danger(
+                label: 'Keluar & matikan',
+                onTap: () => Navigator.pop(ctx, true),
               ),
             ],
           ),
@@ -248,7 +242,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       if (context.mounted) context.go('/pin');
     }
 
-    if (l.useTabletShell && !forcePhone) {
+    if (l.useTabletShell) {
       return _MeTablet(
         m: m,
         audit: audit,
@@ -256,9 +250,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         theme: theme,
         onPickTheme: pickTheme,
         onEndShift: endShift,
-        showLayoutToggle: showLayoutToggle,
-        forcePhone: forcePhone,
-        onToggleLayout: toggleLayout,
       );
     }
     return _MePhone(
@@ -268,9 +259,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       theme: theme,
       onPickTheme: pickTheme,
       onEndShift: endShift,
-      showLayoutToggle: showLayoutToggle,
-      forcePhone: forcePhone,
-      onToggleLayout: toggleLayout,
     );
   }
 }
@@ -284,9 +272,6 @@ class _MePhone extends StatelessWidget {
   final SatTheme theme;
   final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
-  final bool showLayoutToggle;
-  final bool forcePhone;
-  final VoidCallback onToggleLayout;
 
   const _MePhone({
     required this.m,
@@ -295,9 +280,6 @@ class _MePhone extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
-    required this.showLayoutToggle,
-    required this.forcePhone,
-    required this.onToggleLayout,
   });
 
   @override
@@ -310,13 +292,7 @@ class _MePhone extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.fromLTRB(0, l.topInset, 0, l.bottomInset + 40),
           children: [
-            _TopBar(
-              theme: theme,
-              onPickTheme: onPickTheme,
-              showLayoutToggle: showLayoutToggle,
-              forcePhone: forcePhone,
-              onToggleLayout: onToggleLayout,
-            ),
+            _TopBar(theme: theme, onPickTheme: onPickTheme),
             const SizedBox(height: Sp.s2),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
@@ -335,7 +311,10 @@ class _MePhone extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _PacingCard(m: m),
             ),
-            const _SectionLabel(label: 'AKTIVITAS TERBARU'),
+            const SatSectionLabel(
+              'Aktivitas terbaru',
+              padding: EdgeInsets.fromLTRB(Sp.s5, Sp.s6, Sp.s5, Sp.s2h),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _ActivityCard(
@@ -361,9 +340,6 @@ class _MeTablet extends StatelessWidget {
   final SatTheme theme;
   final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
-  final bool showLayoutToggle;
-  final bool forcePhone;
-  final VoidCallback onToggleLayout;
 
   const _MeTablet({
     required this.m,
@@ -372,9 +348,6 @@ class _MeTablet extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
-    required this.showLayoutToggle,
-    required this.forcePhone,
-    required this.onToggleLayout,
   });
 
   @override
@@ -392,20 +365,9 @@ class _MeTablet extends StatelessWidget {
                 child: Text(
                   'MULAI ${m.shiftStart} · ${m.elapsedLabel} BERJALAN'
                       .toUpperCase(),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.66,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
-              if (showLayoutToggle) ...[
-                _LayoutToggleButton(
-                  forcePhone: forcePhone,
-                  onTap: onToggleLayout,
-                ),
-                const SizedBox(width: Sp.s2),
-              ],
               _ThemeIconButton(theme: theme, onTap: onPickTheme),
             ],
           ),
@@ -431,7 +393,7 @@ class _MeTablet extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 22),
+                const SizedBox(width: Sp.s6),
                 Expanded(
                   flex: 4,
                   child: _ActivityCard(
@@ -455,16 +417,7 @@ class _MeTablet extends StatelessWidget {
 class _TopBar extends StatelessWidget {
   final SatTheme theme;
   final VoidCallback onPickTheme;
-  final bool showLayoutToggle;
-  final bool forcePhone;
-  final VoidCallback onToggleLayout;
-  const _TopBar({
-    required this.theme,
-    required this.onPickTheme,
-    required this.showLayoutToggle,
-    required this.forcePhone,
-    required this.onToggleLayout,
-  });
+  const _TopBar({required this.theme, required this.onPickTheme});
 
   @override
   Widget build(BuildContext context) {
@@ -473,55 +426,9 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           const Spacer(),
-          if (showLayoutToggle) ...[
-            _LayoutToggleButton(forcePhone: forcePhone, onTap: onToggleLayout),
-            const SizedBox(width: Sp.s2),
-          ],
           _ThemeIconButton(theme: theme, onTap: onPickTheme),
         ],
       ),
-    );
-  }
-}
-
-/// Phone/tablet layout toggle, styled to match [_ThemeIconButton]. Shown only
-/// on the Server-mode host tablet (see `MeScreen.build`). When [forcePhone] is
-/// active the tablet is rendering the phone layout, so the icon offers the way
-/// back to the tablet layout.
-class _LayoutToggleButton extends StatelessWidget {
-  final bool forcePhone;
-  final VoidCallback onTap;
-  const _LayoutToggleButton({required this.forcePhone, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final inner = Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: SatBox.d(
-            shape: BoxShape.circle,
-            border: SatB.all(color: sc.border1),
-          ),
-          alignment: Alignment.center,
-          child: Icon(
-            forcePhone ? Icons.tablet_mac_outlined : Icons.smartphone_outlined,
-            size: 16,
-            color: sc.textMd,
-          ),
-        ),
-      ),
-    );
-    return Semantics(
-      button: true,
-      label: AppStrings.a11yToggleLayout,
-      child: inner,
     );
   }
 }
@@ -613,29 +520,14 @@ class _Identity extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                m.name,
-                style: SatType.sans(
-                  size: big ? 24 : 22,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.32,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(m.name, style: SatType.h2(color: sc.textHi)),
               const SizedBox(height: Sp.sHair),
-              Text(
-                m.roleLabel,
-                style: SatType.sans(size: 13, color: sc.textMd),
-              ),
+              Text(m.roleLabel, style: SatType.bodyM(color: sc.textMd)),
               if (showShiftLine) ...[
                 const SizedBox(height: Sp.s1h),
                 Text(
                   'MULAI ${m.shiftStart} · ${m.elapsedLabel.toUpperCase()} BERJALAN',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.44,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ],
@@ -750,26 +642,9 @@ class _KpiBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            kpi.label.toUpperCase(),
-            style: SatType.mono(
-              size: 9,
-              weight: FontWeight.w500,
-              letterSpacing: 0.72,
-              color: subColor,
-            ),
-          ),
+          Text(kpi.label.toUpperCase(), style: SatType.monoS(color: subColor)),
           const SizedBox(height: Sp.s2h),
-          Text(
-            kpi.value,
-            style: SatType.mono(
-              size: 26,
-              weight: FontWeight.w600,
-              letterSpacing: -0.52,
-              height: 1,
-              color: valColor,
-            ),
-          ),
+          Text(kpi.value, style: SatType.monoL(color: valColor)),
         ],
       ),
     );
@@ -813,23 +688,10 @@ class _PacingCard extends StatelessWidget {
           Expanded(
             child: Text(
               '$perHour tiket / jam',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w600,
-                letterSpacing: -0.15,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
           ),
-          Text(
-            m.elapsedLabel,
-            style: SatType.mono(
-              size: 16,
-              weight: FontWeight.w600,
-              letterSpacing: -0.2,
-              color: sc.textHi,
-            ),
-          ),
+          Text(m.elapsedLabel, style: SatType.monoM(color: sc.textHi)),
         ],
       ),
     );
@@ -856,7 +718,7 @@ class _ActivityCard extends StatelessWidget {
             padding: const EdgeInsets.all(Sp.s5),
             child: Text(
               'Belum ada entri audit. Pembatalan, comp, dan perubahan pasca-kirim muncul di sini.',
-              style: SatType.sans(size: 13, color: sc.textLo, height: 1.5),
+              style: SatType.bodyM(color: sc.textLo),
             ),
           )
         : Column(
@@ -870,43 +732,14 @@ class _ActivityCard extends StatelessWidget {
           );
 
     if (padded) {
-      return Container(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-        decoration: SatBox.d(
-          color: sc.bg2,
-          border: SatB.all(color: sc.border0),
-          borderRadius: SatR.a(20),
+      return SatCard.section(
+        header: 'Aktivitas terkini',
+        headerTrailing: Text(
+          '${audit.length} entri',
+          style: SatType.monoS(color: sc.textDim),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'AKTIVITAS TERKINI',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      color: sc.textLo,
-                    ),
-                  ),
-                ),
-                Text(
-                  '${audit.length} entri',
-                  style: SatType.mono(
-                    size: 10,
-                    color: sc.textDim,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Sp.s2),
-            inner,
-          ],
-        ),
+        padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s4h, Sp.s5, Sp.s1h),
+        child: inner,
       );
     }
 
@@ -917,28 +750,6 @@ class _ActivityCard extends StatelessWidget {
         border: SatB.all(color: sc.border0),
       ),
       child: inner,
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
-      child: Text(
-        label,
-        style: SatType.mono(
-          size: 10,
-          weight: FontWeight.w500,
-          letterSpacing: 1.2,
-          color: sc.textLo,
-        ),
-      ),
     );
   }
 }
@@ -1044,25 +855,9 @@ class _AuditRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  entry.title,
-                  style: SatType.sans(
-                    size: 13,
-                    weight: FontWeight.w500,
-                    letterSpacing: -0.13,
-                    color: sc.textHi,
-                    height: 1.25,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  meta,
-                  style: SatType.mono(
-                    size: 10,
-                    color: sc.textLo,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+                Text(entry.title, style: SatType.bodyM(color: sc.textHi)),
+                const SizedBox(height: Sp.s1),
+                Text(meta, style: SatType.monoS(color: sc.textLo)),
               ],
             ),
           ),
@@ -1078,26 +873,13 @@ class _EndShiftButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return SizedBox(
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(Icons.logout_rounded, size: 18, color: sc.textHi),
-        label: Text(
-          'Akhiri shift & keluar',
-          style: SatType.sans(
-            size: 15,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: sc.textHi,
-          side: SatB.side(color: sc.border2),
-          shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
-          minimumSize: const Size.fromHeight(52),
-        ),
+      width: double.infinity,
+      child: SatButton.outline(
+        label: 'Akhiri shift & keluar',
+        icon: Icons.logout_rounded,
+        size: SatButtonSize.lg,
+        onTap: onPressed,
       ),
     );
   }

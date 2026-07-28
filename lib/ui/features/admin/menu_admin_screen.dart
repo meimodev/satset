@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_tabs.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +65,8 @@ class _TabletLayout extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (admin && !onCats && !onTags) ...[
-                _PrimaryButton(
+                SatButton.primary(
+                  size: SatButtonSize.sm,
                   label: '+ Tambah item',
                   onTap: () =>
                       ref.read(menuAdminSelectedItemIdProvider.notifier).state =
@@ -73,7 +78,7 @@ class _TabletLayout extends ConsumerWidget {
                 const _TabSwitcher(),
                 const SizedBox(width: Sp.s2h),
               ],
-              _RoleBadge(perm: perm),
+              _MenuRoleChip(perm: perm),
             ],
           ),
         ),
@@ -224,7 +229,7 @@ class _EmptyDetail extends StatelessWidget {
             staff
                 ? 'Pilih item untuk lihat detail'
                 : 'Pilih item atau tambah baru',
-            style: SatType.sans(size: 14, color: sc.textMd),
+            style: SatType.bodyM(color: sc.textMd),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: Sp.s1h),
@@ -232,7 +237,7 @@ class _EmptyDetail extends StatelessWidget {
             staff
                 ? 'Mode staf: hanya tandai habis. Edit penuh hanya admin.'
                 : 'Kelola harga, modifier, stok, dan ketersediaan.',
-            style: SatType.sans(size: 12, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
             textAlign: TextAlign.center,
           ),
         ],
@@ -269,28 +274,16 @@ class _PhoneLayout extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Menu',
-                        style: SatType.sans(
-                          size: 26,
-                          weight: FontWeight.w600,
-                          letterSpacing: -0.5,
-                          color: sc.textHi,
-                        ),
-                      ),
+                      Text('Menu', style: SatType.h2(color: sc.textHi)),
                       const SizedBox(height: Sp.sHair),
                       Text(
                         '${counts.total} item · ${counts.soldOut} tidak tersedia',
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.textLo,
-                          letterSpacing: 0.5,
-                        ),
+                        style: SatType.monoS(color: sc.textLo),
                       ),
                     ],
                   ),
                 ),
-                _RoleBadge(perm: perm),
+                _MenuRoleChip(perm: perm),
               ],
             ),
           ),
@@ -357,40 +350,17 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
+            child: SatField.search(
               controller: _ctrl,
+              hint: 'Cari item, deskripsi…',
               onChanged: (t) =>
                   ref.read(menuAdminSearchProvider.notifier).state = t,
-              style: SatType.sans(size: 13, color: sc.textHi),
-              decoration: InputDecoration(
-                hintText: 'Cari item, deskripsi…',
-                hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                prefixIcon: Icon(Icons.search, size: 18, color: sc.textLo),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s1,
-                  vertical: Sp.s2h,
-                ),
-                filled: true,
-                fillColor: sc.bg2,
-                border: OutlineInputBorder(
-                  borderRadius: SatR.a(999),
-                  borderSide: SatB.side(color: sc.border1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(999),
-                  borderSide: SatB.side(color: sc.border1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(999),
-                  borderSide: SatB.side(color: sc.accent),
-                ),
-              ),
             ),
           ),
           if (!isTab && perm == MenuPermission.admin) ...[
             const SizedBox(width: Sp.s2),
-            _PrimaryButton(
+            SatButton.primary(
+              size: SatButtonSize.sm,
               label: '+ Item',
               onTap: () => context.push('/menuadm/new'),
             ),
@@ -473,11 +443,7 @@ class _CategoryRail extends ConsumerWidget {
               children: [
                 AnimatedDefaultTextStyle(
                   duration: satMotion(context, 200),
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: on ? sc.accentText : sc.textMd,
-                  ),
+                  style: SatType.bodyS(color: on ? sc.accentText : sc.textMd),
                   child: Text(name),
                 ),
                 const SizedBox(width: Sp.s1h),
@@ -485,9 +451,7 @@ class _CategoryRail extends ConsumerWidget {
                   value: n,
                   builder: (_, v) => Text(
                     '$v',
-                    style: SatType.mono(
-                      size: 10,
-                      weight: FontWeight.w600,
+                    style: SatType.caption(
                       color: on ? sc.accentText : sc.textLo,
                     ),
                   ),
@@ -516,10 +480,10 @@ class _ItemList extends ConsumerWidget {
     final Widget body = items.isEmpty
         ? Center(
             child: Padding(
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(Sp.s7),
               child: Text(
                 'Tidak ada item cocok.',
-                style: SatType.sans(size: 13, color: sc.textLo),
+                style: SatType.bodyM(color: sc.textLo),
               ),
             ),
           )
@@ -529,7 +493,7 @@ class _ItemList extends ConsumerWidget {
             itemBuilder: (_, i) => Reveal(
               index: i.clamp(0, 11),
               animKey: items[i].id,
-              child: _ItemRow(item: items[i], compact: compact),
+              child: _MenuItemRow(item: items[i], compact: compact),
             ),
           );
 
@@ -544,10 +508,10 @@ class _ItemList extends ConsumerWidget {
   }
 }
 
-class _ItemRow extends ConsumerWidget {
+class _MenuItemRow extends ConsumerWidget {
   final MenuItem item;
   final bool compact;
-  const _ItemRow({required this.item, required this.compact});
+  const _MenuItemRow({required this.item, required this.compact});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -608,11 +572,8 @@ class _ItemRow extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style:
-                              SatType.sans(
-                                size: 14,
-                                weight: FontWeight.w600,
+                              SatType.labelM(
                                 color: disabled ? sc.textLo : sc.textHi,
-                                letterSpacing: -0.14,
                               ).copyWith(
                                 decoration: disabled
                                     ? TextDecoration.lineThrough
@@ -620,50 +581,32 @@ class _ItemRow extends ConsumerWidget {
                                 decorationColor: sc.textLo,
                               ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: Sp.s1),
                         Row(
                           children: [
                             Text(
                               formatIDR(item.basePrice),
-                              style: SatType.mono(
-                                size: 11,
-                                weight: FontWeight.w600,
-                                color: sc.textMd,
-                              ),
+                              style: SatType.caption(color: sc.textMd),
                             ),
                             // Auto-habis is derived from ingredient stock, so
                             // the card shows the verdict, not a count (ADR-0040).
                             if (item.autoSoldOut) ...[
                               Text(
                                 ' · ',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.textDim,
-                                ),
+                                style: SatType.monoS(color: sc.textDim),
                               ),
                               Text(
                                 'Bahan habis',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.urgent,
-                                  letterSpacing: 0.4,
-                                ),
+                                style: SatType.monoS(color: sc.urgent),
                               ),
                             ] else if (item.soldOutVariantIds.isNotEmpty) ...[
                               Text(
                                 ' · ',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.textDim,
-                                ),
+                                style: SatType.monoS(color: sc.textDim),
                               ),
                               Text(
                                 '${item.soldOutVariantIds.length} varian habis',
-                                style: SatType.mono(
-                                  size: 10,
-                                  color: sc.warn,
-                                  letterSpacing: 0.4,
-                                ),
+                                style: SatType.monoS(color: sc.warn),
                               ),
                             ],
                           ],
@@ -671,7 +614,7 @@ class _ItemRow extends ConsumerWidget {
                         if (!compact &&
                             (item.allergens.isNotEmpty ||
                                 item.dietary.isNotEmpty)) ...[
-                          const SizedBox(height: 5),
+                          const SizedBox(height: Sp.s1h),
                           Wrap(
                             spacing: 3,
                             runSpacing: 3,
@@ -731,17 +674,12 @@ class _ItemRow extends ConsumerWidget {
 
   Widget _miniBadge(SatColors sc, String t, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
-      child: Text(
-        t,
-        style: SatType.mono(
-          size: 9,
-          weight: FontWeight.w600,
-          letterSpacing: 0.4,
-          color: fg,
-        ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.s1h,
+        vertical: Sp.sHair,
       ),
+      decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
+      child: Text(t, style: SatType.caption(color: fg)),
     );
   }
 }
@@ -799,11 +737,7 @@ class _StatusToggle extends ConsumerWidget {
                 child: Text(
                   label,
                   key: ValueKey(label),
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                    height: 1.0,
+                  style: SatType.caption(
                     color: fg,
                   ).copyWith(leadingDistribution: TextLeadingDistribution.even),
                 ),
@@ -816,95 +750,28 @@ class _StatusToggle extends ConsumerWidget {
   }
 }
 
-class _PrimaryButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _PrimaryButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      pressedScale: 0.95,
-      child: Material(
-        color: sc.accent,
-        borderRadius: SatR.a(10),
-        child: InkWell(
-          borderRadius: SatR.a(10),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: 9,
-            ),
-            child: Text(
-              label,
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w600,
-                color: sc.accentInk,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// The menu admin's three panes. A [SatTabs] strip bound to the tab provider.
 class _TabSwitcher extends ConsumerWidget {
   const _TabSwitcher();
 
+  static const _order = [
+    MenuAdminTab.items,
+    MenuAdminTab.categories,
+    MenuAdminTab.tags,
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
     final tab = ref.watch(menuAdminTabProvider);
-    Widget seg(String label, MenuAdminTab value) {
-      final on = tab == value;
-      return PressScale(
-        pressedScale: 0.95,
-        child: GestureDetector(
-          onTap: () => ref.read(menuAdminTabProvider.notifier).state = value,
-          child: AnimatedContainer(
-            duration: satMotion(context, 220),
-            curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: 7,
-            ),
-            decoration: SatBox.d(
-              color: on ? sc.accent : Colors.transparent,
-              borderRadius: SatR.a(8),
-            ),
-            child: AnimatedDefaultTextStyle(
-              duration: satMotion(context, 220),
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w600,
-                color: on ? sc.accentInk : sc.textMd,
-              ),
-              child: Text(label),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: SatBox.d(
-        color: sc.bg3,
-        border: SatB.all(color: sc.border1),
-        borderRadius: SatR.a(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          seg('Item', MenuAdminTab.items),
-          seg('Kategori', MenuAdminTab.categories),
-          seg('Tag', MenuAdminTab.tags),
-        ],
-      ),
+    return SatTabs(
+      tabs: const [
+        SatTab(label: 'Item'),
+        SatTab(label: 'Kategori'),
+        SatTab(label: 'Tag'),
+      ],
+      selected: _order.indexOf(tab),
+      onSelected: (i) =>
+          ref.read(menuAdminTabProvider.notifier).state = _order[i],
     );
   }
 }
@@ -962,21 +829,10 @@ class _CategoriesPanel extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             c.name,
-                            style: SatType.sans(
-                              size: 14,
-                              weight: FontWeight.w600,
-                              color: sc.textHi,
-                            ),
+                            style: SatType.labelM(color: sc.textHi),
                           ),
                         ),
-                        Text(
-                          '$n item',
-                          style: SatType.mono(
-                            size: 11,
-                            color: sc.textLo,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
+                        Text('$n item', style: SatType.monoS(color: sc.textLo)),
                         IconButton(
                           tooltip: AppStrings.a11yRename,
                           icon: Icon(
@@ -1008,7 +864,8 @@ class _CategoriesPanel extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: _PrimaryButton(
+            child: SatButton.primary(
+              size: SatButtonSize.sm,
               label: '+ Tambah kategori',
               onTap: () => _add(context, ref),
             ),
@@ -1084,22 +941,21 @@ class _CategoriesPanel extends ConsumerWidget {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(title, style: SatType.sans(size: 16, color: sc.textHi)),
-        content: TextField(
+        title: Text(title, style: SatType.bodyL(color: sc.textHi)),
+        content: SatField.text(
           controller: ctrl,
+          hint: 'Nama kategori',
           autofocus: true,
-          style: SatType.sans(size: 14, color: sc.textHi),
-          decoration: const InputDecoration(hintText: 'Nama kategori'),
           onSubmitted: (t) => Navigator.pop(ctx, t),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => Navigator.pop(ctx, ctrl.text),
           ),
         ],
       ),
@@ -1139,14 +995,7 @@ class _TagsPanel extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: Sp.s1, bottom: Sp.s2),
-          child: Text(
-            title,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-            ),
-          ),
+          child: Text(title, style: SatType.labelM(color: sc.textMd)),
         ),
         for (final (i, t) in tags.indexed)
           Padding(
@@ -1173,25 +1022,13 @@ class _TagsPanel extends ConsumerWidget {
                         color: tint.withValues(alpha: 0.12),
                         borderRadius: SatR.a(4),
                       ),
-                      child: Text(
-                        t.code,
-                        style: SatType.mono(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          letterSpacing: 0.4,
-                          color: tint,
-                        ),
-                      ),
+                      child: Text(t.code, style: SatType.caption(color: tint)),
                     ),
                     const SizedBox(width: Sp.s2h),
                     Expanded(
                       child: Text(
                         t.name,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.labelM(color: sc.textHi),
                       ),
                     ),
                     IconButton(
@@ -1219,7 +1056,8 @@ class _TagsPanel extends ConsumerWidget {
           ),
         Align(
           alignment: Alignment.centerLeft,
-          child: _PrimaryButton(
+          child: SatButton.primary(
+            size: SatButtonSize.sm,
             label: '+ Tambah ${title.toLowerCase()}',
             onTap: () => _edit(context, ref, null, kind: kind),
           ),
@@ -1253,20 +1091,20 @@ class _TagsPanel extends ConsumerWidget {
         backgroundColor: context.sat.bg1,
         title: Text(
           'Hapus "${tag.name}"?',
-          style: SatType.sans(size: 16, color: context.sat.textHi),
+          style: SatType.bodyL(color: context.sat.textHi),
         ),
         content: Text(
           'Tag ini akan dilepas dari semua item yang memakainya.',
-          style: SatType.sans(size: 13, color: context.sat.textMd),
+          style: SatType.bodyM(color: context.sat.textMd),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx, false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus'),
+          SatButton.primary(
+            label: AppStrings.delete,
+            onTap: () => Navigator.pop(ctx, true),
           ),
         ],
       ),
@@ -1288,44 +1126,41 @@ class _TagsPanel extends ConsumerWidget {
         backgroundColor: sc.bg1,
         title: Text(
           tag == null ? 'Tag baru' : 'Ubah tag',
-          style: SatType.sans(size: 16, color: sc.textHi),
+          style: SatType.bodyL(color: sc.textHi),
         ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
+              SatField.text(
                 controller: nameCtrl,
+                label: 'Nama',
+                hint: '',
                 autofocus: true,
-                style: SatType.sans(size: 14, color: sc.textHi),
-                decoration: const InputDecoration(labelText: 'Nama'),
               ),
               const SizedBox(height: Sp.s2),
-              TextField(
+              SatField.text(
                 controller: codeCtrl,
+                label: 'Kode badge',
+                hint: 'GL',
                 maxLength: 3,
-                textCapitalization: TextCapitalization.characters,
-                style: SatType.sans(size: 14, color: sc.textHi),
-                decoration: const InputDecoration(
-                  labelText: 'Kode badge',
-                  hintText: 'GL',
-                ),
+                capitalization: TextCapitalization.characters,
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            onPressed: () {
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () {
               final n = nameCtrl.text.trim();
               if (n.isEmpty) return;
               Navigator.pop(ctx, (n, codeCtrl.text.trim().toUpperCase()));
             },
-            child: const Text('Simpan'),
           ),
         ],
       ),
@@ -1333,30 +1168,19 @@ class _TagsPanel extends ConsumerWidget {
   }
 }
 
-class _RoleBadge extends StatelessWidget {
+/// Which of the two menu permissions the signed-in staffer holds. A hue choice
+/// over [SatChip], not a chip of its own.
+class _MenuRoleChip extends StatelessWidget {
   final MenuPermission perm;
-  const _RoleBadge({required this.perm});
+  const _MenuRoleChip({required this.perm});
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     final isAdmin = perm == MenuPermission.admin;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
-      decoration: SatBox.d(
-        color: isAdmin ? sc.accentSoft : sc.bg3,
-        border: SatB.all(color: isAdmin ? sc.accentBorder : sc.border1),
-        borderRadius: SatR.a(999),
-      ),
-      child: Text(
-        isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
-        style: SatType.mono(
-          size: 10,
-          weight: FontWeight.w600,
-          letterSpacing: 0.8,
-          color: isAdmin ? sc.accentText : sc.textMd,
-        ),
-      ),
+    return SatChip.tag(
+      label: isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
+      hue: isAdmin ? SatChipHue.accent : SatChipHue.neutral,
+      size: SatChipSize.sm,
     );
   }
 }

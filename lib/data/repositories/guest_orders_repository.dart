@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/log/sat_log.dart';
@@ -77,7 +78,7 @@ class GuestOrdersRepository extends StateNotifier<List<GuestOrderBatch>> {
             tableLabel: m['tableLabel'] as String? ?? '',
             submittedAt:
                 DateTime.tryParse(m['submittedAt'] as String? ?? '') ??
-                DateTime.now(),
+                SatClock.now(),
             lines: [
               for (final l in (m['lines'] as List? ?? const []))
                 _line((l as Map).cast<String, dynamic>()),

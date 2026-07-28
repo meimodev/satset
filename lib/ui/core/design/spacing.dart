@@ -8,6 +8,11 @@
 ///
 /// Above 20 the grid is pure: at that size a 2px difference is not a decision
 /// anyone is making on purpose, so there is nothing to name.
+///
+/// The scale stops at 48. A number larger than that is a dimension — a panel
+/// width, a sheet height, a tile — not spacing, and naming it here would only
+/// invite the wrong ones to be reached for. The guard test draws the same
+/// line.
 class Sp {
   Sp._();
 
@@ -25,7 +30,9 @@ class Sp {
   static const double s4h = 18;
   static const double s5 = 20;
   static const double s6 = 24;
+  static const double s7 = 28;
   static const double s8 = 32;
+  static const double s9 = 36;
   static const double s10 = 40;
   static const double s12 = 48;
 }

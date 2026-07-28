@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +12,6 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
-import 'guest_stepper.dart';
 import 'move_table_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
@@ -68,33 +70,30 @@ class _GuestStepperSheet extends ConsumerWidget {
               children: [
                 Text(
                   'Meja ${table.id}',
-                  style: SatType.mono(
-                    size: 22,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.44,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoL(color: sc.textHi),
                 ),
                 const SizedBox(width: Sp.s2h),
                 Text(
                   'Atur jumlah tamu',
-                  style: SatType.sans(size: 13, color: sc.textMd),
+                  style: SatType.bodyM(color: sc.textMd),
                 ),
               ],
             ),
             const SizedBox(height: Sp.s4),
             Center(
-              child: GuestStepper(
-                pax: table.pax,
+              child: SatStepper.pill(
+                value: table.pax,
                 max: table.capacity,
                 enabled: canEdit,
-                size: 48,
-                onMinus: () => ref
-                    .read(tablesProvider.notifier)
-                    .decrementPax(table.id),
-                onPlus: () => ref
-                    .read(tablesProvider.notifier)
-                    .incrementPax(table.id),
+                icon: Icons.person_outline,
+                showMax: true,
+                size: SatStepperSize.lg,
+                semanticLabel: AppStrings.tableGuests,
+                // No actor passed: a pax correction is not a takeover, so it
+                // must not touch the table's lastActorId. See ADR-0056.
+                onChanged: (v) => v > table.pax
+                    ? ref.read(tablesProvider.notifier).incrementPax(table.id)
+                    : ref.read(tablesProvider.notifier).decrementPax(table.id),
               ),
             ),
             const SizedBox(height: Sp.s3h),
@@ -104,19 +103,17 @@ class _GuestStepperSheet extends ConsumerWidget {
                 child: Text(
                   'Hanya pelayan yang bisa mengubah jumlah tamu.',
                   textAlign: TextAlign.center,
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.4,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
             const SizedBox(height: Sp.s4h),
             if (canMove) ...[
               SizedBox(
                 height: Sp.s12,
-                child: FilledButton.icon(
-                  onPressed: () async {
+                child: SatButton.primary(
+                  label: 'Pindahkan meja',
+                  icon: Icons.swap_horiz_rounded,
+                  onTap: () async {
                     final targetId = await showMoveTableSheet(
                       context: context,
                       sourceId: table.id,
@@ -125,41 +122,15 @@ class _GuestStepperSheet extends ConsumerWidget {
                     Navigator.of(context).pop(); // close this stepper sheet
                     context.push('/table/$targetId');
                   },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: sc.bg3,
-                    foregroundColor: sc.textHi,
-                    shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                  ),
-                  icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                  label: Text(
-                    'Pindahkan meja',
-                    style: SatType.sans(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(height: Sp.s2h),
             ],
             SizedBox(
               height: Sp.s12,
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: sc.textHi,
-                  side: SatB.side(color: sc.border2),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                ),
-                child: Text(
-                  'Tutup',
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+              child: SatButton.outline(
+                label: AppStrings.close,
+                onTap: () => Navigator.of(context).pop(),
               ),
             ),
           ],

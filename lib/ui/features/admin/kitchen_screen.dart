@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/pulse_dot.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -93,7 +95,7 @@ bool _isDone(TicketStatus s) =>
     s == TicketStatus.served;
 
 Duration _age(DateTime sentAtTime) {
-  final d = DateTime.now().difference(sentAtTime);
+  final d = SatClock.now().difference(sentAtTime);
   return d.isNegative ? Duration.zero : d;
 }
 
@@ -215,23 +217,14 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
               child: Text(
                 'Antrian Persiapan',
-                style: SatType.sans(
-                  size: 26,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.5,
-                  color: sc.textHi,
-                ),
+                style: SatType.h2(color: sc.textHi),
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Text(
                 '${orders.length} ORDER · $itemCount ITEM DI ANTRIAN PERSIAPAN',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.66,
-                ),
+                style: SatType.monoS(color: sc.textLo),
               ),
             ),
             Padding(
@@ -327,11 +320,7 @@ class _CompletedFilter extends StatelessWidget {
               const SizedBox(width: Sp.s2),
               Text(
                 'Tampilkan order selesai',
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: value ? sc.textHi : sc.textMd,
-                ),
+                style: SatType.labelM(color: value ? sc.textHi : sc.textMd),
               ),
             ],
           ),
@@ -387,28 +376,19 @@ class _OrderCard extends ConsumerWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
+                    horizontal: Sp.s3,
                     vertical: Sp.s1h,
                   ),
                   decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(9)),
                   child: Text(
                     tableLabel,
-                    style: SatType.mono(
-                      size: 15,
-                      weight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                      color: sc.textHi,
-                    ),
+                    style: SatType.monoM(color: sc.textHi),
                   ),
                 ),
                 const SizedBox(width: Sp.s2h),
                 Text(
                   '${order.done}/${order.total} selesai',
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.textMd,
-                  ),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),
                 _AgePill(age: ageDur, sentAt: order.sentAt, color: ageColor),
@@ -437,7 +417,7 @@ class _OrderCard extends ConsumerWidget {
             child: Column(
               children: [
                 for (var i = 0; i < order.tickets.length; i++)
-                  _ItemRow(
+                  _KdsItemRow(
                     ticket: order.tickets[i],
                     last: i == order.tickets.length - 1,
                     onTap: () => onToggle(order.tableId, order.tickets[i].id),
@@ -465,7 +445,7 @@ class _AgePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
       decoration: SatBox.d(
         color: color.withValues(alpha: 0.14),
         borderRadius: SatR.a(999),
@@ -473,22 +453,11 @@ class _AgePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _PulseDot(color: color, pulse: age.inMinutes >= 10),
+          PulseDot(color: color, pulse: age.inMinutes >= 10),
           const SizedBox(width: Sp.s1h),
-          Text(
-            formatElapsedId(age),
-            style: SatType.mono(
-              size: 12,
-              weight: FontWeight.w700,
-              letterSpacing: 0,
-              color: color,
-            ),
-          ),
+          Text(formatElapsedId(age), style: SatType.monoM(color: color)),
           const SizedBox(width: Sp.s1h),
-          Text(
-            sentAt,
-            style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.4),
-          ),
+          Text(sentAt, style: SatType.monoS(color: sc.textLo)),
         ],
       ),
     );
@@ -497,84 +466,21 @@ class _AgePill extends StatelessWidget {
 
 /// Status dot that gently pulses while an order is overdue (≥10m), drawing the
 /// cook's eye to the most urgent ticket. Static (no repaint) otherwise.
-class _PulseDot extends StatefulWidget {
-  final Color color;
-  final bool pulse;
-  const _PulseDot({required this.color, required this.pulse});
-
-  @override
-  State<_PulseDot> createState() => _PulseDotState();
-}
-
-class _PulseDotState extends State<_PulseDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sync();
-  }
-
-  @override
-  void didUpdateWidget(covariant _PulseDot old) {
-    super.didUpdateWidget(old);
-    if (widget.pulse != old.pulse) _sync();
-  }
-
-  void _sync() {
-    final reduce = MediaQuery.of(context).disableAnimations;
-    if (widget.pulse && !reduce) {
-      if (!_c.isAnimating) _c.repeat(reverse: true);
-    } else {
-      _c.stop();
-      _c.value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dot = Container(
-      width: 6,
-      height: 6,
-      decoration: SatBox.d(color: widget.color, shape: BoxShape.circle),
-    );
-    if (!widget.pulse) return dot;
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, child) {
-        final t = Curves.easeInOut.transform(_c.value);
-        return Transform.scale(scale: 1 + t * 0.45, child: child);
-      },
-      child: dot,
-    );
-  }
-}
-
-class _ItemRow extends StatefulWidget {
+class _KdsItemRow extends StatefulWidget {
   final Ticket ticket;
   final bool last;
   final VoidCallback onTap;
-  const _ItemRow({
+  const _KdsItemRow({
     required this.ticket,
     required this.last,
     required this.onTap,
   });
 
   @override
-  State<_ItemRow> createState() => _ItemRowState();
+  State<_KdsItemRow> createState() => _ItemRowState();
 }
 
-class _ItemRowState extends State<_ItemRow>
+class _ItemRowState extends State<_KdsItemRow>
     with SingleTickerProviderStateMixin {
   // A brief green wash when an item is marked done — acknowledges the tap and
   // softens the row's jump to the bottom of the card (done items sink).
@@ -584,7 +490,7 @@ class _ItemRowState extends State<_ItemRow>
   );
 
   @override
-  void didUpdateWidget(covariant _ItemRow old) {
+  void didUpdateWidget(covariant _KdsItemRow old) {
     super.didUpdateWidget(old);
     final cooked = _isDone(widget.ticket.status);
     final wasCooked = _isDone(old.ticket.status);
@@ -647,17 +553,15 @@ class _ItemRowState extends State<_ItemRow>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                margin: const EdgeInsets.only(top: 1),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                margin: const EdgeInsets.only(top: Sp.sHair),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s2,
+                  vertical: Sp.s1,
+                ),
                 decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(6)),
                 child: Text(
                   '×${ticket.qty}',
-                  style: SatType.mono(
-                    size: 13,
-                    weight: FontWeight.w700,
-                    letterSpacing: 0,
-                    color: cooked ? sc.textLo : sc.textHi,
-                  ),
+                  style: SatType.monoM(color: cooked ? sc.textLo : sc.textHi),
                 ),
               ),
               const SizedBox(width: Sp.s3),
@@ -673,34 +577,23 @@ class _ItemRowState extends State<_ItemRow>
                             (ticket.variantName.isEmpty
                                 ? ''
                                 : ' · ${ticket.variantName}'),
-                        style:
-                            SatType.sans(
-                              size: 16,
-                              weight: FontWeight.w600,
-                              letterSpacing: -0.2,
-                              height: 1.25,
-                              color: sc.textHi,
-                            ).copyWith(
-                              decoration: cooked
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
+                        style: SatType.labelL(color: sc.textHi).copyWith(
+                          decoration: cooked
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
                       ),
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 3),
+                          padding: const EdgeInsets.only(top: Sp.s1),
                           child: Text(
                             ticket.modifiers.map((m) => m.display).join(' · '),
-                            style: SatType.sans(
-                              size: 13,
-                              color: sc.textMd,
-                              height: 1.4,
-                            ),
+                            style: SatType.bodyM(color: sc.textMd),
                           ),
                         ),
                       if (ticket.note != null && ticket.note!.trim().isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 5),
+                          padding: const EdgeInsets.only(top: Sp.s1h),
                           child: NoteLine(
                             label: 'Instruksi khusus',
                             text: ticket.note!,
@@ -840,18 +733,11 @@ class _EmptyQueueState extends State<_EmptyQueue>
             child: Icon(Icons.restaurant_rounded, size: 40, color: sc.textDim),
           ),
           const SizedBox(height: Sp.s3h),
-          Text(
-            'Antrian masak kosong',
-            style: SatType.sans(
-              size: 16,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-            ),
-          ),
+          Text('Antrian masak kosong', style: SatType.labelL(color: sc.textMd)),
           const SizedBox(height: Sp.s1h),
           Text(
             'Semua pesanan dapur sudah selesai dimasak.',
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -38,7 +39,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   static const _rangeLabel = {'today': 'Hari ini', 'd7': '7 hari'};
 
   Future<void> _refresh(String vid) async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final last = _refreshTappedAt;
     if (last != null && now.difference(last) < _refreshCooldown) return;
     setState(() => _refreshTappedAt = now);
@@ -95,11 +96,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               Expanded(
                 child: Text(
                   'Laporan Venue',
-                  style: SatType.sans(
-                    size: 22,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.h2(color: sc.textHi),
                 ),
               ),
               IconButton(
@@ -125,15 +122,11 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s2),
               Flexible(
                 child: Text(
                   _freshnessLine(report, pending),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.5,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
             ],
@@ -162,7 +155,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                 onTap: () => setState(() => _range = key),
                 child: AnimatedContainer(
                   duration: satMotion(context, 160),
-                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  padding: const EdgeInsets.symmetric(vertical: Sp.s2h),
                   margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
                   alignment: Alignment.center,
                   decoration: SatBox.d(
@@ -171,9 +164,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                   ),
                   child: Text(
                     _rangeLabel[key] ?? key,
-                    style: SatType.sans(
-                      size: 12,
-                      weight: FontWeight.w500,
+                    style: SatType.bodyS(
                       color: _range == key ? sc.textHi : sc.textLo,
                     ),
                   ),
@@ -231,7 +222,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 14, color: sc.textMd),
+              style: SatType.bodyM(color: sc.textMd),
             ),
           ],
         ),
@@ -247,7 +238,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   bool _isPending(OwnerReport? report) {
     final tapped = _refreshTappedAt;
     if (tapped == null) return false;
-    if (DateTime.now().difference(tapped) > const Duration(minutes: 2)) {
+    if (SatClock.now().difference(tapped) > const Duration(minutes: 2)) {
       return false; // give up the hint after a while
     }
     final gen = report?.generatedAt;
@@ -265,7 +256,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
   }
 
   String _ago(DateTime t) {
-    final d = DateTime.now().difference(t);
+    final d = SatClock.now().difference(t);
     if (d.inMinutes < 1) return 'baru saja';
     if (d.inMinutes < 60) return '${d.inMinutes} menit lalu';
     if (d.inHours < 24) return '${d.inHours} jam lalu';

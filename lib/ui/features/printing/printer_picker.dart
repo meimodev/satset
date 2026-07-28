@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -288,7 +292,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
   bool _venueOnline(PrinterDto p) {
     final last = p.lastSeenAt;
     if (last == null) return false;
-    return DateTime.now().difference(last) < _venueOnlineWindow;
+    return SatClock.now().difference(last) < _venueOnlineWindow;
   }
 
   // --- merge + dedup ---
@@ -408,16 +412,12 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     children: [
                       Text(
                         'Pilih printer',
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w700,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.h3(color: sc.textHi),
                       ),
                       const SizedBox(height: Sp.s1),
                       Text(
                         widget.job.subtitle,
-                        style: SatType.sans(size: 13, color: sc.textLo),
+                        style: SatType.bodyM(color: sc.textLo),
                       ),
                     ],
                   ),
@@ -441,7 +441,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                 child: Text(
                   'Tidak ada printer online. Tambah manual, atau pair printer Bluetooth di Pengaturan dulu.',
                   textAlign: TextAlign.center,
-                  style: SatType.sans(size: 13, color: sc.textLo),
+                  style: SatType.bodyM(color: sc.textLo),
                 ),
               ),
 
@@ -471,7 +471,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
               const SizedBox(height: Sp.s3h),
               Center(
                 child: SizedBox(
-                  width: 22,
+                  width: Sp.s6,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
@@ -492,14 +492,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
         Expanded(child: Divider(color: sc.border0)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
-          child: Text(
-            label,
-            style: SatType.sans(
-              size: 11,
-              weight: FontWeight.w600,
-              color: sc.textLo,
-            ),
-          ),
+          child: Text(label, style: SatType.labelS(color: sc.textLo)),
         ),
         Expanded(child: Divider(color: sc.border0)),
       ],
@@ -524,7 +517,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: Sp.s3h,
-                vertical: 13,
+                vertical: Sp.s3h,
               ),
               child: Row(
                 children: [
@@ -534,18 +527,8 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          e.label,
-                          style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w600,
-                            color: sc.textHi,
-                          ),
-                        ),
-                        Text(
-                          e.address,
-                          style: SatType.mono(size: 11, color: sc.textLo),
-                        ),
+                        Text(e.label, style: SatType.labelM(color: sc.textHi)),
+                        Text(e.address, style: SatType.monoS(color: sc.textLo)),
                       ],
                     ),
                   ),
@@ -561,7 +544,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: Sp.s2,
-                      vertical: 3,
+                      vertical: Sp.s1,
                     ),
                     decoration: SatBox.d(
                       color: sc.bg1,
@@ -570,11 +553,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     ),
                     child: Text(
                       e.scopeTag,
-                      style: SatType.sans(
-                        size: 10,
-                        weight: FontWeight.w600,
-                        color: sc.textMd,
-                      ),
+                      style: SatType.labelS(color: sc.textMd),
                     ),
                   ),
                 ],
@@ -626,14 +605,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             children: [
               Icon(icon, size: 18, color: sc.textMd),
               const SizedBox(width: Sp.s2),
-              Text(
-                label,
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(label, style: SatType.labelM(color: sc.textHi)),
             ],
           ),
         ),
@@ -714,26 +686,17 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
           final sc = ctx.sat;
           return AlertDialog(
             backgroundColor: sc.bg1,
-            title: Text(
-              'Tambah printer Wi-Fi',
-              style: SatType.sans(size: 16, weight: FontWeight.w700),
-            ),
+            title: Text('Tambah printer Wi-Fi', style: SatType.labelL()),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: labelCtl,
-                  decoration: const InputDecoration(labelText: 'Label'),
-                ),
-                TextField(
+                SatField.text(controller: labelCtl, label: 'Label', hint: ''),
+                SatField.text(
                   controller: hostCtl,
-                  decoration: const InputDecoration(labelText: 'Host (IP)'),
+                  label: 'Host (IP)',
+                  hint: '',
                 ),
-                TextField(
-                  controller: portCtl,
-                  decoration: const InputDecoration(labelText: 'Port'),
-                  keyboardType: TextInputType.number,
-                ),
+                SatField.number(controller: portCtl, label: 'Port', hint: ''),
                 const SizedBox(height: Sp.s3),
                 SegmentedButton<String>(
                   segments: const [
@@ -746,13 +709,13 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Batal'),
+              SatButton.ghost(
+                label: AppStrings.cancel,
+                onTap: () => Navigator.of(ctx).pop(false),
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Tambah'),
+              SatButton.primary(
+                label: AppStrings.add,
+                onTap: () => Navigator.of(ctx).pop(true),
               ),
             ],
           );

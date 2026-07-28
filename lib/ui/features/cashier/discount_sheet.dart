@@ -12,6 +12,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/discount_dto.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
@@ -72,9 +75,9 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
                     'Pengaturan venue › Diskon.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Tutup'),
+          SatButton.ghost(
+            label: AppStrings.close,
+            onTap: () => Navigator.pop(c),
           ),
         ],
       ),
@@ -97,18 +100,14 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
           children: [
             Text(
               'Diskon · ${target.title}',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w700,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.sHair),
             Text(
               target.isLine
                   ? 'Berlaku untuk item ini'
                   : 'Berlaku seluruh struk',
-              style: SatType.sans(size: 12, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s3),
             Flexible(
@@ -129,25 +128,17 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       p.name,
-                      style: SatType.sans(
-                        size: 13.5,
-                        weight: FontWeight.w600,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.labelM(color: sc.textHi),
                     ),
                     subtitle: Text(
                       p.isPercent
                           ? '${(p.value / 100).toStringAsFixed(0)}%'
                           : formatIDR(p.value),
-                      style: SatType.sans(size: 11.5, color: sc.textLo),
+                      style: SatType.bodyS(color: sc.textLo),
                     ),
                     trailing: Text(
                       '-${formatIDR(preview)}',
-                      style: SatType.mono(
-                        size: 13,
-                        weight: FontWeight.w600,
-                        color: sc.warn,
-                      ),
+                      style: SatType.monoM(color: sc.warn),
                     ),
                     onTap: () => Navigator.pop(c, p),
                   );
@@ -186,29 +177,25 @@ Future<String?> _askApproverPin(BuildContext context) async {
         children: [
           Text(
             'Diskon perlu disetujui manajer. Minta manajer memasukkan PIN.',
-            style: SatType.sans(size: 12.5, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s3),
-          TextField(
+          SatField.pin(
             controller: ctrl,
+            label: 'PIN manajer',
+            hint: '',
             autofocus: true,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'PIN manajer',
-              border: OutlineInputBorder(),
-            ),
           ),
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(c),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(c),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(c, ctrl.text.trim()),
-          child: const Text('Setujui'),
+        SatButton.primary(
+          label: 'Setujui',
+          onTap: () => Navigator.pop(c, ctrl.text.trim()),
         ),
       ],
     ),

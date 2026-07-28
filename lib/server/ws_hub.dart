@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'dart:convert';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -43,7 +44,7 @@ class WsHub {
       v: 1,
       type: type,
       payload: payload,
-      ts: DateTime.now(),
+      ts: SatClock.now(),
     );
     final frame = jsonEncode(ev.toJson());
     SatLog.srv('ws broadcast type=$type clients=${_conns.length}');

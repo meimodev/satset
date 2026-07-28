@@ -20791,6 +20791,375 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
   }
 }
 
+class $DemoStatesTable extends DemoStates
+    with TableInfo<$DemoStatesTable, DemoState> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DemoStatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('default'),
+  );
+  static const VerificationMeta _anchorAtMeta = const VerificationMeta(
+    'anchorAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> anchorAt = GeneratedColumn<DateTime>(
+    'anchor_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completeMeta = const VerificationMeta(
+    'complete',
+  );
+  @override
+  late final GeneratedColumn<bool> complete = GeneratedColumn<bool>(
+    'complete',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("complete" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _daysDoneMeta = const VerificationMeta(
+    'daysDone',
+  );
+  @override
+  late final GeneratedColumn<int> daysDone = GeneratedColumn<int>(
+    'days_done',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _daysTotalMeta = const VerificationMeta(
+    'daysTotal',
+  );
+  @override
+  late final GeneratedColumn<int> daysTotal = GeneratedColumn<int>(
+    'days_total',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    anchorAt,
+    complete,
+    daysDone,
+    daysTotal,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'demo_states';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DemoState> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('anchor_at')) {
+      context.handle(
+        _anchorAtMeta,
+        anchorAt.isAcceptableOrUnknown(data['anchor_at']!, _anchorAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_anchorAtMeta);
+    }
+    if (data.containsKey('complete')) {
+      context.handle(
+        _completeMeta,
+        complete.isAcceptableOrUnknown(data['complete']!, _completeMeta),
+      );
+    }
+    if (data.containsKey('days_done')) {
+      context.handle(
+        _daysDoneMeta,
+        daysDone.isAcceptableOrUnknown(data['days_done']!, _daysDoneMeta),
+      );
+    }
+    if (data.containsKey('days_total')) {
+      context.handle(
+        _daysTotalMeta,
+        daysTotal.isAcceptableOrUnknown(data['days_total']!, _daysTotalMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DemoState map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DemoState(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      anchorAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}anchor_at'],
+      )!,
+      complete: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}complete'],
+      )!,
+      daysDone: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}days_done'],
+      )!,
+      daysTotal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}days_total'],
+      )!,
+    );
+  }
+
+  @override
+  $DemoStatesTable createAlias(String alias) {
+    return $DemoStatesTable(attachedDatabase, alias);
+  }
+}
+
+class DemoState extends DataClass implements Insertable<DemoState> {
+  final String id;
+
+  /// The instant the demo snapshot was authored to be read at. The host
+  /// re-anchors [[Demo clock]] to this on every boot, so the seeded states
+  /// read at the age they were written for however long ago that was.
+  final DateTime anchorAt;
+
+  /// False while a seed job is still running. A job that is interrupted —
+  /// host backgrounded, process reclaimed, app force-quit — leaves this false
+  /// forever, and the Venue Hub then offers only Hapus: partial history would
+  /// otherwise trip the seed guard while reporting a loaded venue, so the
+  /// reports look real and are quietly short (ADR-0053 §9).
+  final bool complete;
+
+  /// Progress for the async seed job's WS broadcasts.
+  final int daysDone;
+  final int daysTotal;
+  const DemoState({
+    required this.id,
+    required this.anchorAt,
+    required this.complete,
+    required this.daysDone,
+    required this.daysTotal,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['anchor_at'] = Variable<DateTime>(anchorAt);
+    map['complete'] = Variable<bool>(complete);
+    map['days_done'] = Variable<int>(daysDone);
+    map['days_total'] = Variable<int>(daysTotal);
+    return map;
+  }
+
+  DemoStatesCompanion toCompanion(bool nullToAbsent) {
+    return DemoStatesCompanion(
+      id: Value(id),
+      anchorAt: Value(anchorAt),
+      complete: Value(complete),
+      daysDone: Value(daysDone),
+      daysTotal: Value(daysTotal),
+    );
+  }
+
+  factory DemoState.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DemoState(
+      id: serializer.fromJson<String>(json['id']),
+      anchorAt: serializer.fromJson<DateTime>(json['anchorAt']),
+      complete: serializer.fromJson<bool>(json['complete']),
+      daysDone: serializer.fromJson<int>(json['daysDone']),
+      daysTotal: serializer.fromJson<int>(json['daysTotal']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'anchorAt': serializer.toJson<DateTime>(anchorAt),
+      'complete': serializer.toJson<bool>(complete),
+      'daysDone': serializer.toJson<int>(daysDone),
+      'daysTotal': serializer.toJson<int>(daysTotal),
+    };
+  }
+
+  DemoState copyWith({
+    String? id,
+    DateTime? anchorAt,
+    bool? complete,
+    int? daysDone,
+    int? daysTotal,
+  }) => DemoState(
+    id: id ?? this.id,
+    anchorAt: anchorAt ?? this.anchorAt,
+    complete: complete ?? this.complete,
+    daysDone: daysDone ?? this.daysDone,
+    daysTotal: daysTotal ?? this.daysTotal,
+  );
+  DemoState copyWithCompanion(DemoStatesCompanion data) {
+    return DemoState(
+      id: data.id.present ? data.id.value : this.id,
+      anchorAt: data.anchorAt.present ? data.anchorAt.value : this.anchorAt,
+      complete: data.complete.present ? data.complete.value : this.complete,
+      daysDone: data.daysDone.present ? data.daysDone.value : this.daysDone,
+      daysTotal: data.daysTotal.present ? data.daysTotal.value : this.daysTotal,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DemoState(')
+          ..write('id: $id, ')
+          ..write('anchorAt: $anchorAt, ')
+          ..write('complete: $complete, ')
+          ..write('daysDone: $daysDone, ')
+          ..write('daysTotal: $daysTotal')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, anchorAt, complete, daysDone, daysTotal);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DemoState &&
+          other.id == this.id &&
+          other.anchorAt == this.anchorAt &&
+          other.complete == this.complete &&
+          other.daysDone == this.daysDone &&
+          other.daysTotal == this.daysTotal);
+}
+
+class DemoStatesCompanion extends UpdateCompanion<DemoState> {
+  final Value<String> id;
+  final Value<DateTime> anchorAt;
+  final Value<bool> complete;
+  final Value<int> daysDone;
+  final Value<int> daysTotal;
+  final Value<int> rowid;
+  const DemoStatesCompanion({
+    this.id = const Value.absent(),
+    this.anchorAt = const Value.absent(),
+    this.complete = const Value.absent(),
+    this.daysDone = const Value.absent(),
+    this.daysTotal = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DemoStatesCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime anchorAt,
+    this.complete = const Value.absent(),
+    this.daysDone = const Value.absent(),
+    this.daysTotal = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : anchorAt = Value(anchorAt);
+  static Insertable<DemoState> custom({
+    Expression<String>? id,
+    Expression<DateTime>? anchorAt,
+    Expression<bool>? complete,
+    Expression<int>? daysDone,
+    Expression<int>? daysTotal,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (anchorAt != null) 'anchor_at': anchorAt,
+      if (complete != null) 'complete': complete,
+      if (daysDone != null) 'days_done': daysDone,
+      if (daysTotal != null) 'days_total': daysTotal,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DemoStatesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? anchorAt,
+    Value<bool>? complete,
+    Value<int>? daysDone,
+    Value<int>? daysTotal,
+    Value<int>? rowid,
+  }) {
+    return DemoStatesCompanion(
+      id: id ?? this.id,
+      anchorAt: anchorAt ?? this.anchorAt,
+      complete: complete ?? this.complete,
+      daysDone: daysDone ?? this.daysDone,
+      daysTotal: daysTotal ?? this.daysTotal,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (anchorAt.present) {
+      map['anchor_at'] = Variable<DateTime>(anchorAt.value);
+    }
+    if (complete.present) {
+      map['complete'] = Variable<bool>(complete.value);
+    }
+    if (daysDone.present) {
+      map['days_done'] = Variable<int>(daysDone.value);
+    }
+    if (daysTotal.present) {
+      map['days_total'] = Variable<int>(daysTotal.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DemoStatesCompanion(')
+          ..write('id: $id, ')
+          ..write('anchorAt: $anchorAt, ')
+          ..write('complete: $complete, ')
+          ..write('daysDone: $daysDone, ')
+          ..write('daysTotal: $daysTotal, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -20833,6 +21202,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IngredientsTable ingredients = $IngredientsTable(this);
   late final $RecipeLinesTable recipeLines = $RecipeLinesTable(this);
   late final $StockMovementsTable stockMovements = $StockMovementsTable(this);
+  late final $DemoStatesTable demoStates = $DemoStatesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -20870,6 +21240,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ingredients,
     recipeLines,
     stockMovements,
+    demoStates,
   ];
 }
 
@@ -30913,6 +31284,203 @@ typedef $$StockMovementsTableProcessedTableManager =
       StockMovementRow,
       PrefetchHooks Function()
     >;
+typedef $$DemoStatesTableCreateCompanionBuilder =
+    DemoStatesCompanion Function({
+      Value<String> id,
+      required DateTime anchorAt,
+      Value<bool> complete,
+      Value<int> daysDone,
+      Value<int> daysTotal,
+      Value<int> rowid,
+    });
+typedef $$DemoStatesTableUpdateCompanionBuilder =
+    DemoStatesCompanion Function({
+      Value<String> id,
+      Value<DateTime> anchorAt,
+      Value<bool> complete,
+      Value<int> daysDone,
+      Value<int> daysTotal,
+      Value<int> rowid,
+    });
+
+class $$DemoStatesTableFilterComposer
+    extends Composer<_$AppDatabase, $DemoStatesTable> {
+  $$DemoStatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get anchorAt => $composableBuilder(
+    column: $table.anchorAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get complete => $composableBuilder(
+    column: $table.complete,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get daysDone => $composableBuilder(
+    column: $table.daysDone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get daysTotal => $composableBuilder(
+    column: $table.daysTotal,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DemoStatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DemoStatesTable> {
+  $$DemoStatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get anchorAt => $composableBuilder(
+    column: $table.anchorAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get complete => $composableBuilder(
+    column: $table.complete,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get daysDone => $composableBuilder(
+    column: $table.daysDone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get daysTotal => $composableBuilder(
+    column: $table.daysTotal,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DemoStatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DemoStatesTable> {
+  $$DemoStatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get anchorAt =>
+      $composableBuilder(column: $table.anchorAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get complete =>
+      $composableBuilder(column: $table.complete, builder: (column) => column);
+
+  GeneratedColumn<int> get daysDone =>
+      $composableBuilder(column: $table.daysDone, builder: (column) => column);
+
+  GeneratedColumn<int> get daysTotal =>
+      $composableBuilder(column: $table.daysTotal, builder: (column) => column);
+}
+
+class $$DemoStatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DemoStatesTable,
+          DemoState,
+          $$DemoStatesTableFilterComposer,
+          $$DemoStatesTableOrderingComposer,
+          $$DemoStatesTableAnnotationComposer,
+          $$DemoStatesTableCreateCompanionBuilder,
+          $$DemoStatesTableUpdateCompanionBuilder,
+          (
+            DemoState,
+            BaseReferences<_$AppDatabase, $DemoStatesTable, DemoState>,
+          ),
+          DemoState,
+          PrefetchHooks Function()
+        > {
+  $$DemoStatesTableTableManager(_$AppDatabase db, $DemoStatesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DemoStatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DemoStatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DemoStatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> anchorAt = const Value.absent(),
+                Value<bool> complete = const Value.absent(),
+                Value<int> daysDone = const Value.absent(),
+                Value<int> daysTotal = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DemoStatesCompanion(
+                id: id,
+                anchorAt: anchorAt,
+                complete: complete,
+                daysDone: daysDone,
+                daysTotal: daysTotal,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required DateTime anchorAt,
+                Value<bool> complete = const Value.absent(),
+                Value<int> daysDone = const Value.absent(),
+                Value<int> daysTotal = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DemoStatesCompanion.insert(
+                id: id,
+                anchorAt: anchorAt,
+                complete: complete,
+                daysDone: daysDone,
+                daysTotal: daysTotal,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DemoStatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DemoStatesTable,
+      DemoState,
+      $$DemoStatesTableFilterComposer,
+      $$DemoStatesTableOrderingComposer,
+      $$DemoStatesTableAnnotationComposer,
+      $$DemoStatesTableCreateCompanionBuilder,
+      $$DemoStatesTableUpdateCompanionBuilder,
+      (DemoState, BaseReferences<_$AppDatabase, $DemoStatesTable, DemoState>),
+      DemoState,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -30981,4 +31549,6 @@ class $AppDatabaseManager {
       $$RecipeLinesTableTableManager(_db, _db.recipeLines);
   $$StockMovementsTableTableManager get stockMovements =>
       $$StockMovementsTableTableManager(_db, _db.stockMovements);
+  $$DemoStatesTableTableManager get demoStates =>
+      $$DemoStatesTableTableManager(_db, _db.demoStates);
 }

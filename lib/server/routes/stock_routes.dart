@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -164,7 +165,7 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     }
     await db.transaction(() async {
       await (db.update(db.ingredients)..where((i) => i.id.equals(id))).write(
-        IngredientsCompanion(archivedAt: Value(DateTime.now())),
+        IngredientsCompanion(archivedAt: Value(SatClock.now())),
       );
       await (db.delete(
         db.recipeLines,
@@ -330,8 +331,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final q = req.url.queryParameters;
     final from =
         DateTime.tryParse(q['from'] ?? '') ??
-        DateTime.now().subtract(const Duration(days: 7));
-    final to = DateTime.tryParse(q['to'] ?? '') ?? DateTime.now();
+        SatClock.now().subtract(const Duration(days: 7));
+    final to = DateTime.tryParse(q['to'] ?? '') ?? SatClock.now();
     return _json(await stockReport(db, from: from, to: to));
   });
 

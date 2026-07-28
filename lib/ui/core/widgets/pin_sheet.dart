@@ -171,24 +171,19 @@ class _PinSheetState extends State<_PinSheet>
                     Text(
                       widget.title,
                       textAlign: TextAlign.center,
-                      style: SatType.sans(
-                        size: 20,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.h2(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.s1),
                     Text(
                       widget.subtitle,
                       textAlign: TextAlign.center,
-                      style: SatType.sans(size: 12, color: sc.textMd),
+                      style: SatType.bodyS(color: sc.textMd),
                     ),
                     if (widget.statusSlot != null) ...[
                       const SizedBox(height: Sp.s2h),
                       Center(child: widget.statusSlot!),
                     ],
-                    const SizedBox(height: 22),
+                    const SizedBox(height: Sp.s6),
                     _PinDots(pin: _pin, shake: _shake),
                     const SizedBox(height: Sp.s3),
                     _PinHelper(
@@ -277,15 +272,7 @@ class _PinHelper extends StatelessWidget {
     final sc = context.sat;
     if (error != null) {
       return Center(
-        child: Text(
-          error!,
-          style: SatType.mono(
-            size: 11,
-            weight: FontWeight.w600,
-            color: sc.urgent,
-            letterSpacing: 0.6,
-          ),
-        ),
+        child: Text(error!, style: SatType.caption(color: sc.urgent)),
       );
     }
     final empty = pinLength == 0;
@@ -298,10 +285,7 @@ class _PinHelper extends StatelessWidget {
         : '$pinLength / $kPinLength digit';
     final color = (busy || complete) ? sc.accentText : sc.textLo;
     return Center(
-      child: Text(
-        text,
-        style: SatType.mono(size: 11, color: color, letterSpacing: 0.6),
-      ),
+      child: Text(text, style: SatType.monoS(color: color)),
     );
   }
 }
@@ -379,10 +363,7 @@ class _PinKeyState extends State<_PinKey> {
                 )
               : Text(
                   widget.label,
-                  style: SatType.mono(
-                    size: 32,
-                    weight: FontWeight.w500,
-                    letterSpacing: 0,
+                  style: SatType.monoDisplay(
                     color: disabled ? sc.textLo : sc.textHi,
                   ),
                 ),
@@ -415,12 +396,7 @@ class _DebugCredsHint extends StatelessWidget {
               const SizedBox(width: Sp.s1h),
               Text(
                 'DEBUG · SEEDED PINS',
-                style: SatType.mono(
-                  size: 10,
-                  weight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  color: sc.warn,
-                ),
+                style: SatType.caption(color: sc.warn),
               ),
             ],
           ),
@@ -463,20 +439,10 @@ class _DebugCredRow extends StatelessWidget {
           children: [
             SizedBox(
               width: 76,
-              child: Text(
-                label,
-                style: SatType.mono(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  color: sc.textHi,
-                ),
-              ),
+              child: Text(label, style: SatType.caption(color: sc.textHi)),
             ),
             Expanded(
-              child: Text(
-                value,
-                style: SatType.sans(size: 11, color: sc.textMd),
-              ),
+              child: Text(value, style: SatType.bodyS(color: sc.textMd)),
             ),
             Icon(Icons.copy_rounded, size: 12, color: sc.textLo),
           ],

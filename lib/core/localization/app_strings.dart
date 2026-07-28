@@ -3,6 +3,7 @@ class AppStrings {
   static const String appName = 'SatSet';
   static const String cancel = 'Batal';
   static const String save = 'Simpan';
+  static const String saved = 'Tersimpan';
   static const String delete = 'Hapus';
   static const String add = 'Tambah';
   static const String back = 'Kembali';
@@ -16,6 +17,11 @@ class AppStrings {
   static const String ok = 'OK';
   static const String yes = 'Ya';
   static const String no = 'Tidak';
+
+  // Screen-reader names for the quantity stepper's two taps. Icon-only
+  // targets, so nothing else names them.
+  static const String stepperIncrease = 'Tambah satu';
+  static const String stepperDecrease = 'Kurangi satu';
 
   // Venue Hub Screen
   static const String venueHubTitle = 'Venue';
@@ -50,6 +56,28 @@ class AppStrings {
   static const String venueHubSeedBtnLoad = 'Muat contoh data';
   static const String venueHubSeedBtnLater = 'Nanti';
   static const String venueHubSeedError = 'Gagal memuat contoh data';
+
+  // Demo seed — a venue mid-service (ADR-0052).
+  static const String venueHubDemoTitle = 'Data demo';
+  static const String venueHubDemoBody =
+      'Muat satu bulan riwayat penjualan dan satu potret layanan berjalan — '
+      'meja terisi, pesanan di dapur, tagihan terbayar. Untuk demo dan '
+      'peninjauan tampilan, bukan untuk venue yang sudah berjalan.';
+  static const String venueHubDemoBodyLoaded =
+      'Venue berjalan pada waktu demo, jadi potret layanan tetap terbaca wajar '
+      'setiap kali dibuka. Data bertahan sampai dihapus.';
+  static const String venueHubDemoBodyRunning =
+      'Menyusun sebulan riwayat lewat jalur pesanan sungguhan. Biarkan '
+      'aplikasi terbuka sampai selesai.';
+  static const String venueHubDemoBodyIncomplete =
+      'Pemuatan data demo terhenti sebelum selesai. Data yang ada tidak utuh — '
+      'hapus dulu sebelum memuat ulang.';
+  static const String venueHubDemoBtnLoad = 'Muat data demo';
+  static const String venueHubDemoBtnReset = 'Hapus';
+  static const String venueHubDemoError = 'Gagal memuat data demo';
+  static const String venueHubDemoRefused =
+      'Venue sudah punya riwayat pesanan. Data demo tidak dimuat.';
+  static const String venueHubDemoProgress = 'Menyusun data demo';
 
   // Venue Settings Screen (formerly Venue Identity Screen)
   static const String venueSettingsTitle = 'Pengaturan Venue';
@@ -227,7 +255,8 @@ class AppStrings {
   static const String themeSheetSubtitle = 'Berlaku untuk perangkat ini saja';
   static const String themeAmberGelap = 'Amber Gelap';
   static const String themeAmberTerang = 'Amber Terang';
-  static const String themeNeonHijau = 'Neon Hijau';
+  static const String themeNeonGelap = 'Neon Gelap';
+  static const String themeNeonTerang = 'Neon Terang';
   static const String themeIndigoTerang = 'Indigo Terang';
   static const String themeNeoKertas = 'Neo Kertas';
   static const String themeNeoMidnight = 'Neo Tengah Malam';
@@ -242,6 +271,9 @@ class AppStrings {
   static const String a11yGuestDecrease = 'Kurangi jumlah tamu';
   static const String a11yGuestIncrease = 'Tambah jumlah tamu';
   static const String a11yEdit = 'Ubah';
+  static const String zoneAdminIcon = 'Ikon zona';
+  static const String tableGuests = 'Tamu';
+  static const String quantity = 'Jumlah';
   static const String a11yRename = 'Ganti nama';
   static const String a11yClear = 'Bersihkan';
   static const String a11yRefresh = 'Muat ulang';
@@ -250,7 +282,6 @@ class AppStrings {
   static const String a11ySoundPreview = 'Dengar nada';
   static const String a11ySoundSilent = 'Tanpa nada';
   static const String a11yPickTheme = 'Pilih tema';
-  static const String a11yToggleLayout = 'Ganti tata letak';
   static const String a11yViewPhoto = 'Lihat foto bukti bayar';
   static const String a11yPickColor = 'Pilih warna';
   static const String a11yAddItem = 'Tambah item';

@@ -27,7 +27,7 @@ class StatusChip extends StatelessWidget {
     return AnimatedContainer(
       duration: animate ? _morph : Duration.zero,
       curve: satEaseOut,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.s1),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(6)),
       child: AnimatedSwitcher(
         duration: animate ? _morph : Duration.zero,
@@ -43,12 +43,7 @@ class StatusChip extends StatelessWidget {
         child: Text(
           label,
           key: ValueKey(label),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: fg,
-          ),
+          style: SatType.caption(color: fg),
         ),
       ),
     );

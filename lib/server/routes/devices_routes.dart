@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -50,7 +51,7 @@ Router devicesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   /// "Perangkat aktif" card. `sessionActive` is true when the latest session
   /// has not yet expired.
   r.get('/devices', (Request req) async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final devices = await db.select(db.devices).get();
     final result = <Map<String, dynamic>>[];
     for (final d in devices) {

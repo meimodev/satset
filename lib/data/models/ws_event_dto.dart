@@ -43,6 +43,14 @@ class WsEventTypes {
   static const staffDeleted = 'staff.deleted';
   static const auditCreated = 'audit.created';
   static const rolesUpdated = 'roles.updated';
+
+  /// Demo clock offset changed — seeded, reset, or re-anchored at host boot.
+  /// Payload `{offsetSeconds}`. See ADR-0053 §2.
+  static const demoClock = 'demo.clock';
+
+  /// Demo seed job progress. Payload `{daysDone, daysTotal}` while running,
+  /// then `{done: true}` or `{failed: true}`. See ADR-0053 §8.
+  static const demoProgress = 'demo.progress';
   static const venueSettingsUpdated = 'venueSettings.updated';
 
   /// The [[Preset diskon]] catalogue changed — clients refetch the list.

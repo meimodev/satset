@@ -1,4 +1,9 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_card.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -30,7 +35,6 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
-import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -351,10 +355,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: Sp.s3),
-              Text(
-                'Memuat menu…',
-                style: SatType.sans(size: 13, color: sc.textMd),
-              ),
+              Text('Memuat menu…', style: SatType.bodyM(color: sc.textMd)),
             ],
           ),
         ),
@@ -373,17 +374,13 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 const SizedBox(height: Sp.s2h),
                 Text(
                   'Gagal memuat menu meja',
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s3),
-                OutlinedButton(
-                  onPressed: () =>
+                SatButton.outline(
+                  label: 'Coba lagi',
+                  onTap: () =>
                       ref.read(menuRepositoryProvider.notifier).refresh(),
-                  child: const Text('Coba lagi'),
                 ),
               ],
             ),
@@ -429,18 +426,18 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 : 'Semua tiket telah selesai. Kosongkan meja ${table.displayName} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop('cancel'),
-              child: const Text('Batal'),
+            SatButton.ghost(
+              label: AppStrings.cancel,
+              onTap: () => Navigator.of(ctx).pop('cancel'),
             ),
             if (!isEmptyClose)
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop('print'),
-                child: const Text('Cetak struk'),
+              SatButton.ghost(
+                label: 'Cetak struk',
+                onTap: () => Navigator.of(ctx).pop('print'),
               ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop('close'),
-              child: Text(closeLabel),
+            SatButton.primary(
+              label: closeLabel,
+              onTap: () => Navigator.of(ctx).pop('close'),
             ),
           ],
         ),
@@ -529,7 +526,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           Column(
             children: [
               appBar,
-              _Header(
+              _TableDetailHeader(
                 table: table,
                 zoneName: zone.name,
                 canEditGuests: canEditGuests,
@@ -566,7 +563,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                     grouped[cid]!.isNotEmpty)
                                   Reveal(
                                     index: i,
-                                    child: _CourseBlock(
+                                    child: _DetailCourseBlock(
                                       course: Courses.byId(cid),
                                       items: grouped[cid]!,
                                       readOnly: readOnly,
@@ -586,10 +583,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                   child: Text(
                                     'Belum ada item — ketuk "Tambah ke pesanan" untuk mulai.',
                                     textAlign: TextAlign.center,
-                                    style: SatType.sans(
-                                      size: 13,
-                                      color: sc.textLo,
-                                    ),
+                                    style: SatType.bodyM(color: sc.textLo),
                                   ),
                                 ),
                             ],
@@ -631,16 +625,16 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
   }
 }
 
-/// Per-second tick used by the live elapsed pill in [_Header]. autoDispose so
+/// Per-second tick used by the live elapsed pill in [_TableDetailHeader]. autoDispose so
 /// the stream stops while no table_detail screen is mounted.
 final _detailElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   (ref) => Stream<DateTime>.periodic(
     const Duration(seconds: 1),
-    (_) => DateTime.now(),
+    (_) => SatClock.now(),
   ),
 );
 
-class _Header extends ConsumerWidget {
+class _TableDetailHeader extends ConsumerWidget {
   final VenueTable table;
   final String zoneName;
   final bool canEditGuests;
@@ -648,7 +642,7 @@ class _Header extends ConsumerWidget {
   final VoidCallback onPlusPax;
   final int alertCount;
   final VoidCallback onShowContext;
-  const _Header({
+  const _TableDetailHeader({
     required this.table,
     required this.zoneName,
     required this.canEditGuests,
@@ -666,7 +660,7 @@ class _Header extends ConsumerWidget {
     ref.watch(_detailElapsedTickerProvider);
     final elapsedStr = table.openedAt == null
         ? null
-        : formatElapsedId(DateTime.now().difference(table.openedAt!));
+        : formatElapsedId(SatClock.now().difference(table.openedAt!));
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Row(
@@ -680,13 +674,7 @@ class _Header extends ConsumerWidget {
               child: Text(
                 table.displayName,
                 maxLines: 1,
-                style: SatType.mono(
-                  size: 44,
-                  weight: FontWeight.w500,
-                  letterSpacing: -1.32,
-                  height: 1.0,
-                  color: sc.textHi,
-                ),
+                style: SatType.monoDisplay54(color: sc.textHi),
               ),
             ),
           ),
@@ -695,25 +683,21 @@ class _Header extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  zoneName,
-                  style: SatType.sans(
-                    size: 13,
-                    weight: FontWeight.w500,
-                    color: sc.textMd,
-                  ),
-                ),
+                Text(zoneName, style: SatType.bodyM(color: sc.textMd)),
                 const SizedBox(height: Sp.s2),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    GuestStepper(
-                      pax: table.pax,
+                    SatStepper.pill(
+                      value: table.pax,
                       max: table.capacity,
                       enabled: canEditGuests,
-                      onMinus: onMinusPax,
-                      onPlus: onPlusPax,
-                      size: 32,
+                      icon: Icons.person_outline,
+                      showMax: true,
+                      size: SatStepperSize.sm,
+                      semanticLabel: AppStrings.tableGuests,
+                      onChanged: (v) =>
+                          v > table.pax ? onPlusPax() : onMinusPax(),
                     ),
                     const SizedBox(width: Sp.s2),
                     _ContextTriggerBtn(
@@ -722,7 +706,11 @@ class _Header extends ConsumerWidget {
                     ),
                     if (elapsedStr != null) ...[
                       const SizedBox(width: Sp.s2),
-                      _SeatedDurationChip(label: elapsedStr),
+                      SatChip.tag(
+                        icon: Icons.access_time,
+                        label: elapsedStr,
+                        size: SatChipSize.sm,
+                      ),
                     ],
                   ],
                 ),
@@ -737,9 +725,10 @@ class _Header extends ConsumerWidget {
                     children: [
                       if (table.guestName != null &&
                           table.guestName!.trim().isNotEmpty)
-                        _HPill(
+                        SatChip.tag(
                           icon: Icons.person_outline,
                           label: table.guestName!,
+                          size: SatChipSize.sm,
                         ),
                       if (table.guestNotes != null &&
                           table.guestNotes!.trim().isNotEmpty)
@@ -756,107 +745,20 @@ class _Header extends ConsumerWidget {
   }
 }
 
+/// How long the table has been seated, ticking. The chip itself is a plain
+/// [SatChip.tag] — what earns a widget here is the per-second rebuild, which
+/// a const chip cannot do.
 class _LiveSeatedChip extends ConsumerWidget {
   final DateTime openedAt;
-  final double height;
-  const _LiveSeatedChip({required this.openedAt, this.height = 32});
+  const _LiveSeatedChip({required this.openedAt});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
     ref.watch(_detailElapsedTickerProvider);
-    final label = formatElapsedId(DateTime.now().difference(openedAt));
-    return Container(
-      height: height,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
-      decoration: SatBox.d(
-        color: sc.bg3,
-        borderRadius: SatR.a(height / 2),
-        border: SatB.all(color: sc.border0),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.access_time, size: height * 0.42, color: sc.textMd),
-          const SizedBox(width: Sp.s1h),
-          Text(
-            label,
-            style: SatType.mono(
-              size: height * 0.36,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SeatedDurationChip extends StatelessWidget {
-  final String label;
-  const _SeatedDurationChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h),
-      decoration: SatBox.d(
-        color: sc.bg3,
-        borderRadius: SatR.a(16),
-        border: SatB.all(color: sc.border0),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.access_time, size: 13, color: sc.textMd),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: SatType.mono(
-              size: 12,
-              weight: FontWeight.w600,
-              color: sc.textMd,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HPill extends StatelessWidget {
-  final IconData? icon;
-  final String label;
-  const _HPill({this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
-      decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(999)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: sc.textMd),
-            const SizedBox(width: Sp.s1h),
-          ],
-          Text(
-            label,
-            style: SatType.sans(
-              size: 11,
-              weight: FontWeight.w500,
-              color: sc.textMd,
-            ),
-          ),
-        ],
-      ),
+    return SatChip.tag(
+      icon: Icons.access_time,
+      label: formatElapsedId(SatClock.now().difference(openedAt)),
+      size: SatChipSize.sm,
     );
   }
 }
@@ -924,11 +826,7 @@ class _ContextTriggerBtn extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Text(
                             '$alertCount',
-                            style: SatType.mono(
-                              size: 9,
-                              weight: FontWeight.w700,
-                              color: onFill(sc.urgent),
-                            ),
+                            style: SatType.caption(color: onFill(sc.urgent)),
                           ),
                         ),
                 ),
@@ -985,23 +883,11 @@ class _ContextSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Konteks meja',
-                    style: SatType.sans(
-                      size: 20,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.4,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text('Konteks meja', style: SatType.h2(color: sc.textHi)),
                   const SizedBox(height: Sp.s1),
                   Text(
-                    'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
-                    style: SatType.mono(
-                      size: 11,
-                      color: sc.textLo,
-                      letterSpacing: 0.44,
-                    ),
+                    'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                    style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
               ),
@@ -1019,7 +905,7 @@ class _ContextSheet extends StatelessWidget {
   }
 }
 
-class _CourseBlock extends StatelessWidget {
+class _DetailCourseBlock extends StatelessWidget {
   final Course course;
   final List<Ticket> items;
   final void Function(String) onMarkServed;
@@ -1027,7 +913,7 @@ class _CourseBlock extends StatelessWidget {
   final void Function(Ticket) onTicketTap;
   final bool readOnly;
 
-  const _CourseBlock({
+  const _DetailCourseBlock({
     required this.course,
     required this.items,
     required this.onMarkServed,
@@ -1060,21 +946,12 @@ class _CourseBlock extends StatelessWidget {
                 const SizedBox(width: Sp.s2h),
                 Text(
                   course.name.toUpperCase(),
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    letterSpacing: 1.32,
-                    color: sc.textMd,
-                  ),
+                  style: SatType.caption(color: sc.textMd),
                 ),
                 const Spacer(),
                 Text(
                   '${items.length} item${allHeld ? ' · ditahan' : ''}',
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ),
@@ -1107,28 +984,12 @@ class _FireButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: sc.accentSoft,
-          foregroundColor: sc.accentText,
-          side: SatB.side(color: sc.accentBorder, style: BorderStyle.solid),
-          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
-          shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-        ),
-        icon: Icon(Icons.local_fire_department, size: 14, color: sc.accentText),
-        label: Text(
-          label.toUpperCase(),
-          style: SatType.sans(
-            size: 12,
-            weight: FontWeight.w600,
-            letterSpacing: 0.48,
-            color: sc.accentText,
-          ),
-        ),
+      child: SatButton.outline(
+        label: label.toUpperCase(),
+        icon: Icons.local_fire_department,
+        onTap: onTap,
       ),
     );
   }
@@ -1192,7 +1053,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: const EdgeInsets.all(Sp.s7),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1209,16 +1070,12 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
             const SizedBox(height: Sp.s4h),
             Text(
               'Meja ${widget.tableName} kosong',
-              style: SatType.sans(
-                size: 16,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1h),
             Text(
               'Tap untuk mulai melayani tamu',
-              style: SatType.sans(size: 13, color: sc.textLo),
+              style: SatType.bodyM(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s6),
             Opacity(
@@ -1263,7 +1120,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                     borderRadius: SatR.a(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
+                        horizontal: Sp.s7,
                         vertical: Sp.s4,
                       ),
                       child: Row(
@@ -1273,11 +1130,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                           const SizedBox(width: Sp.s2h),
                           Text(
                             'Mulai layani meja',
-                            style: SatType.sans(
-                              size: 15,
-                              weight: FontWeight.w700,
-                              color: fg,
-                            ),
+                            style: SatType.labelL(color: fg),
                           ),
                         ],
                       ),
@@ -1390,7 +1243,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
             onHighlightChanged: (h) => setState(() => _pressed = h),
             borderRadius: SatR.a(18),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s6),
               alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1399,12 +1252,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
                   const SizedBox(width: Sp.s2h),
                   Text(
                     widget.label,
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w700,
-                      letterSpacing: -0.15,
-                      color: sc.successInk,
-                    ),
+                    style: SatType.labelL(color: sc.successInk),
                   ),
                 ],
               ),
@@ -1451,11 +1299,7 @@ class _LockedBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 'Terkunci oleh $holderName$sinceLabel · hanya lihat',
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w500,
-                  color: sc.warn,
-                ),
+                style: SatType.bodyM(color: sc.warn),
               ),
             ),
           ],
@@ -1551,11 +1395,7 @@ class _TabletSplit extends StatelessWidget {
                                     child: Text(
                                       table.displayName,
                                       maxLines: 1,
-                                      style: SatType.mono(
-                                        size: 56,
-                                        weight: FontWeight.w500,
-                                        letterSpacing: -1.68,
-                                        height: 1,
+                                      style: SatType.monoDisplay54(
                                         color: sc.textHi,
                                       ),
                                     ),
@@ -1571,28 +1411,28 @@ class _TabletSplit extends StatelessWidget {
                                     children: [
                                       Text(
                                         zone.name,
-                                        style: SatType.sans(
-                                          size: 15,
-                                          color: sc.textMd,
-                                        ),
+                                        style: SatType.bodyL(color: sc.textMd),
                                       ),
                                       const SizedBox(height: Sp.s1h),
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          GuestStepper(
-                                            pax: table.pax,
+                                          SatStepper.pill(
+                                            value: table.pax,
                                             max: table.capacity,
                                             enabled: canEditGuests,
-                                            onMinus: onMinusPax,
-                                            onPlus: onPlusPax,
-                                            size: 36,
+                                            icon: Icons.person_outline,
+                                            showMax: true,
+                                            semanticLabel:
+                                                AppStrings.tableGuests,
+                                            onChanged: (v) => v > table.pax
+                                                ? onPlusPax()
+                                                : onMinusPax(),
                                           ),
                                           if (table.openedAt != null) ...[
                                             const SizedBox(width: Sp.s2h),
                                             _LiveSeatedChip(
                                               openedAt: table.openedAt!,
-                                              height: 36,
                                             ),
                                           ],
                                         ],
@@ -1646,15 +1486,11 @@ class _TabletSplit extends StatelessWidget {
                             : tickets.isEmpty
                             ? Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(28),
+                                  padding: const EdgeInsets.all(Sp.s7),
                                   child: Text(
                                     'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
                                     textAlign: TextAlign.center,
-                                    style: SatType.sans(
-                                      size: 14,
-                                      color: sc.textLo,
-                                      height: 1.5,
-                                    ),
+                                    style: SatType.bodyM(color: sc.textLo),
                                   ),
                                 ),
                               )
@@ -1674,7 +1510,7 @@ class _TabletSplit extends StatelessWidget {
                                         grouped[cid]!.isNotEmpty)
                                       Reveal(
                                         index: i,
-                                        child: _CourseBlock(
+                                        child: _DetailCourseBlock(
                                           course: Courses.byId(cid),
                                           items: grouped[cid]!,
                                           readOnly: readOnly,
@@ -1734,9 +1570,7 @@ class _TabletSplit extends StatelessWidget {
                                                   : (tickets.isEmpty
                                                         ? 'Buat pesanan'
                                                         : 'Tambah pesanan'),
-                                              style: SatType.sans(
-                                                size: 15,
-                                                weight: FontWeight.w600,
+                                              style: SatType.labelL(
                                                 color: sc.accentInk,
                                               ),
                                             ),
@@ -1784,21 +1618,13 @@ class _TabletSplit extends StatelessWidget {
       border = sc.success.withValues(alpha: 0.3);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
       decoration: SatBox.d(
         color: bg,
         border: SatB.all(color: border),
         borderRadius: SatR.a(999),
       ),
-      child: Text(
-        text,
-        style: SatType.sans(
-          size: 11,
-          weight: FontWeight.w500,
-          letterSpacing: 0.2,
-          color: fg,
-        ),
-      ),
+      child: Text(text, style: SatType.bodyS(color: fg)),
     );
   }
 }
@@ -1888,7 +1714,7 @@ class _ContextPane extends ConsumerWidget {
           guestNotes.isEmpty
               ? Text(
                   'Belum ada catatan khusus.',
-                  style: SatType.sans(size: 13, color: sc.textLo),
+                  style: SatType.bodyM(color: sc.textLo),
                 )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1918,10 +1744,7 @@ class _ContextPane extends ConsumerWidget {
           sc,
           'ALERGEN DI PESANAN',
           allergens.isEmpty
-              ? Text(
-                  'Tidak ada.',
-                  style: SatType.sans(size: 13, color: sc.textLo),
-                )
+              ? Text('Tidak ada.', style: SatType.bodyM(color: sc.textLo))
               : Wrap(
                   spacing: 6,
                   runSpacing: 6,
@@ -1930,7 +1753,7 @@ class _ContextPane extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: Sp.s2h,
-                          vertical: 5,
+                          vertical: Sp.s1h,
                         ),
                         decoration: SatBox.d(
                           color: sc.urgentSoft,
@@ -1939,14 +1762,7 @@ class _ContextPane extends ConsumerWidget {
                           ),
                           borderRadius: SatR.a(999),
                         ),
-                        child: Text(
-                          a,
-                          style: SatType.sans(
-                            size: 12,
-                            weight: FontWeight.w500,
-                            color: sc.urgent,
-                          ),
-                        ),
+                        child: Text(a, style: SatType.bodyS(color: sc.urgent)),
                       ),
                   ],
                 ),
@@ -2001,23 +1817,11 @@ class _ContextPane extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Konteks meja',
-                style: SatType.sans(
-                  size: 22,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.44,
-                  color: sc.textHi,
-                ),
-              ),
+              Text('Konteks meja', style: SatType.h2(color: sc.textHi)),
               const SizedBox(height: Sp.s1),
               Text(
-                'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(DateTime.now().difference(table.openedAt!))} · ${table.pax} TAMU',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.44,
-                ),
+                'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                style: SatType.monoS(color: sc.textLo),
               ),
             ],
           ),
@@ -2043,50 +1847,19 @@ class _ContextPane extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            v,
-            style: SatType.mono(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.44,
-              height: 1,
-              color: sc.textHi,
-            ),
-          ),
+          Text(v, style: SatType.monoL(color: sc.textHi)),
           const SizedBox(height: Sp.s2),
-          Text(
-            l.toUpperCase(),
-            style: SatType.mono(size: 10, color: sc.textLo, letterSpacing: 0.6),
-          ),
+          Text(l.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
         ],
       ),
     );
   }
 
   Widget _card(BuildContext context, SatColors sc, String head, Widget child) {
-    return Container(
+    return SatCard.section(
+      header: head,
       padding: const EdgeInsets.all(Sp.s4h),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            head,
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: sc.textLo,
-            ),
-          ),
-          const SizedBox(height: Sp.s3),
-          child,
-        ],
-      ),
+      child: child,
     );
   }
 
@@ -2117,10 +1890,7 @@ class _ContextPane extends ConsumerWidget {
               const SizedBox(width: Sp.s2),
               Text(
                 label.toUpperCase(),
-                style: SatType.sans(
-                  size: 12,
-                  weight: FontWeight.w600,
-                  letterSpacing: 0.48,
+                style: SatType.labelS(
                   color: accent ? sc.accentText : sc.textMd,
                 ),
               ),

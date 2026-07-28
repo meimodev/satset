@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -78,44 +82,31 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 const SizedBox(width: Sp.s2),
               ],
               PressScale(
-                child: OutlinedButton.icon(
-                  onPressed: () => setState(() {
-                    _opname = !_opname;
-                    _counts.clear();
-                  }),
-                  icon: Icon(
-                    _opname ? Icons.close : Icons.inventory_2_outlined,
-                    size: 16,
-                  ),
-                  label: Text(_opname ? 'Batal' : 'Opname'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _opname ? sc.urgent : sc.accentText,
-                    side: SatB.side(
-                      color: _opname ? sc.urgent : sc.accentBorder,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Sp.s3h,
-                      vertical: Sp.s2,
-                    ),
-                    shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-                  ),
-                ),
+                child: _opname
+                    ? SatButton.danger(
+                        label: AppStrings.cancel,
+                        icon: Icons.close,
+                        onTap: () => setState(() {
+                          _opname = false;
+                          _counts.clear();
+                        }),
+                      )
+                    : SatButton.outline(
+                        label: 'Opname',
+                        icon: Icons.inventory_2_outlined,
+                        onTap: () => setState(() {
+                          _opname = true;
+                          _counts.clear();
+                        }),
+                      ),
               ),
               if (_opname) ...[
                 const SizedBox(width: Sp.s2),
                 PressScale(
-                  child: FilledButton.icon(
-                    onPressed: _counts.isEmpty ? null : _submitOpname,
-                    icon: const Icon(Icons.check_circle_outline, size: 16),
-                    label: Text('Simpan (${_counts.length})'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: sc.accent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Sp.s4,
-                        vertical: Sp.s2,
-                      ),
-                      shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-                    ),
+                  child: SatButton.primary(
+                    label: 'Simpan (${_counts.length})',
+                    icon: Icons.check_circle_outline,
+                    onTap: _counts.isEmpty ? null : _submitOpname,
                   ),
                 ),
               ],
@@ -327,29 +318,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       child: Text(
                         label,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.mono(
-                          size: 9,
-                          weight: FontWeight.w600,
-                          color: sc.textLo,
-                          letterSpacing: 0.6,
-                        ),
+                        style: SatType.caption(color: sc.textLo),
                       ),
                     ),
                     Icon(icon, size: 16, color: color),
                   ],
                 ),
                 const SizedBox(height: Sp.s1h),
-                Text(
-                  value,
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: color,
-                    letterSpacing: -0.2,
-                  ),
-                ),
+                Text(value, style: SatType.labelL(color: color)),
                 const SizedBox(height: Sp.sHair),
-                Text(sub, style: SatType.sans(size: 10, color: sc.textLo)),
+                Text(sub, style: SatType.bodyS(color: sc.textLo)),
               ],
             ),
           ),
@@ -388,17 +366,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               children: [
                 Text(
                   'MODE STOK OPNAME',
-                  style: SatType.mono(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    color: sc.accentText,
-                    letterSpacing: 0.8,
-                  ),
+                  style: SatType.caption(color: sc.accentText),
                 ),
                 const SizedBox(height: Sp.sHair),
                 Text(
                   'Ketik jumlah fisik di gudang saat ini. Selisih akan otomatis dihitung sebagai penyesuaian mutasi.',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
               ],
             ),
@@ -421,11 +394,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 ),
                 child: Text(
                   '${_counts.length} diisi',
-                  style: SatType.mono(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    color: sc.accentInk,
-                  ),
+                  style: SatType.caption(color: sc.accentInk),
                 ),
               ),
             ),
@@ -447,39 +416,19 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         Row(
           children: [
             Expanded(
-              child: TextField(
+              child: SatField.search(
                 controller: _searchCtrl,
-                style: SatType.sans(size: 13, color: sc.textHi),
-                decoration: InputDecoration(
-                  hintText: 'Cari nama bahan...',
-                  hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                  prefixIcon: Icon(Icons.search, size: 18, color: sc.textLo),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          tooltip: AppStrings.a11yClear,
-                          icon: Icon(Icons.clear, size: 16, color: sc.textLo),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: sc.bg2,
-                  contentPadding: const EdgeInsets.symmetric(vertical: Sp.s2h),
-                  border: OutlineInputBorder(
-                    borderRadius: SatR.a(12),
-                    borderSide: SatB.side(color: sc.border1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(12),
-                    borderSide: SatB.side(color: sc.border1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(12),
-                    borderSide: SatB.side(color: sc.accent),
-                  ),
-                ),
+                hint: 'Cari nama bahan...',
+                suffix: _searchQuery.isEmpty
+                    ? null
+                    : SatIconButton.plain(
+                        icon: Icons.clear,
+                        tooltip: AppStrings.a11yClear,
+                        onTap: () {
+                          _searchCtrl.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      ),
                 onChanged: (val) => setState(() => _searchQuery = val),
               ),
             ),
@@ -550,11 +499,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           ),
           child: Text(
             label,
-            style: SatType.sans(
-              size: 11,
-              weight: active ? FontWeight.w600 : FontWeight.w500,
-              color: color,
-            ),
+            style: (active
+                ? SatType.labelS(color: color)
+                : SatType.bodyS(color: color)),
           ),
         ),
       ),
@@ -613,11 +560,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             Expanded(
                               child: Text(
                                 i.name,
-                                style: SatType.sans(
-                                  size: 15,
-                                  weight: FontWeight.w600,
-                                  color: sc.textHi,
-                                ),
+                                style: SatType.labelL(color: sc.textHi),
                               ),
                             ),
                             if (i.isProduced) ...[
@@ -661,20 +604,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 children: [
                                   Text(
                                     'STOK SAAT INI',
-                                    style: SatType.mono(
-                                      size: 9,
-                                      color: sc.textLo,
-                                      letterSpacing: 0.6,
-                                    ),
+                                    style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
                                   Text(
                                     i.onHandLabel,
-                                    style: SatType.mono(
-                                      size: 13,
-                                      weight: FontWeight.w600,
-                                      color: statusColor,
-                                    ),
+                                    style: SatType.monoM(color: statusColor),
                                   ),
                                 ],
                               ),
@@ -687,11 +622,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 children: [
                                   Text(
                                     'HARGA / ${i.unit.label.toUpperCase()}',
-                                    style: SatType.mono(
-                                      size: 9,
-                                      color: sc.textLo,
-                                      letterSpacing: 0.6,
-                                    ),
+                                    style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
                                   Text(
@@ -703,10 +634,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                             ),
                                           )
                                         : '—',
-                                    style: SatType.mono(
-                                      size: 13,
-                                      color: sc.textMd,
-                                    ),
+                                    style: SatType.monoM(color: sc.textMd),
                                   ),
                                 ],
                               ),
@@ -719,25 +647,18 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 children: [
                                   Text(
                                     'TERAKHIR TERIMA',
-                                    style: SatType.mono(
-                                      size: 9,
-                                      color: sc.textLo,
-                                      letterSpacing: 0.6,
-                                    ),
+                                    style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
                                   Text(
                                     i.lastReceivedAt == null
                                         ? '—'
                                         : formatElapsedId(
-                                            DateTime.now().difference(
+                                            SatClock.now().difference(
                                               i.lastReceivedAt!,
                                             ),
                                           ),
-                                    style: SatType.mono(
-                                      size: 13,
-                                      color: sc.textMd,
-                                    ),
+                                    style: SatType.monoM(color: sc.textMd),
                                   ),
                                 ],
                               ),
@@ -778,35 +699,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              TextField(
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                              SatField.decimal(
+                                hint: i.unit.label,
                                 textAlign: TextAlign.right,
-                                style: SatType.mono(
-                                  size: 13,
-                                  weight: FontWeight.w600,
-                                  color: sc.textHi,
-                                ),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: i.unit.label,
-                                  hintStyle: SatType.sans(
-                                    size: 12,
-                                    color: sc.textLo,
-                                  ),
-                                  filled: true,
-                                  fillColor: sc.bg3,
-                                  border: OutlineInputBorder(
-                                    borderRadius: SatR.a(8),
-                                    borderSide: SatB.side(color: sc.border1),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: Sp.s2,
-                                    vertical: Sp.s2,
-                                  ),
-                                ),
                                 onChanged: (t) {
                                   final v = double.tryParse(
                                     t.replaceAll(',', '.'),
@@ -831,28 +726,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             PressScale(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _receive(i),
-                                icon: const Icon(
-                                  Icons.add_shopping_cart,
-                                  size: 14,
-                                ),
-                                label: const Text('Terima'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: sc.accentText,
-                                  side: SatB.side(color: sc.border1),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: Sp.s2h,
-                                    vertical: Sp.s1h,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: SatR.a(8),
-                                  ),
-                                  textStyle: SatType.sans(
-                                    size: 11,
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
+                              child: SatButton.outline(
+                                label: 'Terima',
+                                icon: Icons.add_shopping_cart,
+                                onTap: () => _receive(i),
                               ),
                             ),
                             PopupMenuButton<String>(
@@ -962,12 +839,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 10, color: color),
-            const SizedBox(width: 3),
+            const SizedBox(width: Sp.s1),
           ],
-          Text(
-            label,
-            style: SatType.mono(size: 9, weight: FontWeight.w600, color: color),
-          ),
+          Text(label, style: SatType.caption(color: color)),
         ],
       ),
     );
@@ -998,7 +872,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         const SizedBox(width: Sp.s2),
         Text(
           'Batas min: ${formatQty(threshold, i.unit)}',
-          style: SatType.mono(size: 9, color: sc.textLo),
+          style: SatType.monoS(color: sc.textLo),
         ),
       ],
     );
@@ -1022,7 +896,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       child: Text(
         text,
         key: ValueKey(text),
-        style: SatType.mono(size: 10, weight: FontWeight.w600, color: color),
+        style: SatType.caption(color: color),
       ),
     );
   }
@@ -1076,46 +950,41 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             builder: (_, setSheet) => Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: SatField.decimal(
                     controller: qtyCtrl,
+                    label: 'Jumlah',
+                    hint: '',
                     autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Jumlah',
-                      prefixIcon: Icon(Icons.numbers_outlined, size: 18),
-                    ),
+                    prefixIcon: Icons.numbers_outlined,
                   ),
                 ),
                 const SizedBox(width: Sp.s2h),
-                DropdownButton<StockUnit>(
-                  value: unit,
-                  items: [
-                    for (final u in entryUnitsFor(i.unit))
-                      DropdownMenuItem(value: u, child: Text(u.label)),
-                  ],
-                  onChanged: (u) => setSheet(() => unit = u ?? unit),
+                SizedBox(
+                  width: 110,
+                  child: SatDropdown<StockUnit>(
+                    value: unit,
+                    options: [
+                      for (final u in entryUnitsFor(i.unit))
+                        SatOption(u, u.label),
+                    ],
+                    onChanged: (u) => setSheet(() => unit = u ?? unit),
+                  ),
                 ),
               ],
             ),
           ),
-          TextField(
+          SatField.number(
             controller: priceCtrl,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: 'Harga per ${i.unit.label} (opsional)',
-              helperText: 'Kosongkan jika tidak mengubah harga rata-rata',
-              prefixIcon: const Icon(Icons.payments_outlined, size: 18),
-            ),
+            label: 'Harga per ${i.unit.label} (opsional)',
+            hint: '',
+            helperText: 'Kosongkan jika tidak mengubah harga rata-rata',
+            prefixIcon: Icons.payments_outlined,
           ),
-          TextField(
+          SatField.text(
             controller: supplierCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Pemasok (opsional)',
-              prefixIcon: Icon(Icons.storefront_outlined, size: 18),
-            ),
+            label: 'Pemasok (opsional)',
+            hint: '',
+            prefixIcon: Icons.storefront_outlined,
           ),
         ],
         onConfirm: () => Navigator.of(ctx).pop(true),
@@ -1160,15 +1029,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             : '1 batch = ${formatQty(i.batchYield!, i.unit)}. '
                   'Bahan baku penyusun akan berkurang otomatis.',
         children: [
-          TextField(
+          SatField.number(
             controller: ctrl,
+            label: 'Jumlah batch',
+            hint: '',
             autofocus: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              labelText: 'Jumlah batch',
-              prefixIcon: Icon(Icons.blender_outlined, size: 18),
-            ),
+            prefixIcon: Icons.blender_outlined,
           ),
         ],
         onConfirm: () => Navigator.of(ctx).pop(true),
@@ -1237,65 +1103,48 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           title: existing == null ? 'Bahan Baru' : 'Ubah ${existing.name}',
           subtitle: 'Atur nama, satuan unit, dan batas reorder.',
           children: [
-            TextField(
+            SatField.text(
               controller: nameCtrl,
+              label: 'Nama bahan',
+              hint: '',
               autofocus: existing == null,
-              decoration: const InputDecoration(
-                labelText: 'Nama bahan',
-                prefixIcon: Icon(Icons.inventory_outlined, size: 18),
-              ),
+              prefixIcon: Icons.inventory_outlined,
             ),
-            DropdownButtonFormField<StockUnit>(
-              initialValue: unit,
-              decoration: const InputDecoration(
-                labelText: 'Satuan',
-                prefixIcon: Icon(Icons.straighten_outlined, size: 18),
-              ),
-              items: [
+            SatDropdown<StockUnit>(
+              value: unit,
+              label: 'Satuan',
+              prefixIcon: Icons.straighten_outlined,
+              options: [
                 for (final u in StockUnit.values)
-                  DropdownMenuItem(
-                    value: u,
-                    child: Text(
-                      '${u.label} · ${stockDimensionLabel(u.dimension)}',
-                    ),
+                  SatOption(
+                    u,
+                    '${u.label} · ${stockDimensionLabel(u.dimension)}',
                   ),
               ],
               onChanged: (u) => setSheet(() => unit = u ?? unit),
             ),
             if (existing == null)
-              TextField(
+              SatField.decimal(
                 controller: openingCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Stok awal (${unit.label})',
-                  helperText: 'Dicatat sebagai mutasi awal',
-                  prefixIcon: const Icon(Icons.assessment_outlined, size: 18),
-                ),
+                label: 'Stok awal (${unit.label})',
+                hint: '',
+                helperText: 'Dicatat sebagai mutasi awal',
+                prefixIcon: Icons.assessment_outlined,
               ),
-            TextField(
+            SatField.decimal(
               controller: lowCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Batas menipis (${unit.label}, opsional)',
-                helperText: 'Munculkan peringatan saat stok di bawah angka ini',
-                prefixIcon: const Icon(Icons.warning_amber_rounded, size: 18),
-              ),
+              label: 'Batas menipis (${unit.label}, opsional)',
+              hint: '',
+              helperText: 'Munculkan peringatan saat stok di bawah angka ini',
+              prefixIcon: Icons.warning_amber_rounded,
             ),
-            TextField(
+            SatField.decimal(
               controller: yieldCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Hasil 1 batch (${unit.label}, opsional)',
-                helperText:
-                    'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
-                prefixIcon: const Icon(Icons.blender_outlined, size: 18),
-              ),
+              label: 'Hasil 1 batch (${unit.label}, opsional)',
+              hint: '',
+              helperText:
+                  'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
+              prefixIcon: Icons.blender_outlined,
             ),
           ],
           onConfirm: () => Navigator.of(ctx).pop(true),
@@ -1400,20 +1249,10 @@ class _Sheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
-                      ),
+                      Text(title, style: SatType.h3(color: sc.textHi)),
                       if (subtitle != null) ...[
                         const SizedBox(height: Sp.sHair),
-                        Text(
-                          subtitle!,
-                          style: SatType.sans(size: 12, color: sc.textLo),
-                        ),
+                        Text(subtitle!, style: SatType.bodyS(color: sc.textLo)),
                       ],
                     ],
                   ),
@@ -1437,21 +1276,9 @@ class _Sheet extends StatelessWidget {
 
             // Primary Action Button
             PressScale(
-              child: FilledButton(
-                onPressed: onConfirm,
-                style: FilledButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(12)),
-                ),
-                child: Text(
-                  'Simpan',
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.accentInk,
-                  ),
-                ),
+              child: SatButton.primary(
+                label: AppStrings.save,
+                onTap: onConfirm,
               ),
             ),
           ],
@@ -1505,19 +1332,11 @@ class _LedgerSheet extends ConsumerWidget {
                     children: [
                       Text(
                         'Riwayat Mutasi',
-                        style: SatType.sans(
-                          size: 18,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.h3(color: sc.textHi),
                       ),
                       Text(
                         ingredient.name.toUpperCase(),
-                        style: SatType.mono(
-                          size: 11,
-                          color: sc.accentText,
-                          letterSpacing: 0.8,
-                        ),
+                        style: SatType.monoS(color: sc.accentText),
                       ),
                     ],
                   ),
@@ -1585,9 +1404,7 @@ class _LedgerSheet extends ConsumerWidget {
                                         children: [
                                           Text(
                                             m.reason.label,
-                                            style: SatType.sans(
-                                              size: 13,
-                                              weight: FontWeight.w600,
+                                            style: SatType.labelM(
                                               color: sc.textHi,
                                             ),
                                           ),
@@ -1599,8 +1416,7 @@ class _LedgerSheet extends ConsumerWidget {
                                               _stamp(m.at),
                                               if (m.note != null) m.note!,
                                             ].join(' · '),
-                                            style: SatType.mono(
-                                              size: 10,
+                                            style: SatType.monoS(
                                               color: sc.textLo,
                                             ),
                                           ),
@@ -1610,9 +1426,7 @@ class _LedgerSheet extends ConsumerWidget {
                                     Text(
                                       '${positive ? '+' : ''}'
                                       '${formatQty(m.delta, ingredient.unit)}',
-                                      style: SatType.mono(
-                                        size: 13,
-                                        weight: FontWeight.w600,
+                                      style: SatType.monoM(
                                         color: positive
                                             ? sc.success
                                             : sc.textMd,
@@ -1674,34 +1488,19 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Sp.s4),
-            Text(
-              title,
-              style: SatType.sans(
-                size: 18,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
-            ),
+            Text(title, style: SatType.h3(color: sc.textHi)),
             const SizedBox(height: Sp.s2),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: sc.textLo),
+              style: SatType.bodyM(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s5),
             PressScale(
-              child: FilledButton.icon(
-                onPressed: onAction,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Tambah Bahan Pertama'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Sp.s5,
-                    vertical: Sp.s3,
-                  ),
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(12)),
-                ),
+              child: SatButton.primary(
+                label: 'Tambah Bahan Pertama',
+                icon: Icons.add,
+                onTap: onAction,
               ),
             ),
           ],
@@ -1733,7 +1532,7 @@ class _Message extends StatelessWidget {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: SatType.sans(size: 13, color: color ?? sc.textLo),
+              style: SatType.bodyM(color: color ?? sc.textLo),
             ),
           ],
         ),
@@ -1769,7 +1568,6 @@ class _RecipeLinkChips extends StatelessWidget {
   static const _iconSize = 11.0;
   static const _iconGap = 3.0;
   static const _border = 1.0;
-  static const _fontSize = 11.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1815,9 +1613,13 @@ class _RecipeLinkChips extends StatelessWidget {
           children: [
             for (final c in chips.take(shown)) _chip(context, c.$1, c.$2, c.$3),
             if (hidden > 0)
-              GestureDetector(
-                onTap: onExpand,
-                child: _chip(context, '+$hidden', null, sc.textLo),
+              Semantics(
+                button: true,
+                label: '+$hidden',
+                child: GestureDetector(
+                  onTap: onExpand,
+                  child: _chip(context, '+$hidden', null, sc.textLo),
+                ),
               ),
           ],
         );
@@ -1827,10 +1629,7 @@ class _RecipeLinkChips extends StatelessWidget {
 
   double _chipWidth(String label, TextScaler scaler) {
     final tp = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: SatType.sans(size: _fontSize),
-      ),
+      text: TextSpan(text: label, style: SatType.bodyS()),
       textDirection: TextDirection.ltr,
       textScaler: scaler,
     )..layout();
@@ -1844,7 +1643,7 @@ class _RecipeLinkChips extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: Sp.s1),
       decoration: SatBox.d(
         color: sc.bg3,
         borderRadius: SatR.a(6),
@@ -1861,10 +1660,7 @@ class _RecipeLinkChips extends StatelessWidget {
                 : Icon(icon, size: _iconSize, color: color),
           ),
           const SizedBox(width: _iconGap),
-          Text(
-            label,
-            style: SatType.sans(size: _fontSize, color: color),
-          ),
+          Text(label, style: SatType.bodyS(color: color)),
         ],
       ),
     );
