@@ -539,20 +539,22 @@ class _StaleBanner extends StatelessWidget {
     final sc = context.sat;
     final brutal = SatShape.brutal;
     final crit = stale.severity == StaleSeverity.crit;
-    // Glow spends `urgent` on crit only and puts everything else on an obsidian
-    // slab — its grammar separates with slab colour, and a whole card foot in
-    // amber is the "if everything is urgent, nothing is" failure one step early.
-    // The other skins keep amber for the warn tier.
+    // Glow puts both tiers on the same obsidian slab — its grammar separates
+    // with slab colour, not with hue floods, and a crit foot flooded `urgent`
+    // read as "the card turned red", swallowing the order-state tint the card
+    // body carries. Crit now spends `urgent` on the bang and on the card's 2px
+    // ring (see `_cardShadow`), which is where the scarce colour belongs. The
+    // other skins keep amber for the warn tier and red for crit.
     final glow = SatShape.glow;
-    final fill = crit
-        ? sc.urgent
-        : glow
+    final fill = glow
         ? sc.slab.bg0
+        : crit
+        ? sc.urgent
         : sc.warn;
     // Both other skins pick the foreground by luminance. White on `warn` amber
     // is ~2:1 and fails AA — and this banner is the one thing on the card a
     // waiter has to read at a glance. On the slab the palette names it.
-    final fg = glow && !crit ? sc.slab.textHi : onFill(fill);
+    final fg = glow ? sc.slab.textHi : onFill(fill);
     return Container(
       padding: EdgeInsets.fromLTRB(tablet ? 18 : 14, 7, tablet ? 18 : 14, 7),
       decoration: BoxDecoration(
@@ -569,10 +571,12 @@ class _StaleBanner extends StatelessWidget {
             alignment: Alignment.center,
             // Glow's bang is a filled disc, not an outlined box — it draws no
             // rules, so a hairline square would be the one border on the card.
+            // Crit fills it at full strength: with both tiers on the same slab
+            // it is the only thing on the foot that says which tier this is.
             decoration: glow
                 ? BoxDecoration(
                     shape: BoxShape.circle,
-                    color: fg.withValues(alpha: 0.2),
+                    color: crit ? sc.slab.urgent : fg.withValues(alpha: 0.2),
                   )
                 : BoxDecoration(
                     borderRadius: SatR.a(4),
@@ -580,9 +584,7 @@ class _StaleBanner extends StatelessWidget {
                   ),
             child: Text(
               '!',
-              style: brutal
-                  ? SatType.labelS(color: fg)
-                  : SatType.labelS(color: fg),
+              style: SatType.labelS(color: glow && crit ? sc.slab.bg0 : fg),
             ),
           ),
           const SizedBox(width: Sp.s2),
