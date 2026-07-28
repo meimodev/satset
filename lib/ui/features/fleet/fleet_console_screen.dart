@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -206,32 +210,23 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(
-          'Venue baru',
-          style: SatType.sans(size: 17, color: sc.textHi),
-        ),
+        title: Text('Venue baru', style: SatType.h3(color: sc.textHi)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Nama venue'),
-            ),
+            SatField.text(controller: name, label: 'Nama venue', hint: ''),
             const SizedBox(height: Sp.s3),
-            TextField(
-              controller: addr,
-              decoration: const InputDecoration(labelText: 'Alamat (opsional)'),
-            ),
+            SatField.text(controller: addr, label: 'Alamat', hint: 'opsional'),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx, false),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => Navigator.pop(ctx, true),
           ),
         ],
       ),
@@ -249,20 +244,19 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
-        title: Text(title, style: SatType.sans(size: 17, color: sc.textHi)),
-        content: Text(body, style: SatType.sans(size: 14, color: sc.textMd)),
+        title: Text(title, style: SatType.h3(color: sc.textHi)),
+        content: Text(body, style: SatType.bodyM(color: sc.textMd)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: sc.urgent),
-            onPressed: () {
+          SatButton.danger(
+            label: 'Lanjut',
+            onTap: () {
               Navigator.pop(ctx);
               onYes();
             },
-            child: const Text('Lanjut'),
           ),
         ],
       ),
@@ -274,7 +268,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   Widget _empty(SatColors sc, String msg) => Padding(
     padding: const EdgeInsets.symmetric(vertical: Sp.s12),
     child: Center(
-      child: Text(msg, style: SatType.sans(size: 14, color: sc.textLo)),
+      child: Text(msg, style: SatType.bodyM(color: sc.textLo)),
     ),
   );
 
@@ -284,7 +278,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       child: Text(
         'Gagal memuat fleet:\n${fleetErrText(e)}',
         textAlign: TextAlign.center,
-        style: SatType.sans(size: 13, color: sc.urgent),
+        style: SatType.bodyM(color: sc.urgent),
       ),
     ),
   );
@@ -304,7 +298,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     final last = v.lastSeenAt;
     if (last == null) return null;
     final remaining =
-        FirebaseAdminService.staleAfter - DateTime.now().difference(last);
+        FirebaseAdminService.staleAfter - SatClock.now().difference(last);
     return remaining <= _fleetLockoutWarn ? remaining : null;
   }
 
@@ -318,7 +312,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   String _offlineText(Venue v) {
     final last = v.lastSeenAt;
     if (last == null) return 'Belum online';
-    final d = DateTime.now().difference(last);
+    final d = SatClock.now().difference(last);
     if (d.inSeconds < 90) return 'Online';
     if (d.inMinutes < 60) return 'Offline ${d.inMinutes}m';
     if (d.inHours < 24) return 'Offline ${d.inHours}j';
@@ -328,7 +322,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   Color _offlineColor(SatColors sc, Venue v) {
     final last = v.lastSeenAt;
     if (last == null) return sc.textLo;
-    return DateTime.now().difference(last).inSeconds < 90
+    return SatClock.now().difference(last).inSeconds < 90
         ? sc.success
         : sc.warn;
   }

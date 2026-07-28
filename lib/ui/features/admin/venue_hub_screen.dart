@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,7 +20,7 @@ import 'package:satset/ui/features/admin/alerts_screen.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
-class _Section {
+class _HubSection {
   final String label;
   final String sub;
   final IconData icon;
@@ -28,7 +29,7 @@ class _Section {
   final String Function(WidgetRef ref)? badgeBuilder;
   final bool Function(WidgetRef ref)? hasAlert;
 
-  const _Section({
+  const _HubSection({
     required this.label,
     required this.sub,
     required this.icon,
@@ -39,8 +40,8 @@ class _Section {
   });
 }
 
-final _sections = <_Section>[
-  _Section(
+final _sections = <_HubSection>[
+  _HubSection(
     label: AppStrings.venueHubSectionZona,
     sub: AppStrings.venueHubSectionZonaSub,
     icon: Icons.place_outlined,
@@ -52,7 +53,7 @@ final _sections = <_Section>[
       return '${t.length} meja · ${z.length} zona';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionMenu,
     sub: AppStrings.venueHubSectionMenuSub,
     icon: Icons.restaurant_menu_rounded,
@@ -64,7 +65,7 @@ final _sections = <_Section>[
       return '${m.length} item · ${c.length} kategori';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionStock,
     sub: AppStrings.venueHubSectionStockSub,
     icon: Icons.inventory_2_outlined,
@@ -80,7 +81,7 @@ final _sections = <_Section>[
       return s.any((i) => i.isLow);
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionVenue,
     sub: AppStrings.venueHubSectionVenueSub,
     icon: Icons.storefront_outlined,
@@ -93,7 +94,7 @@ final _sections = <_Section>[
       return 'Pajak $tax% · Service $svc%';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionAlerts,
     sub: AppStrings.venueHubSectionAlertsSub,
     icon: Icons.notifications_active_outlined,
@@ -101,7 +102,7 @@ final _sections = <_Section>[
     tint: (sc) => sc.urgent,
     badgeBuilder: (ref) => alertsSummary(ref.watch(venueSettingsProvider)),
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionSystem,
     sub: AppStrings.venueHubSectionSystemSub,
     icon: Icons.wifi_rounded,
@@ -113,7 +114,7 @@ final _sections = <_Section>[
       return 'LAN · ${cfg.baseUri.host}';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionStaff,
     sub: AppStrings.venueHubSectionStaffSub,
     icon: Icons.person_outline_rounded,
@@ -124,7 +125,7 @@ final _sections = <_Section>[
       return '${st.length} staf';
     },
   ),
-  _Section(
+  _HubSection(
     label: AppStrings.venueHubSectionReports,
     sub: AppStrings.venueHubSectionReportsSub,
     icon: Icons.auto_awesome_outlined,
@@ -140,29 +141,36 @@ class VenueHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.layout;
-    final showSeed = ref.watch(genericSeedProvider).showPrompt;
+    final seed = ref.watch(genericSeedProvider);
+    final showSeed = seed.showPrompt;
+    final showDemo = seed.canSeedDemo || seed.hasDemo;
 
     if (l.useTabletShell) {
+      var idx = 0;
       return AdminPage(
         title: AppStrings.venueHubTitle,
         sub: AppStrings.venueHubSubtitle,
         children: [
-          const Reveal(index: 0, child: _VenueHeroStrip()),
+          Reveal(index: idx++, child: const _VenueHeroStrip()),
           const SizedBox(height: Sp.s4),
           if (showSeed) ...[
-            const Reveal(index: 1, child: SeedDataBanner()),
+            Reveal(index: idx++, child: const SeedDataBanner()),
             const SizedBox(height: Sp.s4),
           ],
-          _HubGrid(
-            sections: _sections,
-            seedOffset: showSeed ? 2 : 1,
-            big: true,
-          ),
+          if (showDemo) ...[
+            Reveal(index: idx++, child: const DemoDataBanner()),
+            const SizedBox(height: Sp.s4),
+          ],
+          _HubGrid(sections: _sections, seedOffset: idx, big: true),
         ],
       );
     }
 
-    return _PhoneHub(sections: _sections, showSeed: showSeed);
+    return _PhoneHub(
+      sections: _sections,
+      showSeed: showSeed,
+      showDemo: showDemo,
+    );
   }
 }
 
@@ -221,19 +229,14 @@ class _VenueHeroStrip extends ConsumerWidget {
                             venue.displayName.isNotEmpty
                                 ? venue.displayName
                                 : AppStrings.venueHubTitle,
-                            style: SatType.sans(
-                              size: 18,
-                              weight: FontWeight.w700,
-                              color: sc.textHi,
-                              letterSpacing: -0.3,
-                            ),
+                            style: SatType.h3(color: sc.textHi),
                           ),
                         ),
                         const SizedBox(width: Sp.s2),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: Sp.s2,
-                            vertical: 2.5,
+                            vertical: Sp.sHair,
                           ),
                           decoration: SatBox.d(
                             color: sc.successSoft,
@@ -256,12 +259,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                               const SizedBox(width: Sp.s1),
                               Text(
                                 apiConfig != null ? 'LAN AKTIF' : 'LOKAL',
-                                style: SatType.mono(
-                                  size: 9.5,
-                                  weight: FontWeight.w700,
-                                  color: sc.success,
-                                  letterSpacing: 0.5,
-                                ),
+                                style: SatType.caption(color: sc.success),
                               ),
                             ],
                           ),
@@ -275,7 +273,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                           : AppStrings.venueHubSubtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: SatType.sans(size: 12, color: sc.textLo),
+                      style: SatType.bodyS(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -300,11 +298,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                       const SizedBox(width: Sp.s1h),
                       Text(
                         'Pengaturan',
-                        style: SatType.sans(
-                          size: 12,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.labelS(color: sc.textHi),
                       ),
                     ],
                   ),
@@ -366,15 +360,118 @@ class _StatBadge extends StatelessWidget {
       children: [
         Icon(icon, size: 13, color: color),
         const SizedBox(width: Sp.s1),
-        Text(
-          text,
-          style: SatType.sans(
-            size: 11.5,
-            weight: FontWeight.w500,
-            color: sc.textLo,
-          ),
-        ),
+        Text(text, style: SatType.bodyS(color: sc.textLo)),
       ],
+    );
+  }
+}
+
+/// Demo-dataset controls (ADR-0052). Offers the load action while the venue
+/// has not traded, and refresh/reset once demo data is present — the live half
+/// decays within minutes, so refresh is the common action, not an edge case.
+class DemoDataBanner extends ConsumerWidget {
+  const DemoDataBanner({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final st = ref.watch(genericSeedProvider);
+    final ctrl = ref.read(genericSeedProvider.notifier);
+
+    Future<void> run(Future<void> Function() action) async {
+      try {
+        await action();
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              st.canSeedDemo
+                  ? AppStrings.venueHubDemoError
+                  : AppStrings.venueHubDemoRefused,
+            ),
+          ),
+        );
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(Sp.s4),
+      decoration: SatBox.d(
+        color: sc.info.withValues(alpha: 0.10),
+        borderRadius: SatR.a(16),
+        border: SatB.all(color: sc.info.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.science_rounded, size: 18, color: sc.info),
+              const SizedBox(width: Sp.s2),
+              Expanded(
+                child: Text(
+                  AppStrings.venueHubDemoTitle,
+                  style: SatType.labelL(color: sc.textHi),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.s1h),
+          Text(
+            st.demoSeeding
+                ? AppStrings.venueHubDemoBodyRunning
+                : st.demoIncomplete
+                ? AppStrings.venueHubDemoBodyIncomplete
+                : st.hasDemo
+                ? AppStrings.venueHubDemoBodyLoaded
+                : AppStrings.venueHubDemoBody,
+            style: SatType.bodyM(color: sc.textLo),
+          ),
+          const SizedBox(height: Sp.s3h),
+          if (st.demoSeeding) ...[
+            // A month through the production order path takes minutes; a bare
+            // spinner cannot be told from a hang (ADR-0053 §8).
+            ClipRRect(
+              borderRadius: SatR.a(999),
+              child: LinearProgressIndicator(
+                value: st.demoDaysDone / st.demoDaysTotal,
+                minHeight: 6,
+                backgroundColor: sc.bg3,
+                valueColor: AlwaysStoppedAnimation(sc.info),
+              ),
+            ),
+            const SizedBox(height: Sp.s2),
+            Text(
+              '${AppStrings.venueHubDemoProgress} · '
+              '${st.demoDaysDone}/${st.demoDaysTotal}',
+              style: SatType.monoS(color: sc.textLo),
+            ),
+          ] else
+            Row(
+              children: [
+                if (st.hasDemo || st.demoIncomplete)
+                  Expanded(
+                    child: SatButton.primary(
+                      label: AppStrings.venueHubDemoBtnReset,
+                      busy: st.loading,
+                      onTap: st.loading ? null : () => run(ctrl.resetDemo),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: SatButton.primary(
+                      label: st.loading
+                          ? AppStrings.loading
+                          : AppStrings.venueHubDemoBtnLoad,
+                      busy: st.loading,
+                      onTap: st.loading ? null : () => run(ctrl.seedDemo),
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
@@ -404,11 +501,7 @@ class SeedDataBanner extends ConsumerWidget {
               Expanded(
                 child: Text(
                   AppStrings.venueHubSeedTitle,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w700,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
               ),
             ],
@@ -416,17 +509,16 @@ class SeedDataBanner extends ConsumerWidget {
           const SizedBox(height: Sp.s1h),
           Text(
             AppStrings.venueHubSeedBody,
-            style: SatType.sans(size: 12.5, color: sc.textLo, height: 1.35),
+            style: SatType.bodyM(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s3h),
           Row(
             children: [
               Expanded(
-                child: _BannerBtn(
+                child: SatButton.primary(
                   label: st.loading
                       ? AppStrings.loading
                       : AppStrings.venueHubSeedBtnLoad,
-                  filled: true,
                   busy: st.loading,
                   onTap: st.loading
                       ? null
@@ -446,9 +538,8 @@ class SeedDataBanner extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: Sp.s2h),
-              _BannerBtn(
+              SatButton.outline(
                 label: AppStrings.venueHubSeedBtnLater,
-                filled: false,
                 onTap: st.loading ? null : ctrl.dismiss,
               ),
             ],
@@ -459,66 +550,8 @@ class SeedDataBanner extends ConsumerWidget {
   }
 }
 
-class _BannerBtn extends StatelessWidget {
-  final String label;
-  final bool filled;
-  final bool busy;
-  final VoidCallback? onTap;
-  const _BannerBtn({
-    required this.label,
-    required this.filled,
-    this.busy = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Material(
-      color: filled ? sc.accent : Colors.transparent,
-      borderRadius: SatR.a(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: SatR.a(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: 11),
-          decoration: SatBox.d(
-            borderRadius: SatR.a(10),
-            border: filled ? null : SatB.all(color: sc.border1),
-          ),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (busy) ...[
-                SizedBox(
-                  width: 13,
-                  height: 13,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: sc.bg0,
-                  ),
-                ),
-                const SizedBox(width: Sp.s2),
-              ],
-              Text(
-                label,
-                style: SatType.sans(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: filled ? sc.bg0 : sc.textHi,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _HubGrid extends StatelessWidget {
-  final List<_Section> sections;
+  final List<_HubSection> sections;
   final int seedOffset;
   final bool big;
   const _HubGrid({
@@ -557,9 +590,14 @@ class _HubGrid extends StatelessWidget {
 }
 
 class _PhoneHub extends StatelessWidget {
-  final List<_Section> sections;
+  final List<_HubSection> sections;
   final bool showSeed;
-  const _PhoneHub({required this.sections, this.showSeed = false});
+  final bool showDemo;
+  const _PhoneHub({
+    required this.sections,
+    this.showSeed = false,
+    this.showDemo = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -578,11 +616,7 @@ class _PhoneHub extends StatelessWidget {
                 const SizedBox(width: Sp.s1h),
                 Text(
                   AppStrings.venueHubTitle,
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w500,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.bodyM(color: sc.textHi),
                 ),
               ],
             ),
@@ -595,13 +629,7 @@ class _PhoneHub extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
             child: Text(
               AppStrings.crumbKonfigurasi,
-              style: SatType.sans(
-                size: 22,
-                weight: FontWeight.w600,
-                letterSpacing: -0.44,
-                height: 1.05,
-                color: sc.textHi,
-              ),
+              style: SatType.h2(color: sc.textHi),
             ),
           ),
         ),
@@ -611,14 +639,21 @@ class _PhoneHub extends StatelessWidget {
           const Reveal(index: 3, child: SeedDataBanner()),
           const SizedBox(height: Sp.s3),
         ],
-        _HubGrid(sections: sections, seedOffset: showSeed ? 4 : 3),
+        if (showDemo) ...[
+          Reveal(index: showSeed ? 4 : 3, child: const DemoDataBanner()),
+          const SizedBox(height: Sp.s3),
+        ],
+        _HubGrid(
+          sections: sections,
+          seedOffset: 3 + (showSeed ? 1 : 0) + (showDemo ? 1 : 0),
+        ),
       ],
     );
   }
 }
 
 class _HubCard extends ConsumerWidget {
-  final _Section section;
+  final _HubSection section;
   final bool big;
   const _HubCard({required this.section, required this.big});
 
@@ -629,8 +664,6 @@ class _HubCard extends ConsumerWidget {
     final radius = big ? 18.0 : 16.0;
     final iconBox = big ? 46.0 : 40.0;
     final iconSize = big ? 22.0 : 20.0;
-    final labelSize = big ? 15.0 : 14.0;
-    final subSize = big ? 11.5 : 11.0;
 
     final badgeText = section.badgeBuilder?.call(ref);
     final hasAlert = section.hasAlert?.call(ref) ?? false;
@@ -686,9 +719,7 @@ class _HubCard extends ConsumerWidget {
                             badgeText,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: SatType.mono(
-                              size: 9.5,
-                              weight: FontWeight.w600,
+                            style: SatType.caption(
                               color: hasAlert ? sc.warn : sc.textLo,
                             ),
                           ),
@@ -699,23 +730,16 @@ class _HubCard extends ConsumerWidget {
                 const SizedBox(height: Sp.s3h),
                 Text(
                   section.label,
-                  style: SatType.sans(
-                    size: labelSize,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: sc.textHi,
-                  ),
+                  style: big
+                      ? SatType.labelL(color: sc.textHi)
+                      : SatType.labelM(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s1),
                 Text(
                   section.sub,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: SatType.sans(
-                    size: subSize,
-                    color: sc.textLo,
-                    height: 1.3,
-                  ),
+                  style: SatType.bodyS(color: sc.textLo),
                 ),
               ],
             ),

@@ -124,8 +124,11 @@ class ApiClient {
   Future<dynamic> getJson(String path, {Map<String, String>? query}) =>
       _send('GET', path, query: query);
 
-  Future<dynamic> postJson(String path, Object body) =>
-      _send('POST', path, body: body);
+  /// [timeout] overrides [requestTimeout] for the rare endpoint that is
+  /// legitimately slow — the demo seed writes a month of service and takes
+  /// tens of seconds on device (ADR-0052 §7).
+  Future<dynamic> postJson(String path, Object body, {Duration? timeout}) =>
+      _send('POST', path, body: body, timeout: timeout);
 
   Future<dynamic> patchJson(String path, Object body) =>
       _send('PATCH', path, body: body);
@@ -167,6 +170,7 @@ class ApiClient {
     String path, {
     Map<String, String>? query,
     Object? body,
+    Duration? timeout,
   }) async {
     final uri = _config.baseUri.resolve(path).replace(queryParameters: query);
     final headers = await _headers();
@@ -179,7 +183,7 @@ class ApiClient {
         'PATCH' => _inner.patch(uri, headers: headers, body: encoded),
         'DELETE' => _inner.delete(uri, headers: headers),
         _ => throw StateError('Unsupported method $method'),
-      }).timeout(requestTimeout);
+      }).timeout(timeout ?? requestTimeout);
       SatLog.http(
         '$method $path → ${r.statusCode} ${sw.elapsedMilliseconds}ms',
       );

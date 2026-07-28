@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -46,13 +47,14 @@ part 'database.g.dart';
     Ingredients,
     RecipeLines,
     StockMovements,
+    DemoStates,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   /// At most one whole-order discount per receipt, and one line discount per
   /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
@@ -679,6 +681,10 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 6',
         );
       }
+      if (from < 39) {
+        // Demo clock + seed-job state (ADR-0053).
+        await m.createTable(demoStates);
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -851,7 +857,7 @@ class AppDatabase extends _$AppDatabase {
       "reservation_id, last_actor_id FROM venue_tables "
       "WHERE status != 'available'",
     ).get();
-    final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+    final now = SatClock.now().toUtc().millisecondsSinceEpoch ~/ 1000;
     for (final r in rows) {
       final tableId = r.read<String>('id');
       final visitId = '$tableId-v0';

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -100,24 +101,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      'Laporan',
-                      style: SatType.sans(
-                        size: 30,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.6,
-                        color: sc.textHi,
-                      ),
-                    ),
+                    child: Text('Laporan', style: SatType.h1(color: sc.textHi)),
                   ),
-                  GestureDetector(
+                  SatButton.outline(
+                    label: 'Ekspor',
+                    size: SatButtonSize.sm,
                     onTap: () => showExportSheet(
                       context,
                       ref,
                       snapshot: snapshot,
                       query: query,
                     ),
-                    child: adminPill(context, 'Ekspor', on: false),
                   ),
                 ],
               ),
@@ -134,10 +128,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       topTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
+          SatButton.outline(
+            label: 'Ekspor',
+            size: SatButtonSize.sm,
             onTap: () =>
                 showExportSheet(context, ref, snapshot: snapshot, query: query),
-            child: adminPill(context, 'Ekspor', on: false),
           ),
           const SizedBox(width: Sp.s2),
           _refreshButton(
@@ -265,16 +260,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
             child: Text(
               'Gagal memuat laporan',
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w500,
-                color: sc.textHi,
-              ),
+              style: SatType.bodyM(color: sc.textHi),
             ),
           ),
-          GestureDetector(
+          SatButton.outline(
+            label: 'Coba lagi',
+            size: SatButtonSize.sm,
             onTap: () => ref.read(reportsRepositoryProvider.notifier).refresh(),
-            child: adminPill(context, 'Coba lagi'),
           ),
         ],
       ),
@@ -287,15 +279,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Row(
         children: [
           for (final r in ReportRange.values) ...[
-            GestureDetector(
+            SatButton.outline(
+              label: _chipLabel(r, query),
+              size: SatButtonSize.sm,
               onTap: r == ReportRange.custom
                   ? _openCustomSheet
                   : () => _setRange(r),
-              child: adminPill(
-                context,
-                _chipLabel(r, query),
-                on: query.range == r,
-              ),
             ),
             const SizedBox(width: Sp.s2),
           ],
@@ -389,21 +378,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       label.toUpperCase(),
-                      style: SatType.mono(
-                        size: 11,
-                        weight: FontWeight.w600,
-                        letterSpacing: 1.0,
-                        color: sc.textLo,
-                      ),
+                      style: SatType.caption(color: sc.textLo),
                     ),
                   ),
                 ),
                 for (final o in options)
                   ListTile(
-                    title: Text(
-                      o.name,
-                      style: SatType.sans(size: 14, color: sc.textHi),
-                    ),
+                    title: Text(o.name, style: SatType.bodyM(color: sc.textHi)),
                     trailing: o.name == value
                         ? Icon(Icons.check, color: sc.accentText, size: 18)
                         : null,
@@ -434,21 +415,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 children: [
                   Text(
                     label.toUpperCase(),
-                    style: SatType.mono(
-                      size: 9,
-                      weight: FontWeight.w600,
-                      letterSpacing: 1.0,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.caption(color: sc.textLo),
                   ),
                   const SizedBox(height: Sp.sHair),
                   Text(
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: SatType.sans(
-                      size: 13,
-                      weight: FontWeight.w500,
+                    style: SatType.bodyM(
                       color: active ? sc.accentText : sc.textHi,
                     ),
                   ),

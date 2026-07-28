@@ -41,12 +41,9 @@ import 'package:satset/ui/core/design/spacing.dart';
 /// A pill carrying one fleet signal (billing, offline, lockout-risk). Status is
 /// deliberately *not* a pill — it lives in the tile's leading tint.
 Widget fleetPill(SatColors sc, String text, Color fg, Color bg) => Container(
-  padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: 3),
+  padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.s1),
   decoration: SatBox.d(color: bg, borderRadius: SatR.a(8)),
-  child: Text(
-    text,
-    style: SatType.mono(size: 10, weight: FontWeight.w700, color: fg),
-  ),
+  child: Text(text, style: SatType.caption(color: fg)),
 );
 
 /// The shared tile: leading status-tint icon box, title + sub, an optional pill
@@ -82,7 +79,6 @@ class FleetTile extends StatelessWidget {
     final radius = big ? 16.0 : 14.0;
     final iconBox = big ? 48.0 : 40.0;
     final iconSize = big ? 22.0 : 18.0;
-    final titleSize = big ? 16.0 : 15.0;
 
     final body = Container(
       padding: EdgeInsets.fromLTRB(
@@ -117,25 +113,17 @@ class FleetTile extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: Sp.s1),
-                  child: Text(
-                    title,
-                    style: SatType.sans(
-                      size: titleSize,
-                      weight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  child: Text(title, style: SatType.labelL(color: sc.textHi)),
                 ),
                 if (sub != null) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: Sp.s1),
                   Text(
                     sub!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: subMono
-                        ? SatType.mono(size: 11, color: sc.textLo)
-                        : SatType.sans(size: 12, color: sc.textLo, height: 1.3),
+                        ? SatType.monoS(color: sc.textLo)
+                        : SatType.bodyS(color: sc.textLo),
                   ),
                 ],
                 if (pills.isNotEmpty) ...[
@@ -151,11 +139,18 @@ class FleetTile extends StatelessWidget {
     );
 
     if (onTap == null) return body;
-    return PressScale(
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: SatR.a(radius),
-        child: InkWell(onTap: onTap, borderRadius: SatR.a(radius), child: body),
+    return Semantics(
+      button: true,
+      child: PressScale(
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: SatR.a(radius),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: SatR.a(radius),
+            child: body,
+          ),
+        ),
       ),
     );
   }
@@ -180,8 +175,7 @@ Widget fleetMenu(
         value: e.key,
         child: Text(
           e.value,
-          style: SatType.sans(
-            size: 13,
+          style: SatType.bodyM(
             color: dangerKeys.contains(e.key) ? sc.urgent : sc.textHi,
           ),
         ),
@@ -196,7 +190,7 @@ void fleetToast(BuildContext context, String msg, {bool error = false}) {
     ..clearSnackBars()
     ..showSnackBar(
       SnackBar(
-        content: Text(msg, style: SatType.sans(size: 13, color: sc.textHi)),
+        content: Text(msg, style: SatType.bodyM(color: sc.textHi)),
         backgroundColor: error ? sc.urgentSoft : sc.bg3,
       ),
     );
@@ -234,30 +228,13 @@ class FleetHeader extends StatelessWidget {
             Icon(icon, size: 14, color: sc.accentText),
             const SizedBox(width: Sp.s1h),
             Expanded(
-              child: Text(
-                kicker,
-                style: SatType.mono(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: sc.accentText,
-                ),
-              ),
+              child: Text(kicker, style: SatType.caption(color: sc.accentText)),
             ),
             ?trailing,
           ],
         ),
         const SizedBox(height: Sp.s1),
-        Text(
-          title,
-          style: SatType.sans(
-            size: 22,
-            weight: FontWeight.w600,
-            letterSpacing: -0.44,
-            height: 1.05,
-            color: sc.textHi,
-          ),
-        ),
+        Text(title, style: SatType.h2(color: sc.textHi)),
       ],
     );
   }
@@ -288,14 +265,14 @@ class FleetPrimaryButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
           alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (busy)
                 SizedBox(
-                  width: 15,
+                  width: Sp.s4,
                   height: 15,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
@@ -307,9 +284,7 @@ class FleetPrimaryButton extends StatelessWidget {
               const SizedBox(width: Sp.s2),
               Text(
                 label,
-                style: SatType.sans(
-                  size: 14,
-                  weight: FontWeight.w700,
+                style: SatType.labelM(
                   color: onTap == null ? sc.textLo : sc.bg0,
                 ),
               ),

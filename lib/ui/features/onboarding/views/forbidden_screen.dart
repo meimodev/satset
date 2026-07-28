@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 
 class ForbiddenScreen extends StatelessWidget {
   const ForbiddenScreen({super.key});
@@ -16,9 +18,9 @@ class ForbiddenScreen extends StatelessWidget {
             const SizedBox(height: Sp.s3),
             const Text('Akses tidak diizinkan'),
             const SizedBox(height: Sp.s4),
-            FilledButton(
-              onPressed: () => context.go('/tables'),
-              child: const Text('Kembali'),
+            SatButton.primary(
+              label: AppStrings.back,
+              onTap: () => context.go('/tables'),
             ),
           ],
         ),

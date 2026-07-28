@@ -39,23 +39,11 @@ class StubScreen extends StatelessWidget {
               child: Icon(icon, size: 32, color: sc.textMd),
             ),
             const SizedBox(height: Sp.s5),
-            Text(
-              title,
-              style: SatType.sans(
-                size: 22,
-                weight: FontWeight.w600,
-                letterSpacing: -0.2,
-                color: sc.textHi,
-              ),
-            ),
+            Text(title, style: SatType.h2(color: sc.textHi)),
             const SizedBox(height: Sp.s2),
             Text(
               subtitle ?? 'Segera hadir',
-              style: SatType.sans(
-                size: 13,
-                weight: FontWeight.w400,
-                color: sc.textLo,
-              ),
+              style: SatType.bodyM(color: sc.textLo),
             ),
           ],
         ),

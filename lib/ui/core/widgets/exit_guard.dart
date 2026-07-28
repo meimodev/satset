@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
@@ -32,7 +33,7 @@ class _ExitGuardState extends State<ExitGuard> {
       return;
     }
 
-    final now = DateTime.now();
+    final now = SatClock.now();
     if (_lastBack != null && now.difference(_lastBack!) < window) {
       SystemNavigator.pop();
       return;

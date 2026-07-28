@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/log/sat_log.dart';
@@ -287,7 +288,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       final vid =
-          existingVisitId ?? 'T${DateTime.now().millisecondsSinceEpoch}';
+          existingVisitId ?? 'T${SatClock.now().millisecondsSinceEpoch}';
       final cart = [
         for (final l in lines)
           CartItem(
@@ -389,12 +390,12 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     List<CartItem> cart, {
     String? actorId,
   }) {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final stamp = _nowStamp(now);
     final newTickets = [
       for (var i = 0; i < cart.length; i++)
         Ticket(
-          id: 'N${DateTime.now().millisecondsSinceEpoch}-$i',
+          id: 'N${SatClock.now().millisecondsSinceEpoch}-$i',
           itemId: cart[i].itemId,
           name: cart[i].name,
           variantName: cart[i].variantName,

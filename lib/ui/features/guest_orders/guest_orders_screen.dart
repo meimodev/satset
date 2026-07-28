@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,7 +125,7 @@ class _BatchCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 28,
+                    width: Sp.s7,
                     child: Text(
                       '${l.qty}×',
                       style: TextStyle(
@@ -169,30 +171,21 @@ class _BatchCard extends ConsumerWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => ref
+                  child: SatButton.danger(
+                    label: 'Tolak',
+                    onTap: () => ref
                         .read(guestOrdersProvider.notifier)
                         .reject(batch.visitId),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: sc.urgent,
-                      side: SatB.side(color: sc.urgent),
-                      padding: const EdgeInsets.symmetric(vertical: Sp.s3),
-                    ),
-                    child: const Text('Tolak'),
                   ),
                 ),
                 const SizedBox(width: Sp.s2h),
                 Expanded(
                   flex: 2,
-                  child: FilledButton(
-                    onPressed: () => ref
+                  child: SatButton.success(
+                    label: 'Setujui & Kirim ke Dapur',
+                    onTap: () => ref
                         .read(guestOrdersProvider.notifier)
                         .approve(batch.visitId),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: sc.success,
-                      padding: const EdgeInsets.symmetric(vertical: Sp.s3),
-                    ),
-                    child: const Text('Setujui & Kirim ke Dapur'),
                   ),
                 ),
               ],
@@ -204,7 +197,7 @@ class _BatchCard extends ConsumerWidget {
   }
 
   String _ago(DateTime t) {
-    final d = DateTime.now().difference(t);
+    final d = SatClock.now().difference(t);
     if (d.inMinutes < 1) return 'baru saja';
     if (d.inMinutes < 60) return '${d.inMinutes} mnt lalu';
     return '${d.inHours} jam lalu';
@@ -220,13 +213,6 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.sHair),
     decoration: SatBox.d(color: color, borderRadius: SatR.a(10)),
-    child: Text(
-      '$count',
-      style: SatType.sans(
-        size: 13,
-        weight: FontWeight.w700,
-        color: onFill(color),
-      ),
-    ),
+    child: Text('$count', style: SatType.labelM(color: onFill(color))),
   );
 }

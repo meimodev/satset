@@ -1,7 +1,13 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/pulse_dot.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
@@ -15,7 +21,6 @@ import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
-import 'package:satset/ui/core/design/motion.dart';
 
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
@@ -148,6 +153,28 @@ class _PinScreenState extends ConsumerState<PinScreen>
 
   @override
   Widget build(BuildContext context) {
+    final body = _buildPin(context);
+    if (!kDebugMode) return body;
+    // Debug-only door into the widget book. PinScreen is the one surface
+    // reachable before pairing, which is where the gallery is most useful.
+    return Stack(
+      children: [
+        body,
+        Positioned(
+          left: Sp.s2,
+          bottom: Sp.s2,
+          child: SafeArea(
+            child: SatButton.ghost(
+              label: 'Widget book',
+              onTap: () => context.push('/book'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPin(BuildContext context) {
     final sc = context.sat;
     final l = context.layout;
     final prefs = ref.watch(prefsServiceProvider);
@@ -156,7 +183,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
         backgroundColor: sc.bg0,
         body: Center(
           child: SizedBox(
-            width: 28,
+            width: Sp.s7,
             height: 28,
             child: CircularProgressIndicator(
               strokeWidth: 2,
@@ -247,8 +274,8 @@ class _PinScreenState extends ConsumerState<PinScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _Reveal(
-                        delay: const Duration(milliseconds: 120),
+                      Reveal(
+                        index: 2,
                         child: _AdminAuthForm(
                           email: _adminEmail,
                           password: _adminPassword,
@@ -282,10 +309,10 @@ class _PinScreenState extends ConsumerState<PinScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Reveal(child: _TabletBrand()),
+                      Reveal(child: _TabletBrand()),
                       const SizedBox(height: Sp.s12),
-                      _Reveal(
-                        delay: const Duration(milliseconds: 80),
+                      Reveal(
+                        index: 1,
                         child: AnimatedSize(
                           duration: satMotion(context, 280),
                           curve: satEaseOut,
@@ -375,12 +402,9 @@ class _PinScreenState extends ConsumerState<PinScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _Reveal(child: brand),
-                              const SizedBox(height: 36),
-                              _Reveal(
-                                delay: const Duration(milliseconds: 80),
-                                child: modeBlock,
-                              ),
+                              Reveal(child: brand),
+                              const SizedBox(height: Sp.s9),
+                              Reveal(index: 1, child: modeBlock),
                             ],
                           ),
                         ),
@@ -390,10 +414,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               if (state.mode == SignInMode.admin)
-                                _Reveal(
-                                  delay: const Duration(milliseconds: 120),
-                                  child: wrappedAuthBody,
-                                ),
+                                Reveal(index: 2, child: wrappedAuthBody),
                             ],
                           ),
                         ),
@@ -403,18 +424,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: Sp.s6),
-                        _Reveal(child: brand),
-                        const SizedBox(height: 36),
-                        _Reveal(
-                          delay: const Duration(milliseconds: 80),
-                          child: modeBlock,
-                        ),
-                        const SizedBox(height: 26),
+                        Reveal(child: brand),
+                        const SizedBox(height: Sp.s9),
+                        Reveal(index: 1, child: modeBlock),
+                        const SizedBox(height: Sp.s7),
                         if (state.mode == SignInMode.admin)
-                          _Reveal(
-                            delay: const Duration(milliseconds: 140),
-                            child: wrappedAuthBody,
-                          ),
+                          Reveal(index: 3, child: wrappedAuthBody),
                       ],
                     ),
             ),
@@ -453,7 +468,6 @@ class _AdminAuthForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final pwHasError = passwordError != null;
-    final pwBorder = pwHasError ? sc.urgent : sc.border0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -469,58 +483,21 @@ class _AdminAuthForm extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'PASSWORD',
-              style: SatType.mono(
-                size: 10,
-                weight: FontWeight.w500,
-                letterSpacing: 1.2,
-                color: sc.textLo,
-              ),
-            ),
+            Text('PASSWORD', style: SatType.monoS(color: sc.textLo)),
             const SizedBox(height: Sp.s1h),
-            TextField(
+            SatField.text(
               controller: password,
-              obscureText: !showPassword,
-              textInputAction: TextInputAction.done,
+              hint: '••••••••',
+              hasError: pwHasError,
               onSubmitted: (_) => onSubmit(),
-              style: SatType.sans(size: 15, color: sc.textHi),
-              decoration: InputDecoration(
-                hintText: '••••••••',
-                hintStyle: SatType.sans(size: 15, color: sc.textLo),
-                filled: true,
-                fillColor: sc.bg2,
-                border: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: pwBorder),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: pwBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(
-                    color: pwHasError ? sc.urgent : sc.accent,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s3h,
-                  vertical: Sp.s3,
-                ),
-                suffixIcon: IconButton(
-                  tooltip: showPassword
-                      ? AppStrings.a11yHidePassword
-                      : AppStrings.a11yShowPassword,
-                  onPressed: onToggleShow,
-                  icon: Icon(
-                    showPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 18,
-                    color: sc.textMd,
-                  ),
-                ),
+              suffix: SatIconButton.plain(
+                icon: showPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                tooltip: showPassword
+                    ? AppStrings.a11yHidePassword
+                    : AppStrings.a11yShowPassword,
+                onTap: onToggleShow,
               ),
             ),
             if (pwHasError)
@@ -532,11 +509,7 @@ class _AdminAuthForm extends StatelessWidget {
                     const SizedBox(width: Sp.s1h),
                     Text(
                       passwordError!,
-                      style: SatType.sans(
-                        size: 12,
-                        weight: FontWeight.w500,
-                        color: sc.urgent,
-                      ),
+                      style: SatType.bodyS(color: sc.urgent),
                     ),
                   ],
                 ),
@@ -546,54 +519,21 @@ class _AdminAuthForm extends StatelessWidget {
         const SizedBox(height: Sp.s2),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: onForgotPassword,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
-            ),
-            child: Text(
-              'Lupa password?',
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w500,
-                color: sc.textMd,
-              ),
-            ),
+          child: SatButton.ghost(
+            label: 'Lupa password?',
+            size: SatButtonSize.sm,
+            onTap: onForgotPassword,
           ),
         ),
         const SizedBox(height: Sp.s2),
         SizedBox(
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: busy ? null : onSubmit,
-            icon: busy
-                ? SizedBox(
-                    width: Sp.s4,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: sc.accentInk,
-                    ),
-                  )
-                : Icon(
-                    Icons.shield_moon_outlined,
-                    size: 18,
-                    color: sc.accentInk,
-                  ),
-            label: Text(
-              busy ? 'Memuat...' : 'Masuk sebagai admin',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w600,
-                color: sc.accentInk,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: sc.accent,
-              foregroundColor: sc.accentInk,
-              disabledBackgroundColor: sc.accent.withValues(alpha: 0.7),
-              shape: RoundedRectangleBorder(borderRadius: SatR.a(16)),
-            ),
+          width: double.infinity,
+          child: SatButton.primary(
+            label: busy ? AppStrings.loading : 'Masuk sebagai admin',
+            icon: Icons.shield_moon_outlined,
+            busy: busy,
+            size: SatButtonSize.lg,
+            onTap: busy ? null : onSubmit,
           ),
         ),
         if (serverError != null) ...[
@@ -607,11 +547,7 @@ class _AdminAuthForm extends StatelessWidget {
                 child: Text(
                   serverError!,
                   textAlign: TextAlign.center,
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.urgent,
-                  ),
+                  style: SatType.bodyS(color: sc.urgent),
                 ),
               ),
             ],
@@ -723,10 +659,7 @@ class _ModeSwitcher extends StatelessWidget {
                 curve: satEaseOut,
                 builder: (context, t, _) => Text(
                   label,
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.14,
+                  style: SatType.labelM(
                     color: Color.lerp(sc.textMd, sc.textHi, t),
                   ),
                 ),
@@ -772,7 +705,7 @@ class _ServerList extends ConsumerWidget {
                   padding: const EdgeInsets.all(Sp.s4h),
                   child: Text(
                     'Mencari server di jaringan… atau pasangkan manual lewat QR.',
-                    style: SatType.sans(size: 13, color: sc.textMd),
+                    style: SatType.bodyM(color: sc.textMd),
                   ),
                 )
               : Column(
@@ -801,11 +734,7 @@ class _ServerList extends ConsumerWidget {
               Expanded(
                 child: Text(
                   pairingError!,
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.urgent,
-                  ),
+                  style: SatType.bodyS(color: sc.urgent),
                 ),
               ),
             ],
@@ -845,7 +774,7 @@ class _ServerRow extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
             child: Row(
               children: [
-                _PulseDot(color: dotColor, glow: dotShadow),
+                PulseDot(color: dotColor, glow: dotShadow, size: 8),
                 const SizedBox(width: Sp.s3h),
                 Expanded(
                   child: Column(
@@ -854,30 +783,21 @@ class _ServerRow extends StatelessWidget {
                       Text(
                         server.label,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w500,
-                          letterSpacing: -0.14,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.bodyM(color: sc.textHi),
                       ),
                       const SizedBox(height: Sp.sHair),
                       Text(
                         server.version == null
                             ? server.ipLine
                             : '${server.ipLine} · v${server.version}',
-                        style: SatType.mono(
-                          size: 10,
-                          color: sc.textLo,
-                          letterSpacing: 0.4,
-                        ),
+                        style: SatType.monoS(color: sc.textLo),
                       ),
                     ],
                   ),
                 ),
                 if (busy)
                   SizedBox(
-                    width: 22,
+                    width: Sp.s6,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -935,7 +855,7 @@ class _RestoreLoadingScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _TabletBrand(),
-              const SizedBox(height: 28),
+              const SizedBox(height: Sp.s7),
               SizedBox(
                 width: Sp.s6,
                 height: 24,
@@ -945,14 +865,7 @@ class _RestoreLoadingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: Sp.s4),
-              Text(
-                'Memeriksa sesi…',
-                style: SatType.mono(
-                  size: 11,
-                  color: sc.textLo,
-                  letterSpacing: 0.6,
-                ),
-              ),
+              Text('Memeriksa sesi…', style: SatType.monoS(color: sc.textLo)),
             ],
           ),
         ),
@@ -972,26 +885,10 @@ class _Brand extends StatelessWidget {
           height: 32,
           decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(8)),
           alignment: Alignment.center,
-          child: Text(
-            'S',
-            style: SatType.mono(
-              size: 16,
-              weight: FontWeight.w700,
-              letterSpacing: -0.64,
-              color: sc.accentInk,
-            ),
-          ),
+          child: Text('S', style: SatType.monoM(color: sc.accentInk)),
         ),
         const SizedBox(width: Sp.s2h),
-        Text(
-          'satset',
-          style: SatType.sans(
-            size: 18,
-            weight: FontWeight.w600,
-            letterSpacing: -0.18,
-            color: sc.textHi,
-          ),
-        ),
+        Text('satset', style: SatType.h3(color: sc.textHi)),
       ],
     );
   }
@@ -1008,26 +905,10 @@ class _TabletBrand extends StatelessWidget {
           height: 44,
           decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(12)),
           alignment: Alignment.center,
-          child: Text(
-            'S',
-            style: SatType.mono(
-              size: 22,
-              weight: FontWeight.w700,
-              letterSpacing: -0.88,
-              color: sc.accentInk,
-            ),
-          ),
+          child: Text('S', style: SatType.monoL(color: sc.accentInk)),
         ),
         const SizedBox(width: Sp.s3),
-        Text(
-          'satset',
-          style: SatType.sans(
-            size: 22,
-            weight: FontWeight.w600,
-            letterSpacing: -0.22,
-            color: sc.textHi,
-          ),
-        ),
+        Text('satset', style: SatType.h2(color: sc.textHi)),
       ],
     );
   }
@@ -1053,48 +934,12 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final hasError = errorText != null;
-    final borderColor = hasError ? sc.urgent : sc.border0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w500,
-            letterSpacing: 1.2,
-            color: sc.textLo,
-          ),
-        ),
+        Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
         const SizedBox(height: Sp.s1h),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          style: SatType.sans(size: 15, color: sc.textHi),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: SatType.sans(size: 15, color: sc.textLo),
-            filled: true,
-            fillColor: sc.bg2,
-            border: OutlineInputBorder(
-              borderRadius: SatR.a(12),
-              borderSide: SatB.side(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: SatR.a(12),
-              borderSide: SatB.side(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: SatR.a(12),
-              borderSide: SatB.side(color: hasError ? sc.urgent : sc.accent),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: Sp.s3,
-            ),
-          ),
-        ),
+        SatField.text(controller: controller, hint: hint, hasError: hasError),
         if (hasError)
           Padding(
             padding: const EdgeInsets.only(top: Sp.s1h, left: Sp.sHair),
@@ -1102,14 +947,7 @@ class _Field extends StatelessWidget {
               children: [
                 Icon(Icons.error_outline, size: 12, color: sc.urgent),
                 const SizedBox(width: Sp.s1h),
-                Text(
-                  errorText!,
-                  style: SatType.sans(
-                    size: 12,
-                    weight: FontWeight.w500,
-                    color: sc.urgent,
-                  ),
-                ),
+                Text(errorText!, style: SatType.bodyS(color: sc.urgent)),
               ],
             ),
           ),
@@ -1187,11 +1025,7 @@ class _ServerReachabilityPill extends ConsumerWidget {
         const SizedBox(width: Sp.s2),
         Text(
           v.label,
-          style: SatType.mono(
-            size: 11,
-            color: v.offline ? sc.urgent : sc.textMd,
-            letterSpacing: 0.3,
-          ),
+          style: SatType.monoS(color: v.offline ? sc.urgent : sc.textMd),
         ),
       ],
     );
@@ -1219,12 +1053,7 @@ class _ConnectedServerCard extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
           child: Text(
             'SERVER TERSAMBUNG',
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w500,
-              letterSpacing: 1.2,
-              color: sc.textLo,
-            ),
+            style: SatType.monoS(color: sc.textLo),
           ),
         ),
         Material(
@@ -1258,31 +1087,20 @@ class _ConnectedServerCard extends ConsumerWidget {
                         Text(
                           server.label,
                           overflow: TextOverflow.ellipsis,
-                          style: SatType.sans(
-                            size: 14,
-                            weight: FontWeight.w500,
-                            letterSpacing: -0.14,
-                            color: sc.textHi,
-                          ),
+                          style: SatType.bodyM(color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(
                           server.version == null
                               ? server.ipLine
                               : '${server.ipLine} · v${server.version}',
-                          style: SatType.mono(
-                            size: 10,
-                            color: sc.textLo,
-                            letterSpacing: 0.4,
-                          ),
+                          style: SatType.monoS(color: sc.textLo),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: Sp.s1),
                         Text(
                           v.label,
-                          style: SatType.mono(
-                            size: 10,
+                          style: SatType.monoS(
                             color: v.offline ? sc.urgent : sc.textMd,
-                            letterSpacing: 0.4,
                           ),
                         ),
                       ],
@@ -1299,106 +1117,6 @@ class _ConnectedServerCard extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Reveal extends StatefulWidget {
-  final Duration delay;
-  final Widget child;
-  const _Reveal({this.delay = Duration.zero, required this.child});
-
-  @override
-  State<_Reveal> createState() => _RevealState();
-}
-
-class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 480),
-    );
-    Future<void>.delayed(widget.delay, () {
-      if (mounted) _c.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, child) {
-        final t = satEaseOut.transform(_c.value);
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 14),
-            child: child,
-          ),
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
-
-class _PulseDot extends StatefulWidget {
-  final Color color;
-  final Color glow;
-  const _PulseDot({required this.color, required this.glow});
-
-  @override
-  State<_PulseDot> createState() => _PulseDotState();
-}
-
-class _PulseDotState extends State<_PulseDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final reduce = MediaQuery.disableAnimationsOf(context);
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final t = reduce ? 0.5 : Curves.easeInOut.transform(_c.value);
-        final spread = 2.0 + t * 2.5;
-        return Container(
-          width: 8,
-          height: 8,
-          decoration: SatBox.d(
-            shape: BoxShape.circle,
-            color: widget.color,
-            boxShadow: [BoxShadow(color: widget.glow, spreadRadius: spread)],
-          ),
-        );
-      },
     );
   }
 }

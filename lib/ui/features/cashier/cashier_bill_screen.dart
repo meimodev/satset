@@ -1,4 +1,9 @@
 import 'dart:convert';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -74,20 +79,10 @@ class CashierBillScreen extends ConsumerWidget {
         title: billAsync.maybeWhen(
           data: (b) => Text(
             'Tagihan · Meja ${b.tableLabel ?? ''}'.trim(),
-            style: SatType.sans(
-              size: 16,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
+            style: SatType.labelL(color: sc.textHi),
           ),
-          orElse: () => Text(
-            'Tagihan',
-            style: SatType.sans(
-              size: 16,
-              weight: FontWeight.w600,
-              color: sc.textHi,
-            ),
-          ),
+          orElse: () =>
+              Text('Tagihan', style: SatType.labelL(color: sc.textHi)),
         ),
         actions: [
           IconButton(
@@ -109,7 +104,7 @@ class CashierBillScreen extends ConsumerWidget {
         error: (e, _) => Center(
           child: Text(
             'Gagal memuat tagihan.',
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ),
         data: (bill) => _BillBody(
@@ -149,13 +144,13 @@ class CashierBillScreen extends ConsumerWidget {
             'Tindakan ini mengakhiri tagihan.',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Batal'),
+            SatButton.ghost(
+              label: AppStrings.cancel,
+              onTap: () => Navigator.pop(c, false),
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Tutup tagihan'),
+            SatButton.primary(
+              label: 'Tutup tagihan',
+              onTap: () => Navigator.pop(c, true),
             ),
           ],
         ),
@@ -191,31 +186,26 @@ class CashierBillScreen extends ConsumerWidget {
               'kerugian (tak tertagih). Perlu persetujuan manajer.',
             ),
             const SizedBox(height: Sp.s3),
-            TextField(
+            SatField.text(
               controller: ctrl,
+              label: 'Alasan (wajib)',
+              hint: 'mis. tamu pergi tanpa bayar',
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Alasan (wajib)',
-                hintText: 'mis. tamu pergi tanpa bayar',
-              ),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Batal'),
+          SatButton.ghost(
+            label: AppStrings.cancel,
+            onTap: () => Navigator.pop(c),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(c).colorScheme.error,
-            ),
-            onPressed: () {
+          SatButton.danger(
+            label: 'Catat kerugian',
+            onTap: () {
               final t = ctrl.text.trim();
               if (t.isEmpty) return;
               Navigator.pop(c, t);
             },
-            child: const Text('Catat kerugian'),
           ),
         ],
       ),
@@ -342,11 +332,7 @@ class _UnassignedBanner extends StatelessWidget {
           Expanded(
             child: Text(
               '$n item belum diatur ke struk',
-              style: SatType.sans(
-                size: 12.5,
-                weight: FontWeight.w600,
-                color: sc.warn,
-              ),
+              style: SatType.labelM(color: sc.warn),
             ),
           ),
         ],
@@ -362,26 +348,22 @@ class _TotalsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     Widget row(String k, int v, {bool strong = false, Color? color}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             k,
-            style: SatType.sans(
-              size: strong ? 14 : 12.5,
-              weight: strong ? FontWeight.w700 : FontWeight.w400,
-              color: strong ? sc.textHi : sc.textLo,
-            ),
+            style: (strong
+                ? SatType.labelM(color: strong ? sc.textHi : sc.textLo)
+                : SatType.bodyM(color: strong ? sc.textHi : sc.textLo)),
           ),
           AnimatedDefaultTextStyle(
             duration: satMotion(context, 260),
             curve: satEaseOut,
-            style: SatType.mono(
-              size: strong ? 15 : 12.5,
-              weight: strong ? FontWeight.w700 : FontWeight.w500,
-              color: color ?? sc.textHi,
-            ),
+            // Both lines are monoM. The closed set has no weight step inside
+            // the money ramp, so the grand total is marked by ink, not weight.
+            style: SatType.monoM(color: color ?? sc.textHi),
             child: Text(formatIDR(v)),
           ),
         ],
@@ -547,19 +529,9 @@ class _LinesSection extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Item pesanan',
-              style: SatType.sans(
-                size: 12,
-                weight: FontWeight.w600,
-                color: sc.textLo,
-              ),
-            ),
+            Text('Item pesanan', style: SatType.labelS(color: sc.textLo)),
             if (!bill.fullyAssigned && assignable)
-              Text(
-                'Belum semua diatur',
-                style: SatType.sans(size: 10.5, color: sc.warn),
-              ),
+              Text('Belum semua diatur', style: SatType.bodyS(color: sc.warn)),
           ],
         ),
       ),
@@ -573,12 +545,7 @@ class _LinesSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
             child: Text(
               'PESANAN $batchNo · $key',
-              style: SatType.sans(
-                size: 10.5,
-                weight: FontWeight.w700,
-                color: sc.textLo,
-                letterSpacing: 0.5,
-              ),
+              style: SatType.labelS(color: sc.textLo),
             ),
           ),
         );
@@ -606,7 +573,7 @@ class _LinesSection extends StatelessWidget {
       shape: pending ? RoundedRectangleBorder(borderRadius: SatR.a(8)) : null,
       title: Text(
         '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
-        style: SatType.sans(size: 13, color: sc.textHi),
+        style: SatType.bodyM(color: sc.textHi),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -614,33 +581,31 @@ class _LinesSection extends StatelessWidget {
           Text(
             '${l.qty} × ${formatIDR(l.unitPrice)}'
             '${assignable ? '  ·  $assigned/${l.qty} diatur' : ''}',
-            style: SatType.sans(
-              size: 11,
-              color: pending ? sc.warn : sc.textLo,
-              weight: pending ? FontWeight.w600 : FontWeight.w400,
-            ),
+            style: (pending
+                ? SatType.labelS(color: pending ? sc.warn : sc.textLo)
+                : SatType.bodyS(color: pending ? sc.warn : sc.textLo)),
           ),
           for (final m in l.modifiers)
             Text(
               '${m.display}'
               '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
-              style: SatType.sans(size: 11, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
           if (hasNote)
             Text(
               'Catatan: ${l.note!.trim()}',
-              style: SatType.sans(size: 11, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
         ],
       ),
       trailing: assignable
-          ? TextButton(
-              onPressed: () => _assignSheet(context, l),
-              child: Text(assigned >= l.qty ? 'Ubah' : 'Atur'),
+          ? SatButton.ghost(
+              label: assigned >= l.qty ? 'Ubah' : 'Atur',
+              onTap: () => _assignSheet(context, l),
             )
           : Text(
               formatIDR(l.lineTotal),
-              style: SatType.mono(size: 12.5, color: sc.textHi),
+              style: SatType.monoM(color: sc.textHi),
             ),
     );
   }
@@ -665,16 +630,12 @@ class _LinesSection extends StatelessWidget {
           children: [
             Text(
               'Atur "${line.name}"',
-              style: SatType.sans(
-                size: 15,
-                weight: FontWeight.w600,
-                color: sc.textHi,
-              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1),
             Text(
               '${line.qty} unit total · ${line.unassignedUnits} belum diatur',
-              style: SatType.sans(size: 11.5, color: sc.textLo),
+              style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s3),
             ...bill.receipts.where((r) => r.mode != 'even').map((r) {
@@ -726,10 +687,7 @@ class _AssignRowState extends State<_AssignRow> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              widget.label,
-              style: SatType.sans(size: 13, color: sc.textHi),
-            ),
+            child: Text(widget.label, style: SatType.bodyM(color: sc.textHi)),
           ),
           IconButton(
             tooltip: AppStrings.a11yDecrease,
@@ -742,11 +700,7 @@ class _AssignRowState extends State<_AssignRow> {
             child: Text(
               '$v',
               key: ValueKey(v),
-              style: SatType.mono(
-                size: 15,
-                weight: FontWeight.w700,
-                color: sc.textHi,
-              ),
+              style: SatType.monoM(color: sc.textHi),
             ),
           ),
           IconButton(
@@ -755,9 +709,9 @@ class _AssignRowState extends State<_AssignRow> {
             onPressed: v < widget.max ? () => setState(() => v++) : null,
           ),
           const SizedBox(width: Sp.s1),
-          FilledButton(
-            onPressed: () => widget.onChanged(v),
-            child: const Text('Simpan'),
+          SatButton.primary(
+            label: AppStrings.save,
+            onTap: () => widget.onChanged(v),
           ),
         ],
       ),
@@ -813,11 +767,7 @@ class _ReceiptCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   r.label.isEmpty ? 'Struk' : r.label,
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelM(color: sc.textHi),
                 ),
               ),
               AnimatedContainer(
@@ -834,11 +784,7 @@ class _ReceiptCard extends ConsumerWidget {
                 child: AnimatedDefaultTextStyle(
                   duration: satMotion(context, 280),
                   curve: satEaseOut,
-                  style: SatType.sans(
-                    size: 10,
-                    weight: FontWeight.w600,
-                    color: paid ? sc.success : sc.warn,
-                  ),
+                  style: SatType.labelS(color: paid ? sc.success : sc.warn),
                   child: Text(paid ? 'Lunas' : 'Belum bayar'),
                 ),
               ),
@@ -867,15 +813,8 @@ class _ReceiptCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total', style: SatType.sans(size: 12.5, color: sc.textLo)),
-              Text(
-                formatIDR(r.total),
-                style: SatType.mono(
-                  size: 15,
-                  weight: FontWeight.w700,
-                  color: sc.textHi,
-                ),
-              ),
+              Text('Total', style: SatType.bodyM(color: sc.textLo)),
+              Text(formatIDR(r.total), style: SatType.monoM(color: sc.textHi)),
             ],
           ),
           if (r.paidNet != 0)
@@ -884,13 +823,10 @@ class _ReceiptCard extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Terbayar',
-                    style: SatType.sans(size: 11.5, color: sc.textLo),
-                  ),
+                  Text('Terbayar', style: SatType.bodyS(color: sc.textLo)),
                   Text(
                     formatIDR(r.paidNet),
-                    style: SatType.mono(size: 12, color: sc.success),
+                    style: SatType.monoM(color: sc.success),
                   ),
                 ],
               ),
@@ -908,7 +844,7 @@ class _ReceiptCard extends ConsumerWidget {
                   const SizedBox(width: Sp.s1h),
                   Text(
                     _methodLabels[p.method] ?? p.method,
-                    style: SatType.sans(size: 11, color: sc.textLo),
+                    style: SatType.bodyS(color: sc.textLo),
                   ),
                   if (p.hasPhoto) ...[
                     const SizedBox(width: Sp.s1h),
@@ -921,8 +857,7 @@ class _ReceiptCard extends ConsumerWidget {
                   const Spacer(),
                   Text(
                     formatIDR(p.amount),
-                    style: SatType.mono(
-                      size: 11,
+                    style: SatType.monoS(
                       color: p.isRefund ? sc.warn : sc.textLo,
                     ),
                   ),
@@ -935,13 +870,14 @@ class _ReceiptCard extends ConsumerWidget {
             runSpacing: 6,
             children: [
               if (!paid && r.total > 0)
-                _SmallBtn(
+                SatButton.primary(
+                  size: SatButtonSize.sm,
                   label: 'Bayar',
-                  filled: true,
                   onTap: () => _paySheet(context, r),
                 ),
               if (paid)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Buka ulang',
                   onTap: () async {
                     if (await _confirm(
@@ -957,14 +893,16 @@ class _ReceiptCard extends ConsumerWidget {
                   },
                 ),
               if (canRefund && r.paidNet > 0)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Refund',
                   onTap: () => _refundSheet(context, r),
                 ),
               // Discounts are frozen once paid — reopen to correct a mistaken
               // settlement (ADR-0037), so the button hides on a paid receipt.
               if (!paid && r.subtotal > 0 && r.orderDiscount == null)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Diskon',
                   onTap: () async {
                     final picked = await showDiscountSheet(
@@ -988,7 +926,8 @@ class _ReceiptCard extends ConsumerWidget {
                   },
                 ),
               if (!paid && r.orderDiscount != null)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Hapus diskon',
                   onTap: () async {
                     final d = r.orderDiscount!;
@@ -1005,12 +944,14 @@ class _ReceiptCard extends ConsumerWidget {
                   },
                 ),
               if (r.total > 0)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: r.payments.isEmpty ? 'Cetak tagihan' : 'Cetak struk',
                   onTap: () => printDoc(r),
                 ),
               if (!paid && r.mode != 'even')
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Hapus',
                   onTap: () async {
                     if (await _confirm(
@@ -1099,47 +1040,35 @@ class _ReceiptCard extends ConsumerWidget {
               children: [
                 Text(
                   refund ? 'Refund ${r.label}' : 'Bayar ${r.label}',
-                  style: SatType.sans(
-                    size: 16,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s3),
                 Wrap(
                   spacing: 8,
                   children: _methodLabels.entries
                       .map(
-                        (e) => ChoiceChip(
-                          label: Text(e.value),
+                        (e) => SatChip.select(
+                          label: e.value,
                           selected: method == e.key,
-                          onSelected: (_) => setState(() => method = e.key),
+                          onTap: () => setState(() => method = e.key),
                         ),
                       )
                       .toList(),
                 ),
                 const SizedBox(height: Sp.s3),
-                TextField(
+                SatField.money(
                   controller: amountCtl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: const [RupiahInputFormatter()],
+                  label: 'Jumlah',
+                  hint: '',
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    prefixText: 'Rp ',
-                    labelText: 'Jumlah',
-                  ),
                 ),
                 if (!refund && method == 'tunai') ...[
                   const SizedBox(height: Sp.s2),
-                  TextField(
+                  SatField.money(
                     controller: tenderedCtl,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: const [RupiahInputFormatter()],
+                    label: 'Uang diterima',
+                    hint: '',
                     onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      prefixText: 'Rp ',
-                      labelText: 'Uang diterima',
-                    ),
                   ),
                   AnimatedSwitcher(
                     duration: satMotion(context, 200),
@@ -1161,9 +1090,7 @@ class _ReceiptCard extends ConsumerWidget {
                               change >= 0
                                   ? 'Kembalian ${formatIDR(change)}'
                                   : 'Kurang ${formatIDR(-change)}',
-                              style: SatType.sans(
-                                size: 13,
-                                weight: FontWeight.w600,
+                              style: SatType.labelM(
                                 color: change >= 0 ? sc.success : sc.warn,
                               ),
                             ),
@@ -1175,11 +1102,7 @@ class _ReceiptCard extends ConsumerWidget {
                   const SizedBox(height: Sp.s3),
                   Text(
                     'Foto bukti (wajib)',
-                    style: SatType.sans(
-                      size: 12,
-                      weight: FontWeight.w600,
-                      color: sc.textLo,
-                    ),
+                    style: SatType.labelS(color: sc.textLo),
                   ),
                   const SizedBox(height: Sp.s2),
                   Row(
@@ -1196,15 +1119,12 @@ class _ReceiptCard extends ConsumerWidget {
                         ),
                       if (photoBytes != null) const SizedBox(width: Sp.s3),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: shootPhoto,
-                          icon: const Icon(
-                            Icons.photo_camera_rounded,
-                            size: 18,
-                          ),
-                          label: Text(
-                            photoBytes == null ? 'Ambil foto' : 'Ambil ulang',
-                          ),
+                        child: SatButton.outline(
+                          label: photoBytes == null
+                              ? 'Ambil foto'
+                              : 'Ambil ulang',
+                          icon: Icons.photo_camera_rounded,
+                          onTap: shootPhoto,
                         ),
                       ),
                     ],
@@ -1213,8 +1133,9 @@ class _ReceiptCard extends ConsumerWidget {
                 const SizedBox(height: Sp.s4),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
-                    onPressed: amount <= 0 || photoMissing
+                  child: SatButton.primary(
+                    label: refund ? 'Catat refund' : 'Catat pembayaran',
+                    onTap: amount <= 0 || photoMissing
                         ? null
                         : () async {
                             Navigator.of(ctx).pop();
@@ -1242,7 +1163,6 @@ class _ReceiptCard extends ConsumerWidget {
                               );
                             }
                           },
-                    child: Text(refund ? 'Catat refund' : 'Catat pembayaran'),
                   ),
                 ),
               ],
@@ -1337,7 +1257,7 @@ class _ReceiptItemRow extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     '$qtyUnits× $name$variant',
-                    style: SatType.sans(size: 12, color: sc.textHi),
+                    style: SatType.bodyS(color: sc.textHi),
                   ),
                 ),
                 if (canDiscount && existing == null)
@@ -1346,18 +1266,18 @@ class _ReceiptItemRow extends ConsumerWidget {
             ),
             if (existing != null)
               Padding(
-                padding: const EdgeInsets.only(left: Sp.s3, top: 1),
+                padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         existing.label,
-                        style: SatType.sans(size: 11, color: sc.warn),
+                        style: SatType.bodyS(color: sc.warn),
                       ),
                     ),
                     Text(
                       '-${formatIDR(existing.amount)}',
-                      style: SatType.mono(size: 11, color: sc.warn),
+                      style: SatType.monoS(color: sc.warn),
                     ),
                   ],
                 ),
@@ -1383,16 +1303,16 @@ class _AddReceiptButton extends StatelessWidget {
     if (bill.mode == 'even') return const SizedBox.shrink();
     return Align(
       alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: () => run(
+      child: SatButton.ghost(
+        label: 'Tambah struk',
+        icon: Icons.add_rounded,
+        onTap: () => run(
           () => repo.createReceipt(
             bill.visitId,
             mode: 'itemized',
             label: 'Tamu ${bill.receipts.length + 1}',
           ),
         ),
-        icon: const Icon(Icons.add_rounded, size: 18),
-        label: const Text('Tambah struk'),
       ),
     );
   }
@@ -1413,14 +1333,12 @@ class _ResetMethodButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return Align(
       alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        style: TextButton.styleFrom(foregroundColor: sc.textLo),
-        icon: const Icon(Icons.refresh_rounded, size: 18),
-        label: const Text('Ganti metode pembayaran'),
-        onPressed: () async {
+      child: SatButton.ghost(
+        label: 'Ganti metode pembayaran',
+        icon: Icons.refresh_rounded,
+        onTap: () async {
           if (await _confirm(
             context,
             title: 'Ganti metode pembayaran',
@@ -1460,10 +1378,10 @@ class _CloseBar extends StatelessWidget {
       ),
       child: SizedBox(
         width: double.infinity,
-        child: FilledButton.icon(
-          icon: const Icon(Icons.check_circle_outline),
-          label: const Text('Tutup tagihan'),
-          onPressed: onClose,
+        child: SatButton.primary(
+          label: 'Tutup tagihan',
+          icon: Icons.check_circle_outline,
+          onTap: onClose,
         ),
       ),
     );
@@ -1490,45 +1408,23 @@ class _TopActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     final paid = bill.paidAmount > 0;
     final canWriteOff = !bill.fullySettled && canRefund;
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: sc.textHi,
-              side: SatB.side(color: sc.border0),
-              padding: const EdgeInsets.symmetric(vertical: Sp.s3),
-            ),
-            icon: const Icon(Icons.receipt_long_outlined, size: 18),
-            label: Text(
-              paid ? 'Cetak struk meja' : 'Cetak tagihan meja',
-              style: SatType.sans(size: 13, weight: FontWeight.w600),
-            ),
-            onPressed: () => printDoc(null),
+          child: SatButton.outline(
+            label: paid ? 'Cetak struk meja' : 'Cetak tagihan meja',
+            icon: Icons.receipt_long_outlined,
+            onTap: () => printDoc(null),
           ),
         ),
         const SizedBox(width: Sp.s2),
-        SizedBox(
-          height: 46,
-          width: 46,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: sc.urgent,
-              side: SatB.side(
-                color: sc.urgent.withValues(alpha: canWriteOff ? 0.5 : 0.15),
-              ),
-              padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(borderRadius: SatR.a(10)),
-            ),
-            onPressed: canWriteOff ? onWriteOff : null,
-            child: Tooltip(
-              message: 'Tutup tagihan — tak tertagih',
-              child: const Icon(Icons.report_gmailerrorred_outlined, size: 20),
-            ),
-          ),
+        SatIconButton.danger(
+          icon: Icons.report_gmailerrorred_outlined,
+          tooltip: 'Tutup tagihan — tak tertagih',
+          size: 46,
+          onTap: canWriteOff ? onWriteOff : null,
         ),
       ],
     );
@@ -1556,11 +1452,7 @@ class _DetachedBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Meja sudah ditutup waiter — tagihan belum lunas',
-              style: SatType.sans(
-                size: 11.5,
-                weight: FontWeight.w600,
-                color: sc.warn,
-              ),
+              style: SatType.labelS(color: sc.warn),
             ),
           ),
         ],
@@ -1599,52 +1491,9 @@ class _BigBtn extends StatelessWidget {
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: SatType.sans(
-                    size: 11,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.labelS(color: sc.textHi),
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SmallBtn extends StatelessWidget {
-  final String label;
-  final bool filled;
-  final VoidCallback onTap;
-  const _SmallBtn({
-    required this.label,
-    required this.onTap,
-    this.filled = false,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      child: Material(
-        color: filled ? sc.accent : sc.bg3,
-        borderRadius: SatR.a(9),
-        child: InkWell(
-          borderRadius: SatR.a(9),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: Sp.s2,
-            ),
-            child: Text(
-              label,
-              style: SatType.sans(
-                size: 12.5,
-                weight: FontWeight.w600,
-                color: filled ? sc.accentInk : sc.textHi,
-              ),
             ),
           ),
         ),
@@ -1668,18 +1517,13 @@ Future<bool> _confirm(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(c, false),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(c, false),
         ),
-        FilledButton(
-          style: destructive
-              ? FilledButton.styleFrom(
-                  backgroundColor: Theme.of(c).colorScheme.error,
-                )
-              : null,
-          onPressed: () => Navigator.pop(c, true),
-          child: Text(confirmLabel),
+        SatButton.danger(
+          label: confirmLabel,
+          onTap: () => Navigator.pop(c, true),
         ),
       ],
     ),
@@ -1693,21 +1537,15 @@ Future<int?> _askInt(BuildContext context, String title, {int initial = 2}) {
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
-      content: TextField(
-        controller: ctl,
-        keyboardType: TextInputType.number,
-        autofocus: true,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      ),
+      content: SatField.number(controller: ctl, hint: '', autofocus: true),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Batal'),
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(ctx),
         ),
-        FilledButton(
-          onPressed: () =>
-              Navigator.pop(ctx, int.tryParse(ctl.text).let((v) => v)),
-          child: const Text('Bagi'),
+        SatButton.primary(
+          label: 'Bagi',
+          onTap: () => Navigator.pop(ctx, int.tryParse(ctl.text).let((v) => v)),
         ),
       ],
     ),
@@ -1760,12 +1598,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
           padding: const EdgeInsets.only(top: Sp.s1h, bottom: Sp.sHair),
           child: Text(
             'PESANAN $batchNo · $key',
-            style: SatType.sans(
-              size: 10.5,
-              weight: FontWeight.w700,
-              color: sc.textLo,
-              letterSpacing: 0.5,
-            ),
+            style: SatType.labelS(color: sc.textLo),
           ),
         ),
       );
@@ -1774,44 +1607,41 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
       final hasNote = l.note?.trim().isNotEmpty == true;
       out.add(
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Text(
-                    '${l.qty}×',
-                    style: SatType.mono(size: 13, color: sc.textLo),
-                  ),
+                  Text('${l.qty}×', style: SatType.monoM(color: sc.textLo)),
                   const SizedBox(width: Sp.s2),
                   Expanded(
                     child: Text(
                       '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
-                      style: SatType.sans(size: 13, color: sc.textHi),
+                      style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),
                   Text(
                     formatIDR(l.lineTotal),
-                    style: SatType.mono(size: 13, color: sc.textHi),
+                    style: SatType.monoM(color: sc.textHi),
                   ),
                 ],
               ),
               for (final m in l.modifiers)
                 Padding(
-                  padding: const EdgeInsets.only(left: 28, top: 1),
+                  padding: const EdgeInsets.only(left: Sp.s7, top: Sp.sHair),
                   child: Text(
                     '${m.display}'
                     '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
-                    style: SatType.sans(size: 11, color: sc.textLo),
+                    style: SatType.bodyS(color: sc.textLo),
                   ),
                 ),
               if (hasNote)
                 Padding(
-                  padding: const EdgeInsets.only(left: 28, top: 1),
+                  padding: const EdgeInsets.only(left: Sp.s7, top: Sp.sHair),
                   child: Text(
                     'Catatan: ${l.note!.trim()}',
-                    style: SatType.sans(size: 11, color: sc.textLo),
+                    style: SatType.bodyS(color: sc.textLo),
                   ),
                 ),
             ],
@@ -1830,7 +1660,7 @@ String _dayKey(DateTime d) {
 
 String _dayLabel(DateTime d) {
   final l = d.toLocal();
-  final now = DateTime.now();
+  final now = SatClock.now();
   final diff = DateTime(
     now.year,
     now.month,
@@ -1865,7 +1695,7 @@ class _VenueHistoryViewState extends ConsumerState<VenueHistoryView> {
       error: (_, _) => Center(
         child: Text(
           'Gagal memuat riwayat.',
-          style: SatType.sans(size: 13, color: sc.textLo),
+          style: SatType.bodyM(color: sc.textLo),
         ),
       ),
       data: (rows) {
@@ -1916,7 +1746,7 @@ class _HistoryEmpty extends StatelessWidget {
           Text(
             'Belum ada tagihan 7 hari terakhir.',
             textAlign: TextAlign.center,
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ],
       ),
@@ -1947,63 +1777,21 @@ class _FilterBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         children: [
-          _FilterChip(
+          SatChip.select(
             label: 'Semua',
-            active: selected == null,
+            selected: selected == null,
             onTap: () => onSelect(null),
           ),
           for (final e in entries)
             Padding(
               padding: const EdgeInsets.only(left: Sp.s2),
-              child: _FilterChip(
+              child: SatChip.select(
                 label: 'Meja ${e.value ?? '—'}',
-                active: selected == e.key,
+                selected: selected == e.key,
                 onTap: () => onSelect(e.key),
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _FilterChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      child: Material(
-        color: active ? sc.accent : sc.bg2,
-        borderRadius: SatR.a(20),
-        child: InkWell(
-          borderRadius: SatR.a(20),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3h),
-            alignment: Alignment.center,
-            decoration: SatBox.d(
-              borderRadius: SatR.a(20),
-              border: SatB.all(color: active ? sc.accent : sc.border1),
-            ),
-            child: Text(
-              label,
-              style: SatType.sans(
-                size: 12.5,
-                weight: FontWeight.w600,
-                color: active ? sc.accentInk : sc.textMd,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -2060,15 +1848,7 @@ class _DayHeader extends StatelessWidget {
     final sc = context.sat;
     return Padding(
       padding: EdgeInsets.fromLTRB(4, first ? 4 : 16, 4, 8),
-      child: Text(
-        label.toUpperCase(),
-        style: SatType.sans(
-          size: 11,
-          weight: FontWeight.w700,
-          color: sc.textLo,
-          letterSpacing: 0.6,
-        ),
-      ),
+      child: Text(label.toUpperCase(), style: SatType.labelS(color: sc.textLo)),
     );
   }
 }
@@ -2086,14 +1866,7 @@ class _TableChip extends StatelessWidget {
       height: 44,
       decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(12)),
       alignment: Alignment.center,
-      child: Text(
-        label ?? '—',
-        style: SatType.mono(
-          size: 14,
-          weight: FontWeight.w700,
-          color: sc.textHi,
-        ),
-      ),
+      child: Text(label ?? '—', style: SatType.monoM(color: sc.textHi)),
     );
   }
 }
@@ -2134,11 +1907,7 @@ class PastBillsScreen extends ConsumerWidget {
         backgroundColor: sc.bg1,
         title: Text(
           'Riwayat · Meja ${tableLabel ?? ''}'.trim(),
-          style: SatType.sans(
-            size: 16,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
+          style: SatType.labelL(color: sc.textHi),
         ),
       ),
       body: async.when(
@@ -2146,14 +1915,14 @@ class PastBillsScreen extends ConsumerWidget {
         error: (e, _) => Center(
           child: Text(
             'Gagal memuat riwayat.',
-            style: SatType.sans(size: 13, color: sc.textLo),
+            style: SatType.bodyM(color: sc.textLo),
           ),
         ),
         data: (rows) => rows.isEmpty
             ? Center(
                 child: Text(
                   'Belum ada tagihan 7 hari terakhir.',
-                  style: SatType.sans(size: 13, color: sc.textLo),
+                  style: SatType.bodyM(color: sc.textLo),
                 ),
               )
             : ListView.separated(
@@ -2215,18 +1984,14 @@ class _PastBillTile extends StatelessWidget {
                             : _shortWhen(b.closedAt),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: SatType.sans(
-                          size: 13.5,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
-                        ),
+                        style: SatType.labelM(color: sc.textHi),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: Sp.s1),
                       Text(
                         b.isTakeaway
                             ? '${_shortWhen(b.closedAt)} · ${b.ticketCount} item'
                             : '${b.pax} tamu · ${b.ticketCount} item',
-                        style: SatType.sans(size: 11.5, color: sc.textLo),
+                        style: SatType.bodyS(color: sc.textLo),
                       ),
                     ],
                   ),
@@ -2236,21 +2001,13 @@ class _PastBillTile extends StatelessWidget {
                   children: [
                     Text(
                       formatIDR(b.netTotal),
-                      style: SatType.mono(
-                        size: 15,
-                        weight: FontWeight.w700,
-                        color: sc.textHi,
-                      ),
+                      style: SatType.monoM(color: sc.textHi),
                     ),
                     if (b.isWriteOff) ...[
                       const SizedBox(height: Sp.s1),
                       Text(
                         'tak tertagih ${formatIDR(b.lossAmount)}',
-                        style: SatType.sans(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          color: sc.urgent,
-                        ),
+                        style: SatType.labelS(color: sc.urgent),
                       ),
                     ],
                   ],
@@ -2286,11 +2043,7 @@ class PastBillDetailScreen extends ConsumerWidget {
         backgroundColor: sc.bg1,
         title: Text(
           'Struk · Meja ${tableLabel ?? ''}'.trim(),
-          style: SatType.sans(
-            size: 16,
-            weight: FontWeight.w600,
-            color: sc.textHi,
-          ),
+          style: SatType.labelL(color: sc.textHi),
         ),
       ),
       body: FutureBuilder<Bill>(
@@ -2303,7 +2056,7 @@ class PastBillDetailScreen extends ConsumerWidget {
             return Center(
               child: Text(
                 'Gagal memuat struk.',
-                style: SatType.sans(size: 13, color: sc.textLo),
+                style: SatType.bodyM(color: sc.textLo),
               ),
             );
           }
@@ -2320,7 +2073,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                     .expand((r) => r.payments)
                     .map(
                       (p) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        padding: const EdgeInsets.symmetric(vertical: Sp.s1),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -2329,10 +2082,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                                 Text(
                                   '${p.isRefund ? 'Refund' : 'Bayar'} · '
                                   '${_methodLabels[p.method] ?? p.method}',
-                                  style: SatType.sans(
-                                    size: 12,
-                                    color: sc.textLo,
-                                  ),
+                                  style: SatType.bodyS(color: sc.textLo),
                                 ),
                                 if (p.hasPhoto) ...[
                                   const SizedBox(width: Sp.s2),
@@ -2346,7 +2096,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                             ),
                             Text(
                               formatIDR(p.amount),
-                              style: SatType.mono(size: 12, color: sc.textHi),
+                              style: SatType.monoM(color: sc.textHi),
                             ),
                           ],
                         ),
@@ -2425,18 +2175,16 @@ class _ProofViewer extends StatelessWidget {
   final Uint8List bytes;
   const _ProofViewer(this.bytes);
 
-  // A lightbox, not a themed screen: black chrome is what stops the room's
-  // lighting and the app's palette from tinting a photo the cashier is
-  // inspecting for a transfer amount. Same reasoning as receipt_preview.
+  // A lightbox, not a themed screen — see satMediaChrome.
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.black,
+    backgroundColor: satMediaChrome,
     appBar: AppBar(
-      backgroundColor: Colors.black,
-      iconTheme: const IconThemeData(color: Colors.white),
-      title: const Text(
+      backgroundColor: satMediaChrome,
+      iconTheme: const IconThemeData(color: satMediaInk),
+      title: Text(
         'Bukti pembayaran',
-        style: TextStyle(color: Colors.white, fontSize: 16),
+        style: SatType.labelL(color: satMediaInk),
       ),
     ),
     body: Center(

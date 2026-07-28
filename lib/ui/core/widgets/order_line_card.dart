@@ -153,15 +153,10 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 22,
+                      width: Sp.s6,
                       child: Text(
                         '×${ticket.qty}',
-                        style: SatType.mono(
-                          size: 13,
-                          weight: FontWeight.w600,
-                          color: sc.textMd,
-                          letterSpacing: 0,
-                        ),
+                        style: SatType.monoM(color: sc.textMd),
                       ),
                     ),
                     const SizedBox(width: Sp.s3),
@@ -175,11 +170,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                                     ? ''
                                     : ' · ${ticket.variantName}'),
                             style:
-                                SatType.sans(
-                                  size: 14,
-                                  weight: FontWeight.w500,
-                                  letterSpacing: -0.14,
-                                  height: 1.25,
+                                SatType.bodyM(
                                   color: isVoided ? sc.textLo : sc.textHi,
                                 ).copyWith(
                                   decoration: isVoided
@@ -190,16 +181,12 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                           if (!isVoided) MenuTagBadges(itemId: ticket.itemId),
                           if (ticket.modifiers.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 3),
+                              padding: const EdgeInsets.only(top: Sp.s1),
                               child: Text(
                                 ticket.modifiers
                                     .map((m) => m.display)
                                     .join(' · '),
-                                style: SatType.sans(
-                                  size: 12,
-                                  color: sc.textMd,
-                                  height: 1.4,
-                                ),
+                                style: SatType.bodyS(color: sc.textMd),
                               ),
                             ),
                           if (ticket.note != null &&
@@ -213,14 +200,10 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                             ),
                           if (ticket.voidReason != null)
                             Padding(
-                              padding: const EdgeInsets.only(top: 3),
+                              padding: const EdgeInsets.only(top: Sp.s1),
                               child: Text(
                                 'Dibatalkan · ${ticket.voidReason} · disetujui oleh ${ticket.voidApprovedBy ?? ''}',
-                                style: SatType.sans(
-                                  size: 12,
-                                  color: sc.urgent,
-                                  height: 1.4,
-                                ),
+                                style: SatType.bodyS(color: sc.urgent),
                               ),
                             ),
                           const SizedBox(height: Sp.s2),
@@ -242,12 +225,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                               const Spacer(),
                               Text(
                                 formatIDR(ticket.price * ticket.qty),
-                                style: SatType.mono(
-                                  size: 12,
-                                  weight: FontWeight.w500,
-                                  color: sc.textMd,
-                                  letterSpacing: 0,
-                                ),
+                                style: SatType.monoM(color: sc.textMd),
                               ),
                             ],
                           ),
@@ -303,12 +281,7 @@ class _SmallSuccessButton extends StatelessWidget {
         icon: Icon(icon, size: 14, color: sc.success),
         label: Text(
           label.toUpperCase(),
-          style: SatType.sans(
-            size: 12,
-            weight: FontWeight.w600,
-            letterSpacing: 0.48,
-            color: sc.success,
-          ),
+          style: SatType.labelS(color: sc.success),
         ),
       ),
     );

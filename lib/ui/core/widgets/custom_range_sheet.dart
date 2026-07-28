@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/data/repositories/reports_repository.dart'
@@ -69,7 +70,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
   }
 
   Future<void> _pick(bool isStart) async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final today = _dateOnly(now);
     final first = DateTime(now.year - 3);
     final initial = (isStart ? _from : _to) ?? today;
@@ -104,15 +105,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'RENTANG KHUSUS',
-              style: SatType.mono(
-                size: 11,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo,
-              ),
-            ),
+            Text('RENTANG KHUSUS', style: SatType.caption(color: sc.textLo)),
             const SizedBox(height: Sp.s4),
             Row(
               children: [
@@ -127,9 +120,9 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
             ),
             if (err != null) ...[
               const SizedBox(height: Sp.s3),
-              Text(err, style: SatType.sans(size: 12, color: sc.urgent)),
+              Text(err, style: SatType.bodyS(color: sc.urgent)),
             ],
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s6),
             SizedBox(width: double.infinity, child: _applyButton(context)),
           ],
         ),
@@ -160,23 +153,11 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label.toUpperCase(),
-              style: SatType.mono(
-                size: 9,
-                weight: FontWeight.w600,
-                letterSpacing: 1.0,
-                color: sc.textLo,
-              ),
-            ),
+            Text(label.toUpperCase(), style: SatType.caption(color: sc.textLo)),
             const SizedBox(height: Sp.sHair),
             Text(
               set ? _fmt(value) : 'Pilih',
-              style: SatType.sans(
-                size: 14,
-                weight: FontWeight.w500,
-                color: set ? sc.accentText : sc.textLo,
-              ),
+              style: SatType.bodyM(color: set ? sc.accentText : sc.textLo),
             ),
           ],
         ),
@@ -197,11 +178,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
         ),
         child: Text(
           'Terapkan',
-          style: SatType.sans(
-            size: 15,
-            weight: FontWeight.w700,
-            color: _valid ? sc.accentInk : sc.textLo,
-          ),
+          style: SatType.labelL(color: _valid ? sc.accentInk : sc.textLo),
         ),
       ),
     );

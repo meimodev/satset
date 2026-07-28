@@ -1,4 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,19 +97,12 @@ class _ScopeCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: SatType.sans(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
-                ),
+                child: Text(title, style: SatType.labelL(color: sc.textHi)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: Sp.s2,
-                  vertical: 3,
+                  vertical: Sp.s1,
                 ),
                 decoration: SatBox.d(
                   color: deviceScoped ? sc.bg3 : sc.bg1,
@@ -127,12 +122,7 @@ class _ScopeCard extends StatelessWidget {
                     const SizedBox(width: Sp.s1),
                     Text(
                       scope.toUpperCase(),
-                      style: SatType.mono(
-                        size: 9,
-                        weight: FontWeight.w600,
-                        letterSpacing: 1.2,
-                        color: sc.textLo,
-                      ),
+                      style: SatType.caption(color: sc.textLo),
                     ),
                   ],
                 ),
@@ -141,10 +131,7 @@ class _ScopeCard extends StatelessWidget {
           ),
           if (hint != null) ...[
             const SizedBox(height: Sp.s1h),
-            Text(
-              hint!,
-              style: SatType.sans(size: 12, color: sc.textLo, height: 1.4),
-            ),
+            Text(hint!, style: SatType.bodyS(color: sc.textLo)),
           ],
           const SizedBox(height: Sp.s3),
           child,
@@ -299,18 +286,19 @@ class _MinutesRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: SatType.sans(
-                    size: 13,
-                    color: on ? sc.textMd : sc.textLo,
-                  ),
+                  style: SatType.bodyM(color: on ? sc.textMd : sc.textLo),
                 ),
                 const SizedBox(height: Sp.sHair),
-                Text(hint, style: SatType.sans(size: 11, color: sc.textLo)),
+                Text(hint, style: SatType.bodyS(color: sc.textLo)),
               ],
             ),
           ),
           if (onEnabledChanged != null) ...[
-            Switch(value: on, onChanged: (v) => onEnabledChanged!(v)),
+            SatToggle(
+              value: on,
+              semanticLabel: label,
+              onChanged: (v) => onEnabledChanged!(v),
+            ),
             const SizedBox(width: Sp.s1),
           ],
           _step(
@@ -324,11 +312,7 @@ class _MinutesRow extends StatelessWidget {
             child: Text(
               '$value min',
               textAlign: TextAlign.center,
-              style: SatType.mono(
-                size: 13,
-                weight: FontWeight.w600,
-                color: on ? sc.textHi : sc.textLo,
-              ),
+              style: SatType.monoM(color: on ? sc.textHi : sc.textLo),
             ),
           ),
           const SizedBox(width: Sp.s2),
@@ -342,24 +326,19 @@ class _MinutesRow extends StatelessWidget {
     );
   }
 
-  Widget _step(SatColors sc, IconData icon, VoidCallback? onTap) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: SatBox.d(
-            color: onTap == null ? sc.bg2 : sc.bg3,
-            border: SatB.all(color: sc.border1),
-            borderRadius: SatR.a(9),
-          ),
-          child: Icon(
-            icon,
-            size: 17,
-            color: onTap == null ? sc.textLo : sc.textHi,
-          ),
-        ),
-      );
+  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
+  /// deriving it from the glyph is how every one of these gets named without
+  /// the call sites repeating it.
+  Widget _step(SatColors sc, IconData icon, VoidCallback? onTap) {
+    return SatIconButton.outline(
+      icon: icon,
+      tooltip: icon == Icons.add
+          ? AppStrings.stepperIncrease
+          : AppStrings.stepperDecrease,
+      size: 34,
+      onTap: onTap,
+    );
+  }
 }
 
 /// Venue-wide alert sound chooser (ADR-0035). Picks a preset per [AlertEvent];
@@ -458,7 +437,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: SatType.sans(size: 13, color: sc.textHi)),
+            child: Text(label, style: SatType.bodyM(color: sc.textHi)),
           ),
           GestureDetector(
             onTap: () => _openPicker(sc, event),
@@ -477,7 +456,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                 children: [
                   Text(
                     preset?.label ?? id,
-                    style: SatType.sans(size: 12.5, color: sc.textHi),
+                    style: SatType.bodyM(color: sc.textHi),
                   ),
                   const SizedBox(width: Sp.s1h),
                   Icon(Icons.expand_more, size: 16, color: sc.textLo),
@@ -542,7 +521,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                   ),
                   title: Text(
                     preset.label,
-                    style: SatType.sans(size: 14, color: sc.textHi),
+                    style: SatType.bodyM(color: sc.textHi),
                   ),
                   trailing: IconButton(
                     tooltip: preset.isSilent
@@ -617,11 +596,12 @@ class _DeviceMuteCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     _labels[e]!,
-                    style: SatType.sans(size: 13, color: sc.textMd),
+                    style: SatType.bodyM(color: sc.textMd),
                   ),
                 ),
-                Switch(
+                SatToggle(
                   value: !muted.contains(e),
+                  semanticLabel: _labels[e],
                   onChanged: (v) async {
                     final prefs = ref.read(prefsServiceProvider).valueOrNull;
                     if (prefs == null) return;

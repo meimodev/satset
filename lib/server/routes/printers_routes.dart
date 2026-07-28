@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -102,7 +103,7 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             port: Value((body['port'] as num?)?.toInt() ?? 9100),
             kind: Value((body['kind'] as String?) ?? 'escpos'),
             enabled: Value((body['enabled'] as bool?) ?? true),
-            createdAt: DateTime.now(),
+            createdAt: SatClock.now(),
           ),
         );
     final row = await (db.select(
@@ -196,7 +197,7 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'},
       );
     }
-    final now = DateTime.now();
+    final now = SatClock.now();
     await (db.update(db.printers)..where((p) => p.id.equals(id))).write(
       PrintersCompanion(lastSeenAt: Value(now)),
     );

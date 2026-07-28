@@ -14,6 +14,15 @@ import 'package:flutter_test/flutter_test.dart';
 /// Lower the baseline in the same commit — that is what locks the win in.
 ///
 /// Goal for every baseline is 0. See `lib/ui/core/widgets/CATALOG.md`.
+/// True when a bare literal is small enough to be spacing rather than a
+/// dimension. The scale tops out at 48; above that a number is a panel width
+/// or a tile height and belongs at its call site.
+bool _isSpacing(String arg) {
+  final m = RegExp(r'(\d+(?:\.\d+)?)\s*$').firstMatch(arg.trim());
+  if (m == null) return false;
+  return (double.tryParse(m.group(1)!) ?? 999) <= 48;
+}
+
 void main() {
   // ponytail: regex over source, not an analyzer plugin. A custom_lint package
   // would give IDE squiggles for ~300 lines of plumbing; this is 100 lines and
@@ -30,14 +39,13 @@ void main() {
           '(status pill, owner chip) is onFill(), not a literal.',
     ),
     _Rule(
-      // The 6 left are two deliberate cases, both commented at the site: the
-      // QR quiet zone in zone_admin (themed to charcoal it stops scanning) and
-      // the payment-proof lightbox in cashier_bill (black chrome so the app's
-      // palette does not tint a photo being read for an amount). Left as a
-      // baseline rather than a file exemption, so genuine drift in those two
-      // files still trips the rule.
+      // Reached 0. The last two cases were real design decisions wearing a
+      // literal — the QR quiet zone and the payment-proof lightbox — so they
+      // became tokens (satQrQuiet, satMediaChrome/satMediaInk) rather than a
+      // file exemption. A colour that must ignore the palette still deserves
+      // a name saying so.
       name: 'Colors.white / Colors.black',
-      baseline: 6,
+      baseline: 0,
       pattern: RegExp(r'Colors\.(white|black)\b'),
       fix:
           'use context.sat neutral ramp (bg0-bg4, textHi-textDim), onFill() for '
@@ -59,6 +67,171 @@ void main() {
 
   test('lib/ui/ is scannable', () {
     expect(files, isNotEmpty, reason: 'run from the repo root');
+  });
+
+  // A ban from the day it landed (ADR-0055). Every raw Material button in a
+  // feature screen was converted in the same pass, so there is no debt to
+  // ratchet down — the count starts at zero and stays there.
+  //
+  // `core/widgets/` builds SatButton out of these and `core/design/theme.dart`
+  // themes them for the stock widgets that still reach for them; both are
+  // outside the scan. `_book` renders raw states on purpose, so it is exempt
+  // by name below.
+  test('no raw Material buttons outside core/widgets', () {
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      if (file.path.contains('/core/widgets/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'\b(FilledButton|OutlinedButton|TextButton|ElevatedButton)\s*[.(]',
+      ).allMatches(src)) {
+        hits.add('${file.path}:${_lineOf(src, m.start)} ${m.group(1)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use SatButton — core/widgets/sat_button.dart. Named constructors '
+          '(.primary/.neutral/.outline/.ghost/.success/.danger) carry the '
+          'intent; size/icon/busy/trailingValue are the only open axes. An '
+          'icon-only target is SatIconButton, which requires a tooltip.\n'
+          '${hits.join('\n')}',
+    );
+  });
+
+  // The Material bans above only catch a screen that *names* FilledButton or
+  // TextField. They said nothing about a private `_FilledBtn` drawing the same
+  // pill out of a Container — which is how five of them survived the first
+  // sweep. A widget whose name claims to be a control has to be built on one.
+  test('no private lookalikes of a shared control', () {
+    final claims = RegExp(
+      r'^class (_\w*(?:Btn|Button|Chip|Pill|Badge|Field|Toggle|Switch|Stepper)) ',
+      multiLine: true,
+    );
+    final delegates = RegExp(
+      r'\bSat(Button|IconButton|Chip|Field|Dropdown|Toggle|Stepper|Card)\b',
+    );
+    // Named, with the reason. Each is chip- or button-*shaped* but is not one
+    // of the shared controls, and forcing it onto one would cost more than the
+    // duplication saves. Named individually so a new lookalike still trips.
+    const shapedButNot = {
+      // Pulsing dot + elapsed + sent-at, three scales in one pill.
+      '_AgePill',
+      // A spinner or a check circle where a dot would go.
+      '_StationChip',
+      // 44x44 squares leading a history row — avatars, not chips.
+      '_TableChip', '_TakeawayChip',
+      // 9pt micro-badges with brutal's hard shadow; SatChip's floor is 12pt.
+      '_OwnerChip', '_StatePill',
+      // A glow-shadowed status dot with no container at all.
+      '_ServerReachabilityPill',
+      // A solid count badge riding a tab, not a labelled chip.
+      '_Badge',
+      // Icon over label, stacked — SatButton is a horizontal row.
+      '_BigBtn',
+      // A circular target carrying an overflow badge.
+      '_ContextTriggerBtn',
+      // A colour swatch in a ring; the glyph *is* the value.
+      '_ThemeIconButton',
+      // Animated availability pill that cross-fades success<->urgent on tap.
+      '_StatusToggle',
+    };
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      if (file.path.contains('/core/widgets/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in claims.allMatches(src)) {
+        if (shapedButNot.contains(m.group(1))) continue;
+        final body = _classBody(src, m.start);
+        // Composition is the point (ADR-0051): a thin wrapper adding domain
+        // meaning on top of a shared control is exactly right.
+        if (delegates.hasMatch(body)) continue;
+        // Paints nothing — a layout holder or a callback bag, not a control.
+        if (!body.contains('SatBox.d(') &&
+            !body.contains('BoxDecoration(') &&
+            !body.contains('Material(')) {
+          continue;
+        }
+        hits.add('${file.path}:${_lineOf(src, m.start)} ${m.group(1)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'A private widget named like a control must be built on the shared '
+          'one — wrap SatButton / SatChip / SatField / SatToggle / SatStepper '
+          'rather than redrawing it. If it is genuinely something else, name '
+          'it for what it is.\n${hits.join('\n')}',
+    );
+  });
+
+  test('no literal type sizes outside core/design', () {
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      // Renders what a thermal printer will emit, not app chrome — its sizes
+      // are the paper's, not the design system's.
+      if (file.path.endsWith('receipt_preview.dart')) continue;
+      // The rail label is tuned per skin to fit a 56px tile — 'MANDIRI' at
+      // caption's tracking wrapped to two lines and overflowed the column.
+      // Named here rather than exempted by shape, so any *other* literal in
+      // the file still trips.
+      if (file.path.endsWith('tablet_chrome.dart')) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'SatType\.(sans|mono|display)\(',
+      ).allMatches(src)) {
+        // A glyph sized off its own container — an avatar's initials, a
+        // stepper's numeral — scales with the thing it sits in and has no
+        // fixed role. It is the *literal* that is banned, not the call.
+        final body = _callBody(src, m.start);
+        if (!RegExp(r'size:\s*[\d.]').hasMatch(body)) continue;
+        hits.add('${file.path}:${_lineOf(src, m.start)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use a named role — SatType.h1/h2/h3, bodyL/M/S, labelL/M/S, '
+          'monoDisplay54/monoDisplay/monoL/monoM/monoS, caption. Size and '
+          'weight belong to the role; only colour varies per call site. '
+          'Reaching for sans()/mono()/display() directly is how five weights '
+          'across 827 sites happened.\n'
+          '${hits.join('\n')}',
+    );
+  });
+
+  test('no raw text inputs or dropdowns outside core/widgets', () {
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      if (file.path.contains('/core/widgets/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'\b(TextField|TextFormField|InputDecoration|DropdownButton|'
+        r'DropdownButtonFormField)\s*[.(<]',
+      ).allMatches(src)) {
+        hits.add('${file.path}:${_lineOf(src, m.start)} ${m.group(1)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use SatField — core/widgets/sat_field.dart. The constructor names '
+          'what the field accepts (.text/.number/.money/.decimal/.search/'
+          '.pin/.inline) and carries the keyboard, formatters and affix that '
+          'go with it. A neighbour that Material dresses with an '
+          'InputDecoration calls satInputDecoration() so it matches exactly. '
+          'A closed list of choices is SatDropdown — or, where they all fit on '
+          'screen, a row of SatChip.select.\n'
+          '${hits.join('\n')}',
+    );
   });
 
   // Accessibility rules need the whole constructor call, not one line: the
@@ -83,51 +256,50 @@ void main() {
     );
   });
 
-  test('no new: icon-only tap target without a role', () {
-    // Baseline, not a ban. The scan cannot see through a child widget's own
-    // build, so a tap target wrapping `adminPill(context, '+ Add staff')`
-    // counts here even though it announces that text fine — what those are
-    // missing is the button *role*, not a name. The remaining 30 are all admin
-    // surfaces in that shape; the icon-only ones, which announced nothing at
-    // all, are fixed. Wrapping `adminPill`/`adminToggle` in `_common.dart`
-    // would clear most of the rest in one change.
-    //
-    // It also cannot see a `Semantics` applied at `return` to a widget built
-    // into a local (table_card, me_screen, table_detail do this), so a handful
-    // of counted sites are already correct.
-    const baseline = 30;
+  // A ban since the whole shared-widget sweep: SatButton, SatIconButton,
+  // SatChip and SatToggle each carry their own role, and the tap targets left
+  // in feature code were wrapped one by one.
+  //
+  // Scans the whole enclosing method rather than a fixed lookback — three
+  // widgets (table_card, me_screen, table_detail) apply Semantics at `return`
+  // to a card built into a local, which a 320-char window could not see and
+  // which was the only reason this stayed a baseline.
+  test('every tap target carries a role', () {
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();
+      final methods = RegExp(
+        r'^\s*(?:@override\s*\n\s*)?\w[\w<>, ?]*\s+\w+\([^;]*?\)\s*(?:\{|=>)',
+        multiLine: true,
+      ).allMatches(src).map((m) => m.start).toList();
       for (final m in RegExp(
         r'\b(GestureDetector|InkWell)\(',
       ).allMatches(src)) {
         final body = _callBody(src, m.start);
-        // The Semantics wrapper usually sits *above* the tap target, not
-        // inside it, so the body alone is not enough — look back over the
-        // enclosing widget too.
-        final lookback = src.substring(
-          (m.start - 320).clamp(0, m.start),
-          m.start,
+        if (RegExp(r'Text\(|SatType\.|label:').hasMatch(body)) continue;
+        // The enclosing method: from the last declaration at or before the
+        // tap target, to the next one after it.
+        final startIdx = methods.lastWhere(
+          (i) => i <= m.start,
+          orElse: () => 0,
         );
-        if (body.contains('Semantics(') ||
-            lookback.contains('Semantics(') ||
-            RegExp(r'Text\(|SatType\.|label:').hasMatch(body)) {
-          continue;
-        }
+        final endIdx = methods.firstWhere(
+          (i) => i > m.start,
+          orElse: () => src.length,
+        );
+        if (src.substring(startIdx, endIdx).contains('Semantics(')) continue;
         hits.add('${file.path}:${_lineOf(src, m.start)}');
       }
     }
-    if (hits.length > baseline) {
-      fail(
-        'icon-only tap targets without Semantics: ${hits.length}, baseline '
-        '$baseline (+${hits.length - baseline} new).\nWrap in '
-        'Semantics(button: true, label: …).\n\n${hits.join('\n')}',
-      );
-    }
-    if (hits.length < baseline) {
-      fail('dropped to ${hits.length} — set baseline to ${hits.length}.');
-    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'A GestureDetector or InkWell with no text child announces nothing '
+          'to TalkBack. Reach for SatButton / SatIconButton / SatChip / '
+          'SatToggle, which carry their own role, or wrap it in '
+          'Semantics(button: true, label: …).\n${hits.join('\n')}',
+    );
   });
 
   // The clutter guard. A widget class name declared in more than one file is
@@ -136,14 +308,16 @@ void main() {
   // different `Reveal`s. Catalogued shared widgets are unique by construction,
   // so this only ever fires on a genuine second copy.
   //
-  // Not a ban. Most of the remaining 12 are same-name-different-thing —
-  // `_Header`, `_Empty`, `_Section`, `_Footer` are generic names over unrelated
-  // widgets, and merging them would yield a widget with the union of both APIs
-  // and the shape of neither. Two are worth a look when someone next touches
-  // them: `_CourseBlock` (table detail vs. review) and `_ZoneRow` (floor vs.
-  // zone admin) may be real copies.
-  test('no new: widget class name declared in 2+ files', () {
-    const baseline = 12;
+  // A ban since the sweep. The real copies were merged — two pulse dots, two
+  // empty states, two section labels, two sheet headers, and a second Reveal
+  // that had drifted to its own timing. The rest were generic names over
+  // unrelated widgets (`_Header` three times, `_Footer`, `_Section`), which
+  // merging would have turned into one widget with the union of both APIs and
+  // the shape of neither; those were renamed for what they actually are.
+  //
+  // The rule outlives the cleanup: a name colliding again is still the
+  // fingerprint of "rebuilt it because I couldn't see the existing one".
+  test('no widget class name declared in 2+ files', () {
     final byName = <String, List<String>>{};
     for (final file in files) {
       final src = file.readAsStringSync();
@@ -162,17 +336,14 @@ void main() {
     final report = dupes
         .map((e) => '${e.key} (${e.value.length})\n  ${e.value.join('\n  ')}')
         .join('\n');
-    if (dupes.length > baseline) {
-      fail(
-        'duplicated widget names: ${dupes.length}, baseline $baseline '
-        '(+${dupes.length - baseline} new).\nCheck '
-        'lib/ui/core/widgets/CATALOG.md before writing a new widget — if '
-        'something there is close, extend it.\n\n$report',
-      );
-    }
-    if (dupes.length < baseline) {
-      fail('dropped to ${dupes.length} — set baseline to ${dupes.length}.');
-    }
+    expect(
+      dupes,
+      isEmpty,
+      reason:
+          'Check lib/ui/core/widgets/CATALOG.md before writing a new widget — '
+          'if something there is close, extend it. If the two really are '
+          'different things, name them for what they are.\n\n$report',
+    );
   });
 
   // Reduced motion. A ban, not a baseline — every `AnimatedFoo` in lib/ui now
@@ -249,38 +420,45 @@ void main() {
   // but the `6` inside `EdgeInsets.only(bottom: inset * 6)` is arithmetic. An
   // earlier regex version did not draw that line and rewrote layout dimensions
   // (a 560px panel width became 48) — hence the argument parser.
-  test('no new: raw spacing literal', () {
-    const baseline = 181;
+  //
+  // A ban since the scale grew s7/s9 and every value under it was snapped.
+  // Numbers above the scale's 48 ceiling are dimensions — a 560px panel, a
+  // 110px thumbnail — not spacing, and are not counted: naming them would
+  // only invite the wrong one to be reached for.
+  test('no raw spacing literal', () {
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();
+      // Mocks a 58mm thermal receipt; its paddings are the paper's, not the
+      // design system's — same reasoning as its type sizes.
+      if (file.path.endsWith('receipt_preview.dart')) continue;
       for (final m in RegExp(
         r'EdgeInsets\.(?:all|symmetric|only)\(',
       ).allMatches(src)) {
         final body = _callBody(src, m.start);
         if (body.length < 2) continue;
         for (final arg in _splitArgs(body.substring(1, body.length - 1))) {
-          if (_bareNumberArg.hasMatch(arg)) {
+          final g = _bareNumberArg.firstMatch(arg);
+          if (g != null && _isSpacing(arg)) {
             hits.add('${file.path}:${_lineOf(src, m.start)}  ${arg.trim()}');
           }
         }
       }
       for (final m in RegExp(
-        r'SizedBox\(\s*(?:width|height):\s*(\d+)\s*[,)]',
+        r'SizedBox\(\s*(?:width|height):\s*(\d+(?:\.\d+)?)\s*[,)]',
       ).allMatches(src)) {
+        if (!_isSpacing(m.group(1)!)) continue;
         hits.add('${file.path}:${_lineOf(src, m.start)}  ${m.group(1)}');
       }
     }
-    if (hits.length > baseline) {
-      fail(
-        'raw spacing literals: ${hits.length}, baseline $baseline '
-        '(+${hits.length - baseline} new).\nUse Sp — design/spacing.dart '
-        '(2/4/6/8/10/12/14/16/18/20/24/32/40/48).\n\n${hits.join('\n')}',
-      );
-    }
-    if (hits.length < baseline) {
-      fail('dropped to ${hits.length} — set baseline to ${hits.length}.');
-    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use Sp — design/spacing.dart '
+          '(2/4/6/8/10/12/14/16/18/20/24/28/32/36/40/48).\n'
+          '${hits.join('\n')}',
+    );
   });
 
   for (final rule in rules) {
@@ -410,4 +588,14 @@ class _Rule {
     required this.pattern,
     required this.fix,
   });
+}
+
+/// Source of the class declaration starting at [start], to the next
+/// column-zero `}`. Good enough for a scan: Dart formats every top-level
+/// closing brace there.
+String _classBody(String src, int start) {
+  final end = RegExp(r'^\}', multiLine: true).firstMatch(src.substring(start));
+  return end == null
+      ? src.substring(start)
+      : src.substring(start, start + end.end);
 }

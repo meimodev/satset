@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_tabs.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,18 +44,16 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
               child: Row(
                 children: [
-                  Text(
-                    'Kasir',
-                    style: SatType.sans(
-                      size: 26,
-                      weight: FontWeight.w700,
-                      color: sc.textHi,
-                    ),
-                  ),
+                  Text('Kasir', style: SatType.h2(color: sc.textHi)),
                   const Spacer(),
-                  _TabToggle(
-                    tab: _tab,
-                    onChanged: (t) => setState(() => _tab = t),
+                  SatTabs(
+                    tabs: const [
+                      SatTab(label: 'Aktif'),
+                      SatTab(label: 'Riwayat'),
+                    ],
+                    selected: _tab.index,
+                    onSelected: (i) =>
+                        setState(() => _tab = _CashierTab.values[i]),
                   ),
                 ],
               ),
@@ -85,56 +85,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 /// iOS-style two-segment pill switching the cashier between live bills and
 /// history. Chrome, not a CTA — the selected segment reads as a raised tile
 /// rather than an accent button.
-class _TabToggle extends StatelessWidget {
-  final _CashierTab tab;
-  final ValueChanged<_CashierTab> onChanged;
-  const _TabToggle({required this.tab, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    Widget seg(_CashierTab t, String label) {
-      final active = tab == t;
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => onChanged(t),
-        child: AnimatedContainer(
-          duration: satMotion(context, 180),
-          curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(
-            horizontal: Sp.s4,
-            vertical: Sp.s2,
-          ),
-          decoration: SatBox.d(
-            color: active ? sc.bg0 : Colors.transparent,
-            borderRadius: SatR.a(9),
-          ),
-          child: Text(
-            label,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w600,
-              color: active ? sc.textHi : sc.textLo,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(12)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          seg(_CashierTab.aktif, 'Aktif'),
-          seg(_CashierTab.riwayat, 'Riwayat'),
-        ],
-      ),
-    );
-  }
-}
-
 /// The Aktif tab: live payable visits, pull-to-refresh.
 class _PayableList extends ConsumerWidget {
   const _PayableList();
@@ -155,17 +105,18 @@ class _PayableList extends ConsumerWidget {
           else if (status.hasError && bills.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: _Empty(
+              child: SatEmpty(
                 icon: Icons.cloud_off_rounded,
-                text: 'Gagal memuat tagihan.\nTarik untuk coba lagi.',
+                title: 'Gagal memuat tagihan',
+                body: 'Tarik untuk coba lagi.',
               ),
             )
           else if (bills.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: _Empty(
+              child: SatEmpty(
                 icon: Icons.receipt_long_outlined,
-                text: 'Belum ada meja yang siap dibayar.',
+                title: 'Belum ada meja yang siap dibayar',
               ),
             )
           else
@@ -198,157 +149,128 @@ class _PayableTile extends StatelessWidget {
         : partial
         ? (sc.warn, 'Sebagian')
         : (sc.textLo, 'Belum bayar');
-    return PressScale(
-      child: Material(
-        color: sc.bg1,
-        borderRadius: SatR.a(16),
-        child: InkWell(
+    return Semantics(
+      button: true,
+      label: badgeText,
+      child: PressScale(
+        child: Material(
+          color: sc.bg1,
           borderRadius: SatR.a(16),
-          // Root navigator: the bill is a full page with its own AppBar and a
-          // bottom CTA. Pushed on the shell's navigator instead, the floating
-          // phone tab bar floats *over* it and swallows "Tutup tagihan". Same
-          // treatment as the table flow, which is also outside the shell.
-          onTap: () => Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute(
-              builder: (_) =>
-                  CashierBillScreen(visitId: b.visitId, tableId: b.tableId),
+          child: InkWell(
+            borderRadius: SatR.a(16),
+            // Root navigator: the bill is a full page with its own AppBar and a
+            // bottom CTA. Pushed on the shell's navigator instead, the floating
+            // phone tab bar floats *over* it and swallows "Tutup tagihan". Same
+            // treatment as the table flow, which is also outside the shell.
+            onTap: () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    CashierBillScreen(visitId: b.visitId, tableId: b.tableId),
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(Sp.s3h),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: SatBox.d(
-                    color: b.isTakeaway
-                        ? sc.accentSoft
-                        : (b.detached ? sc.warnSoft : sc.bg3),
-                    borderRadius: SatR.a(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: b.isTakeaway
-                      ? Icon(
-                          Icons.shopping_bag_rounded,
-                          size: 20,
-                          color: sc.accentText,
-                        )
-                      : Text(
-                          b.tableLabel ?? '—',
-                          style: SatType.mono(
-                            size: 15,
-                            weight: FontWeight.w700,
-                            color: b.detached ? sc.warn : sc.textHi,
+            child: Padding(
+              padding: const EdgeInsets.all(Sp.s3h),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: SatBox.d(
+                      color: b.isTakeaway
+                          ? sc.accentSoft
+                          : (b.detached ? sc.warnSoft : sc.bg3),
+                      borderRadius: SatR.a(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: b.isTakeaway
+                        ? Icon(
+                            Icons.shopping_bag_rounded,
+                            size: 20,
+                            color: sc.accentText,
+                          )
+                        : Text(
+                            b.tableLabel ?? '—',
+                            style: SatType.monoM(
+                              color: b.detached ? sc.warn : sc.textHi,
+                            ),
                           ),
+                  ),
+                  const SizedBox(width: Sp.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          b.isTakeaway
+                              ? (b.guestName?.trim().isNotEmpty == true
+                                    ? '${b.tableLabel ?? 'Bawa pulang'} · ${b.guestName}'
+                                    : (b.tableLabel ?? 'Bawa pulang'))
+                              : (b.guestName?.trim().isNotEmpty == true
+                                    ? b.guestName!
+                                    : 'Meja ${b.tableLabel ?? ''}'.trim()),
+                          style: SatType.labelM(color: sc.textHi),
                         ),
-                ),
-                const SizedBox(width: Sp.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: Sp.s1),
+                        Text(
+                          b.isTakeaway
+                              ? (b.detached
+                                    ? 'Bawa pulang · sudah diserahkan'
+                                    : 'Bawa pulang · belum diserahkan')
+                              : (b.detached
+                                    ? 'Meja sudah ditutup · belum lunas'
+                                    : '${b.pax} tamu · ${b.receiptCount} struk'
+                                          '${b.mode == 'even' ? ' · rata' : ''}'),
+                          style: ((b.detached || b.isTakeaway)
+                              ? SatType.labelS(
+                                  color: b.isTakeaway
+                                      ? sc.accentText
+                                      : (b.detached ? sc.warn : sc.textLo),
+                                )
+                              : SatType.bodyS(
+                                  color: b.isTakeaway
+                                      ? sc.accentText
+                                      : (b.detached ? sc.warn : sc.textLo),
+                                )),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        b.isTakeaway
-                            ? (b.guestName?.trim().isNotEmpty == true
-                                  ? '${b.tableLabel ?? 'Bawa pulang'} · ${b.guestName}'
-                                  : (b.tableLabel ?? 'Bawa pulang'))
-                            : (b.guestName?.trim().isNotEmpty == true
-                                  ? b.guestName!
-                                  : 'Meja ${b.tableLabel ?? ''}'.trim()),
-                        style: SatType.sans(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          color: sc.textHi,
+                        formatIDR(b.outstanding),
+                        style: SatType.monoM(
+                          color: settled ? sc.textLo : sc.textHi,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        b.isTakeaway
-                            ? (b.detached
-                                  ? 'Bawa pulang · sudah diserahkan'
-                                  : 'Bawa pulang · belum diserahkan')
-                            : (b.detached
-                                  ? 'Meja sudah ditutup · belum lunas'
-                                  : '${b.pax} tamu · ${b.receiptCount} struk'
-                                        '${b.mode == 'even' ? ' · rata' : ''}'),
-                        style: SatType.sans(
-                          size: 11.5,
-                          weight: (b.detached || b.isTakeaway)
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: b.isTakeaway
-                              ? sc.accentText
-                              : (b.detached ? sc.warn : sc.textLo),
+                      const SizedBox(height: Sp.s1h),
+                      AnimatedContainer(
+                        duration: satMotion(context, 240),
+                        curve: satEaseOut,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Sp.s2,
+                          vertical: Sp.sHair,
+                        ),
+                        decoration: SatBox.d(
+                          color: badgeColor.withValues(alpha: 0.15),
+                          borderRadius: SatR.a(6),
+                        ),
+                        child: AnimatedDefaultTextStyle(
+                          duration: satMotion(context, 240),
+                          curve: satEaseOut,
+                          style: SatType.labelS(color: badgeColor),
+                          child: Text(badgeText),
                         ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      formatIDR(b.outstanding),
-                      style: SatType.mono(
-                        size: 15,
-                        weight: FontWeight.w700,
-                        color: settled ? sc.textLo : sc.textHi,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    AnimatedContainer(
-                      duration: satMotion(context, 240),
-                      curve: satEaseOut,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Sp.s2,
-                        vertical: Sp.sHair,
-                      ),
-                      decoration: SatBox.d(
-                        color: badgeColor.withValues(alpha: 0.15),
-                        borderRadius: SatR.a(6),
-                      ),
-                      child: AnimatedDefaultTextStyle(
-                        duration: satMotion(context, 240),
-                        curve: satEaseOut,
-                        style: SatType.sans(
-                          size: 10,
-                          weight: FontWeight.w600,
-                          color: badgeColor,
-                        ),
-                        child: Text(badgeText),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _Empty({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 44, color: sc.textLo),
-        const SizedBox(height: Sp.s3),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: SatType.sans(size: 13, color: sc.textLo),
-        ),
-      ],
     );
   }
 }

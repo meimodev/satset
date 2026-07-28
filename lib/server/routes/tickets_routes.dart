@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
@@ -179,7 +180,7 @@ Future<void> _emitVoidAudit(
           type: AuditType.voidItem.name,
           title: 'Dibatalkan ×${ticket.qty} ${ticket.name} · $amount',
           tableId: Value(ticket.tableId),
-          at: DateTime.now(),
+          at: SatClock.now(),
           reason: Value(reason),
           actorUserId: Value(actorUserId),
         ),
@@ -218,9 +219,246 @@ Map<String, dynamic> _tableToJson(VenueTable t) => {
   'openedAt': t.openedAt?.toIso8601String(),
 };
 
+const _orderUuid = Uuid();
+
+/// One submitted order, written exactly the way `POST /orders` writes it.
+///
+/// Extracted from the route handler so the [[Demo seed (venue mid-service)]]
+/// can replay a month of service through the **production** path — idempotency
+/// claim, visit resolution, recipe coverage, per-line stock rejection, ticket
+/// insert, consumption, table transition — rather than inserting rows that
+/// merely look like orders (ADR-0053 §5). The handler parses the request and
+/// broadcasts; everything that touches the database lives here.
+class SubmitOrderResult {
+  final List<String> createdIds;
+  final List<Ticket> createdRows;
+  final List<Map<String, dynamic>> rejected;
+  final VenueTable? tableRow;
+  final String? visitId;
+  final String? storedResponse;
+
+  const SubmitOrderResult({
+    required this.createdIds,
+    required this.createdRows,
+    required this.rejected,
+    this.tableRow,
+    this.visitId,
+    this.storedResponse,
+  });
+}
+
+Future<SubmitOrderResult> submitOrder(
+  AppDatabase db, {
+  required String tableId,
+  required String idem,
+  required List<Map<String, dynamic>> lines,
+  bool takeaway = false,
+  String? guestName,
+  String? appendVisitId,
+  String? actorId,
+  bool canOverrideStock = false,
+
+  /// Write these timestamps instead of "now". The demo seed replays a month
+  /// through this function and must stamp each order at its own moment —
+  /// without dragging the running app's clock around while it does
+  /// (ADR-0053 §5). Production callers pass nothing.
+  DateTime? at,
+
+  /// Prefix applied to every id this call mints — tickets and their stock
+  /// movements. The demo seed passes its tag so reset can delete by it
+  /// (ADR-0053 §5); production callers pass nothing.
+  String? idPrefix,
+}) async {
+  final stamp = at ?? SatClock.now();
+  final createdIds = <String>[];
+  final createdRows = <Ticket>[];
+  final rejected = <Map<String, dynamic>>[];
+  VenueTable? tableRow;
+  String? storedResponse;
+  String? orderVisitId;
+  await db.transaction(() async {
+    // Claim the idempotency key atomically; primary-key conflict means
+    // a concurrent request already took it.
+    final existing = await (db.select(
+      db.idempotency,
+    )..where((k) => k.key.equals(idem))).getSingleOrNull();
+    if (existing != null) {
+      storedResponse = existing.responseJson;
+      return;
+    }
+    // Resolve the visit (the bill key). Dine-in lazily ensures the table's
+    // visit; takeaway mints a brand-new table-less one. See ADR-0024/0026.
+    final String visitId;
+    if (takeaway) {
+      if (appendVisitId != null && appendVisitId.isNotEmpty) {
+        visitId = appendVisitId;
+      } else {
+        final v = await createTakeawayVisit(
+          db,
+          guestName: (guestName != null && guestName.isNotEmpty)
+              ? guestName
+              : 'Bawa pulang',
+          actorId: actorId,
+        );
+        visitId = v.id;
+      }
+    } else {
+      visitId = await ensureVisit(db, tableId, actorId: actorId);
+    }
+    orderVisitId = visitId;
+    // Ingredient coverage (ADR-0041). Stock moves at **send** — the last
+    // point at which refusing a line is still cheap. `running` is mutated as
+    // lines are accepted, so two lines of the same order competing for the
+    // last portion resolve consistently.
+    final recipes = await loadRecipes(db);
+    final ingredientRows = await db.select(db.ingredients).get();
+    final running = {for (final i in ingredientRows) i.id: i.stockOnHand};
+    final ingredientNames = {for (final i in ingredientRows) i.id: i.name};
+    // Tickets carry the variant *name*, not its id, so the id is resolved
+    // here against the menu as it reads right now.
+    final variantNameMaps = <String, Map<String, String>>{};
+
+    for (final l in lines) {
+      final id = '${idPrefix ?? ''}${_orderUuid.v4()}';
+      final course = l['course'] as String;
+      // "Kirim ke dapur" is an explicit fire action: every line enters
+      // the KDS queue as `sent`. Course pacing is purely a sort/grouping
+      // hint for the kitchen, not a gate.
+      final itemId = l['itemId'] as String;
+      final lineQty = (l['qty'] as num?)?.toInt() ?? 1;
+      final lineVariant = (l['variantName'] as String?) ?? '';
+      if (!variantNameMaps.containsKey(itemId)) {
+        final item = await (db.select(
+          db.menuItems,
+        )..where((i) => i.id.equals(itemId))).getSingleOrNull();
+        variantNameMaps[itemId] = item == null
+            ? const {}
+            : variantIdsByName(item.variantsJson);
+      }
+      final need = await needForLine(
+        db,
+        itemId: itemId,
+        variantName: lineVariant,
+        optionIds: [
+          for (final m in (l['modifiers'] as List? ?? const []))
+            if (m is Map && (m['optionId'] as String?)?.isNotEmpty == true)
+              m['optionId'] as String,
+        ],
+        qty: lineQty,
+        recipes: recipes,
+        running: running,
+        ingredientNames: ingredientNames,
+        variantIdsByName: variantNameMaps[itemId]!,
+      );
+      if (!need.covered && !canOverrideStock) {
+        // Reject ONLY this line — one out-of-stock side dish must not kill a
+        // twelve-item order the waiter would have to re-key (ADR-0041).
+        rejected.add({
+          'itemId': itemId,
+          'name': (l['name'] as String?) ?? itemId,
+          'variantName': lineVariant,
+          'ingredients': need.shortNames,
+        });
+        continue;
+      }
+
+      final row = TicketsCompanion.insert(
+        id: id,
+        tableId: tableId,
+        visitId: Value(visitId),
+        itemId: itemId,
+        name: (l['name'] as String?) ?? l['itemId'] as String,
+        variantName: Value((l['variantName'] as String?) ?? ''),
+        course: course,
+        qty: Value((l['qty'] as num?)?.toInt() ?? 1),
+        // Structured add-on snapshot, built client-side and stored
+        // verbatim. See docs/adr/0011-ticket-modifier-snapshot.md.
+        modifiersJson: Value(jsonEncode(l['modifiers'] ?? const [])),
+        note: Value(l['note'] as String?),
+        price: (l['unitPrice'] as num).toInt(),
+        status: 'sent',
+        sentAt: stamp,
+        createdByUserId: Value(actorId),
+      );
+      await db.into(db.tickets).insert(row);
+      // Deduct inside the existing idempotency-keyed transaction, so a
+      // retried submit can never double-deduct (ADR-0041). An overridden
+      // line still writes its movements — the balance goes negative on
+      // purpose, as the "your counts are wrong" signal.
+      if (need.need.isNotEmpty) {
+        await consumeForTicket(
+          db,
+          at: at,
+          idPrefix: idPrefix,
+          ticketId: id,
+          need: need.need,
+          sourceLabel: [
+            (l['name'] as String?) ?? itemId,
+            if (lineVariant.isNotEmpty) lineVariant,
+          ].join(' · '),
+          userId: actorId,
+        );
+        for (final e in need.need.entries) {
+          running[e.key] = (running[e.key] ?? 0) - e.value;
+        }
+      }
+      createdIds.add(id);
+      final full = await (db.select(
+        db.tickets,
+      )..where((t) => t.id.equals(id))).getSingle();
+      createdRows.add(full);
+    }
+    await db
+        .into(db.idempotency)
+        .insert(
+          IdempotencyCompanion.insert(
+            key: idem,
+            responseJson: jsonEncode({
+              'ticketIds': createdIds,
+              'visitId': visitId,
+              if (rejected.isNotEmpty) 'rejected': rejected,
+            }),
+            createdAt: stamp,
+          ),
+        );
+    // Every line rejected for stock ⇒ nothing was actually ordered, so the
+    // table must not be flipped to `pending` with no lines behind it.
+    if (!takeaway && createdIds.isNotEmpty) {
+      // Mark the table `pending` in the same transaction so that all
+      // clients observe ticket-creation and table-state changes together
+      // and never see one without the other. Set openedAt only on the
+      // first order (when the table transitions from available to pending).
+      final tblCurrent = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals(tableId))).getSingleOrNull();
+      await (db.update(
+        db.venueTables,
+      )..where((t) => t.id.equals(tableId))).write(
+        VenueTablesCompanion(
+          status: const Value('pending'),
+          lastActorId: Value(actorId),
+          openedAt: tblCurrent?.openedAt == null
+              ? Value(stamp)
+              : const Value.absent(),
+        ),
+      );
+      tableRow = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals(tableId))).getSingleOrNull();
+    }
+  });
+  return SubmitOrderResult(
+    createdIds: createdIds,
+    createdRows: createdRows,
+    rejected: rejected,
+    tableRow: tableRow,
+    visitId: orderVisitId,
+    storedResponse: storedResponse,
+  );
+}
+
 Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   final r = Router();
-  const uuid = Uuid();
 
   r.get('/tickets', (Request req) async {
     final rows = await db.select(db.tickets).get();
@@ -240,8 +478,6 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final takeaway = body['takeaway'] == true;
     final tableId = takeaway ? '' : body['tableId'] as String;
     final guestName = (body['guestName'] as String?)?.trim();
-    // Optional: append to an existing takeaway visit (add-items flow) instead
-    // of minting a new one. See ADR-0026.
     final appendVisitId = (body['visitId'] as String?)?.trim();
     final idem = body['idempotencyKey'] as String;
     final lines = (body['lines'] as List).cast<Map<String, dynamic>>();
@@ -257,181 +493,23 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       Capability.overrideStock,
     );
 
-    final createdIds = <String>[];
-    final createdRows = <Ticket>[];
-    final rejected = <Map<String, dynamic>>[];
-    VenueTable? tableRow;
-    String? storedResponse;
-    String? orderVisitId;
-    await db.transaction(() async {
-      // Claim the idempotency key atomically; primary-key conflict means
-      // a concurrent request already took it.
-      final existing = await (db.select(
-        db.idempotency,
-      )..where((k) => k.key.equals(idem))).getSingleOrNull();
-      if (existing != null) {
-        storedResponse = existing.responseJson;
-        return;
-      }
-      // Resolve the visit (the bill key). Dine-in lazily ensures the table's
-      // visit; takeaway mints a brand-new table-less one. See ADR-0024/0026.
-      final String visitId;
-      if (takeaway) {
-        if (appendVisitId != null && appendVisitId.isNotEmpty) {
-          visitId = appendVisitId;
-        } else {
-          final v = await createTakeawayVisit(
-            db,
-            guestName: (guestName != null && guestName.isNotEmpty)
-                ? guestName
-                : 'Bawa pulang',
-            actorId: actorId,
-          );
-          visitId = v.id;
-        }
-      } else {
-        visitId = await ensureVisit(db, tableId, actorId: actorId);
-      }
-      orderVisitId = visitId;
-      // Ingredient coverage (ADR-0041). Stock moves at **send** — the last
-      // point at which refusing a line is still cheap. `running` is mutated as
-      // lines are accepted, so two lines of the same order competing for the
-      // last portion resolve consistently.
-      final recipes = await loadRecipes(db);
-      final ingredientRows = await db.select(db.ingredients).get();
-      final running = {for (final i in ingredientRows) i.id: i.stockOnHand};
-      final ingredientNames = {for (final i in ingredientRows) i.id: i.name};
-      // Tickets carry the variant *name*, not its id, so the id is resolved
-      // here against the menu as it reads right now.
-      final variantNameMaps = <String, Map<String, String>>{};
-
-      for (final l in lines) {
-        final id = uuid.v4();
-        final course = l['course'] as String;
-        // "Kirim ke dapur" is an explicit fire action: every line enters
-        // the KDS queue as `sent`. Course pacing is purely a sort/grouping
-        // hint for the kitchen, not a gate.
-        final itemId = l['itemId'] as String;
-        final lineQty = (l['qty'] as num?)?.toInt() ?? 1;
-        final lineVariant = (l['variantName'] as String?) ?? '';
-        if (!variantNameMaps.containsKey(itemId)) {
-          final item = await (db.select(
-            db.menuItems,
-          )..where((i) => i.id.equals(itemId))).getSingleOrNull();
-          variantNameMaps[itemId] = item == null
-              ? const {}
-              : variantIdsByName(item.variantsJson);
-        }
-        final need = await needForLine(
-          db,
-          itemId: itemId,
-          variantName: lineVariant,
-          optionIds: [
-            for (final m in (l['modifiers'] as List? ?? const []))
-              if (m is Map && (m['optionId'] as String?)?.isNotEmpty == true)
-                m['optionId'] as String,
-          ],
-          qty: lineQty,
-          recipes: recipes,
-          running: running,
-          ingredientNames: ingredientNames,
-          variantIdsByName: variantNameMaps[itemId]!,
-        );
-        if (!need.covered && !canOverrideStock) {
-          // Reject ONLY this line — one out-of-stock side dish must not kill a
-          // twelve-item order the waiter would have to re-key (ADR-0041).
-          rejected.add({
-            'itemId': itemId,
-            'name': (l['name'] as String?) ?? itemId,
-            'variantName': lineVariant,
-            'ingredients': need.shortNames,
-          });
-          continue;
-        }
-
-        final row = TicketsCompanion.insert(
-          id: id,
-          tableId: tableId,
-          visitId: Value(visitId),
-          itemId: itemId,
-          name: (l['name'] as String?) ?? l['itemId'] as String,
-          variantName: Value((l['variantName'] as String?) ?? ''),
-          course: course,
-          qty: Value((l['qty'] as num?)?.toInt() ?? 1),
-          // Structured add-on snapshot, built client-side and stored
-          // verbatim. See docs/adr/0011-ticket-modifier-snapshot.md.
-          modifiersJson: Value(jsonEncode(l['modifiers'] ?? const [])),
-          note: Value(l['note'] as String?),
-          price: (l['unitPrice'] as num).toInt(),
-          status: 'sent',
-          sentAt: DateTime.now(),
-          createdByUserId: Value(actorId),
-        );
-        await db.into(db.tickets).insert(row);
-        // Deduct inside the existing idempotency-keyed transaction, so a
-        // retried submit can never double-deduct (ADR-0041). An overridden
-        // line still writes its movements — the balance goes negative on
-        // purpose, as the "your counts are wrong" signal.
-        if (need.need.isNotEmpty) {
-          await consumeForTicket(
-            db,
-            ticketId: id,
-            need: need.need,
-            sourceLabel: [
-              (l['name'] as String?) ?? itemId,
-              if (lineVariant.isNotEmpty) lineVariant,
-            ].join(' · '),
-            userId: actorId,
-          );
-          for (final e in need.need.entries) {
-            running[e.key] = (running[e.key] ?? 0) - e.value;
-          }
-        }
-        createdIds.add(id);
-        final full = await (db.select(
-          db.tickets,
-        )..where((t) => t.id.equals(id))).getSingle();
-        createdRows.add(full);
-      }
-      await db
-          .into(db.idempotency)
-          .insert(
-            IdempotencyCompanion.insert(
-              key: idem,
-              responseJson: jsonEncode({
-                'ticketIds': createdIds,
-                'visitId': visitId,
-                if (rejected.isNotEmpty) 'rejected': rejected,
-              }),
-              createdAt: DateTime.now(),
-            ),
-          );
-      // Every line rejected for stock ⇒ nothing was actually ordered, so the
-      // table must not be flipped to `pending` with no lines behind it.
-      if (!takeaway && createdIds.isNotEmpty) {
-        // Mark the table `pending` in the same transaction so that all
-        // clients observe ticket-creation and table-state changes together
-        // and never see one without the other. Set openedAt only on the
-        // first order (when the table transitions from available to pending).
-        final tblCurrent = await (db.select(
-          db.venueTables,
-        )..where((t) => t.id.equals(tableId))).getSingleOrNull();
-        await (db.update(
-          db.venueTables,
-        )..where((t) => t.id.equals(tableId))).write(
-          VenueTablesCompanion(
-            status: const Value('pending'),
-            lastActorId: Value(actorId),
-            openedAt: tblCurrent?.openedAt == null
-                ? Value(DateTime.now())
-                : const Value.absent(),
-          ),
-        );
-        tableRow = await (db.select(
-          db.venueTables,
-        )..where((t) => t.id.equals(tableId))).getSingleOrNull();
-      }
-    });
+    final res = await submitOrder(
+      db,
+      tableId: tableId,
+      idem: idem,
+      lines: lines,
+      takeaway: takeaway,
+      guestName: guestName,
+      appendVisitId: appendVisitId,
+      actorId: actorId,
+      canOverrideStock: canOverrideStock,
+    );
+    final createdIds = res.createdIds;
+    final createdRows = res.createdRows;
+    final rejected = res.rejected;
+    final tableRow = res.tableRow;
+    final orderVisitId = res.visitId;
+    final storedResponse = res.storedResponse;
 
     if (storedResponse != null) {
       return Response.ok(
@@ -443,7 +521,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       hub.broadcast(WsEventTypes.ticketCreated, _toJson(t));
     }
     if (tableRow != null) {
-      hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow!));
+      hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow));
     }
     if (orderVisitId != null) {
       // Dine-in: refresh the floor money badge. Takeaway: no attached table so
@@ -451,7 +529,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       if (takeaway) {
         hub.broadcast(WsEventTypes.billUpdated, {'visitId': orderVisitId});
       } else {
-        await syncVisitMoney(db, hub, orderVisitId!);
+        await syncVisitMoney(db, hub, orderVisitId);
       }
     }
     // Re-broadcast the menu only when a derived habis flag actually flipped —
@@ -518,7 +596,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     // Speed-of-service stamps (ADR-0013). readyAt set-once on first entry into
     // `ready` (so a served→ready undo never inflates prep time); servedAt
     // last-write on every entry into `served`.
-    final stampNow = DateTime.now();
+    final stampNow = SatClock.now();
     final stampReady = to == TicketStatus.ready && current.readyAt == null;
     final stampServed = to == TicketStatus.served;
     // ADR-0043: firing a held line hands it to the kitchen now — the prep
@@ -645,7 +723,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           .write(
             TicketsCompanion(
               status: const Value('sent'),
-              firedAt: Value(DateTime.now()),
+              firedAt: Value(SatClock.now()),
             ),
           );
       final rows =
@@ -733,7 +811,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               ))
               .get();
       if (pend.isEmpty) return;
-      final now = DateTime.now();
+      final now = SatClock.now();
       for (final t in pend) {
         await (db.update(db.tickets)..where((r) => r.id.equals(t.id))).write(
           TicketsCompanion(status: const Value('sent'), sentAt: Value(now)),

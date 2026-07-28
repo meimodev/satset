@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
@@ -141,7 +142,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               visitId: Value(visitId),
               mode: Value(mode),
               label: Value((body['label'] as String?)?.trim() ?? ''),
-              createdAt: DateTime.now().toUtc(),
+              createdAt: SatClock.now().toUtc(),
             ),
           );
       if (body['assignAll'] == true) {
@@ -289,7 +290,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
                 mode: const Value('even'),
                 label: Value('Bagian ${i + 1}/$n'),
                 total: Value(shares[i]),
-                createdAt: DateTime.now().toUtc(),
+                createdAt: SatClock.now().toUtc(),
               ),
             );
       }
@@ -446,7 +447,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             value: Value(preset.value),
             byUserId: Value(actor?.id),
             approvedByUserId: Value(approvedBy),
-            at: DateTime.now().toUtc(),
+            at: SatClock.now().toUtc(),
           ),
         );
     // _recompute resolves the rupiah amount against the current base.
@@ -559,7 +560,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               tenderedAmount: Value((body['tendered'] as num?)?.toInt()),
               cashierUserId: Value(user?.id),
               note: Value((body['note'] as String?)?.trim()),
-              at: DateTime.now().toUtc(),
+              at: SatClock.now().toUtc(),
               photo: Value(method == 'tunai' ? null : photo),
             ),
           );
@@ -634,7 +635,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               isRefund: const Value(true),
               cashierUserId: Value(user?.id),
               note: Value((body['note'] as String?)?.trim()),
-              at: DateTime.now().toUtc(),
+              at: SatClock.now().toUtc(),
             ),
           );
       await _recompute(db, visitId);
@@ -692,7 +693,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
       return _err(502, 'print_failed', 'printer tak terhubung');
     }
-    final now = DateTime.now();
+    final now = SatClock.now();
     await (db.update(db.printers)..where((p) => p.id.equals(printerId))).write(
       PrintersCompanion(lastSeenAt: Value(now)),
     );
@@ -814,7 +815,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       }
     }
     final loss = writeOff ? outstanding : 0;
-    final now = DateTime.now().toUtc();
+    final now = SatClock.now().toUtc();
     await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
       VisitsCompanion(
         billClosedAt: Value(now),
@@ -918,7 +919,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final days = int.tryParse(req.url.queryParameters['days'] ?? '7') ?? 7;
     final tableId = req.url.queryParameters['tableId'];
-    final cutoff = DateTime.now().toUtc().subtract(Duration(days: days));
+    final cutoff = SatClock.now().toUtc().subtract(Duration(days: days));
     final q = db.select(db.tableSessions)
       ..where((s) => s.closedAt.isBiggerThanValue(cutoff))
       ..orderBy([(s) => OrderingTerm.desc(s.closedAt)]);
@@ -1245,7 +1246,7 @@ Future<void> _audit(
           type: type.name,
           title: title,
           tableId: Value(tableId),
-          at: DateTime.now().toUtc(),
+          at: SatClock.now().toUtc(),
           actorUserId: Value(actor),
           reason: Value(reason),
         ),

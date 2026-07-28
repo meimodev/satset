@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,7 +35,7 @@ class ErrorBusService {
   }) {
     SatLog.err('bus ${level.name}${code != null ? " $code" : ""}: $message');
     _c.add(
-      AppError(message: message, level: level, at: DateTime.now(), code: code),
+      AppError(message: message, level: level, at: SatClock.now(), code: code),
     );
   }
 

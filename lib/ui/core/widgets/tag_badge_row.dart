@@ -38,12 +38,7 @@ class TagBadgeRow extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 tagsById[id]?.code ?? '?',
-                style: SatType.mono(
-                  size: 8,
-                  weight: FontWeight.w600,
-                  color: fg,
-                  letterSpacing: 0,
-                ),
+                style: SatType.caption(color: fg),
               ),
             ),
         ],

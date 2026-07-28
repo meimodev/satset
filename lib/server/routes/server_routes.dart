@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/time/sat_clock.dart';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Variable;
@@ -63,7 +64,7 @@ Map<String, dynamic> buildServerStatus(ServerRuntime rt) {
 Future<Map<String, dynamic>> buildServerStatusWithCounts(
   ServerRuntime rt,
 ) async {
-  final now = DateTime.now();
+  final now = SatClock.now();
   final activeSessions = await rt.db
       .customSelect(
         'SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?',
@@ -106,7 +107,7 @@ Router serverRoutes(ServerRuntime rt) {
     // Notify everyone *before* the request returns; the listener tears
     // down right after this response is written.
     rt.hub.broadcast(WsEventTypes.serverRestarting, {
-      'at': DateTime.now().toIso8601String(),
+      'at': SatClock.now().toIso8601String(),
     });
     scheduleMicrotask(() => rt.restart());
     return Response(

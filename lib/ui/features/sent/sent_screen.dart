@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,8 +57,14 @@ class _SentScreenState extends ConsumerState<SentScreen>
     final tables = ref.watch(tablesProvider);
     final table = tables.where((x) => x.id == widget.tableId).firstOrNull;
     final name = table?.displayName ?? widget.tableId;
+    // Glow's send confirmation is a full-bleed lime slab — the design's rule 1
+    // is slab stacking, and this is the one screen that is nothing but its own
+    // confirmation. Ink goes obsidian against it. The other skins keep the
+    // page ground and let the green check carry the message.
+    final glow = SatShape.glow;
+    final ink = glow ? sc.accentInk : sc.textHi;
     return Scaffold(
-      backgroundColor: sc.bg0,
+      backgroundColor: glow ? sc.accent : sc.bg0,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sp.s8),
@@ -69,31 +76,25 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 height: 96,
                 decoration: SatBox.d(
                   shape: BoxShape.circle,
-                  color: sc.successSoft,
+                  color: glow ? sc.accentInk : sc.successSoft,
                 ),
                 alignment: Alignment.center,
                 child: Icon(
                   Icons.check,
                   size: 46,
-                  color: sc.success,
+                  color: glow ? sc.accent : sc.success,
                   weight: 800,
                 ),
               ),
               const SizedBox(height: Sp.s6),
-              Text(
-                'Terkirim',
-                style: SatType.sans(
-                  size: 30,
-                  weight: FontWeight.w600,
-                  letterSpacing: -0.6,
-                  color: sc.textHi,
-                ),
-              ),
+              Text('Terkirim', style: SatType.h1(color: ink)),
               const SizedBox(height: Sp.s2),
               Text(
                 'Pesanan Meja $name sudah live di display dapur dan bar.',
                 textAlign: TextAlign.center,
-                style: SatType.sans(size: 14, color: sc.textMd),
+                style: SatType.bodyM(
+                  color: glow ? ink.withValues(alpha: 0.7) : sc.textMd,
+                ),
               ),
               const SizedBox(height: Sp.s6),
               Wrap(
@@ -108,18 +109,16 @@ class _SentScreenState extends ConsumerState<SentScreen>
               const SizedBox(height: Sp.s4),
               Text(
                 'LAN P50 ${_latency}MS · CLOUD QUEUED',
-                style: SatType.mono(
-                  size: 10,
-                  color: sc.textLo,
-                  letterSpacing: 1.0,
+                style: SatType.monoS(
+                  color: glow ? ink.withValues(alpha: 0.55) : sc.textLo,
                 ),
               ),
               if (table != null) ...[
                 const SizedBox(height: Sp.s6),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                  label: const Text('Cetak struk'),
-                  onPressed: () {
+                SatButton.outline(
+                  icon: Icons.receipt_long_rounded,
+                  label: 'Cetak struk',
+                  onTap: () {
                     setState(() => _engaged = true);
                     printTableStruk(
                       context: context,
@@ -179,14 +178,7 @@ class _StationChip extends StatelessWidget {
                   ),
                 ),
           const SizedBox(width: Sp.s2),
-          Text(
-            name,
-            style: SatType.sans(
-              size: 13,
-              weight: FontWeight.w500,
-              color: sc.textHi,
-            ),
-          ),
+          Text(name, style: SatType.bodyM(color: sc.textHi)),
         ],
       ),
     );

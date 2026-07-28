@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -76,16 +77,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: SatType.sans(
-                    size: 30,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                    height: 1.05,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text(label, style: SatType.h1(color: sc.textHi)),
                 const SizedBox(height: Sp.s1),
                 Text(
                   [
@@ -93,11 +85,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                     '${active.length} ITEM',
                     if (handedOver) 'SUDAH DISERAHKAN',
                   ].join(' · '),
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.44,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ],
             ),
@@ -107,7 +95,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                 ? Center(
                     child: Text(
                       'Belum ada item.',
-                      style: SatType.sans(size: 13, color: sc.textLo),
+                      style: SatType.bodyM(color: sc.textLo),
                     ),
                   )
                 : ListView(
@@ -126,7 +114,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                     ],
                   ),
           ),
-          _Footer(
+          _TakeawayFooter(
             sc: sc,
             total: total,
             handedOver: handedOver,
@@ -204,7 +192,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
   }
 }
 
-class _Footer extends StatelessWidget {
+class _TakeawayFooter extends StatelessWidget {
   final SatColors sc;
   final int total;
   final bool handedOver;
@@ -213,7 +201,7 @@ class _Footer extends StatelessWidget {
   final VoidCallback onAddItems;
   final VoidCallback? onPrint;
   final VoidCallback? onHandover;
-  const _Footer({
+  const _TakeawayFooter({
     required this.sc,
     required this.total,
     required this.handedOver,
@@ -242,16 +230,9 @@ class _Footer extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Total', style: SatType.sans(size: 13, color: sc.textMd)),
+              Text('Total', style: SatType.bodyM(color: sc.textMd)),
               const Spacer(),
-              Text(
-                formatIDR(total),
-                style: SatType.mono(
-                  size: 15,
-                  weight: FontWeight.w600,
-                  color: sc.textHi,
-                ),
-              ),
+              Text(formatIDR(total), style: SatType.monoM(color: sc.textHi)),
             ],
           ),
           const SizedBox(height: Sp.s3),
@@ -259,30 +240,18 @@ class _Footer extends StatelessWidget {
             children: [
               if (!handedOver)
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: busy ? null : onAddItems,
-                    icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text('Tambah item'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: sc.textHi,
-                      side: SatB.side(color: sc.border2),
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                    ),
+                  child: SatButton.outline(
+                    label: 'Tambah item',
+                    icon: Icons.add_rounded,
+                    onTap: busy ? null : onAddItems,
                   ),
                 ),
               if (!handedOver) const SizedBox(width: Sp.s2h),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onPrint,
-                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                  label: const Text('Tagihan'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: sc.textHi,
-                    side: SatB.side(color: sc.border2),
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(borderRadius: SatR.a(14)),
-                  ),
+                child: SatButton.outline(
+                  label: 'Tagihan',
+                  icon: Icons.receipt_long_rounded,
+                  onTap: onPrint,
                 ),
               ),
             ],
@@ -292,21 +261,12 @@ class _Footer extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: FilledButton.icon(
-                onPressed: onHandover,
-                icon: busy
-                    ? const SizedBox(
-                        width: Sp.s4,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.shopping_bag_rounded, size: 18),
-                label: const Text('Serahkan'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: sc.accent,
-                  foregroundColor: sc.accentInk,
-                  shape: RoundedRectangleBorder(borderRadius: SatR.a(16)),
-                ),
+              child: SatButton.primary(
+                label: 'Serahkan',
+                icon: Icons.shopping_bag_rounded,
+                busy: busy,
+                size: SatButtonSize.lg,
+                onTap: onHandover,
               ),
             ),
             if (onHandover == null && !busy)
@@ -315,11 +275,7 @@ class _Footer extends StatelessWidget {
                 child: Text(
                   'Bisa diserahkan setelah semua item siap/disajikan.',
                   textAlign: TextAlign.center,
-                  style: SatType.mono(
-                    size: 11,
-                    color: sc.textLo,
-                    letterSpacing: 0.3,
-                  ),
+                  style: SatType.monoS(color: sc.textLo),
                 ),
               ),
           ] else
@@ -327,7 +283,7 @@ class _Footer extends StatelessWidget {
               padding: const EdgeInsets.only(top: Sp.s1),
               child: Text(
                 'Sudah diserahkan ke tamu.',
-                style: SatType.sans(size: 12, color: sc.textMd),
+                style: SatType.bodyS(color: sc.textMd),
               ),
             ),
         ],

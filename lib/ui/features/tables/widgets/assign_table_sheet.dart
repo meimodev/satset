@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +10,6 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'guest_stepper.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
 /// Result of the menu-first **Pesanan baru → assign to table** commit step.
@@ -100,69 +101,30 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               ),
             ),
             const SizedBox(height: Sp.s4h),
-            Text(
-              'Tetapkan ke meja',
-              style: SatType.sans(
-                size: 20,
-                weight: FontWeight.w600,
-                letterSpacing: -0.4,
-                color: sc.textHi,
-              ),
-            ),
+            Text('Tetapkan ke meja', style: SatType.h2(color: sc.textHi)),
             const SizedBox(height: Sp.s1),
             Text(
               'Atur tamu lalu pilih meja kosong',
-              style: SatType.mono(
-                size: 11,
-                color: sc.textLo,
-                letterSpacing: 0.44,
-              ),
+              style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
             Row(
               children: [
-                Text(
-                  'Tamu',
-                  style: SatType.sans(
-                    size: 14,
-                    weight: FontWeight.w500,
-                    color: sc.textHi,
-                  ),
-                ),
+                Text('Tamu', style: SatType.bodyM(color: sc.textHi)),
                 const Spacer(),
-                GuestStepper(
-                  pax: _pax,
+                SatStepper.pill(
+                  value: _pax,
                   max: 20,
-                  enabled: true,
-                  size: 40,
-                  onMinus: () => setState(() => _pax = (_pax - 1).clamp(0, 20)),
-                  onPlus: () => setState(() => _pax = (_pax + 1).clamp(0, 20)),
+                  icon: Icons.person_outline,
+                  showMax: true,
+                  size: SatStepperSize.lg,
+                  semanticLabel: 'Tamu',
+                  onChanged: (v) => setState(() => _pax = v.clamp(0, 20)),
                 ),
               ],
             ),
             const SizedBox(height: Sp.s3h),
-            TextField(
-              controller: _guestCtrl,
-              style: SatType.sans(size: 14, color: sc.textHi),
-              decoration: InputDecoration(
-                hintText: 'Nama tamu (opsional)',
-                hintStyle: SatType.sans(size: 14, color: sc.textLo),
-                filled: true,
-                fillColor: sc.bg2,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s3h,
-                  vertical: Sp.s3,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: sc.border0),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: SatR.a(12),
-                  borderSide: SatB.side(color: sc.border0),
-                ),
-              ),
-            ),
+            SatField.text(controller: _guestCtrl, hint: 'Nama tamu (opsional)'),
             const SizedBox(height: Sp.s4),
             Flexible(
               child: targets.isEmpty
@@ -171,7 +133,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                       child: Text(
                         'Tidak ada meja kosong.',
                         textAlign: TextAlign.center,
-                        style: SatType.sans(size: 13, color: sc.textLo),
+                        style: SatType.bodyM(color: sc.textLo),
                       ),
                     )
                   : ListView(
@@ -195,12 +157,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
         padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
         child: Text(
           zone.name.toUpperCase(),
-          style: SatType.mono(
-            size: 10,
-            weight: FontWeight.w600,
-            letterSpacing: 1.2,
-            color: sc.textLo,
-          ),
+          style: SatType.caption(color: sc.textLo),
         ),
       ),
       for (final t in inZone) _targetTile(sc, t),
@@ -239,16 +196,12 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               children: [
                 Text(
                   target.displayName,
-                  style: SatType.mono(
-                    size: 18,
-                    weight: FontWeight.w600,
-                    color: sc.textHi,
-                  ),
+                  style: SatType.monoL(color: sc.textHi),
                 ),
                 const SizedBox(width: Sp.s3),
                 Text(
                   'kapasitas ${target.capacity}',
-                  style: SatType.sans(size: 12, color: sc.textMd),
+                  style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),
                 if (overCapacity)

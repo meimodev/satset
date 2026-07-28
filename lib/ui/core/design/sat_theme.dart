@@ -16,7 +16,18 @@ import 'skin.dart';
 enum SatTheme {
   amberGelap(AppStrings.themeAmberGelap, Brightness.dark, SatColors.dark),
   amberTerang(AppStrings.themeAmberTerang, Brightness.light, SatColors.light),
-  neonHijau(AppStrings.themeNeonHijau, Brightness.dark, SatColors.neonHijau),
+  neonGelap(
+    AppStrings.themeNeonGelap,
+    Brightness.dark,
+    SatColors.glowNoir,
+    SatSkin.glow,
+  ),
+  neonTerang(
+    AppStrings.themeNeonTerang,
+    Brightness.light,
+    SatColors.glow,
+    SatSkin.glow,
+  ),
   indigoTerang(
     AppStrings.themeIndigoTerang,
     Brightness.light,
@@ -63,6 +74,11 @@ enum SatTheme {
 
   /// Enum name round-trip for [PrefsService]. Unknown or absent keys fall back
   /// rather than throwing: a preference read must never block app start.
+  ///
+  /// `neonHijau` was renamed to [neonGelap] without an alias (ADR-0050), so a
+  /// device that had picked it lands on [fallback] once. Deliberate: the
+  /// palette underneath the name changed too, so there is no old choice left to
+  /// honour — and the setting is device-local and cosmetic.
   static SatTheme fromKey(String? key) {
     for (final t in SatTheme.values) {
       if (t.name == key) return t;

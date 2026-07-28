@@ -52,11 +52,7 @@ class _TakeawayList extends ConsumerWidget {
           const SizedBox(height: Sp.s3h),
           Text(
             SatShape.caps(AppStrings.floorTakeaway),
-            style: SatType.display(
-              size: 18,
-              weight: FontWeight.w700,
-              color: sc.textHi,
-            ),
+            style: SatType.h3(color: sc.textHi),
           ),
           const SizedBox(height: Sp.s3),
           if (visits.isEmpty)
@@ -64,7 +60,7 @@ class _TakeawayList extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: Sp.s5),
               child: Text(
                 AppStrings.takeawayEmpty,
-                style: SatType.sans(size: 13, color: sc.textMd),
+                style: SatType.bodyM(color: sc.textMd),
               ),
             )
           else
@@ -129,16 +125,8 @@ class _TakeawayRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    visit.label,
-                    style: SatType.mono(
-                      size: 13,
-                      weight: FontWeight.w600,
-                      color: sc.textHi,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
+                  Text(visit.label, style: SatType.monoM(color: sc.textHi)),
+                  const SizedBox(height: Sp.s1),
                   Text(
                     [
                       if (visit.guestName != null &&
@@ -146,11 +134,7 @@ class _TakeawayRow extends ConsumerWidget {
                         visit.guestName!,
                       '${active.length} item',
                     ].join(' · '),
-                    style: SatType.sans(
-                      size: 12,
-                      weight: FontWeight.w500,
-                      color: sc.textMd,
-                    ),
+                    style: SatType.bodyS(color: sc.textMd),
                   ),
                 ],
               ),
@@ -158,7 +142,7 @@ class _TakeawayRow extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: Sp.s1h,
-                vertical: 3,
+                vertical: Sp.s1,
               ),
               decoration: BoxDecoration(
                 color: SatShape.brutal
@@ -171,10 +155,7 @@ class _TakeawayRow extends ConsumerWidget {
               ),
               child: Text(
                 SatShape.caps(statusLabel),
-                style: SatType.sans(
-                  size: 9,
-                  weight: FontWeight.w800,
-                  letterSpacing: 0.8,
+                style: SatType.labelS(
                   color: SatShape.brutal ? onFill(statusColor) : statusColor,
                 ),
               ),

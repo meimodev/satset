@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -163,7 +165,7 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
               decoration: SatBox.d(color: sc.textDim, borderRadius: SatR.a(4)),
             ),
           ),
-          _Head(
+          _LineActionHead(
             ticket: ticket,
             tableName:
                 widget.displayName ??
@@ -200,11 +202,11 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
   }
 }
 
-class _Head extends StatelessWidget {
+class _LineActionHead extends StatelessWidget {
   final Ticket ticket;
   final String tableName;
   final VoidCallback onClose;
-  const _Head({
+  const _LineActionHead({
     required this.ticket,
     required this.tableName,
     required this.onClose,
@@ -213,62 +215,37 @@ class _Head extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 8, 14),
-      child: Row(
+    return SatSheetHeader(
+      onClose: onClose,
+      padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s1h, Sp.s2, Sp.s3h),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    StatusChip(status: ticket.status),
-                    const SizedBox(width: Sp.s2),
-                    Flexible(
-                      child: Text(
-                        'MEJA $tableName · ${ticket.sentAt}',
-                        style: SatType.mono(
-                          size: 10,
-                          color: sc.textLo,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ),
-                  ],
+          Row(
+            children: [
+              StatusChip(status: ticket.status),
+              const SizedBox(width: Sp.s2),
+              Flexible(
+                child: Text(
+                  'MEJA $tableName · ${ticket.sentAt}',
+                  style: SatType.monoS(color: sc.textLo),
                 ),
-                const SizedBox(height: Sp.s1h),
-                Text(
-                  '×${ticket.qty} ${ticket.name}${ticket.variantName.isEmpty ? '' : ' · ${ticket.variantName}'}',
-                  style: SatType.sans(
-                    size: 17,
-                    weight: FontWeight.w600,
-                    letterSpacing: -0.17,
-                    height: 1.2,
-                    color: sc.textHi,
-                  ),
-                ),
-                if (ticket.modifiers.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: Sp.s1),
-                    child: Text(
-                      ticket.modifiers.map((m) => m.display).join(' · '),
-                      style: SatType.sans(
-                        size: 12,
-                        color: sc.textMd,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.s1h),
+          Text(
+            '×${ticket.qty} ${ticket.name}${ticket.variantName.isEmpty ? '' : ' · ${ticket.variantName}'}',
+            style: SatType.h3(color: sc.textHi),
+          ),
+          if (ticket.modifiers.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: Sp.s1),
+              child: Text(
+                ticket.modifiers.map((m) => m.display).join(' · '),
+                style: SatType.bodyS(color: sc.textMd),
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: AppStrings.close,
-            onPressed: onClose,
-            icon: Icon(Icons.close, size: 18, color: sc.textMd),
-          ),
         ],
       ),
     );
@@ -340,7 +317,7 @@ class _ActionList extends StatelessWidget {
           const SizedBox(height: 60),
           Text(
             'Tap luar sheet untuk batal.',
-            style: SatType.sans(size: 11, color: sc.textLo),
+            style: SatType.bodyS(color: sc.textLo),
           ),
         ],
       ),
@@ -431,24 +408,9 @@ class _ActionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.title,
-                      style: SatType.sans(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        letterSpacing: -0.14,
-                        color: titleColor,
-                      ),
-                    ),
+                    Text(item.title, style: SatType.labelM(color: titleColor)),
                     const SizedBox(height: Sp.sHair),
-                    Text(
-                      item.desc,
-                      style: SatType.sans(
-                        size: 11,
-                        color: sc.textMd,
-                        height: 1.35,
-                      ),
-                    ),
+                    Text(item.desc, style: SatType.bodyS(color: sc.textMd)),
                   ],
                 ),
               ),
@@ -503,11 +465,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 Expanded(
                   child: Text(
                     'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan. Refire mungkin lebih cocok untuk isu kualitas.',
-                    style: SatType.sans(
-                      size: 12,
-                      color: sc.textMd,
-                      height: 1.4,
-                    ),
+                    style: SatType.bodyS(color: sc.textMd),
                   ),
                 ),
               ],
@@ -564,16 +522,12 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                             children: [
                               Text(
                                 r['label']!,
-                                style: SatType.sans(
-                                  size: 14,
-                                  weight: FontWeight.w500,
-                                  color: sc.textHi,
-                                ),
+                                style: SatType.bodyM(color: sc.textHi),
                               ),
                               const SizedBox(height: Sp.sHair),
                               Text(
                                 r['desc']!,
-                                style: SatType.sans(size: 11, color: sc.textMd),
+                                style: SatType.bodyS(color: sc.textMd),
                               ),
                             ],
                           ),
@@ -587,32 +541,23 @@ class _VoidReasonListState extends State<_VoidReasonList> {
           if (_pickedId == 'other')
             Padding(
               padding: const EdgeInsets.only(top: Sp.s1),
-              child: TextField(
+              child: SatField.text(
+                hint: 'Wajib — jelaskan alasan pembatalan',
                 maxLength: 120,
+                // Red before it is wrong: the reason gates the void, so the
+                // field wears the same border it would on rejection.
+                hasError: _other.trim().isEmpty,
                 onChanged: (v) => setState(() => _other = v),
-                decoration: InputDecoration(
-                  hintText: 'Wajib — jelaskan alasan pembatalan',
-                  filled: true,
-                  fillColor: sc.bg2,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(14),
-                    borderSide: SatB.side(color: sc.urgent),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: SatR.a(14),
-                    borderSide: SatB.side(color: sc.urgent),
-                  ),
-                  counterText: '',
-                  hintStyle: SatType.sans(size: 13, color: sc.textLo),
-                ),
-                style: SatType.sans(size: 13, color: sc.textHi),
               ),
             ),
           const SizedBox(height: Sp.s4),
           SizedBox(
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _canContinue
+            width: double.infinity,
+            child: SatButton.primary(
+              label: 'Batalkan item',
+              icon: Icons.delete_outline,
+              size: SatButtonSize.lg,
+              onTap: _canContinue
                   ? () {
                       final r = _voidReasons.firstWhere(
                         (x) => x['id'] == _pickedId,
@@ -623,29 +568,6 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                       );
                     }
                   : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: sc.accent,
-                disabledBackgroundColor: sc.accent.withValues(alpha: 0.45),
-                foregroundColor: sc.accentInk,
-                elevation: 0,
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(borderRadius: SatR.a(18)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Batalkan item',
-                    style: SatType.sans(
-                      size: 15,
-                      weight: FontWeight.w600,
-                      color: sc.accentInk,
-                    ),
-                  ),
-                  const SizedBox(width: Sp.s1h),
-                  Icon(Icons.delete_outline, size: 14, color: sc.accentInk),
-                ],
-              ),
             ),
           ),
         ],
@@ -676,20 +598,12 @@ class _ConfirmedView extends StatelessWidget {
             child: Icon(Icons.delete_outline, size: 46, color: sc.urgent),
           ),
           const SizedBox(height: Sp.s4),
-          Text(
-            'Item dibatalkan',
-            style: SatType.sans(
-              size: 22,
-              weight: FontWeight.w600,
-              letterSpacing: -0.22,
-              color: sc.textHi,
-            ),
-          ),
+          Text('Item dibatalkan', style: SatType.h2(color: sc.textHi)),
           const SizedBox(height: Sp.s2),
           Text(
             'Tercatat: ×${ticket.qty} ${ticket.name} · atas nama kamu · terlihat di laporan',
             textAlign: TextAlign.center,
-            style: SatType.sans(size: 13, color: sc.textMd, height: 1.45),
+            style: SatType.bodyM(color: sc.textMd),
           ),
         ],
       ),

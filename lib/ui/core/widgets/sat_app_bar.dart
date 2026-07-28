@@ -43,11 +43,24 @@ class SatAppBar extends ConsumerWidget {
 
   Color _resolveBg(SatColors sc) {
     if (backgroundColor != null) return backgroundColor!;
-    if (SatShape.brutal) {
-      return SatShape.brutalPaper ? sc.accent : sc.bg1;
-    }
-    return sc.bg0;
+    return switch (SatShape.skin) {
+      SatSkin.brutal => SatShape.brutalPaper ? sc.accent : sc.bg1,
+      // Glow's chrome is a surface panel over the page, not the page itself —
+      // the bar has to read as a separate slab from the content under it.
+      SatSkin.glow => sc.bg1,
+      SatSkin.lembut => sc.bg0,
+    };
   }
+
+  /// The rule under a top bar. Fat ink under brutal; a palette hairline under
+  /// both others — Glow's `border0` is the α0.05 the design calls `--hair`.
+  static BorderSide _rule(SatColors sc) => SatB.side(
+    color: SatShape.brutal ? SatShape.ink : sc.border0,
+    width: switch (SatShape.skin) {
+      SatSkin.brutal => SatShape.brutalBorder,
+      SatSkin.lembut || SatSkin.glow => 1,
+    },
+  );
 
   Widget _phone(BuildContext context) {
     final sc = context.sat;
@@ -57,12 +70,7 @@ class SatAppBar extends ConsumerWidget {
     return Container(
       decoration: SatBox.d(
         color: bg,
-        border: Border(
-          bottom: SatB.side(
-            color: SatShape.brutal ? SatShape.ink : sc.border0,
-            width: SatShape.brutal ? SatShape.brutalBorder : 1,
-          ),
-        ),
+        border: Border(bottom: _rule(sc)),
       ),
       padding: EdgeInsets.fromLTRB(16, l.topInset + 6, 16, 10),
       child: Row(
@@ -93,12 +101,7 @@ class SatAppBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: Sp.s6),
       decoration: SatBox.d(
         color: bg,
-        border: Border(
-          bottom: SatB.side(
-            color: SatShape.brutal ? SatShape.ink : sc.border0,
-            width: SatShape.brutal ? SatShape.brutalBorder : 1,
-          ),
-        ),
+        border: Border(bottom: _rule(sc)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -166,15 +169,7 @@ class _NetworkPill extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: Sp.s2),
-          Text(
-            label,
-            style: SatType.mono(
-              size: 11,
-              weight: FontWeight.w700,
-              letterSpacing: 0.6,
-              color: fg,
-            ),
-          ),
+          Text(label, style: SatType.caption(color: fg)),
         ],
       ),
     );
@@ -208,15 +203,7 @@ class SatAppBarPill extends StatelessWidget {
             Icon(icon, size: 12, color: fg),
             const SizedBox(width: Sp.s1h),
           ],
-          Text(
-            label,
-            style: SatType.mono(
-              size: 10,
-              weight: FontWeight.w500,
-              letterSpacing: 0.6,
-              color: fg,
-            ),
-          ),
+          Text(label, style: SatType.monoS(color: fg)),
         ],
       ),
     );
