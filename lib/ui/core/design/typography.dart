@@ -6,6 +6,22 @@ import 'skin.dart';
 class SatType {
   SatType._();
 
+  /// Resolves every role against the platform's default face instead of
+  /// fetching IBM Plex / Archivo through `google_fonts`.
+  ///
+  /// Set by the golden suite only. `google_fonts` downloads on first use, and
+  /// `flutter_test` stubs the network out — the fetch then fails
+  /// asynchronously, after the test body has finished, which is too late for
+  /// `takeException()` to catch. Bundling ~2MB of `.ttf` to satisfy a test
+  /// artifact is the wrong trade.
+  ///
+  /// Everything the roles decide — size, weight, tracking, height — still
+  /// applies; only the face is swapped, so a golden still fails when a role
+  /// changes. It also makes goldens deterministic across machines, which a
+  /// downloaded font never is.
+  @visibleForTesting
+  static bool useSystemFonts = false;
+
   static TextStyle sans({
     double size = 14,
     FontWeight weight = FontWeight.w400,
@@ -13,6 +29,15 @@ class SatType {
     double? height,
     Color? color,
   }) {
+    if (useSystemFonts) {
+      return TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing,
+        height: height,
+        color: color,
+      );
+    }
     final f = switch (SatShape.skin) {
       SatSkin.brutal || SatSkin.glow => GoogleFonts.archivo,
       SatSkin.lembut => GoogleFonts.ibmPlexSans,
@@ -41,6 +66,16 @@ class SatType {
     double? height,
     Color? color,
   }) {
+    if (useSystemFonts) {
+      return TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: SatShape.glow ? 0 : letterSpacing,
+        height: height,
+        color: color,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
+    }
     if (SatShape.glow) {
       return GoogleFonts.archivo(
         fontSize: size,
@@ -77,6 +112,15 @@ class SatType {
       return sans(
         size: size,
         weight: weight,
+        letterSpacing: letterSpacing,
+        height: height,
+        color: color,
+      );
+    }
+    if (useSystemFonts) {
+      return TextStyle(
+        fontSize: size,
+        fontWeight: FontWeight.w900,
         letterSpacing: letterSpacing,
         height: height,
         color: color,

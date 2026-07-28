@@ -204,7 +204,9 @@ void main() {
         r'^\s*(?:@override\s*\n\s*)?\w[\w<>, ?]*\s+\w+\([^;]*?\)\s*(?:\{|=>)',
         multiLine: true,
       ).allMatches(src).map((m) => m.start).toList();
-      for (final m in RegExp(r'\b(GestureDetector|InkWell)\(').allMatches(src)) {
+      for (final m in RegExp(
+        r'\b(GestureDetector|InkWell)\(',
+      ).allMatches(src)) {
         final body = _callBody(src, m.start);
         if (RegExp(r'Text\(|SatType\.|label:').hasMatch(body)) continue;
         // The enclosing method: from the last declaration at or before the

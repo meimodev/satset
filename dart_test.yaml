@@ -1,0 +1,13 @@
+tags:
+  # Pixel comparisons. Excluded from `flutter test` because golden output is
+  # renderer- and platform-sensitive: a contributor on a different OS would see
+  # failures that say nothing about their change. Run deliberately, on one
+  # machine or one CI image:
+  #
+  #   flutter test --tags golden --run-skipped
+  #   flutter test --tags golden --run-skipped --update-goldens
+  #
+  # `--run-skipped` is needed because a skip is how a tag gets excluded from
+  # the default run; there is no default-exclude in dart_test.yaml.
+  golden:
+    skip: "run explicitly: flutter test --tags golden --run-skipped"

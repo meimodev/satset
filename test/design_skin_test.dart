@@ -264,9 +264,15 @@ void main() {
     test('onHue overrides the luminance rule where the design needs it', () {
       // These two sit just under onFill()'s cut and would take white ink.
       expect(onFill(SatColors.glowNoir.urgent), const Color(0xFFFFFFFF));
-      expect(SatColors.glowNoir.inkOn(SatColors.glowNoir.urgent), const Color(0xFF08080A));
+      expect(
+        SatColors.glowNoir.inkOn(SatColors.glowNoir.urgent),
+        const Color(0xFF08080A),
+      );
       // A palette that declares nothing still computes, as before.
-      expect(SatColors.dark.inkOn(SatColors.dark.success), onFill(SatColors.dark.success));
+      expect(
+        SatColors.dark.inkOn(SatColors.dark.success),
+        onFill(SatColors.dark.success),
+      );
     });
   });
 

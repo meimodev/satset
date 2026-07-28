@@ -31,6 +31,8 @@ flutter run
 flutter build apk --debug
 flutter test
 flutter test test/foo_test.dart
+flutter test --tags golden --run-skipped            # pixel lock on core/widgets
+flutter test --tags golden --run-skipped --update-goldens
 tool/codegen.sh                  # rebuild generated files
 ```
 
