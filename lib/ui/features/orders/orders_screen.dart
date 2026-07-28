@@ -6,6 +6,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
@@ -16,6 +17,7 @@ import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
+import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
@@ -42,9 +44,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       venueSettingsProvider.select((s) => s.displayName),
     );
 
-    // Venue-wide board: every table's tickets, no per-waiter filter. Each card
-    // shows the line's own orderer (ticket.createdBy) — frozen to whoever sent
-    // it, not the table's current waiter. Null on legacy / offline lines.
+    // Rows are scoped to the signed-in user (ADR-0056): the section you handle,
+    // plus lines you authored, plus anything nobody owns. Each card still shows
+    // the line's own orderer (ticket.createdBy) — frozen to whoever sent it, not
+    // the table's current handler. Null on legacy / offline lines.
+    final meId = ref.watch(authStateProvider.select((s) => s.user?.id));
+    final showAll = ref.watch(ordersShowAllProvider);
+
     final all = <_Row>[];
     tickets.forEach((key, list) {
       if (list.isEmpty) return;
@@ -73,6 +79,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             pax: pax,
             orderer: orderer,
             isTakeaway: takeaway != null,
+            mine: ownsOrderRow(
+              meId: meId,
+              createdBy: t.createdBy,
+              tableActorId: table?.lastActorId,
+            ),
           ),
         );
       }
@@ -92,10 +103,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       }
     }
 
+    // Siap is deliberately venue-wide whatever the scope says: the "Pesanan
+    // siap" cue already sounds on every waiter's handset, and food dying under
+    // the lamp is everyone's problem. Scoping applies to Aktif and Selesai.
+    // ADR-0056.
     final ready = all
         .where((r) => r.ticket.status == TicketStatus.ready)
         .toList();
-    final active = all
+    final scoped = showAll ? all : all.where((r) => r.mine).toList();
+    final active = scoped
         .where(
           (r) =>
               r.ticket.status == TicketStatus.sent ||
@@ -104,7 +120,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               r.ticket.status == TicketStatus.held,
         )
         .toList();
-    final done = all
+    final done = scoped
         .where(
           (r) =>
               r.ticket.status == TicketStatus.served ||
@@ -120,11 +136,17 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final taRows = list.where((r) => r.isTakeaway).toList();
     final dineRows = list.where((r) => !r.isTakeaway).toList();
 
+    // Scoped-and-empty is a different fact from venue-empty: say which, so a
+    // waiter never reads "nothing is cooking" when the kitchen is slammed.
     final emptyMsg = _seg == 'ready'
         ? 'Belum ada yang siap di pass.'
         : _seg == 'active'
-        ? 'Tidak ada item yang sedang disiapkan.'
-        : 'Belum ada item yang selesai pada sesi ini.';
+        ? (showAll
+              ? 'Tidak ada item yang sedang disiapkan.'
+              : 'Tidak ada item Anda yang sedang disiapkan.\nPilih Semua untuk melihat seluruh venue.')
+        : (showAll
+              ? 'Belum ada item yang selesai pada sesi ini.'
+              : 'Belum ada item Anda yang selesai pada sesi ini.\nPilih Semua untuk melihat seluruh venue.');
 
     Widget orderRow(_Row r) => _OrderRow(
       row: r,
@@ -268,6 +290,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   active: _seg == 'done',
                   onTap: () => setState(() => _seg = 'done'),
                 ),
+                const Spacer(),
+                if (_seg != 'ready')
+                  _ScopeToggle(
+                    showAll: showAll,
+                    onChange: (v) =>
+                        ref.read(ordersShowAllProvider.notifier).set(v),
+                  ),
               ],
             ),
           ),
@@ -317,6 +346,18 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           done: done.length,
           onChange: (v) => setState(() => _seg = v),
         ),
+        if (_seg != 'ready')
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s2, Sp.s4, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _ScopeToggle(
+                showAll: showAll,
+                onChange: (v) =>
+                    ref.read(ordersShowAllProvider.notifier).set(v),
+              ),
+            ),
+          ),
         Expanded(
           child: Center(
             child: ConstrainedBox(
@@ -338,6 +379,10 @@ class _Row {
   final int pax;
   final AppUser? orderer;
   final bool isTakeaway;
+
+  /// Belongs to the signed-in user — see [ownsOrderRow]. Filters Aktif and
+  /// Selesai; the Siap bucket ignores it. ADR-0056.
+  final bool mine;
   _Row({
     required this.ticket,
     required this.tableId,
@@ -346,6 +391,7 @@ class _Row {
     required this.pax,
     this.orderer,
     this.isTakeaway = false,
+    this.mine = true,
   });
 
   /// Compact label for the card's leading tile. Takeaway shows just its running
@@ -433,6 +479,85 @@ class _Segments extends StatelessWidget {
             onTap: () => onChange('done'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// "Milik saya / Semua" scope switch. Only rendered on Aktif and Selesai —
+/// showing it over the venue-wide Siap bucket would be a lie. ADR-0056.
+class _ScopeToggle extends StatelessWidget {
+  final bool showAll;
+  final ValueChanged<bool> onChange;
+  const _ScopeToggle({required this.showAll, required this.onChange});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      padding: const EdgeInsets.all(Sp.sHair),
+      decoration: SatBox.d(
+        color: sc.bg2,
+        borderRadius: SatR.a(999),
+        border: SatB.all(color: sc.border0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ScopePill(
+            label: 'Milik saya',
+            active: !showAll,
+            onTap: () => onChange(false),
+          ),
+          _ScopePill(
+            label: 'Semua',
+            active: showAll,
+            onTap: () => onChange(true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScopePill extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _ScopePill({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: Material(
+        color: active ? sc.bg4 : Colors.transparent,
+        borderRadius: SatR.a(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: SatR.a(999),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s3,
+              vertical: Sp.s1h,
+            ),
+            child: Text(
+              label,
+              style: SatType.sans(
+                size: 12,
+                weight: active ? FontWeight.w600 : FontWeight.w500,
+                color: active ? sc.textHi : sc.textLo,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

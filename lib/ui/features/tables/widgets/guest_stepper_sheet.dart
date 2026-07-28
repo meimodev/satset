@@ -45,7 +45,6 @@ class _GuestStepperSheet extends ConsumerWidget {
     final canEdit = user?.role == UserRole.waiter;
     final canMove =
         table.status != TableStatus.available && auth.has(Capability.takeOrder);
-    final actorId = user?.id;
 
     return SafeArea(
       child: Padding(
@@ -92,10 +91,10 @@ class _GuestStepperSheet extends ConsumerWidget {
                 size: 48,
                 onMinus: () => ref
                     .read(tablesProvider.notifier)
-                    .decrementPax(table.id, userId: actorId),
+                    .decrementPax(table.id),
                 onPlus: () => ref
                     .read(tablesProvider.notifier)
-                    .incrementPax(table.id, userId: actorId),
+                    .incrementPax(table.id),
               ),
             ),
             const SizedBox(height: Sp.s3h),

@@ -596,7 +596,6 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final pax = (body['pax'] as num).toInt();
-    final actorId = body['actorId'] as String?;
     // Clamp to [1, capacity] server-side; the UI gates this too but never
     // trust client clamping for a multi-device flow.
     final row = await (db.select(
@@ -604,11 +603,11 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return Response.notFound('table not found');
     final clamped = pax.clamp(0, row.capacity < 1 ? 1 : row.capacity);
+    // Deliberately does NOT touch lastActorId: fixing a headcount is a
+    // correction, not a takeover, and lastActorId now scopes the Pesanan
+    // board. See ADR-0056.
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
-      VenueTablesCompanion(
-        pax: Value(clamped),
-        lastActorId: actorId == null ? const Value.absent() : Value(actorId),
-      ),
+      VenueTablesCompanion(pax: Value(clamped)),
     );
     return _broadcast(db, hub, id);
   });
@@ -1188,8 +1187,6 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.post('/tables/<id>/ready/decrement', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>?;
-    final actorId = body == null ? null : body['actorId'] as String?;
     final row = await (db.select(
       db.venueTables,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -1200,12 +1197,11 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final nextStatus = (row.status == 'ready' && n == 0)
         ? 'occupied'
         : row.status;
+    // Deliberately does NOT touch lastActorId: running someone else's plate
+    // to the pass is a favour, not a takeover, and lastActorId now scopes
+    // the Pesanan board. See ADR-0056.
     await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
-      VenueTablesCompanion(
-        readyCount: Value(n),
-        status: Value(nextStatus),
-        lastActorId: actorId == null ? const Value.absent() : Value(actorId),
-      ),
+      VenueTablesCompanion(readyCount: Value(n), status: Value(nextStatus)),
     );
     return _broadcast(db, hub, id);
   });
