@@ -78,6 +78,27 @@ class BookEntry {
   });
 }
 
+/// Holds a selection index so a book state can actually be operated, not just
+/// looked at. Most states here are deliberately static — a fixed render is the
+/// only way to pin an *edge* state (dead at min, overflowing, disabled) that a
+/// live control would immediately let you tap your way out of. Reach for this
+/// when the thing worth checking is the transition rather than the extreme.
+class _Live extends StatefulWidget {
+  final Widget Function(int selected, ValueChanged<int> set) build;
+  const _Live(this.build);
+
+  @override
+  State<_Live> createState() => _LiveState();
+}
+
+class _LiveState extends State<_Live> {
+  int _selected = 0;
+
+  @override
+  Widget build(BuildContext context) =>
+      widget.build(_selected, (i) => setState(() => _selected = i));
+}
+
 // ── Provider plumbing ───────────────────────────────────────────────────────
 
 /// `authStateProvider` is a `StateNotifierProvider<AuthRepository, AuthState>`,
@@ -563,6 +584,22 @@ List<BookEntry> bookEntries() => [
           selected: 1,
           onSelected: (_) {},
         ),
+      ),
+      BookState(
+        'two tabs, live — the Pesanan scope switch',
+        (c, r) => _Live(
+          (selected, set) => SatTabs(
+            tabs: const [SatTab(label: 'Milik saya'), SatTab(label: 'Semua')],
+            selected: selected,
+            onSelected: set,
+          ),
+        ),
+        note:
+            'The only state in the book that actually moves when you tap it. '
+            'Two mutually exclusive views of one list — the shape the Pesanan '
+            'board uses to scope Disiapkan and Selesai (ADR-0056). Every other '
+            'state here is a static render with a dead callback, which shows '
+            'you what a control looks like but not what it does.',
       ),
     ],
   ),
