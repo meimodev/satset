@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +16,7 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -181,12 +183,23 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                     ),
                     const SizedBox(height: Sp.s1),
                     Text(
-                      '${today.length} booking · $covers tamu',
+                      '${formatBookingDayId(now)} · ${today.length} booking · '
+                      '$covers tamu',
                       style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
                 ),
               ),
+              // The source puts the primary action in the head, beside what it
+              // acts on, rather than at the foot below a scrolling list where
+              // it is off screen exactly when the book is busy.
+              SatButton.primary(
+                label: 'Reservasi baru',
+                icon: Icons.add,
+                size: SatButtonSize.sm,
+                onTap: () => openCreateReservationSheet(context, ref),
+              ),
+              const SizedBox(width: Sp.s1),
               IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.close),
@@ -221,15 +234,13 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
         ),
         Expanded(
           child: list.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Sp.s6),
-                    child: Text(
-                      AppStrings.reservationEmptyFilter,
-                      textAlign: TextAlign.center,
-                      style: SatType.bodyM(color: sc.textMd),
-                    ),
-                  ),
+              // The source draws a dashed outline here. `SatEmpty` is the
+              // app's one empty state (ADR-0055) and says more with an icon
+              // and a title than a dashed box does — forking the vocabulary to
+              // match a border was the worse trade.
+              ? SatEmpty(
+                  icon: Icons.event_busy_outlined,
+                  title: AppStrings.reservationEmptyFilter,
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -240,14 +251,6 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                     late: _isLate(list[i], grace, now),
                   ),
                 ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: SatButton.primary(
-            label: 'Reservasi baru',
-            icon: Icons.add,
-            onTap: () => openCreateReservationSheet(context, ref),
-          ),
         ),
       ],
     );
@@ -272,13 +275,24 @@ class _ReservationRow extends ConsumerWidget {
                   .map((t) => t.displayName)
                   .firstOrNull ??
               r.tableId!;
+    final zoneLabel = r.zoneId == null
+        ? null
+        : ref
+              .watch(zonesProvider)
+              .where((z) => z.id == r.zoneId)
+              .map((z) => z.name)
+              .firstOrNull;
 
+    // A booking still waiting is the accent's job, not the info ramp's — the
+    // source paints `rv-st-info` with the same rule it paints every other
+    // accent pill. "Menunggu" is the one status on this row that is a thing to
+    // go and do, so it takes the colour the app spends on actions.
     final (statusLabel, statusTone) = late
         ? (AppStrings.reservationLate, sc.urgent)
         : switch (r.status) {
             ReservationStatus.pending => (
               reservationStatusLabel(r.status),
-              sc.info,
+              sc.accent,
             ),
             ReservationStatus.seated => (
               reservationStatusLabel(r.status),
@@ -287,10 +301,36 @@ class _ReservationRow extends ConsumerWidget {
             _ => (reservationStatusLabel(r.status), sc.textLo),
           };
 
+    // Landing inside the next 20 minutes — the window where the host should be
+    // watching the door. Already computed for the relative label below; the
+    // ground reads it too rather than leaving it to a line of 11pt mono.
+    final isSoon =
+        !late &&
+        r.status == ReservationStatus.pending &&
+        r.expectedAt.difference(SatClock.now()).inMinutes <= 20;
+    final isDead =
+        r.status == ReservationStatus.noShow ||
+        r.status == ReservationStatus.cancelled;
+
+    // The row's ground carries its state. A dead booking drops to the recessed
+    // step and stops competing; everything else warms toward what it needs.
+    final Color fill;
+    if (late) {
+      fill = Color.alphaBlend(sc.urgent.withValues(alpha: 0.10), sc.bg1);
+    } else if (isSoon) {
+      fill = Color.alphaBlend(sc.accent.withValues(alpha: 0.18), sc.bg1);
+    } else if (r.status == ReservationStatus.seated) {
+      fill = Color.alphaBlend(sc.success.withValues(alpha: 0.10), sc.bg1);
+    } else if (isDead) {
+      fill = sc.bg3;
+    } else {
+      fill = sc.bg2;
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: SatBox.d(
-        color: sc.bg2,
+        color: fill,
         borderRadius: SatR.a(14),
         border: SatB.all(color: late ? sc.urgent : sc.border0),
       ),
@@ -332,6 +372,10 @@ class _ReservationRow extends ConsumerWidget {
                     Text(
                       [
                         '${r.partySize} tamu',
+                        // Where the party is going, not just which table.
+                        // A booking with no table yet still has a zone, and
+                        // that is what the host seats against.
+                        ?zoneLabel,
                         if (tableLabel != null)
                           'Meja $tableLabel'
                         else
@@ -364,7 +408,10 @@ class _ReservationRow extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: SatButton.outline(
+                  // The source tones this one red. It is the only action here
+                  // that writes a guest off, and it sits beside a plain cancel
+                  // — the two should not look interchangeable.
+                  child: SatButton.danger(
                     label: AppStrings.reservationActionNoShow,
                     onTap: () async {
                       await n.updateStatus(r.id, ReservationStatus.noShow);
@@ -407,6 +454,13 @@ class _ReservationRow extends ConsumerWidget {
   }
 }
 
+/// Status tag on a booking row. Kept in step with `_StatePill` on the table
+/// card — same rule, same reason: both poster skins fill solid, and under Glow
+/// the row behind this tag is itself a semantic wash, so a tinted tag would be
+/// a tint on a tint.
+// ponytail: still two copies of this, one here and one in `table_card.dart`.
+// They agree today. Fold both into `SatChip` if a third appears — one caller
+// each does not yet pay for a parameter on the shared widget.
 class _Tag extends StatelessWidget {
   final String label;
   final Color tone;
@@ -414,17 +468,19 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sc = context.sat;
     final brutal = SatShape.brutal;
+    final solid = !SatShape.lembut;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1),
       decoration: BoxDecoration(
-        color: brutal ? tone : tone.withValues(alpha: 0.15),
-        borderRadius: SatR.a(6),
+        color: solid ? tone : tone.withValues(alpha: 0.15),
+        borderRadius: SatShape.glow ? SatR.pill : SatR.a(6),
         border: brutal ? Border.all(color: SatShape.ink, width: 2) : null,
       ),
       child: Text(
         SatShape.caps(label),
-        style: SatType.labelS(color: brutal ? onFill(tone) : tone),
+        style: SatType.labelS(color: solid ? sc.inkOn(tone) : tone),
       ),
     );
   }

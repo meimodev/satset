@@ -35,6 +35,16 @@ class SatChip extends StatelessWidget {
   final SatChipSize size;
   final bool selected;
 
+  /// Fills the chip with its hue instead of tinting it, and inks it via
+  /// [SatColors.inkOn]. A tag states a fact; a *filled* tag states a fact that
+  /// changes what someone does — the KDS add-on ("something extra lands on this
+  /// plate") beside a chosen option, which is only a variation of it. Tint and
+  /// fill are two volumes of the same vocabulary, not two vocabularies.
+  ///
+  /// [SatChipHue.neutral] ignores this: a solid neutral is a `bg3` chip, which
+  /// is what the tint already is.
+  final bool filled;
+
   /// A tally after the label — how many rows this filter would show. Set in
   /// mono so a row of chips keeps its numbers in a column.
   final int? count;
@@ -50,6 +60,7 @@ class SatChip extends StatelessWidget {
     this.hue = SatChipHue.neutral,
     this.size = SatChipSize.md,
     this.count,
+    this.filled = false,
   }) : selected = false,
        onTap = null,
        _selectable = false;
@@ -66,6 +77,7 @@ class SatChip extends StatelessWidget {
     this.size = SatChipSize.md,
     this.count,
   }) : hue = SatChipHue.neutral,
+       filled = false,
        _selectable = true;
 
   EdgeInsets get _padding => switch (size) {
@@ -94,21 +106,37 @@ class SatChip extends StatelessWidget {
     // neutral ramp (ADR-0051) — a tint of a fluorescent accent on a bone
     // ground reads as a highlighter smear, and "is this on?" must never be a
     // difference you have to look for.
+    //
+    // Which slab, though, is the amendment: the source design paints every
+    // segment and zone control lime-on-obsidian when active and reserves the
+    // obsidian slab for menu category tabs. Selecting obsidian here made the
+    // hand-rolled zone row (lime) and every `SatChip.select` (obsidian)
+    // disagree about a state the design styles identically.
     final glow = SatShape.glow;
-    final on = glow && selected ? sc.slab : sc;
 
     final Color fill;
     final Color border;
     final Color ink;
     if (_selectable) {
-      fill = selected ? (glow ? on.bg0 : sc.bg4) : sc.bg2;
-      border = selected ? sc.border2 : sc.border0;
-      ink = selected ? on.textHi : sc.textMd;
+      fill = selected ? (glow ? sc.accent : sc.bg4) : sc.bg2;
+      // Glow draws no rules — the fill carries the state, so the border
+      // collapses into it instead of ringing the pill.
+      border = selected ? (glow ? sc.accent : sc.border2) : sc.border0;
+      ink = selected ? (glow ? sc.accentInk : sc.textHi) : sc.textMd;
     } else {
       final tone = _tone(sc);
-      fill = tone.fill;
-      border = tone.border;
-      ink = tone.ink;
+      final solid = filled ? _solid(sc) : null;
+      fill = solid ?? tone.fill;
+      border = solid ?? tone.border;
+      // `accent` takes `accentInk`, not `inkOn`. A palette's `onHue` is one
+      // answer for every semantic fill, and it is right for all of them except
+      // this one: Glow's semantic hues are dark ink on bone so `onHue` is
+      // white, but its accent is fluorescent lime and wants obsidian. The
+      // source keeps a separate `--onLime` for the same reason, and
+      // `.select` above already reads `accentInk`.
+      ink = solid == null
+          ? tone.ink
+          : (hue == SatChipHue.accent ? sc.accentInk : sc.inkOn(solid));
     }
 
     final body = AnimatedContainer(
@@ -169,6 +197,21 @@ class SatChip extends StatelessWidget {
       ),
     );
   }
+
+  /// The solid hue behind [filled]. Separate from [_tone] because the tint's
+  /// `border` is not always the hue — `accent` rings itself with
+  /// `accentBorder`, which under Glow is a near-transparent obsidian and would
+  /// paint a filled accent chip grey. `neutral` returns null: its tint is
+  /// already the flat `bg3` a fill would produce.
+  Color? _solid(SatColors sc) => switch (hue) {
+    SatChipHue.neutral => null,
+    SatChipHue.accent => sc.accent,
+    SatChipHue.success => sc.success,
+    SatChipHue.warn => sc.warn,
+    SatChipHue.urgent => sc.urgent,
+    SatChipHue.info => sc.info,
+    SatChipHue.violet => sc.violet,
+  };
 
   ({Color fill, Color border, Color ink}) _tone(SatColors sc) => switch (hue) {
     SatChipHue.neutral => (fill: sc.bg3, border: sc.border0, ink: sc.textMd),

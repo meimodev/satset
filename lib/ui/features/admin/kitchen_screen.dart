@@ -10,8 +10,10 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
@@ -32,6 +34,18 @@ class _KOrder {
 
   int get total => tickets.length;
   int get done => tickets.where((t) => _isDone(t.status)).length;
+
+  /// The distinct courses in this group, in station order. Usually one — the
+  /// source's ticket *is* a course — but the app groups by send, and a waiter
+  /// who fires drinks and mains together makes one card carry both. Naming them
+  /// is information the cook does not get today.
+  List<Course> get courses {
+    final seen = tickets.map((t) => t.course).toSet();
+    return [
+      for (final c in Courses.all)
+        if (seen.contains(c.id)) c,
+    ];
+  }
 }
 
 // `ready` stays in the active set so a just-cooked item (now servable)
@@ -84,8 +98,10 @@ List<_KOrder> _buildOrders(
       out.add(order);
     });
   });
-  // Oldest fire first — most urgent at the top of the queue.
-  out.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+  // Oldest fire first — most urgent at the top of the queue. Sorted on the
+  // full timestamp, not the HH:mm grouping key: a service running past midnight
+  // would otherwise sort 00:15 ahead of 23:50 and bury the oldest ticket.
+  out.sort((a, b) => a.sentAtTime.compareTo(b.sentAtTime));
   return out;
 }
 
@@ -99,8 +115,25 @@ Duration _age(DateTime sentAtTime) {
   return d.isNegative ? Duration.zero : d;
 }
 
-Color _ageColor(SatColors sc, int min) =>
-    min >= 10 ? sc.urgent : (min >= 5 ? sc.warn : sc.success);
+/// When a ticket counts as late. One constant so the header's TELAT tally, the
+/// card border, the age pill's colour and its pulse cannot drift apart and tell
+/// the line two different stories.
+const int kKitchenLateMins = 10;
+
+/// The tier below late. The source derives it as `0.7 ×` the late threshold —
+/// far enough out that a cook can still save the ticket, close enough that the
+/// warning means something.
+const int _kKitchenWarnMins = 7;
+
+/// The timer's ink. Neutral until the ticket is worth worrying about: a ticket
+/// two minutes old is not news, and spending a colour on the good case is how
+/// `urgent` stops being read. Glow paints the calm case lime instead, because
+/// the head it sits in is an obsidian slab and `textMd` there is a mutter.
+Color _ageColor(SatColors sc, int min) {
+  if (min >= kKitchenLateMins) return sc.urgent;
+  if (min >= _kKitchenWarnMins) return sc.warn;
+  return SatShape.glow ? sc.accent : sc.textMd;
+}
 
 // Refined deceleration — no bounce/elastic (kitchen-floor tone is calm).
 const _kEaseOutQuart = Cubic(0.25, 1, 0.5, 1);
@@ -193,6 +226,12 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
       showCompleted: _showCompleted,
     );
     final itemCount = orders.fold<int>(0, (n, o) => n + o.total);
+    // Each card already turns urgent on its own, but a cook working the top of
+    // a scrolled queue cannot see how many are red below the fold. The tally is
+    // the one number that says whether the line is behind.
+    final lateCount = orders
+        .where((o) => _age(o.sentAtTime).inMinutes >= kKitchenLateMins)
+        .length;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
 
     // All status changes round-trip through the server via the KDS
@@ -207,6 +246,16 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
       value: _showCompleted,
       onChanged: (v) => setState(() => _showCompleted = v),
     );
+    final headTrailing = lateCount == 0
+        ? filter
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LateTally(count: lateCount),
+              const SizedBox(width: Sp.s2),
+              filter,
+            ],
+          );
 
     if (!context.layout.useTabletShell) {
       return SafeArea(
@@ -229,7 +278,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: filter,
+              child: headTrailing,
             ),
             Expanded(
               child: orders.isEmpty
@@ -256,7 +305,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
       title: 'Antrian Persiapan',
       sub:
           '${orders.length} order aktif · $itemCount item · tahan untuk tandai selesai',
-      topTrailing: filter,
+      topTrailing: headTrailing,
       children: [
         if (orders.isEmpty)
           const SizedBox(height: 360, child: _EmptyQueue())
@@ -340,7 +389,8 @@ class _OrderCard extends ConsumerWidget {
     final sc = context.sat;
     final ageDur = _age(order.sentAtTime);
     final age = ageDur.inMinutes;
-    final ageColor = _ageColor(sc, age);
+    final late = age >= kKitchenLateMins;
+    final warn = !late && age >= _kKitchenWarnMins;
     final progress = order.total == 0 ? 0.0 : order.done / order.total;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final tables = ref.watch(tablesProvider);
@@ -360,40 +410,34 @@ class _OrderCard extends ConsumerWidget {
       duration: satMotion(context, 300),
       curve: satEaseOut,
       decoration: SatBox.d(
-        color: sc.bg2,
+        // Late tints the whole card, not just its edge — a ticket that has
+        // blown its window has to be findable in peripheral vision from the
+        // other end of the line. Flattened onto `bg2` rather than laid over it:
+        // the soft tokens are ~11% alpha and a `BoxShadow` paints *behind* the
+        // box, so the solid ring below would otherwise read straight through
+        // the fill and flood the whole card.
+        color: late ? Color.alphaBlend(sc.urgentSoft, sc.bg2) : sc.bg2,
         border: SatB.all(
-          color: age >= 10 ? ageColor.withValues(alpha: 0.5) : sc.border0,
-          width: age >= 10 ? 1.5 : 1,
+          color: late
+              ? sc.urgent.withValues(alpha: 0.5)
+              : (warn ? sc.warn.withValues(alpha: 0.5) : sc.border0),
+          width: late ? 1.5 : 1,
         ),
-        borderRadius: SatR.a(18),
+        borderRadius: SatR.card,
+        // Glow draws no rules, so the tier reads as a ring around the card
+        // rather than a heavier border — the same shape `TableCard` gives a
+        // crit table (ADR-0051).
+        boxShadow: SatShape.glow ? _ring(sc, late: late, warn: warn) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Sp.s3,
-                    vertical: Sp.s1h,
-                  ),
-                  decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(9)),
-                  child: Text(
-                    tableLabel,
-                    style: SatType.monoM(color: sc.textHi),
-                  ),
-                ),
-                const SizedBox(width: Sp.s2h),
-                Text(
-                  '${order.done}/${order.total} selesai',
-                  style: SatType.bodyS(color: sc.textMd),
-                ),
-                const Spacer(),
-                _AgePill(age: ageDur, sentAt: order.sentAt, color: ageColor),
-              ],
-            ),
+          _CardHead(
+            table: tableLabel,
+            courses: order.courses,
+            age: ageDur,
+            sentAt: order.sentAt,
+            late: late,
           ),
           ClipRRect(
             child: TweenAnimationBuilder<double>(
@@ -425,41 +469,189 @@ class _OrderCard extends ConsumerWidget {
               ],
             ),
           ),
+          // The bar above says how far along at a glance from across the room;
+          // this says it in words for the cook standing at the card. The source
+          // has only the words, at 11px — unreadable at the distance this
+          // screen is actually mounted.
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            decoration: SatBox.d(
+              border: Border(top: SatB.side(color: sc.border0)),
+            ),
+            child: Text(
+              order.done == order.total
+                  ? 'Semua siap'
+                  : '${order.done} / ${order.total} siap',
+              style: SatType.labelM(color: sc.textMd),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _AgePill extends StatelessWidget {
+/// The tier ring. `spreadRadius` with no blur draws a hard band around the
+/// card's own corner radius — a blurred red glow would read as a light source
+/// rather than a state. Same call `TableCard` makes for `sev-crit`.
+List<BoxShadow> _ring(SatColors sc, {required bool late, required bool warn}) {
+  if (late) {
+    return [
+      BoxShadow(color: sc.urgent, spreadRadius: 3, blurRadius: 0),
+      ...SatShape.liftLg,
+    ];
+  }
+  if (warn) {
+    return [
+      BoxShadow(color: sc.warn, spreadRadius: 2, blurRadius: 0),
+      ...SatShape.lift,
+    ];
+  }
+  return SatShape.lift;
+}
+
+/// The ticket head. Under Glow this is a full-bleed obsidian slab and every
+/// hue inside it is re-read from `sc.slab` — the light palette's `urgent` and
+/// `warn` are tuned as ink on bone and go muddy on obsidian (ADR-0051). The
+/// other skins get the base design's darker band off the neutral ramp.
+class _CardHead extends StatelessWidget {
+  final String table;
+  final List<Course> courses;
   final Duration age;
   final String sentAt;
-  final Color color;
-  const _AgePill({
+  final bool late;
+  const _CardHead({
+    required this.table,
+    required this.courses,
     required this.age,
     required this.sentAt,
-    required this.color,
+    required this.late,
   });
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
+    final page = context.sat;
+    final sc = SatShape.glow ? page.slab : page;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: SatBox.d(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: SatR.a(999),
+        color: SatShape.glow ? sc.bg0 : page.bg3,
+        border: SatShape.glow
+            ? null
+            : Border(bottom: SatB.side(color: page.border0)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          PulseDot(color: color, pulse: age.inMinutes >= 10),
-          const SizedBox(width: Sp.s1h),
-          Text(formatElapsedId(age), style: SatType.monoM(color: color)),
-          const SizedBox(width: Sp.s1h),
-          Text(sentAt, style: SatType.monoS(color: sc.textLo)),
+          Expanded(
+            child: Wrap(
+              spacing: Sp.s2,
+              runSpacing: Sp.s1h,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(table, style: SatType.h3(color: sc.textHi)),
+                // Flat accent, never the per-course hue: the course colours are
+                // tuned as ink on the page and five of them stacked on obsidian
+                // is a paint chart, not a signal.
+                for (final c in courses)
+                  SatChip.tag(
+                    label: c.name,
+                    size: SatChipSize.sm,
+                    hue: SatChipHue.accent,
+                    filled: true,
+                  ),
+                if (late)
+                  SatChip.tag(
+                    label: 'Telat',
+                    size: SatChipSize.sm,
+                    hue: SatChipHue.urgent,
+                    filled: true,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Sp.s2),
+          _Timer(age: age, sentAt: sentAt, sc: sc),
         ],
       ),
+    );
+  }
+}
+
+/// Elapsed over arrival, right-aligned. Bare numerals rather than a pill: the
+/// slab already separates the head, and a tinted capsule inside a tinted slab
+/// is two containers saying one thing.
+class _Timer extends StatefulWidget {
+  final Duration age;
+  final String sentAt;
+  final SatColors sc;
+  const _Timer({required this.age, required this.sentAt, required this.sc});
+
+  @override
+  State<_Timer> createState() => _TimerState();
+}
+
+class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  bool get _late => widget.age.inMinutes >= kKitchenLateMins;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(covariant _Timer old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  // Reduced motion collapses to the final state — full opacity, still red.
+  // The colour is the signal; the pulse only makes it findable.
+  void _sync() {
+    final on = _late && !MediaQuery.of(context).disableAnimations;
+    if (on && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!on && _pulse.isAnimating) {
+      _pulse
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = widget.sc;
+    final color = _ageColor(sc, widget.age.inMinutes);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedBuilder(
+          animation: _pulse,
+          builder: (_, child) =>
+              Opacity(opacity: 1 - 0.4 * _pulse.value, child: child),
+          child: Text(
+            formatStationTimer(widget.age),
+            style: SatType.monoL(color: color),
+          ),
+        ),
+        Text(
+          'masuk ${widget.sentAt}',
+          style: SatType.monoS(color: sc.textMd),
+        ),
+      ],
     );
   }
 }
@@ -483,9 +675,12 @@ class _KdsItemRow extends StatefulWidget {
 class _ItemRowState extends State<_KdsItemRow>
     with SingleTickerProviderStateMixin {
   // A brief green wash when an item is marked done — acknowledges the tap and
-  // softens the row's jump to the bottom of the card (done items sink).
+  // softens the row's jump to the bottom of the card (done items sink). Rests
+  // at 1, not 0: the wash is `1 - value`, so a controller left at its default
+  // lower bound paints every untouched row green and never stops.
   late final AnimationController _flash = AnimationController(
     vsync: this,
+    value: 1,
     duration: const Duration(milliseconds: 520),
   );
 
@@ -545,66 +740,106 @@ class _ItemRowState extends State<_KdsItemRow>
         onLongPress: cooked ? null : _commit,
         child: Container(
           constraints: const BoxConstraints(minHeight: 60),
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
           decoration: SatBox.d(
             border: Border(top: SatB.side(color: sc.border0)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // The bar is the row's state at the coarsest possible resolution
+              // — accent while it is work, `success` once it is not — readable
+              // from further away than the tick, the strike or the text.
               Container(
-                margin: const EdgeInsets.only(top: Sp.sHair),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s2,
-                  vertical: Sp.s1,
-                ),
-                decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(6)),
-                child: Text(
-                  '×${ticket.qty}',
-                  style: SatType.monoM(color: cooked ? sc.textLo : sc.textHi),
+                width: 3,
+                constraints: const BoxConstraints(minHeight: 40),
+                margin: const EdgeInsets.only(right: Sp.s3),
+                decoration: SatBox.d(
+                  color: cooked ? sc.success : sc.accent,
+                  borderRadius: SatR.a(2),
                 ),
               ),
-              const SizedBox(width: Sp.s3),
+              _Tick(cooked: cooked),
+              const SizedBox(width: Sp.s2h),
               Expanded(
-                child: AnimatedOpacity(
-                  duration: satMotion(context, 160),
-                  opacity: cooked ? 0.55 : 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        ticket.name +
-                            (ticket.variantName.isEmpty
-                                ? ''
-                                : ' · ${ticket.variantName}'),
-                        style: SatType.labelL(color: sc.textHi).copyWith(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedOpacity(
+                      duration: satMotion(context, 160),
+                      opacity: cooked ? 0.55 : 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '×${ticket.qty}  ',
+                              style: SatType.monoM(color: sc.textMd),
+                            ),
+                            TextSpan(
+                              text:
+                                  ticket.name +
+                                  (ticket.variantName.isEmpty
+                                      ? ''
+                                      : ' · ${ticket.variantName}'),
+                              style: SatType.labelL(color: sc.textHi),
+                            ),
+                          ],
+                        ),
+                        style: TextStyle(
                           decoration: cooked
                               ? TextDecoration.lineThrough
                               : null,
                         ),
                       ),
+                      // Chosen options and paid add-ons are two different jobs
+                      // for the cook: one changes how the dish is made, the
+                      // other adds something extra to the plate. Run together
+                      // in one grey line they were the same sentence, and the
+                      // extra is the one that gets forgotten.
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: Sp.s1),
-                          child: Text(
-                            ticket.modifiers.map((m) => m.display).join(' · '),
-                            style: SatType.bodyM(color: sc.textMd),
+                          child: Wrap(
+                            spacing: Sp.s1h,
+                            runSpacing: Sp.s1,
+                            children: [
+                              // `display` already prefixes the sign, so the
+                              // chip only picks a tone. The add-on takes a
+                              // solid accent as the source does — a tint of it
+                              // sat at the same volume as the option beside it.
+                              for (final m in ticket.modifiers)
+                                SatChip.tag(
+                                  label: m.display,
+                                  size: SatChipSize.sm,
+                                  hue: m.priceDelta > 0
+                                      ? SatChipHue.accent
+                                      : SatChipHue.neutral,
+                                  filled: m.priceDelta > 0,
+                                ),
+                            ],
                           ),
                         ),
-                      if (ticket.note != null && ticket.note!.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Sp.s1h),
-                          child: NoteLine(
-                            label: 'Instruksi khusus',
-                            text: ticket.note!,
-                          ),
+                      ],
+                      ),
+                    ),
+                    // Never dimmed with the rest. "Tanpa telur" is the reason
+                    // the plate goes out or into the bin, and it stays true
+                    // after the cook has ticked the item off.
+                    if (ticket.note != null && ticket.note!.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Sp.s1h),
+                        child: NoteLine(
+                          label: 'Instruksi khusus',
+                          text: ticket.note!,
+                          alert: true,
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(width: Sp.s3),
-              _CheckButton(cooked: cooked),
             ],
           ),
         ),
@@ -613,16 +848,45 @@ class _ItemRowState extends State<_KdsItemRow>
   }
 }
 
-class _CheckButton extends StatefulWidget {
-  final bool cooked;
-  const _CheckButton({required this.cooked});
+/// "TELAT 3" beside the completed filter. Only rendered when the count is
+/// non-zero — a permanent "TELAT 0" is a word the line stops reading, and
+/// `urgent` is too scarce a colour to spend on the good case.
+class _LateTally extends StatelessWidget {
+  final int count;
+  const _LateTally({required this.count});
 
   @override
-  State<_CheckButton> createState() => _CheckButtonState();
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final ink = sc.inkOn(sc.urgent);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
+      decoration: SatBox.d(color: sc.urgent, borderRadius: SatR.pill),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PulseDot(color: ink),
+          const SizedBox(width: Sp.s1h),
+          Text(SatShape.caps('Telat'), style: SatType.labelS(color: ink)),
+          const SizedBox(width: Sp.s1h),
+          Text('$count', style: SatType.monoM(color: ink)),
+        ],
+      ),
+    );
+  }
 }
 
-class _CheckButtonState extends State<_CheckButton>
-    with SingleTickerProviderStateMixin {
+/// The done marker. An indicator, not a button — the whole row takes the
+/// long-press. Empty ring until the cook commits, then a filled `success` disc.
+class _Tick extends StatefulWidget {
+  final bool cooked;
+  const _Tick({required this.cooked});
+
+  @override
+  State<_Tick> createState() => _TickState();
+}
+
+class _TickState extends State<_Tick> with SingleTickerProviderStateMixin {
   late final AnimationController _pop = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 260),
@@ -641,7 +905,7 @@ class _CheckButtonState extends State<_CheckButton>
   ]).animate(_pop);
 
   @override
-  void didUpdateWidget(covariant _CheckButton old) {
+  void didUpdateWidget(covariant _Tick old) {
     super.didUpdateWidget(old);
     if (widget.cooked &&
         !old.cooked &&
@@ -664,21 +928,22 @@ class _CheckButtonState extends State<_CheckButton>
       child: AnimatedContainer(
         duration: satMotion(context, 180),
         curve: satEaseOut,
-        width: 34,
-        height: 34,
+        margin: const EdgeInsets.only(top: Sp.sHair),
+        width: 26,
+        height: 26,
         decoration: SatBox.d(
           color: widget.cooked ? sc.success : Colors.transparent,
           shape: BoxShape.circle,
           border: SatB.all(
             color: widget.cooked ? sc.success : sc.border2,
-            width: 2,
+            width: 1.5,
           ),
         ),
-        child: Icon(
-          Icons.check_rounded,
-          size: 20,
-          color: widget.cooked ? sc.accentInk : sc.textDim,
-        ),
+        // Empty until committed — the source draws no glyph in the open state,
+        // and a grey tick reads as "already done" from two metres away.
+        child: widget.cooked
+            ? Icon(Icons.check_rounded, size: 16, color: sc.inkOn(sc.success))
+            : null,
       ),
     );
   }

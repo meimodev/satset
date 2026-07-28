@@ -9,6 +9,14 @@ final _idr = NumberFormat.currency(
 
 String formatIDR(num value) => _idr.format(value);
 
+/// Weekday + day + short month for a service-day header: "Sabtu 27 Jul".
+///
+/// The booking book leads on this because a drawer that just says "12 booking"
+/// is ambiguous the moment service runs past midnight.
+final _bookingDay = DateFormat('EEEE d MMM', 'id_ID');
+
+String formatBookingDayId(DateTime d) => _bookingDay.format(d);
+
 final _grouping = NumberFormat.decimalPattern('id_ID');
 
 /// Group an integer amount for seeding a rupiah text field: `14500` → `14.500`.
@@ -49,6 +57,21 @@ class RupiahInputFormatter extends TextInputFormatter {
 String formatClockId(String iso) {
   final dt = DateTime.tryParse(iso);
   return dt == null ? iso : DateFormat.Hm().format(dt.toLocal());
+}
+
+/// Station-clock readout for a count-up duration — "8:42", "12:05", "1:04:18".
+/// Deliberately not [formatElapsedId]: on a kitchen ticket the number is read
+/// at a glance from 1–2 m and compared against the ticket beside it, so it wants
+/// a fixed shape and tabular digits, not the prose form ("8m 42d") the table
+/// and shift counters use. Zero-pads everything but the leading unit.
+String formatStationTimer(Duration d) {
+  if (d.isNegative) d = Duration.zero;
+  final h = d.inHours;
+  final m = d.inMinutes.remainder(60);
+  final s = d.inSeconds.remainder(60);
+  final ss = s.toString().padLeft(2, '0');
+  if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:$ss';
+  return '$m:$ss';
 }
 
 /// Indonesian relative label for a count-up duration (table seated, shift, etc).

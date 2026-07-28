@@ -88,10 +88,11 @@ class _SatTabItem extends StatelessWidget {
     final sc = context.sat;
 
     // Selected reads as a fill, never a tint — same rule as SatChip
-    // (ADR-0051). The slab keeps it legible under Glow's bone ground.
+    // (ADR-0051), and under Glow the fill is the accent, not the obsidian
+    // slab: the source paints `.tab-seg.active` lime, same as the zone and
+    // filter controls a segmented strip sits beside.
     final glow = SatShape.glow;
-    final onPal = glow && on ? sc.slab : sc;
-    final ink = on ? onPal.textHi : sc.textMd;
+    final ink = on ? (glow ? sc.accentInk : sc.textHi) : sc.textMd;
 
     return Semantics(
       button: true,
@@ -107,7 +108,7 @@ class _SatTabItem extends StatelessWidget {
             vertical: Sp.s2h,
           ),
           decoration: SatBox.d(
-            color: on ? (glow ? onPal.bg0 : sc.bg3) : null,
+            color: on ? (glow ? sc.accent : sc.bg3) : null,
             borderRadius: SatR.sm,
           ),
           child: Row(
@@ -126,7 +127,10 @@ class _SatTabItem extends StatelessWidget {
               ),
               if (tab.badge != null) ...[
                 const SizedBox(width: Sp.s1h),
-                Text('${tab.badge}', style: SatType.caption(color: sc.textLo)),
+                Text(
+                  '${tab.badge}',
+                  style: SatType.caption(color: on ? ink : sc.textLo),
+                ),
               ],
             ],
           ),

@@ -103,10 +103,18 @@ class _TableCardState extends ConsumerState<TableCard> {
     final isReady = table.status == TableStatus.ready;
     final isOccupied = table.status == TableStatus.occupied;
     final isPending = table.status == TableStatus.pending;
+    // `reservationHoldFor` only returns a booking for a free table, so this is
+    // exclusive with the three above rather than an overlay on them.
+    final isReserved = hold != null;
 
-    // Status fills. Brutal paints the semantic *soft* token as a full slab —
-    // its softs are near-saturation blocks. Lembut's are 14% tints meant to sit
-    // behind a border, so it keeps the original neutral-ramp mapping.
+    // Status fills. Both poster skins paint the semantic *soft* token as the
+    // card's ground — brutal because its softs are near-saturation blocks, glow
+    // because the source styles all four states that way and separates with
+    // slab colour rather than a rule. Lembut's softs are 14% tints meant to sit
+    // behind a border, so it keeps the original neutral-ramp mapping. Phrased
+    // as "not lembut" per ADR-0051, so a future skin does not inherit bg3.
+    final poster = !SatShape.lembut;
+
     Color bg = sc.bg2;
     Color border = sc.border0;
     Color statusDot = sc.textDim;
@@ -114,11 +122,11 @@ class _TableCardState extends ConsumerState<TableCard> {
     Color numColor = sc.textHi;
 
     if (isOccupied) {
-      bg = brutal ? sc.infoSoft : sc.bg3;
+      bg = poster ? sc.infoSoft : sc.bg3;
       statusDot = sc.info;
       statusColor = brutal ? sc.textHi : sc.info;
     } else if (isPending) {
-      bg = brutal ? sc.warnSoft : sc.bg3;
+      bg = poster ? sc.warnSoft : sc.bg3;
       border = brutal ? sc.border0 : sc.warnSoft;
       statusDot = sc.warn;
       statusColor = brutal ? sc.textHi : sc.warn;
@@ -130,6 +138,14 @@ class _TableCardState extends ConsumerState<TableCard> {
       // green-on-green fails contrast (ADR-0047's successInk finding).
       statusColor = brutal ? sc.textHi : sc.success;
       numColor = brutal ? sc.textHi : sc.success;
+    } else if (isReserved) {
+      // A held table is not an empty one. Without this the card said "Dipesan"
+      // in words and rendered identical to a free table — the state was legible
+      // only to someone already reading the label.
+      bg = poster ? sc.violetSoft : sc.bg3;
+      border = brutal ? sc.border0 : sc.violet;
+      statusDot = sc.violet;
+      statusColor = brutal ? sc.textHi : sc.violet;
     }
 
     final currentUserId = ref.watch(authStateProvider).user?.id;
@@ -278,7 +294,11 @@ class _TableCardState extends ConsumerState<TableCard> {
               ],
             ],
           ),
-          if (next != null) ...[
+          // A stuck card gets one footer, not two. The source hides the
+          // booking footnote outright (`.is-stale .tt-resv { display: none }`)
+          // — the overrun names what to do now, and "20:30 · Budi" underneath
+          // it is the next hour's problem competing for the same glance.
+          if (next != null && stale == null) ...[
             const SizedBox(height: Sp.s1h),
             Row(
               children: [
@@ -425,6 +445,7 @@ class _OwnerChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final brutal = SatShape.brutal;
+    final glow = SatShape.glow;
     if (initials == null) {
       return Container(
         padding: const EdgeInsets.symmetric(
@@ -432,25 +453,35 @@ class _OwnerChip extends StatelessWidget {
           vertical: Sp.s1,
         ),
         decoration: BoxDecoration(
-          color: brutal ? sc.accent : sc.accentSoft,
-          borderRadius: SatR.a(6),
-          border: SatB.all(color: sc.accentBorder),
+          // Glow spends the accent as a fill, not a tint: the source paints
+          // "Punya saya" solid lime with obsidian ink. A 34% lime wash on a
+          // bone card is not a state anyone notices at arm's length.
+          color: brutal || glow ? sc.accent : sc.accentSoft,
+          borderRadius: glow ? SatR.pill : SatR.a(6),
+          border: glow ? null : SatB.all(color: sc.accentBorder),
           boxShadow: brutal ? SatShape.hardShadow(2) : null,
         ),
         child: Text(
           SatShape.caps(AppStrings.tableOwnerMine),
-          style: SatType.labelS(color: brutal ? sc.accentInk : sc.accentText),
+          style: SatType.labelS(
+            color: brutal || glow ? sc.accentInk : sc.accentText,
+          ),
         ),
       );
     }
+    // Brutal keeps this square (ADR-0047): at 30px it reads as a nameplate,
+    // not a status pip. Glow rounds it to a disc instead — its sixth grammar
+    // rule is that avatars, dots and icon tiles are circles filled with a soft
+    // tint, and this is the only avatar on the card.
     return Container(
       width: brutal ? 30 : 26,
       height: brutal ? 30 : 26,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: sc.bg1,
-        borderRadius: SatR.a(6),
-        border: SatB.all(color: sc.border1),
+        color: glow ? sc.bg3 : sc.bg1,
+        shape: glow ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: glow ? null : SatR.a(6),
+        border: glow ? null : SatB.all(color: sc.border1),
       ),
       child: Text(
         initials!,
@@ -462,8 +493,12 @@ class _OwnerChip extends StatelessWidget {
   }
 }
 
-/// Money and service-state chips. Outlined under lembut, filled under brutal —
-/// the neo skin has no tints, only blocks.
+/// Money and service-state chips. Outlined under lembut, filled under both
+/// poster skins — the neo skin has no tints, only blocks, and Glow's source
+/// comments the same rule for these pills in as many words: *"solid fills with
+/// obsidian/white ink, per the reference — never tint-on-tint"*. It matters
+/// here more than anywhere: under Glow the card behind them is already a
+/// semantic tint, so a tinted pill is a tint on a tint.
 class _StatePill extends StatelessWidget {
   final String label;
   final Color tone;
@@ -473,16 +508,20 @@ class _StatePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brutal = SatShape.brutal;
+    final solid = !SatShape.lembut;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1),
       decoration: BoxDecoration(
-        color: brutal ? tone : tone.withValues(alpha: 0.15),
-        borderRadius: SatR.a(6),
+        color: solid ? tone : tone.withValues(alpha: 0.15),
+        // Glow pills are pills. `SatR.a(6)` passes 6 through untouched under
+        // that skin — the ramp deliberately leaves sub-8 radii alone — so the
+        // shape has to be asked for by name.
+        borderRadius: SatShape.glow ? SatR.pill : SatR.a(6),
         border: brutal ? Border.all(color: SatShape.ink, width: 2) : null,
       ),
       child: Text(
         SatShape.caps(label),
-        style: SatType.labelS(color: brutal ? onFill(tone) : tone),
+        style: SatType.labelS(color: solid ? sc.inkOn(tone) : tone),
       ),
     );
   }

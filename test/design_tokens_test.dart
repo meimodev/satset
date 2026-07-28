@@ -129,6 +129,12 @@ void main() {
       '_ServerReachabilityPill',
       // A solid count badge riding a tab, not a labelled chip.
       '_Badge',
+      // Same case as _AgePill: a *pulsing* dot on a solid semantic fill. The
+      // blip is what carries a stuck zone across the room, and SatChip's `dot`
+      // is static — and its tag hues are tints, where this has to be solid.
+      '_ZoneAlarmBadge',
+      // A solid urgent tally with a pulsing dot; SatChip.tag is a soft fill.
+      '_LateTally',
       // Icon over label, stacked — SatButton is a horizontal row.
       '_BigBtn',
       // A circular target carrying an overflow badge.
