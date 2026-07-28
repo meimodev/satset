@@ -22,9 +22,12 @@ import 'package:satset/ui/features/_book/book_entries.dart';
 /// churn on every copy edit and get regenerated without being read, which is
 /// how a golden suite stops meaning anything.
 ///
-/// Every widget is rendered in **both** themes: "both themes, both real" is a
-/// design principle, and a regression that only shows on the light palette is
-/// exactly the one nobody catches by hand.
+/// Every widget is rendered under **one theme per skin**: `neonTerang` for
+/// `glow`, `amberGelap` for `lembut`. Shape is a skin property (ADR-0047,
+/// ADR-0050) — radii, borders, shadows and the type ramp all differ — so a
+/// second theme on the same skin re-locks pixels the first one already holds,
+/// while a skin with no coverage regresses silently. `neonTerang` leads
+/// because it is the shipped default (ADR-0057). `brutal` is uncovered.
 ///
 /// Tagged `golden` and excluded from the default run — goldens are
 /// font-renderer specific, so they are a local and single-CI-image check, not
@@ -42,7 +45,7 @@ void main() {
     expect(controls, isNotEmpty);
   });
 
-  for (final theme in [SatTheme.amberGelap, SatTheme.amberTerang]) {
+  for (final theme in [SatTheme.neonTerang, SatTheme.amberGelap]) {
     for (final entry in controls) {
       for (var i = 0; i < entry.states.length; i++) {
         final state = entry.states[i];

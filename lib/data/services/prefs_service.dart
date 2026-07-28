@@ -18,7 +18,12 @@ class PrefsService {
   static const _kAudioAlert = 'satset.audio_alert';
   static const _kMutedAlerts = 'satset.muted_alerts';
   static const _kDevicePrinters = 'satset.device_printers';
-  static const _kTheme = 'satset.theme';
+
+  /// Bumped from `satset.theme` when Neon Terang became the shipped default
+  /// (ADR-0057). A device carrying the old key finds nothing under the new one,
+  /// so `SatTheme.fromKey(null)` hands it the fallback exactly once. Another
+  /// forced re-theme is another bump; the orphaned value costs nothing.
+  static const _kTheme = 'satset.theme.v2';
 
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
   Future<void> setAppMode(AppMode m) async {

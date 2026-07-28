@@ -63,9 +63,12 @@ enum SatTheme {
     SatShape.brightness = brightness;
   }
 
-  /// What a device gets before it has ever chosen — the palette the app
-  /// shipped with, so an upgrade is visually a no-op.
-  static const fallback = SatTheme.amberGelap;
+  /// What a device gets before it has ever chosen. No longer the palette the
+  /// app shipped with: ADR-0057 moved it from [amberGelap] to [neonTerang] and
+  /// bumped the prefs key alongside, so the swap reaches devices that had
+  /// already picked. An upgrade is deliberately *not* a visual no-op — see
+  /// ADR-0057 for why that promise was withdrawn.
+  static const fallback = SatTheme.neonTerang;
 
   /// Enum name round-trip for [PrefsService]. Unknown or absent keys fall back
   /// rather than throwing: a preference read must never block app start.

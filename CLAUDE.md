@@ -168,7 +168,7 @@ Emotional goals, in order:
 
 ### Aesthetic Direction
 
-Dark-first. Restaurants run dim, so **dark is the real default and light is the exception** — but light mode is a first-class citizen, not a fallback: terrace and daylight service must survive glare, so light mode needs genuine high contrast, not washed-out grays.
+**The app boots on Neon Terang** — the light Glow palette, bone `#EEEFE0` ground (ADR-0057). Neither brightness is the exception: restaurants run dim and a dark theme is one tap away for the rooms that need it, while terrace and daylight service must survive glare. Both directions ship with genuine high contrast, never washed-out grays. Neon Terang is the roster's most accessible light palette — its semantic hues are authored as ink on white rather than reused from the charcoal ramp.
 
 Color is signal, never decoration. The neutral ramp (`bg0`–`bg4`, `border0`–`border2`, `textHi`→`textDim`) carries structure; semantic tokens (`accent`, `success`, `warn`, `urgent`, `info`, `violet`) carry meaning only. Course colors (`cDrinks`/`cStarters`/`cMains`/`cDesserts`/`cFire`) alias the semantic set deliberately — one hue vocabulary, learned once.
 

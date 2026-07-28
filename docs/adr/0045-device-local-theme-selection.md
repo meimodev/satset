@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted.
+Accepted. **Amended by ADR-0050** (theme roster) and **ADR-0057** — the default
+is now `neonTerang`, and "existing devices keep exactly the look they had" no
+longer holds: the prefs key was bumped so the swap reaches devices that had
+already picked. Everything else below — device-local scope, the flat theme list,
+`ThemeMode` removal, identity on the enum — still stands.
 
 ## Context
 
