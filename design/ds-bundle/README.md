@@ -17,13 +17,13 @@ Flat on purpose: the pane serves each preview standalone, and a same-directory
 | `ds.css` | All six palettes as `[data-pal="…"]` blocks + shared component classes |
 | `index.html` | Brand context — personas, principles, anti-references (CLAUDE.md §Design Context) |
 | `tokens-color.html` | `colors.dart` |
-| `tokens-type.html` | `typography.dart` |
+| `tokens-type.html` | `typography.dart` — the 15 named roles, not the raw `sans`/`mono`/`display` |
 | `tokens-spacing-layout.html` | `spacing.dart`, `layout.dart` |
 | `tokens-shape-skin.html` | `skin.dart` (ADR-0047) |
 | `tokens-motion.html` | `motion.dart`, `anim.dart` |
 | `tokens-course-role-zone.html` | `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart` |
-| `comp-status-chip.html` | `_StatusChip` in `order_line_card.dart` |
-| `comp-pills.html` | `elapsed_pill.dart`, `_NetworkPill`/`SatAppBarPill`, `_StatePill` |
+| `comp-status-chip.html` | `status_chip.dart` |
+| `comp-pills.html` | `sat_chip.dart`, `elapsed_pill.dart`, `SatAppBarPill`, `_StatePill` |
 | `comp-badges-avatar-note.html` | `tag_badge_row.dart`, `staff_avatar.dart`, `note_line.dart`, `menu_photo.dart` |
 | `comp-order-line-card.html` | `order_line_card.dart` |
 | `comp-table-card.html` | `features/tables/widgets/table_card.dart` |
@@ -33,11 +33,11 @@ Flat on purpose: the pane serves each preview standalone, and a same-directory
 | `comp-ready-alerts.html` | `ready_banner.dart`, `ready_toast.dart`, `admin_grace_banner.dart` |
 | `comp-skeletons.html` | `skeleton_card.dart` |
 | `comp-motion-primitives.html` | `anim.dart` — every primitive, live, plus the full duration table |
-| `comp-buttons.html` | The button shapes that recur (there is no shared Button widget) |
-| `comp-inputs.html` | `_Field` in `pin_screen.dart`, `modifier_sheet.dart`, `reports_screen.dart` filter chip, `adminToggle` |
+| `comp-buttons.html` | `sat_button.dart`, `sat_icon_button.dart` |
+| `comp-inputs.html` | `sat_field.dart`, `sat_dropdown.dart`, `sat_toggle.dart`, `sat_stepper.dart` |
 | `comp-sheets.html` | `pin_sheet.dart`, `export_sheet.dart`, `custom_range_sheet.dart`, `me/widgets/theme_sheet.dart` |
 | `comp-modifier-sheet.html` | `features/menu/modifier_sheet.dart` |
-| `comp-states.html` | Empty / loading / error across every feature |
+| `comp-states.html` | `sat_empty.dart`, plus loading / error across every feature |
 | `pattern-floor-grid.html` | `/tables` |
 | `pattern-table-detail.html` | `/table/:id` |
 | `pattern-kds.html` | `/kitchen` |
@@ -49,14 +49,27 @@ Flat on purpose: the pane serves each preview standalone, and a same-directory
 | `pattern-admin.html` | `/venue`, `_common.dart` surfaces, `/reports` chrome |
 | `pattern-guest-spa.html` | `lib/server/guest_app_html.dart` (ADR-0027 / 0029) |
 
-### Known deviations recorded in the bundle
+### Stale after ADR-0055 — re-transcribe before the next push
+
+The shared-control sweep replaced what several of these pages were mirroring. The Dart is
+correct; the HTML below still describes the world before it and must be re-transcribed:
+
+| Page | What changed |
+|---|---|
+| `comp-buttons.html` | Documented "there is no button widget; the variance is drift". There is now `SatButton` (6 variants x 3 sizes) and `SatIconButton`, and the raw Material ones are banned by the guard test. |
+| `comp-inputs.html` | Mirrored `_Field`, a per-screen filter chip and `adminToggle`, all three of which are gone. Now `SatField` (7 kinds), `SatDropdown`, `SatToggle`, `SatStepper`. |
+| `comp-pills.html` | Mirrored `_StatePill` and friends. `SatChip` (`.tag` x 7 hues, `.select`) is the vocabulary; selection is a fill, never a tint. |
+| `tokens-type.html` | Mirrored the raw `sans`/`mono`/`display` ramp. A literal `size:` is now banned outside `core/design/`; the page should show the 15 named roles. |
+| `tokens-spacing-layout.html` | `Sp` gained `s7` (28) and `s9` (36) and an explicit 48 ceiling. |
+| `comp-states.html` | Empty states are now one widget, `SatEmpty`, with a body line that names the next action. |
+
+No page needs a new palette or a new principle — this is transcription, not design.
+
+### Other known deviations
 
 - **`pattern-onboarding.html`** — mode select, pair and forbidden render stock Material 3
   with the default purple seed. No `context.sat`, no `SatType`, no `SatBox`. The page shows
   both what ships today and what it should be; it is the first screen a new install sees.
-- **`comp-buttons.html`** — there is no button widget in `ui/core/widgets/`. Every call site
-  builds its own. The page documents the heights and radii that repeat often enough to count
-  as the system, and says plainly that the remaining variance is drift.
 - **Menu search** — rendered on both phone and tablet menu screens, inert. Flagged in
   `comp-inputs.html` so it is not read back as a working control.
 

@@ -66,6 +66,43 @@ Labels live in the `a11y*` block of `app_strings.dart`. Text scale is clamped to
 
 ---
 
+## Controls — the shared vocabulary (ADR-0055)
+
+**The guard test bans the raw Material equivalents outside `core/widgets/`.** These are
+not suggestions; a screen cannot reach for `FilledButton`, `TextField`, `DropdownButton`
+or `IconButton` and still pass CI.
+
+| Widget | File | Use for |
+|---|---|---|
+| `SatButton` | `sat_button.dart` | **Every** button. `.primary` / `.neutral` / `.outline` / `.ghost` / `.success` / `.danger` carry the intent; `size` (sm/md/lg), `icon`, `busy` and `trailingValue` are the only open axes. Disabled reads from the neutral ramp on every variant — a greyed danger button must not still look dangerous. |
+| `SatIconButton` | `sat_icon_button.dart` | Icon-only target. `tooltip` is **required**: with no text child Flutter derives no semantics. |
+| `SatChip` | `sat_chip.dart` | `.tag` states a fact (seven hues, optional icon/dot/count); `.select` takes a tap. Selection is a **fill, never a tint** — under Glow it becomes a slab (ADR-0051). Not `StatusChip`, which stays: a ticket's lifecycle is domain vocabulary with a fixed set. |
+| `SatToggle` | `sat_toggle.dart` | On/off. Owns its 44px tap target and its `Semantics(toggled:)`. A disabled toggle still announces its state. |
+| `SatStepper` | `sat_stepper.dart` | Quantity. Boxed for forms, `.pill` for a crowded row (`icon`, `showMax` → `3/6`). Count slides in the direction of travel. |
+| `SatTabs` + `SatTab` | `sat_tabs.dart` | Segmented strip. No `TabController` — the screen already holds the index. For a handful of options that all fit, prefer a `SatChip.select` row, which shows every choice at once. |
+| `SatField` | `sat_field.dart` | **Every** text input. The constructor names what it accepts — `.text` / `.number` / `.money` / `.decimal` / `.search` / `.pin` / `.inline` — and carries the keyboard, the formatters and the affix. `.inline` is the borderless settings-row editor. |
+| `satInputDecoration(context, …)` | `sat_field.dart` | For a neighbour Material dresses with an `InputDecoration` and that must match a field beside it. |
+| `SatDropdown` + `SatOption` | `sat_dropdown.dart` | One choice from a closed list, in the same box as `SatField`. |
+| `SatCard` | `sat_card.dart` | The card surface. `.plain`, `.section` (caps header), `.titled` (title + caps tag — the admin section card), `.tappable` (press feedback + `Semantics`). Owns the surface and the header, not the layout inside. |
+| `SatEmpty` | `sat_empty.dart` | "Nothing here yet". `body` is where the next action goes, in words. |
+| `SatSectionLabel` | `sat_empty.dart` | Caps label above a section that is not inside a card. |
+| `SatSheetHeader` | `sat_sheet_header.dart` | Top of a bottom sheet: padding, leading slot, and the close button with its tooltip. |
+| `PulseDot` | `pulse_dot.dart` | Status dot that breathes while something needs attention. Reduced motion holds it at the **midpoint**, not the trough — a dot frozen at its dimmest reads as "off". |
+
+### Type roles — `SatType`
+
+`SatType.sans/mono/display` are the substrate. A screen names a **role**, and a literal
+`size:` outside `core/design/` is banned.
+
+`display54` · `h1` · `h2` · `h3` · `bodyL/M/S` · `labelL/M/S` · `monoDisplay54` ·
+`monoDisplay` · `monoL/M/S` · `caption`
+
+Only `color` varies per call site. `labelL/M/S` and `monoS`/`monoDisplay54` are
+extensions beyond the design source's eleven — the sheet has no w600 body and no small
+regular mono, and ~100 call sites needed one.
+
+---
+
 ## Motion — `core/widgets/anim.dart`
 
 All collapse to a static final frame under reduced motion. Callers never branch on it.
@@ -155,7 +192,6 @@ Listed so you find them before rebuilding them. Promote to `core/widgets/` on a 
 | Entry | File |
 |---|---|
 | `TableCard` | `table_card.dart` — floor grid card: state, owner, staleness. |
-| `GuestStepper` | `guest_stepper.dart` — pax +/- control. |
 | `showGuestStepperSheet(...)` | `guest_stepper_sheet.dart` |
 | `showAssignTableSheet(...)` → `AssignTableResult?` | `assign_table_sheet.dart` |
 | `showMoveTableSheet(...)` → `String?` | `move_table_sheet.dart` |
@@ -166,24 +202,15 @@ Listed so you find them before rebuilding them. Promote to `core/widgets/` on a 
 
 | Entry | File |
 |---|---|
-| `AdminPage`, `AdminRow`, `SetTile`, `SetHero`, `AdminEmbeddedStrip` | `_common.dart` |
+| `AdminPage`, `AdminRow`, `SetTile`, `SetHero`, `AdminEmbeddedStrip` | `_common.dart` — `adminPill`/`adminToggle` are gone; use `SatButton`/`SatChip`/`SatToggle`. |
 | `ReceiptPreview`, `ReceiptPreviewData` | `widgets/receipt_preview.dart` |
 
 ---
 
-## Known duplicates — consolidate on contact
+## Duplicates
 
-Rebuilt in more than one place. Guarded by `test/design_tokens_test.dart`
-("widget class name declared in 2+ files", baseline 12) — the count can fall, never rise.
-
-| Name | Copies | Target |
-|---|---|---|
-| `_CourseBlock` | 2 (`table_detail`, `review`) | Likely a real copy. Promote on contact. |
-| `_ZoneRow` | 2 (`tables_screen`, `zone_admin`) | Likely a real copy. Promote on contact. |
-| `_PulseDot` | 2 (`pin_screen`, `kitchen_screen`) | **Same name, different widget.** One glows via `spreadRadius` and always pulses; the other scales and gates on a `pulse` flag. Merging them yields a 4-param widget with two behaviours — rename instead. |
-| `_FilterChip` | 2 (`cashier_bill`, `reservations_surface`) | **Same name, different widget.** One is a plain Material pill, the other carries a count badge and skin-aware fills. Rename to `_SatFilterChip` / `_RvFilterChip` (both also shadow Material's `FilterChip`). |
-| `_SectionLabel` | 2 (`discount_presets`, `me_screen`) | **Same name, different widget.** Different padding, size, weight, tracking. |
-| `_Header`, `_Empty`, `_Section`, `_Footer`, `_Head`, `_ItemRow`, `_PhoneDetailScreen` | 2–3 each | Generic names over unrelated widgets. Rename on contact; do not merge. |
+There are none, and the guard test keeps it that way: a widget class name declared in
+two files fails CI. If two things really are different, name them for what they are.
 
 ### Consolidated (do not re-create)
 
@@ -196,3 +223,14 @@ Rebuilt in more than one place. Guarded by `test/design_tokens_test.dart`
 | `computeLuminance() > 0.45 ? dark : light` ×3 | `onFill(Color)` — `design/colors.dart`. Took the last hardcoded `Color(0x…)` in `lib/ui/` with it; that rule is now a hard ban. |
 | Inline avatar ×3 (`staff_screen`, `me_screen`, plus the rail) with 0.32/0.36 darkening | `StaffAvatar` / `StaffAvatar.raw`. The rail keeps its own chrome but shares the tokens. |
 | `_d(context, …)` ×2, `_motion(context, …)`, `_kEase` ×4, `_kStatusXfade` ×3 | `satMotion`, `satEaseOut`, `satStatusXfadeMs` — `design/motion.dart`. |
+| ~139 raw `FilledButton`/`OutlinedButton`/`TextButton`/`ElevatedButton` | `SatButton` / `SatIconButton`. |
+| 64 raw `TextField` + the menu editor's private `_fieldDeco`/`_input` pair | `SatField` + `satInputDecoration`. |
+| 7 `DropdownButton*` | `SatDropdown`. |
+| `adminPill` (a button call sites wrapped in a bare `GestureDetector`) | `SatButton` where a tap was attached, `SatChip.tag` where none was. |
+| `adminToggle`, `_Switch`, 4× Material `Switch` | `SatToggle`. |
+| `_Stepper`, `_StepperBtn`, `GuestStepper` | `SatStepper` / `SatStepper.pill`. |
+| `_TabSwitcher`/`_TabFade`, `_Segments`/`_SegBtn` | `SatTabs`, or a `SatChip.select` row where the counts matter. |
+| 12 private `_XChip`/`_XPill`/`_XBadge` | `SatChip.tag` / `SatChip.select`. |
+| 6 hand-drawn section cards | `SatCard.section` / `SatCard.titled`. |
+| `_PulseDot` ×2, `_Empty` ×2, `_SectionLabel` ×2, `_Head` ×2, a second private `Reveal` | `PulseDot`, `SatEmpty`, `SatSectionLabel`, `SatSheetHeader`, `Reveal`. |
+| 730 `SatType.sans/mono/display(size: …)` call sites | The named roles above. |
