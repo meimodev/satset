@@ -25,9 +25,21 @@ import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/ui/core/widgets/order_line_card.dart';
 import 'package:satset/ui/core/widgets/pin_sheet.dart';
+import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/ready_toast.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/widgets/sat_tabs.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/skeleton_card.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
@@ -238,6 +250,7 @@ class _BookGrowState extends State<_BookGrow> {
 
 // ── The catalogue ───────────────────────────────────────────────────────────
 
+const _gControls = 'Controls';
 const _gMotion = 'Motion';
 const _gChrome = 'Chrome';
 const _gContent = 'Content';
@@ -251,6 +264,557 @@ const _gSheets = 'Sheets';
 /// longest realistic Indonesian copy. Add an entry here in the same commit as a
 /// new shared widget.
 List<BookEntry> bookEntries() => [
+  // ── Controls ──────────────────────────────────────────────────────────────
+  // The shared control vocabulary (ADR-0055). These are the widgets the guard
+  // test bans the raw Material equivalents in favour of, so every variant is
+  // rendered here rather than discovered on a screen.
+  BookEntry(
+    name: 'SatButton',
+    group: _gControls,
+    note:
+        'Six variants x three sizes. Disabled reads from the neutral ramp on '
+        'every variant — a greyed danger button must not still look dangerous.',
+    states: [
+      BookState(
+        'variants (md)',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          children: [
+            SatButton.primary(label: 'Kirim', onTap: () {}),
+            SatButton.neutral(label: 'Netral', onTap: () {}),
+            SatButton.outline(label: 'Garis', onTap: () {}),
+            SatButton.ghost(label: 'Hantu', onTap: () {}),
+            SatButton.success(label: 'Simpan', onTap: () {}),
+            SatButton.danger(label: 'Batalkan', onTap: () {}),
+          ],
+        ),
+      ),
+      BookState(
+        'sizes',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SatButton.primary(
+              label: 'sm',
+              size: SatButtonSize.sm,
+              onTap: () {},
+            ),
+            SatButton.primary(label: 'md', onTap: () {}),
+            SatButton.primary(
+              label: 'lg',
+              size: SatButtonSize.lg,
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+      BookState(
+        'icon, busy, disabled',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          children: [
+            SatButton.primary(
+              label: 'Tambah',
+              icon: Icons.add_rounded,
+              onTap: () {},
+            ),
+            SatButton.primary(label: 'Mengirim', busy: true, onTap: () {}),
+            const SatButton.primary(label: 'Mati', onTap: null),
+            const SatButton.danger(label: 'Mati', onTap: null),
+          ],
+        ),
+      ),
+      BookState(
+        'trailingValue — the send button',
+        (c, r) => SatButton.primary(
+          label: 'Kirim ke dapur',
+          icon: Icons.send_rounded,
+          size: SatButtonSize.lg,
+          trailingValue: 'Rp 248.000',
+          onTap: () {},
+        ),
+        note:
+            'The fourth axis. A cart total riding its own action is the one '
+            'place a button carries a value.',
+      ),
+      BookState(
+        'stress — longest realistic label',
+        (c, r) => SatButton.outline(
+          label: 'Tandai tidak tersedia untuk hari ini',
+          icon: Icons.block_rounded,
+          onTap: () {},
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatIconButton',
+    group: _gControls,
+    note:
+        'tooltip is required: with no text child Flutter derives no semantics, '
+        'so the glyph would announce nothing at all.',
+    states: [
+      BookState(
+        'variants',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          children: [
+            SatIconButton.plain(
+              icon: Icons.more_vert,
+              tooltip: 'Lainnya',
+              onTap: () {},
+            ),
+            SatIconButton.outline(
+              icon: Icons.tune,
+              tooltip: 'Ubah',
+              onTap: () {},
+            ),
+            SatIconButton.primary(
+              icon: Icons.check,
+              tooltip: 'Selesai',
+              onTap: () {},
+            ),
+            SatIconButton.danger(
+              icon: Icons.delete_outline,
+              tooltip: 'Hapus',
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+      BookState(
+        'disabled',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          children: const [
+            SatIconButton.outline(
+              icon: Icons.tune,
+              tooltip: 'Ubah',
+              onTap: null,
+            ),
+            SatIconButton.danger(
+              icon: Icons.delete_outline,
+              tooltip: 'Hapus',
+              onTap: null,
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatChip',
+    group: _gControls,
+    note:
+        'Two shapes: .tag states a fact, .select takes a tap. Selection is a '
+        'fill, never a tint — under Glow it becomes a slab (ADR-0051).',
+    states: [
+      BookState(
+        'tag — every hue',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          children: [
+            for (final h in SatChipHue.values)
+              SatChip.tag(label: h.name, hue: h),
+          ],
+        ),
+      ),
+      BookState(
+        'tag — icon, dot, count',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          children: [
+            const SatChip.tag(
+              label: 'Dapur',
+              icon: Icons.local_fire_department,
+            ),
+            SatChip.tag(label: 'Mains', dot: c.sat.accent),
+            const SatChip.tag(label: 'Alergi', count: 3),
+            const SatChip.tag(label: 'Kecil', size: SatChipSize.sm),
+          ],
+        ),
+      ),
+      BookState(
+        'select — off / on',
+        (c, r) => Wrap(
+          spacing: Sp.s2,
+          children: [
+            SatChip.select(label: 'Semua', selected: true, onTap: () {}),
+            SatChip.select(label: 'Siap', selected: false, onTap: () {}),
+            SatChip.select(
+              label: 'Selesai',
+              selected: false,
+              count: 12,
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+      BookState(
+        'stress — long label ellipsizes',
+        (c, r) => SizedBox(
+          width: 160,
+          child: SatChip.tag(
+            label: 'Tidak tersedia untuk hari ini',
+            hue: SatChipHue.urgent,
+          ),
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatToggle',
+    group: _gControls,
+    note:
+        'Owns its 44px tap target and its Semantics(toggled:). A disabled '
+        'toggle still announces its state — a setting you cannot change is not '
+        'a setting you cannot read.',
+    states: [
+      BookState(
+        'off / on / disabled',
+        (c, r) => Wrap(
+          spacing: Sp.s4,
+          children: [
+            SatToggle(value: false, semanticLabel: 'Mati', onChanged: (_) {}),
+            SatToggle(value: true, semanticLabel: 'Hidup', onChanged: (_) {}),
+            const SatToggle(
+              value: true,
+              semanticLabel: 'Kunci',
+              onChanged: null,
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatStepper',
+    group: _gControls,
+    note:
+        'Boxed for forms, pill for a crowded row. The count slides in the '
+        'direction of travel; reduced motion snaps it.',
+    states: [
+      BookState(
+        'boxed — sizes',
+        (c, r) => Wrap(
+          spacing: Sp.s3,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SatStepper(value: 2, size: SatStepperSize.sm, onChanged: (_) {}),
+            SatStepper(value: 2, onChanged: (_) {}),
+            SatStepper(value: 2, size: SatStepperSize.lg, onChanged: (_) {}),
+          ],
+        ),
+      ),
+      BookState(
+        'pill — seats against capacity',
+        (c, r) => SatStepper.pill(
+          value: 3,
+          max: 6,
+          icon: Icons.person_outline,
+          showMax: true,
+          onChanged: (_) {},
+        ),
+      ),
+      BookState(
+        'at the bounds',
+        (c, r) => Wrap(
+          spacing: Sp.s3,
+          children: [
+            SatStepper(value: 0, min: 0, max: 5, onChanged: (_) {}),
+            SatStepper(value: 5, min: 0, max: 5, onChanged: (_) {}),
+            SatStepper(value: 2, enabled: false, onChanged: (_) {}),
+          ],
+        ),
+        note: 'Minus is dead at min, plus at max, both when disabled.',
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatTabs',
+    group: _gControls,
+    states: [
+      BookState(
+        'three tabs',
+        (c, r) => SatTabs(
+          tabs: const [
+            SatTab(label: 'Item'),
+            SatTab(label: 'Kategori'),
+            SatTab(label: 'Tag'),
+          ],
+          selected: 0,
+          onSelected: (_) {},
+        ),
+      ),
+      BookState(
+        'icons + badges, expanded',
+        (c, r) => SatTabs(
+          expand: true,
+          tabs: const [
+            SatTab(label: 'Aktif', icon: Icons.local_fire_department, badge: 4),
+            SatTab(label: 'Siap', icon: Icons.check_circle_outline),
+          ],
+          selected: 1,
+          onSelected: (_) {},
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatField',
+    group: _gControls,
+    note:
+        'The constructor names what the field accepts and carries the keyboard, '
+        'the formatters and the affix that go with it.',
+    states: [
+      BookState(
+        'text, with and without a label',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatField.text(hint: 'mis. Budi', label: 'Nama tamu'),
+            const SizedBox(height: Sp.s3),
+            const SatField.text(hint: 'Tanpa label'),
+          ],
+        ),
+      ),
+      BookState(
+        'number, money, decimal, pin',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: const [
+            SatField.number(hint: '0', label: 'Jumlah'),
+            SizedBox(height: Sp.s3),
+            SatField.money(hint: '0', label: 'Harga dasar'),
+            SizedBox(height: Sp.s3),
+            SatField.decimal(hint: '0', label: 'Stok', suffixText: 'kg'),
+            SizedBox(height: Sp.s3),
+            SatField.pin(hint: '••••', label: 'PIN'),
+          ],
+        ),
+      ),
+      BookState(
+        'search, error, helper, disabled, inline',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: const [
+            SatField.search(hint: 'Cari item…'),
+            SizedBox(height: Sp.s3),
+            SatField.text(hint: '', label: 'Nama', errorText: 'Wajib diisi'),
+            SizedBox(height: Sp.s3),
+            SatField.number(
+              hint: '',
+              label: 'Harga',
+              helperText: 'Kosongkan jika tidak mengubah harga rata-rata',
+            ),
+            SizedBox(height: Sp.s3),
+            SatField.text(hint: 'Terkunci', enabled: false),
+            SizedBox(height: Sp.s3),
+            SatField.inline(hint: 'Ketik di baris'),
+          ],
+        ),
+      ),
+      BookState(
+        'multiline',
+        (c, r) => const SatField.text(
+          hint: 'mis. alergi belum tertera, catatan plating…',
+          maxLines: 3,
+          minLines: 2,
+          maxLength: 80,
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatDropdown',
+    group: _gControls,
+    note:
+        'Wears the same box as SatField — the two sit in the same rows. For a '
+        'handful of options that all fit, prefer a SatChip.select row.',
+    states: [
+      BookState(
+        'labelled / bare / disabled',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatDropdown<String>(
+              value: 'kg',
+              label: 'Satuan',
+              options: const [
+                SatOption('g', 'g · massa'),
+                SatOption('kg', 'kg · massa'),
+                SatOption('L', 'L · volume'),
+              ],
+              onChanged: (_) {},
+            ),
+            const SizedBox(height: Sp.s3),
+            SatDropdown<String>(
+              value: 'trial',
+              options: const [
+                SatOption('trial', 'trial'),
+                SatOption('paid', 'paid'),
+              ],
+              onChanged: (_) {},
+            ),
+            const SizedBox(height: Sp.s3),
+            const SatDropdown<String>(
+              value: 'paid',
+              label: 'Terkunci',
+              options: [SatOption('paid', 'paid')],
+              onChanged: null,
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatCard',
+    group: _gControls,
+    states: [
+      BookState(
+        'plain / section / titled',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: const [
+            SatCard.plain(child: _BookSwatch('plain')),
+            SizedBox(height: Sp.s3),
+            SatCard.section(
+              header: 'Ketersediaan',
+              child: _BookSwatch('section'),
+            ),
+            SizedBox(height: Sp.s3),
+            SatCard.titled(
+              title: 'Pencetak',
+              tag: 'Perangkat',
+              child: _BookSwatch('titled'),
+            ),
+          ],
+        ),
+      ),
+      BookState(
+        'tappable, selected',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatCard.tappable(onTap: () {}, child: const _BookSwatch('tap me')),
+            const SizedBox(height: Sp.s3),
+            SatCard.tappable(
+              onTap: () {},
+              selected: true,
+              child: const _BookSwatch('selected'),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatEmpty',
+    group: _gControls,
+    note:
+        'The body is where the next action goes, in words. An empty screen '
+        'that only says "kosong" tells a new hire nothing.',
+    states: [
+      BookState(
+        'title only / with body / with action',
+        (c, r) => Column(
+          children: [
+            const SatEmpty(
+              icon: Icons.receipt_long_outlined,
+              title: 'Belum ada meja yang siap dibayar',
+            ),
+            const SatEmpty(
+              icon: Icons.sell_outlined,
+              title: 'Belum ada preset diskon',
+              body:
+                  'Buat preset agar kasir bisa memberi diskon tanpa mengetik '
+                  'angka sendiri.',
+            ),
+            SatEmpty(
+              icon: Icons.table_bar_outlined,
+              title: 'Zona ini kosong',
+              body: 'Tambahkan meja untuk mulai menerima pesanan.',
+              action: SatButton.primary(
+                label: 'Tambah meja',
+                icon: Icons.add_rounded,
+                onTap: () {},
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatSectionLabel',
+    group: _gControls,
+    states: [
+      BookState('default', (c, r) => const SatSectionLabel('Seluruh pesanan')),
+    ],
+  ),
+  BookEntry(
+    name: 'SatSheetHeader',
+    group: _gControls,
+    note: 'Owns the padding and the close button, including its tooltip.',
+    states: [
+      BookState(
+        'with and without a leading slot',
+        (c, r) => Column(
+          children: [
+            SatSheetHeader(
+              onClose: () {},
+              leading: const _BookSwatch('64'),
+              child: Text(
+                'Nasi Goreng Spesial',
+                style: SatType.h3(color: c.sat.textHi),
+              ),
+            ),
+            SatSheetHeader(
+              onClose: () {},
+              child: Text(
+                'Batalkan item',
+                style: SatType.h3(color: c.sat.textHi),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'PulseDot',
+    group: _gControls,
+    note:
+        'Reduced motion holds it at the midpoint, not the trough — a dot '
+        'frozen at its dimmest reads as "off", the opposite of the fact it '
+        'carries.',
+    states: [
+      BookState(
+        'pulsing / static / with a glow',
+        (c, r) => Wrap(
+          spacing: Sp.s4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            PulseDot(color: c.sat.urgent),
+            PulseDot(color: c.sat.textLo, pulse: false),
+            PulseDot(
+              color: c.sat.success,
+              size: 8,
+              glow: c.sat.success.withValues(alpha: 0.25),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+
   // ── Motion ────────────────────────────────────────────────────────────────
   BookEntry(
     name: 'Reveal',
