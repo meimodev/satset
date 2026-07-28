@@ -28,11 +28,6 @@ enum SatTheme {
     SatColors.glow,
     SatSkin.glow,
   ),
-  indigoTerang(
-    AppStrings.themeIndigoTerang,
-    Brightness.light,
-    SatColors.indigoTerang,
-  ),
   neoKertas(
     AppStrings.themeNeoKertas,
     Brightness.light,
