@@ -3,7 +3,6 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
-import 'package:satset/ui/core/design/motion.dart';
 
 export 'package:satset/ui/core/widgets/tablet_chrome.dart'
     show TabletCard, TabletStatTile;
@@ -238,63 +237,4 @@ class AdminRow extends StatelessWidget {
       ),
     );
   }
-}
-
-Widget adminPill(
-  BuildContext context,
-  String text, {
-  bool on = false,
-  bool danger = false,
-}) {
-  final sc = context.sat;
-  Color bg = sc.bg3;
-  Color border = sc.border1;
-  Color fg = sc.textMd;
-  if (on) {
-    bg = sc.accentSoft;
-    border = sc.accentBorder;
-    fg = sc.accentText;
-  }
-  if (danger) {
-    bg = sc.urgentSoft;
-    border = sc.urgent;
-    fg = sc.urgent;
-  }
-  return Container(
-    height: 30,
-    padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
-    alignment: Alignment.center,
-    decoration: SatBox.d(
-      color: bg,
-      border: SatB.all(color: border),
-      borderRadius: SatR.a(999),
-    ),
-    child: Text(text, style: SatType.bodyS(color: fg)),
-  );
-}
-
-Widget adminToggle(BuildContext context, {required bool on}) {
-  final sc = context.sat;
-  return Container(
-    width: 36,
-    height: 20,
-    decoration: SatBox.d(
-      color: on ? sc.success : sc.bg3,
-      border: SatB.all(color: on ? sc.success : sc.border1),
-      borderRadius: SatR.a(999),
-    ),
-    child: AnimatedAlign(
-      duration: satMotion(context, 180),
-      alignment: on ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
-        width: 14,
-        height: 14,
-        decoration: SatBox.d(
-          color: on ? sc.successInk : sc.textLo,
-          shape: BoxShape.circle,
-        ),
-      ),
-    ),
-  );
 }

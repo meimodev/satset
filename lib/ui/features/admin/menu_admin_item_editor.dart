@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -19,7 +20,6 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
-import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
@@ -1356,7 +1356,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
             ),
           ),
-          adminToggle(context, on: !_draft.isSoldOut),
+          // Disabled while stock says sold out — same gate as the button
+          // beside it, since an auto sell-out is not a thing to override here.
+          SatToggle(
+            value: !_draft.isSoldOut,
+            semanticLabel: 'Aktif untuk dijual',
+            onChanged: auto
+                ? null
+                : (v) => _patch(_draft.copyWith(unavailable: !v)),
+          ),
           const SizedBox(width: Sp.s1h),
           SatButton.ghost(
             label: _draft.unavailable ? 'Aktifkan' : 'Tandai tidak tersedia',

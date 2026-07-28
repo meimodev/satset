@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -50,11 +52,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       topTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _tabBtn(AppStrings.staffTabPeople, _Tab.people),
+          _tabChip(AppStrings.staffTabPeople, _Tab.people),
           const SizedBox(width: Sp.s1h),
-          _tabBtn(AppStrings.staffTabRoles, _Tab.roles),
+          _tabChip(AppStrings.staffTabRoles, _Tab.roles),
           const SizedBox(width: Sp.s1h),
-          _tabBtn(AppStrings.staffTabPermissions, _Tab.permissions),
+          _tabChip(AppStrings.staffTabPermissions, _Tab.permissions),
         ],
       ),
       children: [
@@ -156,9 +158,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               ),
             ),
             const SizedBox(width: Sp.s2h),
-            GestureDetector(
+            SatButton.primary(
+              label: AppStrings.staffAddPill,
+              size: SatButtonSize.sm,
               onTap: () => _addStaff(roles),
-              child: adminPill(context, AppStrings.staffAddPill, on: true),
             ),
           ],
         ),
@@ -231,9 +234,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               style: SatType.bodyM(color: sc.textMd),
             ),
             const Spacer(),
-            GestureDetector(
+            SatButton.primary(
+              label: AppStrings.staffNewRolePill,
+              size: SatButtonSize.sm,
               onTap: _createRole,
-              child: adminPill(context, AppStrings.staffNewRolePill, on: true),
             ),
           ],
         ),
@@ -305,22 +309,22 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               sc.violetSoft,
             ),
           const SizedBox(width: Sp.s2),
-          GestureDetector(
+          SatButton.outline(
+            label: AppStrings.staffColor,
+            size: SatButtonSize.sm,
             onTap: () => _pickRoleColor(r),
-            child: adminPill(context, AppStrings.staffColor),
           ),
           const SizedBox(width: Sp.s1h),
-          GestureDetector(
+          SatButton.outline(
+            label: AppStrings.a11yRename,
+            size: SatButtonSize.sm,
             onTap: () => _renameRole(r),
-            child: adminPill(context, AppStrings.a11yRename),
           ),
           const SizedBox(width: Sp.s1h),
-          GestureDetector(
+          SatButton.danger(
+            label: AppStrings.delete,
+            size: SatButtonSize.sm,
             onTap: memberCount == 0 ? () => _deleteRole(r) : null,
-            child: Opacity(
-              opacity: memberCount == 0 ? 1 : 0.4,
-              child: adminPill(context, AppStrings.delete, danger: true),
-            ),
           ),
         ],
       ),
@@ -569,17 +573,22 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                   runSpacing: 14,
                   children: [
                     for (final c in swatches)
-                      GestureDetector(
-                        onTap: () => Navigator.pop(ctx, c),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: SatBox.d(
-                            color: Color(c),
-                            shape: BoxShape.circle,
-                            border: SatB.all(
-                              color: c == r.colorHex ? sc.textHi : sc.border1,
-                              width: c == r.colorHex ? 3 : 1,
+                      Semantics(
+                        button: true,
+                        selected: c == r.colorHex,
+                        label: AppStrings.staffColor,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(ctx, c),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: SatBox.d(
+                              color: Color(c),
+                              shape: BoxShape.circle,
+                              border: SatB.all(
+                                color: c == r.colorHex ? sc.textHi : sc.border1,
+                                width: c == r.colorHex ? 3 : 1,
+                              ),
                             ),
                           ),
                         ),
@@ -636,10 +645,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     return null;
   }
 
-  Widget _tabBtn(String label, _Tab t) {
-    return GestureDetector(
+  /// Three tabs that all fit on one line — a chip row shows every choice at
+  /// once, where SatTabs would give the same three a heavier frame.
+  Widget _tabChip(String label, _Tab t) {
+    return SatChip.select(
+      label: label,
+      selected: _tab == t,
+      size: SatChipSize.sm,
       onTap: () => setState(() => _tab = t),
-      child: adminPill(context, label, on: _tab == t),
     );
   }
 
@@ -1291,8 +1304,9 @@ class _StaffDetailDrawerState extends ConsumerState<_StaffDetailDrawer> {
                             style: SatType.bodyM(color: sc.textHi),
                           ),
                         ),
-                        Switch(
+                        SatToggle(
                           value: !user.disabled,
+                          semanticLabel: AppStrings.active,
                           onChanged: (v) => _setDisabled(user, !v),
                         ),
                       ],

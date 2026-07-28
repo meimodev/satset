@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -576,7 +578,11 @@ class _ActiveRow extends StatelessWidget {
                 ],
               ),
             ),
-            _Switch(on: active),
+            SatToggle(
+              value: active,
+              semanticLabel: AppStrings.zoneAdminTableActive,
+              onChanged: (v) => onChanged(v),
+            ),
           ],
         ),
       ),
@@ -633,7 +639,11 @@ class _GuestOrderRow extends StatelessWidget {
                       ],
                     ),
                   ),
-                  _Switch(on: enabled),
+                  SatToggle(
+                    value: enabled,
+                    semanticLabel: AppStrings.zoneAdminGuestOrdering,
+                    onChanged: onChanged,
+                  ),
                 ],
               ),
             ),
@@ -913,14 +923,27 @@ class _ZoneRow extends StatelessWidget {
               ),
             ),
           ),
-          _IconBtn(icon: Icons.tune, onTap: onEdit),
-          const SizedBox(width: Sp.s1),
-          _IconBtn(
-            icon: Icons.delete_outline,
-            danger: !locked,
-            muted: locked,
-            onTap: onDelete,
+          SatIconButton.outline(
+            icon: Icons.tune,
+            tooltip: AppStrings.a11yEdit,
+            size: 36,
+            onTap: onEdit,
           ),
+          const SizedBox(width: Sp.s1),
+          if (locked)
+            SatIconButton.outline(
+              icon: Icons.delete_outline,
+              tooltip: AppStrings.delete,
+              size: 36,
+              onTap: null,
+            )
+          else
+            SatIconButton.danger(
+              icon: Icons.delete_outline,
+              tooltip: AppStrings.delete,
+              size: 36,
+              onTap: onDelete,
+            ),
         ],
       ),
     );
@@ -1186,21 +1209,26 @@ class _IconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: satMotion(context, 130),
-        width: 46,
-        height: 46,
-        decoration: SatBox.d(
-          color: selected ? color.withValues(alpha: 0.18) : sc.bg2,
-          border: SatB.all(
-            color: selected ? color : sc.border1,
-            width: selected ? 1.4 : 1,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: AppStrings.zoneAdminIcon,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: satMotion(context, 130),
+          width: 46,
+          height: 46,
+          decoration: SatBox.d(
+            color: selected ? color.withValues(alpha: 0.18) : sc.bg2,
+            border: SatB.all(
+              color: selected ? color : sc.border1,
+              width: selected ? 1.4 : 1,
+            ),
+            borderRadius: SatR.a(12),
           ),
-          borderRadius: SatR.a(12),
+          child: Icon(icon, size: 22, color: selected ? color : sc.textMd),
         ),
-        child: Icon(icon, size: 22, color: selected ? color : sc.textMd),
       ),
     );
   }
@@ -1288,8 +1316,10 @@ class _SheetShell extends StatelessWidget {
                     ],
                   ),
                 ),
-                _IconBtn(
+                SatIconButton.outline(
                   icon: Icons.close,
+                  tooltip: AppStrings.close,
+                  size: 36,
                   onTap: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -1450,55 +1480,17 @@ class _Stepper extends StatelessWidget {
     );
   }
 
+  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
+  /// deriving it from the glyph is how every one of these gets named without
+  /// the call sites repeating it.
   Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
-    return GestureDetector(
+    return SatIconButton.outline(
+      icon: icon,
+      tooltip: icon == Icons.add
+          ? AppStrings.stepperIncrease
+          : AppStrings.stepperDecrease,
+      size: 38,
       onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 36,
-        decoration: SatBox.d(
-          color: onTap == null ? sc.bg3 : sc.bg4,
-          borderRadius: SatR.a(8),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: onTap == null ? sc.textDim : sc.textHi,
-        ),
-      ),
-    );
-  }
-}
-
-class _Switch extends StatelessWidget {
-  final bool on;
-  const _Switch({required this.on});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return AnimatedContainer(
-      duration: satMotion(context, 160),
-      width: 44,
-      height: 26,
-      decoration: SatBox.d(
-        color: on ? sc.success : sc.bg3,
-        border: SatB.all(color: on ? sc.success : sc.border1),
-        borderRadius: SatR.a(999),
-      ),
-      child: AnimatedAlign(
-        duration: satMotion(context, 160),
-        alignment: on ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.all(Sp.sHair),
-          width: 20,
-          height: 20,
-          decoration: SatBox.d(
-            color: on ? sc.successInk : sc.textLo,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1606,42 +1598,6 @@ class _DangerBtn extends StatelessWidget {
           borderRadius: SatR.a(999),
         ),
         child: Text(label, style: SatType.labelM(color: sc.urgent)),
-      ),
-    );
-  }
-}
-
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final bool danger;
-  final bool muted;
-  final VoidCallback onTap;
-  const _IconBtn({
-    required this.icon,
-    this.danger = false,
-    this.muted = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final fg = danger
-        ? sc.urgent
-        : muted
-        ? sc.textDim
-        : sc.textMd;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: SatBox.d(
-          color: sc.bg2,
-          border: SatB.all(color: sc.border1),
-          borderRadius: SatR.a(10),
-        ),
-        child: Icon(icon, size: 18, color: fg),
       ),
     );
   }

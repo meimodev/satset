@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -1059,9 +1061,10 @@ class _PajakLayananCard extends ConsumerWidget {
         Expanded(
           child: Text(label, style: SatType.bodyM(color: sc.textHi)),
         ),
-        GestureDetector(
-          onTap: onToggle,
-          child: adminToggle(context, on: on),
+        SatToggle(
+          value: on,
+          semanticLabel: label,
+          onChanged: (_) => onToggle(),
         ),
       ],
     );
@@ -1237,23 +1240,17 @@ class _PajakLayananCard extends ConsumerWidget {
     );
   }
 
+  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
+  /// deriving it from the glyph is how every one of these gets named without
+  /// the call sites repeating it.
   Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
-    return GestureDetector(
+    return SatIconButton.outline(
+      icon: icon,
+      tooltip: icon == Icons.add
+          ? AppStrings.stepperIncrease
+          : AppStrings.stepperDecrease,
+      size: 36,
       onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: SatBox.d(
-          color: onTap == null ? sc.bg2 : sc.bg3,
-          border: SatB.all(color: sc.border1),
-          borderRadius: SatR.a(10),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: onTap == null ? sc.textDim : sc.textHi,
-        ),
-      ),
     );
   }
 }
@@ -1301,10 +1298,10 @@ class _GuestOrderingCard extends ConsumerWidget {
                   style: SatType.bodyM(color: sc.textHi),
                 ),
               ),
-              GestureDetector(
-                onTap: () =>
-                    n.patch(guestOrderingEnabled: !s.guestOrderingEnabled),
-                child: adminToggle(context, on: s.guestOrderingEnabled),
+              SatToggle(
+                value: s.guestOrderingEnabled,
+                semanticLabel: 'Pesan mandiri',
+                onChanged: (v) => n.patch(guestOrderingEnabled: v),
               ),
             ],
           ),
@@ -1495,23 +1492,17 @@ class _ReportsHourCard extends ConsumerWidget {
     );
   }
 
+  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
+  /// deriving it from the glyph is how every one of these gets named without
+  /// the call sites repeating it.
   Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
-    return GestureDetector(
+    return SatIconButton.outline(
+      icon: icon,
+      tooltip: icon == Icons.add
+          ? AppStrings.stepperIncrease
+          : AppStrings.stepperDecrease,
+      size: 36,
       onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: SatBox.d(
-          color: onTap == null ? sc.bg2 : sc.bg3,
-          border: SatB.all(color: sc.border1),
-          borderRadius: SatR.a(10),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: onTap == null ? sc.textDim : sc.textHi,
-        ),
-      ),
     );
   }
 }

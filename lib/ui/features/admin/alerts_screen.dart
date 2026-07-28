@@ -1,4 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -292,7 +294,11 @@ class _MinutesRow extends StatelessWidget {
             ),
           ),
           if (onEnabledChanged != null) ...[
-            Switch(value: on, onChanged: (v) => onEnabledChanged!(v)),
+            SatToggle(
+              value: on,
+              semanticLabel: label,
+              onChanged: (v) => onEnabledChanged!(v),
+            ),
             const SizedBox(width: Sp.s1),
           ],
           _step(
@@ -320,24 +326,19 @@ class _MinutesRow extends StatelessWidget {
     );
   }
 
-  Widget _step(SatColors sc, IconData icon, VoidCallback? onTap) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: SatBox.d(
-            color: onTap == null ? sc.bg2 : sc.bg3,
-            border: SatB.all(color: sc.border1),
-            borderRadius: SatR.a(9),
-          ),
-          child: Icon(
-            icon,
-            size: 17,
-            color: onTap == null ? sc.textLo : sc.textHi,
-          ),
-        ),
-      );
+  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
+  /// deriving it from the glyph is how every one of these gets named without
+  /// the call sites repeating it.
+  Widget _step(SatColors sc, IconData icon, VoidCallback? onTap) {
+    return SatIconButton.outline(
+      icon: icon,
+      tooltip: icon == Icons.add
+          ? AppStrings.stepperIncrease
+          : AppStrings.stepperDecrease,
+      size: 34,
+      onTap: onTap,
+    );
+  }
 }
 
 /// Venue-wide alert sound chooser (ADR-0035). Picks a preset per [AlertEvent];
@@ -598,8 +599,9 @@ class _DeviceMuteCard extends ConsumerWidget {
                     style: SatType.bodyM(color: sc.textMd),
                   ),
                 ),
-                Switch(
+                SatToggle(
                   value: !muted.contains(e),
+                  semanticLabel: _labels[e],
                   onChanged: (v) async {
                     final prefs = ref.read(prefsServiceProvider).valueOrNull;
                     if (prefs == null) return;

@@ -1613,9 +1613,13 @@ class _RecipeLinkChips extends StatelessWidget {
           children: [
             for (final c in chips.take(shown)) _chip(context, c.$1, c.$2, c.$3),
             if (hidden > 0)
-              GestureDetector(
-                onTap: onExpand,
-                child: _chip(context, '+$hidden', null, sc.textLo),
+              Semantics(
+                button: true,
+                label: '+$hidden',
+                child: GestureDetector(
+                  onTap: onExpand,
+                  child: _chip(context, '+$hidden', null, sc.textLo),
+                ),
               ),
           ],
         );

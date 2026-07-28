@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -418,59 +420,68 @@ class _AvatarBtn extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         shape: border,
-        child: InkWell(
-          customBorder: border,
-          onTap: () => context.go('/me'),
-          child: Container(
-            width: 46,
-            height: 46,
-            decoration: SatBox.d(
-              shape: shape,
-              border: SatShape.brutal
-                  ? null
-                  : SatB.all(
-                      color: active ? sc.accentBorder : Colors.transparent,
-                      width: 2,
-                    ),
-              boxShadow: active
-                  ? (SatShape.brutal
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: sc.bg1,
-                              blurRadius: 0,
-                              spreadRadius: 3,
-                            ),
-                          ])
-                  : null,
-            ),
-            alignment: Alignment.center,
+        child: Semantics(
+          button: true,
+          label: AppStrings.tabSaya,
+          child: InkWell(
+            customBorder: border,
+            onTap: () => context.go('/me'),
             child: Container(
-              width: 42,
-              height: 42,
+              width: 46,
+              height: 46,
               decoration: SatBox.d(
                 shape: shape,
-                border: SatShape.brutal ? SatB.all(color: SatShape.ink) : null,
-                boxShadow: SatShape.brutal && active
-                    ? SatShape.hardShadow()
+                border: SatShape.brutal
+                    ? null
+                    : SatB.all(
+                        color: active ? sc.accentBorder : Colors.transparent,
+                        width: 2,
+                      ),
+                boxShadow: active
+                    ? (SatShape.brutal
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: sc.bg1,
+                                blurRadius: 0,
+                                spreadRadius: 3,
+                              ),
+                            ])
                     : null,
-                // Flat under both non-soft skins. Glow fills with solid colour
-                // and separates with shadow; a gradient reads as a different
-                // material entirely.
-                //
-                // The source design fills this disc with obsidian and sets the
-                // initials in lime, dropping the per-user hue. Kept as the
-                // user's own colour instead: the swatch identifying a person
-                // has to match wherever else they appear, and the rail is where
-                // you look to check who is signed in.
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: SatShape.lembut ? [base, dark] : [base, base],
-                ),
               ),
               alignment: Alignment.center,
-              child: Text(initials, style: SatType.monoM(color: onFill(base))),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: SatBox.d(
+                  shape: shape,
+                  border: SatShape.brutal
+                      ? SatB.all(color: SatShape.ink)
+                      : null,
+                  boxShadow: SatShape.brutal && active
+                      ? SatShape.hardShadow()
+                      : null,
+                  // Flat under both non-soft skins. Glow fills with solid colour
+                  // and separates with shadow; a gradient reads as a different
+                  // material entirely.
+                  //
+                  // The source design fills this disc with obsidian and sets the
+                  // initials in lime, dropping the per-user hue. Kept as the
+                  // user's own colour instead: the swatch identifying a person
+                  // has to match wherever else they appear, and the rail is where
+                  // you look to check who is signed in.
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: SatShape.lembut ? [base, dark] : [base, base],
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initials,
+                  style: SatType.monoM(color: onFill(base)),
+                ),
+              ),
             ),
           ),
         ),

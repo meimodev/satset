@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -54,11 +56,13 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     return AdminPage(
       title: 'Sistem',
       sub: '${venueName.isEmpty ? 'Venue' : venueName} · v2.0',
-      topTrailing: adminPill(
-        context,
-        degraded ? 'Mode degraded' : 'LAN online',
-        on: !degraded,
-        danger: degraded && ping.consecutiveFailures > 2,
+      topTrailing: SatChip.tag(
+        label: degraded ? 'Mode degraded' : 'LAN online',
+        size: SatChipSize.sm,
+        // Degraded now reads as warn rather than neutral: a LAN that is half
+        // up is not the same fact as one that is fine, and the old pill said
+        // so only in words.
+        hue: degraded ? SatChipHue.warn : SatChipHue.accent,
       ),
       children: _systemBody(context, sc),
     );
@@ -204,7 +208,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               Expanded(
                 child: Text(fpShort, style: SatType.monoM(color: sc.textHi)),
               ),
-              GestureDetector(
+              SatButton.outline(
+                label: 'Salin',
+                size: SatButtonSize.sm,
                 onTap: fp.isEmpty
                     ? null
                     : () async {
@@ -214,7 +220,6 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                           const SnackBar(content: Text('Fingerprint disalin')),
                         );
                       },
-                child: adminPill(context, 'Salin'),
               ),
             ],
           ),
@@ -268,14 +273,16 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
+          SatButton.outline(
+            label: 'Cari',
+            size: SatButtonSize.sm,
             onTap: () => _discoverPrinters(context),
-            child: adminPill(context, 'Cari'),
           ),
           const SizedBox(width: Sp.s1h),
-          GestureDetector(
+          SatButton.outline(
+            label: '+ Printer',
+            size: SatButtonSize.sm,
             onTap: () => _showAddPrinterSheet(context),
-            child: adminPill(context, '+ Printer'),
           ),
         ],
       ),
@@ -301,7 +308,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               style: SatType.monoM(color: sc.textHi),
             ),
           ),
-          GestureDetector(
+          SatButton.outline(
+            label: 'Test',
+            size: SatButtonSize.sm,
             onTap: () async {
               final err = await ref
                   .read(printersRepositoryProvider.notifier)
@@ -311,10 +320,13 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                 context,
               ).showSnackBar(SnackBar(content: Text(err ?? 'Tes tercetak')));
             },
-            child: adminPill(context, 'Test'),
           ),
           const SizedBox(width: Sp.s1h),
-          adminPill(context, online ? 'Online' : 'Offline', on: online),
+          SatChip.tag(
+            label: online ? 'Online' : 'Offline',
+            size: SatChipSize.sm,
+            hue: online ? SatChipHue.accent : SatChipHue.neutral,
+          ),
         ],
       ),
       last: last,
@@ -340,7 +352,11 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               style: SatType.bodyM(color: sc.textHi),
             ),
           ),
-          adminPill(context, pending == 0 ? 'Sepi' : 'Aktif', on: pending > 0),
+          SatChip.tag(
+            label: pending == 0 ? 'Sepi' : 'Aktif',
+            size: SatChipSize.sm,
+            hue: pending > 0 ? SatChipHue.accent : SatChipHue.neutral,
+          ),
         ],
       ),
       last: last,
@@ -399,12 +415,19 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             child: Text(sub, style: SatType.bodyM(color: sc.textHi)),
           ),
           if (!d.revoked)
-            GestureDetector(
+            SatButton.outline(
+              label: 'Revoke',
+              size: SatButtonSize.sm,
               onTap: () => _confirmRevoke(d),
-              child: adminPill(context, 'Revoke'),
             ),
           const SizedBox(width: Sp.s1h),
-          adminPill(context, pillLabel, on: d.sessionActive && !d.revoked),
+          SatChip.tag(
+            label: pillLabel,
+            size: SatChipSize.sm,
+            hue: d.sessionActive && !d.revoked
+                ? SatChipHue.accent
+                : SatChipHue.neutral,
+          ),
         ],
       ),
       last: last,
@@ -424,15 +447,16 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           value: Row(
             children: [
               const Spacer(),
-              GestureDetector(
-                onTap: () async {
+              SatToggle(
+                value: audio,
+                semanticLabel: 'Alert audio',
+                onChanged: (v) async {
                   final prefs = ref.read(prefsServiceProvider).valueOrNull;
                   if (prefs == null) return;
-                  await prefs.setAudioAlertEnabled(!audio);
+                  await prefs.setAudioAlertEnabled(v);
                   if (!context.mounted) return;
                   ref.invalidate(prefsServiceProvider);
                 },
-                child: adminToggle(context, on: audio),
               ),
             ],
           ),
@@ -441,9 +465,10 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           label: 'Tindakan',
           value: Row(
             children: [
-              GestureDetector(
+              SatButton.outline(
+                label: 'Mulai ulang server',
+                size: SatButtonSize.sm,
                 onTap: () => _confirmRestart(),
-                child: adminPill(context, 'Mulai ulang server'),
               ),
             ],
           ),

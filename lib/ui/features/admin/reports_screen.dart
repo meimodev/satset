@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -102,14 +103,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   Expanded(
                     child: Text('Laporan', style: SatType.h1(color: sc.textHi)),
                   ),
-                  GestureDetector(
+                  SatButton.outline(
+                    label: 'Ekspor',
+                    size: SatButtonSize.sm,
                     onTap: () => showExportSheet(
                       context,
                       ref,
                       snapshot: snapshot,
                       query: query,
                     ),
-                    child: adminPill(context, 'Ekspor', on: false),
                   ),
                 ],
               ),
@@ -126,10 +128,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       topTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
+          SatButton.outline(
+            label: 'Ekspor',
+            size: SatButtonSize.sm,
             onTap: () =>
                 showExportSheet(context, ref, snapshot: snapshot, query: query),
-            child: adminPill(context, 'Ekspor', on: false),
           ),
           const SizedBox(width: Sp.s2),
           _refreshButton(
@@ -260,9 +263,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               style: SatType.bodyM(color: sc.textHi),
             ),
           ),
-          GestureDetector(
+          SatButton.outline(
+            label: 'Coba lagi',
+            size: SatButtonSize.sm,
             onTap: () => ref.read(reportsRepositoryProvider.notifier).refresh(),
-            child: adminPill(context, 'Coba lagi'),
           ),
         ],
       ),
@@ -275,15 +279,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Row(
         children: [
           for (final r in ReportRange.values) ...[
-            GestureDetector(
+            SatButton.outline(
+              label: _chipLabel(r, query),
+              size: SatButtonSize.sm,
               onTap: r == ReportRange.custom
                   ? _openCustomSheet
                   : () => _setRange(r),
-              child: adminPill(
-                context,
-                _chipLabel(r, query),
-                on: query.range == r,
-              ),
             ),
             const SizedBox(width: Sp.s2),
           ],

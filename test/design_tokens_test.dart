@@ -189,51 +189,48 @@ void main() {
     );
   });
 
-  test('no new: icon-only tap target without a role', () {
-    // Baseline, not a ban. The scan cannot see through a child widget's own
-    // build, so a tap target wrapping `adminPill(context, '+ Add staff')`
-    // counts here even though it announces that text fine — what those are
-    // missing is the button *role*, not a name. The remaining 29 are all admin
-    // surfaces in that shape; the icon-only ones, which announced nothing at
-    // all, are fixed. Wrapping `adminPill`/`adminToggle` in `_common.dart`
-    // would clear most of the rest in one change.
-    //
-    // It also cannot see a `Semantics` applied at `return` to a widget built
-    // into a local (table_card, me_screen, table_detail do this), so a handful
-    // of counted sites are already correct.
-    const baseline = 29;
+  // A ban since the whole shared-widget sweep: SatButton, SatIconButton,
+  // SatChip and SatToggle each carry their own role, and the tap targets left
+  // in feature code were wrapped one by one.
+  //
+  // Scans the whole enclosing method rather than a fixed lookback — three
+  // widgets (table_card, me_screen, table_detail) apply Semantics at `return`
+  // to a card built into a local, which a 320-char window could not see and
+  // which was the only reason this stayed a baseline.
+  test('every tap target carries a role', () {
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();
-      for (final m in RegExp(
-        r'\b(GestureDetector|InkWell)\(',
-      ).allMatches(src)) {
+      final methods = RegExp(
+        r'^\s*(?:@override\s*\n\s*)?\w[\w<>, ?]*\s+\w+\([^;]*?\)\s*(?:\{|=>)',
+        multiLine: true,
+      ).allMatches(src).map((m) => m.start).toList();
+      for (final m in RegExp(r'\b(GestureDetector|InkWell)\(').allMatches(src)) {
         final body = _callBody(src, m.start);
-        // The Semantics wrapper usually sits *above* the tap target, not
-        // inside it, so the body alone is not enough — look back over the
-        // enclosing widget too.
-        final lookback = src.substring(
-          (m.start - 320).clamp(0, m.start),
-          m.start,
+        if (RegExp(r'Text\(|SatType\.|label:').hasMatch(body)) continue;
+        // The enclosing method: from the last declaration at or before the
+        // tap target, to the next one after it.
+        final startIdx = methods.lastWhere(
+          (i) => i <= m.start,
+          orElse: () => 0,
         );
-        if (body.contains('Semantics(') ||
-            lookback.contains('Semantics(') ||
-            RegExp(r'Text\(|SatType\.|label:').hasMatch(body)) {
-          continue;
-        }
+        final endIdx = methods.firstWhere(
+          (i) => i > m.start,
+          orElse: () => src.length,
+        );
+        if (src.substring(startIdx, endIdx).contains('Semantics(')) continue;
         hits.add('${file.path}:${_lineOf(src, m.start)}');
       }
     }
-    if (hits.length > baseline) {
-      fail(
-        'icon-only tap targets without Semantics: ${hits.length}, baseline '
-        '$baseline (+${hits.length - baseline} new).\nWrap in '
-        'Semantics(button: true, label: …).\n\n${hits.join('\n')}',
-      );
-    }
-    if (hits.length < baseline) {
-      fail('dropped to ${hits.length} — set baseline to ${hits.length}.');
-    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'A GestureDetector or InkWell with no text child announces nothing '
+          'to TalkBack. Reach for SatButton / SatIconButton / SatChip / '
+          'SatToggle, which carry their own role, or wrap it in '
+          'Semantics(button: true, label: …).\n${hits.join('\n')}',
+    );
   });
 
   // The clutter guard. A widget class name declared in more than one file is

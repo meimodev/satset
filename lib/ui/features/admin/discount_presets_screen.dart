@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -265,15 +266,26 @@ Future<void> _edit(
                 errorText: error,
               ),
               const SizedBox(height: Sp.s2),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('Aktif', style: SatType.bodyM(color: sc.textHi)),
-                subtitle: Text(
-                  'Nonaktif menyembunyikan preset dari kasir',
-                  style: SatType.bodyS(color: sc.textLo),
-                ),
-                value: active,
-                onChanged: (v) => setState(() => active = v),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Aktif', style: SatType.bodyM(color: sc.textHi)),
+                        Text(
+                          'Nonaktif menyembunyikan preset dari kasir',
+                          style: SatType.bodyS(color: sc.textLo),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SatToggle(
+                    value: active,
+                    semanticLabel: 'Aktif',
+                    onChanged: (v) => setState(() => active = v),
+                  ),
+                ],
               ),
               const SizedBox(height: Sp.s2),
               SizedBox(

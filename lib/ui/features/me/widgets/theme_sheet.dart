@@ -93,45 +93,51 @@ class _ThemeRow extends StatelessWidget {
     final sc = Theme.of(context).extension<SatColors>()!;
     final p = theme.colors;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Sp.s2),
-      child: Material(
-        color: selected ? sc.accentSoft : sc.bg2,
-        borderRadius: SatR.a(14),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: Sp.s3h,
-            ),
-            decoration: SatBox.d(
-              borderRadius: SatR.a(14),
-              border: SatB.all(color: selected ? sc.accentBorder : sc.border1),
-            ),
-            child: Row(
-              children: [
-                _Swatch(bg: p.bg0, accent: p.accent, text: p.textHi),
-                const SizedBox(width: Sp.s3h),
-                Expanded(
-                  child: Text(
-                    theme.label,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: sc.textHi),
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: Sp.s2),
+        child: Material(
+          color: selected ? sc.accentSoft : sc.bg2,
+          borderRadius: SatR.a(14),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s3h,
+                vertical: Sp.s3h,
+              ),
+              decoration: SatBox.d(
+                borderRadius: SatR.a(14),
+                border: SatB.all(
+                  color: selected ? sc.accentBorder : sc.border1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  _Swatch(bg: p.bg0, accent: p.accent, text: p.textHi),
+                  const SizedBox(width: Sp.s3h),
+                  Expanded(
+                    child: Text(
+                      theme.label,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: sc.textHi),
+                    ),
                   ),
-                ),
-                // Selection is stated by the check, not by the tint alone —
-                // the tint is unreadable against some palettes' swatches.
-                Icon(
-                  selected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  size: 18,
-                  color: selected ? sc.accentText : sc.textDim,
-                ),
-              ],
+                  // Selection is stated by the check, not by the tint alone —
+                  // the tint is unreadable against some palettes' swatches.
+                  Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 18,
+                    color: selected ? sc.accentText : sc.textDim,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -139,11 +139,18 @@ class FleetTile extends StatelessWidget {
     );
 
     if (onTap == null) return body;
-    return PressScale(
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: SatR.a(radius),
-        child: InkWell(onTap: onTap, borderRadius: SatR.a(radius), child: body),
+    return Semantics(
+      button: true,
+      child: PressScale(
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: SatR.a(radius),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: SatR.a(radius),
+            child: body,
+          ),
+        ),
       ),
     );
   }

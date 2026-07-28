@@ -166,7 +166,7 @@ Listed so you find them before rebuilding them. Promote to `core/widgets/` on a 
 
 | Entry | File |
 |---|---|
-| `AdminPage`, `AdminRow`, `SetTile`, `SetHero`, `AdminEmbeddedStrip`, `adminPill(...)`, `adminToggle(...)` | `_common.dart` |
+| `AdminPage`, `AdminRow`, `SetTile`, `SetHero`, `AdminEmbeddedStrip` | `_common.dart` |
 | `ReceiptPreview`, `ReceiptPreviewData` | `widgets/receipt_preview.dart` |
 
 ---

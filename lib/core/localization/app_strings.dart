@@ -271,6 +271,7 @@ class AppStrings {
   static const String a11yGuestDecrease = 'Kurangi jumlah tamu';
   static const String a11yGuestIncrease = 'Tambah jumlah tamu';
   static const String a11yEdit = 'Ubah';
+  static const String zoneAdminIcon = 'Ikon zona';
   static const String a11yRename = 'Ganti nama';
   static const String a11yClear = 'Bersihkan';
   static const String a11yRefresh = 'Muat ulang';
