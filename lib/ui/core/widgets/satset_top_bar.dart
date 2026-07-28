@@ -80,7 +80,10 @@ class _LoginClockState extends ConsumerState<LoginClock> {
       children: [
         // Current Time Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s2h,
+            vertical: Sp.s1h,
+          ),
           decoration: SatBox.d(
             color: badgeBg,
             border: badgeBorder,
@@ -98,7 +101,10 @@ class _LoginClockState extends ConsumerState<LoginClock> {
         const SizedBox(width: Sp.s2),
         // Elapsed Time Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s2h,
+            vertical: Sp.s1h,
+          ),
           decoration: SatBox.d(
             color: badgeBg,
             border: badgeBorder,

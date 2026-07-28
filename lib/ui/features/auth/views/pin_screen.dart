@@ -182,7 +182,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
         backgroundColor: sc.bg0,
         body: Center(
           child: SizedBox(
-            width: 28,
+            width: Sp.s7,
             height: 28,
             child: CircularProgressIndicator(
               strokeWidth: 2,
@@ -402,7 +402,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _Reveal(child: brand),
-                              const SizedBox(height: 36),
+                              const SizedBox(height: Sp.s9),
                               _Reveal(
                                 delay: const Duration(milliseconds: 80),
                                 child: modeBlock,
@@ -430,12 +430,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
                       children: [
                         const SizedBox(height: Sp.s6),
                         _Reveal(child: brand),
-                        const SizedBox(height: 36),
+                        const SizedBox(height: Sp.s9),
                         _Reveal(
                           delay: const Duration(milliseconds: 80),
                           child: modeBlock,
                         ),
-                        const SizedBox(height: 26),
+                        const SizedBox(height: Sp.s7),
                         if (state.mode == SignInMode.admin)
                           _Reveal(
                             delay: const Duration(milliseconds: 140),
@@ -808,7 +808,7 @@ class _ServerRow extends StatelessWidget {
                 ),
                 if (busy)
                   SizedBox(
-                    width: 22,
+                    width: Sp.s6,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -866,7 +866,7 @@ class _RestoreLoadingScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _TabletBrand(),
-              const SizedBox(height: 28),
+              const SizedBox(height: Sp.s7),
               SizedBox(
                 width: Sp.s6,
                 height: 24,
@@ -1107,7 +1107,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                               : '${server.ipLine} · v${server.version}',
                           style: SatType.monoS(color: sc.textLo),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: Sp.s1),
                         Text(
                           v.label,
                           style: SatType.monoS(

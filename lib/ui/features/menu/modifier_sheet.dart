@@ -672,7 +672,7 @@ class _Foot extends StatelessWidget {
               children: [
                 _StepperBtn(label: '−', onTap: onDec, disabled: qty <= 1),
                 SizedBox(
-                  width: 28,
+                  width: Sp.s7,
                   child: Text(
                     '$qty',
                     textAlign: TextAlign.center,
@@ -712,7 +712,7 @@ class _StepperBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 38,
+      width: Sp.s10,
       height: double.infinity,
       child: SatButton.ghost(label: label, onTap: disabled ? null : onTap),
     );

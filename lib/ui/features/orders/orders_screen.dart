@@ -377,7 +377,7 @@ class _Segments extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: Sp.s10,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -426,7 +426,10 @@ class _SegBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: 9),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s3h,
+          vertical: Sp.s2h,
+        ),
         decoration: SatBox.d(
           color: active ? sc.textHi : sc.bg2,
           borderRadius: SatR.a(999),
@@ -559,7 +562,7 @@ class _OrderRow extends StatelessWidget {
                         ),
                         if (t.modifiers.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(top: 3),
+                            padding: const EdgeInsets.only(top: Sp.s1),
                             child: Text(
                               t.modifiers
                                       .take(2)
@@ -569,7 +572,7 @@ class _OrderRow extends StatelessWidget {
                               style: SatType.bodyS(color: sc.textMd),
                             ),
                           ),
-                        const SizedBox(height: 7),
+                        const SizedBox(height: Sp.s2),
                         Wrap(
                           spacing: 8,
                           runSpacing: 4,

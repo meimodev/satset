@@ -170,7 +170,7 @@ class SetHero extends StatelessWidget {
         border: SatB.all(color: accent, width: 1.5),
         borderRadius: SatR.a(18),
       ),
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(Sp.s6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

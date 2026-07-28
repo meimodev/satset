@@ -348,7 +348,7 @@ class _TotalsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     Widget row(String k, int v, {bool strong = false, Color? color}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1260,7 +1260,7 @@ class _ReceiptItemRow extends ConsumerWidget {
             ),
             if (existing != null)
               Padding(
-                padding: const EdgeInsets.only(left: Sp.s3, top: 1),
+                padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
                 child: Row(
                   children: [
                     Expanded(
@@ -1636,7 +1636,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
       final hasNote = l.note?.trim().isNotEmpty == true;
       out.add(
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1658,7 +1658,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
               ),
               for (final m in l.modifiers)
                 Padding(
-                  padding: const EdgeInsets.only(left: 28, top: 1),
+                  padding: const EdgeInsets.only(left: Sp.s7, top: Sp.sHair),
                   child: Text(
                     '${m.display}'
                     '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
@@ -1667,7 +1667,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                 ),
               if (hasNote)
                 Padding(
-                  padding: const EdgeInsets.only(left: 28, top: 1),
+                  padding: const EdgeInsets.only(left: Sp.s7, top: Sp.sHair),
                   child: Text(
                     'Catatan: ${l.note!.trim()}',
                     style: SatType.bodyS(color: sc.textLo),
@@ -2015,7 +2015,7 @@ class _PastBillTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: SatType.labelM(color: sc.textHi),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: Sp.s1),
                       Text(
                         b.isTakeaway
                             ? '${_shortWhen(b.closedAt)} · ${b.ticketCount} item'
@@ -2102,7 +2102,7 @@ class PastBillDetailScreen extends ConsumerWidget {
                     .expand((r) => r.payments)
                     .map(
                       (p) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        padding: const EdgeInsets.symmetric(vertical: Sp.s1),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [

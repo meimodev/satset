@@ -258,7 +258,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
               const SizedBox(height: Sp.s3h),
               Text(_error!, style: SatType.bodyS(color: sc.urgent)),
             ],
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s6),
             SizedBox(width: double.infinity, child: _exportButton(context)),
           ],
         ),

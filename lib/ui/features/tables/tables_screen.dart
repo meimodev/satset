@@ -290,7 +290,7 @@ class _FloorAction extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: sc.textMd),
             if (!compact) ...[
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s2),
               Text(
                 SatShape.caps(label),
                 style: (brutal
@@ -298,13 +298,13 @@ class _FloorAction extends StatelessWidget {
                     : SatType.bodyS(color: sc.textHi)),
               ),
             ],
-            const SizedBox(width: 7),
+            const SizedBox(width: Sp.s2),
             Text('$count', style: SatType.monoM(color: sc.textMd)),
             if (alert != null) ...[
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s2),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 5,
+                  horizontal: Sp.s1h,
                   vertical: Sp.sHair,
                 ),
                 decoration: BoxDecoration(

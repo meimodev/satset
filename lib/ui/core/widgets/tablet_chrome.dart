@@ -103,7 +103,7 @@ class TabletSideRail extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _Mark(),
-          const SizedBox(height: 22),
+          const SizedBox(height: Sp.s6),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -289,7 +289,7 @@ class _RailBtn extends StatelessWidget {
     final sc = context.sat;
     final isActive = active == id;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -363,7 +363,7 @@ class _RailBtn extends StatelessWidget {
                     child: Container(
                       constraints: const BoxConstraints(minWidth: 16),
                       height: 16,
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
                       decoration: SatBox.d(
                         color: alert ? sc.success : sc.accent,
                         borderRadius: SatR.a(8),

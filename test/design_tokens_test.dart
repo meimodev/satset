@@ -14,6 +14,15 @@ import 'package:flutter_test/flutter_test.dart';
 /// Lower the baseline in the same commit — that is what locks the win in.
 ///
 /// Goal for every baseline is 0. See `lib/ui/core/widgets/CATALOG.md`.
+/// True when a bare literal is small enough to be spacing rather than a
+/// dimension. The scale tops out at 48; above that a number is a panel width
+/// or a tile height and belongs at its call site.
+bool _isSpacing(String arg) {
+  final m = RegExp(r'(\d+(?:\.\d+)?)\s*$').firstMatch(arg.trim());
+  if (m == null) return false;
+  return (double.tryParse(m.group(1)!) ?? 999) <= 48;
+}
+
 void main() {
   // ponytail: regex over source, not an analyzer plugin. A custom_lint package
   // would give IDE squiggles for ~300 lines of plumbing; this is 100 lines and
@@ -346,38 +355,45 @@ void main() {
   // but the `6` inside `EdgeInsets.only(bottom: inset * 6)` is arithmetic. An
   // earlier regex version did not draw that line and rewrote layout dimensions
   // (a 560px panel width became 48) — hence the argument parser.
-  test('no new: raw spacing literal', () {
-    const baseline = 170;
+  //
+  // A ban since the scale grew s7/s9 and every value under it was snapped.
+  // Numbers above the scale's 48 ceiling are dimensions — a 560px panel, a
+  // 110px thumbnail — not spacing, and are not counted: naming them would
+  // only invite the wrong one to be reached for.
+  test('no raw spacing literal', () {
     final hits = <String>[];
     for (final file in files) {
       final src = file.readAsStringSync();
+      // Mocks a 58mm thermal receipt; its paddings are the paper's, not the
+      // design system's — same reasoning as its type sizes.
+      if (file.path.endsWith('receipt_preview.dart')) continue;
       for (final m in RegExp(
         r'EdgeInsets\.(?:all|symmetric|only)\(',
       ).allMatches(src)) {
         final body = _callBody(src, m.start);
         if (body.length < 2) continue;
         for (final arg in _splitArgs(body.substring(1, body.length - 1))) {
-          if (_bareNumberArg.hasMatch(arg)) {
+          final g = _bareNumberArg.firstMatch(arg);
+          if (g != null && _isSpacing(arg)) {
             hits.add('${file.path}:${_lineOf(src, m.start)}  ${arg.trim()}');
           }
         }
       }
       for (final m in RegExp(
-        r'SizedBox\(\s*(?:width|height):\s*(\d+)\s*[,)]',
+        r'SizedBox\(\s*(?:width|height):\s*(\d+(?:\.\d+)?)\s*[,)]',
       ).allMatches(src)) {
+        if (!_isSpacing(m.group(1)!)) continue;
         hits.add('${file.path}:${_lineOf(src, m.start)}  ${m.group(1)}');
       }
     }
-    if (hits.length > baseline) {
-      fail(
-        'raw spacing literals: ${hits.length}, baseline $baseline '
-        '(+${hits.length - baseline} new).\nUse Sp — design/spacing.dart '
-        '(2/4/6/8/10/12/14/16/18/20/24/32/40/48).\n\n${hits.join('\n')}',
-      );
-    }
-    if (hits.length < baseline) {
-      fail('dropped to ${hits.length} — set baseline to ${hits.length}.');
-    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use Sp — design/spacing.dart '
+          '(2/4/6/8/10/12/14/16/18/20/24/28/32/36/40/48).\n'
+          '${hits.join('\n')}',
+    );
   });
 
   for (final rule in rules) {

@@ -100,7 +100,7 @@ class _ScopeCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: Sp.s2,
-                  vertical: 3,
+                  vertical: Sp.s1,
                 ),
                 decoration: SatBox.d(
                   color: deviceScoped ? sc.bg3 : sc.bg1,

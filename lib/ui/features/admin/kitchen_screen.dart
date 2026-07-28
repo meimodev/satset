@@ -375,7 +375,7 @@ class _OrderCard extends ConsumerWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
+                    horizontal: Sp.s3,
                     vertical: Sp.s1h,
                   ),
                   decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(9)),
@@ -444,7 +444,7 @@ class _AgePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
       decoration: SatBox.d(
         color: color.withValues(alpha: 0.14),
         borderRadius: SatR.a(999),
@@ -615,8 +615,11 @@ class _ItemRowState extends State<_ItemRow>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                margin: const EdgeInsets.only(top: 1),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                margin: const EdgeInsets.only(top: Sp.sHair),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s2,
+                  vertical: Sp.s1,
+                ),
                 decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(6)),
                 child: Text(
                   '×${ticket.qty}',
@@ -644,7 +647,7 @@ class _ItemRowState extends State<_ItemRow>
                       ),
                       if (ticket.modifiers.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 3),
+                          padding: const EdgeInsets.only(top: Sp.s1),
                           child: Text(
                             ticket.modifiers.map((m) => m.display).join(' · '),
                             style: SatType.bodyM(color: sc.textMd),
@@ -652,7 +655,7 @@ class _ItemRowState extends State<_ItemRow>
                         ),
                       if (ticket.note != null && ticket.note!.trim().isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 5),
+                          padding: const EdgeInsets.only(top: Sp.s1h),
                           child: NoteLine(
                             label: 'Instruksi khusus',
                             text: ticket.note!,

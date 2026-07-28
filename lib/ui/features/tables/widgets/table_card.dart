@@ -210,7 +210,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                 size: tablet ? 14 : 12,
                 color: sc.textMd,
               ),
-              const SizedBox(width: 3),
+              const SizedBox(width: Sp.s1),
               Text(
                 '${table.pax}/${table.capacity}',
                 style: SatType.monoS(color: sc.textMd),
@@ -283,7 +283,7 @@ class _TableCardState extends ConsumerState<TableCard> {
             Row(
               children: [
                 Icon(Icons.event_outlined, size: 12, color: sc.textLo),
-                const SizedBox(width: 5),
+                const SizedBox(width: Sp.s1h),
                 Expanded(
                   child: Text(
                     '${_hhmm(next.expectedAt)} · ${next.name}',
@@ -427,7 +427,10 @@ class _OwnerChip extends StatelessWidget {
     final brutal = SatShape.brutal;
     if (initials == null) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: 3),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s1h,
+          vertical: Sp.s1,
+        ),
         decoration: BoxDecoration(
           color: brutal ? sc.accent : sc.accentSoft,
           borderRadius: SatR.a(6),
@@ -471,7 +474,7 @@ class _StatePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final brutal = SatShape.brutal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1),
       decoration: BoxDecoration(
         color: brutal ? tone : tone.withValues(alpha: 0.15),
         borderRadius: SatR.a(6),
@@ -543,7 +546,7 @@ class _StaleBanner extends StatelessWidget {
                   : SatType.labelS(color: fg),
             ),
           ),
-          const SizedBox(width: 7),
+          const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
               SatShape.caps(stale.label),

@@ -1049,7 +1049,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: const EdgeInsets.all(Sp.s7),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1116,7 +1116,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                     borderRadius: SatR.a(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
+                        horizontal: Sp.s7,
                         vertical: Sp.s4,
                       ),
                       child: Row(
@@ -1239,7 +1239,7 @@ class _CloseTableButtonState extends State<_CloseTableButton> {
             onHighlightChanged: (h) => setState(() => _pressed = h),
             borderRadius: SatR.a(18),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s6),
               alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1478,7 +1478,7 @@ class _TabletSplit extends StatelessWidget {
                             : tickets.isEmpty
                             ? Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(28),
+                                  padding: const EdgeInsets.all(Sp.s7),
                                   child: Text(
                                     'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
                                     textAlign: TextAlign.center,
@@ -1610,7 +1610,7 @@ class _TabletSplit extends StatelessWidget {
       border = sc.success.withValues(alpha: 0.3);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2h, vertical: Sp.s1h),
       decoration: SatBox.d(
         color: bg,
         border: SatB.all(color: border),
@@ -1745,7 +1745,7 @@ class _ContextPane extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: Sp.s2h,
-                          vertical: 5,
+                          vertical: Sp.s1h,
                         ),
                         decoration: SatBox.d(
                           color: sc.urgentSoft,

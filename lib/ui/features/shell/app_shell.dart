@@ -283,7 +283,7 @@ class _Tab extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, size: 20, color: active ? sc.textHi : sc.textLo),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: Sp.s1),
                   Text(
                     label,
                     style: SatType.bodyS(color: active ? sc.textHi : sc.textLo),

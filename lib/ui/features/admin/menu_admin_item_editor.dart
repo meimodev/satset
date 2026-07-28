@@ -1376,7 +1376,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final out = _draft.isSoldOut;
     final tone = out ? sc.urgent : sc.success;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.s1),
       decoration: SatBox.d(
         color: tone.withValues(alpha: 0.14),
         borderRadius: SatR.a(6),
@@ -1535,7 +1535,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         child: AnimatedContainer(
           duration: satMotion(context, 200),
           curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s3,
+            vertical: Sp.s2,
+          ),
           decoration: SatBox.d(
             color: selected ? sc.accentSoft : sc.bg2,
             border: SatB.all(color: selected ? sc.accentBorder : sc.border1),

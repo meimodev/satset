@@ -60,7 +60,7 @@ InputDecoration satInputDecoration(
     suffixStyle: SatType.monoM(color: sc.textLo),
     contentPadding: const EdgeInsets.symmetric(
       horizontal: Sp.s3h,
-      vertical: 13,
+      vertical: Sp.s3h,
     ),
     enabledBorder: border(bad ? sc.urgent : sc.border1),
     focusedBorder: border(bad ? sc.urgent : sc.accentBorder),

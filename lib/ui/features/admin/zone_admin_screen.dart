@@ -194,7 +194,7 @@ class _Header extends StatelessWidget {
                   AppStrings.zoneAdminTitle,
                   style: SatType.h2(color: sc.textHi),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: Sp.s1),
                 Text(sub.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
               ],
             ),
@@ -337,7 +337,7 @@ class _TableRow extends StatelessWidget {
               if (inactive)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
+                    horizontal: Sp.s2h,
                     vertical: Sp.s1,
                   ),
                   decoration: SatBox.d(
@@ -678,7 +678,7 @@ class _QrDialog extends ConsumerWidget {
       backgroundColor: sc.bg1,
       shape: RoundedRectangleBorder(borderRadius: SatR.a(20)),
       child: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(Sp.s6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1050,7 +1050,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
             ],
           ),
           if (!_isNew) ...[
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s6),
             _MetaRow(tableCount: widget.tableCount),
           ],
         ],

@@ -471,7 +471,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
               const SizedBox(height: Sp.s3h),
               Center(
                 child: SizedBox(
-                  width: 22,
+                  width: Sp.s6,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
@@ -517,7 +517,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: Sp.s3h,
-                vertical: 13,
+                vertical: Sp.s3h,
               ),
               child: Row(
                 children: [
@@ -544,7 +544,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: Sp.s2,
-                      vertical: 3,
+                      vertical: Sp.s1,
                     ),
                     decoration: SatBox.d(
                       color: sc.bg1,

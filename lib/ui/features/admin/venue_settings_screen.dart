@@ -512,12 +512,12 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           textAlign: TextAlign.right,
           style: SatType.bodyM(color: sc.textHi),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: Sp.s1),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.lock_outline_rounded, size: 10, color: sc.textLo),
-            const SizedBox(width: 3),
+            const SizedBox(width: Sp.s1),
             Text(
               AppStrings.venueSettingsManagedBySuperAdmin,
               style: SatType.bodyS(color: sc.textLo),
@@ -689,7 +689,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
         decoration: SatBox.d(
           color: c.withValues(alpha: 0.10),
           border: SatB.all(color: c.withValues(alpha: 0.4)),

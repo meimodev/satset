@@ -111,7 +111,7 @@ class _TabToggle extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(Sp.s1),
       decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(12)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -245,7 +245,7 @@ class _PayableTile extends StatelessWidget {
                                   : 'Meja ${b.tableLabel ?? ''}'.trim()),
                         style: SatType.labelM(color: sc.textHi),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: Sp.s1),
                       Text(
                         b.isTakeaway
                             ? (b.detached
@@ -279,7 +279,7 @@ class _PayableTile extends StatelessWidget {
                         color: settled ? sc.textLo : sc.textHi,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: Sp.s1h),
                     AnimatedContainer(
                       duration: satMotion(context, 240),
                       curve: satEaseOut,

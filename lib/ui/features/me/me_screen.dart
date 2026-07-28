@@ -388,7 +388,7 @@ class _MeTablet extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 22),
+                const SizedBox(width: Sp.s6),
                 Expanded(
                   flex: 4,
                   child: _ActivityCard(
@@ -885,7 +885,7 @@ class _AuditRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(entry.title, style: SatType.bodyM(color: sc.textHi)),
-                const SizedBox(height: 3),
+                const SizedBox(height: Sp.s1),
                 Text(meta, style: SatType.monoS(color: sc.textLo)),
               ],
             ),

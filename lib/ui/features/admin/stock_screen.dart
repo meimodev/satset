@@ -839,7 +839,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 10, color: color),
-            const SizedBox(width: 3),
+            const SizedBox(width: Sp.s1),
           ],
           Text(label, style: SatType.caption(color: color)),
         ],
@@ -1639,7 +1639,7 @@ class _RecipeLinkChips extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: _padH, vertical: Sp.s1),
       decoration: SatBox.d(
         color: sc.bg3,
         borderRadius: SatR.a(6),

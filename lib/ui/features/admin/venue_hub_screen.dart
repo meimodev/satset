@@ -235,7 +235,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: Sp.s2,
-                            vertical: 2.5,
+                            vertical: Sp.sHair,
                           ),
                           decoration: SatBox.d(
                             color: sc.successSoft,
@@ -575,7 +575,10 @@ class _BannerBtn extends StatelessWidget {
         onTap: onTap,
         borderRadius: SatR.a(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: 11),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s4,
+            vertical: Sp.s3,
+          ),
           decoration: SatBox.d(
             borderRadius: SatR.a(10),
             border: filled ? null : SatB.all(color: sc.border1),
@@ -586,7 +589,7 @@ class _BannerBtn extends StatelessWidget {
             children: [
               if (busy) ...[
                 SizedBox(
-                  width: 13,
+                  width: Sp.s3h,
                   height: 13,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,

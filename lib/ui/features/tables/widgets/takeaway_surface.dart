@@ -126,7 +126,7 @@ class _TakeawayRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(visit.label, style: SatType.monoM(color: sc.textHi)),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: Sp.s1),
                   Text(
                     [
                       if (visit.guestName != null &&
@@ -142,7 +142,7 @@ class _TakeawayRow extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: Sp.s1h,
-                vertical: 3,
+                vertical: Sp.s1,
               ),
               decoration: BoxDecoration(
                 color: SatShape.brutal

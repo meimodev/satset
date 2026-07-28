@@ -183,7 +183,7 @@ class _PinSheetState extends State<_PinSheet>
                       const SizedBox(height: Sp.s2h),
                       Center(child: widget.statusSlot!),
                     ],
-                    const SizedBox(height: 22),
+                    const SizedBox(height: Sp.s6),
                     _PinDots(pin: _pin, shake: _shake),
                     const SizedBox(height: Sp.s3),
                     _PinHelper(

@@ -75,7 +75,7 @@ class SatChip extends StatelessWidget {
     ),
     SatChipSize.md => const EdgeInsets.symmetric(
       horizontal: Sp.s3,
-      vertical: 9,
+      vertical: Sp.s2h,
     ),
   };
 

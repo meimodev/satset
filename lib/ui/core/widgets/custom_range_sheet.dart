@@ -122,7 +122,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
               const SizedBox(height: Sp.s3),
               Text(err, style: SatType.bodyS(color: sc.urgent)),
             ],
-            const SizedBox(height: 22),
+            const SizedBox(height: Sp.s6),
             SizedBox(width: double.infinity, child: _applyButton(context)),
           ],
         ),

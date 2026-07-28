@@ -603,7 +603,7 @@ class _CourseBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 22,
+                      width: Sp.s6,
                       child: Text(
                         '×${c.qty}',
                         style: SatType.monoM(color: sc.textMd),
@@ -624,7 +624,7 @@ class _CourseBlock extends StatelessWidget {
                           MenuTagBadges(itemId: c.itemId),
                           if (c.modifiers.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 3),
+                              padding: const EdgeInsets.only(top: Sp.s1),
                               child: Text(
                                 c.modifiers.join(' · '),
                                 style: SatType.bodyS(color: sc.textMd),

@@ -477,7 +477,7 @@ class _ItemList extends ConsumerWidget {
     final Widget body = items.isEmpty
         ? Center(
             child: Padding(
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(Sp.s7),
               child: Text(
                 'Tidak ada item cocok.',
                 style: SatType.bodyM(color: sc.textLo),
@@ -578,7 +578,7 @@ class _ItemRow extends ConsumerWidget {
                                 decorationColor: sc.textLo,
                               ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: Sp.s1),
                         Row(
                           children: [
                             Text(
@@ -611,7 +611,7 @@ class _ItemRow extends ConsumerWidget {
                         if (!compact &&
                             (item.allergens.isNotEmpty ||
                                 item.dietary.isNotEmpty)) ...[
-                          const SizedBox(height: 5),
+                          const SizedBox(height: Sp.s1h),
                           Wrap(
                             spacing: 3,
                             runSpacing: 3,
@@ -671,7 +671,10 @@ class _ItemRow extends ConsumerWidget {
 
   Widget _miniBadge(SatColors sc, String t, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.s1h,
+        vertical: Sp.sHair,
+      ),
       decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
       child: Text(t, style: SatType.caption(color: fg)),
     );
@@ -763,7 +766,7 @@ class _PrimaryButton extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: Sp.s3h,
-              vertical: 9,
+              vertical: Sp.s2h,
             ),
             child: Text(label, style: SatType.labelS(color: sc.accentInk)),
           ),
@@ -791,7 +794,7 @@ class _TabSwitcher extends ConsumerWidget {
             curve: satEaseOut,
             padding: const EdgeInsets.symmetric(
               horizontal: Sp.s3h,
-              vertical: 7,
+              vertical: Sp.s2,
             ),
             decoration: SatBox.d(
               color: on ? sc.accent : Colors.transparent,
@@ -808,7 +811,7 @@ class _TabSwitcher extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(Sp.s1),
       decoration: SatBox.d(
         color: sc.bg3,
         border: SatB.all(color: sc.border1),

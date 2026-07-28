@@ -403,7 +403,7 @@ class _CatTabs extends ConsumerWidget {
     final sc = context.sat;
     final cats = ref.watch(menuCategoriesProvider);
     return SizedBox(
-      height: 36,
+      height: Sp.s9,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -515,7 +515,7 @@ class _ItemCard extends ConsumerWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: Sp.s2,
-                              vertical: 3,
+                              vertical: Sp.s1,
                             ),
                             decoration: SatBox.d(
                               color: satMediaScrim,
@@ -582,7 +582,7 @@ class _ItemCard extends ConsumerWidget {
                           ),
                         ],
                         if (item.dietary.isNotEmpty) ...[
-                          const SizedBox(height: 3),
+                          const SizedBox(height: Sp.s1),
                           TagBadgeRow(
                             ids: item.dietary,
                             tagsById: tagsById,
@@ -733,7 +733,7 @@ class _TabletCartPane extends ConsumerWidget {
             child: cart.isEmpty
                 ? Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(28),
+                      padding: const EdgeInsets.all(Sp.s7),
                       child: Text(
                         'Belum ada item di keranjang. Pilih dari menu di kiri.',
                         textAlign: TextAlign.center,
@@ -785,7 +785,7 @@ class _TabletCartPane extends ConsumerWidget {
                                   Padding(
                                     padding: const EdgeInsets.only(
                                       top: Sp.s1,
-                                      left: 22,
+                                      left: Sp.s6,
                                     ),
                                     child: Text(
                                       cart[i].modifiers.join(' · '),
@@ -922,7 +922,7 @@ class _TabletCartPane extends ConsumerWidget {
     String value,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Row(
         children: [
           Text(label, style: SatType.monoM(color: sc.textMd)),

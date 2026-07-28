@@ -122,7 +122,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: Sp.s2),
               Flexible(
                 child: Text(
                   _freshnessLine(report, pending),
@@ -155,7 +155,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                 onTap: () => setState(() => _range = key),
                 child: AnimatedContainer(
                   duration: satMotion(context, 160),
-                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  padding: const EdgeInsets.symmetric(vertical: Sp.s2h),
                   margin: const EdgeInsets.symmetric(horizontal: Sp.sHair),
                   alignment: Alignment.center,
                   decoration: SatBox.d(

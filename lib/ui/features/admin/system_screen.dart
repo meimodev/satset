@@ -712,7 +712,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         content: Row(
           children: [
             SizedBox(
-              width: 22,
+              width: Sp.s6,
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),

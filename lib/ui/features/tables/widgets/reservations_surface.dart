@@ -328,7 +328,7 @@ class _ReservationRow extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(r.name, style: SatType.labelM(color: sc.textHi)),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: Sp.s1),
                     Text(
                       [
                         '${r.partySize} tamu',
@@ -416,7 +416,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final brutal = SatShape.brutal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1),
       decoration: BoxDecoration(
         color: brutal ? tone : tone.withValues(alpha: 0.15),
         borderRadius: SatR.a(6),
@@ -517,7 +517,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
           )
         else
           SizedBox(
-            height: 36,
+            height: Sp.s9,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: available.length,
@@ -847,28 +847,29 @@ class _TablePicker extends StatelessWidget {
         )
         .toList();
 
-    Widget chip(String label, bool active, VoidCallback onTap) =>
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: 7),
-            decoration: SatBox.d(
-              color: active
-                  ? (SatShape.lembut ? sc.textHi : sc.accent)
-                  : sc.bg2,
-              border: SatB.all(color: sc.border0),
-              borderRadius: SatR.a(999),
-            ),
-            child: Text(
-              SatShape.caps(label),
-              style: SatType.labelS(
-                color: active
-                    ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
-                    : sc.textMd,
-              ),
-            ),
+    Widget chip(
+      String label,
+      bool active,
+      VoidCallback onTap,
+    ) => GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
+        decoration: SatBox.d(
+          color: active ? (SatShape.lembut ? sc.textHi : sc.accent) : sc.bg2,
+          border: SatB.all(color: sc.border0),
+          borderRadius: SatR.a(999),
+        ),
+        child: Text(
+          SatShape.caps(label),
+          style: SatType.labelS(
+            color: active
+                ? (SatShape.lembut ? sc.bg0 : sc.accentInk)
+                : sc.textMd,
           ),
-        );
+        ),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -880,7 +881,7 @@ class _TablePicker extends StatelessWidget {
         const SizedBox(height: Sp.s2),
         if (zones.length > 1)
           SizedBox(
-            height: 34,
+            height: Sp.s9,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: zones.length,
@@ -894,7 +895,7 @@ class _TablePicker extends StatelessWidget {
           ),
         const SizedBox(height: Sp.s1h),
         SizedBox(
-          height: 34,
+          height: Sp.s9,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: free.length + 1,

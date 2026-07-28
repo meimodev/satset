@@ -168,7 +168,7 @@ class _Swatch extends StatelessWidget {
             height: 12,
             decoration: SatBox.d(shape: BoxShape.circle, color: accent),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: Sp.s1h),
           Container(
             width: 12,
             height: 3,
