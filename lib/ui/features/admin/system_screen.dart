@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
@@ -486,31 +487,12 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     required List<Widget> rows,
     Widget? trailing,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
+    return SatCard.titled(
+      title: title,
+      tag: tag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(title, style: SatType.labelL(color: sc.textHi)),
-              ),
-              Text(tag, style: SatType.caption(color: sc.textLo)),
-              if (trailing != null) ...[
-                const SizedBox(width: Sp.s2h),
-                trailing,
-              ],
-            ],
-          ),
-          const SizedBox(height: Sp.s2h),
-          ...rows,
-        ],
+        children: [?trailing, ...rows],
       ),
     );
   }

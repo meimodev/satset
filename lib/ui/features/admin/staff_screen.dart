@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
@@ -135,26 +136,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         Row(
           children: [
             Expanded(
-              child: Container(
-                height: 38,
-                padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
-                decoration: SatBox.d(
-                  color: sc.bg2,
-                  border: SatB.all(color: sc.border0),
-                  borderRadius: SatR.a(10),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.search, size: 16, color: sc.textLo),
-                    const SizedBox(width: Sp.s2),
-                    Expanded(
-                      child: SatField.search(
-                        hint: AppStrings.staffSearchHint,
-                        onChanged: (v) => setState(() => _query = v),
-                      ),
-                    ),
-                  ],
-                ),
+              child: SatField.search(
+                hint: AppStrings.staffSearchHint,
+                onChanged: (v) => setState(() => _query = v),
               ),
             ),
             const SizedBox(width: Sp.s2h),
@@ -662,36 +646,12 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     VoidCallback onTap, {
     Color? color,
   }) {
-    final sc = context.sat;
-    return GestureDetector(
+    return SatChip.select(
+      label: label,
+      dot: color,
+      selected: on,
+      size: SatChipSize.sm,
       onTap: onTap,
-      child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
-        alignment: Alignment.center,
-        decoration: SatBox.d(
-          color: on ? sc.accentSoft : sc.bg3,
-          border: SatB.all(color: on ? sc.accentBorder : sc.border1),
-          borderRadius: SatR.a(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (color != null) ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: SatBox.d(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: Sp.s1h),
-            ],
-            Text(
-              label,
-              style: SatType.bodyS(color: on ? sc.accentText : sc.textMd),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -858,51 +818,44 @@ class _StaffCard extends StatelessWidget {
     final disabled = user.disabled;
     return Opacity(
       opacity: disabled ? 0.55 : 1,
-      child: GestureDetector(
+      child: SatCard.tappable(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(Sp.s3h),
-          decoration: SatBox.d(
-            color: sc.bg2,
-            border: SatB.all(color: sc.border0),
-            borderRadius: SatR.a(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              StaffAvatar(actor: user, fallbackColor: role?.color, size: 44),
-              const SizedBox(height: Sp.s3),
-              Text(
-                user.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: SatType.labelL(color: sc.textHi),
-              ),
-              const SizedBox(height: Sp.s1),
-              if (role != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Sp.s1h,
-                    vertical: Sp.sHair,
-                  ),
-                  decoration: SatBox.d(
-                    color: role!.color.withValues(alpha: 0.16),
-                    borderRadius: SatR.a(5),
-                  ),
-                  child: Text(
-                    role!.name.toUpperCase(),
-                    style: SatType.caption(color: role!.color),
-                  ),
-                )
-              else
-                Text(
-                  AppStrings.staffNoRole,
-                  style: SatType.monoS(color: sc.textLo),
+        padding: const EdgeInsets.all(Sp.s3h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            StaffAvatar(actor: user, fallbackColor: role?.color, size: 44),
+            const SizedBox(height: Sp.s3),
+            Text(
+              user.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: SatType.labelL(color: sc.textHi),
+            ),
+            const SizedBox(height: Sp.s1),
+            if (role != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s1h,
+                  vertical: Sp.sHair,
                 ),
-              const Spacer(),
-              Text('PIN ${user.pin}', style: SatType.monoS(color: sc.textLo)),
-            ],
-          ),
+                decoration: SatBox.d(
+                  color: role!.color.withValues(alpha: 0.16),
+                  borderRadius: SatR.a(5),
+                ),
+                child: Text(
+                  role!.name.toUpperCase(),
+                  style: SatType.caption(color: role!.color),
+                ),
+              )
+            else
+              Text(
+                AppStrings.staffNoRole,
+                style: SatType.monoS(color: sc.textLo),
+              ),
+            const Spacer(),
+            Text('PIN ${user.pin}', style: SatType.monoS(color: sc.textLo)),
+          ],
         ),
       ),
     );

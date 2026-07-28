@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
@@ -1623,32 +1624,11 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(14),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title.toUpperCase(),
-                  style: SatType.caption(color: sc.textLo),
-                ),
-              ),
-              ?trailing,
-            ],
-          ),
-          const SizedBox(height: Sp.s3),
-          child,
-        ],
-      ),
+    return SatCard.section(
+      header: title,
+      headerTrailing: trailing,
+      padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s3h, Sp.s4, Sp.s4),
+      child: child,
     );
   }
 }

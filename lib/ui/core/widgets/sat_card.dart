@@ -29,12 +29,17 @@ class SatCard extends StatelessWidget {
   /// one.
   final bool selected;
 
+  /// Set when the card carries a [SatCard.titled] header. Null everywhere
+  /// else, which is also how [build] tells the two header shapes apart.
+  final String? _tag;
+
   const SatCard.plain({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(Sp.s5),
   }) : header = null,
        headerTrailing = null,
+       _tag = null,
        onTap = null,
        selected = false;
 
@@ -44,7 +49,24 @@ class SatCard extends StatelessWidget {
     required this.child,
     this.headerTrailing,
     this.padding = const EdgeInsets.all(Sp.s5),
-  }) : onTap = null,
+  }) : _tag = null,
+       onTap = null,
+       selected = false;
+
+  /// The admin section card: a title on the left in [SatType.labelL] and a
+  /// caps tag on the right naming the area. Distinct from [SatCard.section],
+  /// whose header *is* the caps line — an admin page stacks six of these and
+  /// needs a title you can scan at body weight, with the tag as the index.
+  const SatCard.titled({
+    super.key,
+    required String title,
+    required String tag,
+    required this.child,
+    this.padding = const EdgeInsets.all(Sp.s5),
+  }) : header = title,
+       headerTrailing = null,
+       _tag = tag,
+       onTap = null,
        selected = false;
 
   const SatCard.tappable({
@@ -55,7 +77,7 @@ class SatCard extends StatelessWidget {
     this.selected = false,
     this.header,
     this.headerTrailing,
-  });
+  }) : _tag = null;
 
   @override
   Widget build(BuildContext context) {
@@ -76,14 +98,21 @@ class SatCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    header!.toUpperCase(),
-                    style: SatType.caption(color: sc.textLo),
+                    _tag == null ? header!.toUpperCase() : header!,
+                    style: _tag == null
+                        ? SatType.caption(color: sc.textLo)
+                        : SatType.labelL(color: sc.textHi),
                   ),
                 ),
+                if (_tag != null)
+                  Text(
+                    _tag.toUpperCase(),
+                    style: SatType.caption(color: sc.textLo),
+                  ),
                 ?headerTrailing,
               ],
             ),
-            const SizedBox(height: Sp.s3),
+            SizedBox(height: _tag == null ? Sp.s3 : Sp.s2h),
           ],
           child,
         ],

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -1855,21 +1856,10 @@ class _ContextPane extends ConsumerWidget {
   }
 
   Widget _card(BuildContext context, SatColors sc, String head, Widget child) {
-    return Container(
+    return SatCard.section(
+      header: head,
       padding: const EdgeInsets.all(Sp.s4h),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(head, style: SatType.caption(color: sc.textLo)),
-          const SizedBox(height: Sp.s3),
-          child,
-        ],
-      ),
+      child: child,
     );
   }
 

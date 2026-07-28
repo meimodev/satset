@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -727,34 +728,14 @@ class _ActivityCard extends StatelessWidget {
           );
 
     if (padded) {
-      return Container(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-        decoration: SatBox.d(
-          color: sc.bg2,
-          border: SatB.all(color: sc.border0),
-          borderRadius: SatR.a(20),
+      return SatCard.section(
+        header: 'Aktivitas terkini',
+        headerTrailing: Text(
+          '${audit.length} entri',
+          style: SatType.monoS(color: sc.textDim),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'AKTIVITAS TERKINI',
-                    style: SatType.caption(color: sc.textLo),
-                  ),
-                ),
-                Text(
-                  '${audit.length} entri',
-                  style: SatType.monoS(color: sc.textDim),
-                ),
-              ],
-            ),
-            const SizedBox(height: Sp.s2),
-            inner,
-          ],
-        ),
+        padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s4h, Sp.s5, Sp.s1h),
+        child: inner,
       );
     }
 

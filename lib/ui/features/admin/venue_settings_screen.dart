@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
@@ -796,28 +797,12 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     required String tag,
     required List<Widget> rows,
   }) {
-    final sc = context.sat;
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
+    return SatCard.titled(
+      title: title,
+      tag: tag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(title, style: SatType.labelL(color: sc.textHi)),
-              ),
-              Text(tag, style: SatType.caption(color: sc.textLo)),
-            ],
-          ),
-          const SizedBox(height: Sp.s2h),
-          ...rows,
-        ],
+        children: [...rows],
       ),
     );
   }
@@ -1262,27 +1247,12 @@ class _GuestOrderingCard extends ConsumerWidget {
     final s = ref.watch(venueSettingsProvider);
     final n = ref.read(venueSettingsProvider.notifier);
     final net = ref.watch(guestNetInfoProvider);
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
+    return SatCard.titled(
+      title: AppStrings.venueSettingsSectionGuestOrdering,
+      tag: 'QR TAMU',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  AppStrings.venueSettingsSectionGuestOrdering,
-                  style: SatType.labelL(color: sc.textHi),
-                ),
-              ),
-              Text('QR TAMU', style: SatType.caption(color: sc.textLo)),
-            ],
-          ),
           const SizedBox(height: Sp.s1h),
           Text(
             'Tamu pindai QR di meja, pesan sendiri lewat web. Pesanan masuk '
@@ -1404,27 +1374,12 @@ class _ReportsHourCard extends ConsumerWidget {
     final s = ref.watch(venueSettingsProvider);
     final n = ref.read(venueSettingsProvider.notifier);
     final hour = s.businessDayStartHour;
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
+    return SatCard.titled(
+      title: AppStrings.venueSettingsSectionReports,
+      tag: 'LAPORAN',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  AppStrings.venueSettingsSectionReports,
-                  style: SatType.labelL(color: sc.textHi),
-                ),
-              ),
-              Text('LAPORAN', style: SatType.caption(color: sc.textLo)),
-            ],
-          ),
           const SizedBox(height: Sp.s3h),
           Row(
             children: [
