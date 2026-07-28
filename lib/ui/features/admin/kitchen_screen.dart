@@ -406,7 +406,9 @@ class _OrderCard extends ConsumerWidget {
             .firstOrNull ??
         order.tableId;
 
-    return AnimatedContainer(
+    final ring = SatShape.glow ? (late ? 3.0 : (warn ? 2.0 : 0.0)) : 0.0;
+
+    final card = AnimatedContainer(
       duration: satMotion(context, 300),
       curve: satEaseOut,
       decoration: SatBox.d(
@@ -424,11 +426,14 @@ class _OrderCard extends ConsumerWidget {
           width: late ? 1.5 : 1,
         ),
         borderRadius: SatR.card,
-        // Glow draws no rules, so the tier reads as a ring around the card
-        // rather than a heavier border — the same shape `TableCard` gives a
-        // crit table (ADR-0051).
-        boxShadow: SatShape.glow ? _ring(sc, late: late, warn: warn) : null,
+        // The lift lives on the ring wrapper when there is one, so the band
+        // does not get shadowed by the card sitting inside it.
+        boxShadow: SatShape.glow && ring == 0 ? SatShape.lift : null,
       ),
+      // The head is a full-bleed slab and the foot a full-bleed rule; neither
+      // knows the card's corner radius, so both painted square over the top
+      // and bottom of the rounded border until this clip.
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -488,26 +493,27 @@ class _OrderCard extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
 
-/// The tier ring. `spreadRadius` with no blur draws a hard band around the
-/// card's own corner radius — a blurred red glow would read as a light source
-/// rather than a state. Same call `TableCard` makes for `sev-crit`.
-List<BoxShadow> _ring(SatColors sc, {required bool late, required bool warn}) {
-  if (late) {
-    return [
-      BoxShadow(color: sc.urgent, spreadRadius: 3, blurRadius: 0),
-      ...SatShape.liftLg,
-    ];
+    if (ring == 0) return card;
+
+    // The tier band, drawn as a padded box behind the card rather than a
+    // `BoxShadow` with `spreadRadius`. A spread shadow inflates the rect but
+    // keeps the decoration's radius, so the band's outer corner stayed at 26
+    // while its outer edge moved 3px out — the card's own corner then cut
+    // across it and the ring looked pinched at all four corners. An outer box
+    // one ring-width larger in both padding and radius is concentric by
+    // construction. Hard-edged on purpose: a blurred red glow would read as a
+    // light source, not a state.
+    return Container(
+      padding: EdgeInsets.all(ring),
+      decoration: SatBox.d(
+        color: late ? sc.urgent : sc.warn,
+        borderRadius: BorderRadius.circular(SatR.card.topLeft.x + ring),
+        boxShadow: late ? SatShape.liftLg : SatShape.lift,
+      ),
+      child: card,
+    );
   }
-  if (warn) {
-    return [
-      BoxShadow(color: sc.warn, spreadRadius: 2, blurRadius: 0),
-      ...SatShape.lift,
-    ];
-  }
-  return SatShape.lift;
 }
 
 /// The ticket head. Under Glow this is a full-bleed obsidian slab and every
