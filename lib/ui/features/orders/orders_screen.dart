@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -541,44 +542,17 @@ class _OrderRow extends StatelessWidget {
                     ),
                   ),
                   if (isReady)
-                    _ServeButton(onTap: onServe)
+                    SatButton.success(
+                      label: 'Sajikan',
+                      icon: Icons.check_rounded,
+                      size: SatButtonSize.sm,
+                      onTap: onServe,
+                    )
                   else
                     Icon(Icons.chevron_right, size: 16, color: sc.textLo),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ServeButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _ServeButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Material(
-      color: sc.success,
-      borderRadius: SatR.a(999),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: SatR.a(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Sp.s3,
-            vertical: Sp.s2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_rounded, size: 14, color: sc.accentInk),
-              const SizedBox(width: Sp.s1h),
-              Text('Sajikan', style: SatType.labelS(color: sc.accentInk)),
-            ],
           ),
         ),
       ),

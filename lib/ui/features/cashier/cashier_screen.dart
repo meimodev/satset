@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_tabs.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,9 +46,14 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                 children: [
                   Text('Kasir', style: SatType.h2(color: sc.textHi)),
                   const Spacer(),
-                  _TabToggle(
-                    tab: _tab,
-                    onChanged: (t) => setState(() => _tab = t),
+                  SatTabs(
+                    tabs: const [
+                      SatTab(label: 'Aktif'),
+                      SatTab(label: 'Riwayat'),
+                    ],
+                    selected: _tab.index,
+                    onSelected: (i) =>
+                        setState(() => _tab = _CashierTab.values[i]),
                   ),
                 ],
               ),
@@ -79,52 +85,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 /// iOS-style two-segment pill switching the cashier between live bills and
 /// history. Chrome, not a CTA — the selected segment reads as a raised tile
 /// rather than an accent button.
-class _TabToggle extends StatelessWidget {
-  final _CashierTab tab;
-  final ValueChanged<_CashierTab> onChanged;
-  const _TabToggle({required this.tab, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    Widget seg(_CashierTab t, String label) {
-      final active = tab == t;
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => onChanged(t),
-        child: AnimatedContainer(
-          duration: satMotion(context, 180),
-          curve: satEaseOut,
-          padding: const EdgeInsets.symmetric(
-            horizontal: Sp.s4,
-            vertical: Sp.s2,
-          ),
-          decoration: SatBox.d(
-            color: active ? sc.bg0 : Colors.transparent,
-            borderRadius: SatR.a(9),
-          ),
-          child: Text(
-            label,
-            style: SatType.labelM(color: active ? sc.textHi : sc.textLo),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(Sp.s1),
-      decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(12)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          seg(_CashierTab.aktif, 'Aktif'),
-          seg(_CashierTab.riwayat, 'Riwayat'),
-        ],
-      ),
-    );
-  }
-}
-
 /// The Aktif tab: live payable visits, pull-to-refresh.
 class _PayableList extends ConsumerWidget {
   const _PayableList();

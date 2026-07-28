@@ -870,13 +870,14 @@ class _ReceiptCard extends ConsumerWidget {
             runSpacing: 6,
             children: [
               if (!paid && r.total > 0)
-                _SmallBtn(
+                SatButton.primary(
+                  size: SatButtonSize.sm,
                   label: 'Bayar',
-                  filled: true,
                   onTap: () => _paySheet(context, r),
                 ),
               if (paid)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Buka ulang',
                   onTap: () async {
                     if (await _confirm(
@@ -892,14 +893,16 @@ class _ReceiptCard extends ConsumerWidget {
                   },
                 ),
               if (canRefund && r.paidNet > 0)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Refund',
                   onTap: () => _refundSheet(context, r),
                 ),
               // Discounts are frozen once paid — reopen to correct a mistaken
               // settlement (ADR-0037), so the button hides on a paid receipt.
               if (!paid && r.subtotal > 0 && r.orderDiscount == null)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Diskon',
                   onTap: () async {
                     final picked = await showDiscountSheet(
@@ -923,7 +926,8 @@ class _ReceiptCard extends ConsumerWidget {
                   },
                 ),
               if (!paid && r.orderDiscount != null)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Hapus diskon',
                   onTap: () async {
                     final d = r.orderDiscount!;
@@ -940,12 +944,14 @@ class _ReceiptCard extends ConsumerWidget {
                   },
                 ),
               if (r.total > 0)
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: r.payments.isEmpty ? 'Cetak tagihan' : 'Cetak struk',
                   onTap: () => printDoc(r),
                 ),
               if (!paid && r.mode != 'even')
-                _SmallBtn(
+                SatButton.neutral(
+                  size: SatButtonSize.sm,
                   label: 'Hapus',
                   onTap: () async {
                     if (await _confirm(
@@ -1488,41 +1494,6 @@ class _BigBtn extends StatelessWidget {
                   style: SatType.labelS(color: sc.textHi),
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SmallBtn extends StatelessWidget {
-  final String label;
-  final bool filled;
-  final VoidCallback onTap;
-  const _SmallBtn({
-    required this.label,
-    required this.onTap,
-    this.filled = false,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      child: Material(
-        color: filled ? sc.accent : sc.bg3,
-        borderRadius: SatR.a(9),
-        child: InkWell(
-          borderRadius: SatR.a(9),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: Sp.s2,
-            ),
-            child: Text(
-              label,
-              style: SatType.labelM(color: filled ? sc.accentInk : sc.textHi),
             ),
           ),
         ),

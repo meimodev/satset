@@ -101,6 +101,74 @@ void main() {
     );
   });
 
+  // The Material bans above only catch a screen that *names* FilledButton or
+  // TextField. They said nothing about a private `_FilledBtn` drawing the same
+  // pill out of a Container — which is how five of them survived the first
+  // sweep. A widget whose name claims to be a control has to be built on one.
+  test('no private lookalikes of a shared control', () {
+    final claims = RegExp(
+      r'^class (_\w*(?:Btn|Button|Chip|Pill|Badge|Field|Toggle|Switch|Stepper)) ',
+      multiLine: true,
+    );
+    final delegates = RegExp(
+      r'\bSat(Button|IconButton|Chip|Field|Dropdown|Toggle|Stepper|Card)\b',
+    );
+    // Named, with the reason. Each is chip- or button-*shaped* but is not one
+    // of the shared controls, and forcing it onto one would cost more than the
+    // duplication saves. Named individually so a new lookalike still trips.
+    const shapedButNot = {
+      // Pulsing dot + elapsed + sent-at, three scales in one pill.
+      '_AgePill',
+      // A spinner or a check circle where a dot would go.
+      '_StationChip',
+      // 44x44 squares leading a history row — avatars, not chips.
+      '_TableChip', '_TakeawayChip',
+      // 9pt micro-badges with brutal's hard shadow; SatChip's floor is 12pt.
+      '_OwnerChip', '_StatePill',
+      // A glow-shadowed status dot with no container at all.
+      '_ServerReachabilityPill',
+      // A solid count badge riding a tab, not a labelled chip.
+      '_Badge',
+      // Icon over label, stacked — SatButton is a horizontal row.
+      '_BigBtn',
+      // A circular target carrying an overflow badge.
+      '_ContextTriggerBtn',
+      // A colour swatch in a ring; the glyph *is* the value.
+      '_ThemeIconButton',
+      // Animated availability pill that cross-fades success<->urgent on tap.
+      '_StatusToggle',
+    };
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/features/_book/')) continue;
+      if (file.path.contains('/core/widgets/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in claims.allMatches(src)) {
+        if (shapedButNot.contains(m.group(1))) continue;
+        final body = _classBody(src, m.start);
+        // Composition is the point (ADR-0051): a thin wrapper adding domain
+        // meaning on top of a shared control is exactly right.
+        if (delegates.hasMatch(body)) continue;
+        // Paints nothing — a layout holder or a callback bag, not a control.
+        if (!body.contains('SatBox.d(') &&
+            !body.contains('BoxDecoration(') &&
+            !body.contains('Material(')) {
+          continue;
+        }
+        hits.add('${file.path}:${_lineOf(src, m.start)} ${m.group(1)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'A private widget named like a control must be built on the shared '
+          'one — wrap SatButton / SatChip / SatField / SatToggle / SatStepper '
+          'rather than redrawing it. If it is genuinely something else, name '
+          'it for what it is.\n${hits.join('\n')}',
+    );
+  });
+
   test('no literal type sizes outside core/design', () {
     final hits = <String>[];
     for (final file in files) {
@@ -520,4 +588,14 @@ class _Rule {
     required this.pattern,
     required this.fix,
   });
+}
+
+/// Source of the class declaration starting at [start], to the next
+/// column-zero `}`. Good enough for a scan: Dart formats every top-level
+/// closing brace there.
+String _classBody(String src, int start) {
+  final end = RegExp(r'^\}', multiLine: true).firstMatch(src.substring(start));
+  return end == null
+      ? src.substring(start)
+      : src.substring(start, start + end.end);
 }

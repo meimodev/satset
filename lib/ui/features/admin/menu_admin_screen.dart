@@ -65,7 +65,8 @@ class _TabletLayout extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (admin && !onCats && !onTags) ...[
-                _PrimaryButton(
+                SatButton.primary(
+                  size: SatButtonSize.sm,
                   label: '+ Tambah item',
                   onTap: () =>
                       ref.read(menuAdminSelectedItemIdProvider.notifier).state =
@@ -358,7 +359,8 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
           ),
           if (!isTab && perm == MenuPermission.admin) ...[
             const SizedBox(width: Sp.s2),
-            _PrimaryButton(
+            SatButton.primary(
+              size: SatButtonSize.sm,
               label: '+ Item',
               onTap: () => context.push('/menuadm/new'),
             ),
@@ -748,35 +750,6 @@ class _StatusToggle extends ConsumerWidget {
   }
 }
 
-class _PrimaryButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _PrimaryButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      pressedScale: 0.95,
-      child: Material(
-        color: sc.accent,
-        borderRadius: SatR.a(10),
-        child: InkWell(
-          borderRadius: SatR.a(10),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: Sp.s2h,
-            ),
-            child: Text(label, style: SatType.labelS(color: sc.accentInk)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The menu admin's three panes. A [SatTabs] strip bound to the tab provider.
 class _TabSwitcher extends ConsumerWidget {
   const _TabSwitcher();
@@ -891,7 +864,8 @@ class _CategoriesPanel extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: _PrimaryButton(
+            child: SatButton.primary(
+              size: SatButtonSize.sm,
               label: '+ Tambah kategori',
               onTap: () => _add(context, ref),
             ),
@@ -1082,7 +1056,8 @@ class _TagsPanel extends ConsumerWidget {
           ),
         Align(
           alignment: Alignment.centerLeft,
-          child: _PrimaryButton(
+          child: SatButton.primary(
+            size: SatButtonSize.sm,
             label: '+ Tambah ${title.toLowerCase()}',
             onTap: () => _edit(context, ref, null, kind: kind),
           ),

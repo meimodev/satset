@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -451,20 +452,18 @@ class DemoDataBanner extends ConsumerWidget {
               children: [
                 if (st.hasDemo || st.demoIncomplete)
                   Expanded(
-                    child: _BannerBtn(
+                    child: SatButton.primary(
                       label: AppStrings.venueHubDemoBtnReset,
-                      filled: true,
                       busy: st.loading,
                       onTap: st.loading ? null : () => run(ctrl.resetDemo),
                     ),
                   )
                 else
                   Expanded(
-                    child: _BannerBtn(
+                    child: SatButton.primary(
                       label: st.loading
                           ? AppStrings.loading
                           : AppStrings.venueHubDemoBtnLoad,
-                      filled: true,
                       busy: st.loading,
                       onTap: st.loading ? null : () => run(ctrl.seedDemo),
                     ),
@@ -516,11 +515,10 @@ class SeedDataBanner extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: _BannerBtn(
+                child: SatButton.primary(
                   label: st.loading
                       ? AppStrings.loading
                       : AppStrings.venueHubSeedBtnLoad,
-                  filled: true,
                   busy: st.loading,
                   onTap: st.loading
                       ? null
@@ -540,71 +538,13 @@ class SeedDataBanner extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: Sp.s2h),
-              _BannerBtn(
+              SatButton.outline(
                 label: AppStrings.venueHubSeedBtnLater,
-                filled: false,
                 onTap: st.loading ? null : ctrl.dismiss,
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BannerBtn extends StatelessWidget {
-  final String label;
-  final bool filled;
-  final bool busy;
-  final VoidCallback? onTap;
-  const _BannerBtn({
-    required this.label,
-    required this.filled,
-    this.busy = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Material(
-      color: filled ? sc.accent : Colors.transparent,
-      borderRadius: SatR.a(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: SatR.a(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Sp.s4,
-            vertical: Sp.s3,
-          ),
-          decoration: SatBox.d(
-            borderRadius: SatR.a(10),
-            border: filled ? null : SatB.all(color: sc.border1),
-          ),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (busy) ...[
-                SizedBox(
-                  width: Sp.s3h,
-                  height: 13,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: sc.bg0,
-                  ),
-                ),
-                const SizedBox(width: Sp.s2),
-              ],
-              Text(
-                label,
-                style: SatType.labelM(color: filled ? sc.bg0 : sc.textHi),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

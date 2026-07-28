@@ -72,6 +72,13 @@ Labels live in the `a11y*` block of `app_strings.dart`. Text scale is clamped to
 not suggestions; a screen cannot reach for `FilledButton`, `TextField`, `DropdownButton`
 or `IconButton` and still pass CI.
 
+It also bans the *lookalikes*: a private `_FilledBtn` that draws the same pill out of a
+`Container` never names a Material class, and five of them survived the first sweep for
+exactly that reason. A widget whose name claims to be a control (`…Btn`, `…Button`,
+`…Chip`, `…Pill`, `…Badge`, `…Field`, `…Toggle`, `…Stepper`) has to be built on one.
+Wrapping a shared control to add domain meaning is fine — that is composition. Redrawing
+it is not.
+
 | Widget | File | Use for |
 |---|---|---|
 | `SatButton` | `sat_button.dart` | **Every** button. `.primary` / `.neutral` / `.outline` / `.ghost` / `.success` / `.danger` carry the intent; `size` (sm/md/lg), `icon`, `busy` and `trailingValue` are the only open axes. Disabled reads from the neutral ramp on every variant — a greyed danger button must not still look dangerous. |
