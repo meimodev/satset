@@ -327,31 +327,26 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     }
   }
 
-  Future<void> decrementReady(String id, {String? userId}) async {
+  /// Clearing a ready plate does **not** claim the table — the runner is doing
+  /// the handler a favour, and `lastActorId` now scopes the Pesanan board.
+  /// See ADR-0056.
+  Future<void> decrementReady(String id) async {
     SatLog.repo('tables.decReady id=${id.substring(0, id.length.clamp(0, 6))}');
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
       _replace(
         id,
         prev.readyCount <= 1
-            ? prev.copyWith(
-                status: TableStatus.occupied,
-                readyCount: 0,
-                lastActorId: userId ?? prev.lastActorId,
-              )
-            : prev.copyWith(
-                readyCount: prev.readyCount - 1,
-                lastActorId: userId ?? prev.lastActorId,
-              ),
+            ? prev.copyWith(status: TableStatus.occupied, readyCount: 0)
+            : prev.copyWith(readyCount: prev.readyCount - 1),
       );
     }
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     try {
-      final raw = await ref.read(apiClientProvider).postJson(
-        '/tables/$id/ready/decrement',
-        {'actorId': ?userId},
-      );
+      final raw = await ref
+          .read(apiClientProvider)
+          .postJson('/tables/$id/ready/decrement', const {});
       _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
     } catch (_) {
       if (prev != null) _replace(id, prev);
@@ -359,24 +354,21 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     }
   }
 
-  Future<void> setPax(String id, int pax, {String? userId}) async {
+  /// Correcting a headcount does **not** claim the table. See ADR-0056.
+  Future<void> setPax(String id, int pax) async {
     SatLog.repo(
       'tables.setPax id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax',
     );
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
-      _replace(
-        id,
-        prev.copyWith(pax: pax, lastActorId: userId ?? prev.lastActorId),
-      );
+      _replace(id, prev.copyWith(pax: pax));
     }
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     try {
-      final raw = await ref.read(apiClientProvider).patchJson(
-        '/tables/$id/pax',
-        {'pax': pax, 'actorId': ?userId},
-      );
+      final raw = await ref.read(apiClientProvider).patchJson('/tables/$id/pax', {
+        'pax': pax,
+      });
       _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
     } catch (_) {
       if (prev != null) _replace(id, prev);
@@ -434,16 +426,16 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     unawaited(setHandler(id, userId));
   }
 
-  Future<void> incrementPax(String id, {String? userId}) async {
+  Future<void> incrementPax(String id) async {
     final cur = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (cur == null || cur.pax >= cur.capacity) return;
-    await setPax(id, cur.pax + 1, userId: userId);
+    await setPax(id, cur.pax + 1);
   }
 
-  Future<void> decrementPax(String id, {String? userId}) async {
+  Future<void> decrementPax(String id) async {
     final cur = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (cur == null || cur.pax <= 0) return;
-    await setPax(id, cur.pax - 1, userId: userId);
+    await setPax(id, cur.pax - 1);
   }
 
   // --- Floor configuration (local-only; no LAN endpoint yet) ---

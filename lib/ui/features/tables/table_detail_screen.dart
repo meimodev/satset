@@ -288,12 +288,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
 
     void onMinus() {
       if (readOnly) return;
-      ref.read(tablesProvider.notifier).decrementPax(_tableId, userId: actorId);
+      ref.read(tablesProvider.notifier).decrementPax(_tableId);
     }
 
     void onPlus() {
       if (readOnly) return;
-      ref.read(tablesProvider.notifier).incrementPax(_tableId, userId: actorId);
+      ref.read(tablesProvider.notifier).incrementPax(_tableId);
     }
 
     final grouped = <CourseId, List<Ticket>>{};
