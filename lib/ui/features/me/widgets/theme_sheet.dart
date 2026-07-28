@@ -62,15 +62,27 @@ class _ThemeSheet extends ConsumerWidget {
               ).textTheme.bodySmall?.copyWith(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s3h),
-            for (final t in SatTheme.values)
-              _ThemeRow(
-                theme: t,
-                selected: t == active,
-                onTap: () {
-                  ref.read(satThemeProvider.notifier).select(t);
-                  Navigator.of(context).pop();
-                },
+            // Scrolls because the list grows with the palette set — seven
+            // themes already overflow a tablet sheet, and the next one added
+            // must not be the thing that discovers that.
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final t in SatTheme.values)
+                      _ThemeRow(
+                        theme: t,
+                        selected: t == active,
+                        onTap: () {
+                          ref.read(satThemeProvider.notifier).select(t);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                  ],
+                ),
               ),
+            ),
           ],
         ),
       ),
