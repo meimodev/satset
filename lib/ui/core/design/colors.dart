@@ -624,6 +624,20 @@ const Color satBarrier = Color(0x80000000);
 /// does. Heavier than [satBarrier] — it competes with detail, not flat colour.
 const Color satMediaScrim = Color(0xB3000000);
 
+/// Chrome for a lightbox — the payment-proof viewer. Black, on every palette
+/// and every skin, because the room's lighting and the app's own accent must
+/// not tint a photo the cashier is reading an amount off. Paired with
+/// [satMediaInk] for anything drawn on top of it.
+const Color satMediaChrome = Color(0xFF000000);
+
+/// Ink on [satMediaChrome].
+const Color satMediaInk = Color(0xFFFFFFFF);
+
+/// The quiet zone a QR code is printed on, and the ink of its modules. Not
+/// themed and never themed: at charcoal the code stops scanning, and the
+/// camera reading it belongs to a guest, not to this app.
+const Color satQrQuiet = Color(0xFFFFFFFF);
+
 /// Ambient shadow colour for lifted surfaces on the soft skin. The brutal skin
 /// uses `SatShape.hardShadow` instead. Opacity belongs to the caller: a floating
 /// tab bar sits higher than a chip and casts accordingly.

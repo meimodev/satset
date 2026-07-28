@@ -720,17 +720,13 @@ class _QrDialog extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(Sp.s3h),
                       decoration: SatBox.d(
-                        // Not a token, and not drift: a QR code needs a light
-                        // quiet zone with full contrast against its modules.
-                        // Themed to charcoal it stops scanning, and this one is
-                        // read by a guest's own phone camera.
-                        color: Colors.white,
+                        color: satQrQuiet,
                         borderRadius: SatR.a(14),
                       ),
                       child: QrImageView(
                         data: url,
                         size: 220,
-                        backgroundColor: Colors.white,
+                        backgroundColor: satQrQuiet,
                       ),
                     ),
                     const SizedBox(height: Sp.s3),

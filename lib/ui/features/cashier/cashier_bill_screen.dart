@@ -2204,18 +2204,16 @@ class _ProofViewer extends StatelessWidget {
   final Uint8List bytes;
   const _ProofViewer(this.bytes);
 
-  // A lightbox, not a themed screen: black chrome is what stops the room's
-  // lighting and the app's palette from tinting a photo the cashier is
-  // inspecting for a transfer amount. Same reasoning as receipt_preview.
+  // A lightbox, not a themed screen — see satMediaChrome.
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.black,
+    backgroundColor: satMediaChrome,
     appBar: AppBar(
-      backgroundColor: Colors.black,
-      iconTheme: const IconThemeData(color: Colors.white),
-      title: const Text(
+      backgroundColor: satMediaChrome,
+      iconTheme: const IconThemeData(color: satMediaInk),
+      title: Text(
         'Bukti pembayaran',
-        style: TextStyle(color: Colors.white, fontSize: 16),
+        style: SatType.labelL(color: satMediaInk),
       ),
     ),
     body: Center(

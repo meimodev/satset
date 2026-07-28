@@ -39,14 +39,13 @@ void main() {
           '(status pill, owner chip) is onFill(), not a literal.',
     ),
     _Rule(
-      // The 6 left are two deliberate cases, both commented at the site: the
-      // QR quiet zone in zone_admin (themed to charcoal it stops scanning) and
-      // the payment-proof lightbox in cashier_bill (black chrome so the app's
-      // palette does not tint a photo being read for an amount). Left as a
-      // baseline rather than a file exemption, so genuine drift in those two
-      // files still trips the rule.
+      // Reached 0. The last two cases were real design decisions wearing a
+      // literal — the QR quiet zone and the payment-proof lightbox — so they
+      // became tokens (satQrQuiet, satMediaChrome/satMediaInk) rather than a
+      // file exemption. A colour that must ignore the palette still deserves
+      // a name saying so.
       name: 'Colors.white / Colors.black',
-      baseline: 6,
+      baseline: 0,
       pattern: RegExp(r'Colors\.(white|black)\b'),
       fix:
           'use context.sat neutral ramp (bg0-bg4, textHi-textDim), onFill() for '

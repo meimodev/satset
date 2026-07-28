@@ -68,7 +68,7 @@ Future<void> openReservationsSurface(
     // to blend against, so using it here paints the floor out entirely. The
     // barrier dims, and it dims dark on every palette (neo.css §9 does the same
     // on both its light and dark skins).
-    barrierColor: Colors.black54,
+    barrierColor: satBarrier,
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (ctx, _, _) => Align(
       alignment: Alignment.centerRight,
