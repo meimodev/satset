@@ -532,6 +532,7 @@ Future<void> consumeForTicket(
   required String sourceLabel,
   String? userId,
   DateTime? at,
+
   /// Prefix for the movement ids. The demo seed replays through this path and
   /// its rows must carry the demo tag, or reset deletes the purchases and
   /// leaves the sales behind — driving every balance deeply negative.

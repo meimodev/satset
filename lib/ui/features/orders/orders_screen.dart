@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -360,6 +361,8 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+/// The three order buckets. A chip row rather than a tab strip: all three fit
+/// on a phone, and each carries a live count that a tab indicator cannot.
 class _Segments extends StatelessWidget {
   final String seg;
   final int ready;
@@ -382,75 +385,20 @@ class _Segments extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
         children: [
-          _SegBtn(
-            label: 'Siap',
-            count: ready,
-            active: seg == 'ready',
-            onTap: () => onChange('ready'),
-          ),
-          const SizedBox(width: Sp.s1h),
-          _SegBtn(
-            label: 'Disiapkan',
-            count: active,
-            active: seg == 'active',
-            onTap: () => onChange('active'),
-          ),
-          const SizedBox(width: Sp.s1h),
-          _SegBtn(
-            label: 'Selesai',
-            count: done,
-            active: seg == 'done',
-            onTap: () => onChange('done'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SegBtn extends StatelessWidget {
-  final String label;
-  final int count;
-  final bool active;
-  final VoidCallback onTap;
-  const _SegBtn({
-    required this.label,
-    required this.count,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Sp.s3h,
-          vertical: Sp.s2h,
-        ),
-        decoration: SatBox.d(
-          color: active ? sc.textHi : sc.bg2,
-          borderRadius: SatR.a(999),
-          border: SatB.all(color: active ? sc.textHi : sc.border0),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: SatType.bodyM(color: active ? sc.bg0 : sc.textMd),
+          for (final (key, label, count) in [
+            ('ready', 'Siap', ready),
+            ('active', 'Disiapkan', active),
+            ('done', 'Selesai', done),
+          ]) ...[
+            SatChip.select(
+              label: label,
+              count: count,
+              selected: seg == key,
+              onTap: () => onChange(key),
             ),
-            const SizedBox(width: Sp.s2),
-            Text(
-              '$count',
-              style: SatType.monoS(
-                color: active ? sc.bg0.withValues(alpha: 0.6) : sc.textLo,
-              ),
-            ),
+            const SizedBox(width: Sp.s1h),
           ],
-        ),
+        ],
       ),
     );
   }

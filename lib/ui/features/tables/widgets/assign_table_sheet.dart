@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'guest_stepper.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
 /// Result of the menu-first **Pesanan baru → assign to table** commit step.
@@ -112,13 +112,14 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               children: [
                 Text('Tamu', style: SatType.bodyM(color: sc.textHi)),
                 const Spacer(),
-                GuestStepper(
-                  pax: _pax,
+                SatStepper.pill(
+                  value: _pax,
                   max: 20,
-                  enabled: true,
-                  size: 40,
-                  onMinus: () => setState(() => _pax = (_pax - 1).clamp(0, 20)),
-                  onPlus: () => setState(() => _pax = (_pax + 1).clamp(0, 20)),
+                  icon: Icons.person_outline,
+                  showMax: true,
+                  size: SatStepperSize.lg,
+                  semanticLabel: 'Tamu',
+                  onChanged: (v) => setState(() => _pax = v.clamp(0, 20)),
                 ),
               ],
             ),

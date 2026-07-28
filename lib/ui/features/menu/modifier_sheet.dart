@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -660,28 +661,12 @@ class _Foot extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s1),
-            decoration: SatBox.d(
-              color: sc.bg2,
-              borderRadius: SatR.a(14),
-              border: SatB.all(color: sc.border0),
-            ),
-            child: Row(
-              children: [
-                _StepperBtn(label: '−', onTap: onDec, disabled: qty <= 1),
-                SizedBox(
-                  width: Sp.s7,
-                  child: Text(
-                    '$qty',
-                    textAlign: TextAlign.center,
-                    style: SatType.monoM(color: sc.textHi),
-                  ),
-                ),
-                _StepperBtn(label: '+', onTap: onInc, disabled: false),
-              ],
-            ),
+          SatStepper(
+            value: qty,
+            min: 1,
+            size: SatStepperSize.lg,
+            semanticLabel: AppStrings.quantity,
+            onChanged: (v) => v > qty ? onInc() : onDec(),
           ),
           const SizedBox(width: Sp.s3),
           Expanded(
@@ -695,26 +680,6 @@ class _Foot extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _StepperBtn extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final bool disabled;
-  const _StepperBtn({
-    required this.label,
-    required this.onTap,
-    required this.disabled,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: Sp.s10,
-      height: double.infinity,
-      child: SatButton.ghost(label: label, onTap: disabled ? null : onTap),
     );
   }
 }

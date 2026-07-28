@@ -257,11 +257,13 @@ Future<SubmitOrderResult> submitOrder(
   String? appendVisitId,
   String? actorId,
   bool canOverrideStock = false,
+
   /// Write these timestamps instead of "now". The demo seed replays a month
   /// through this function and must stamp each order at its own moment —
   /// without dragging the running app's clock around while it does
   /// (ADR-0053 §5). Production callers pass nothing.
   DateTime? at,
+
   /// Prefix applied to every id this call mints — tickets and their stock
   /// movements. The demo seed passes its tag so reset can delete by it
   /// (ADR-0053 §5); production callers pass nothing.

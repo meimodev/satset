@@ -7,7 +7,7 @@ import '../design/spacing.dart';
 import '../design/typography.dart';
 import 'anim.dart';
 
-enum SatStepperSize { sm, md }
+enum SatStepperSize { sm, md, lg }
 
 /// The app's quantity control (ADR-0055).
 ///
@@ -15,6 +15,11 @@ enum SatStepperSize { sm, md }
 /// `_StepperBtn` in the modifier sheet, and `GuestStepper` on the table
 /// detail. All three did the same thing: clamp, disable at the bounds, and
 /// animate the count.
+///
+/// Two shapes, because the app genuinely uses two. [SatStepper.new] is the
+/// boxed one that sits in a form. [SatStepper.pill] is the one that rides a
+/// crowded row — the seat count on a table card, where it has to read as a
+/// single object rather than three controls.
 ///
 /// The count slides in the direction of travel, which is the spatial cue that
 /// tells a waiter their tap landed without them having to read the number.
@@ -27,6 +32,19 @@ class SatStepper extends StatelessWidget {
   final bool enabled;
   final SatStepperSize size;
 
+  /// Pill only. Sits before the count — a person glyph on the seat stepper.
+  final IconData? icon;
+
+  /// Pill only. Renders `3/6` rather than `3`. A seat count means nothing
+  /// without the capacity it is filling.
+  final bool showMax;
+
+  /// Names the quantity for screen readers — 'Tamu', 'Jumlah'. The +/- buttons
+  /// name themselves.
+  final String? semanticLabel;
+
+  final bool _pill;
+
   const SatStepper({
     super.key,
     required this.value,
@@ -35,53 +53,95 @@ class SatStepper extends StatelessWidget {
     this.max = 99,
     this.enabled = true,
     this.size = SatStepperSize.md,
-  });
+    this.semanticLabel,
+  }) : icon = null,
+       showMax = false,
+       _pill = false;
 
-  double get _btn => size == SatStepperSize.sm ? 30 : 36;
-  double get _btnW => size == SatStepperSize.sm ? 34 : 40;
+  const SatStepper.pill({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.min = 0,
+    this.max = 99,
+    this.enabled = true,
+    this.size = SatStepperSize.md,
+    this.icon,
+    this.showMax = false,
+    this.semanticLabel,
+  }) : _pill = true;
+
+  double get _h => switch (size) {
+    SatStepperSize.sm => 32,
+    SatStepperSize.md => 36,
+    SatStepperSize.lg => 44,
+  };
+
+  double get _btnW => _pill ? _h : _h + 4;
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    // A max of zero would disable the plus button forever; a table with no
+    // stated capacity still seats someone.
+    final ceiling = _pill && max < 1 ? 1 : max;
     final canDec = enabled && value > min;
-    final canInc = enabled && value < max;
+    final canInc = enabled && value < ceiling;
 
-    return Container(
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border1),
-        borderRadius: SatR.md,
-      ),
-      padding: const EdgeInsets.all(Sp.s1h),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StepButton(
-            icon: Icons.remove,
-            semanticLabel: AppStrings.stepperDecrease,
-            width: _btnW,
-            height: _btn,
-            onTap: canDec ? () => onChanged(value - 1) : null,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.s2),
-            child: AnimatedCount(
-              value: value,
-              builder: (context, v) => Text(
-                '$v',
-                textAlign: TextAlign.center,
-                style: SatType.monoL(color: enabled ? sc.textHi : sc.textLo),
+    return Semantics(
+      label: semanticLabel,
+      value: showMax ? '$value/$ceiling' : '$value',
+      child: Container(
+        height: _pill ? _h : null,
+        decoration: SatBox.d(
+          color: _pill ? sc.bg3 : sc.bg2,
+          border: SatB.all(color: _pill ? sc.border0 : sc.border1),
+          borderRadius: _pill ? SatR.pill : SatR.md,
+        ),
+        padding: _pill ? EdgeInsets.zero : const EdgeInsets.all(Sp.s1h),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _StepButton(
+              icon: _pill ? Icons.remove_rounded : Icons.remove,
+              semanticLabel: AppStrings.stepperDecrease,
+              width: _btnW,
+              height: _h,
+              round: _pill,
+              onTap: canDec ? () => onChanged(value - 1) : null,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 16, color: sc.textMd),
+                    const SizedBox(width: Sp.s1),
+                  ],
+                  AnimatedCount(
+                    value: value,
+                    builder: (context, v) => Text(
+                      showMax ? '$v/$ceiling' : '$v',
+                      textAlign: TextAlign.center,
+                      style: SatType.monoL(
+                        color: enabled ? sc.textHi : sc.textLo,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          _StepButton(
-            icon: Icons.add,
-            semanticLabel: AppStrings.stepperIncrease,
-            width: _btnW,
-            height: _btn,
-            onTap: canInc ? () => onChanged(value + 1) : null,
-          ),
-        ],
+            _StepButton(
+              icon: _pill ? Icons.add_rounded : Icons.add,
+              semanticLabel: AppStrings.stepperIncrease,
+              width: _btnW,
+              height: _h,
+              round: _pill,
+              onTap: canInc ? () => onChanged(value + 1) : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -92,12 +152,14 @@ class _StepButton extends StatelessWidget {
   final String semanticLabel;
   final double width;
   final double height;
+  final bool round;
   final VoidCallback? onTap;
   const _StepButton({
     required this.icon,
     required this.semanticLabel,
     required this.width,
     required this.height,
+    required this.round,
     required this.onTap,
   });
 
@@ -117,8 +179,11 @@ class _StepButton extends StatelessWidget {
             height: height,
             alignment: Alignment.center,
             decoration: SatBox.d(
-              color: on ? sc.bg4 : sc.bg3,
-              borderRadius: SatR.sm,
+              // The pill's buttons are its own end caps — a filled square
+              // inside a pill reads as a button glued onto a track.
+              color: round ? null : (on ? sc.bg4 : sc.bg3),
+              borderRadius: round ? null : SatR.sm,
+              shape: round ? BoxShape.circle : BoxShape.rectangle,
             ),
             child: Icon(icon, size: 18, color: on ? sc.textHi : sc.textDim),
           ),

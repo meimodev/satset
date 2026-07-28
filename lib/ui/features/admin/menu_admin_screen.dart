@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_tabs.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -776,55 +777,28 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
+/// The menu admin's three panes. A [SatTabs] strip bound to the tab provider.
 class _TabSwitcher extends ConsumerWidget {
   const _TabSwitcher();
 
+  static const _order = [
+    MenuAdminTab.items,
+    MenuAdminTab.categories,
+    MenuAdminTab.tags,
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
     final tab = ref.watch(menuAdminTabProvider);
-    Widget seg(String label, MenuAdminTab value) {
-      final on = tab == value;
-      return PressScale(
-        pressedScale: 0.95,
-        child: GestureDetector(
-          onTap: () => ref.read(menuAdminTabProvider.notifier).state = value,
-          child: AnimatedContainer(
-            duration: satMotion(context, 220),
-            curve: satEaseOut,
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sp.s3h,
-              vertical: Sp.s2,
-            ),
-            decoration: SatBox.d(
-              color: on ? sc.accent : Colors.transparent,
-              borderRadius: SatR.a(8),
-            ),
-            child: AnimatedDefaultTextStyle(
-              duration: satMotion(context, 220),
-              style: SatType.labelS(color: on ? sc.accentInk : sc.textMd),
-              child: Text(label),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(Sp.s1),
-      decoration: SatBox.d(
-        color: sc.bg3,
-        border: SatB.all(color: sc.border1),
-        borderRadius: SatR.a(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          seg('Item', MenuAdminTab.items),
-          seg('Kategori', MenuAdminTab.categories),
-          seg('Tag', MenuAdminTab.tags),
-        ],
-      ),
+    return SatTabs(
+      tabs: const [
+        SatTab(label: 'Item'),
+        SatTab(label: 'Kategori'),
+        SatTab(label: 'Tag'),
+      ],
+      selected: _order.indexOf(tab),
+      onSelected: (i) =>
+          ref.read(menuAdminTabProvider.notifier).state = _order[i],
     );
   }
 }

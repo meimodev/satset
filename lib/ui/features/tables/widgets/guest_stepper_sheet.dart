@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -11,7 +12,6 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
-import 'guest_stepper.dart';
 import 'move_table_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
@@ -82,17 +82,21 @@ class _GuestStepperSheet extends ConsumerWidget {
             ),
             const SizedBox(height: Sp.s4),
             Center(
-              child: GuestStepper(
-                pax: table.pax,
+              child: SatStepper.pill(
+                value: table.pax,
                 max: table.capacity,
                 enabled: canEdit,
-                size: 48,
-                onMinus: () => ref
-                    .read(tablesProvider.notifier)
-                    .decrementPax(table.id, userId: actorId),
-                onPlus: () => ref
-                    .read(tablesProvider.notifier)
-                    .incrementPax(table.id, userId: actorId),
+                icon: Icons.person_outline,
+                showMax: true,
+                size: SatStepperSize.lg,
+                semanticLabel: AppStrings.tableGuests,
+                onChanged: (v) => v > table.pax
+                    ? ref
+                          .read(tablesProvider.notifier)
+                          .incrementPax(table.id, userId: actorId)
+                    : ref
+                          .read(tablesProvider.notifier)
+                          .decrementPax(table.id, userId: actorId),
               ),
             ),
             const SizedBox(height: Sp.s3h),

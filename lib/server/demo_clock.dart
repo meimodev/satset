@@ -69,13 +69,14 @@ class DemoClock {
   /// a multi-minute run leaves every staged state that much older than it was
   /// written to be.
   static Future<void> markComplete(AppDatabase db) async {
-    await (db.update(db.demoStates)..where((d) => d.id.equals('default')))
-        .write(
-          DemoStatesCompanion(
-            complete: const Value(true),
-            anchorAt: Value(DateTime.now()),
-          ),
-        );
+    await (db.update(
+      db.demoStates,
+    )..where((d) => d.id.equals('default'))).write(
+      DemoStatesCompanion(
+        complete: const Value(true),
+        anchorAt: Value(DateTime.now()),
+      ),
+    );
     await reanchor(db);
   }
 

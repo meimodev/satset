@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -33,7 +34,6 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
-import 'package:satset/ui/features/tables/widgets/guest_stepper.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -687,13 +687,16 @@ class _Header extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    GuestStepper(
-                      pax: table.pax,
+                    SatStepper.pill(
+                      value: table.pax,
                       max: table.capacity,
                       enabled: canEditGuests,
-                      onMinus: onMinusPax,
-                      onPlus: onPlusPax,
-                      size: 32,
+                      icon: Icons.person_outline,
+                      showMax: true,
+                      size: SatStepperSize.sm,
+                      semanticLabel: AppStrings.tableGuests,
+                      onChanged: (v) =>
+                          v > table.pax ? onPlusPax() : onMinusPax(),
                     ),
                     const SizedBox(width: Sp.s2),
                     _ContextTriggerBtn(
@@ -1413,13 +1416,17 @@ class _TabletSplit extends StatelessWidget {
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          GuestStepper(
-                                            pax: table.pax,
+                                          SatStepper.pill(
+                                            value: table.pax,
                                             max: table.capacity,
                                             enabled: canEditGuests,
-                                            onMinus: onMinusPax,
-                                            onPlus: onPlusPax,
-                                            size: 36,
+                                            icon: Icons.person_outline,
+                                            showMax: true,
+                                            semanticLabel:
+                                                AppStrings.tableGuests,
+                                            onChanged: (v) => v > table.pax
+                                                ? onPlusPax()
+                                                : onMinusPax(),
                                           ),
                                           if (table.openedAt != null) ...[
                                             const SizedBox(width: Sp.s2h),

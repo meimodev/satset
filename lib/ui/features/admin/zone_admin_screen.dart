@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
@@ -473,10 +474,11 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
           const SizedBox(height: Sp.s5),
           _label(sc, AppStrings.zoneAdminMaxCapacity),
           const SizedBox(height: Sp.s2),
-          _Stepper(
+          SatStepper(
             value: _capacity,
             min: 1,
             max: 20,
+            semanticLabel: AppStrings.zoneAdminMaxCapacity,
             onChanged: (v) => setState(() => _capacity = v),
           ),
           const SizedBox(height: Sp.s5),
@@ -1430,67 +1432,6 @@ class _SatField extends StatelessWidget {
       controller: controller,
       hint: hint,
       onChanged: onChanged,
-    );
-  }
-}
-
-class _Stepper extends StatelessWidget {
-  final int value;
-  final int min;
-  final int max;
-  final ValueChanged<int> onChanged;
-  const _Stepper({
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border1),
-        borderRadius: SatR.a(12),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h, vertical: Sp.s1h),
-      child: Row(
-        children: [
-          _stepBtn(
-            sc,
-            Icons.remove,
-            value > min ? () => onChanged(value - 1) : null,
-          ),
-          Expanded(
-            child: Text(
-              '$value',
-              textAlign: TextAlign.center,
-              style: SatType.monoL(color: sc.textHi),
-            ),
-          ),
-          _stepBtn(
-            sc,
-            Icons.add,
-            value < max ? () => onChanged(value + 1) : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
-  /// deriving it from the glyph is how every one of these gets named without
-  /// the call sites repeating it.
-  Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
-    return SatIconButton.outline(
-      icon: icon,
-      tooltip: icon == Icons.add
-          ? AppStrings.stepperIncrease
-          : AppStrings.stepperDecrease,
-      size: 38,
-      onTap: onTap,
     );
   }
 }
