@@ -162,6 +162,18 @@ class _TableCardState extends ConsumerState<TableCard> {
     final isMine = actor != null && actor.id == currentUserId;
     if (isMine && !brutal) border = sc.accentBorder;
 
+    // Crit's ring used to be a hard `urgent` shadow painted *behind* the card
+    // (see `_cardShadow`). Behind a full-bleed obsidian foot that rim read as
+    // card ground peeking out below and beside the banner. A border paints
+    // inside the bounds, over the clipped banner edge, so the red hugs the bar
+    // instead of framing a gap. It outranks both the status border and the
+    // owner's accent — a stuck table is the worse fact.
+    //
+    // Glow only. Lembut never had a ring, and brutal's crit is a red slab
+    // offset behind the ink one, which reads as a stacked card, not a rim.
+    final critRing = SatShape.glow && stale?.severity == StaleSeverity.crit;
+    if (critRing) border = sc.urgent;
+
     final radius = tablet ? 20.0 : 22.0;
     final padH = tablet ? 18.0 : 14.0;
     final padTop = tablet ? 18.0 : 16.0;
@@ -339,7 +351,7 @@ class _TableCardState extends ConsumerState<TableCard> {
     final decoration = BoxDecoration(
       color: bg,
       borderRadius: SatR.a(radius),
-      border: SatB.all(color: border),
+      border: SatB.all(color: border, width: critRing ? 2 : 1),
       boxShadow: _cardShadow(stale, sc),
     );
 
@@ -387,10 +399,10 @@ class _TableCardState extends ConsumerState<TableCard> {
   /// Crit cards sit on a doubled shadow so a screen of lifted cards still has
   /// one that reads as lifted further.
   ///
-  /// Brutal stacks a red slab behind the ink one. Glow does the same job with
-  /// a hard 2px `urgent` ring under its ordinary lift, which is what the source
-  /// design specifies for `.sev-crit` — a blurred red glow would read as
-  /// decoration, and `urgent` is too scarce a colour to spend on that.
+  /// Brutal stacks a red slab behind the ink one. Glow's crit ring is not here
+  /// — it moved into the card's own border (see `critRing` in `build`), because
+  /// a shadow sits outside the clip and so left a red band between the foot
+  /// banner and the card edge.
   List<BoxShadow>? _cardShadow(TableStale? stale, SatColors sc) {
     final crit = stale?.severity == StaleSeverity.crit;
     switch (SatShape.skin) {
@@ -408,11 +420,7 @@ class _TableCardState extends ConsumerState<TableCard> {
           ),
         ].reversed.toList();
       case SatSkin.glow:
-        if (!crit) return SatShape.lift;
-        return [
-          BoxShadow(color: sc.urgent, spreadRadius: 2, blurRadius: 0),
-          ...SatShape.lift,
-        ];
+        return SatShape.lift;
     }
   }
 
@@ -561,8 +569,19 @@ class _StaleBanner extends StatelessWidget {
     // is ~2:1 and fails AA — and this banner is the one thing on the card a
     // waiter has to read at a glance. On the slab the palette names it.
     final fg = glow ? sc.slab.textHi : onFill(fill);
+    // `Sp.s3` vertically, not the 7 this used to carry. Under Glow the card's
+    // radius maps to 26, and a 29px bar against a 26px corner is arc top to
+    // bottom — barely 3px of straight side edge, so the foot read as a tab
+    // stuck under the card rather than part of it. At 39 there is a real bar
+    // between the corners, and the one thing on the card a waiter must read at
+    // arm's length stops being the thinnest.
     return Container(
-      padding: EdgeInsets.fromLTRB(tablet ? 18 : 14, 7, tablet ? 18 : 14, 7),
+      padding: EdgeInsets.fromLTRB(
+        tablet ? 18 : 14,
+        Sp.s3,
+        tablet ? 18 : 14,
+        Sp.s3,
+      ),
       decoration: BoxDecoration(
         color: fill,
         border: brutal
