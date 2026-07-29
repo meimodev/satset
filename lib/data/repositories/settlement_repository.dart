@@ -190,8 +190,9 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   }
 
   /// Past bills (last `days`, default 7), newest-first. `tableId` null ⇒
-  /// venue-wide (the cashier's Riwayat tab); set ⇒ scoped to one table (the
-  /// bill-screen Riwayat shortcut). One endpoint, both callers. See ADR-0024.
+  /// venue-wide (the cashier's Riwayat tab); set ⇒ scoped to one table. The
+  /// scoped form has no caller since ADR-0064 retired the bill-screen Riwayat
+  /// shortcut — the route keeps it. See ADR-0024.
   Future<List<PastBillSummary>> fetchHistory({
     String? tableId,
     int days = 7,
@@ -349,23 +350,10 @@ final billDetailProvider = FutureProvider.family.autoDispose<Bill, String>((
   return ref.read(settlementProvider.notifier).fetchBill(visitId);
 });
 
-/// Per-table past bills (last 7 days). Keyed by tableId — backs the bill
-/// screen's Riwayat shortcut. Refetched on `tableSession.closed` for *this*
-/// table (a new past bill landed there).
-final pastBillsProvider = FutureProvider.family
-    .autoDispose<List<PastBillSummary>, String>((ref, tableId) async {
-      ref.watch(apiConfigProvider);
-      final sub = ref.read(wsClientProvider).events.listen((ev) {
-        if (ev.type == WsEventTypes.tableSessionClosed &&
-            ev.payload['tableId'] == tableId) {
-          ref.invalidateSelf();
-        }
-      });
-      ref.onDispose(sub.cancel);
-      return ref
-          .read(settlementProvider.notifier)
-          .fetchHistory(tableId: tableId);
-    });
+// The per-table `pastBillsProvider` went with the bill screen's Riwayat
+// shortcut (ADR-0064) — per-table history is the venue-wide list filtered by
+// its table chips. `fetchHistory` keeps its `tableId` parameter; the route
+// still takes one.
 
 /// Venue-wide past bills (last 7 days) — backs the cashier's Riwayat tab.
 /// Refetched on *any* `tableSession.closed`: a bill closed at any table lands a

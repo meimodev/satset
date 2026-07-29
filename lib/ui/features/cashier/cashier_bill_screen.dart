@@ -3,6 +3,11 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
+import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
+import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -34,94 +39,126 @@ const _methodLabels = {
   'lainnya': 'Lainnya',
 };
 
+/// Opens the bill surface (ADR-0064): a right-edge drawer on a tablet, where
+/// the cashier reads it *against* the payable list, and a tall bottom sheet on
+/// a phone, where a 560px side panel would be the whole screen anyway. Same
+/// two-containers-one-body shape as the booking book (ADR-0048).
+Future<void> openCashierBill(
+  BuildContext context, {
+  required String visitId,
+}) {
+  final sc = context.sat;
+  if (!context.layout.useTabletShell) {
+    return showSatSheet<void>(
+      context,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.92,
+        child: SafeArea(child: CashierBillView(visitId: visitId)),
+      ),
+    );
+  }
+  return showSatDrawer<void>(
+    context,
+    builder: (_) => Material(
+      color: sc.bg1,
+      child: Container(
+        // Wider than the booking book's 520: the receipt cards carry a
+        // seven-button action Wrap that reflows to three rows below this.
+        width: 560,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          border: Border(left: SatB.side(color: sc.border1)),
+        ),
+        child: SafeArea(child: CashierBillView(visitId: visitId)),
+      ),
+    ),
+  );
+}
+
 /// Settle one [[Visit]]'s [[Bill]]: assign lines to receipts (itemized), split
 /// evenly, record payments/refunds, reopen, and — bill close (Tutup tagihan,
 /// Lunas or tak tertagih). Freeing the floor table is the WAITER's separate
 /// act, not here. See ADR-0024 and CONTEXT.md (Bill close / Settlement).
-class CashierBillScreen extends ConsumerWidget {
+///
+/// Content only — no `Scaffold`, no `AppBar`. [openCashierBill] supplies the
+/// container. Per-table history is not reachable from here; the venue-wide
+/// Riwayat tab filters by table (ADR-0064).
+class CashierBillView extends ConsumerStatefulWidget {
   final String visitId;
-  final String tableId;
-  const CashierBillScreen({
-    super.key,
-    required this.visitId,
-    required this.tableId,
-  });
+  const CashierBillView({super.key, required this.visitId});
 
-  SettlementRepository _repo(WidgetRef ref) =>
-      ref.read(settlementProvider.notifier);
+  @override
+  ConsumerState<CashierBillView> createState() => _CashierBillViewState();
+}
 
-  Future<void> _run(
-    BuildContext context,
-    WidgetRef ref,
-    Future<Bill> Function() op,
-  ) async {
+class _CashierBillViewState extends ConsumerState<CashierBillView> {
+  /// Last failed operation, shown inline under the header. A `SnackBar` here
+  /// would render in the root `Scaffold` *underneath* the modal barrier — on
+  /// the money path an error must not be something you have to dismiss the
+  /// bill to read (ADR-0064).
+  String? _error;
+
+  SettlementRepository get _repo => ref.read(settlementProvider.notifier);
+
+  Future<void> _run(Future<Bill> Function() op) async {
     try {
       await op();
+      if (mounted) setState(() => _error = null);
     } on ApiException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(_msg(e))));
-      }
+      if (mounted) setState(() => _error = _msg(e));
     } finally {
-      ref.invalidate(billDetailProvider(visitId));
+      ref.invalidate(billDetailProvider(widget.visitId));
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final sc = context.sat;
-    final billAsync = ref.watch(billDetailProvider(visitId));
+    final billAsync = ref.watch(billDetailProvider(widget.visitId));
 
-    return Scaffold(
-      backgroundColor: sc.bg0,
-      appBar: AppBar(
-        backgroundColor: sc.bg1,
-        title: billAsync.maybeWhen(
-          data: (b) => Text(
-            'Tagihan · Meja ${b.tableLabel ?? ''}'.trim(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SatSheetHeader(
+          onClose: () => Navigator.of(context).pop(),
+          child: Text(
+            billAsync.maybeWhen(
+              data: (b) => 'Tagihan · Meja ${b.tableLabel ?? ''}'.trim(),
+              orElse: () => 'Tagihan',
+            ),
             style: SatType.labelL(color: sc.textHi),
           ),
-          orElse: () =>
-              Text('Tagihan', style: SatType.labelL(color: sc.textHi)),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Riwayat tagihan meja',
-            icon: const Icon(Icons.history_rounded),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PastBillsScreen(
-                  tableId: tableId,
-                  tableLabel: billAsync.asData?.value.tableLabel,
-                ),
+        if (_error != null)
+          _ErrorLine(
+            message: _error!,
+            onDismiss: () => setState(() => _error = null),
+          ),
+        Expanded(
+          child: billAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+              child: Text(
+                'Gagal memuat tagihan.',
+                style: SatType.bodyM(color: sc.textLo),
+              ),
+            ),
+            data: (bill) => _BillBody(
+              bill: bill,
+              run: _run,
+              repo: _repo,
+              canRefund: ref.watch(authStateProvider).has(Capability.refund),
+              onCloseBill: () => _closeBill(context, ref, bill),
+              printDoc: (r) => printBillStruk(
+                context: context,
+                ref: ref,
+                bill: bill,
+                receipt: r,
               ),
             ),
           ),
-        ],
-      ),
-      body: billAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text(
-            'Gagal memuat tagihan.',
-            style: SatType.bodyM(color: sc.textLo),
-          ),
         ),
-        data: (bill) => _BillBody(
-          bill: bill,
-          run: (op) => _run(context, ref, op),
-          repo: _repo(ref),
-          canRefund: ref.watch(authStateProvider).has(Capability.refund),
-          onCloseBill: () => _closeBill(context, ref, bill),
-          printDoc: (r) => printBillStruk(
-            context: context,
-            ref: ref,
-            bill: bill,
-            receipt: r,
-          ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -164,11 +201,7 @@ class CashierBillScreen extends ConsumerWidget {
           .closeBill(bill.visitId, writeOff: writeOff, reason: reason);
       if (context.mounted) Navigator.of(context).pop();
     } on ApiException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(_msg(e))));
-      }
+      if (mounted) setState(() => _error = _msg(e));
     }
   }
 
@@ -213,16 +246,54 @@ class CashierBillScreen extends ConsumerWidget {
     );
   }
 
-  static String _msg(ApiException e) => switch (e.code) {
-    'over_assign' => 'Unit melebihi yang tersedia.',
-    'receipt_paid' => 'Buka ulang struk sebelum mengubahnya.',
-    'not_settled' => 'Tagihan belum lunas.',
-    'bill_locked' => 'Tagihan sudah ditutup — buka ulang dulu.',
-    'forbidden' => 'Perlu persetujuan manajer (tak tertagih).',
-    'reason_required' => 'Alasan tak tertagih wajib diisi.',
-    'no_lines' => 'Meja tidak punya pesanan.',
-    _ => 'Operasi gagal (${e.code ?? e.statusCode}).',
-  };
+}
+
+String _msg(ApiException e) => switch (e.code) {
+  'over_assign' => 'Unit melebihi yang tersedia.',
+  'receipt_paid' => 'Buka ulang struk sebelum mengubahnya.',
+  'not_settled' => 'Tagihan belum lunas.',
+  'bill_locked' => 'Tagihan sudah ditutup — buka ulang dulu.',
+  'forbidden' => 'Perlu persetujuan manajer (tak tertagih).',
+  'reason_required' => 'Alasan tak tertagih wajib diisi.',
+  'no_lines' => 'Meja tidak punya pesanan.',
+  _ => 'Operasi gagal (${e.code ?? e.statusCode}).',
+};
+
+/// The failed-operation line under the sheet header — warn-toned, dismissible,
+/// and inside the surface that raised it.
+class _ErrorLine extends StatelessWidget {
+  final String message;
+  final VoidCallback onDismiss;
+  const _ErrorLine({required this.message, required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(Sp.s3h, 0, Sp.s3h, Sp.s2),
+      padding: const EdgeInsets.fromLTRB(Sp.s3, Sp.s2, Sp.s1h, Sp.s2),
+      decoration: SatBox.d(
+        color: sc.warn.withValues(alpha: 0.12),
+        borderRadius: SatR.a(10),
+        border: SatB.all(color: sc.warn.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: sc.warn),
+          const SizedBox(width: Sp.s2),
+          Expanded(
+            child: Text(message, style: SatType.labelM(color: sc.warn)),
+          ),
+          SatIconButton.plain(
+            icon: Icons.close,
+            tooltip: AppStrings.close,
+            size: 32,
+            onTap: onDismiss,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _BillBody extends StatelessWidget {
@@ -370,9 +441,8 @@ class _TotalsCard extends StatelessWidget {
         ],
       ),
     );
-    return Container(
+    return SatCard.plain(
       padding: const EdgeInsets.all(Sp.s3h),
-      decoration: SatBox.d(color: sc.bg1, borderRadius: SatR.a(14)),
       child: Column(
         children: [
           row('Subtotal', bill.subtotal),
@@ -416,9 +486,12 @@ class _ModeChooser extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _BigBtn(
+            child: SatButton.primary(
+              size: SatButtonSize.sm,
               icon: Icons.payments_outlined,
-              label: 'Bayar penuh',
+              // Short labels: three across a phone sheet leaves ~105dp each,
+              // and the icons already carry the distinction.
+              label: 'Penuh',
               onTap: () async {
                 await run(
                   () => repo.createReceipt(
@@ -433,9 +506,10 @@ class _ModeChooser extends StatelessWidget {
           ),
           const SizedBox(width: Sp.s2),
           Expanded(
-            child: _BigBtn(
+            child: SatButton.primary(
+              size: SatButtonSize.sm,
               icon: Icons.call_split_rounded,
-              label: 'Split per item',
+              label: 'Per item',
               onTap: () => run(
                 () => repo.createReceipt(
                   bill.visitId,
@@ -447,9 +521,10 @@ class _ModeChooser extends StatelessWidget {
           ),
           const SizedBox(width: Sp.s2),
           Expanded(
-            child: _BigBtn(
+            child: SatButton.primary(
+              size: SatButtonSize.sm,
               icon: Icons.safety_divider_rounded,
-              label: 'Split rata',
+              label: 'Rata',
               onTap: () async {
                 // Switching to an even split rebuilds every receipt, taking
                 // line discounts with them — an even receipt owns no lines to
@@ -524,26 +599,14 @@ class _LinesSection extends StatelessWidget {
     }
     final multiBatch = groups.length > 1;
 
-    final children = <Widget>[
-      Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Item pesanan', style: SatType.labelS(color: sc.textLo)),
-            if (!bill.fullyAssigned && assignable)
-              Text('Belum semua diatur', style: SatType.bodyS(color: sc.warn)),
-          ],
-        ),
-      ),
-    ];
+    final children = <Widget>[];
     var batchNo = 0;
     groups.forEach((key, lines) {
       batchNo++;
       if (multiBatch) {
         children.add(
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
+            padding: const EdgeInsets.only(top: Sp.s2, bottom: Sp.sHair),
             child: Text(
               'PESANAN $batchNo · $key',
               style: SatType.labelS(color: sc.textLo),
@@ -556,10 +619,16 @@ class _LinesSection extends StatelessWidget {
       }
     });
 
-    return Container(
-      decoration: SatBox.d(color: sc.bg1, borderRadius: SatR.a(14)),
-      padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
-      child: Column(children: children),
+    return SatCard.section(
+      header: 'Item pesanan',
+      headerTrailing: (!bill.fullyAssigned && assignable)
+          ? Text('Belum semua diatur', style: SatType.bodyS(color: sc.warn))
+          : null,
+      padding: const EdgeInsets.fromLTRB(Sp.s3h, Sp.s3, Sp.s3h, Sp.s2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
     );
   }
 
@@ -692,26 +761,13 @@ class _AssignRowState extends State<_AssignRow> {
           Expanded(
             child: Text(widget.label, style: SatType.bodyM(color: sc.textHi)),
           ),
-          IconButton(
-            tooltip: AppStrings.a11yDecrease,
-            icon: const Icon(Icons.remove_circle_outline, size: 22),
-            onPressed: v > 0 ? () => setState(() => v--) : null,
+          SatStepper(
+            value: v,
+            max: widget.max,
+            semanticLabel: widget.label,
+            onChanged: (n) => setState(() => v = n),
           ),
-          AnimatedSwitcher(
-            duration: satMotion(context, 150),
-            transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
-            child: Text(
-              '$v',
-              key: ValueKey(v),
-              style: SatType.monoM(color: sc.textHi),
-            ),
-          ),
-          IconButton(
-            tooltip: AppStrings.a11yIncrease,
-            icon: const Icon(Icons.add_circle_outline, size: 22),
-            onPressed: v < widget.max ? () => setState(() => v++) : null,
-          ),
-          const SizedBox(width: Sp.s1),
+          const SizedBox(width: Sp.s2),
           SatButton.primary(
             label: AppStrings.save,
             onTap: () => widget.onChanged(v),
@@ -753,14 +809,7 @@ class _ReceiptCard extends ConsumerWidget {
     final lineByTicket = {for (final b in bill.lines) b.ticketId: b};
     final isWholeBill = bill.receipts.length == 1 && bill.fullyAssigned;
     final showItems = r.lines.isNotEmpty && !isWholeBill;
-    return AnimatedContainer(
-      duration: satMotion(context, 280),
-      curve: satEaseOut,
-      decoration: SatBox.d(
-        color: sc.bg1,
-        borderRadius: SatR.a(14),
-        border: SatB.all(color: paid ? sc.success : sc.border0),
-      ),
+    return SatCard.plain(
       padding: const EdgeInsets.all(Sp.s3h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -773,23 +822,12 @@ class _ReceiptCard extends ConsumerWidget {
                   style: SatType.labelM(color: sc.textHi),
                 ),
               ),
-              AnimatedContainer(
-                duration: satMotion(context, 280),
-                curve: satEaseOut,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s2,
-                  vertical: Sp.sHair,
-                ),
-                decoration: SatBox.d(
-                  color: (paid ? sc.success : sc.warn).withValues(alpha: 0.15),
-                  borderRadius: SatR.a(6),
-                ),
-                child: AnimatedDefaultTextStyle(
-                  duration: satMotion(context, 280),
-                  curve: satEaseOut,
-                  style: SatType.labelS(color: paid ? sc.success : sc.warn),
-                  child: Text(paid ? 'Lunas' : 'Belum bayar'),
-                ),
+              // Paid state rides the chip alone — SatCard owns its border, so
+              // there is no card outline to tint (ADR-0064).
+              SatChip.tag(
+                label: paid ? 'Lunas' : 'Belum bayar',
+                hue: paid ? SatChipHue.success : SatChipHue.warn,
+                size: SatChipSize.sm,
               ),
             ],
           ),
@@ -1366,12 +1404,9 @@ class _CloseBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        12 + MediaQuery.of(context).padding.bottom,
-      ),
+      // No bottom safe-area inset: the drawer/sheet container already wraps
+      // this body in a SafeArea (ADR-0064).
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: SatBox.d(
         color: sc.bg1,
         border: Border(top: SatB.side(color: sc.border0)),
@@ -1462,45 +1497,6 @@ class _DetachedBanner extends StatelessWidget {
 }
 
 // ── small shared widgets ──
-
-class _BigBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _BigBtn({required this.icon, required this.label, required this.onTap});
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      pressedScale: 0.96,
-      child: Material(
-        color: sc.bg3,
-        borderRadius: SatR.a(12),
-        child: InkWell(
-          borderRadius: SatR.a(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: Sp.s3h,
-              horizontal: Sp.s1h,
-            ),
-            child: Column(
-              children: [
-                Icon(icon, size: 22, color: sc.textHi),
-                const SizedBox(height: Sp.s1h),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: SatType.labelS(color: sc.textHi),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Accidental-press guard for one-tap money actions (Hapus / Buka ulang): a
 /// simple confirm dialog. Returns true only on explicit confirm.
@@ -1735,23 +1731,10 @@ class _VenueHistoryViewState extends ConsumerState<VenueHistoryView> {
 class _HistoryEmpty extends StatelessWidget {
   const _HistoryEmpty();
   @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history_toggle_off_rounded, size: 44, color: sc.textLo),
-          const SizedBox(height: Sp.s3),
-          Text(
-            'Belum ada tagihan 7 hari terakhir.',
-            textAlign: TextAlign.center,
-            style: SatType.bodyM(color: sc.textLo),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const SatEmpty(
+    icon: Icons.history_toggle_off_rounded,
+    title: 'Belum ada tagihan 7 hari terakhir.',
+  );
 }
 
 /// Horizontal table-filter chips. Hidden when only one table is present
@@ -1844,13 +1827,10 @@ class _DayHeader extends StatelessWidget {
   const _DayHeader(this.label, {required this.first});
 
   @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(4, first ? 4 : 16, 4, 8),
-      child: Text(label.toUpperCase(), style: SatType.labelS(color: sc.textLo)),
-    );
-  }
+  Widget build(BuildContext context) => SatSectionLabel(
+    label,
+    padding: EdgeInsets.fromLTRB(4, first ? Sp.s1 : Sp.s4, 4, Sp.s2),
+  );
 }
 
 /// Square table-label badge leading a venue-wide history row.
@@ -1886,53 +1866,6 @@ class _TakeawayChip extends StatelessWidget {
       decoration: SatBox.d(color: sc.accentSoft, borderRadius: SatR.a(12)),
       alignment: Alignment.center,
       child: Icon(Icons.shopping_bag_rounded, size: 20, color: sc.accentText),
-    );
-  }
-}
-
-/// Past bills for one physical table — last 7 days of closed bills (snapshotted
-/// sessions). Tap one to view its Struk pembayaran detail. See ADR-0024.
-class PastBillsScreen extends ConsumerWidget {
-  final String tableId;
-  final String? tableLabel;
-  const PastBillsScreen({super.key, required this.tableId, this.tableLabel});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final async = ref.watch(pastBillsProvider(tableId));
-    return Scaffold(
-      backgroundColor: sc.bg0,
-      appBar: AppBar(
-        backgroundColor: sc.bg1,
-        title: Text(
-          'Riwayat · Meja ${tableLabel ?? ''}'.trim(),
-          style: SatType.labelL(color: sc.textHi),
-        ),
-      ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text(
-            'Gagal memuat riwayat.',
-            style: SatType.bodyM(color: sc.textLo),
-          ),
-        ),
-        data: (rows) => rows.isEmpty
-            ? Center(
-                child: Text(
-                  'Belum ada tagihan 7 hari terakhir.',
-                  style: SatType.bodyM(color: sc.textLo),
-                ),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                itemCount: rows.length,
-                separatorBuilder: (_, _) => const SizedBox(height: Sp.s2),
-                itemBuilder: (_, i) =>
-                    Reveal(index: i, child: _PastBillTile(rows[i])),
-              ),
-      ),
     );
   }
 }
