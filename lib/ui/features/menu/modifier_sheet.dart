@@ -22,6 +22,7 @@ import 'package:satset/domain/models/ticket_modifier.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 const _uuid = Uuid();
 
@@ -41,10 +42,8 @@ Future<void> showModifierSheet({
 }) {
   final l = context.layout;
   if (l.useTabletShell) {
-    return showDialog(
-      context: context,
-      useRootNavigator: true,
-      barrierColor: satBarrier,
+    return showSatDialog(
+      context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -74,12 +73,9 @@ Future<void> showModifierSheet({
     );
   }
 
-  return showModalBottomSheet(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    barrierColor: satBarrier,
+  return showSatSheet(
+    context,
+    bare: true,
     builder: (_) => DraggableScrollableSheet(
       initialChildSize: 0.9,
       minChildSize: 0.5,
@@ -436,8 +432,10 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
             valid: _valid,
             editing: widget.editing != null,
             totalLabel: formatIDR(_unit * _qty),
-            onDec: () => setState(() => _qty = (_qty - 1).clamp(1, _kMaxPerAdd)),
-            onInc: () => setState(() => _qty = (_qty + 1).clamp(1, _kMaxPerAdd)),
+            onDec: () =>
+                setState(() => _qty = (_qty - 1).clamp(1, _kMaxPerAdd)),
+            onInc: () =>
+                setState(() => _qty = (_qty + 1).clamp(1, _kMaxPerAdd)),
             onAdd: _submit,
           ),
         ],

@@ -24,6 +24,7 @@ import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 const _methodLabels = {
   'tunai': 'Tunai',
@@ -135,8 +136,8 @@ class CashierBillScreen extends ConsumerWidget {
       reason = await _askWriteOffReason(context, bill.outstanding);
       if (reason == null) return; // cancelled
     } else {
-      final ok = await showDialog<bool>(
-        context: context,
+      final ok = await showSatDialog<bool>(
+        context,
         builder: (c) => AlertDialog(
           title: const Text('Tutup tagihan'),
           content: Text(
@@ -173,8 +174,8 @@ class CashierBillScreen extends ConsumerWidget {
 
   Future<String?> _askWriteOffReason(BuildContext context, int outstanding) {
     final ctrl = TextEditingController();
-    return showDialog<String>(
-      context: context,
+    return showSatDialog<String>(
+      context,
       builder: (c) => AlertDialog(
         title: const Text('Tutup tagihan — tak tertagih'),
         content: Column(
@@ -612,11 +613,8 @@ class _LinesSection extends StatelessWidget {
 
   Future<void> _assignSheet(BuildContext context, BillLine line) async {
     final sc = context.sat;
-    await showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: sc.bg1,
-      isScrollControlled: true,
+    await showSatSheet<void>(
+      context,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(ctx).viewInsets.bottom + 12,
@@ -992,11 +990,8 @@ class _ReceiptCard extends ConsumerWidget {
     final tenderedCtl = TextEditingController();
     var method = 'tunai';
     Uint8List? photoBytes; // proof shot for a non-cash payment (ADR-0025)
-    await showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: sc.bg1,
-      isScrollControlled: true,
+    await showSatSheet<void>(
+      context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) {
           int parse(TextEditingController c) =>
@@ -1511,8 +1506,8 @@ Future<bool> _confirm(
   required String confirmLabel,
   bool destructive = false,
 }) async {
-  final ok = await showDialog<bool>(
-    context: context,
+  final ok = await showSatDialog<bool>(
+    context,
     builder: (c) => AlertDialog(
       title: Text(title),
       content: Text(message),
@@ -1533,8 +1528,8 @@ Future<bool> _confirm(
 
 Future<int?> _askInt(BuildContext context, String title, {int initial = 2}) {
   final ctl = TextEditingController(text: '$initial');
-  return showDialog<int>(
-    context: context,
+  return showSatDialog<int>(
+    context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
       content: SatField.number(controller: ctl, hint: '', autofocus: true),

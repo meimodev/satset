@@ -12,6 +12,7 @@ import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 // Canonical reason codes — must match the server taxonomy in
 // reports_routes.dart and the void_reason_code DB column (see ADR-0006).
@@ -44,12 +45,9 @@ void showLineItemActionSheet({
   // the table's displayName from [tableId]. See ADR-0026.
   String? displayName,
 }) {
-  showModalBottomSheet(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    barrierColor: satBarrier,
+  showSatSheet(
+    context,
+    bare: true,
     builder: (_) => DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.4,

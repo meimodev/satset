@@ -28,6 +28,7 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 const _uuid = Uuid();
 
@@ -53,11 +54,9 @@ class PrintJob {
 }
 
 Future<void> _openPicker(BuildContext context, PrintJob job) =>
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+    showSatSheet<void>(
+      context,
+      bare: true,
       builder: (_) => _PrinterPickerSheet(job: job),
     );
 
@@ -679,8 +678,8 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     final portCtl = TextEditingController(text: '9100');
     var scope = 'venue'; // venue | device
 
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showSatDialog<bool>(
+      context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) {
           final sc = ctx.sat;

@@ -11,12 +11,18 @@
 /// Colour, corner radius and elevation come from `bottomSheetTheme` /
 /// `dialogTheme` — never pass them here. Safe area and keyboard (`viewInsets`)
 /// padding stay the body's job, as they always have been.
+///
+/// The barrier is [satBarrier], not `sc.scrim`: that token is an *opaque* base
+/// for translucent surfaces to blend against, so using it here paints the floor
+/// out entirely. The barrier dims, and it dims dark on every palette (neo.css
+/// §9 does the same on both its light and dark skins).
 library;
 
 import 'package:flutter/material.dart';
 
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/motion.dart';
 
 /// Modal bottom sheet. Returns the value the body pops with, `null` on dismiss.
 ///
@@ -32,6 +38,7 @@ Future<T?> showSatSheet<T>(
   bool bare = false,
   bool dismissible = true,
   bool scrollControlled = true,
+  bool dragHandle = false,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -39,6 +46,7 @@ Future<T?> showSatSheet<T>(
     isScrollControlled: scrollControlled,
     isDismissible: dismissible,
     enableDrag: dismissible,
+    showDragHandle: dragHandle,
     barrierColor: satBarrier,
     backgroundColor: bare ? Colors.transparent : null,
     builder: builder,
@@ -63,10 +71,13 @@ Future<T?> showSatDialog<T>(
 
 /// Edge-anchored panel — a sheet that comes in from the side instead of the
 /// bottom, for filter rails and the like on a wide screen.
+///
+/// Slides in from whichever edge [alignment] pins it to, and holds still under
+/// reduced motion.
 Future<T?> showSatDrawer<T>(
   BuildContext context, {
   required WidgetBuilder builder,
-  AlignmentGeometry alignment = Alignment.centerRight,
+  Alignment alignment = Alignment.centerRight,
   bool dismissible = true,
   String? barrierLabel,
 }) {
@@ -76,7 +87,15 @@ Future<T?> showSatDrawer<T>(
     barrierDismissible: dismissible,
     barrierLabel: barrierLabel ?? AppStrings.close,
     barrierColor: satBarrier,
-    transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (ctx, _, _) => Align(alignment: alignment, child: builder(ctx)),
+    transitionDuration: satMotion(context, 220),
+    pageBuilder: (ctx, _, _) =>
+        Align(alignment: alignment, child: builder(ctx)),
+    transitionBuilder: (ctx, anim, _, child) => SlideTransition(
+      position: Tween<Offset>(
+        begin: Offset(alignment.x, alignment.y),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: anim, curve: satEaseOut)),
+      child: child,
+    ),
   );
 }

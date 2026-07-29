@@ -22,6 +22,7 @@ import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 class ZoneAdminScreen extends ConsumerStatefulWidget {
   const ZoneAdminScreen({super.key});
@@ -449,10 +450,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
   }
 
   void _showQr(BuildContext context, VenueTable table) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => _QrDialog(table: table),
-    );
+    showSatDialog<void>(context, builder: (_) => _QrDialog(table: table));
   }
 
   @override
@@ -1335,12 +1333,9 @@ class _SheetShell extends StatelessWidget {
 }
 
 Future<void> _present(BuildContext context, Widget child) {
-  return showModalBottomSheet(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    barrierColor: satBarrier,
+  return showSatSheet(
+    context,
+    bare: true,
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(ctx).viewInsets.bottom,
@@ -1360,13 +1355,8 @@ Widget _sheetHandle(SatColors sc) => Container(
 );
 
 Future<bool?> _confirm(BuildContext context, String title, String message) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: context.sat.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<bool>(
+    context,
     builder: (ctx) {
       final sc = ctx.sat;
       return SafeArea(

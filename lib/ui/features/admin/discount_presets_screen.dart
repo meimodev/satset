@@ -24,6 +24,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 class DiscountPresetsScreen extends ConsumerWidget {
   const DiscountPresetsScreen({super.key});
@@ -129,8 +130,8 @@ class _PresetTile extends StatelessWidget {
           tooltip: AppStrings.delete,
           icon: Icon(Icons.delete_outline, color: sc.urgent),
           onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
+            final ok = await showSatDialog<bool>(
+              context,
               builder: (c) => AlertDialog(
                 title: const Text('Hapus preset'),
                 content: Text(
@@ -177,10 +178,9 @@ Future<void> _edit(
   var active = existing?.active ?? true;
   String? error;
 
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  await showSatSheet<void>(
+    context,
+    dragHandle: true,
     builder: (c) {
       final sc = c.sat;
       return StatefulBuilder(

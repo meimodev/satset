@@ -8,6 +8,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 const int kPinLength = 6;
 
@@ -32,10 +33,9 @@ Future<bool?> showPinSheet(
   PinDebugCreds? debugCreds,
   Widget? statusSlot,
 }) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+  return showSatSheet<bool>(
+    context,
+    bare: true,
     builder: (ctx) => _PinSheet(
       title: title,
       subtitle: subtitle,

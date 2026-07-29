@@ -20,6 +20,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 enum _Tab { people, roles, permissions }
 
@@ -450,12 +451,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   // ── Detail drawer ───────────────────────────────────────────
   void _openDetail(AppUser u) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: satBarrier,
+    showSatSheet<void>(
+      context,
+      bare: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: FractionallySizedBox(
@@ -481,14 +479,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       for (final u in users)
         if (u.avatarColorHex != null) u.avatarColorHex!,
     };
-    final res = await showModalBottomSheet<_NewStaff>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: context.sat.bg1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-      ),
+    final res = await showSatSheet<_NewStaff>(
+      context,
       builder: (_) =>
           _NewStaffDialog(roles: selectable, takenColors: takenColors),
     );
@@ -529,13 +521,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       0xFF7ED6C4,
       0xFFE48BB7,
     ];
-    final picked = await showModalBottomSheet<int>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: context.sat.bg1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-      ),
+    final picked = await showSatSheet<int>(
+      context,
       builder: (ctx) {
         final sc = ctx.sat;
         return SafeArea(
@@ -676,14 +663,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   Future<String?> _prompt(String title, String initial) {
     final ctl = TextEditingController(text: initial);
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: context.sat.bg1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-      ),
+    return showSatSheet<String>(
+      context,
       builder: (ctx) {
         final sc = ctx.sat;
         return Padding(
@@ -752,13 +733,8 @@ Future<bool?> _confirmSheet(
   String confirmLabel = AppStrings.confirm,
   bool danger = false,
 }) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: context.sat.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<bool>(
+    context,
     builder: (ctx) {
       final sc = ctx.sat;
       return SafeArea(

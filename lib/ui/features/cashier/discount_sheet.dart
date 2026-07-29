@@ -25,6 +25,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// What the caller wants to discount: a whole receipt, or one of its lines.
 class DiscountTarget {
@@ -63,8 +64,8 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
   final canApply = ref.read(authStateProvider).has(Capability.applyDiscount);
 
   if (presets.isEmpty) {
-    await showDialog<void>(
-      context: context,
+    await showSatDialog<void>(
+      context,
       builder: (c) => AlertDialog(
         title: const Text('Belum ada preset diskon'),
         content: Text(
@@ -86,11 +87,9 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
   }
 
   DiscountPresetDto? chosen;
-  final picked = await showModalBottomSheet<DiscountPresetDto>(
-    context: context,
-    backgroundColor: sc.bg1,
-    showDragHandle: true,
-    isScrollControlled: true,
+  final picked = await showSatSheet<DiscountPresetDto>(
+    context,
+    dragHandle: true,
     builder: (c) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -167,8 +166,8 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
 Future<String?> _askApproverPin(BuildContext context) async {
   final ctrl = TextEditingController();
   final sc = context.sat;
-  return showDialog<String>(
-    context: context,
+  return showSatDialog<String>(
+    context,
     builder: (c) => AlertDialog(
       title: const Text('Persetujuan manajer'),
       content: Column(

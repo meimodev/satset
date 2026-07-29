@@ -11,6 +11,7 @@ import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Result of the menu-first **Pesanan baru → assign to table** commit step.
 class AssignTableResult {
@@ -32,14 +33,8 @@ class AssignTableResult {
 Future<AssignTableResult?> showAssignTableSheet({
   required BuildContext context,
 }) {
-  return showModalBottomSheet<AssignTableResult>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: context.sat.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<AssignTableResult>(
+    context,
     builder: (_) => const _AssignTableSheet(),
   );
 }

@@ -32,6 +32,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 class SystemScreen extends ConsumerStatefulWidget {
   const SystemScreen({super.key});
@@ -651,8 +652,8 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       );
       return;
     }
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showSatDialog<bool>(
+      context,
       builder: (_) => const _RestartPinDialog(),
     );
     if (ok != true || !mounted) return;
@@ -688,8 +689,8 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
   }
 
   Future<void> _confirmRevoke(DeviceDto d) async {
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showSatDialog<bool>(
+      context,
       builder: (_) => AlertDialog(
         title: const Text('Revoke device?'),
         content: Text('${d.label} akan kehilangan sesi.'),
@@ -712,9 +713,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
 
   Future<void> _discoverPrinters(BuildContext context) async {
     // Non-blocking spinner dialog while discovery runs; popped when done.
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
+    showSatDialog<void>(
+      context,
+      dismissible: false,
       builder: (_) => const AlertDialog(
         content: Row(
           children: [
@@ -740,8 +741,8 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       );
       return;
     }
-    final chosen = await showDialog<DiscoveredPrinter>(
-      context: context,
+    final chosen = await showSatDialog<DiscoveredPrinter>(
+      context,
       builder: (ctx) => AlertDialog(
         title: const Text('Printer ditemukan'),
         content: Column(
@@ -774,8 +775,8 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     final hostCtl = TextEditingController();
     final portCtl = TextEditingController(text: '9100');
     String kind = 'escpos';
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showSatDialog<bool>(
+      context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: const Text('Tambah printer'),
