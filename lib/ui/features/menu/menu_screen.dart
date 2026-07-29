@@ -19,6 +19,7 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'cart_line_actions.dart';
@@ -958,13 +959,8 @@ String _fmtPct(int bps) {
 /// change; doing it here would drag three unrelated screens plus the CATALOG
 /// and /book entries into a cart commit.
 Future<bool?> _confirmDiscard(BuildContext context, int items) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: context.sat.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<bool>(
+    context,
     builder: (ctx) {
       final sc = ctx.sat;
       return SafeArea(
