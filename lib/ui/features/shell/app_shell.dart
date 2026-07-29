@@ -20,6 +20,73 @@ import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
+/// First path segment of [loc], e.g. `/menuadm` for `/menuadm/42`. Shell routes
+/// are matched on this rather than on `startsWith`, so a destination can never
+/// be swallowed by a shorter sibling — `/menuadm` used to answer to `/me`.
+String _firstSegment(String loc) {
+  final parts = loc.split('/');
+  return parts.length > 1 ? '/${parts[1]}' : '/';
+}
+
+/// Shell routes that are a rail destination in their own right. Everything not
+/// listed belongs to the Venue hub — the default points at `venue`, not
+/// `tables`. See ADR-0058: the hub grows children (Stok, Peringatan, …) far more
+/// often than the app grows top-level destinations, and an unlisted hub child
+/// used to light up Meja. A *new top-level destination* must be added here or it
+/// will read as Venue.
+const _railRoutes = <String, String>{
+  '/tables': 'tables',
+  '/orders': 'orders',
+  '/guestorders': 'guest',
+  '/kitchen': 'kitchen',
+  '/kasir': 'kasir',
+  '/me': 'me',
+};
+
+/// Venue hub children → their crumb trail's tail segment. One map feeds both the
+/// rail (anything absent is `venue`) and the crumb, so the two can no longer
+/// drift apart the way two parallel switches did. A hub path with no entry gets
+/// the bare `[Venue]` trail rather than borrowing another screen's label.
+const venueHubCrumbs = <String, String>{
+  '/venue-settings': AppStrings.crumbKonfigurasi,
+  '/alerts': AppStrings.alertsTitle,
+  '/zone-admin': AppStrings.zoneAdminTitle,
+  '/menuadm': AppStrings.crumbMenuAdmin,
+  '/stock': AppStrings.venueHubSectionStock,
+  '/reports': AppStrings.crumbLaporanShift,
+  '/system': AppStrings.venueHubSectionSystem,
+  '/staff': AppStrings.crumbStafAkun,
+};
+
+/// Which rail item owns [loc].
+String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)] ?? 'venue';
+
+/// The crumb trail for [loc], given the rail item [activeTabFor] resolved it to.
+List<String> crumbsFor(
+  String loc,
+  String activeTab,
+  String zoneName,
+  String venueName,
+) {
+  switch (activeTab) {
+    case 'orders':
+      return [AppStrings.crumbTeras, AppStrings.crumbPesananSaya];
+    case 'guest':
+      return [AppStrings.crumbTeras, AppStrings.crumbPesananMandiri];
+    case 'me':
+      return ['Maya Anjani', AppStrings.crumbRingkasanShift];
+    case 'kitchen':
+      return ['Stasiun', AppStrings.crumbAntrianPersiapan];
+    case 'kasir':
+      return [AppStrings.tabKasir];
+    case 'venue':
+      return [AppStrings.venueHubTitle, ?venueHubCrumbs[_firstSegment(loc)]];
+    default:
+      final venue = venueName.isEmpty ? AppStrings.venueHubTitle : venueName;
+      return [venue, zoneName];
+  }
+}
+
 class AppShell extends ConsumerWidget {
   final Widget child;
   const AppShell({super.key, required this.child});
@@ -32,7 +99,7 @@ class AppShell extends ConsumerWidget {
     final loc = GoRouterState.of(context).uri.path;
     final l = context.layout;
 
-    final activeTab = _activeFor(loc);
+    final activeTab = activeTabFor(loc);
     final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
     // Mandiri is a destination only when the venue master switch is on — see
     // CONTEXT.md "Guest ordering switches". The per-table opt-in deliberately
@@ -40,9 +107,7 @@ class AppShell extends ConsumerWidget {
     // nothing about the other tables still ordering.
     final showGuest =
         ref.watch(authStateProvider).has(Capability.takeOrder) &&
-        ref.watch(
-          venueSettingsProvider.select((s) => s.guestOrderingEnabled),
-        );
+        ref.watch(venueSettingsProvider.select((s) => s.guestOrderingEnabled));
     final guestCount = ref.watch(guestOrdersProvider).length;
     final zones = ref.watch(zonesProvider);
     final zoneName = zones.isEmpty ? '—' : zones.first.name;
@@ -59,7 +124,7 @@ class AppShell extends ConsumerWidget {
           showKasir: showKasir,
           showGuest: showGuest,
           guestCount: guestCount,
-          crumbs: _crumbsFor(loc, activeTab, zoneName, venueName),
+          crumbs: crumbsFor(loc, activeTab, zoneName, venueName),
           child: Column(
             children: [
               const AdminGraceBanner(),
@@ -100,59 +165,6 @@ class AppShell extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _activeFor(String loc) {
-    if (loc.startsWith('/guestorders')) return 'guest';
-    if (loc.startsWith('/orders')) return 'orders';
-    if (loc.startsWith('/kitchen')) return 'kitchen';
-    if (loc.startsWith('/venue')) return 'venue';
-    if (loc.startsWith('/zone-admin')) return 'venue';
-    if (loc.startsWith('/menuadm')) return 'venue';
-    if (loc.startsWith('/system')) return 'venue';
-    if (loc.startsWith('/staff')) return 'venue';
-    if (loc.startsWith('/reports')) return 'venue';
-    if (loc.startsWith('/kasir')) return 'kasir';
-    if (loc.startsWith('/me')) return 'me';
-    return 'tables';
-  }
-
-  List<String> _crumbsFor(
-    String loc,
-    String activeTab,
-    String zoneName,
-    String venueName,
-  ) {
-    final venue = venueName.isEmpty ? AppStrings.venueHubTitle : venueName;
-    switch (activeTab) {
-      case 'orders':
-        return [AppStrings.crumbTeras, AppStrings.crumbPesananSaya];
-      case 'guest':
-        return [AppStrings.crumbTeras, AppStrings.crumbPesananMandiri];
-      case 'me':
-        return ['Maya Anjani', AppStrings.crumbRingkasanShift];
-      case 'kitchen':
-        return ['Stasiun', AppStrings.crumbAntrianPersiapan];
-      case 'venue':
-        if (loc.startsWith('/zone-admin')) {
-          return [AppStrings.venueHubTitle, AppStrings.zoneAdminTitle];
-        }
-        if (loc.startsWith('/menuadm')) {
-          return [AppStrings.venueHubTitle, AppStrings.crumbMenuAdmin];
-        }
-        if (loc.startsWith('/system')) {
-          return [AppStrings.venueHubTitle, AppStrings.venueHubSectionSystem];
-        }
-        if (loc.startsWith('/staff')) {
-          return [AppStrings.venueHubTitle, AppStrings.crumbStafAkun];
-        }
-        if (loc.startsWith('/reports')) {
-          return [AppStrings.venueHubTitle, AppStrings.crumbLaporanShift];
-        }
-        return [AppStrings.venueHubTitle, AppStrings.crumbKonfigurasi];
-      default:
-        return [venue, zoneName];
-    }
   }
 }
 
