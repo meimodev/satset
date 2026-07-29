@@ -148,6 +148,12 @@ class _TableCardState extends ConsumerState<TableCard> {
       statusColor = brutal ? sc.textHi : sc.violet;
     }
 
+    // Soft tokens are translucent tints, and a crit card paints a solid `urgent`
+    // slab behind itself (see `_cardShadow`) — left translucent the ring bleeds
+    // through the fill and the whole card reads red instead of tinted. Flatten
+    // the tint onto the card surface so the ring stays a ring.
+    bg = Color.alphaBlend(bg, sc.bg2);
+
     final currentUserId = ref.watch(authStateProvider).user?.id;
     final staff = ref.watch(staffRepositoryProvider);
     final actor = table.lastActorId == null
