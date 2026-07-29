@@ -599,10 +599,15 @@ class _LinesSection extends StatelessWidget {
             ),
         ],
       ),
+      // ponytail: SatButton centers its content, so it eats every pixel of a
+      // loose constraint — ListTile hands trailing the full tile width.
       trailing: assignable
-          ? SatButton.ghost(
-              label: assigned >= l.qty ? 'Ubah' : 'Atur',
-              onTap: () => _assignSheet(context, l),
+          ? SizedBox(
+              width: 84,
+              child: SatButton.ghost(
+                label: assigned >= l.qty ? 'Ubah' : 'Atur',
+                onTap: () => _assignSheet(context, l),
+              ),
             )
           : Text(
               formatIDR(l.lineTotal),
