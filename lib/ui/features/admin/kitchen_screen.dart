@@ -17,36 +17,11 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
+import 'package:satset/ui/features/admin/kitchen/kitchen_order.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
-
-/// One kitchen order card: the kitchen-station tickets a table sent together.
-class _KOrder {
-  final String tableId;
-  final String sentAt;
-  // Full-precision fire time of the earliest ticket in the group — drives the
-  // live age counter. `sentAt` (HH:mm) stays the grouping key. See ADR-0008.
-  final DateTime sentAtTime;
-  final List<Ticket> tickets;
-  const _KOrder(this.tableId, this.sentAt, this.sentAtTime, this.tickets);
-
-  int get total => tickets.length;
-  int get done => tickets.where((t) => _isDone(t.status)).length;
-
-  /// The distinct courses in this group, in station order. Usually one — the
-  /// source's ticket *is* a course — but the app groups by send, and a waiter
-  /// who fires drinks and mains together makes one card carry both. Naming them
-  /// is information the cook does not get today.
-  List<Course> get courses {
-    final seen = tickets.map((t) => t.course).toSet();
-    return [
-      for (final c in Courses.all)
-        if (seen.contains(c.id)) c,
-    ];
-  }
-}
 
 // `ready` stays in the active set so a just-cooked item (now servable)
 // remains struck-through on the card instead of vanishing one-by-one. A
@@ -63,14 +38,21 @@ const _kitchenInProgress = {
 // the table they're done with the kitchen.
 const _kitchenCompleted = {TicketStatus.ready, TicketStatus.served};
 
-List<_KOrder> _buildOrders(
+/// [fallbackFreeze] is the screen's memory of when a stamp-less complete batch
+/// was first seen finished — read here, and written back for any batch that
+/// needs one. Entries for batches that have left the queue are pruned so the
+/// map cannot grow over a service.
+List<KitchenOrder> _buildOrders(
   Map<String, List<Ticket>> byTable, {
   required bool showCompleted,
+  required DateTime now,
+  required Map<String, DateTime> fallbackFreeze,
 }) {
   final visible = showCompleted
       ? {..._kitchenInProgress, ..._kitchenCompleted}
       : _kitchenInProgress;
-  final out = <_KOrder>[];
+  final out = <KitchenOrder>[];
+  final seen = <String>{};
   byTable.forEach((tableId, list) {
     final groups = <String, List<Ticket>>{};
     for (final t in list) {
@@ -84,20 +66,36 @@ List<_KOrder> _buildOrders(
         final bc = _isDone(b.status) ? 1 : 0;
         return ac.compareTo(bc);
       });
-      final earliest = tickets
-          .map((t) => t.sentAtTime)
-          .reduce((a, b) => a.isBefore(b) ? a : b);
       // `byTable` is keyed by visitId (ADR-0034); use the ticket's real
       // tableId so the card resolves a table name, not the raw visit id.
       // Falls back to the key for takeaway (no table).
       final resolvedId = tickets.first.tableId.isNotEmpty
           ? tickets.first.tableId
           : tableId;
-      final order = _KOrder(resolvedId, sentAt, earliest, tickets);
-      if (!showCompleted && order.done == order.total) return;
+      final key = '$resolvedId|$sentAt';
+      var order = KitchenOrder.resolve(
+        tableId: resolvedId,
+        sentAt: sentAt,
+        tickets: tickets,
+        now: now,
+        fallbackFreeze: fallbackFreeze[key],
+      );
+      if (order.needsFallbackFreeze && !fallbackFreeze.containsKey(key)) {
+        fallbackFreeze[key] = now;
+        order = KitchenOrder.resolve(
+          tableId: resolvedId,
+          sentAt: sentAt,
+          tickets: tickets,
+          now: now,
+          fallbackFreeze: now,
+        );
+      }
+      seen.add(key);
+      if (!showCompleted && order.complete) return;
       out.add(order);
     });
   });
+  fallbackFreeze.removeWhere((k, _) => !seen.contains(k));
   // Oldest fire first — most urgent at the top of the queue. Sorted on the
   // full timestamp, not the HH:mm grouping key: a service running past midnight
   // would otherwise sort 00:15 ahead of 23:50 and bury the oldest ticket.
@@ -105,33 +103,20 @@ List<_KOrder> _buildOrders(
   return out;
 }
 
-bool _isDone(TicketStatus s) =>
-    s == TicketStatus.cooked ||
-    s == TicketStatus.ready ||
-    s == TicketStatus.served;
-
-Duration _age(DateTime sentAtTime) {
-  final d = SatClock.now().difference(sentAtTime);
-  return d.isNegative ? Duration.zero : d;
-}
-
-/// When a ticket counts as late. One constant so the header's TELAT tally, the
-/// card border, the age pill's colour and its pulse cannot drift apart and tell
-/// the line two different stories.
-const int kKitchenLateMins = 10;
-
-/// The tier below late. The source derives it as `0.7 ×` the late threshold —
-/// far enough out that a cook can still save the ticket, close enough that the
-/// warning means something.
-const int _kKitchenWarnMins = 7;
+bool _isDone(TicketStatus s) => kitchenLineDone(s);
 
 /// The timer's ink. Neutral until the ticket is worth worrying about: a ticket
 /// two minutes old is not news, and spending a colour on the good case is how
 /// `urgent` stops being read. Glow paints the calm case lime instead, because
 /// the head it sits in is an obsidian slab and `textMd` there is a mutter.
-Color _ageColor(SatColors sc, int min) {
+///
+/// A frozen clock is `success` regardless of the number it stopped on — the
+/// card already reads "Semua siap" in the same green, and a red 25:00 on a
+/// finished batch contradicts the missing Telat chip beside it.
+Color _ageColor(SatColors sc, int min, {required bool complete}) {
+  if (complete) return sc.success;
   if (min >= kKitchenLateMins) return sc.urgent;
-  if (min >= _kKitchenWarnMins) return sc.warn;
+  if (min >= kKitchenWarnMins) return sc.warn;
   return SatShape.glow ? sc.accent : sc.textMd;
 }
 
@@ -203,6 +188,9 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
   // Drives the live age counters (and their color/pulse thresholds) so cards
   // tick between ticket events, matching the other elapsed counters.
   Timer? _tick;
+  // When a complete batch with no `readyAt` stamps was first seen finished.
+  // Screen-lifetime only — see KitchenOrder.resolve.
+  final Map<String, DateTime> _fallbackFreeze = {};
 
   @override
   void initState() {
@@ -224,14 +212,15 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
     final orders = _buildOrders(
       ref.watch(ticketsProvider),
       showCompleted: _showCompleted,
+      now: SatClock.now(),
+      fallbackFreeze: _fallbackFreeze,
     );
     final itemCount = orders.fold<int>(0, (n, o) => n + o.total);
     // Each card already turns urgent on its own, but a cook working the top of
     // a scrolled queue cannot see how many are red below the fold. The tally is
-    // the one number that says whether the line is behind.
-    final lateCount = orders
-        .where((o) => _age(o.sentAtTime).inMinutes >= kKitchenLateMins)
-        .length;
+    // the one number that says whether the line is behind — so a finished batch
+    // is not in it, however long it took.
+    final lateCount = orders.where((o) => o.late).length;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
 
     // All status changes round-trip through the server via the KDS
@@ -380,17 +369,16 @@ class _CompletedFilter extends StatelessWidget {
 }
 
 class _OrderCard extends ConsumerWidget {
-  final _KOrder order;
+  final KitchenOrder order;
   final void Function(String tableId, String ticketId) onToggle;
   const _OrderCard({required this.order, required this.onToggle});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final ageDur = _age(order.sentAtTime);
-    final age = ageDur.inMinutes;
-    final late = age >= kKitchenLateMins;
-    final warn = !late && age >= _kKitchenWarnMins;
+    final ageDur = order.age;
+    final late = order.late;
+    final warn = order.warn;
     final progress = order.total == 0 ? 0.0 : order.done / order.total;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final tables = ref.watch(tablesProvider);
@@ -443,6 +431,7 @@ class _OrderCard extends ConsumerWidget {
             age: ageDur,
             sentAt: order.sentAt,
             late: late,
+            complete: order.complete,
             done: order.done,
             total: order.total,
           ),
@@ -470,7 +459,6 @@ class _OrderCard extends ConsumerWidget {
                 for (var i = 0; i < order.tickets.length; i++)
                   _KdsItemRow(
                     ticket: order.tickets[i],
-                    last: i == order.tickets.length - 1,
                     onTap: () => onToggle(order.tableId, order.tickets[i].id),
                   ),
               ],
@@ -512,6 +500,7 @@ class _CardHead extends StatelessWidget {
   final Duration age;
   final String sentAt;
   final bool late;
+  final bool complete;
   final int done;
   final int total;
   const _CardHead({
@@ -520,6 +509,7 @@ class _CardHead extends StatelessWidget {
     required this.age,
     required this.sentAt,
     required this.late,
+    required this.complete,
     required this.done,
     required this.total,
   });
@@ -546,15 +536,15 @@ class _CardHead extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(table, style: SatType.h3(color: sc.textHi)),
-                // Flat accent, never the per-course hue: the course colours are
-                // tuned as ink on the page and five of them stacked on obsidian
-                // is a paint chart, not a signal.
+                // A caption, not a chip. The course never changes and never
+                // acts, so a filled accent capsule was spending a signal colour
+                // and a container's worth of affordance on a static label —
+                // and the per-course hues are worse still, five of them stacked
+                // on obsidian being a paint chart rather than a signal.
                 for (final c in courses)
-                  SatChip.tag(
-                    label: c.name,
-                    size: SatChipSize.sm,
-                    hue: SatChipHue.accent,
-                    filled: true,
+                  Text(
+                    SatShape.caps(c.name),
+                    style: SatType.caption(color: sc.textMd),
                   ),
                 if (late)
                   SatChip.tag(
@@ -567,7 +557,14 @@ class _CardHead extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Sp.s2),
-          _Timer(age: age, sentAt: sentAt, sc: sc, done: done, total: total),
+          _Timer(
+            age: age,
+            sentAt: sentAt,
+            sc: sc,
+            complete: complete,
+            done: done,
+            total: total,
+          ),
         ],
       ),
     );
@@ -581,12 +578,14 @@ class _Timer extends StatefulWidget {
   final Duration age;
   final String sentAt;
   final SatColors sc;
+  final bool complete;
   final int done;
   final int total;
   const _Timer({
     required this.age,
     required this.sentAt,
     required this.sc,
+    required this.complete,
     required this.done,
     required this.total,
   });
@@ -601,7 +600,8 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
     duration: const Duration(milliseconds: 1400),
   );
 
-  bool get _late => widget.age.inMinutes >= kKitchenLateMins;
+  bool get _late =>
+      !widget.complete && widget.age.inMinutes >= kKitchenLateMins;
 
   @override
   void didChangeDependencies() {
@@ -637,7 +637,11 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final sc = widget.sc;
-    final color = _ageColor(sc, widget.age.inMinutes);
+    final color = _ageColor(
+      sc,
+      widget.age.inMinutes,
+      complete: widget.complete,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
@@ -670,13 +674,8 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
 /// cook's eye to the most urgent ticket. Static (no repaint) otherwise.
 class _KdsItemRow extends StatefulWidget {
   final Ticket ticket;
-  final bool last;
   final VoidCallback onTap;
-  const _KdsItemRow({
-    required this.ticket,
-    required this.last,
-    required this.onTap,
-  });
+  const _KdsItemRow({required this.ticket, required this.onTap});
 
   @override
   State<_KdsItemRow> createState() => _ItemRowState();
@@ -749,11 +748,14 @@ class _ItemRowState extends State<_KdsItemRow>
         onTap: cooked ? null : _hint,
         onLongPress: cooked ? null : _commit,
         child: Container(
+          // No rule between rows: the 3px spine, the strike-through and the
+          // dimming already separate one item from the next, and on a card of
+          // five items the hairlines cost height the KDS would rather spend on
+          // the dish names. `minHeight` holds at 40 — the row commits on
+          // long-press and this is a hot line, so the target does not shrink;
+          // the padding is what inflated the multi-line rows anyway.
           constraints: const BoxConstraints(minHeight: 40),
-          padding: const EdgeInsets.fromLTRB(14, Sp.s2h, 12, Sp.s2h),
-          decoration: SatBox.d(
-            border: Border(top: SatB.side(color: sc.border0)),
-          ),
+          padding: const EdgeInsets.fromLTRB(14, Sp.s2, 12, Sp.s2),
           // Stack, not IntrinsicHeight: the bar has to run whatever height the
           // row turned out to be, and an intrinsic pass would ask the modifier
           // Wrap below for a height it answers badly.
