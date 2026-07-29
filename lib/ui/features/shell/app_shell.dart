@@ -34,7 +34,15 @@ class AppShell extends ConsumerWidget {
 
     final activeTab = _activeFor(loc);
     final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
-    final showGuest = ref.watch(authStateProvider).has(Capability.takeOrder);
+    // Mandiri is a destination only when the venue master switch is on — see
+    // CONTEXT.md "Guest ordering switches". The per-table opt-in deliberately
+    // does not enter into it: one table falling back to waiter service says
+    // nothing about the other tables still ordering.
+    final showGuest =
+        ref.watch(authStateProvider).has(Capability.takeOrder) &&
+        ref.watch(
+          venueSettingsProvider.select((s) => s.guestOrderingEnabled),
+        );
     final guestCount = ref.watch(guestOrdersProvider).length;
     final zones = ref.watch(zonesProvider);
     final zoneName = zones.isEmpty ? '—' : zones.first.name;

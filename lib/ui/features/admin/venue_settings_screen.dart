@@ -12,7 +12,9 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/repositories/guest_orders_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -1272,7 +1274,17 @@ class _GuestOrderingCard extends ConsumerWidget {
               SatToggle(
                 value: s.guestOrderingEnabled,
                 semanticLabel: 'Pesan mandiri',
-                onChanged: (v) => n.patch(guestOrderingEnabled: v),
+                onChanged: (v) {
+                  // Switching off hides the Mandiri tab venue-wide, so a
+                  // pending guest order would be left with no staff surface.
+                  // Block it and hand over the queue instead of stranding it.
+                  final pending = ref.read(guestOrdersProvider).length;
+                  if (!v && pending > 0) {
+                    _guestQueueBlock(context, pending);
+                    return;
+                  }
+                  n.patch(guestOrderingEnabled: v);
+                },
               ),
             ],
           ),
@@ -1366,6 +1378,74 @@ class _GuestOrderingCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// "Antrian mandiri belum kosong" — why the master switch would not turn off,
+/// plus the way to the queue that is blocking it. Not a confirm: there is no
+/// destructive path to take, so it offers a door, not a "do it anyway".
+///
+/// ponytail: yet another private copy of the sheet shape (menu_screen,
+/// staff_screen, zone_admin_screen, cashier_bill_screen hold the others). A
+/// shared `showSatConfirm` is still the right fix and still its own change.
+Future<void> _guestQueueBlock(BuildContext context, int pending) {
+  return showSatSheet<void>(
+    context,
+    builder: (ctx) {
+      final sc = ctx.sat;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s3, Sp.s5, Sp.s5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: SatBox.d(
+                    color: sc.border1,
+                    borderRadius: SatR.a(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: Sp.s4h),
+              Text(
+                AppStrings.guestOrderingBlockTitle,
+                style: SatType.labelL(color: sc.textHi),
+              ),
+              const SizedBox(height: Sp.s2),
+              Text(
+                AppStrings.guestOrderingBlockBody(pending),
+                style: SatType.bodyM(color: sc.textMd),
+              ),
+              const SizedBox(height: Sp.s4h),
+              Row(
+                children: [
+                  Expanded(
+                    child: SatButton.outline(
+                      label: AppStrings.cancel,
+                      onTap: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: Sp.s2h),
+                  Expanded(
+                    child: SatButton.primary(
+                      label: AppStrings.guestOrderingBlockAction,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        ctx.go('/guestorders');
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _ReportsHourCard extends ConsumerWidget {

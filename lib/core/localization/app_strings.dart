@@ -114,6 +114,15 @@ class AppStrings {
 
   static const String venueSettingsSectionTax = 'Pajak & layanan';
   static const String venueSettingsSectionGuestOrdering = 'Pesanan mandiri';
+
+  // Turning the venue master switch off is blocked while the review queue
+  // still holds pending guest orders — switching off hides the Mandiri tab
+  // venue-wide, which would leave those orders with no staff surface.
+  static const String guestOrderingBlockTitle = 'Antrian mandiri belum kosong';
+  static String guestOrderingBlockBody(int n) =>
+      '$n pesanan mandiri masih menunggu ditinjau. Setujui atau tolak dulu '
+      'sebelum mematikan pesanan mandiri.';
+  static const String guestOrderingBlockAction = 'Lihat antrian';
   static const String venueSettingsSectionReports = 'Laporan & shift';
   static const String venueSettingsSectionSound = 'Suara';
   static const String venueSettingsSectionSoundTag = 'Nada notifikasi';
