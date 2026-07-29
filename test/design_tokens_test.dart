@@ -240,6 +240,35 @@ void main() {
     );
   });
 
+  // Scans all of lib/, not just lib/ui/ — a route pushed from a router
+  // redirect or a service would land under the shell just the same.
+  test('no raw overlay outside sat_overlay.dart', () {
+    final hits = <String>[];
+    for (final file in _allLibDart()) {
+      if (file.path.endsWith('/core/widgets/sat_overlay.dart')) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'\b(showModalBottomSheet|showDialog|showGeneralDialog)\s*[(<]',
+      ).allMatches(src)) {
+        hits.add('${file.path}:${_lineOf(src, m.start)} ${m.group(1)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use showSatSheet / showSatDialog / showSatDrawer — '
+          'core/widgets/sat_overlay.dart (ADR-0061). All three of these '
+          'default to useRootNavigator: false, which puts the overlay on the '
+          "shell navigator — and AppShell paints that under the phone's "
+          'floating tab bar, so the sheet renders behind the bar and the bar '
+          'keeps taking taps through the barrier. That is the bug this ban '
+          'exists to make unwritable. If the helper cannot express what you '
+          'need, give the helper the parameter.\n'
+          '${hits.join('\n')}',
+    );
+  });
+
   // Accessibility rules need the whole constructor call, not one line: the
   // `tooltip:` that names a button sits several lines below `IconButton(`.
   // Balanced-paren scan instead of a line regex.
@@ -556,6 +585,19 @@ List<File> _scanTargets() {
       .where((f) => f.path.endsWith('.dart'))
       .where((f) => !f.path.contains('/core/design/'))
       .where((f) => !_exempt.any(f.path.endsWith))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+}
+
+/// Every `.dart` file under `lib/`, generated output included — a `.g.dart`
+/// has no business pushing a route either.
+List<File> _allLibDart() {
+  final root = Directory('lib');
+  if (!root.existsSync()) return const [];
+  return root
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'))
       .toList()
     ..sort((a, b) => a.path.compareTo(b.path));
 }
