@@ -653,10 +653,7 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
             style: SatType.monoL(color: color),
           ),
         ),
-        Text(
-          'masuk ${widget.sentAt}',
-          style: SatType.monoS(color: sc.textMd),
-        ),
+        Text('masuk ${widget.sentAt}', style: SatType.monoS(color: sc.textMd)),
       ],
     );
   }
@@ -750,101 +747,121 @@ class _ItemRowState extends State<_KdsItemRow>
           decoration: SatBox.d(
             border: Border(top: SatB.side(color: sc.border0)),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Stack, not IntrinsicHeight: the bar has to run whatever height the
+          // row turned out to be, and an intrinsic pass would ask the modifier
+          // Wrap below for a height it answers badly.
+          child: Stack(
             children: [
               // The bar is the row's state at the coarsest possible resolution
               // — accent while it is work, `success` once it is not — readable
-              // from further away than the tick, the strike or the text.
-              Container(
-                width: 3,
-                constraints: const BoxConstraints(minHeight: 40),
-                margin: const EdgeInsets.only(right: Sp.s3),
-                decoration: SatBox.d(
-                  color: cooked ? sc.success : sc.accent,
-                  borderRadius: SatR.a(2),
+              // from further away than the tick, the strike or the text. It
+              // spans the full content box, so a dish that wraps onto three
+              // lines of options and notes still reads as one item rather than
+              // as an item followed by loose text.
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 3,
+                  decoration: SatBox.d(
+                    color: cooked ? sc.success : sc.accent,
+                    borderRadius: SatR.a(2),
+                  ),
                 ),
               ),
-              _Tick(cooked: cooked),
-              const SizedBox(width: Sp.s2h),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AnimatedOpacity(
-                      duration: satMotion(context, 160),
-                      opacity: cooked ? 0.55 : 1,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '×${ticket.qty}  ',
-                              style: SatType.monoM(color: sc.textMd),
-                            ),
-                            TextSpan(
-                              text:
-                                  ticket.name +
-                                  (ticket.variantName.isEmpty
-                                      ? ''
-                                      : ' · ${ticket.variantName}'),
-                              style: SatType.labelL(color: sc.textHi),
-                            ),
-                          ],
-                        ),
-                        style: TextStyle(
-                          decoration: cooked
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                      ),
-                      // Chosen options and paid add-ons are two different jobs
-                      // for the cook: one changes how the dish is made, the
-                      // other adds something extra to the plate. Run together
-                      // in one grey line they were the same sentence, and the
-                      // extra is the one that gets forgotten.
-                      if (ticket.modifiers.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Sp.s1),
-                          child: Wrap(
-                            spacing: Sp.s1h,
-                            runSpacing: Sp.s1,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Gutter the bar sits in. The row's own minHeight floors the
+                  // content box at 40, so the bar keeps its old short-row
+                  // length without asking for it.
+                  const SizedBox(width: 3 + Sp.s3),
+                  _Tick(cooked: cooked),
+                  const SizedBox(width: Sp.s2h),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AnimatedOpacity(
+                          duration: satMotion(context, 160),
+                          opacity: cooked ? 0.55 : 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // `display` already prefixes the sign, so the
-                              // chip only picks a tone. The add-on takes a
-                              // solid accent as the source does — a tint of it
-                              // sat at the same volume as the option beside it.
-                              for (final m in ticket.modifiers)
-                                SatChip.tag(
-                                  label: m.display,
-                                  size: SatChipSize.sm,
-                                  hue: m.priceDelta > 0
-                                      ? SatChipHue.accent
-                                      : SatChipHue.neutral,
-                                  filled: m.priceDelta > 0,
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '×${ticket.qty}  ',
+                                      style: SatType.monoM(color: sc.textMd),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          ticket.name +
+                                          (ticket.variantName.isEmpty
+                                              ? ''
+                                              : ' · ${ticket.variantName}'),
+                                      style: SatType.labelL(color: sc.textHi),
+                                    ),
+                                  ],
+                                ),
+                                style: TextStyle(
+                                  decoration: cooked
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                              ),
+                              // Chosen options and paid add-ons are two
+                              // different jobs for the cook: one changes how
+                              // the dish is made, the other adds something
+                              // extra to the plate. Run together in one grey
+                              // line they were the same sentence, and the
+                              // extra is the one that gets forgotten.
+                              if (ticket.modifiers.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: Sp.s1),
+                                  child: Wrap(
+                                    spacing: Sp.s1h,
+                                    runSpacing: Sp.s1,
+                                    children: [
+                                      // `display` already prefixes the sign, so
+                                      // the chip only picks a tone. The add-on
+                                      // takes a solid accent as the source does
+                                      // — a tint of it sat at the same volume
+                                      // as the option beside it.
+                                      for (final m in ticket.modifiers)
+                                        SatChip.tag(
+                                          label: m.display,
+                                          size: SatChipSize.sm,
+                                          hue: m.priceDelta > 0
+                                              ? SatChipHue.accent
+                                              : SatChipHue.neutral,
+                                          filled: m.priceDelta > 0,
+                                        ),
+                                    ],
+                                  ),
                                 ),
                             ],
                           ),
                         ),
+                        // Never dimmed with the rest. "Tanpa telur" is the
+                        // reason the plate goes out or into the bin, and it
+                        // stays true after the cook has ticked the item off.
+                        if (ticket.note != null &&
+                            ticket.note!.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: Sp.s1h),
+                            child: NoteLine(
+                              label: 'Instruksi khusus',
+                              text: ticket.note!,
+                              alert: true,
+                            ),
+                          ),
                       ],
-                      ),
                     ),
-                    // Never dimmed with the rest. "Tanpa telur" is the reason
-                    // the plate goes out or into the bin, and it stays true
-                    // after the cook has ticked the item off.
-                    if (ticket.note != null && ticket.note!.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: Sp.s1h),
-                        child: NoteLine(
-                          label: 'Instruksi khusus',
-                          text: ticket.note!,
-                          alert: true,
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
