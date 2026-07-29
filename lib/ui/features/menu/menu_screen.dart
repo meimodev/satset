@@ -62,8 +62,40 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       ? '/order/new/review'
       : '/table/${widget.tableId}/review';
 
+  /// Leave the order flow, discarding whatever is in the cart.
+  ///
+  /// An unsent cart is invisible once you are off this screen — only the menu
+  /// and review screens render it — so backing out strands items nobody can
+  /// see or send. Leaving *is* the discard; confirm it when there is something
+  /// to lose and pop straight through when there is not. See ADR-0061.
+  Future<void> _handleBack() async {
+    final cart = ref.read(cartProvider(widget.tableId));
+    if (cart.isNotEmpty) {
+      final ok = await _confirmDiscard(
+        context,
+        cart.fold<int>(0, (s, c) => s + c.qty),
+      );
+      if (ok != true) return;
+      ref.read(cartProvider(widget.tableId).notifier).clear();
+    }
+    if (mounted) safePop(context, fallback: _backFallback);
+  }
+
   @override
   Widget build(BuildContext context) {
+    // canPop: false so the Android gesture / nav-bar back lands in the same
+    // handler as the app-bar button — a waiter on gesture nav would otherwise
+    // skip the guard entirely, which is the path that loses carts today.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _handleBack();
+      },
+      child: _buildScreen(context),
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
     final sc = context.sat;
     final l = context.layout;
     final cols = l.gridCount(minTileWidth: 170);
@@ -159,8 +191,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           button: true,
                           label: AppStrings.back,
                           child: GestureDetector(
-                            onTap: () =>
-                                safePop(context, fallback: _backFallback),
+                            onTap: _handleBack,
                             child: Container(
                               width: 36,
                               height: 36,
@@ -284,7 +315,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           Column(
             children: [
               SatAppBar(
-                onBack: () => safePop(context, fallback: _backFallback),
+                onBack: _handleBack,
                 crumbs: widget.tableless
                     ? (_isTakeaway
                           ? const ['Bawa pulang', 'Tambah item']
@@ -916,4 +947,75 @@ class _TabletCartPane extends ConsumerWidget {
 String _fmtPct(int bps) {
   final v = bps / 100.0;
   return '${v.toStringAsFixed(v == v.roundToDouble() ? 0 : 2)}%';
+}
+
+/// "Batalkan pesanan ini?" — asked on the way out of the menu with [items] in
+/// the cart. Returns true to discard. See ADR-0061.
+///
+/// ponytail: a fourth private copy of the confirm-sheet shape (staff_screen,
+/// zone_admin_screen, cashier_bill_screen hold the others). Promoting one
+/// `showSatConfirm` into core/widgets is the right fix and is worth its own
+/// change; doing it here would drag three unrelated screens plus the CATALOG
+/// and /book entries into a cart commit.
+Future<bool?> _confirmDiscard(BuildContext context, int items) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    useRootNavigator: true,
+    backgroundColor: context.sat.bg1,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
+    ),
+    builder: (ctx) {
+      final sc = ctx.sat;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s3, Sp.s5, Sp.s5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: SatBox.d(
+                    color: sc.border1,
+                    borderRadius: SatR.a(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: Sp.s4h),
+              Text(
+                AppStrings.discardCartTitle,
+                style: SatType.labelL(color: sc.textHi),
+              ),
+              const SizedBox(height: Sp.s2),
+              Text(
+                AppStrings.discardCartBody(items),
+                style: SatType.bodyM(color: sc.textMd),
+              ),
+              const SizedBox(height: Sp.s4h),
+              Row(
+                children: [
+                  Expanded(
+                    child: SatButton.outline(
+                      label: AppStrings.cancel,
+                      onTap: () => Navigator.pop(ctx, false),
+                    ),
+                  ),
+                  const SizedBox(width: Sp.s2h),
+                  Expanded(
+                    child: SatButton.danger(
+                      label: AppStrings.discardCartConfirm,
+                      onTap: () => Navigator.pop(ctx, true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }

@@ -19,6 +19,13 @@ class AppStrings {
   static const String yes = 'Ya';
   static const String no = 'Tidak';
 
+  // Leaving the menu with an unsent cart. Nothing outside the menu and review
+  // screens renders that cart, so walking out discards it — say so. ADR-0061.
+  static const String discardCartTitle = 'Batalkan pesanan ini?';
+  static String discardCartBody(int items) =>
+      '$items item belum terkirim akan dihapus.';
+  static const String discardCartConfirm = 'Ya, batalkan';
+
   // Screen-reader names for the quantity stepper's two taps. Icon-only
   // targets, so nothing else names them.
   static const String stepperIncrease = 'Tambah satu';
