@@ -97,7 +97,7 @@ class BillStrukData {
   final DateTime at;
   final BillDocKind kind;
   final String
-  docLabel; // receipt label ('Tamu 1' / 'Bagian 1/3'); '' for whole
+  docLabel; // receipt label, already prose ('Tamu A' / 'Bagian 1/3'); '' for whole
 
   // ── body ──
   final List<BillStrukLine> lines;

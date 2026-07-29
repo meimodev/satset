@@ -1528,6 +1528,13 @@ Map<String, dynamic> _summarize(Map<String, dynamic> bill) => {
   'paidAmount': bill['paidAmount'],
   'outstanding': bill['outstanding'],
   'receiptCount': (bill['receipts'] as List).length,
+  // Just the letter and its paid-ness — enough for the /kasir tile's progress
+  // strip, without shipping every line and payment into a list payload. See
+  // ADR-0063.
+  'receipts': [
+    for (final r in (bill['receipts'] as List).cast<Map<String, dynamic>>())
+      {'label': r['label'], 'paid': r['status'] == 'paid'},
+  ],
   'mode': bill['mode'],
   'fullySettled': bill['fullySettled'],
 };

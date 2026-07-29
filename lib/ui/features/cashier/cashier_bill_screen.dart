@@ -19,8 +19,10 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/ui/core/design/receipt_visuals.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/discount_sheet.dart';
+import 'package:satset/ui/features/cashier/receipt_badge.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -278,21 +280,35 @@ class _BillBody extends StatelessWidget {
               ],
               rv(_LinesSection(bill: bill, run: run, repo: repo)),
               const SizedBox(height: Sp.s3h),
-              ...bill.receipts.map(
-                (r) => Padding(
-                  padding: const EdgeInsets.only(bottom: Sp.s2h),
-                  child: rv(
-                    _ReceiptCard(
-                      bill: bill,
-                      receipt: r,
-                      run: run,
-                      repo: repo,
-                      canRefund: canRefund,
-                      printDoc: printDoc,
+              // An even split's shares own no items and are interchangeable by
+              // design, so N near-identical cards are scroll with no signal in
+              // it. They collapse into one card of thin rows. ADR-0063.
+              if (bill.mode == 'even' && bill.receipts.isNotEmpty)
+                rv(
+                  _EvenSplitCard(
+                    bill: bill,
+                    run: run,
+                    repo: repo,
+                    canRefund: canRefund,
+                    printDoc: printDoc,
+                  ),
+                )
+              else
+                ...bill.receipts.map(
+                  (r) => Padding(
+                    padding: const EdgeInsets.only(bottom: Sp.s2h),
+                    child: rv(
+                      _ReceiptCard(
+                        bill: bill,
+                        receipt: r,
+                        run: run,
+                        repo: repo,
+                        canRefund: canRefund,
+                        printDoc: printDoc,
+                      ),
                     ),
                   ),
                 ),
-              ),
               if (bill.receipts.isNotEmpty)
                 rv(_AddReceiptButton(bill: bill, run: run, repo: repo)),
               if (bill.receipts.isNotEmpty && bill.paidAmount == 0)
@@ -440,7 +456,7 @@ class _ModeChooser extends StatelessWidget {
                 () => repo.createReceipt(
                   bill.visitId,
                   mode: 'itemized',
-                  label: 'Tamu 1',
+                  label: 'A',
                 ),
               ),
             ),
@@ -580,12 +596,15 @@ class _LinesSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${l.qty} × ${formatIDR(l.unitPrice)}'
-            '${assignable ? '  ·  $assigned/${l.qty} diatur' : ''}',
+            '${l.qty} × ${formatIDR(l.unitPrice)}',
             style: (pending
                 ? SatType.labelS(color: pending ? sc.warn : sc.textLo)
                 : SatType.bodyS(color: pending ? sc.warn : sc.textLo)),
           ),
+          // Where this dish's units went, not just how many are placed: a
+          // "2/3 diatur" count never answered *whose*. One chip per owning
+          // receipt, plus an amber `?` chip for units still free. ADR-0063.
+          if (assignable) _ownerChips(context, l),
           for (final m in l.modifiers)
             Text(
               '${m.display}'
@@ -613,6 +632,35 @@ class _LinesSection extends StatelessWidget {
               formatIDR(l.lineTotal),
               style: SatType.monoM(color: sc.textHi),
             ),
+    );
+  }
+
+  /// One badge per receipt owning units of [l], in bill order, trailed by the
+  /// unassigned remainder. Even-mode receipts own no lines, so this row is
+  /// empty for them and the caller's `assignable` gate already excludes it.
+  Widget _ownerChips(BuildContext context, BillLine l) {
+    final chips = <Widget>[];
+    for (final r in bill.receipts) {
+      final units = r.lines
+          .where((x) => x.ticketId == l.ticketId)
+          .fold<int>(0, (a, b) => a + b.qtyUnits);
+      if (units == 0) continue;
+      chips.add(
+        isReceiptLetter(r.label.trim())
+            ? ReceiptBadge(r.label.trim(), count: units, dense: true)
+            : Text(
+                '${receiptTitle(r.label)} ×$units',
+                style: SatType.labelS(color: context.sat.textLo),
+              ),
+      );
+    }
+    if (l.unassignedUnits > 0) {
+      chips.add(ReceiptBadge.unassigned(count: l.unassignedUnits));
+    }
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: Sp.s1),
+      child: Wrap(spacing: Sp.s1, runSpacing: Sp.s1, children: chips),
     );
   }
 
@@ -649,7 +697,7 @@ class _LinesSection extends StatelessWidget {
                   line.qty -
                   (line.assignedUnits - current); // free + already-here
               return _AssignRow(
-                label: r.label.isEmpty ? 'Struk' : r.label,
+                label: r.label,
                 value: current,
                 max: maxForThis,
                 onChanged: (v) async {
@@ -689,8 +737,15 @@ class _AssignRowState extends State<_AssignRow> {
       padding: const EdgeInsets.symmetric(vertical: Sp.s1),
       child: Row(
         children: [
+          if (isReceiptLetter(widget.label.trim())) ...[
+            ReceiptBadge(widget.label.trim()),
+            const SizedBox(width: Sp.s2),
+          ],
           Expanded(
-            child: Text(widget.label, style: SatType.bodyM(color: sc.textHi)),
+            child: Text(
+              receiptTitle(widget.label),
+              style: SatType.bodyM(color: sc.textHi),
+            ),
           ),
           IconButton(
             tooltip: AppStrings.a11yDecrease,
@@ -753,13 +808,23 @@ class _ReceiptCard extends ConsumerWidget {
     final lineByTicket = {for (final b in bill.lines) b.ticketId: b};
     final isWholeBill = bill.receipts.length == 1 && bill.fullyAssigned;
     final showItems = r.lines.isNotEmpty && !isWholeBill;
+    // 'Tagihan' (whole bill) and 'Bagian 1/3' (even share) are not letters and
+    // wear no badge — there is no sibling guest to tell them apart from.
+    final hasLetter = isReceiptLetter(r.label.trim());
     return AnimatedContainer(
       duration: satMotion(context, 280),
       curve: satEaseOut,
       decoration: SatBox.d(
         color: sc.bg1,
         borderRadius: SatR.a(14),
-        border: SatB.all(color: paid ? sc.success : sc.border0),
+        // Settled always wins the outline (green ends the conversation).
+        // Otherwise the card wears its guest's hue, so a scrolled-past card is
+        // still identifiable once the header badge is off-screen. ADR-0063.
+        border: SatB.all(
+          color: paid
+              ? sc.success
+              : (hasLetter ? receiptHue(r.label.trim()) : sc.border0),
+        ),
       ),
       padding: const EdgeInsets.all(Sp.s3h),
       child: Column(
@@ -767,9 +832,13 @@ class _ReceiptCard extends ConsumerWidget {
         children: [
           Row(
             children: [
+              if (hasLetter) ...[
+                ReceiptBadge(r.label.trim()),
+                const SizedBox(width: Sp.s2),
+              ],
               Expanded(
                 child: Text(
-                  r.label.isEmpty ? 'Struk' : r.label,
+                  receiptTitle(r.label),
                   style: SatType.labelM(color: sc.textHi),
                 ),
               ),
@@ -887,7 +956,7 @@ class _ReceiptCard extends ConsumerWidget {
                       context,
                       title: 'Buka ulang struk',
                       message:
-                          'Batalkan status lunas "${r.label.isEmpty ? 'Struk' : r.label}" '
+                          'Batalkan status lunas "${receiptTitle(r.label)}" '
                           'agar bisa diubah? Pembayaran tercatat tetap ada.',
                       confirmLabel: 'Ya, buka ulang',
                     )) {
@@ -915,7 +984,7 @@ class _ReceiptCard extends ConsumerWidget {
                         receipt: r,
                         ticketId: null,
                         base: r.subtotal,
-                        title: r.label.isEmpty ? 'Struk' : r.label,
+                        title: receiptTitle(r.label),
                       ),
                     );
                     if (picked == null) return;
@@ -961,7 +1030,7 @@ class _ReceiptCard extends ConsumerWidget {
                       context,
                       title: 'Hapus struk',
                       message:
-                          'Hapus "${r.label.isEmpty ? 'Struk' : r.label}"? '
+                          'Hapus "${receiptTitle(r.label)}"? '
                           'Item yang sudah diatur ke struk ini akan kembali belum diatur.',
                       confirmLabel: 'Ya, hapus',
                       destructive: true,
@@ -1039,7 +1108,9 @@ class _ReceiptCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  refund ? 'Refund ${r.label}' : 'Bayar ${r.label}',
+                  refund
+                      ? 'Refund ${receiptTitle(r.label)}'
+                      : 'Bayar ${receiptTitle(r.label)}',
                   style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s3),
@@ -1169,6 +1240,180 @@ class _ReceiptCard extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// The whole of an **even** [[Split bill]] in one card: the per-head amount,
+/// a paid tally, and one thin row per share.
+///
+/// An even receipt owns no lines (ADR-0037), so there is nothing to tell one
+/// share from another — rendering them as N full receipt cards implied a
+/// per-guest identity the model does not have, and buried the only fact that
+/// matters (how many are still owing) under a screen of scroll.
+///
+/// Every per-share act stays reachable: a row opens that share's own
+/// [_ReceiptCard] in a sheet, so pay / reopen / refund / diskon / cetak run
+/// through exactly one implementation. See ADR-0063.
+class _EvenSplitCard extends StatelessWidget {
+  final Bill bill;
+  final Future<void> Function(Future<Bill> Function()) run;
+  final SettlementRepository repo;
+  final bool canRefund;
+  final Future<void> Function(BillReceipt?) printDoc;
+  const _EvenSplitCard({
+    required this.bill,
+    required this.run,
+    required this.repo,
+    required this.canRefund,
+    required this.printDoc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final rs = bill.receipts;
+    final paidCount = rs.where((r) => r.isPaid).length;
+    final next = rs.indexWhere((r) => !r.isPaid);
+    // Shares are computed to the rupiah server-side and can differ by one on
+    // the remainder, so the headline quotes the first rather than dividing.
+    final perHead = rs.isEmpty ? 0 : rs.first.total;
+    return Container(
+      decoration: SatBox.d(
+        color: sc.bg1,
+        borderRadius: SatR.a(14),
+        border: SatB.all(
+          color: paidCount == rs.length ? sc.success : sc.border0,
+        ),
+      ),
+      padding: const EdgeInsets.all(Sp.s3h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Split rata · ${rs.length} bagian',
+                  style: SatType.labelM(color: sc.textHi),
+                ),
+              ),
+              Text(
+                '${formatIDR(perHead)} / orang',
+                style: SatType.monoM(color: sc.textHi),
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.s1),
+          Text(
+            '$paidCount dari ${rs.length} lunas',
+            style: SatType.bodyS(
+              color: paidCount == rs.length ? sc.success : sc.textLo,
+            ),
+          ),
+          const SizedBox(height: Sp.s2),
+          Divider(height: 1, color: sc.border0),
+          for (var i = 0; i < rs.length; i++)
+            _EvenShareRow(
+              index: i,
+              receipt: rs[i],
+              onTap: () => _shareSheet(context, rs[i]),
+            ),
+          if (next >= 0) ...[
+            const SizedBox(height: Sp.s2h),
+            SatButton.primary(
+              size: SatButtonSize.sm,
+              label: 'Bayar bagian ${next + 1}',
+              onTap: () => _shareSheet(context, rs[next]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// One share's full card in a sheet. `run` is wrapped to close the sheet
+  /// first — the sheet holds a snapshot of the receipt, so leaving it open
+  /// after a mutation would show stale money.
+  Future<void> _shareSheet(BuildContext context, BillReceipt r) =>
+      showSatSheet<void>(
+        context,
+        builder: (ctx) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s3,
+            left: Sp.s3h,
+            right: Sp.s3h,
+            top: Sp.s3h,
+          ),
+          child: _ReceiptCard(
+            bill: bill,
+            receipt: r,
+            run: (fn) async {
+              Navigator.of(ctx).pop();
+              await run(fn);
+            },
+            repo: repo,
+            canRefund: canRefund,
+            printDoc: printDoc,
+          ),
+        ),
+      );
+}
+
+/// One share inside [_EvenSplitCard] — position, amount, paid state, and a
+/// chevron into its action sheet. Deliberately thin: an even share has no
+/// items and no identity, so there is nothing else true to show.
+class _EvenShareRow extends StatelessWidget {
+  final int index;
+  final BillReceipt receipt;
+  final VoidCallback onTap;
+  const _EvenShareRow({
+    required this.index,
+    required this.receipt,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final paid = receipt.isPaid;
+    return Semantics(
+      button: true,
+      label: 'Bagian ${index + 1}, ${paid ? 'lunas' : 'belum bayar'}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: SatR.a(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
+          child: Row(
+            children: [
+              SizedBox(
+                width: Sp.s6,
+                child: Text(
+                  '${index + 1}',
+                  style: SatType.monoM(color: sc.textLo),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  formatIDR(receipt.total),
+                  style: SatType.monoM(color: sc.textHi),
+                ),
+              ),
+              Text(
+                paid ? 'Lunas' : 'Belum bayar',
+                style: SatType.labelS(color: paid ? sc.success : sc.warn),
+              ),
+              const SizedBox(width: Sp.s1h),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: sc.textDim,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1310,7 +1555,10 @@ class _AddReceiptButton extends StatelessWidget {
           () => repo.createReceipt(
             bill.visitId,
             mode: 'itemized',
-            label: 'Tamu ${bill.receipts.length + 1}',
+            // Lowest unused letter, so deleting B and adding again refills B
+            // rather than minting D. A guest's letter is persisted, never
+            // positional. ADR-0063.
+            label: nextReceiptLetter([for (final r in bill.receipts) r.label]),
           ),
         ),
       ),

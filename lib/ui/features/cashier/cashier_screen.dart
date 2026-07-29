@@ -10,8 +10,10 @@ import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/ui/core/design/receipt_visuals.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
+import 'package:satset/ui/features/cashier/receipt_badge.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
@@ -149,6 +151,13 @@ class _PayableTile extends StatelessWidget {
         : partial
         ? (sc.warn, 'Sebagian')
         : (sc.textLo, 'Belum bayar');
+    // Only a genuine per-guest split earns a strip. "Bayar penuh" labels its
+    // lone receipt 'Tagihan' and an even share is 'Bagian 1/3' — neither is a
+    // letter, so both fall out here with no extra branch. ADR-0063.
+    final letters = [
+      for (final r in b.receipts)
+        if (isReceiptLetter(r.label.trim())) r,
+    ];
     return Semantics(
       button: true,
       label: badgeText,
@@ -232,6 +241,10 @@ class _PayableTile extends StatelessWidget {
                                       : (b.detached ? sc.warn : sc.textLo),
                                 )),
                         ),
+                        if (letters.isNotEmpty) ...[
+                          const SizedBox(height: Sp.s1h),
+                          _ReceiptStrip(letters),
+                        ],
                       ],
                     ),
                   ),
@@ -271,6 +284,28 @@ class _PayableTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Split-progress strip on a payable tile: one [[Split bill]] letter per
+/// receipt, filled once that guest has settled and outlined while they have
+/// not. Lets the cashier see *who is still owing* without opening the bill.
+/// The tile's own Lunas/Sebagian chip still carries the state in words —
+/// the fill is a scan aid, never the only signal. ADR-0063.
+class _ReceiptStrip extends StatelessWidget {
+  final List<BillSummaryReceipt> receipts;
+  const _ReceiptStrip(this.receipts);
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: Sp.s1,
+      runSpacing: Sp.s1,
+      children: [
+        for (final r in receipts)
+          ReceiptBadge(r.label.trim(), filled: r.paid, dense: true),
+      ],
     );
   }
 }

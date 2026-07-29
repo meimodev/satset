@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/receipt_label.dart';
 
 /// Assembles a [BillStrukData] for the MONEY document from either source — the
 /// typed [Bill] on a client, or the raw settlement bill map on the server —
@@ -110,7 +111,9 @@ class BillStrukBuilder {
       guestName: bill.guestName ?? '',
       at: DateTime.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
-      docLabel: receipt.label,
+      // "Tamu A", not a bare "A" — the guest reads this line to know the slip
+      // in their hand is theirs. Non-letter labels (Bagian 1/3) pass through.
+      docLabel: receiptTitle(receipt.label),
       lines: lines,
       subtotal: receipt.subtotal,
       discountLabel: receipt.orderDiscount?.label ?? '',
@@ -383,7 +386,7 @@ class BillStrukBuilder {
       guestName: guestName,
       at: DateTime.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
-      docLabel: (rec['label'] as String?) ?? '',
+      docLabel: receiptTitle((rec['label'] as String?) ?? ''),
       lines: lines,
       subtotal: n(rec['subtotal']),
       discountLabel: orderDiscountOf(rec) == null

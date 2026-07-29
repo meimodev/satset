@@ -49,6 +49,11 @@ class BillSummary {
   final int paidAmount;
   final int outstanding;
   final int receiptCount;
+
+  /// Letter + paid-ness per receipt, in bill order — the `/kasir` tile's
+  /// progress strip. Empty on a bill whose method has not been chosen yet.
+  /// ADR-0063.
+  final List<BillSummaryReceipt> receipts;
   final String mode;
   final bool fullySettled;
 
@@ -66,6 +71,7 @@ class BillSummary {
     required this.paidAmount,
     required this.outstanding,
     required this.receiptCount,
+    required this.receipts,
     required this.mode,
     required this.fullySettled,
   });
@@ -86,9 +92,30 @@ class BillSummary {
     paidAmount: _int(j['paidAmount']),
     outstanding: _int(j['outstanding']),
     receiptCount: _int(j['receiptCount']),
+    receipts: [
+      for (final r in (j['receipts'] as List? ?? const []))
+        BillSummaryReceipt.fromJson((r as Map).cast<String, dynamic>()),
+    ],
     mode: j['mode'] as String? ?? 'itemized',
     fullySettled: j['fullySettled'] as bool? ?? false,
   );
+}
+
+/// One receipt as it appears on the `/kasir` list — its [[Split bill]] letter
+/// and whether it is settled. Deliberately thinner than [BillReceipt]: the
+/// list only draws a strip of badges, and a payable payload spans every open
+/// visit in the venue. ADR-0063.
+class BillSummaryReceipt {
+  final String label;
+  final bool paid;
+
+  const BillSummaryReceipt({required this.label, required this.paid});
+
+  factory BillSummaryReceipt.fromJson(Map<String, dynamic> j) =>
+      BillSummaryReceipt(
+        label: j['label'] as String? ?? '',
+        paid: j['paid'] as bool? ?? false,
+      );
 }
 
 /// A closed bill in the cashier's per-table history (last 7 days), from a
