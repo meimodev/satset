@@ -308,7 +308,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(20, l.topInset, 20, 14),
+          // Not `l.topInset` — that token clears a status bar for screens with
+          // no chrome above them, and this one always renders under SatAppBar.
+          padding: const EdgeInsets.fromLTRB(20, Sp.s6, 20, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

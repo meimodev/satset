@@ -1250,14 +1250,6 @@ List<BookEntry> bookEntries() => [
     ],
   ),
   BookEntry(
-    name: 'LoginClock',
-    group: _gChrome,
-    states: [
-      BookState('default', (c, r) => const LoginClock()),
-      BookState('tinted', (c, r) => LoginClock(textColor: c.sat.accentText)),
-    ],
-  ),
-  BookEntry(
     name: 'SatBackButton',
     group: _gChrome,
     states: [

@@ -6,6 +6,11 @@ Accepted. Reconciles `SatAppBar` against the design source's top bar, in the
 manner of ADR-0051. Serves `lib/ui/core/widgets/CATALOG.md` and ADR-0054's
 widget book.
 
+Amended by ADR-0062, which gives the phone bar a height and a width budget.
+Two decisions below no longer hold: phone no longer keeps `LoginClock` (it
+adopts `_ShiftCluster`, and `LoginClock` is deleted), and the phone clock is
+now conditional on there being no back button.
+
 ## Context
 
 `SatAppBar` declared four public parameters — `title`, `crumbs`,

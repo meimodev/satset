@@ -291,7 +291,9 @@ class _MePhone extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
         child: ListView(
-          padding: EdgeInsets.fromLTRB(0, l.topInset, 0, l.bottomInset + 40),
+          // Not `l.topInset` — that token clears a status bar for screens with
+          // no chrome above them, and this one always renders under SatAppBar.
+          padding: EdgeInsets.fromLTRB(0, Sp.s6, 0, l.bottomInset + 40),
           children: [
             _TopBar(theme: theme, onPickTheme: onPickTheme),
             const SizedBox(height: Sp.s2),

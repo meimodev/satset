@@ -15,16 +15,17 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
-import 'package:satset/ui/core/widgets/satset_top_bar.dart'
-    show LoginClock, SatBackButton;
+import 'package:satset/ui/core/widgets/satset_top_bar.dart' show SatBackButton;
 
 /// Single responsive app bar used everywhere chrome is needed.
 ///
 /// Tablet: 64h slab, crumb trail on the left, a status cluster on the right —
 /// sync, shift elapsed, wall clock. No avatar; the side rail owns that.
-/// Phone: three slots — back + clock, then the status cluster and the current
-/// user's avatar. Crumbs are dropped here: at 402px the trail truncates to its
-/// last segment anyway, and the parent is one back-tap away.
+/// Phone: status bar + a 56h row, two slots. Left is the shift cluster *or* a
+/// back button, never both; right is sync and the current user's avatar.
+/// Crumbs are dropped here: at 402px the trail truncates to its last segment
+/// anyway, and the parent is one back-tap away. See ADR-0062 for why the phone
+/// row is this spare — it is budgeted against a 360dp handset, not a 411dp one.
 class SatAppBar extends ConsumerWidget {
   final VoidCallback? onBack;
 
@@ -84,38 +85,44 @@ class SatAppBar extends ConsumerWidget {
         color: _resolveBg(sc),
         border: Border(bottom: _rule(sc)),
       ),
-      padding: EdgeInsets.fromLTRB(Sp.s4, l.topInset + Sp.s1h, Sp.s4, Sp.s2h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (onBack != null) ...[
-                SatBackButton(onTap: onBack!),
-                const SizedBox(width: Sp.s2h),
+      // The status bar and nothing else. `l.topInset` adds another 24 on top of
+      // it, which is breathing room for screens that render *bare* — this bar
+      // is the chrome those screens don't have, so paying it here just made the
+      // phone bar 30dp taller than it reads. Height comes from the row.
+      padding: EdgeInsets.fromLTRB(Sp.s4, l.padding.top, Sp.s4, 0),
+      child: SizedBox(
+        height: 56,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Back button and shift cluster are exclusive. The cluster is shell
+            // chrome — a glance at your own shift — and a screen you can back
+            // out of is a task, not the shell. It is also the only way the row
+            // fits a 360dp phone: cluster + back + sync + avatar overruns by
+            // ~60dp there, and by ~8dp even on a 411dp handset (ADR-0062).
+            if (onBack != null)
+              SatBackButton(onTap: onBack!)
+            else
+              const _ShiftCluster(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final pill in trailingPills) ...[
+                  pill,
+                  const SizedBox(width: Sp.s2),
+                ],
+                // Bare dot rather than the tablet's pill: the phone row has no
+                // width to spend on an enclosure, and none to spend narrating
+                // a healthy link either — see [_SyncStatus].
+                const _SyncStatus(bare: true),
+                if (showAvatar) ...[
+                  const SizedBox(width: Sp.s3),
+                  const _BarAvatar(),
+                ],
               ],
-              const LoginClock(),
-            ],
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final pill in trailingPills) ...[
-                pill,
-                const SizedBox(width: Sp.s2),
-              ],
-              // Bare dot + label rather than the tablet's pill: the phone row
-              // already carries two bordered clock badges, and a third
-              // enclosure turns the bar into a strip of boxes.
-              const _SyncStatus(bare: true),
-              if (showAvatar) ...[
-                const SizedBox(width: Sp.s3),
-                const _BarAvatar(),
-              ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -199,8 +206,14 @@ class _Crumbs extends StatelessWidget {
   }
 }
 
-/// Live LAN link state. [bare] drops the pill enclosure down to a dot and a
-/// label — the phone form.
+/// Live LAN link state. [bare] is the phone form: no pill enclosure, and no
+/// label at all while the link is healthy.
+///
+/// The dot alone carries `open`. "LIVE · LAN" costs ~72dp to narrate the case
+/// nobody acts on, and the phone bar needs that width for the shift cluster at
+/// 360dp. `connecting` and `offline` keep their words — those are the states
+/// that change what a waiter does next, and the design's promise is to degrade
+/// loudly. The tablet is wide enough to say all three out loud.
 class _SyncStatus extends ConsumerWidget {
   final bool bare;
   const _SyncStatus({this.bare = false});
@@ -239,8 +252,10 @@ class _SyncStatus extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(width: Sp.s2),
-        Text(label, style: SatType.caption(color: fg)),
+        if (!bare || state != WsConnState.open) ...[
+          const SizedBox(width: Sp.s2),
+          Text(label, style: SatType.caption(color: fg)),
+        ],
       ],
     );
 
@@ -261,11 +276,15 @@ class _SyncStatus extends ConsumerWidget {
   }
 }
 
-/// `SHIFT 6:42:07 · 18:14 Sab` — the tablet's time block.
+/// `SHIFT 6j 42m 7d · 18:14 · Sab` — the time block, both layouts.
 ///
-/// Bare label/value pairs rather than the phone's bordered badges: the tablet
-/// bar already carries a crumb trail and a sync pill, and the design drops the
-/// enclosures here so the row reads as one status line instead of four chips.
+/// Bare label/value pairs rather than bordered badges: the row already carries
+/// a sync indicator (and a crumb trail, on tablet), and enclosing every value
+/// turns the bar into a strip of boxes instead of one status line.
+///
+/// No seconds on the wall clock. The elapsed counter beside it already proves
+/// the clock is live, and a digit ticking in permanent chrome that nobody acts
+/// on is motion for its own sake — the weekday earns that width instead.
 class _ShiftCluster extends ConsumerStatefulWidget {
   const _ShiftCluster();
 

@@ -604,7 +604,9 @@ class _PhoneHub extends StatelessWidget {
     final sc = context.sat;
     final l = context.layout;
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, l.topInset, 16, l.bottomInset + 40),
+      // Not `l.topInset` — that token clears a status bar for screens with no
+      // chrome above them, and this one always renders under SatAppBar.
+      padding: EdgeInsets.fromLTRB(16, Sp.s6, 16, l.bottomInset + 40),
       children: [
         Reveal(
           index: 0,

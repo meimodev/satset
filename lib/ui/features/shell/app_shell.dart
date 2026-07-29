@@ -263,6 +263,26 @@ class _Tab extends StatelessWidget {
     this.badgeAlert = false,
   });
 
+  /// Mirrors [TabletSideRail]'s rail button — one active treatment, learned
+  /// once, whichever slab the nav happens to live on.
+  ///
+  /// The rail's brutal-paper case is the one that cannot come across: there the
+  /// rail *is* the accent, so both states sit on a bright ground and take ink.
+  /// The phone bar is a scrim over the page, so paper behaves like every other
+  /// skin here and fills the active tab with the accent.
+  Color _fill(SatColors sc) => switch (SatShape.skin) {
+    SatSkin.lembut => sc.bg3,
+    SatSkin.brutal || SatSkin.glow => sc.accent,
+  };
+
+  Color _fg(SatColors sc) {
+    if (!active) return sc.textLo;
+    return switch (SatShape.skin) {
+      SatSkin.lembut => sc.textHi,
+      SatSkin.brutal || SatSkin.glow => sc.accentInk,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
@@ -274,20 +294,23 @@ class _Tab extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Container(
+              // Flat under glow, like the rail's pill: the skin lifts cards,
+              // not chrome that is already part of the bar. Brutal keeps its
+              // ink rule so the active tab reads as a block cut out of the bar.
               decoration: SatBox.d(
-                color: active ? sc.bg4 : Colors.transparent,
+                color: active ? _fill(sc) : Colors.transparent,
                 borderRadius: SatR.a(18),
+                border: SatShape.brutal && active
+                    ? SatB.all(color: SatShape.ink)
+                    : null,
               ),
               alignment: Alignment.center,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 20, color: active ? sc.textHi : sc.textLo),
+                  Icon(icon, size: 20, color: _fg(sc)),
                   const SizedBox(height: Sp.s1),
-                  Text(
-                    label,
-                    style: SatType.bodyS(color: active ? sc.textHi : sc.textLo),
-                  ),
+                  Text(label, style: SatType.bodyS(color: _fg(sc))),
                 ],
               ),
             ),

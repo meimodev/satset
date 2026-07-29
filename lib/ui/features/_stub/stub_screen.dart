@@ -22,7 +22,9 @@ class StubScreen extends StatelessWidget {
     final sc = context.sat;
     final l = context.layout;
     return Padding(
-      padding: EdgeInsets.fromLTRB(0, l.topInset, 0, l.bottomInset),
+      // Not `l.topInset` — that token clears a status bar for screens with no
+      // chrome above them, and this one always renders under SatAppBar.
+      padding: EdgeInsets.fromLTRB(0, Sp.s6, 0, l.bottomInset),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

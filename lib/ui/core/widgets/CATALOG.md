@@ -130,9 +130,8 @@ All collapse to a static final frame under reduced motion. Callers never branch 
 
 | Widget | File | Use for |
 |---|---|---|
-| `SatAppBar` | `sat_app_bar.dart` | **The** app bar. Responsive phone/tablet. Don't build another. Pass `crumbs` (coarsest first) — there is no `title`. Tablet renders the trail; phone drops it. |
-| `SatAppBarPill` | `sat_app_bar.dart` | Trailing pill slot in `SatAppBar` (e.g. `T+0:45`). |
-| `LoginClock` | `satset_top_bar.dart` | Live clock + shift elapsed, as bordered badges. Phone bar only; the tablet bar sets its own bare cluster. |
+| `SatAppBar` | `sat_app_bar.dart` | **The** app bar. Responsive phone/tablet. Don't build another. Pass `crumbs` (coarsest first) — there is no `title`. Tablet renders the trail; phone drops it. Phone owns the clock too, and only when `onBack` is null (ADR-0062). |
+| `SatAppBarPill` | `sat_app_bar.dart` | Trailing pill slot in `SatAppBar` (e.g. `T+0:45`). Phone is width-bound — check ADR-0062's budget before adding one. |
 | `SatBackButton` | `satset_top_bar.dart` | Back affordance. |
 | `safePop(context)` | `satset_top_bar.dart` | Pop with a route fallback — use instead of raw `Navigator.pop`. |
 | `TabletShell` | `tablet_chrome.dart` | Tablet shell scaffold. |
