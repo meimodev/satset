@@ -167,16 +167,11 @@ class _PayableTile extends StatelessWidget {
           borderRadius: SatR.a(16),
           child: InkWell(
             borderRadius: SatR.a(16),
-            // Root navigator: the bill is a full page with its own AppBar and a
-            // bottom CTA. Pushed on the shell's navigator instead, the floating
-            // phone tab bar floats *over* it and swallows "Tutup tagihan". Same
-            // treatment as the table flow, which is also outside the shell.
-            onTap: () => Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    CashierBillScreen(visitId: b.visitId, tableId: b.tableId),
-              ),
-            ),
+            // The bill is an overlay, not a page (ADR-0064) — a right drawer on
+            // tablet, a tall sheet on a phone. `showSatDrawer`/`showSatSheet`
+            // are root-navigator by construction, so the floating phone tab bar
+            // can no longer float over "Tutup tagihan".
+            onTap: () => openCashierBill(context, visitId: b.visitId),
             child: Padding(
               padding: const EdgeInsets.all(Sp.s3h),
               child: Row(
