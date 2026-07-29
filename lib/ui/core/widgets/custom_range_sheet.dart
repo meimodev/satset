@@ -7,6 +7,7 @@ import 'package:satset/data/repositories/reports_repository.dart'
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Hand-rolled bottom sheet for the Reports "Custom" timeline chip. Picks an
 /// inclusive start/end **calendar date** (date-only; the server snaps each to
@@ -20,12 +21,8 @@ Future<(DateTime, DateTime)?> showCustomRangeSheet(
   DateTime? initialFrom,
   DateTime? initialTo,
 }) {
-  final sc = context.sat;
-  return showModalBottomSheet<(DateTime, DateTime)>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: sc.bg1,
+  return showSatSheet<(DateTime, DateTime)>(
+    context,
     builder: (_) =>
         _CustomRangeSheet(initialFrom: initialFrom, initialTo: initialTo),
   );

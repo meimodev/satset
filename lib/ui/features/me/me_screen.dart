@@ -30,6 +30,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 class _ShiftMetrics {
   final String name;
@@ -212,8 +213,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         final liveCount = tables
             .where((t) => t.status != TableStatus.available)
             .length;
-        final ok = await showDialog<bool>(
-          context: context,
+        final ok = await showSatDialog<bool>(
+          context,
           builder: (ctx) => AlertDialog(
             title: const Text('Akhiri sesi admin?'),
             content: Text(

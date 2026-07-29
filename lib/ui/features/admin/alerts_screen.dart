@@ -15,6 +15,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Everything that decides whether the floor beeps, in one destination.
 ///
@@ -491,13 +492,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
       event,
       _currentId(ref.read(venueSettingsProvider), event),
     );
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: sc.bg2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(18)),
-      ),
-      isScrollControlled: true,
+    showSatSheet<void>(
+      context,
       builder: (ctx) => SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(

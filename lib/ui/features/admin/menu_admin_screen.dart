@@ -20,6 +20,7 @@ import 'package:satset/ui/features/admin/menu_admin_item_editor.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Two-tier menu admin screen.
 /// - Tablet: master-detail (item list left, editor right).
@@ -936,9 +937,8 @@ class _CategoriesPanel extends ConsumerWidget {
   }) {
     final ctrl = TextEditingController(text: initial);
     final sc = context.sat;
-    return showDialog<String>(
-      context: context,
-      useRootNavigator: true,
+    return showSatDialog<String>(
+      context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(title, style: SatType.bodyL(color: sc.textHi)),
@@ -1084,9 +1084,8 @@ class _TagsPanel extends ConsumerWidget {
 
   Future<void> _delete(BuildContext context, WidgetRef ref, MenuTag tag) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
+    final ok = await showSatDialog<bool>(
+      context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.sat.bg1,
         title: Text(
@@ -1119,9 +1118,8 @@ class _TagsPanel extends ConsumerWidget {
     final nameCtrl = TextEditingController(text: tag?.name ?? '');
     final codeCtrl = TextEditingController(text: tag?.code ?? '');
     final sc = context.sat;
-    return showDialog<(String, String)>(
-      context: context,
-      useRootNavigator: true,
+    return showSatDialog<(String, String)>(
+      context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(

@@ -22,6 +22,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// What an export covers. All kinds share one sheet and one **Ekspor** entry
 /// (ADR-0030 / ADR-0031 / ADR-0032); the user picks the kind via the **Jenis**
@@ -59,12 +60,8 @@ Future<void> showExportSheet(
   required ReportsQuery query,
   ReportsSnapshotDto? snapshot,
 }) {
-  final sc = context.sat;
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: sc.bg1,
+  return showSatSheet<void>(
+    context,
     builder: (_) => _ExportSheet(query: query, reportsSnapshot: snapshot),
   );
 }

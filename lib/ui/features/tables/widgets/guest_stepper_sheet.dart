@@ -14,18 +14,14 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'move_table_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 Future<void> showGuestStepperSheet({
   required BuildContext context,
   required String tableId,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: context.sat.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<void>(
+    context,
     builder: (ctx) => _GuestStepperSheet(tableId: tableId),
   );
 }

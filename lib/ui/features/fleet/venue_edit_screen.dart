@@ -13,6 +13,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Per-venue management surface, opened from a Fleet console tile. Owns this
 /// venue's identity (name/address, cloud source of truth per ADR-0018),
@@ -364,8 +365,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final pw = TextEditingController();
     final sc = context.sat;
     final roleLabel = role == 'owner' ? 'pemilik' : 'admin';
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showSatDialog<bool>(
+      context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(
@@ -481,8 +482,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   void _confirm(String title, String body, VoidCallback onYes) {
     final sc = context.sat;
-    showDialog<void>(
-      context: context,
+    showSatDialog<void>(
+      context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(title, style: SatType.h3(color: sc.textHi)),

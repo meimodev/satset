@@ -7,18 +7,16 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Device-local theme picker (ADR-0045). Lives on the Me screen rather than in
 /// `/settings` on purpose: `/settings` is gated on `editSettings`, and every
 /// waiter must be able to set the look of their own handset.
+///
+/// Not `bare:` — the sheet stays opaque so the swatches are judged against
+/// their own palette, not through a tint of the outgoing one.
 Future<void> showThemeSheet(BuildContext context, WidgetRef ref) {
-  return showModalBottomSheet<void>(
-    context: context,
-    // Sheet is opaque so the swatches are judged against their own palette,
-    // not through a tint of the outgoing one.
-    isScrollControlled: true,
-    builder: (_) => const _ThemeSheet(),
-  );
+  return showSatSheet<void>(context, builder: (_) => const _ThemeSheet());
 }
 
 class _ThemeSheet extends ConsumerWidget {

@@ -15,6 +15,7 @@ import 'package:satset/ui/core/widgets/skeleton_card.dart';
 import 'package:satset/ui/features/admin/report_sections_view.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Admin → Reports. Owns the report **chrome** — range pills, server/zone/
 /// category filters, export, freshness — and delegates the five-section
@@ -364,10 +365,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final active = !value.toLowerCase().startsWith('semua');
     return InkWell(
       onTap: () async {
-        final picked = await showModalBottomSheet<NamedIdDto>(
-          context: context,
-          useRootNavigator: true,
-          backgroundColor: sc.bg1,
+        final picked = await showSatSheet<NamedIdDto>(
+          context,
           builder: (c) => SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,

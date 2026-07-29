@@ -26,6 +26,7 @@ import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Full sectioned editor for one menu item.
 /// Used in tablet right pane and phone full-screen route.
@@ -279,13 +280,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   }
 
   void _delete() async {
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: context.sat.bg1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-      ),
+    final ok = await showSatSheet<bool>(
+      context,
       builder: (ctx) {
         final sc = ctx.sat;
         return SafeArea(
@@ -541,13 +537,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   void _showPhotoSheet() {
     final sc = context.sat;
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: sc.bg1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-      ),
+    showSatSheet<void>(
+      context,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

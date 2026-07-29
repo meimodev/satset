@@ -177,9 +177,25 @@ a screen-shaped skeleton rather than dropping a `CircularProgressIndicator`.
 
 ---
 
-## Sheets
+## Overlays
 
-Entry points, not widgets. Call the function; don't `showModalBottomSheet` yourself.
+Anything that floats above the current route goes through `sat_overlay.dart` (ADR-0061).
+Raw `showModalBottomSheet` / `showDialog` / `showGeneralDialog` fail CI — they default to
+the *shell* navigator, which on a phone paints under the floating tab bar.
+
+| Entry | Use for |
+|---|---|
+| `showSatSheet<T>(context, builder:)` | Bottom sheet. `bare: true` for a body with its own chrome; `scrollControlled: false` for Material's 9/16 cap; `dismissible: false` to block tap-away. |
+| `showSatDialog<T>(context, builder:)` | Centred dialog. |
+| `showSatDrawer<T>(context, builder:)` | Edge-anchored panel; `alignment` picks the edge. |
+
+Never pass `backgroundColor` or `shape` — colour, radius and elevation come from
+`bottomSheetTheme` / `dialogTheme`. Safe area and `viewInsets` keyboard padding are the
+body's job.
+
+### Sheet entry points
+
+Entry points, not widgets. Call the function; don't open the sheet yourself.
 
 | Entry | File | Returns |
 |---|---|---|

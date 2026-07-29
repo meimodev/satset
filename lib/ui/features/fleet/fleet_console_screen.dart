@@ -14,6 +14,7 @@ import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 import 'package:satset/ui/features/fleet/venue_edit_screen.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// The super admin's cloud control plane. Reads venues live from Firestore;
 /// every mutation goes through a Cloud Function. Lives outside the app shell (a
@@ -206,8 +207,8 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     final name = TextEditingController();
     final addr = TextEditingController();
     final sc = context.sat;
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showSatDialog<bool>(
+      context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text('Venue baru', style: SatType.h3(color: sc.textHi)),
@@ -240,8 +241,8 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
 
   void _confirm(String title, String body, VoidCallback onYes) {
     final sc = context.sat;
-    showDialog<void>(
-      context: context,
+    showSatDialog<void>(
+      context,
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(title, style: SatType.h3(color: sc.textHi)),

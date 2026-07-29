@@ -30,6 +30,7 @@ import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'package:satset/ui/features/tables/widgets/assign_table_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
@@ -403,13 +404,8 @@ enum _Commit { dineIn, takeaway }
 /// (takeaway). See ADR-0026.
 Future<_Commit?> _chooseCommit(BuildContext context) {
   final sc = context.sat;
-  return showModalBottomSheet<_Commit>(
-    context: context,
-    useRootNavigator: true,
-    backgroundColor: sc.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<_Commit>(
+    context,
     builder: (ctx) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -507,8 +503,8 @@ class _CommitTile extends StatelessWidget {
 Future<String?> _askGuestName(BuildContext context) {
   final sc = context.sat;
   final ctrl = TextEditingController();
-  return showDialog<String>(
-    context: context,
+  return showSatDialog<String>(
+    context,
     builder: (ctx) => AlertDialog(
       backgroundColor: sc.bg1,
       title: Text('Nama tamu', style: SatType.bodyM(color: sc.textHi)),

@@ -18,6 +18,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 enum _StockFilter { all, low, negative, produced }
 
@@ -937,11 +938,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final supplierCtrl = TextEditingController();
     var unit = i.unit;
 
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
+    final ok = await showSatSheet<bool>(
+      context,
+      bare: true,
       builder: (ctx) => _Sheet(
         title: 'Terima ${i.name}',
         subtitle: 'Catat penambahan stok dan harga beli terbaru.',
@@ -1017,11 +1016,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
   Future<void> _produce(Ingredient i) async {
     final ctrl = TextEditingController(text: '1');
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
+    final ok = await showSatSheet<bool>(
+      context,
+      bare: true,
       builder: (ctx) => _Sheet(
         title: 'Produksi ${i.name}',
         subtitle: i.batchYield == null
@@ -1057,11 +1054,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   Future<void> _ledger(Ingredient i) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
+    await showSatSheet<void>(
+      context,
+      bare: true,
       builder: (_) => _LedgerSheet(ingredient: i),
     );
   }
@@ -1093,11 +1088,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     );
     var unit = existing?.unit ?? StockUnit.pcs;
 
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
+    final ok = await showSatSheet<bool>(
+      context,
+      bare: true,
       builder: (ctx) => StatefulBuilder(
         builder: (_, setSheet) => _Sheet(
           title: existing == null ? 'Bahan Baru' : 'Ubah ${existing.name}',

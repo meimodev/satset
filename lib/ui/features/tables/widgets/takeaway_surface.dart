@@ -10,21 +10,15 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Active Bawa pulang visits (ADR-0026), behind the floor head's second
 /// trigger. A sheet on both form factors — unlike the booking book there is
 /// nothing here to compare against the floor grid, so it does not earn a
 /// drawer that keeps the grid visible.
 Future<void> openTakeawaySurface(BuildContext context) {
-  final sc = context.sat;
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useRootNavigator: true,
-    backgroundColor: sc.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<void>(
+    context,
     builder: (ctx) => const SafeArea(child: _TakeawayList()),
   );
 }

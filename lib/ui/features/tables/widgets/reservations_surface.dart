@@ -20,7 +20,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
-import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// The booking book (ADR-0048). One content widget, two containers: a right-side
 /// drawer on tablet — the source design's idiom for a surface you read *against*
@@ -32,14 +32,8 @@ Future<void> openReservationsSurface(
 }) {
   final sc = context.sat;
   if (!tablet) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: sc.bg1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-      ),
+    return showSatSheet<void>(
+      context,
       builder: (ctx) => FractionallySizedBox(
         heightFactor: 0.92,
         child: SafeArea(
@@ -61,39 +55,20 @@ Future<void> openReservationsSurface(
       ),
     );
   }
-  return showGeneralDialog<void>(
-    context: context,
-    useRootNavigator: true,
-    barrierDismissible: true,
-    barrierLabel: AppStrings.close,
-    // Not `sc.scrim` — that token is an *opaque* base for translucent surfaces
-    // to blend against, so using it here paints the floor out entirely. The
-    // barrier dims, and it dims dark on every palette (neo.css §9 does the same
-    // on both its light and dark skins).
-    barrierColor: satBarrier,
-    transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (ctx, _, _) => Align(
-      alignment: Alignment.centerRight,
-      child: Material(
-        color: sc.bg1,
-        child: Container(
-          // Wide enough that all five filters fit without the last one hanging
-          // off the edge — measured, not chosen.
-          width: 520,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            border: Border(left: SatB.side(color: sc.border1)),
-          ),
-          child: const SafeArea(child: ReservationsBook()),
+  return showSatDrawer<void>(
+    context,
+    builder: (ctx) => Material(
+      color: sc.bg1,
+      child: Container(
+        // Wide enough that all five filters fit without the last one hanging
+        // off the edge — measured, not chosen.
+        width: 520,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          border: Border(left: SatB.side(color: sc.border1)),
         ),
+        child: const SafeArea(child: ReservationsBook()),
       ),
-    ),
-    transitionBuilder: (ctx, anim, _, child) => SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(1, 0),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(parent: anim, curve: satEaseOut)),
-      child: child,
     ),
   );
 }
@@ -669,14 +644,8 @@ Future<void> openCreateReservationSheet(
   String? zoneId;
   String? tableId;
 
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useRootNavigator: true,
-    backgroundColor: sc.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  await showSatSheet<void>(
+    context,
     builder: (ctx) {
       return StatefulBuilder(
         builder: (ctx, setLocal) {

@@ -13,6 +13,7 @@ import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Target picker for **Pindah meja** (move table, ADR-0019). Lists every empty
 /// (`available` + `active`) table grouped by zone; tapping one transfers the
@@ -22,14 +23,8 @@ Future<String?> showMoveTableSheet({
   required BuildContext context,
   required String sourceId,
 }) {
-  return showModalBottomSheet<String>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: context.sat.bg1,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
-    ),
+  return showSatSheet<String>(
+    context,
     builder: (_) => _MoveTableSheet(sourceId: sourceId),
   );
 }
@@ -195,8 +190,8 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
   Future<void> _confirmAndMove(VenueTable target, VenueTable source) async {
     final sc = context.sat;
     final overCapacity = source.pax > target.capacity;
-    final confirm = await showDialog<bool>(
-      context: context,
+    final confirm = await showSatDialog<bool>(
+      context,
       builder: (ctx) => AlertDialog(
         title: Text('Pindahkan meja ${source.displayName}?'),
         content: Text(

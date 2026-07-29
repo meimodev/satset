@@ -65,8 +65,11 @@ ThemeData _build(SatColors sc, Brightness brightness) {
       // sees these, their decoration comes from the theme (ADR-0047).
       elevation: SatShape.glow ? _glowSheetElevation : null,
       shadowColor: SatShape.glow ? SatShape.liftLg.first.color : null,
+      // 24, not 28: every sheet used to re-declare this shape at the call site
+      // and every one of them said 24. `showSatSheet` deleted those overrides
+      // (ADR-0061), so the theme adopts the number the app actually rendered.
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: SatR.c(28)),
+        borderRadius: BorderRadius.vertical(top: SatR.c(24)),
       ),
     ),
     // M3 spends `colorScheme.primary` on both roles: the filled button's

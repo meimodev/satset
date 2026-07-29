@@ -39,6 +39,7 @@ import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -333,11 +334,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final ctxAlertCount = ctxAllergens.length;
 
     void showContextSheet() {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        useRootNavigator: true,
-        backgroundColor: Colors.transparent,
+      showSatSheet(
+        context,
+        bare: true,
         builder: (_) =>
             _ContextSheet(table: table, tickets: tickets, menu: menuItems),
       );
@@ -416,8 +415,8 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
 
     Future<void> onClose() async {
       if (!canClose) return;
-      final choice = await showDialog<String>(
-        context: context,
+      final choice = await showSatDialog<String>(
+        context,
         builder: (ctx) => AlertDialog(
           title: Text(isEmptyClose ? 'Lepaskan Meja?' : 'Selesaikan Layanan?'),
           content: Text(
