@@ -443,6 +443,8 @@ class _OrderCard extends ConsumerWidget {
             age: ageDur,
             sentAt: order.sentAt,
             late: late,
+            done: order.done,
+            total: order.total,
           ),
           ClipRRect(
             child: TweenAnimationBuilder<double>(
@@ -472,22 +474,6 @@ class _OrderCard extends ConsumerWidget {
                     onTap: () => onToggle(order.tableId, order.tickets[i].id),
                   ),
               ],
-            ),
-          ),
-          // The bar above says how far along at a glance from across the room;
-          // this says it in words for the cook standing at the card. The source
-          // has only the words, at 11px — unreadable at the distance this
-          // screen is actually mounted.
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-            decoration: SatBox.d(
-              border: Border(top: SatB.side(color: sc.border0)),
-            ),
-            child: Text(
-              order.done == order.total
-                  ? 'Semua siap'
-                  : '${order.done} / ${order.total} siap',
-              style: SatType.labelM(color: sc.textMd),
             ),
           ),
         ],
@@ -526,12 +512,16 @@ class _CardHead extends StatelessWidget {
   final Duration age;
   final String sentAt;
   final bool late;
+  final int done;
+  final int total;
   const _CardHead({
     required this.table,
     required this.courses,
     required this.age,
     required this.sentAt,
     required this.late,
+    required this.done,
+    required this.total,
   });
 
   @override
@@ -577,7 +567,7 @@ class _CardHead extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Sp.s2),
-          _Timer(age: age, sentAt: sentAt, sc: sc),
+          _Timer(age: age, sentAt: sentAt, sc: sc, done: done, total: total),
         ],
       ),
     );
@@ -591,7 +581,15 @@ class _Timer extends StatefulWidget {
   final Duration age;
   final String sentAt;
   final SatColors sc;
-  const _Timer({required this.age, required this.sentAt, required this.sc});
+  final int done;
+  final int total;
+  const _Timer({
+    required this.age,
+    required this.sentAt,
+    required this.sc,
+    required this.done,
+    required this.total,
+  });
 
   @override
   State<_Timer> createState() => _TimerState();
@@ -654,6 +652,15 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
           ),
         ),
         Text('masuk ${widget.sentAt}', style: SatType.monoS(color: sc.textMd)),
+        const SizedBox(height: Sp.s1),
+        Text(
+          widget.done == widget.total
+              ? 'Semua siap'
+              : '${widget.done}/${widget.total} siap',
+          style: SatType.monoS(
+            color: widget.done == widget.total ? sc.success : sc.textMd,
+          ),
+        ),
       ],
     );
   }
@@ -742,8 +749,8 @@ class _ItemRowState extends State<_KdsItemRow>
         onTap: cooked ? null : _hint,
         onLongPress: cooked ? null : _commit,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 60),
-          padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+          constraints: const BoxConstraints(minHeight: 40),
+          padding: const EdgeInsets.fromLTRB(14, Sp.s2h, 12, Sp.s2h),
           decoration: SatBox.d(
             border: Border(top: SatB.side(color: sc.border0)),
           ),
@@ -777,8 +784,6 @@ class _ItemRowState extends State<_KdsItemRow>
                   // content box at 40, so the bar keeps its old short-row
                   // length without asking for it.
                   const SizedBox(width: 3 + Sp.s3),
-                  _Tick(cooked: cooked),
-                  const SizedBox(width: Sp.s2h),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -894,79 +899,6 @@ class _LateTally extends StatelessWidget {
           const SizedBox(width: Sp.s1h),
           Text('$count', style: SatType.monoM(color: ink)),
         ],
-      ),
-    );
-  }
-}
-
-/// The done marker. An indicator, not a button — the whole row takes the
-/// long-press. Empty ring until the cook commits, then a filled `success` disc.
-class _Tick extends StatefulWidget {
-  final bool cooked;
-  const _Tick({required this.cooked});
-
-  @override
-  State<_Tick> createState() => _TickState();
-}
-
-class _TickState extends State<_Tick> with SingleTickerProviderStateMixin {
-  late final AnimationController _pop = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 260),
-  );
-
-  // A confident pop (no elastic overshoot) when the cook marks an item done.
-  late final Animation<double> _scale = TweenSequence<double>([
-    TweenSequenceItem(
-      tween: Tween(begin: 1.0, end: 1.18).chain(CurveTween(curve: satEaseOut)),
-      weight: 45,
-    ),
-    TweenSequenceItem(
-      tween: Tween(begin: 1.18, end: 1.0).chain(CurveTween(curve: satEaseOut)),
-      weight: 55,
-    ),
-  ]).animate(_pop);
-
-  @override
-  void didUpdateWidget(covariant _Tick old) {
-    super.didUpdateWidget(old);
-    if (widget.cooked &&
-        !old.cooked &&
-        !MediaQuery.of(context).disableAnimations) {
-      _pop.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _pop.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return ScaleTransition(
-      scale: _scale,
-      child: AnimatedContainer(
-        duration: satMotion(context, 180),
-        curve: satEaseOut,
-        margin: const EdgeInsets.only(top: Sp.sHair),
-        width: 26,
-        height: 26,
-        decoration: SatBox.d(
-          color: widget.cooked ? sc.success : Colors.transparent,
-          shape: BoxShape.circle,
-          border: SatB.all(
-            color: widget.cooked ? sc.success : sc.border2,
-            width: 1.5,
-          ),
-        ),
-        // Empty until committed — the source draws no glyph in the open state,
-        // and a grey tick reads as "already done" from two metres away.
-        child: widget.cooked
-            ? Icon(Icons.check_rounded, size: 16, color: sc.inkOn(sc.success))
-            : null,
       ),
     );
   }
