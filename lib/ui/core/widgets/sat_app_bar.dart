@@ -1,34 +1,47 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
-import 'package:satset/domain/models/user.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
-import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart'
     show LoginClock, SatBackButton;
 
 /// Single responsive app bar used everywhere chrome is needed.
 ///
-/// Phone: padded row with clock, optional back, title, trailing pills,
-/// network pill, avatar.
-/// Tablet: 64h container with border-bottom; avatar omitted when [showAvatar]
-/// is false (side rail provides one).
+/// Tablet: 64h slab, crumb trail on the left, a status cluster on the right —
+/// sync, shift elapsed, wall clock. No avatar; the side rail owns that.
+/// Phone: three slots — back + clock, then the status cluster and the current
+/// user's avatar. Crumbs are dropped here: at 402px the trail truncates to its
+/// last segment anyway, and the parent is one back-tap away.
 class SatAppBar extends ConsumerWidget {
   final VoidCallback? onBack;
-  final String? title;
+
+  /// Path to the current screen, coarsest first: `['Meja', 'T5', 'Teras']`.
+  /// Tablet only.
   final List<String> crumbs;
+
+  /// Extra status chips, rendered ahead of the sync indicator on both layouts.
   final List<Widget> trailingPills;
+
+  /// Off on tablet, where [TabletSideRail] carries the avatar instead.
   final bool showAvatar;
   final Color? backgroundColor;
 
   const SatAppBar({
     super.key,
     this.onBack,
-    this.title,
     this.crumbs = const [],
     this.trailingPills = const [],
     this.showAvatar = true,
@@ -65,14 +78,13 @@ class SatAppBar extends ConsumerWidget {
   Widget _phone(BuildContext context) {
     final sc = context.sat;
     final l = context.layout;
-    final bg = _resolveBg(sc);
 
     return Container(
       decoration: SatBox.d(
-        color: bg,
+        color: _resolveBg(sc),
         border: Border(bottom: _rule(sc)),
       ),
-      padding: EdgeInsets.fromLTRB(16, l.topInset + 6, 16, 10),
+      padding: EdgeInsets.fromLTRB(Sp.s4, l.topInset + Sp.s1h, Sp.s4, Sp.s2h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -86,7 +98,23 @@ class SatAppBar extends ConsumerWidget {
               const LoginClock(),
             ],
           ),
-          const _NetworkPill(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final pill in trailingPills) ...[
+                pill,
+                const SizedBox(width: Sp.s2),
+              ],
+              // Bare dot + label rather than the tablet's pill: the phone row
+              // already carries two bordered clock badges, and a third
+              // enclosure turns the bar into a strip of boxes.
+              const _SyncStatus(bare: true),
+              if (showAvatar) ...[
+                const SizedBox(width: Sp.s3),
+                const _BarAvatar(),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -94,37 +122,88 @@ class SatAppBar extends ConsumerWidget {
 
   Widget _tablet(BuildContext context) {
     final sc = context.sat;
-    final bg = _resolveBg(sc);
 
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: Sp.s6),
       decoration: SatBox.d(
-        color: bg,
+        color: _resolveBg(sc),
         border: Border(bottom: _rule(sc)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (onBack != null) ...[
-                SatBackButton(onTap: onBack!),
-                const SizedBox(width: Sp.s2h),
-              ],
-              const LoginClock(),
-            ],
-          ),
-          const _NetworkPill(),
+          if (onBack != null) ...[
+            SatBackButton(onTap: onBack!),
+            const SizedBox(width: Sp.s2h),
+          ],
+          Expanded(child: _Crumbs(crumbs)),
+          const SizedBox(width: Sp.s4),
+          for (final pill in trailingPills) ...[
+            pill,
+            const SizedBox(width: Sp.s3h),
+          ],
+          const _SyncStatus(),
+          const SizedBox(width: Sp.s3h),
+          const _ShiftCluster(),
+          if (showAvatar) ...[
+            const SizedBox(width: Sp.s3h),
+            const _BarAvatar(),
+          ],
         ],
       ),
     );
   }
 }
 
-class _NetworkPill extends ConsumerWidget {
-  const _NetworkPill();
+/// `Meja › T5 › Teras` — the trail, coarsest first, current segment brightest.
+///
+/// Ellipsizes as one line rather than wrapping: the bar is a fixed 64h and a
+/// second crumb line would push the rule off the slab.
+class _Crumbs extends StatelessWidget {
+  final List<String> items;
+  const _Crumbs(this.items);
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final hi = SatShape.brutal && SatShape.brutalPaper
+        ? SatShape.ink
+        : sc.textHi;
+
+    final spans = <InlineSpan>[];
+    for (var i = 0; i < items.length; i++) {
+      if (i > 0) {
+        spans.add(
+          TextSpan(text: '  ›  ', style: SatType.monoS(color: sc.textLo)),
+        );
+      }
+      final last = i == items.length - 1;
+      spans.add(
+        TextSpan(
+          text: items[i],
+          style: last
+              ? SatType.monoM(color: hi)
+              : SatType.monoS(color: sc.textMd),
+        ),
+      );
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
+    );
+  }
+}
+
+/// Live LAN link state. [bare] drops the pill enclosure down to a dot and a
+/// label — the phone form.
+class _SyncStatus extends ConsumerWidget {
+  final bool bare;
+  const _SyncStatus({this.bare = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -140,9 +219,32 @@ class _NetworkPill extends ConsumerWidget {
       WsConnState.connecting => (sc.warn, sc.warnSoft, 'MENGHUBUNGKAN…'),
       _ => (sc.urgent, sc.urgentSoft, 'OFFLINE'),
     };
-    final fg = SatShape.brutal && SatShape.brutalPaper
-        ? SatShape.ink
-        : sc.textHi;
+    final fg = bare
+        ? sc.textMd
+        : (SatShape.brutal && SatShape.brutalPaper
+              ? SatShape.ink
+              : sc.textHi);
+
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: SatBox.d(
+            color: dotColor,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: softColor, blurRadius: 0, spreadRadius: 3),
+            ],
+          ),
+        ),
+        const SizedBox(width: Sp.s2),
+        Text(label, style: SatType.caption(color: fg)),
+      ],
+    );
+
+    if (bare) return row;
 
     return Container(
       height: 30,
@@ -154,23 +256,86 @@ class _NetworkPill extends ConsumerWidget {
         border: SatB.all(color: SatShape.brutal ? SatShape.ink : sc.border1),
         borderRadius: SatR.a(999),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: SatBox.d(
-              color: dotColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: softColor, blurRadius: 0, spreadRadius: 3),
-              ],
-            ),
-          ),
-          const SizedBox(width: Sp.s2),
-          Text(label, style: SatType.caption(color: fg)),
-        ],
+      child: row,
+    );
+  }
+}
+
+/// `SHIFT 6:42:07 · 18:14 Sab` — the tablet's time block.
+///
+/// Bare label/value pairs rather than the phone's bordered badges: the tablet
+/// bar already carries a crumb trail and a sync pill, and the design drops the
+/// enclosures here so the row reads as one status line instead of four chips.
+class _ShiftCluster extends ConsumerStatefulWidget {
+  const _ShiftCluster();
+
+  @override
+  ConsumerState<_ShiftCluster> createState() => _ShiftClusterState();
+}
+
+class _ShiftClusterState extends ConsumerState<_ShiftCluster> {
+  Timer? _timer;
+  DateTime _now = SatClock.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _now = SatClock.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final hi = SatShape.brutal && SatShape.brutalPaper
+        ? SatShape.ink
+        : sc.textHi;
+
+    final startedRaw = ref.watch(
+      authStateProvider.select((s) => s.user?.shiftStartedAt),
+    );
+    final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
+    final elapsed = started == null
+        ? '00:00:00'
+        : formatElapsedId(_now.difference(started));
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(AppStrings.shiftLabel, style: SatType.caption(color: sc.textLo)),
+        const SizedBox(width: Sp.s1h),
+        Text(elapsed, style: SatType.monoM(color: hi)),
+        const SizedBox(width: Sp.s3h),
+        Text(formatBarClockId(_now), style: SatType.monoM(color: sc.textMd)),
+      ],
+    );
+  }
+}
+
+/// The signed-in user, top right. Taps through to their own shift summary —
+/// the only route out of the bar that isn't a crumb.
+class _BarAvatar extends ConsumerWidget {
+  const _BarAvatar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider).user;
+    if (user == null) return const SizedBox.shrink();
+
+    return Semantics(
+      button: true,
+      label: AppStrings.tabSaya,
+      child: GestureDetector(
+        onTap: () => context.go('/me'),
+        child: StaffAvatar(actor: user, size: 32, mine: true),
       ),
     );
   }

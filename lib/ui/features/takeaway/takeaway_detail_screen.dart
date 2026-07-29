@@ -69,7 +69,6 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
         children: [
           SatAppBar(
             onBack: () => safePop(context, fallback: '/tables'),
-            title: label,
             crumbs: ['Bawa pulang', ?guest],
           ),
           Padding(

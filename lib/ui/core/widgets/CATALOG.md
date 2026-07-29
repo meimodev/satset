@@ -87,7 +87,7 @@ it is not.
 | `SatToggle` | `sat_toggle.dart` | On/off. Owns its 44px tap target and its `Semantics(toggled:)`. A disabled toggle still announces its state. |
 | `SatStepper` | `sat_stepper.dart` | Quantity. Boxed for forms, `.pill` for a crowded row (`icon`, `showMax` → `3/6`). Count slides in the direction of travel. |
 | `SatTabs` + `SatTab` | `sat_tabs.dart` | Segmented strip. No `TabController` — the screen already holds the index. For a handful of options that all fit, prefer a `SatChip.select` row, which shows every choice at once. Two tabs is the **scope switch** shape — mutually exclusive views of one list (the Pesanan board's Milik saya / Semua, ADR-0056) — and needs no wrapper widget of its own. Under Glow the selected tab fills `accent` and inks `accentInk`, matching `SatChip.select` and the zone strip (ADR-0051 as amended). |
-| `SatField` | `sat_field.dart` | **Every** text input. The constructor names what it accepts — `.text` / `.number` / `.money` / `.decimal` / `.search` / `.pin` / `.inline` — and carries the keyboard, the formatters and the affix. `.inline` is the borderless settings-row editor. |
+| `SatField` | `sat_field.dart` | **Every** text input. The constructor names what it accepts — `.text` / `.number` / `.money` / `.decimal` / `.search` / `.pin` / `.inline` / `.password` — and carries the keyboard, the formatters and the affix. `.inline` is the borderless settings-row editor. `.password` masks unless `visible` and builds its own reveal eye — never hand-roll that suffix onto `.text`, which cannot mask. |
 | `satInputDecoration(context, …)` | `sat_field.dart` | For a neighbour Material dresses with an `InputDecoration` and that must match a field beside it. |
 | `SatDropdown` + `SatOption` | `sat_dropdown.dart` | One choice from a closed list, in the same box as `SatField`. |
 | `SatCard` | `sat_card.dart` | The card surface. `.plain`, `.section` (caps header), `.titled` (title + caps tag — the admin section card), `.tappable` (press feedback + `Semantics`). Owns the surface and the header, not the layout inside. |
@@ -130,9 +130,9 @@ All collapse to a static final frame under reduced motion. Callers never branch 
 
 | Widget | File | Use for |
 |---|---|---|
-| `SatAppBar` | `sat_app_bar.dart` | **The** app bar. Responsive phone/tablet. Don't build another. |
+| `SatAppBar` | `sat_app_bar.dart` | **The** app bar. Responsive phone/tablet. Don't build another. Pass `crumbs` (coarsest first) — there is no `title`. Tablet renders the trail; phone drops it. |
 | `SatAppBarPill` | `sat_app_bar.dart` | Trailing pill slot in `SatAppBar` (e.g. `T+0:45`). |
-| `LoginClock` | `satset_top_bar.dart` | Live clock. |
+| `LoginClock` | `satset_top_bar.dart` | Live clock + shift elapsed, as bordered badges. Phone bar only; the tablet bar sets its own bare cluster. |
 | `SatBackButton` | `satset_top_bar.dart` | Back affordance. |
 | `safePop(context)` | `satset_top_bar.dart` | Pop with a route fallback — use instead of raw `Navigator.pop`. |
 | `TabletShell` | `tablet_chrome.dart` | Tablet shell scaffold. |

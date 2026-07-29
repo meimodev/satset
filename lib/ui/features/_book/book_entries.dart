@@ -271,6 +271,10 @@ class _BookGrowState extends State<_BookGrow> {
 
 // ── The catalogue ───────────────────────────────────────────────────────────
 
+// ponytail: a file-level bool, not a StatefulWidget. The book is a debug
+// surface and this is the only entry that needs to remember a tap.
+bool _bookPwVisible = false;
+
 const _gControls = 'Controls';
 const _gMotion = 'Motion';
 const _gChrome = 'Chrome';
@@ -705,6 +709,53 @@ List<BookEntry> bookEntries() => [
         ),
       ),
       BookState(
+        'password — hidden, revealed, error',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatField.password(
+              hint: '••••••••',
+              label: 'Password',
+              visible: false,
+              onToggle: () {},
+              controller: TextEditingController(text: 'rahasia123'),
+            ),
+            const SizedBox(height: Sp.s3),
+            SatField.password(
+              hint: '••••••••',
+              label: 'Password',
+              visible: true,
+              onToggle: () {},
+              controller: TextEditingController(text: 'rahasia123'),
+            ),
+            const SizedBox(height: Sp.s3),
+            SatField.password(
+              hint: '••••••••',
+              label: 'Password',
+              visible: false,
+              onToggle: () {},
+              errorText: 'Minimal 6 karakter.',
+            ),
+          ],
+        ),
+      ),
+      BookState(
+        // The bug this replaced was a working eye over an unmasked field, so
+        // the book gets a live toggle rather than two frozen snapshots.
+        'password — live toggle',
+        (c, r) => StatefulBuilder(
+          builder: (c, setState) {
+            return SatField.password(
+              hint: '••••••••',
+              label: 'Ketuk mata',
+              visible: _bookPwVisible,
+              onToggle: () => setState(() => _bookPwVisible = !_bookPwVisible),
+              controller: TextEditingController(text: 'rahasia123'),
+            );
+          },
+        ),
+      ),
+      BookState(
         'multiline',
         (c, r) => const SatField.text(
           hint: 'mis. alergi belum tertera, catatan plating…',
@@ -1087,34 +1138,35 @@ List<BookEntry> bookEntries() => [
         'disconnected render together.',
     states: [
       BookState(
-        'title, waiter, connected',
+        'crumbs, waiter, connected',
         (c, r) => _scope([
           _auth(BookStubs.waiterAuth),
           _ws(WsConnState.open),
-        ], const SatAppBar(title: 'Meja')),
+        ], const SatAppBar(crumbs: ['Meja'])),
       ),
       BookState(
         'connecting',
         (c, r) => _scope([
           _auth(BookStubs.waiterAuth),
           _ws(WsConnState.connecting),
-        ], const SatAppBar(title: 'Meja')),
+        ], const SatAppBar(crumbs: ['Meja'])),
       ),
       BookState(
         'closed',
         (c, r) => _scope([
           _auth(BookStubs.waiterAuth),
           _ws(WsConnState.closed),
-        ], const SatAppBar(title: 'Meja')),
+        ], const SatAppBar(crumbs: ['Meja'])),
       ),
       BookState(
         'admin — network pill visible',
         (c, r) => _scope([
           _auth(BookStubs.adminAuth),
           _ws(WsConnState.closed),
-        ], const SatAppBar(title: 'Venue')),
+        ], const SatAppBar(crumbs: ['Venue'])),
         note:
-            'The pill only renders for an admin; a waiter gets the dot alone.',
+            'An admin reads "LIVE · LAN"; a waiter gets "LIVE". Tablet draws '
+            'the sync status as a pill, phone as a bare dot + label.',
       ),
       BookState(
         'crumbs + back',
@@ -1131,7 +1183,7 @@ List<BookEntry> bookEntries() => [
         (c, r) => _scope(
           [_auth(BookStubs.waiterAuth), _ws(WsConnState.open)],
           const SatAppBar(
-            title: 'Dapur',
+            crumbs: ['Dapur'],
             trailingPills: [
               SatAppBarPill(icon: Icons.timer_outlined, label: 'T+0:45'),
               SatAppBarPill(label: '12 antre'),
@@ -1144,17 +1196,17 @@ List<BookEntry> bookEntries() => [
         (c, r) => _scope([
           _auth(BookStubs.waiterAuth),
           _ws(WsConnState.open),
-        ], const SatAppBar(title: 'Meja', showAvatar: false)),
+        ], const SatAppBar(crumbs: ['Meja'], showAvatar: false)),
       ),
       BookState(
         'signed out',
         (c, r) => _scope([
           _auth(BookStubs.signedOut),
           _ws(WsConnState.closed),
-        ], const SatAppBar(title: 'Masuk')),
+        ], const SatAppBar(crumbs: ['Masuk'])),
       ),
       BookState(
-        'stress — long title, deep crumbs, three pills',
+        'stress — deep crumbs, three pills',
         (c, r) => _scope(
           [_auth(BookStubs.adminAuth), _ws(WsConnState.connecting)],
           const SatAppBar(

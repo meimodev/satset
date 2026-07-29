@@ -45,7 +45,7 @@ class DiscountPresetsScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          const SatAppBar(title: 'Diskon'),
+          const SatAppBar(crumbs: ['Diskon']),
           Expanded(
             child: presets.isEmpty
                 ? const SatEmpty(

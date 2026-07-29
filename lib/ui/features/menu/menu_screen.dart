@@ -21,6 +21,7 @@ import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
+import 'cart_line_actions.dart';
 import 'modifier_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
@@ -284,9 +285,6 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             children: [
               SatAppBar(
                 onBack: () => safePop(context, fallback: _backFallback),
-                title: widget.tableless
-                    ? (_isTakeaway ? 'Bawa pulang' : 'Pesanan baru')
-                    : 'Meja ${table!.displayName} · ${table.pax}p',
                 crumbs: widget.tableless
                     ? (_isTakeaway
                           ? const ['Bawa pulang', 'Tambah item']
@@ -765,12 +763,9 @@ class _TabletCartPane extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      '×${cart[i].qty}',
-                                      style: SatType.monoM(color: sc.textMd),
-                                    ),
-                                    const SizedBox(width: Sp.s2),
                                     Expanded(
                                       child: Text(
                                         cart[i].variantName.isEmpty
@@ -779,44 +774,7 @@ class _TabletCartPane extends ConsumerWidget {
                                         style: SatType.bodyM(color: sc.textHi),
                                       ),
                                     ),
-                                  ],
-                                ),
-                                if (cart[i].modifiers.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: Sp.s1,
-                                      left: Sp.s6,
-                                    ),
-                                    child: Text(
-                                      cart[i].modifiers.join(' · '),
-                                      style: SatType.bodyS(color: sc.textMd),
-                                    ),
-                                  ),
-                                const SizedBox(height: Sp.s2),
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => ref
-                                          .read(cartProvider(tableId).notifier)
-                                          .remove(cart[i].id),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.delete_outline,
-                                            size: 12,
-                                            color: sc.urgent,
-                                          ),
-                                          const SizedBox(width: Sp.s1),
-                                          Text(
-                                            'Hapus',
-                                            style: SatType.bodyS(
-                                              color: sc.urgent,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Spacer(),
+                                    const SizedBox(width: Sp.s2),
                                     Text(
                                       formatIDR(
                                         cart[i].unitPrice * cart[i].qty,
@@ -824,6 +782,27 @@ class _TabletCartPane extends ConsumerWidget {
                                       style: SatType.monoM(color: sc.textMd),
                                     ),
                                   ],
+                                ),
+                                if (cart[i].modifiers.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: Sp.s1),
+                                    child: Text(
+                                      cart[i].modifiers.join(' · '),
+                                      style: SatType.bodyS(color: sc.textMd),
+                                    ),
+                                  ),
+                                if (cart[i].note.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: Sp.s1),
+                                    child: Text(
+                                      cart[i].note,
+                                      style: SatType.bodyS(color: sc.textLo),
+                                    ),
+                                  ),
+                                const SizedBox(height: Sp.s2),
+                                CartLineActions(
+                                  tableId: tableId,
+                                  line: cart[i],
                                 ),
                               ],
                             ),

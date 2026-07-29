@@ -36,4 +36,51 @@ class CartItem {
     required this.unitPrice,
     this.allergens = const [],
   });
+
+  CartItem copyWith({
+    String? id,
+    String? itemId,
+    String? name,
+    String? variantId,
+    String? variantName,
+    List<String>? modifiers,
+    List<TicketModifier>? selectedModifiers,
+    String? note,
+    CourseId? course,
+    int? qty,
+    int? unitPrice,
+    List<String>? allergens,
+  }) => CartItem(
+    id: id ?? this.id,
+    itemId: itemId ?? this.itemId,
+    name: name ?? this.name,
+    variantId: variantId ?? this.variantId,
+    variantName: variantName ?? this.variantName,
+    modifiers: modifiers ?? this.modifiers,
+    selectedModifiers: selectedModifiers ?? this.selectedModifiers,
+    note: note ?? this.note,
+    course: course ?? this.course,
+    qty: qty ?? this.qty,
+    unitPrice: unitPrice ?? this.unitPrice,
+    allergens: allergens ?? this.allergens,
+  );
+
+  /// Order-insensitive identity of the chosen options. Two lines that picked
+  /// the same options in a different order are the same line to the kitchen,
+  /// so the set — not the list — is what stacking compares. See ADR-0060.
+  Set<String> get modifierKeys => {
+    for (final m in selectedModifiers) '${m.groupId}|${m.optionId}',
+  };
+
+  /// Whether [other] is the same order line: same dish, same config, same
+  /// note, same course. Deliberately ignores `id` (a fresh uuid per add),
+  /// `qty` (the thing being summed) and `unitPrice`/`allergens` (both derived
+  /// from the fields above).
+  bool sameLineAs(CartItem other) =>
+      itemId == other.itemId &&
+      variantId == other.variantId &&
+      course == other.course &&
+      note.trim() == other.note.trim() &&
+      modifierKeys.length == other.modifierKeys.length &&
+      modifierKeys.containsAll(other.modifierKeys);
 }

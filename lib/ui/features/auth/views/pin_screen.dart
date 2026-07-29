@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
-import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -9,6 +8,7 @@ import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:go_router/go_router.dart';
@@ -99,6 +99,11 @@ class _PinScreenState extends ConsumerState<PinScreen>
     if (ok) context.go('/venue');
   }
 
+  /// Hands the reset off to a human. See ADR-0059: there is no self-serve
+  /// path any more, so this only has to get the address in front of the
+  /// developer — `wa.me` is an https link, so it resolves to WhatsApp when
+  /// installed and to the browser's "Continue to chat" page when not. No
+  /// `canLaunchUrl` gate: on Android something always answers an https VIEW.
   Future<void> _forgotPassword() async {
     final emailErr = _validateEmail(_adminEmail.text);
     if (emailErr != null) {
@@ -107,18 +112,16 @@ class _PinScreenState extends ConsumerState<PinScreen>
     }
     FocusScope.of(context).unfocus();
     final email = _adminEmail.text.trim();
+    final uri = Uri.parse(
+      'https://wa.me/${AppStrings.devWhatsApp}?text='
+      '${Uri.encodeComponent(AppStrings.resetRequestMessage(email))}',
+    );
     try {
-      await ref.read(authStateProvider.notifier).sendAdminPasswordReset(email);
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Link reset dikirim ke $email')));
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal kirim link reset. Cek email & koneksi.'),
-        ),
+        const SnackBar(content: Text(AppStrings.resetRequestFailed)),
       );
     }
   }
@@ -485,20 +488,13 @@ class _AdminAuthForm extends StatelessWidget {
           children: [
             Text('PASSWORD', style: SatType.monoS(color: sc.textLo)),
             const SizedBox(height: Sp.s1h),
-            SatField.text(
+            SatField.password(
               controller: password,
               hint: '••••••••',
+              visible: showPassword,
+              onToggle: onToggleShow,
               hasError: pwHasError,
               onSubmitted: (_) => onSubmit(),
-              suffix: SatIconButton.plain(
-                icon: showPassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                tooltip: showPassword
-                    ? AppStrings.a11yHidePassword
-                    : AppStrings.a11yShowPassword,
-                onTap: onToggleShow,
-              ),
             ),
             if (pwHasError)
               Padding(

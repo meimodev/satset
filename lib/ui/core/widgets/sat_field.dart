@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/localization/app_strings.dart';
 import '../design/colors.dart';
 import '../design/format.dart';
 import '../design/skin.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
+import 'sat_icon_button.dart';
 
 /// What a field accepts. Private — the named constructors are the API.
-enum _Kind { text, number, money, decimal, search, pin, inline }
+enum _Kind { text, number, money, decimal, search, pin, inline, password }
 
 /// The app's one input skin, shared by [SatField] and by anything else Material
 /// dresses with an `InputDecoration` — the recipe editor's ingredient dropdown
@@ -133,6 +135,15 @@ class SatField extends StatelessWidget {
   /// Money only. Lets a leading `-` through — a modifier can knock money off
   /// the line as well as add to it.
   final bool signed;
+
+  /// Password only. Whether the characters are shown. The parent owns this bit
+  /// rather than the field: the pin screen already holds it, and a field that
+  /// hid its own reveal state could not be driven from a "show password"
+  /// setting elsewhere.
+  final bool visible;
+
+  /// Password only. Fires when the eye is tapped.
+  final VoidCallback? onToggle;
   final _Kind _kind;
 
   /// Free text — names, notes, descriptions.
@@ -161,6 +172,8 @@ class SatField extends StatelessWidget {
   }) : signed = false,
        mono = false,
        keyboard = null,
+       visible = false,
+       onToggle = null,
        _kind = _Kind.text;
 
   /// Whole numbers — quantities, minutes, seats. Digits only, enforced by
@@ -191,6 +204,8 @@ class SatField extends StatelessWidget {
        signed = false,
        mono = false,
        keyboard = null,
+       visible = false,
+       onToggle = null,
        _kind = _Kind.number;
 
   /// Rupiah. Groups thousands as you type and carries the `Rp` mark, so the
@@ -220,6 +235,8 @@ class SatField extends StatelessWidget {
        capitalization = TextCapitalization.none,
        mono = false,
        keyboard = null,
+       visible = false,
+       onToggle = null,
        _kind = _Kind.money;
 
   /// Fractional amounts — stock in kg or litres. Accepts a comma as well as a
@@ -249,6 +266,8 @@ class SatField extends StatelessWidget {
        signed = false,
        mono = false,
        keyboard = null,
+       visible = false,
+       onToggle = null,
        _kind = _Kind.decimal;
 
   /// Filters a list as you type. Carries its own leading glass.
@@ -277,6 +296,8 @@ class SatField extends StatelessWidget {
        signed = false,
        mono = false,
        keyboard = null,
+       visible = false,
+       onToggle = null,
        _kind = _Kind.search;
 
   /// A value edited in place at the right of a settings row. No box, no
@@ -309,6 +330,8 @@ class SatField extends StatelessWidget {
        textAlign = TextAlign.end,
        capitalization = TextCapitalization.sentences,
        signed = false,
+       visible = false,
+       onToggle = null,
        _kind = _Kind.inline;
 
   /// A staff PIN. Obscured, digits only, capped at six — the shape the auth
@@ -338,7 +361,44 @@ class SatField extends StatelessWidget {
        signed = false,
        mono = false,
        keyboard = null,
+       visible = false,
+       onToggle = null,
        _kind = _Kind.pin;
+
+  /// An account password. Obscured unless [visible], with the reveal eye built
+  /// in — every screen that rolled its own suffix got the icon right and the
+  /// masking wrong, so the toggle and the thing it toggles now ship together.
+  ///
+  /// Unlike [SatField.pin] this takes any character: a PIN is the six digits
+  /// the auth route accepts, a password is whatever Firebase holds.
+  const SatField.password({
+    super.key,
+    this.controller,
+    required this.hint,
+    required this.visible,
+    required this.onToggle,
+    this.label,
+    this.onChanged,
+    this.onSubmitted,
+    this.enabled = true,
+    this.autofocus = false,
+    this.focusNode,
+    this.errorText,
+    this.hasError = false,
+  }) : readOnly = false,
+       maxLines = 1,
+       minLines = null,
+       maxLength = null,
+       prefixIcon = null,
+       suffixText = null,
+       suffix = null,
+       helperText = null,
+       textAlign = TextAlign.start,
+       capitalization = TextCapitalization.none,
+       signed = false,
+       mono = false,
+       keyboard = null,
+       _kind = _Kind.password;
 
   TextInputType get _keyboard =>
       keyboard ??
@@ -349,13 +409,14 @@ class SatField extends StatelessWidget {
         _Kind.text || _Kind.inline =>
           maxLines == 1 ? TextInputType.text : TextInputType.multiline,
         _Kind.search => TextInputType.text,
+        _Kind.password => TextInputType.visiblePassword,
       };
 
   List<TextInputFormatter>? get _formatters => switch (_kind) {
     _Kind.number || _Kind.pin => [FilteringTextInputFormatter.digitsOnly],
     _Kind.money => [RupiahInputFormatter(allowNegative: signed)],
     _Kind.decimal => null,
-    _Kind.text || _Kind.search || _Kind.inline => null,
+    _Kind.text || _Kind.search || _Kind.inline || _Kind.password => null,
   };
 
   @override
@@ -369,7 +430,8 @@ class SatField extends StatelessWidget {
       enabled: enabled,
       readOnly: readOnly,
       autofocus: autofocus,
-      obscureText: _kind == _Kind.pin,
+      obscureText:
+          _kind == _Kind.pin || (_kind == _Kind.password && !visible),
       maxLines: maxLines,
       minLines: minLines,
       maxLength: maxLength,
@@ -404,7 +466,17 @@ class SatField extends StatelessWidget {
               prefixIcon: prefixIcon,
               prefixText: _kind == _Kind.money ? 'Rp ' : null,
               suffixText: suffixText,
-              suffix: suffix,
+              suffix: _kind == _Kind.password
+                  ? SatIconButton.plain(
+                      icon: visible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      tooltip: visible
+                          ? AppStrings.a11yHidePassword
+                          : AppStrings.a11yShowPassword,
+                      onTap: onToggle,
+                    )
+                  : suffix,
             ),
     );
 

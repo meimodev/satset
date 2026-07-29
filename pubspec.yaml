@@ -61,6 +61,9 @@ dependencies:
   printing: ^5.13.3
   share_plus: ^10.1.2
 
+  # Hands the "lupa password" request to the developer's WhatsApp (ADR-0059).
+  url_launcher: ^6.3.1
+
   # Firebase — admin identity + eligibility gate (Android only). See
   # docs/adr/0015-firebase-admin-auth-and-server-kill-switch.md.
   firebase_core: ^3.6.0

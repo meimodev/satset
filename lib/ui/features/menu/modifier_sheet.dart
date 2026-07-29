@@ -25,10 +25,19 @@ import 'package:satset/ui/core/design/spacing.dart';
 
 const _uuid = Uuid();
 
+/// Ceiling for one trip through the sheet. Repeated adds stack past this on
+/// the cart line itself, up to `kCartLineMaxQty` (ADR-0060).
+const int _kMaxPerAdd = 20;
+
+/// Opens the item configurator. Pass [editing] to reopen it over a line that
+/// is already in the cart — the sheet seeds itself from that line and the foot
+/// button says "Simpan". Same sheet either way: one place owns the modifier
+/// rendering, the price math and the required-group validation (ADR-0060).
 Future<void> showModifierSheet({
   required BuildContext context,
   required MenuItem item,
   required ValueChanged<CartItem> onAdd,
+  CartItem? editing,
 }) {
   final l = context.layout;
   if (l.useTabletShell) {
@@ -51,6 +60,7 @@ Future<void> showModifierSheet({
               color: ctx.sat.bg1,
               child: _ModifierSheetBody(
                 item: item,
+                editing: editing,
                 scrollController: ScrollController(),
                 onAdd: (ci) {
                   onAdd(ci);
@@ -77,6 +87,7 @@ Future<void> showModifierSheet({
       expand: false,
       builder: (ctx, scroll) => _ModifierSheetBody(
         item: item,
+        editing: editing,
         scrollController: scroll,
         onAdd: (ci) {
           onAdd(ci);
@@ -91,10 +102,15 @@ class _ModifierSheetBody extends ConsumerStatefulWidget {
   final MenuItem item;
   final ValueChanged<CartItem> onAdd;
   final ScrollController scrollController;
+
+  /// The cart line being re-configured, or null when adding a new one.
+  final CartItem? editing;
+
   const _ModifierSheetBody({
     required this.item,
     required this.onAdd,
     required this.scrollController,
+    this.editing,
   });
 
   @override
@@ -108,14 +124,39 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
   late CourseId _course;
   int _qty = 1;
 
+  late final TextEditingController _noteCtl;
+
   @override
   void initState() {
     super.initState();
-    _variantId = widget.item.variants.first.id;
+    final edit = widget.editing;
+    // A variant can be retired from the menu while the line sits in the cart;
+    // fall back rather than throw on a `firstWhere` that finds nothing.
+    final variantIds = widget.item.variants.map((v) => v.id).toSet();
+    _variantId = edit != null && variantIds.contains(edit.variantId)
+        ? edit.variantId
+        : widget.item.variants.first.id;
     for (final g in widget.item.modifierGroups) {
-      _selections[g.id] = g.multi ? <String>[] : null;
+      final chosen = edit == null
+          ? const <String>[]
+          : [
+              for (final m in edit.selectedModifiers)
+                if (m.groupId == g.id) m.optionId,
+            ];
+      _selections[g.id] = g.multi
+          ? chosen.toList()
+          : (chosen.isEmpty ? null : chosen.first);
     }
-    _course = Courses.fromCategory(widget.item.categoryId);
+    _special = edit?.note ?? '';
+    _noteCtl = TextEditingController(text: _special);
+    _course = edit?.course ?? Courses.fromCategory(widget.item.categoryId);
+    _qty = edit?.qty ?? 1;
+  }
+
+  @override
+  void dispose() {
+    _noteCtl.dispose();
+    super.dispose();
   }
 
   bool get _valid {
@@ -201,7 +242,9 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
     final variant = widget.item.variants.firstWhere((v) => v.id == _variantId);
     widget.onAdd(
       CartItem(
-        id: 'C${_uuid.v4()}',
+        // Keeps the line's identity when re-configuring, so the cart replaces
+        // rather than orphans it.
+        id: widget.editing?.id ?? 'C${_uuid.v4()}',
         itemId: widget.item.id,
         name: widget.item.name,
         variantId: _variantId,
@@ -369,6 +412,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SatField.text(
+                          controller: _noteCtl,
                           hint: 'mis. alergi belum tertera, catatan plating…',
                           maxLength: 80,
                           minLines: 2,
@@ -390,9 +434,10 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
           _Foot(
             qty: _qty,
             valid: _valid,
+            editing: widget.editing != null,
             totalLabel: formatIDR(_unit * _qty),
-            onDec: () => setState(() => _qty = (_qty - 1).clamp(1, 20)),
-            onInc: () => setState(() => _qty = (_qty + 1).clamp(1, 20)),
+            onDec: () => setState(() => _qty = (_qty - 1).clamp(1, _kMaxPerAdd)),
+            onInc: () => setState(() => _qty = (_qty + 1).clamp(1, _kMaxPerAdd)),
             onAdd: _submit,
           ),
         ],
@@ -624,6 +669,7 @@ class _CourseChip extends StatelessWidget {
 class _Foot extends StatelessWidget {
   final int qty;
   final bool valid;
+  final bool editing;
   final String totalLabel;
   final VoidCallback onDec;
   final VoidCallback onInc;
@@ -635,6 +681,7 @@ class _Foot extends StatelessWidget {
     required this.onDec,
     required this.onInc,
     required this.onAdd,
+    this.editing = false,
   });
 
   @override
@@ -656,6 +703,9 @@ class _Foot extends StatelessWidget {
           SatStepper(
             value: qty,
             min: 1,
+            // Was left at the default 99 while the callbacks clamped at 20, so
+            // the last twenty taps of `+` did nothing visible.
+            max: _kMaxPerAdd,
             size: SatStepperSize.lg,
             semanticLabel: AppStrings.quantity,
             onChanged: (v) => v > qty ? onInc() : onDec(),
@@ -663,8 +713,10 @@ class _Foot extends StatelessWidget {
           const SizedBox(width: Sp.s3),
           Expanded(
             child: SatButton.primary(
-              label: valid ? AppStrings.add : 'Pilih wajib',
-              icon: valid ? Icons.add : null,
+              label: valid
+                  ? (editing ? AppStrings.save : AppStrings.add)
+                  : 'Pilih wajib',
+              icon: valid ? (editing ? Icons.check : Icons.add) : null,
               size: SatButtonSize.lg,
               trailingValue: valid ? totalLabel : null,
               onTap: valid ? onAdd : null,

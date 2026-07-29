@@ -19,6 +19,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
+import 'package:satset/ui/features/menu/cart_line_actions.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/review/view_models/review_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
@@ -116,11 +117,6 @@ class ReviewScreen extends ConsumerWidget {
             children: [
               SatAppBar(
                 onBack: () => safePop(context, fallback: backFallback),
-                title: tableless
-                    ? (_isTakeaway
-                          ? 'Tinjau · Bawa pulang'
-                          : 'Tinjau · Pesanan baru')
-                    : 'Tinjau · Meja ${table!.displayName}',
                 crumbs: tableless
                     ? (_isTakeaway
                           ? const ['Bawa pulang', 'Tinjau']
@@ -200,9 +196,7 @@ class ReviewScreen extends ConsumerWidget {
                             _ReviewCourseBlock(
                               course: Courses.byId(cid),
                               items: grouped[cid]!,
-                              onRemove: (id) => ref
-                                  .read(cartProvider(tableId).notifier)
-                                  .remove(id),
+                              tableId: tableId,
                             ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -547,11 +541,15 @@ Future<String?> _askGuestName(BuildContext context) {
 class _ReviewCourseBlock extends StatelessWidget {
   final Course course;
   final List<CartItem> items;
-  final void Function(String) onRemove;
+
+  /// Cart key — [CartLineActions] reaches the notifier itself rather than
+  /// threading one callback per verb through this widget.
+  final String tableId;
+
   const _ReviewCourseBlock({
     required this.course,
     required this.items,
-    required this.onRemove,
+    required this.tableId,
   });
 
   @override
@@ -599,75 +597,50 @@ class _ReviewCourseBlock extends StatelessWidget {
                   borderRadius: SatR.a(14),
                   border: SatB.all(color: sc.border0),
                 ),
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: Sp.s6,
-                      child: Text(
-                        '×${c.qty}',
-                        style: SatType.monoM(color: sc.textMd),
-                      ),
-                    ),
-                    const SizedBox(width: Sp.s3),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
                             c.name +
                                 (c.variantName.isEmpty
                                     ? ''
                                     : ' · ${c.variantName}'),
                             style: SatType.bodyM(color: sc.textHi),
                           ),
-                          MenuTagBadges(itemId: c.itemId),
-                          if (c.modifiers.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: Sp.s1),
-                              child: Text(
-                                c.modifiers.join(' · '),
-                                style: SatType.bodyS(color: sc.textMd),
-                              ),
-                            ),
-                          if (c.note.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: Sp.s1),
-                              child: NoteLine(
-                                label: 'Instruksi khusus',
-                                text: c.note,
-                              ),
-                            ),
-                          const SizedBox(height: Sp.s2),
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => onRemove(c.id),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.delete_outline,
-                                      size: 12,
-                                      color: sc.urgent,
-                                    ),
-                                    const SizedBox(width: Sp.s1),
-                                    Text(
-                                      'Hapus',
-                                      style: SatType.bodyS(color: sc.urgent),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                formatIDR(c.unitPrice * c.qty),
-                                style: SatType.monoM(color: sc.textMd),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: Sp.s3),
+                        // Price moved off the action row: the stepper now
+                        // carries the quantity, and the two together did not
+                        // fit the 380-wide tablet pane.
+                        Text(
+                          formatIDR(c.unitPrice * c.qty),
+                          style: SatType.monoM(color: sc.textMd),
+                        ),
+                      ],
                     ),
+                    MenuTagBadges(itemId: c.itemId),
+                    if (c.modifiers.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Sp.s1),
+                        child: Text(
+                          c.modifiers.join(' · '),
+                          style: SatType.bodyS(color: sc.textMd),
+                        ),
+                      ),
+                    if (c.note.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Sp.s1),
+                        child: NoteLine(
+                          label: 'Instruksi khusus',
+                          text: c.note,
+                        ),
+                      ),
+                    const SizedBox(height: Sp.s2),
+                    CartLineActions(tableId: tableId, line: c),
                   ],
                 ),
               ),

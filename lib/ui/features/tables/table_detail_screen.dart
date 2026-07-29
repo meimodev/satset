@@ -488,7 +488,6 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final appBar = SatAppBar(
       onBack: () => safePop(context),
       crumbs: ['Meja', table.displayName, if (zone.name.isNotEmpty) zone.name],
-      title: 'Meja ${table.displayName}',
     );
 
     if (l.useTabletShell) {

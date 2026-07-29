@@ -17,6 +17,23 @@ final _bookingDay = DateFormat('EEEE d MMM', 'id_ID');
 
 String formatBookingDayId(DateTime d) => _bookingDay.format(d);
 
+/// The wall clock in the tablet top bar: "18:14 · Sab".
+///
+/// Minute precision on purpose — the seconds a waiter needs are the shift
+/// elapsed sitting next to it, and a second-ticking wall clock next to a
+/// second-ticking timer reads as two things racing.
+/// Hand-rolled rather than `DateFormat('HH:mm · EEE', 'id_ID')`: the bar builds
+/// on first frame, and locale data is only loaded once `main` has run. A widget
+/// test mounting the bar directly would throw `LocaleDataException`, and seven
+/// strings are not worth an init dependency.
+const _idShortDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+String formatBarClockId(DateTime d) {
+  final hh = d.hour.toString().padLeft(2, '0');
+  final mm = d.minute.toString().padLeft(2, '0');
+  return '$hh:$mm · ${_idShortDays[d.weekday - 1]}';
+}
+
 final _grouping = NumberFormat.decimalPattern('id_ID');
 
 /// Group an integer amount for seeding a rupiah text field: `14500` → `14.500`.

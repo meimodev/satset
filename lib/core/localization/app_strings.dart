@@ -6,6 +6,7 @@ class AppStrings {
   static const String saved = 'Tersimpan';
   static const String delete = 'Hapus';
   static const String add = 'Tambah';
+  static const String edit = 'Ubah';
   static const String back = 'Kembali';
   static const String close = 'Tutup';
   static const String loading = 'Memuat…';
@@ -239,6 +240,9 @@ class AppStrings {
   static const String tabKasir = 'Kasir';
   static const String tabSaya = 'Saya';
 
+  /// Caps label ahead of the running shift timer in the tablet top bar.
+  static const String shiftLabel = 'SHIFT';
+
   // Breadcrumbs
   static const String crumbTeras = 'Teras';
   static const String crumbPesananSaya = 'Pesanan saya';
@@ -285,6 +289,22 @@ class AppStrings {
   static const String a11yPickColor = 'Pilih warna';
   static const String a11yAddItem = 'Tambah item';
   static const String a11yTableLocked = 'Meja terkunci';
+
+  // Pemulihan password admin (ADR-0059). Tidak ada reset otomatis: tombol
+  // "Lupa password?" membuka WhatsApp developer dengan pesan yang sudah diisi.
+
+  /// WhatsApp developer, E.164 tanpa `+`, untuk tautan `wa.me`. Ditanam di
+  /// aplikasi karena tombol ini ditekan justru saat perangkat belum terpasang
+  /// atau tanpa internet — nomor yang harus diambil dari jaringan tidak ada
+  /// gunanya di saat itu.
+  static const String devWhatsApp = '6289525699078';
+
+  static String resetRequestMessage(String email) =>
+      'Halo, saya lupa password admin SatSet.\n'
+      'Email: $email\n'
+      'Mohon dibantu reset.';
+
+  static const String resetRequestFailed = 'Gagal membuka WhatsApp.';
 
   // Staf & akun (staff_screen). Layar ini sebelumnya ditulis penuh dalam bahasa
   // Inggris — satu-satunya layar yang begitu. Istilah yang tetap dipakai apa

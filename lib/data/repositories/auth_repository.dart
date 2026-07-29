@@ -522,10 +522,6 @@ class AuthRepository extends StateNotifier<AuthState> {
         .toUpperCase();
   }
 
-  /// Trigger a Firebase password-reset email for [email].
-  Future<void> sendAdminPasswordReset(String email) =>
-      ref.read(firebaseAdminServiceProvider).sendPasswordReset(email);
-
   /// Arm the two-sided kill switch and the offline heartbeat for a live admin
   /// session: watch `admins/{uid}.status` (per-operator ban) AND
   /// `venues/{vid}.status` (per-venue kill); either leaving `active` tears the
