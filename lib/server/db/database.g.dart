@@ -8639,6 +8639,19 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('chime'),
   );
+  static const VerificationMeta _soundGuestPendingMeta = const VerificationMeta(
+    'soundGuestPending',
+  );
+  @override
+  late final GeneratedColumn<String> soundGuestPending =
+      GeneratedColumn<String>(
+        'sound_guest_pending',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('doorbell'),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8680,6 +8693,7 @@ class $VenueSettingsTable extends VenueSettings
     soundOverdue,
     soundUngreeted,
     soundPickup,
+    soundGuestPending,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9016,6 +9030,15 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('sound_guest_pending')) {
+      context.handle(
+        _soundGuestPendingMeta,
+        soundGuestPending.isAcceptableOrUnknown(
+          data['sound_guest_pending']!,
+          _soundGuestPendingMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9181,6 +9204,10 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.string,
         data['${effectivePrefix}sound_pickup'],
       )!,
+      soundGuestPending: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_guest_pending'],
+      )!,
     );
   }
 
@@ -9294,6 +9321,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// Presets for the two table cues added by ADR-0044.
   final String soundUngreeted;
   final String soundPickup;
+
+  /// Preset for the guest-order arrival cue (ADR-0064). Defaults to a clip that
+  /// is *not* the ready chime: the two demand different actions.
+  final String soundGuestPending;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -9334,6 +9365,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.soundOverdue,
     required this.soundUngreeted,
     required this.soundPickup,
+    required this.soundGuestPending,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9379,6 +9411,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['sound_overdue'] = Variable<String>(soundOverdue);
     map['sound_ungreeted'] = Variable<String>(soundUngreeted);
     map['sound_pickup'] = Variable<String>(soundPickup);
+    map['sound_guest_pending'] = Variable<String>(soundGuestPending);
     return map;
   }
 
@@ -9423,6 +9456,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundOverdue: Value(soundOverdue),
       soundUngreeted: Value(soundUngreeted),
       soundPickup: Value(soundPickup),
+      soundGuestPending: Value(soundGuestPending),
     );
   }
 
@@ -9481,6 +9515,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundOverdue: serializer.fromJson<String>(json['soundOverdue']),
       soundUngreeted: serializer.fromJson<String>(json['soundUngreeted']),
       soundPickup: serializer.fromJson<String>(json['soundPickup']),
+      soundGuestPending: serializer.fromJson<String>(json['soundGuestPending']),
     );
   }
   @override
@@ -9526,6 +9561,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'soundOverdue': serializer.toJson<String>(soundOverdue),
       'soundUngreeted': serializer.toJson<String>(soundUngreeted),
       'soundPickup': serializer.toJson<String>(soundPickup),
+      'soundGuestPending': serializer.toJson<String>(soundGuestPending),
     };
   }
 
@@ -9569,6 +9605,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     String? soundOverdue,
     String? soundUngreeted,
     String? soundPickup,
+    String? soundGuestPending,
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -9609,6 +9646,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundOverdue: soundOverdue ?? this.soundOverdue,
     soundUngreeted: soundUngreeted ?? this.soundUngreeted,
     soundPickup: soundPickup ?? this.soundPickup,
+    soundGuestPending: soundGuestPending ?? this.soundGuestPending,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -9715,6 +9753,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundPickup: data.soundPickup.present
           ? data.soundPickup.value
           : this.soundPickup,
+      soundGuestPending: data.soundGuestPending.present
+          ? data.soundGuestPending.value
+          : this.soundGuestPending,
     );
   }
 
@@ -9759,7 +9800,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('soundVoid: $soundVoid, ')
           ..write('soundOverdue: $soundOverdue, ')
           ..write('soundUngreeted: $soundUngreeted, ')
-          ..write('soundPickup: $soundPickup')
+          ..write('soundPickup: $soundPickup, ')
+          ..write('soundGuestPending: $soundGuestPending')
           ..write(')'))
         .toString();
   }
@@ -9805,6 +9847,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundOverdue,
     soundUngreeted,
     soundPickup,
+    soundGuestPending,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -9848,7 +9891,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.soundVoid == this.soundVoid &&
           other.soundOverdue == this.soundOverdue &&
           other.soundUngreeted == this.soundUngreeted &&
-          other.soundPickup == this.soundPickup);
+          other.soundPickup == this.soundPickup &&
+          other.soundGuestPending == this.soundGuestPending);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -9891,6 +9935,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<String> soundOverdue;
   final Value<String> soundUngreeted;
   final Value<String> soundPickup;
+  final Value<String> soundGuestPending;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -9932,6 +9977,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundOverdue = const Value.absent(),
     this.soundUngreeted = const Value.absent(),
     this.soundPickup = const Value.absent(),
+    this.soundGuestPending = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -9974,6 +10020,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundOverdue = const Value.absent(),
     this.soundUngreeted = const Value.absent(),
     this.soundPickup = const Value.absent(),
+    this.soundGuestPending = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -10016,6 +10063,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<String>? soundOverdue,
     Expression<String>? soundUngreeted,
     Expression<String>? soundPickup,
+    Expression<String>? soundGuestPending,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10065,6 +10113,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (soundOverdue != null) 'sound_overdue': soundOverdue,
       if (soundUngreeted != null) 'sound_ungreeted': soundUngreeted,
       if (soundPickup != null) 'sound_pickup': soundPickup,
+      if (soundGuestPending != null) 'sound_guest_pending': soundGuestPending,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10109,6 +10158,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<String>? soundOverdue,
     Value<String>? soundUngreeted,
     Value<String>? soundPickup,
+    Value<String>? soundGuestPending,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -10153,6 +10203,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       soundOverdue: soundOverdue ?? this.soundOverdue,
       soundUngreeted: soundUngreeted ?? this.soundUngreeted,
       soundPickup: soundPickup ?? this.soundPickup,
+      soundGuestPending: soundGuestPending ?? this.soundGuestPending,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10285,6 +10336,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (soundPickup.present) {
       map['sound_pickup'] = Variable<String>(soundPickup.value);
     }
+    if (soundGuestPending.present) {
+      map['sound_guest_pending'] = Variable<String>(soundGuestPending.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10333,6 +10387,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('soundOverdue: $soundOverdue, ')
           ..write('soundUngreeted: $soundUngreeted, ')
           ..write('soundPickup: $soundPickup, ')
+          ..write('soundGuestPending: $soundGuestPending, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -25236,6 +25291,7 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<String> soundOverdue,
       Value<String> soundUngreeted,
       Value<String> soundPickup,
+      Value<String> soundGuestPending,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -25279,6 +25335,7 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<String> soundOverdue,
       Value<String> soundUngreeted,
       Value<String> soundPickup,
+      Value<String> soundGuestPending,
       Value<int> rowid,
     });
 
@@ -25483,6 +25540,11 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<String> get soundPickup => $composableBuilder(
     column: $table.soundPickup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundGuestPending => $composableBuilder(
+    column: $table.soundGuestPending,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -25690,6 +25752,11 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.soundPickup,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get soundGuestPending => $composableBuilder(
+    column: $table.soundGuestPending,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -25881,6 +25948,11 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.soundPickup,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get soundGuestPending => $composableBuilder(
+    column: $table.soundGuestPending,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -25953,6 +26025,7 @@ class $$VenueSettingsTableTableManager
                 Value<String> soundOverdue = const Value.absent(),
                 Value<String> soundUngreeted = const Value.absent(),
                 Value<String> soundPickup = const Value.absent(),
+                Value<String> soundGuestPending = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -25994,6 +26067,7 @@ class $$VenueSettingsTableTableManager
                 soundOverdue: soundOverdue,
                 soundUngreeted: soundUngreeted,
                 soundPickup: soundPickup,
+                soundGuestPending: soundGuestPending,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -26037,6 +26111,7 @@ class $$VenueSettingsTableTableManager
                 Value<String> soundOverdue = const Value.absent(),
                 Value<String> soundUngreeted = const Value.absent(),
                 Value<String> soundPickup = const Value.absent(),
+                Value<String> soundGuestPending = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -26078,6 +26153,7 @@ class $$VenueSettingsTableTableManager
                 soundOverdue: soundOverdue,
                 soundUngreeted: soundUngreeted,
                 soundPickup: soundPickup,
+                soundGuestPending: soundGuestPending,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

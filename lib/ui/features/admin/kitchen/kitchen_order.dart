@@ -1,15 +1,11 @@
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/service_timing.dart';
 
-/// When a ticket counts as late. One constant so the header's TELAT tally, the
-/// card border, the age pill's colour and its pulse cannot drift apart and tell
-/// the line two different stories.
-const int kKitchenLateMins = 10;
-
-/// The tier below late. The source derives it as `0.7 ×` the late threshold —
-/// far enough out that a cook can still save the ticket, close enough that the
-/// warning means something.
-const int kKitchenWarnMins = 7;
+/// The tier below late, as a fraction of the batch's own target — far enough
+/// out that a cook can still save the ticket, close enough that the warning
+/// means something.
+const double kKitchenWarnFraction = 0.7;
 
 bool kitchenLineDone(TicketStatus s) =>
     s == TicketStatus.cooked ||
@@ -43,6 +39,12 @@ class KitchenOrder {
   /// Every line cooked, ready or served.
   final bool complete;
 
+  /// How long this batch may take before it is late, in minutes. The `max` of
+  /// its lines' resolved targets (`item.prepTime ?? venue.prepTargetMins`), so
+  /// the slowest dish paces the batch and a 3-minute drink riding along with a
+  /// grill order is not judged on the grill's clock. See ADR-0043.
+  final int targetMins;
+
   const KitchenOrder({
     required this.tableId,
     required this.sentAt,
@@ -51,6 +53,7 @@ class KitchenOrder {
     required this.tickets,
     required this.age,
     required this.complete,
+    required this.targetMins,
   });
 
   /// Resolves the batch's clock against [now].
@@ -60,11 +63,15 @@ class KitchenOrder {
   /// `toggleCooked` always advances through `ready` — it freezes at
   /// [fallbackFreeze] instead. ponytail: the caller stamps that once and keeps
   /// it for the life of the screen; leaving and returning re-freezes higher.
+  /// [venueTargetMins] is `VenueSettings.prepTargetMins`; [prepByItem] carries
+  /// each menu item's own `Waktu siap` override (absent / null ⇒ inherit).
   factory KitchenOrder.resolve({
     required String tableId,
     required String sentAt,
     required List<Ticket> tickets,
     required DateTime now,
+    required int venueTargetMins,
+    Map<String, int?> prepByItem = const {},
     DateTime? fallbackFreeze,
   }) {
     final sentAtTime = tickets
@@ -79,6 +86,18 @@ class KitchenOrder {
     final end = complete ? (_lastReady(tickets) ?? fallbackFreeze ?? now) : now;
     final d = end.difference(clockStart);
 
+    // The slowest line paces the batch — the same `max` rule ADR-0043 uses to
+    // roll a course up for the audible overdue cue.
+    // Starts at the first line, not at the venue default: a batch of nothing
+    // but 5-minute drinks must be late at 5, not at the venue's 15.
+    var target = tickets.isEmpty
+        ? venueTargetMins
+        : resolvePrepMins(prepByItem[tickets.first.itemId], venueTargetMins);
+    for (final t in tickets.skip(1)) {
+      final resolved = resolvePrepMins(prepByItem[t.itemId], venueTargetMins);
+      if (resolved > target) target = resolved;
+    }
+
     return KitchenOrder(
       tableId: tableId,
       sentAt: sentAt,
@@ -87,6 +106,7 @@ class KitchenOrder {
       tickets: tickets,
       age: d.isNegative ? Duration.zero : d,
       complete: complete,
+      targetMins: target,
     );
   }
 
@@ -109,11 +129,13 @@ class KitchenOrder {
   int get total => tickets.length;
   int get done => tickets.where((t) => kitchenLineDone(t.status)).length;
 
+  /// The tier below late, derived from this batch's own target.
+  int get warnMins => (targetMins * kKitchenWarnFraction).round();
+
   /// A finished batch is never late: it is not work, so it earns neither the
   /// chip, the red card, nor a slot in the header tally.
-  bool get late => !complete && age.inMinutes >= kKitchenLateMins;
-  bool get warn =>
-      !complete && !late && age.inMinutes >= kKitchenWarnMins;
+  bool get late => !complete && age.inMinutes >= targetMins;
+  bool get warn => !complete && !late && age.inMinutes >= warnMins;
 
   /// The distinct courses in this group, in station order. Usually one — the
   /// source's ticket *is* a course — but the app groups by send, and a waiter

@@ -319,9 +319,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 onBack: _handleBack,
                 crumbs: widget.tableless
                     ? (_isTakeaway
-                          ? const ['Bawa pulang', 'Tambah item']
-                          : const ['Pesanan baru', 'Tambah item'])
-                    : ['Meja', table!.displayName, 'Tambah item'],
+                          ? const [
+                              AppStrings.crumbBawaPulang,
+                              AppStrings.crumbTambahItem,
+                            ]
+                          : const [
+                              AppStrings.crumbPesananBaru,
+                              AppStrings.crumbTambahItem,
+                            ])
+                    : [table!.displayName, AppStrings.crumbTambahItem],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),

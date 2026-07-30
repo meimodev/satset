@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   /// At most one whole-order discount per receipt, and one line discount per
   /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
@@ -684,6 +684,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 39) {
         // Demo clock + seed-job state (ADR-0053).
         await m.createTable(demoStates);
+      }
+      if (from < 40) {
+        // Guest orders get their own cue (ADR-0064). Existing venues inherit
+        // the doorbell default, so the cue is live the moment they upgrade —
+        // a guest order arriving silently was the bug this fixes.
+        await _safeAddColumnOn(
+          'venue_settings',
+          'sound_guest_pending',
+          type: "TEXT NOT NULL DEFAULT 'doorbell'",
+        );
       }
     },
     onCreate: (m) async {

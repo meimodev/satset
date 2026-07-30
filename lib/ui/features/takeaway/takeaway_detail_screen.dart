@@ -1,3 +1,4 @@
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -69,7 +70,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
         children: [
           SatAppBar(
             onBack: () => safePop(context, fallback: '/tables'),
-            crumbs: ['Bawa pulang', ?guest],
+            crumbs: [AppStrings.crumbBawaPulang, ?guest],
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),

@@ -1174,7 +1174,8 @@ List<BookEntry> bookEntries() => [
           [_auth(BookStubs.waiterAuth), _ws(WsConnState.open)],
           SatAppBar(
             onBack: () {},
-            crumbs: const ['Teras', 'Meja 5', 'Pesanan'],
+            // Venue-less: the bar prepends the venue's own name itself.
+            crumbs: const ['Meja 5', 'Teras'],
           ),
         ),
       ),
@@ -1593,47 +1594,63 @@ List<BookEntry> bookEntries() => [
     name: 'ElapsedPill',
     group: _gContent,
     note:
-        'Escalates at the venue default prepTargetMins (15). Driven by the '
-        "ticket's age, not a provider override.",
+        'Escalates at the target the caller resolves for the line '
+        '(item Waktu siap, else venue prepTargetMins). Anchored to the '
+        'kitchen clock start — a held course counts from its fire.',
     states: [
       BookState(
         'under a minute',
         (c, r) => ElapsedPill(
-          sentAtTime: DateTime.now(),
+          clockStart: DateTime.now(),
           sentAtClock: '19:04',
           terminal: false,
+          targetMins: 15,
         ),
       ),
       BookState(
-        'live, within target (3m)',
+        'live, within target (3m of 15)',
         (c, r) => ElapsedPill(
-          sentAtTime: DateTime.now().subtract(const Duration(minutes: 3)),
+          clockStart: DateTime.now().subtract(const Duration(minutes: 3)),
           sentAtClock: '19:01',
           terminal: false,
+          targetMins: 15,
         ),
       ),
       BookState(
-        'overdue (42m) — urgent',
+        'overdue (42m of 15) — urgent',
         (c, r) => ElapsedPill(
-          sentAtTime: DateTime.now().subtract(const Duration(minutes: 42)),
+          clockStart: DateTime.now().subtract(const Duration(minutes: 42)),
           sentAtClock: '18:22',
           terminal: false,
+          targetMins: 15,
         ),
+      ),
+      BookState(
+        'fast item — overdue at its own 5m target',
+        (c, r) => ElapsedPill(
+          clockStart: DateTime.now().subtract(const Duration(minutes: 6)),
+          sentAtClock: '18:58',
+          terminal: false,
+          targetMins: 5,
+        ),
+        note: 'Same 6 minutes would still be calm on a 15m item.',
       ),
       BookState(
         'terminal — frozen clock',
         (c, r) => ElapsedPill(
-          sentAtTime: DateTime.now().subtract(const Duration(minutes: 42)),
+          clockStart: DateTime.now().subtract(const Duration(minutes: 42)),
           sentAtClock: '18:22',
           terminal: true,
+          targetMins: 15,
         ),
       ),
       BookState(
         'stress — over an hour',
         (c, r) => ElapsedPill(
-          sentAtTime: DateTime.now().subtract(const Duration(hours: 26)),
+          clockStart: DateTime.now().subtract(const Duration(hours: 26)),
           sentAtClock: '17:10',
           terminal: false,
+          targetMins: 15,
         ),
       ),
     ],

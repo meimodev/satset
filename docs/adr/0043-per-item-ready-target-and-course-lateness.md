@@ -14,6 +14,15 @@ The report SLA moves to the same unit: **% of courses that hit their own target*
 
 **Supporting fix.** `Tickets.firedAt` (nullable) is stamped on the `held → sent` fire. `sentAt` was never re-stamped there, so a course held at 19:00 and fired at 19:40 arrived 40 minutes old and was instantly overdue against any target. The prep clock is now `readyAt − (firedAt ?? sentAt)`; `sentAt` keeps meaning "when the guest ordered" (it is the KDS card-grouping key per ADR-0008 and the line time on the struk, so re-stamping it would have corrupted both). `CourseTimings.firedAt` previously *derived* itself from the earliest `sentAt` — it now reads the real column.
 
+## Amendment: the resolved target reaches every surface that says "late"
+
+The resolution above landed in the alert sweep and the report aggregation and stopped there, so two screens went on carrying their own definition of late:
+
+- **The KDS** reddened at `kKitchenLateMins = 10` — a constant that predated `prepTargetMins` and ignored both it and every per-item *Waktu siap*. A venue could set its target to 25 and watch the pass go red at 10. The batch now resolves a `targetMins` the same way a course does (the `max` of its lines' resolved targets), and the warn tier is `0.7 ×` that rather than a second constant.
+- **The waiter's `ElapsedPill`** used the venue default flat, ignoring per-item overrides, and anchored to `sentAtTime` rather than `firedAt ?? sentAt` — so the held-course bug this ADR fixed for the cue was still on the phone, showing a course as overdue before the kitchen had been given it.
+
+The unit stays different by design: a KDS card is a **send batch** (what a cook picks up as one job), a cue is a **course**. Re-cutting KDS cards per course to unify them was rejected — it splits one waiter's send into two cards on the pass to serve a consistency nobody on the line is asking for. Only the *target* is shared; the grouping is not.
+
 ## Consequences
 
 - **An item's target stops being independently measurable** once it shares a course with something slower. `slowItems` therefore keeps its per-item averages but **loses its pass/fail colouring** — colouring it against each item's own target would red a `sides` item permanently for correctly waiting. It is now a neutral ranked diagnostic.

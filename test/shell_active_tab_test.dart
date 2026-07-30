@@ -4,67 +4,61 @@ import 'package:satset/ui/features/shell/app_shell.dart';
 
 /// The rail item and the crumb trail come from one mapping (ADR-0058). These
 /// rows are the contract: every shell route resolves to the destination that
-/// actually owns it, and an unmapped hub path degrades to the bare `[Venue]`
-/// trail instead of borrowing a sibling screen's label.
+/// actually owns it, names it with the same constant the rail button renders,
+/// and an unmapped hub path degrades to the bare `[Venue]` trail instead of
+/// borrowing a sibling screen's label.
+///
+/// Trails here are venue-less on purpose — `SatAppBar` prepends the venue name
+/// to every trail in the app, so it is not this function's business. What
+/// renders is `<venue> › <trail>`.
 void main() {
-  const venue = AppStrings.venueHubTitle;
+  const hub = AppStrings.tabVenue;
+  const me = 'Maya Anjani';
 
   const cases = <String, (String, List<String>)>{
     // The bug: hub children absent from both old switches lit up Meja and
     // claimed the "Konfigurasi" crumb.
-    '/stock': ('venue', [venue, AppStrings.venueHubSectionStock]),
-    '/alerts': ('venue', [venue, AppStrings.alertsTitle]),
+    '/stock': ('venue', [hub, AppStrings.venueHubSectionStock]),
+    '/alerts': ('venue', [hub, AppStrings.alertsTitle]),
     // "Konfigurasi" was only ever true for this one.
-    '/venue-settings': ('venue', [venue, AppStrings.crumbKonfigurasi]),
+    '/venue-settings': ('venue', [hub, AppStrings.crumbKonfigurasi]),
     // The hub root is not its own settings child.
-    '/venue': ('venue', [venue]),
+    '/venue': ('venue', [hub]),
     // Prefix collision: /menuadm must not answer to /me.
-    '/menuadm': ('venue', [venue, AppStrings.crumbMenuAdmin]),
-    '/me': ('me', ['Maya Anjani', AppStrings.crumbRingkasanShift]),
-    '/zone-admin': ('venue', [venue, AppStrings.zoneAdminTitle]),
-    '/system': ('venue', [venue, AppStrings.venueHubSectionSystem]),
-    '/staff': ('venue', [venue, AppStrings.crumbStafAkun]),
-    '/reports': ('venue', [venue, AppStrings.crumbLaporanShift]),
-    // Had no case at all, so it fell to the venue/zone trail.
+    '/menuadm': ('venue', [hub, AppStrings.crumbMenuAdmin]),
+    '/zone-admin': ('venue', [hub, AppStrings.zoneAdminTitle]),
+    '/system': ('venue', [hub, AppStrings.venueHubSectionSystem]),
+    '/staff': ('venue', [hub, AppStrings.crumbStafAkun]),
+    '/reports': ('venue', [hub, AppStrings.crumbLaporanShift]),
+    // Top-level destinations are named by the rail's own label, one segment.
+    '/tables': ('tables', [AppStrings.tabMeja]),
+    '/orders': ('orders', [AppStrings.tabPesanan]),
+    '/guestorders': ('guest', [AppStrings.tabMandiri]),
+    '/kitchen': ('kitchen', [AppStrings.tabAntrian]),
     '/kasir': ('kasir', [AppStrings.tabKasir]),
-    '/orders': ('orders', [AppStrings.crumbTeras, AppStrings.crumbPesananSaya]),
-    '/guestorders': (
-      'guest',
-      [AppStrings.crumbTeras, AppStrings.crumbPesananMandiri],
-    ),
-    '/kitchen': ('kitchen', ['Stasiun', AppStrings.crumbAntrianPersiapan]),
-    // The only path the venue/zone trail was written for.
-    '/tables': ('tables', ['Warung Sate', 'Dalam']),
+    // The one dynamic tail: who is logged in, not the label "Saya".
+    '/me': ('me', [me]),
   };
 
   cases.forEach((loc, expected) {
     final (tab, crumbs) = expected;
     test('$loc → rail "$tab", crumbs $crumbs', () {
       expect(activeTabFor(loc), tab);
-      expect(crumbsFor(loc, tab, 'Dalam', 'Warung Sate'), crumbs);
+      expect(crumbsFor(loc, me), crumbs);
     });
   });
 
   test('an unmapped hub path fails short, never mislabelled', () {
     expect(activeTabFor('/some-future-hub-child'), 'venue');
-    expect(
-      crumbsFor('/some-future-hub-child', 'venue', 'Dalam', 'Warung Sate'),
-      [venue],
-    );
+    expect(crumbsFor('/some-future-hub-child', me), [hub]);
   });
 
   test('a subpath resolves to its parent destination', () {
     expect(activeTabFor('/menuadm/42'), 'venue');
-    expect(crumbsFor('/menuadm/42', 'venue', 'Dalam', 'Warung Sate'), [
-      venue,
-      AppStrings.crumbMenuAdmin,
-    ]);
+    expect(crumbsFor('/menuadm/42', me), [hub, AppStrings.crumbMenuAdmin]);
   });
 
-  test(
-    'an empty venue name falls back to the hub title on the tables trail',
-    () {
-      expect(crumbsFor('/tables', 'tables', 'Dalam', ''), [venue, 'Dalam']);
-    },
-  );
+  test('an unnamed user falls back to the rail label on /me', () {
+    expect(crumbsFor('/me', ''), [AppStrings.tabSaya]);
+  });
 }

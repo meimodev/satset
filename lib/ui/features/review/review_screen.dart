@@ -120,9 +120,15 @@ class ReviewScreen extends ConsumerWidget {
                 onBack: () => safePop(context, fallback: backFallback),
                 crumbs: tableless
                     ? (_isTakeaway
-                          ? const ['Bawa pulang', 'Tinjau']
-                          : const ['Pesanan baru', 'Tinjau'])
-                    : ['Meja', table!.displayName, 'Tinjau'],
+                          ? const [
+                              AppStrings.crumbBawaPulang,
+                              AppStrings.crumbTinjau,
+                            ]
+                          : const [
+                              AppStrings.crumbPesananBaru,
+                              AppStrings.crumbTinjau,
+                            ])
+                    : [table!.displayName, AppStrings.crumbTinjau],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),

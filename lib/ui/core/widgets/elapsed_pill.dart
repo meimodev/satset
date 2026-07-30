@@ -3,10 +3,20 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/domain/service_timing.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+
+/// One line's ready target: the item's own `Waktu siap` if it has one, else the
+/// venue default. The single resolution every elapsed surface goes through, so
+/// a pill, a KDS card and the audible cue cannot disagree (ADR-0043).
+int lineTargetMins(WidgetRef ref, String itemId) => resolvePrepMins(
+  ref.watch(prepTimeByItemProvider)[itemId],
+  ref.watch(venueSettingsProvider).prepTargetMins,
+);
 
 /// Shared 30s heartbeat for live elapsed pills. autoDispose so the stream
 /// stops whenever no pill is mounted. 30s keeps minute-granularity labels
@@ -18,21 +28,27 @@ final elapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
   ),
 );
 
-/// "How long since this line was sent to the kitchen." Ticks live while the
-/// line is active; once it's terminal (served / voided) we have no end stamp
-/// on the Ticket, so the pill freezes to the static sent clock instead of an
-/// ever-growing number. Active pills escalate to the urgent color at the
-/// venue's configurable service target (prepTargetMins) so the board agrees
-/// with the floor + audio. See docs/adr/0013.
+/// "How long the kitchen has owned this line." Ticks live while the line is
+/// active; once it's terminal (served / voided) we have no end stamp on the
+/// Ticket, so the pill freezes to the static sent clock instead of an
+/// ever-growing number. Active pills escalate to the urgent color at the line's
+/// own resolved target so the board agrees with the KDS, the audio cue and the
+/// report. See docs/adr/0013 and ADR-0043.
 class ElapsedPill extends ConsumerWidget {
-  /// When the line was sent to the kitchen — the elapsed anchor.
-  final DateTime sentAtTime;
+  /// Where the kitchen clock starts: `firedAt ?? sentAt`. A held course counts
+  /// from its fire, never from the guest's order — passing `sentAtTime` here
+  /// would show a course as overdue before the kitchen was even given it.
+  final DateTime clockStart;
 
   /// Pre-formatted clock string (e.g. "14:32") shown when frozen.
   final String sentAtClock;
 
   /// True for served / voided lines: stop ticking, show the sent clock.
   final bool terminal;
+
+  /// This line's resolved ready target in minutes:
+  /// `resolvePrepMins(item.prepTime, venue.prepTargetMins)`.
+  final int targetMins;
 
   /// Minute-granularity label: "<1m", "8m", "1j 5m". No seconds — the 30s
   /// ticker would make a seconds field jitter.
@@ -45,9 +61,10 @@ class ElapsedPill extends ConsumerWidget {
 
   const ElapsedPill({
     super.key,
-    required this.sentAtTime,
+    required this.clockStart,
     required this.sentAtClock,
     required this.terminal,
+    required this.targetMins,
   });
 
   @override
@@ -66,10 +83,8 @@ class ElapsedPill extends ConsumerWidget {
 
     // Live: rebuild on each heartbeat so the elapsed label stays current.
     ref.watch(elapsedTickerProvider);
-    // Overdue line = the venue's configurable service target (ADR-0013).
-    final overdueMinutes = ref.watch(venueSettingsProvider).prepTargetMins;
-    final d = SatClock.now().difference(sentAtTime);
-    final overdue = d.inMinutes >= overdueMinutes;
+    final d = SatClock.now().difference(clockStart);
+    final overdue = d.inMinutes >= targetMins;
     return _pill(
       context,
       icon: overdue ? Icons.timer_outlined : Icons.access_time,

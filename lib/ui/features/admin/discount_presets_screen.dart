@@ -46,7 +46,10 @@ class DiscountPresetsScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          const SatAppBar(crumbs: ['Diskon']),
+          // Pushed from Venue Settings, so the hub stays in the trail.
+          const SatAppBar(
+            crumbs: [AppStrings.tabVenue, AppStrings.crumbDiskon],
+          ),
           Expanded(
             child: presets.isEmpty
                 ? const SatEmpty(

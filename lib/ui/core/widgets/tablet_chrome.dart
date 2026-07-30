@@ -112,14 +112,14 @@ class TabletSideRail extends StatelessWidget {
                 children: [
                   _RailBtn(
                     id: 'tables',
-                    label: 'Meja',
+                    label: AppStrings.tabMeja,
                     icon: Icons.grid_view_rounded,
                     route: '/tables',
                     active: active,
                   ),
                   _RailBtn(
                     id: 'orders',
-                    label: 'Pesanan',
+                    label: AppStrings.tabPesanan,
                     icon: Icons.description_outlined,
                     route: '/orders',
                     active: active,
@@ -129,7 +129,7 @@ class TabletSideRail extends StatelessWidget {
                   if (showGuest)
                     _RailBtn(
                       id: 'guest',
-                      label: 'Mandiri',
+                      label: AppStrings.tabMandiri,
                       icon: Icons.qr_code_2,
                       route: '/guestorders',
                       active: active,
@@ -138,7 +138,7 @@ class TabletSideRail extends StatelessWidget {
                     ),
                   _RailBtn(
                     id: 'kitchen',
-                    label: 'Antrian',
+                    label: AppStrings.tabAntrian,
                     icon: Icons.receipt_long_outlined,
                     route: '/kitchen',
                     active: active,
@@ -147,7 +147,7 @@ class TabletSideRail extends StatelessWidget {
                   if (showKasir)
                     _RailBtn(
                       id: 'kasir',
-                      label: 'Kasir',
+                      label: AppStrings.tabKasir,
                       icon: Icons.point_of_sale_rounded,
                       route: '/kasir',
                       active: active,
@@ -155,7 +155,7 @@ class TabletSideRail extends StatelessWidget {
                   _RailDiv(),
                   _RailBtn(
                     id: 'venue',
-                    label: 'Venue',
+                    label: AppStrings.tabVenue,
                     icon: Icons.storefront_outlined,
                     route: '/venue',
                     active: active,

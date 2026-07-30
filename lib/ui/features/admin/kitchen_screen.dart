@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -14,9 +15,11 @@ import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/admin/kitchen/kitchen_order.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
@@ -47,6 +50,8 @@ List<KitchenOrder> _buildOrders(
   required bool showCompleted,
   required DateTime now,
   required Map<String, DateTime> fallbackFreeze,
+  required int venueTargetMins,
+  required Map<String, int?> prepByItem,
 }) {
   final visible = showCompleted
       ? {..._kitchenInProgress, ..._kitchenCompleted}
@@ -78,6 +83,8 @@ List<KitchenOrder> _buildOrders(
         sentAt: sentAt,
         tickets: tickets,
         now: now,
+        venueTargetMins: venueTargetMins,
+        prepByItem: prepByItem,
         fallbackFreeze: fallbackFreeze[key],
       );
       if (order.needsFallbackFreeze && !fallbackFreeze.containsKey(key)) {
@@ -87,6 +94,8 @@ List<KitchenOrder> _buildOrders(
           sentAt: sentAt,
           tickets: tickets,
           now: now,
+          venueTargetMins: venueTargetMins,
+          prepByItem: prepByItem,
           fallbackFreeze: now,
         );
       }
@@ -113,10 +122,15 @@ bool _isDone(TicketStatus s) => kitchenLineDone(s);
 /// A frozen clock is `success` regardless of the number it stopped on — the
 /// card already reads "Semua siap" in the same green, and a red 25:00 on a
 /// finished batch contradicts the missing Telat chip beside it.
-Color _ageColor(SatColors sc, int min, {required bool complete}) {
+Color _ageColor(
+  SatColors sc,
+  int min, {
+  required bool complete,
+  required int targetMins,
+}) {
   if (complete) return sc.success;
-  if (min >= kKitchenLateMins) return sc.urgent;
-  if (min >= kKitchenWarnMins) return sc.warn;
+  if (min >= targetMins) return sc.urgent;
+  if (min >= (targetMins * kKitchenWarnFraction).round()) return sc.warn;
   return SatShape.glow ? sc.accent : sc.textMd;
 }
 
@@ -209,11 +223,18 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    // "Late" on this board is the venue's configured target resolved per line
+    // (ADR-0043) — the same number the overdue cue and the report SLA use, so
+    // the pass, the phone and the report cannot tell the cook three stories.
     final orders = _buildOrders(
       ref.watch(ticketsProvider),
       showCompleted: _showCompleted,
       now: SatClock.now(),
       fallbackFreeze: _fallbackFreeze,
+      venueTargetMins: ref.watch(venueSettingsProvider).prepTargetMins,
+      prepByItem: {
+        for (final i in ref.watch(menuItemsProvider)) i.id: i.prepTime,
+      },
     );
     final itemCount = orders.fold<int>(0, (n, o) => n + o.total);
     // Each card already turns urgent on its own, but a cook working the top of
@@ -254,7 +275,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
               child: Text(
-                'Antrian Persiapan',
+                AppStrings.kitchenQueueTitle,
                 style: SatType.h2(color: sc.textHi),
               ),
             ),
@@ -291,7 +312,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
     }
 
     return AdminPage(
-      title: 'Antrian Persiapan',
+      title: AppStrings.kitchenQueueTitle,
       sub:
           '${orders.length} order aktif · $itemCount item · tahan untuk tandai selesai',
       topTrailing: headTrailing,
@@ -431,6 +452,7 @@ class _OrderCard extends ConsumerWidget {
             age: ageDur,
             sentAt: order.sentAt,
             late: late,
+            targetMins: order.targetMins,
             complete: order.complete,
             done: order.done,
             total: order.total,
@@ -500,6 +522,7 @@ class _CardHead extends StatelessWidget {
   final Duration age;
   final String sentAt;
   final bool late;
+  final int targetMins;
   final bool complete;
   final int done;
   final int total;
@@ -509,6 +532,7 @@ class _CardHead extends StatelessWidget {
     required this.age,
     required this.sentAt,
     required this.late,
+    required this.targetMins,
     required this.complete,
     required this.done,
     required this.total,
@@ -562,6 +586,7 @@ class _CardHead extends StatelessWidget {
             sentAt: sentAt,
             sc: sc,
             complete: complete,
+            targetMins: targetMins,
             done: done,
             total: total,
           ),
@@ -579,6 +604,7 @@ class _Timer extends StatefulWidget {
   final String sentAt;
   final SatColors sc;
   final bool complete;
+  final int targetMins;
   final int done;
   final int total;
   const _Timer({
@@ -586,6 +612,7 @@ class _Timer extends StatefulWidget {
     required this.sentAt,
     required this.sc,
     required this.complete,
+    required this.targetMins,
     required this.done,
     required this.total,
   });
@@ -601,7 +628,7 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
   );
 
   bool get _late =>
-      !widget.complete && widget.age.inMinutes >= kKitchenLateMins;
+      !widget.complete && widget.age.inMinutes >= widget.targetMins;
 
   @override
   void didChangeDependencies() {
@@ -641,6 +668,7 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
       sc,
       widget.age.inMinutes,
       complete: widget.complete,
+      targetMins: widget.targetMins,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,

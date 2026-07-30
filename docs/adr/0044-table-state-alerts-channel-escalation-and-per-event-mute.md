@@ -36,6 +36,14 @@ Cues stay **one-shot**. The glossary invariant ("never loop or demand acknowledg
 - **Venue policy** — `ungreetedAlertEnabled` / `pickupAlertEnabled`, explicit booleans. "Off" is never a degenerate threshold: overloading `0` to mean disabled gives one number two meanings, and a mistyped `0` would silently kill a cue.
 - **Device** — the all-or-nothing "Alert audio" toggle becomes a per-event set in prefs, listing only cues that device's role receives. Without it, one annoying cue costs the operator *pesanan siap* as collateral. It is unenforceable anyway (the handset has a volume rocker), so an in-app valve is strictly better than pushing an annoyed waiter to OS-level mute, which is invisible and total.
 
+### Amendment: the enable flags govern the sound only
+
+Two things this ADR asserted were not true in the code, and are now.
+
+**The all-or-nothing device toggle is actually gone.** "Becomes a per-event set" described an intent; the master `audioAlertEnabled` switch survived on the *Sistem* screen and still short-circuited `_play` ahead of the mute list. So an operator could mute one cue on `/alerts` and be silenced entirely by a switch two destinations away, with nothing on `/alerts` disclosing it. The switch, its pref key and its guard are deleted; the per-event set is the only device-level axis. Silencing a handset completely now means flipping the three or four rows its role shows — the cost of having one honest place to look.
+
+**`ungreetedAlertEnabled` / `pickupAlertEnabled` silence the cue, not the signal.** The floor card's standing state and the report SLA keep reading `ungreetedMins` / `pickupTargetMins` when the flag is off, which is what the "three orthogonal axes" framing always implied and what the card's own reason for existing requires — it carries the state precisely so a one-shot cue that was missed stays visible. The threshold steppers therefore stay **editable** while the flag is off; disabling them said the number had stopped mattering, which was never true of a number two other surfaces were still using.
+
 ## Consequences
 
 - **On upgrade every venue gets these live at their defaults, audible cues included.** The alternative — audible cues opt-in, visual states on — was recommended and not taken. The accepted risk is concrete: a venue that never asked for them hears new sounds mid-service, and the first instinct is to mute. The per-event mute and the venue-wide enable flags exist to make that recoverable rather than terminal.

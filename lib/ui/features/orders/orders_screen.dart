@@ -482,7 +482,7 @@ class _ScopeToggle extends StatelessWidget {
   }
 }
 
-class _OrderRow extends StatelessWidget {
+class _OrderRow extends ConsumerWidget {
   final _Row row;
   final VoidCallback onTap;
   final VoidCallback onServe;
@@ -493,7 +493,7 @@ class _OrderRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final t = row.ticket;
     final isReady = t.status == TicketStatus.ready;
@@ -611,10 +611,11 @@ class _OrderRow extends StatelessWidget {
                               ),
                             StatusChip(status: t.status),
                             ElapsedPill(
-                              sentAtTime: t.sentAtTime,
+                              clockStart: t.kitchenClockStart,
                               sentAtClock: t.sentAt,
                               terminal:
                                   isVoided || t.status == TicketStatus.served,
+                              targetMins: lineTargetMins(ref, t.itemId),
                             ),
                             if (row.orderer != null)
                               StaffAvatar(actor: row.orderer!, size: 20),

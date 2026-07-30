@@ -125,6 +125,41 @@ void main() {
       expect(relaxed, isNull);
     });
 
+    test('a silenced cue still leaves its banner standing', () {
+      // ADR-0044 as amended: the venue enable flags govern the *sound*. The
+      // threshold keeps driving the card, so an owner who quietens a noisy
+      // room does not also blind the floor.
+      final quiet = s.copyWith(
+        ungreetedAlertEnabled: false,
+        pickupAlertEnabled: false,
+      );
+
+      final ungreeted = staleFor(
+        table: table(openedAt: now.subtract(const Duration(minutes: 20))),
+        lines: const [],
+        hold: null,
+        service: ServiceState.ungreeted,
+        s: quiet,
+        now: now,
+      );
+      expect(ungreeted?.severity, StaleSeverity.crit);
+
+      final uncollected = staleFor(
+        table: table(status: TableStatus.ready),
+        lines: [
+          line(
+            status: TicketStatus.ready,
+            readyAt: now.subtract(const Duration(minutes: 20)),
+          ),
+        ],
+        hold: null,
+        service: ServiceState.none,
+        s: quiet,
+        now: now,
+      );
+      expect(uncollected?.severity, StaleSeverity.crit);
+    });
+
     test('crit outranks warn on the same table', () {
       // Long-stay (warn) and an unreviewed guest order (crit) both apply.
       final out = staleFor(

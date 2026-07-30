@@ -100,6 +100,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     String? soundOverdue,
     String? soundUngreeted,
     String? soundPickup,
+    String? soundGuestPending,
   }) async {
     final prev = state;
     state = state.copyWith(
@@ -141,6 +142,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       soundOverdue: soundOverdue ?? state.soundOverdue,
       soundUngreeted: soundUngreeted ?? state.soundUngreeted,
       soundPickup: soundPickup ?? state.soundPickup,
+      soundGuestPending: soundGuestPending ?? state.soundGuestPending,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -182,6 +184,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'soundOverdue': ?soundOverdue,
         'soundUngreeted': ?soundUngreeted,
         'soundPickup': ?soundPickup,
+        'soundGuestPending': ?soundGuestPending,
       };
       final raw = await ref
           .read(apiClientProvider)

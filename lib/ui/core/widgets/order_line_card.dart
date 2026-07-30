@@ -212,11 +212,12 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                               StatusChip(status: ticket.status),
                               const SizedBox(width: Sp.s2),
                               ElapsedPill(
-                                sentAtTime: ticket.sentAtTime,
+                                clockStart: ticket.kitchenClockStart,
                                 sentAtClock: ticket.sentAt,
                                 terminal:
                                     isVoided ||
                                     ticket.status == TicketStatus.served,
+                                targetMins: lineTargetMins(ref, ticket.itemId),
                               ),
                               if (orderer != null) ...[
                                 const SizedBox(width: Sp.s2),
