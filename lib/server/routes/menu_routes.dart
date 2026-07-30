@@ -144,9 +144,7 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         db,
         hub: hub,
         type: value ? AuditType.menuKilled : AuditType.menuRestored,
-        title: value
-            ? 'Stop jual ${before.name}'
-            : 'Jual lagi ${before.name}',
+        title: value ? 'Stop jual ${before.name}' : 'Jual lagi ${before.name}',
         actorUserId: (await _actor(req, db, auth))?.id,
         reason: (reason != null && reason.isNotEmpty) ? reason : null,
       );

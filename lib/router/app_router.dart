@@ -34,6 +34,7 @@ import 'package:satset/ui/features/admin/menu_admin_item_screen.dart';
 import 'package:satset/ui/features/admin/reports_screen.dart';
 import 'package:satset/ui/features/admin/venue_hub_screen.dart';
 import 'package:satset/ui/features/admin/alerts_screen.dart';
+import 'package:satset/ui/features/admin/audit_screen.dart';
 import 'package:satset/ui/features/admin/venue_settings_screen.dart';
 import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
@@ -54,6 +55,10 @@ Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/alerts')) return Capability.editSettings;
   if (loc.startsWith('/stock')) return Capability.manageIngredients;
   if (loc.startsWith('/reports')) return Capability.viewReports;
+  // Same permission as reports: both answer "what really happened in my
+  // venue". Admin rows inside the log carry a second `manageStaff` check
+  // server-side (ADR-0067) — the route gate cannot express that.
+  if (loc.startsWith('/audit')) return Capability.viewReports;
   if (loc.startsWith('/venue/diskon')) return Capability.editSettings;
   if (loc.startsWith('/menuadm') ||
       loc.startsWith('/staff') ||
@@ -187,6 +192,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/menuadm', builder: (_, _) => const MenuAdminScreen()),
           GoRoute(path: '/stock', builder: (_, _) => const StockScreen()),
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
+          GoRoute(path: '/audit', builder: (_, _) => const AuditScreen()),
           GoRoute(path: '/system', builder: (_, _) => const SystemScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),
           GoRoute(path: '/me', builder: (_, _) => const MeScreen()),

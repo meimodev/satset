@@ -82,22 +82,29 @@ class AuditRepository extends StateNotifier<List<AuditEntry>> {
     });
   }
 
-  AuditEntry _fromJson(Map<String, dynamic> j) {
-    return AuditEntry(
-      id: j['id'] as String,
-      type: AuditType.values.firstWhere(
-        (t) => t.name == (j['type'] as String? ?? ''),
-        orElse: () => AuditType.modify,
-      ),
-      title: (j['title'] as String?) ?? '',
-      tableId: (j['tableId'] as String?) ?? '',
-      when: (j['at'] as String?) ?? '',
-      approvedBy: j['approvedBy'] as String?,
-      reason: j['reason'] as String?,
-      actorUserId: j['actorUserId'] as String?,
-    );
-  }
+  AuditEntry _fromJson(Map<String, dynamic> j) => auditEntryFromJson(j);
 }
+
+/// One decoder for both audit feeds — the personal one here and the venue log
+/// in [VenueAuditRepository]. They read the same wire shape, and a screen that
+/// decoded `amountCents` differently from the one beside it would show two
+/// different rupiah for the same void.
+AuditEntry auditEntryFromJson(Map<String, dynamic> j) => AuditEntry(
+  id: j['id'] as String,
+  type: AuditType.values.firstWhere(
+    (t) => t.name == (j['type'] as String? ?? ''),
+    orElse: () => AuditType.modify,
+  ),
+  title: (j['title'] as String?) ?? '',
+  tableId: (j['tableId'] as String?) ?? '',
+  when: (j['at'] as String?) ?? '',
+  approvedBy: j['approvedBy'] as String?,
+  reason: j['reason'] as String?,
+  actorUserId: j['actorUserId'] as String?,
+  amountCents: (j['amountCents'] as num?)?.toInt(),
+  actorName: j['actorName'] as String?,
+  actorRoleName: j['actorRoleName'] as String?,
+);
 
 final auditProvider = StateNotifierProvider<AuditRepository, List<AuditEntry>>(
   (ref) => AuditRepository(ref),

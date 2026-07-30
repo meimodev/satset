@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:satset/ui/core/design/skin.dart';
 import 'dart:typed_data';
 
@@ -197,8 +196,8 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
   }
 
   /// UTF-8 with BOM so Excel opens Indonesian text and Rupiah correctly.
-  Uint8List _csvBytes(String csv) =>
-      Uint8List.fromList([0xEF, 0xBB, 0xBF, ...utf8.encode(csv)]);
+  /// Shared with the audit export — see `csvBytes` in `export_share.dart`.
+  Uint8List _csvBytes(String csv) => csvBytes(csv);
 
   @override
   Widget build(BuildContext context) {

@@ -58,6 +58,51 @@ class AppStrings {
   static const String venueHubSectionAlerts = 'Peringatan';
   static const String venueHubSectionAlertsSub =
       'Ambang waktu, suara, dan senyap perangkat';
+  static const String venueHubSectionAudit = 'Audit';
+  static const String venueHubSectionAuditSub =
+      'Batal, gratis, diskon, dan ubah pesanan';
+
+  // ---- Audit log (venue-wide) ----
+  static const String auditTitle = 'Catatan audit';
+  static const String auditSubtitle = 'Semua kejadian · jejak lengkap';
+  static const String auditTabletOnly = 'Butuh layar tablet';
+  static const String auditTabletOnlyBody =
+      'Catatan audit menampilkan enam kolom sekaligus supaya bisa dibaca '
+      'sekilas. Buka dari tablet.';
+  static const String auditTabletOnlyBadge = 'Tablet saja';
+  static const String auditEmpty = 'Belum ada kejadian';
+  static const String auditEmptyBody =
+      'Pembatalan, gratisan, diskon, refund, dan perubahan pesanan akan '
+      'tampil di sini.';
+  static const String auditExport = 'Ekspor';
+  static const String auditColTime = 'Waktu';
+  static const String auditColType = 'Jenis';
+  static const String auditColUser = 'Pengguna';
+  static const String auditColEvent = 'Kejadian';
+  static const String auditColAmount = 'Jumlah';
+  static const String auditColReason = 'Alasan';
+  static const String auditSystemActor = 'Sistem';
+  static const String auditLoadMore = 'Muat lagi';
+  static const String auditWindowToday = 'Hari ini';
+  static const String auditWindowYesterday = 'Kemarin';
+  static const String auditWindowWeek = '7 hari';
+  static const String auditWindowAll = 'Semua waktu';
+  static const String auditTypeAll = 'Semua jenis';
+  static const String auditTileVoid = 'Pembatalan';
+  static const String auditTileComp = 'Gratisan';
+  static const String auditTileDiscount = 'Diskon';
+  static const String auditTileRefund = 'Refund';
+  static const String auditTileKilled = 'Stop jual';
+  static const String auditTileModify = 'Ubah pesanan';
+  static const String killReasonTitle = 'Stop jual';
+  static const String killReasonHint = 'Alasan lain (opsional)';
+  static const String killReasonSkip = 'Lewati';
+  static const String killReasonConfirm = 'Stop jual';
+  static String killReasonBody(String item) =>
+      '$item tidak bisa dipesan sampai diaktifkan lagi. Alasannya masuk '
+      'catatan audit.';
+  static String auditEventCount(int n) => '$n kejadian';
+  static String auditNewRows(int n) => '$n baru';
   static const String venueHubSeedTitle = 'Mulai cepat';
   static const String venueHubSeedBody =
       'Muat contoh data restoran umum: 2 zona (Dalam & Luar) dengan meja, menu lengkap, dan 2 staf (pelayan & dapur). Bisa diubah kapan saja.';

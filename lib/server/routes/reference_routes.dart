@@ -228,9 +228,11 @@ Future<List<Map<String, dynamic>>> _auditJsonWithFallback(
   final users = await (db.select(
     db.users,
   )..where((u) => u.id.isIn(needing.toList()))).get();
-  final roles = await (db.select(
-    db.roles,
-  )..where((r) => r.id.isIn(users.map((u) => u.roleId).toSet().toList()))).get();
+  final roles =
+      await (db.select(db.roles)..where(
+            (r) => r.id.isIn(users.map((u) => u.roleId).toSet().toList()),
+          ))
+          .get();
   final roleById = {for (final r in roles) r.id: r};
   final byId = {for (final u in users) u.id: u};
 

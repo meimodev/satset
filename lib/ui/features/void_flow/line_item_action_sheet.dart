@@ -6,9 +6,12 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/ui/features/menu/modifier_sheet.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -31,10 +34,20 @@ const _voidReasons = <Map<String, String>>[
   {
     'id': 'kitchenError',
     'label': 'Komplain / kualitas dapur',
-    'desc': 'Masalah kualitas — pertimbangkan refire',
+    'desc': 'Masalah kualitas — item ditarik dari tagihan',
   },
   {'id': 'other', 'label': 'Lainnya', 'desc': 'Alasan bebas wajib diisi'},
 ];
+
+/// Offered only on an already-served line, which is exactly when voiding
+/// requires `compItem` rather than `voidItem` (ADR-0006). Without a button of
+/// its own a comp was only recorded as one if someone happened to type the
+/// word into free text — so the venue log counted giveaways as cancellations.
+const _compReason = <String, String>{
+  'id': 'comp',
+  'label': 'Kompensasi manajer',
+  'desc': 'Digratiskan untuk tamu · tercatat terpisah dari pembatalan',
+};
 
 void showLineItemActionSheet({
   required BuildContext context,
@@ -117,10 +130,65 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
         await useCase.call(widget.tableId, t.id, TicketStatus.ready);
         if (mounted) Navigator.of(context).pop();
         break;
+      case 'modify':
+        await _modify(t);
+        break;
       case 'void':
         setState(() => _step = _Step.voidReason);
         break;
     }
+  }
+
+  /// Reopen the item configurator over a line that is already sent but still
+  /// held. The sheet already knows how to edit (ADR-0060) — it is handed the
+  /// line as a [CartItem] and gives back the edited one, so the modifier
+  /// rendering, the price math and the required-group validation stay in the
+  /// one place that owns them.
+  Future<void> _modify(Ticket t) async {
+    final item = ref
+        .read(menuItemsProvider)
+        .where((m) => m.id == t.itemId)
+        .firstOrNull;
+    if (item == null) return;
+    final nav = Navigator.of(context);
+    await showModifierSheet(
+      context: context,
+      item: item,
+      editing: CartItem(
+        id: t.id,
+        itemId: t.itemId,
+        name: t.name,
+        // A ticket freezes the variant *name*, not its id (ADR-0011), so the
+        // id is resolved against the menu as it reads now — the same thing the
+        // server does at send. An empty fallback lets the sheet seed on its
+        // default variant rather than refusing to open.
+        variantId:
+            item.variants
+                .where((v) => v.name == t.variantName)
+                .map((v) => v.id)
+                .firstOrNull ??
+            (item.variants.isNotEmpty ? item.variants.first.id : ''),
+        variantName: t.variantName,
+        selectedModifiers: t.modifiers,
+        note: t.note ?? '',
+        course: t.course,
+        qty: t.qty,
+        unitPrice: t.price,
+      ),
+      onAdd: (edited) async {
+        await ref
+            .read(ticketsProvider.notifier)
+            .modifyLine(
+              widget.tableId,
+              t.id,
+              qty: edited.qty,
+              note: edited.note.isEmpty ? null : edited.note,
+              modifiers: edited.selectedModifiers,
+              unitPrice: edited.unitPrice,
+            );
+        if (nav.canPop()) nav.pop();
+      },
+    );
   }
 
   Future<void> _commitVoid() async {
@@ -184,6 +252,7 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
                   onPick: _pickAction,
                 ),
                 _Step.voidReason => _VoidReasonList(
+                  canComp: ticket.status == TicketStatus.served,
                   onPick: (r, text) {
                     _reason = r;
                     _reasonText = text;
@@ -267,6 +336,18 @@ class _ActionList extends StatelessWidget {
           title: 'Bakar sekarang',
           desc: 'Kirim course ke line langsung',
           tone: _Tone.accent,
+        ),
+      );
+      // Editing is offered only here, and only here it is safe: once the line
+      // is fired the kitchen owns it and the sole remedy is a void
+      // (ADR-0066). The server enforces the same rule with a 409.
+      rows.add(
+        _ActionItem(
+          id: 'modify',
+          icon: Icons.edit_outlined,
+          title: 'Ubah item',
+          desc: 'Jumlah, catatan, dan pilihan · sebelum masuk dapur',
+          tone: _Tone.normal,
         ),
       );
     }
@@ -423,7 +504,12 @@ class _ActionRow extends StatelessWidget {
 
 class _VoidReasonList extends StatefulWidget {
   final void Function(Map<String, String> reason, String text) onPick;
-  const _VoidReasonList({required this.onPick});
+
+  /// Whether the line has already been served — the case that requires
+  /// `compItem` rather than `voidItem`, and the only one where "gratis" is a
+  /// real answer rather than a way to lose money quietly.
+  final bool canComp;
+  const _VoidReasonList({required this.onPick, required this.canComp});
 
   @override
   State<_VoidReasonList> createState() => _VoidReasonListState();
@@ -432,6 +518,12 @@ class _VoidReasonList extends StatefulWidget {
 class _VoidReasonListState extends State<_VoidReasonList> {
   String? _pickedId;
   String _other = '';
+
+  List<Map<String, String>> get _reasons => [
+    ..._voidReasons.where((r) => r['id'] != 'other'),
+    if (widget.canComp) _compReason,
+    ..._voidReasons.where((r) => r['id'] == 'other'),
+  ];
 
   bool get _canContinue =>
       _pickedId != null && (_pickedId != 'other' || _other.trim().length >= 3);
@@ -462,14 +554,14 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 const SizedBox(width: Sp.s2),
                 Expanded(
                   child: Text(
-                    'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan. Refire mungkin lebih cocok untuk isu kualitas.',
+                    'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan dan catatan audit.',
                     style: SatType.bodyS(color: sc.textMd),
                   ),
                 ),
               ],
             ),
           ),
-          for (final r in _voidReasons)
+          for (final r in _reasons)
             Padding(
               padding: const EdgeInsets.only(bottom: Sp.s1h),
               child: Material(

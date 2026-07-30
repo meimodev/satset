@@ -17,6 +17,7 @@ import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/features/admin/menu_admin_item_editor.dart';
+import 'package:satset/ui/features/admin/widgets/kill_reason_sheet.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -544,9 +545,7 @@ class _MenuItemRow extends ConsumerWidget {
               }
             },
             onLongPress: perm == MenuPermission.admin
-                ? () => ref
-                      .read(menuRepositoryProvider.notifier)
-                      .toggleAvailability(item.id)
+                ? () => _toggleAvailability(context, ref, item)
                 : null,
             child: AnimatedContainer(
               duration: satMotion(context, 200),
@@ -701,11 +700,7 @@ class _StatusToggle extends ConsumerWidget {
     return PressScale(
       pressedScale: canToggle ? 0.94 : 1.0,
       child: GestureDetector(
-        onTap: canToggle
-            ? () => ref
-                  .read(menuRepositoryProvider.notifier)
-                  .toggleAvailability(item.id)
-            : null,
+        onTap: canToggle ? () => _toggleAvailability(context, ref, item) : null,
         child: AnimatedContainer(
           duration: satMotion(context, 220),
           curve: satEaseOut,
@@ -1181,4 +1176,29 @@ class _MenuRoleChip extends StatelessWidget {
       size: SatChipSize.sm,
     );
   }
+}
+
+/// Flip an item's sold-out state, asking why on the way *off* the menu.
+///
+/// Only the kill direction prompts: putting a dish back needs no
+/// justification, and a second sheet there would be friction for its own sake.
+/// The reason lands on the audit row (ADR-0067) — a manager reading "Burger
+/// Wagyu stop jual" later wants the "out of brioche" beside it.
+Future<void> _toggleAvailability(
+  BuildContext context,
+  WidgetRef ref,
+  MenuItem item,
+) async {
+  final repo = ref.read(menuRepositoryProvider.notifier);
+  if (item.unavailable) {
+    await repo.toggleAvailability(item.id);
+    return;
+  }
+  final reason = await showKillReasonSheet(context, itemName: item.name);
+  // Null is a dismissal, '' is "no reason given" — only the former aborts.
+  if (reason == null) return;
+  await repo.toggleAvailability(
+    item.id,
+    reason: reason.isEmpty ? null : reason,
+  );
 }

@@ -249,7 +249,10 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     }
   }
 
-  Future<void> toggleAvailability(String id) async {
+  /// Flip an item's sold-out state. [reason] rides along on the *kill*
+  /// direction only and lands on the audit row (ADR-0067) — "Burger off" with
+  /// no why tells a manager reading the log nothing.
+  Future<void> toggleAvailability(String id, {String? reason}) async {
     final cur = state.items.where((i) => i.id == id).firstOrNull;
     if (cur == null) return;
     final next = !cur.unavailable;
@@ -266,7 +269,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     try {
       final raw = await ref.read(apiClientProvider).postJson(
         '/menu/items/$id/availability',
-        {'unavailable': next},
+        {'unavailable': next, if (next && reason != null) 'reason': reason},
       );
       final dto = MenuItemDto.fromJson((raw as Map).cast<String, dynamic>());
       _mergeServerItem(dto);
