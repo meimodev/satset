@@ -45,6 +45,7 @@ Never hardcode a `Color`, a spacing number, or a curve. Go through these.
 | `satBarrier`, `satMediaScrim`, `satShadowInk` | `colors.dart` | Dimming and shadow that must stay dark on *both* themes — modal barrier, label-over-photo scrim, ambient shadow. Not `sc.scrim`: that token is an opaque blend base and paints the layer underneath out entirely. |
 | `context.layout` | `layout.dart` | Phone/tablet breakpoints, `useTabletShell`. |
 | `courseVisual`, `roleVisual`, `zoneVisual` | `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart` | Course/role/zone color + icon. One hue vocabulary — don't re-map. |
+| `SatChannel` | `channel_visuals.dart` | How a takeaway reached the venue (bungkus / telepon / gofood / grab) + its hue. The channel pill is a takeaway's stand-in for a dine-in's zone chip, so it goes in the same slot. ADR-0066. |
 | `format.dart` | `format.dart` | Currency, time, duration formatting. |
 
 User-facing strings go through `lib/core/localization/app_strings.dart`. Never inline.

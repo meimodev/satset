@@ -254,6 +254,10 @@ Future<SubmitOrderResult> submitOrder(
   required List<Map<String, dynamic>> lines,
   bool takeaway = false,
   String? guestName,
+  /// How a takeaway reached the venue, and whether an aggregator already
+  /// settled it. Ignored for dine-in. ADR-0066.
+  String takeawayChannel = 'bungkus',
+  bool takeawayPrepaid = false,
   String? appendVisitId,
   String? actorId,
   bool canOverrideStock = false,
@@ -299,6 +303,10 @@ Future<SubmitOrderResult> submitOrder(
               ? guestName
               : 'Bawa pulang',
           actorId: actorId,
+          // ADR-0066. Defaults to a walk-in wanting it wrapped, which is what
+          // every takeaway was before the channel existed.
+          channel: takeawayChannel,
+          prepaid: takeawayPrepaid,
         );
         visitId = v.id;
       }
@@ -500,6 +508,8 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       lines: lines,
       takeaway: takeaway,
       guestName: guestName,
+      takeawayChannel: (body['channel'] as String?) ?? 'bungkus',
+      takeawayPrepaid: body['prepaid'] == true,
       appendVisitId: appendVisitId,
       actorId: actorId,
       canOverrideStock: canOverrideStock,

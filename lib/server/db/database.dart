@@ -54,20 +54,32 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 40;
+  // 41 belongs to main (the Indonesian menu-tag code fix). This branch was cut
+  // before it and independently reached for 41, which would have left every
+  // device already on 41 skipping the cashier migration entirely — no
+  // `channel`, no `prepaid`, no nullable `receipt_id`. Renumbered to 42; the
+  // merge with main keeps both blocks.
+  int get schemaVersion => 42;
 
-  /// At most one whole-order discount per receipt, and one line discount per
-  /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
-  /// in route code. Drift cannot express partial indexes, so they are raw SQL
-  /// and must be created on both fresh and upgraded databases.
+  /// At most one discount per target — one bill discount per visit (ADR-0070),
+  /// one whole-order discount per receipt, one line discount per line: the
+  /// ADR-0037 no-stacking rule, enforced in the schema rather than in route
+  /// code. Drift cannot express partial indexes, so they are raw SQL and must be
+  /// created on both fresh and upgraded databases.
   Future<void> _createDiscountIndexes() async {
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_order_uniq '
-      'ON discounts (receipt_id) WHERE ticket_id IS NULL',
+      'ON discounts (receipt_id) WHERE receipt_id IS NOT NULL '
+      'AND ticket_id IS NULL',
     );
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_line_uniq '
       'ON discounts (receipt_id, ticket_id) WHERE ticket_id IS NOT NULL',
+    );
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_bill_uniq '
+      'ON discounts (visit_id) WHERE receipt_id IS NULL '
+      'AND visit_id IS NOT NULL',
     );
   }
 
@@ -694,6 +706,55 @@ class AppDatabase extends _$AppDatabase {
           'sound_guest_pending',
           type: "TEXT NOT NULL DEFAULT 'doorbell'",
         );
+      }
+      if (from < 42) {
+        // The cashier reconciliation pass (ADR-0066..0070).
+        //
+        // Takeaway channel + prepaid, on the live visit and frozen into its
+        // snapshot so history can still tell GoFood from a walk-in.
+        for (final t in ['visits', 'table_sessions']) {
+          await _safeAddColumnOn(
+            t,
+            'channel',
+            type: "TEXT NOT NULL DEFAULT ''",
+          );
+          await _safeAddColumnOn(
+            t,
+            'prepaid',
+            type: 'INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+        // Bill-level discounts (ADR-0070) need `receipt_id` nullable and a
+        // `visit_id` beside it. SQLite cannot drop a NOT NULL in place, so this
+        // is a rebuild — `alterTable` copies every surviving column across and
+        // leaves the new nullable one NULL, which is exactly right: every
+        // existing row is receipt-scoped.
+        // `alterTable` is the only in-tree way to relax a NOT NULL; the
+        // alternative is hand-rolling the same rebuild in raw SQL.
+        //
+        // `newColumns` is not optional here: the rebuild copies every column of
+        // the NEW schema out of the OLD table, so without naming `visit_id` as
+        // new it selects a column that does not exist yet and the whole
+        // migration fails on `no such column: visit_id`. Nullable, so it needs
+        // no transformer — every pre-existing row is receipt-scoped.
+        await m.alterTable(
+          // ignore: experimental_member_use
+          TableMigration(discounts, newColumns: [discounts.visitId]),
+        );
+        // The snapshot mirrors the live row, so it relaxes the same way.
+        // ignore: experimental_member_use
+        await m.alterTable(TableMigration(tableSessionDiscounts));
+        // The order-scope index gained a `receipt_id IS NOT NULL` clause, so it
+        // has to be replaced rather than left alone — CREATE IF NOT EXISTS
+        // would keep the old definition and let a second bill discount through.
+        for (final ix in [
+          'idx_discounts_order_uniq',
+          'idx_discounts_line_uniq',
+          'idx_discounts_bill_uniq',
+        ]) {
+          await customStatement('DROP INDEX IF EXISTS $ix');
+        }
+        await _createDiscountIndexes();
       }
     },
     onCreate: (m) async {

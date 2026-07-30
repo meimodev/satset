@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
+import 'package:satset/ui/core/design/channel_visuals.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -317,11 +319,13 @@ class ReviewScreen extends ConsumerWidget {
                           final choice = await _chooseCommit(context);
                           if (choice == null || !context.mounted) return;
                           if (choice == _Commit.takeaway) {
-                            final guest = await _askGuestName(context);
-                            if (guest == null || !context.mounted) return;
+                            final ta = await _askTakeawayDetails(context);
+                            if (ta == null || !context.mounted) return;
                             final vid = await vm.submitTakeaway(
                               cart,
-                              guestName: guest,
+                              guestName: ta.guestName,
+                              channel: ta.channel,
+                              prepaid: ta.prepaid,
                               actorId: actorId,
                             );
                             if (vid == null || vid.isEmpty) return;
@@ -505,37 +509,109 @@ class _CommitTile extends StatelessWidget {
   }
 }
 
-/// Prompt for the guest name (the takeaway visit's only handle). Required.
-Future<String?> _askGuestName(BuildContext context) {
+/// What the takeaway prompt collects: the guest name (the visit's only handle,
+/// required) plus how the order reached us and whether it is already paid.
+typedef _TakeawayDetails = ({String guestName, String channel, bool prepaid});
+
+/// Prompt for the guest name and the [[Kanal (channel)]] (ADR-0066).
+///
+/// The channel is asked here rather than left to default because the cashier
+/// cannot infer it later: a GoFood order and a walk-in bungkus look identical
+/// on the bill, and only one of them has money still to collect. Prepaid is
+/// offered only for the aggregator channels — a walk-in cannot have prepaid,
+/// and an aggregator order can still be cash-on-delivery, so it is a separate
+/// question rather than derived.
+Future<_TakeawayDetails?> _askTakeawayDetails(BuildContext context) {
   final sc = context.sat;
   final ctrl = TextEditingController();
-  return showSatDialog<String>(
+  var channel = SatChannel.bungkus;
+  var prepaid = false;
+  return showSatDialog<_TakeawayDetails>(
     context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: sc.bg1,
-      title: Text('Nama tamu', style: SatType.bodyM(color: sc.textHi)),
-      content: SatField.text(
-        controller: ctrl,
-        hint: 'mis. Budi',
-        autofocus: true,
-        capitalization: TextCapitalization.words,
-        onSubmitted: (v) {
-          if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim());
-        },
-      ),
-      actions: [
-        SatButton.ghost(
-          label: AppStrings.cancel,
-          onTap: () => Navigator.of(ctx).pop(),
-        ),
-        SatButton.primary(
-          label: 'Lanjut',
-          onTap: () {
-            final v = ctrl.text.trim();
-            if (v.isNotEmpty) Navigator.of(ctx).pop(v);
-          },
-        ),
-      ],
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) {
+        final aggregator =
+            channel == SatChannel.gofood || channel == SatChannel.grab;
+        return AlertDialog(
+          backgroundColor: sc.bg1,
+          title: Text('Bawa pulang', style: SatType.bodyM(color: sc.textHi)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Kanal', style: SatType.labelS(color: sc.textLo)),
+              const SizedBox(height: Sp.s2),
+              Wrap(
+                spacing: Sp.s2,
+                runSpacing: Sp.s2,
+                children: [
+                  for (final c in SatChannel.values)
+                    SatChip.select(
+                      label: c.label,
+                      selected: channel == c,
+                      onTap: () => setState(() {
+                        channel = c;
+                        // A walk-in cannot be prepaid; clear it rather than
+                        // carry a stale yes onto the new channel.
+                        if (c != SatChannel.gofood && c != SatChannel.grab) {
+                          prepaid = false;
+                        }
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Sp.s3h),
+              Text(
+                'Nama tamu / kurir',
+                style: SatType.labelS(color: sc.textLo),
+              ),
+              const SizedBox(height: Sp.s2),
+              SatField.text(
+                controller: ctrl,
+                hint: 'mis. Budi · atau Rizal (kurir)',
+                autofocus: true,
+                capitalization: TextCapitalization.words,
+              ),
+              if (aggregator) ...[
+                const SizedBox(height: Sp.s2h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Sudah dibayar aplikasi',
+                        style: SatType.bodyS(color: sc.textHi),
+                      ),
+                    ),
+                    SatToggle(
+                      value: prepaid,
+                      semanticLabel: 'Sudah dibayar aplikasi',
+                      onChanged: (v) => setState(() => prepaid = v),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            SatButton.ghost(
+              label: AppStrings.cancel,
+              onTap: () => Navigator.of(ctx).pop(),
+            ),
+            SatButton.primary(
+              label: 'Lanjut',
+              onTap: () {
+                final v = ctrl.text.trim();
+                if (v.isEmpty) return;
+                Navigator.of(ctx).pop((
+                  guestName: v,
+                  channel: channel.id,
+                  prepaid: prepaid,
+                ));
+              },
+            ),
+          ],
+        );
+      },
     ),
   );
 }

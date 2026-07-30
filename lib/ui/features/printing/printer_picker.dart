@@ -10,7 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:satset/core/printing/bill_struk_builder.dart';
+import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/core/printing/bill_struk_renderer.dart';
+import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
+import 'package:satset/ui/features/cashier/widgets/paper_preview.dart';
 import 'package:satset/core/printing/struk_builder.dart';
 import 'package:satset/core/printing/struk_renderer.dart';
 import 'package:satset/core/printing/struk_socket.dart';
@@ -126,29 +129,77 @@ Future<void> printBillStruk({
   final who = receipt == null
       ? 'Meja ${bill.tableLabel ?? ''}'.trim()
       : (receipt.label.isEmpty ? 'struk' : receipt.label);
+
+  final venue = ref.read(venueSettingsProvider);
+  final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
+  final data = BillStrukBuilder.fromBill(
+    bill: bill,
+    receipt: receipt,
+    venue: venue,
+    logoBytes: logo,
+  );
+
+  // Look before you print (ADR-0066). The preview is built from the same
+  // `BillStrukData` the renderer gets, so what is on screen is what lands on
+  // the roll — and a wrong table label is caught here rather than in a guest's
+  // hand. Dismissing the preview prints nothing.
+  if (!context.mounted) return;
+  final go = await showSatSheet<bool>(
+    context,
+    builder: (c) => _PreviewSheet(data: data, subtitle: 'Cetak $what · $who'),
+  );
+  if (go != true || !context.mounted) return;
+
   await _openPicker(
     context,
     PrintJob(
       subtitle: 'Cetak $what · $who',
-      renderBytes: () async {
-        final venue = ref.read(venueSettingsProvider);
-        final logo = await ref.read(
-          venueLogoBytesProvider(venue.logoRev).future,
-        );
-        return BillStrukRenderer.render(
-          BillStrukBuilder.fromBill(
-            bill: bill,
-            receipt: receipt,
-            venue: venue,
-            logoBytes: logo,
-          ),
-        );
-      },
+      renderBytes: () async => BillStrukRenderer.render(data),
       printVenue: (pid) => receipt == null
           ? ref.read(settlementProvider.notifier).printBill(bill.visitId, pid)
           : ref.read(settlementProvider.notifier).printReceipt(receipt.id, pid),
     ),
   );
+}
+
+/// Paper preview + one way forward. Deliberately thin: the printer choice is
+/// the picker's job, and asking it twice is how a cashier ends up printing to
+/// the kitchen roll.
+class _PreviewSheet extends StatelessWidget {
+  final BillStrukData data;
+  final String subtitle;
+  const _PreviewSheet({required this.data, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return FractionallySizedBox(
+      heightFactor: 0.9,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatSheetHeader(
+              onClose: () => Navigator.of(context).pop(false),
+              child: Text(
+                subtitle,
+                style: SatType.labelL(color: sc.textHi),
+              ),
+            ),
+            Expanded(child: PaperPreviewBody(data)),
+            Padding(
+              padding: const EdgeInsets.all(Sp.s4),
+              child: SatButton.primary(
+                label: 'Pilih printer',
+                icon: Icons.print_rounded,
+                onTap: () => Navigator.of(context).pop(true),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 void _toast(BuildContext context, String msg) {

@@ -135,6 +135,17 @@ class Visits extends Table {
   /// with handover ("Serahkan") in place of table-close. Drives label
   /// resolution (KDS/cashier) and the reports dine-in/takeaway split.
   TextColumn get kind => text().withDefault(const Constant('dineIn'))();
+
+  /// How a takeaway order reached the venue — `bungkus` | `telepon` | `gofood`
+  /// | `grab`. Empty for a dine-in visit. Provenance, not a payment method: a
+  /// GoFood order can still be unpaid. Drives the cashier's channel pill, which
+  /// is a takeaway's stand-in for a dine-in's zone. ADR-0066.
+  TextColumn get channel => text().withDefault(const Constant(''))();
+
+  /// The aggregator already settled this order, so there is nothing to collect.
+  /// Normal for gofood/grab, impossible for a walk-in bungkus — but not derived
+  /// from [channel], because an aggregator order can be cash-on-delivery.
+  BoolColumn get prepaid => boolean().withDefault(const Constant(false))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -512,6 +523,12 @@ class TableSessions extends Table {
   /// Visit kind frozen at snapshot: `dineIn` (default) | `takeaway`. Lets
   /// reports split takeaway out of per-cover / turn-time / occupancy. ADR-0026.
   TextColumn get kind => text().withDefault(const Constant('dineIn'))();
+
+  /// Takeaway channel + prepaid flag, frozen at snapshot so history can still
+  /// tell a GoFood order from a walk-in bungkus. Empty / false for dine-in and
+  /// for pre-v42 rows. ADR-0066.
+  TextColumn get channel => text().withDefault(const Constant(''))();
+  BoolColumn get prepaid => boolean().withDefault(const Constant(false))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -568,6 +585,17 @@ class Receipts extends Table {
   /// The [[Visit]] this receipt settles — see Tickets.visitId. Nullable only
   /// for pre-v29 rows. ADR-0024.
   TextColumn get visitId => text().nullable()();
+
+  /// `itemized` ⇒ the receipt **owns units** and its total is recomputed from
+  /// them. `even` ⇒ an [[Amount receipt]] (ADR-0068): it owns no lines and
+  /// holds a frozen money claim on the untracked remainder — bill total less
+  /// every itemized receipt's total and every other amount receipt's claim.
+  /// The stored value stays `even` for compatibility; the concept is wider than
+  /// the word, because a bill can hold both kinds at once now (ADR-0067).
+  ///
+  /// An amount receipt's [total] is **never recomputed** after minting. A guest
+  /// quoted a third of the bill is owed that number even if a line is voided
+  /// afterwards; the correction belongs in a refund, which has an audit trail.
   TextColumn get mode => text().withDefault(const Constant('itemized'))();
   TextColumn get label => text().withDefault(const Constant(''))();
 
@@ -589,8 +617,10 @@ class Receipts extends Table {
 }
 
 /// Owner-defined discount the [[Cashier]] may pick from — cashiers never type a
-/// percentage (ADR-0037). `scope` ∈ {order, line} keeps a fixed whole-bill
-/// amount off a single cheap line; `kind` ∈ {percent, fixed} mirrors
+/// percentage (ADR-0037). `scope` ∈ {bill, order, line} keeps a fixed whole-bill
+/// amount off a single cheap line — `bill` is the whole [[Bill (tab)]] (a
+/// table-wide promo, ADR-0070), `order` one receipt, `line` one line;
+/// `kind` ∈ {percent, fixed} mirrors
 /// `VenueSettings.serviceMode`, with `value` in basis points or rupiah.
 /// Hard-deleted rather than archived — safe because every applied discount
 /// snapshots these values onto its `discounts` row. `active` hides a seasonal
@@ -607,20 +637,35 @@ class DiscountPresets extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// An applied [[Diskon (discount)]] — always receipt-scoped, at settlement only
-/// (ADR-0037). `ticketId == null` ⇒ whole-order discount; set ⇒ a line discount
-/// against the units *this receipt* owns.
+/// An applied [[Diskon (discount)]], at settlement only (ADR-0037). Three
+/// scopes, told apart by which key is set:
+///
+/// - `visitId` set, `receiptId` null ⇒ a **bill** discount (ADR-0070) — a
+///   table-wide promo, applied before any receipt claims anything and then
+///   distributed across receipts the way an order discount already is.
+/// - `receiptId` set, `ticketId` null ⇒ a **whole-order** discount on one receipt.
+/// - `receiptId` and `ticketId` both set ⇒ a **line** discount against the units
+///   *this receipt* owns.
 ///
 /// `name`/`kind`/`value` are **snapshotted** off the preset at apply time so
 /// editing or deleting a preset never rewrites settled history; `presetId` is a
 /// weak reference kept only for the per-preset reporting rollup (ADR-0039).
 ///
-/// At most one order discount per receipt and one line discount per line — see
-/// the two partial unique indexes in `AppDatabase.migration`. Rows cascade with
-/// their receipt, which is how `split-even` disposes of line discounts.
+/// At most one of each per target — one bill discount per visit, one order
+/// discount per receipt, one line discount per line. See the three partial
+/// unique indexes in `AppDatabase.migration`. Receipt-scoped rows cascade with
+/// their receipt; a bill discount outlives every receipt on the visit, which is
+/// the point — receipts are minted per payment now (ADR-0067) and the promo
+/// predates all of them.
 class Discounts extends Table {
   TextColumn get id => text()();
-  TextColumn get receiptId => text()();
+
+  /// Null ⇒ a bill discount (see [visitId]). Set ⇒ receipt- or line-scoped.
+  TextColumn get receiptId => text().nullable()();
+
+  /// Set only on a bill discount. Receipt-scoped rows reach their visit through
+  /// the receipt.
+  TextColumn get visitId => text().nullable()();
 
   /// Null ⇒ whole-order discount. Set ⇒ line discount on this ticket's units.
   TextColumn get ticketId => text().nullable()();
@@ -705,9 +750,13 @@ class TableSessionReceipts extends Table {
 class TableSessionDiscounts extends Table {
   TextColumn get id => text()();
   TextColumn get sessionId => text()();
-  TextColumn get receiptId => text()();
 
-  /// Null ⇒ whole-order discount; set ⇒ line discount.
+  /// Null ⇒ a **bill** discount, which belongs to the visit rather than to any
+  /// one receipt (ADR-0070). The session is the visit here, so no `visitId` is
+  /// needed alongside — `sessionId` already carries it.
+  TextColumn get receiptId => text().nullable()();
+
+  /// Null ⇒ whole-order (or bill) discount; set ⇒ line discount.
   TextColumn get ticketId => text().nullable()();
   TextColumn get presetId => text().nullable()();
   TextColumn get name => text()();

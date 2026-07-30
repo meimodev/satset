@@ -100,6 +100,11 @@ Future<String> ensureVisit(
   return id;
 }
 
+/// The channels a takeaway can arrive through (ADR-0066). Anything else falls
+/// back to `bungkus` rather than being stored — the cashier's channel pill has
+/// to mean one of four things or it means nothing.
+const _takeawayChannels = {'bungkus', 'telepon', 'gofood', 'grab'};
+
 /// Mint a takeaway (Bawa pulang) [[Visit]] — `kind == takeaway`, no table row,
 /// `pax = 0`, `tableFreedAt` null at creation. The pickup number comes from the
 /// per-business-day [DailyCounters] (`Bawa pulang #N`). The lifecycle reuses
@@ -110,6 +115,8 @@ Future<Visit> createTakeawayVisit(
   required String guestName,
   String? guestNotes,
   String? actorId,
+  String channel = 'bungkus',
+  bool prepaid = false,
 }) async {
   final now = SatClock.now();
   final nowUtc = now.toUtc();
@@ -155,6 +162,10 @@ Future<Visit> createTakeawayVisit(
             lastActorId: Value(actorId),
             createdAt: nowUtc,
             kind: const Value('takeaway'),
+            channel: Value(
+              _takeawayChannels.contains(channel) ? channel : 'bungkus',
+            ),
+            prepaid: Value(prepaid),
           ),
         );
   });
@@ -272,6 +283,10 @@ Future<void> snapshotVisitAndDelete(
             // Freeze the visit kind so reports can split takeaway out of
             // per-cover / turn-time / occupancy metrics. See ADR-0026.
             kind: Value(visit.kind),
+            // Freeze the channel too, so a closed GoFood order is still
+            // distinguishable from a walk-in bungkus in history. ADR-0066.
+            channel: Value(visit.channel),
+            prepaid: Value(visit.prepaid),
           ),
         );
     for (final t in tickets) {
@@ -343,7 +358,7 @@ Future<void> snapshotVisitAndDelete(
             TableSessionDiscountsCompanion.insert(
               id: _uuid.v4(),
               sessionId: sid,
-              receiptId: d.receiptId,
+              receiptId: Value(d.receiptId),
               ticketId: Value(d.ticketId),
               presetId: Value(d.presetId),
               name: d.name,

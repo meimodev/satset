@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
 class TabletShell extends StatelessWidget {
@@ -580,28 +581,32 @@ class TabletCard extends StatelessWidget {
   }
 }
 
+/// A headline figure over its caption. [onTap] turns the tile into a filter —
+/// the cashier's stat row is a set of counts you act on, not just read, and the
+/// tile gained the axis rather than being forked into a tappable lookalike
+/// (the ADR-0051 `_TabletSeg` lesson). [selected] marks the one currently
+/// filtering.
 class TabletStatTile extends StatelessWidget {
   final String value;
   final String label;
   final Color? bg;
   final Color? valueColor;
+  final VoidCallback? onTap;
+  final bool selected;
   const TabletStatTile({
     super.key,
     required this.value,
     required this.label,
     this.bg,
     this.valueColor,
+    this.onTap,
+    this.selected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Container(
-      decoration: SatBox.d(
-        color: bg ?? sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(14),
-      ),
+    final body = Padding(
       padding: const EdgeInsets.all(Sp.s3h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,6 +615,38 @@ class TabletStatTile extends StatelessWidget {
           const SizedBox(height: Sp.s2),
           Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
         ],
+      ),
+    );
+    final decoration = SatBox.d(
+      color: bg ?? sc.bg2,
+      // Selection reads as a heavier rule in the tile's own hue, so a filtered
+      // row still says *which* filter without a second colour vocabulary.
+      border: SatB.all(
+        color: selected ? (valueColor ?? sc.textHi) : sc.border0,
+        width: selected ? 2 : 1,
+      ),
+      borderRadius: SatR.a(14),
+    );
+    if (onTap == null) {
+      return Container(decoration: decoration, child: body);
+    }
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$label $value',
+      child: PressScale(
+        child: DecoratedBox(
+          decoration: decoration,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: SatR.a(14),
+            child: InkWell(
+              borderRadius: SatR.a(14),
+              onTap: onTap,
+              child: body,
+            ),
+          ),
+        ),
       ),
     );
   }

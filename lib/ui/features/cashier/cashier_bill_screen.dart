@@ -4,11 +4,9 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
-import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/design/layout.dart';
-import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -28,6 +26,7 @@ import 'package:satset/ui/core/design/receipt_visuals.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/cashier/receipt_badge.dart';
+import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -41,15 +40,23 @@ const _methodLabels = {
   'lainnya': 'Lainnya',
 };
 
-/// Opens the bill surface (ADR-0064): a right-edge drawer on a tablet, where
-/// the cashier reads it *against* the payable list, and a tall bottom sheet on
-/// a phone, where a 560px side panel would be the whole screen anyway. Same
-/// two-containers-one-body shape as the booking book (ADR-0048).
+/// Opens the bill surface. Hardware decides, as everywhere else (ADR-0049):
+///
+/// - **Tablet** — a full-screen two-pane page on the root navigator (ADR-0066).
+///   The settle side carries a mode row, four methods, a seven-note cash pad,
+///   a tender row, a running tally, a change fold and a proof block; that is
+///   not a drawer's worth of content, and the one thing that must not scroll
+///   while a cashier counts notes is the tally beside them.
+/// - **Phone** — the tall sheet ADR-0064 specified, unchanged. A side panel on
+///   a 360dp handset would be the whole screen anyway, so the drawer never had
+///   anything to offer here.
+///
+/// Both are root-navigator by construction, so the floating phone tab bar still
+/// cannot float over the confirm button.
 Future<void> openCashierBill(
   BuildContext context, {
   required String visitId,
 }) {
-  final sc = context.sat;
   if (!context.layout.useTabletShell) {
     return showSatSheet<void>(
       context,
@@ -59,22 +66,29 @@ Future<void> openCashierBill(
       ),
     );
   }
-  return showSatDrawer<void>(
-    context,
-    builder: (_) => Material(
-      color: sc.bg1,
-      child: Container(
-        // Wider than the booking book's 520: the receipt cards carry a
-        // seven-button action Wrap that reflows to three rows below this.
-        width: 560,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          border: Border(left: SatB.side(color: sc.border1)),
-        ),
-        child: SafeArea(child: CashierBillView(visitId: visitId)),
-      ),
+  return Navigator.of(context, rootNavigator: true).push<void>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => CashierBillPage(visitId: visitId),
     ),
   );
+}
+
+/// The tablet container for [CashierBillView] — a page, not an overlay
+/// (ADR-0066). Content-only body, same as the phone sheet gets; this supplies
+/// the scaffold and the way out.
+class CashierBillPage extends StatelessWidget {
+  final String visitId;
+  const CashierBillPage({super.key, required this.visitId});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Scaffold(
+      backgroundColor: sc.bg0,
+      body: SafeArea(child: CashierBillView(visitId: visitId)),
+    );
+  }
 }
 
 /// Settle one [[Visit]]'s [[Bill]]: assign lines to receipts (itemized), split
@@ -151,6 +165,7 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
               repo: _repo,
               canRefund: ref.watch(authStateProvider).has(Capability.refund),
               onCloseBill: () => _closeBill(context, ref, bill),
+              onReopenBill: () => _reopenBill(bill),
               printDoc: (r) => printBillStruk(
                 context: context,
                 ref: ref,
@@ -202,6 +217,20 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
           .read(settlementProvider.notifier)
           .closeBill(bill.visitId, writeOff: writeOff, reason: reason);
       if (context.mounted) Navigator.of(context).pop();
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = _msg(e));
+    }
+  }
+
+  /// Unlock a bill that closed itself (ADR-0069). No confirm dialog: reopening
+  /// is the *recovery* from a mis-tap, and putting a second decision in front of
+  /// it is how a cashier ends up stuck. It is audited, and the money is
+  /// untouched — only the lock comes off.
+  Future<void> _reopenBill(Bill bill) async {
+    try {
+      await _repo.reopenBill(bill.visitId);
+      ref.invalidate(billDetailProvider(bill.visitId));
+      await ref.read(settlementProvider.notifier).refresh();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = _msg(e));
     }
@@ -298,12 +327,13 @@ class _ErrorLine extends StatelessWidget {
   }
 }
 
-class _BillBody extends StatelessWidget {
+class _BillBody extends StatefulWidget {
   final Bill bill;
   final Future<void> Function(Future<Bill> Function()) run;
   final SettlementRepository repo;
   final bool canRefund;
   final VoidCallback onCloseBill;
+  final VoidCallback onReopenBill;
   final Future<void> Function(BillReceipt?) printDoc;
 
   const _BillBody({
@@ -312,84 +342,185 @@ class _BillBody extends StatelessWidget {
     required this.repo,
     required this.canRefund,
     required this.onCloseBill,
+    required this.onReopenBill,
     required this.printDoc,
   });
 
   @override
+  State<_BillBody> createState() => _BillBodyState();
+}
+
+class _BillBodyState extends State<_BillBody> {
+  SettleMode _mode = SettleMode.penuh;
+
+  /// ticketId → units chosen for the payment about to be taken. Lives here
+  /// because the lines pane draws it and the settle pane prices it.
+  final Map<String, int> _selection = {};
+
+  Bill get bill => widget.bill;
+
+  void _toggle(BillLine l) {
+    setState(() {
+      if (_selection.containsKey(l.ticketId)) {
+        _selection.remove(l.ticketId);
+      } else {
+        // Tap takes the whole line — the 95% case. ADR-0067.
+        _selection[l.ticketId] = l.unassignedUnits;
+      }
+    });
+  }
+
+  void _setUnits(BillLine l, int units) {
+    setState(() {
+      if (units <= 0) {
+        _selection.remove(l.ticketId);
+      } else {
+        _selection[l.ticketId] = units.clamp(1, l.unassignedUnits);
+      }
+    });
+  }
+
+  /// A payment landed, or the mode changed — the picks no longer refer to
+  /// anything, and a stale selection is how a cashier double-charges an item.
+  void _clearSelection() {
+    if (_selection.isEmpty) return;
+    setState(_selection.clear);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final done = bill.billClosedAt != null || bill.fullySettled;
+    if (context.layout.useTabletShell) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Two panes scrolling independently is the whole reason ADR-0066
+          // chose a page over the drawer: the running cash tally must stay put
+          // while the cashier scrolls a long bill.
+          Expanded(flex: 3, child: _lines(context)),
+          Container(width: 1, color: context.sat.border0),
+          Expanded(flex: 2, child: _settle(context, done)),
+        ],
+      );
+    }
+    // Phone: one column, confirm bar pinned. A 360dp sheet has no room for two
+    // panes, and stacking them is what the sheet already does well.
+    return Column(
+      children: [
+        Expanded(child: _lines(context)),
+        if (done)
+          _donePane()
+        else
+          SizedBox(height: 420, child: _settle(context, done)),
+      ],
+    );
+  }
+
+  Widget _donePane() => _DonePane(
+    bill: bill,
+    onPrint: () => widget.printDoc(null),
+    onReopen: widget.onReopenBill,
+  );
+
+  Widget _settle(BuildContext context, bool done) {
+    if (done) return _donePane();
+    return SettlePane(
+      bill: bill,
+      repo: widget.repo,
+      run: widget.run,
+      selection: _selection,
+      mode: _mode,
+      onMode: (m) {
+        setState(() => _mode = m);
+        _clearSelection();
+      },
+      onClearSelection: _clearSelection,
+    );
+  }
+
+  Widget _lines(BuildContext context) {
     // Page-load choreography: each section reveals in sequence top-to-bottom.
     var i = 0;
     Widget rv(Widget child) => Reveal(index: i++, child: child);
-    return Column(
+    final picking = _mode == SettleMode.perItem;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
       children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
-            children: [
-              rv(_TotalsCard(bill)),
-              const SizedBox(height: Sp.s2),
-              rv(
-                _TopActions(
-                  bill: bill,
-                  canRefund: canRefund,
-                  printDoc: printDoc,
-                  onWriteOff: onCloseBill,
-                ),
-              ),
-              if (bill.detached) ...[
-                const SizedBox(height: Sp.s2h),
-                rv(const _DetachedBanner()),
-              ],
-              const SizedBox(height: Sp.s3h),
-              if (bill.receipts.isEmpty)
-                rv(_ModeChooser(bill: bill, run: run, repo: repo)),
-              if (bill.mode == 'itemized' &&
-                  bill.receipts.isNotEmpty &&
-                  !bill.fullyAssigned) ...[
-                rv(_UnassignedBanner(bill: bill)),
-                const SizedBox(height: Sp.s2h),
-              ],
-              rv(_LinesSection(bill: bill, run: run, repo: repo)),
-              const SizedBox(height: Sp.s3h),
-              // An even split's shares own no items and are interchangeable by
-              // design, so N near-identical cards are scroll with no signal in
-              // it. They collapse into one card of thin rows. ADR-0063.
-              if (bill.mode == 'even' && bill.receipts.isNotEmpty)
-                rv(
-                  _EvenSplitCard(
-                    bill: bill,
-                    run: run,
-                    repo: repo,
-                    canRefund: canRefund,
-                    printDoc: printDoc,
-                  ),
-                )
-              else
-                ...bill.receipts.map(
-                  (r) => Padding(
-                    padding: const EdgeInsets.only(bottom: Sp.s2h),
-                    child: rv(
-                      _ReceiptCard(
-                        bill: bill,
-                        receipt: r,
-                        run: run,
-                        repo: repo,
-                        canRefund: canRefund,
-                        printDoc: printDoc,
-                      ),
-                    ),
-                  ),
-                ),
-              if (bill.receipts.isNotEmpty)
-                rv(_AddReceiptButton(bill: bill, run: run, repo: repo)),
-              if (bill.receipts.isNotEmpty && bill.paidAmount == 0)
-                rv(_ResetMethodButton(bill: bill, run: run, repo: repo)),
-            ],
+        rv(_TotalsCard(bill)),
+        const SizedBox(height: Sp.s2),
+        rv(
+          _TopActions(
+            bill: bill,
+            canRefund: widget.canRefund,
+            printDoc: widget.printDoc,
+            onWriteOff: widget.onCloseBill,
+            run: widget.run,
+            repo: widget.repo,
           ),
         ),
-        // Bottom CTA only for the happy path: a fully-settled bill ready to
-        // lock as Lunas. The tak-tertagih write-off moved up to _TopActions.
-        if (bill.fullySettled) _CloseBar(bill: bill, onClose: onCloseBill),
+        if (bill.detached) ...[
+          const SizedBox(height: Sp.s2h),
+          rv(const _DetachedBanner()),
+        ],
+        const SizedBox(height: Sp.s3h),
+        if (bill.mode == 'itemized' &&
+            bill.receipts.isNotEmpty &&
+            !bill.fullyAssigned) ...[
+          rv(_UnassignedBanner(bill: bill)),
+          const SizedBox(height: Sp.s2h),
+        ],
+        rv(
+          _LinesSection(
+            bill: bill,
+            run: widget.run,
+            repo: widget.repo,
+            selectable: picking,
+            selection: _selection,
+            onToggle: _toggle,
+            onUnits: _setUnits,
+          ),
+        ),
+        const SizedBox(height: Sp.s3h),
+        // An even split's shares own no items and are interchangeable by
+        // design, so N near-identical cards are scroll with no signal in it.
+        // They collapse into one card of thin rows. ADR-0063.
+        if (bill.mode == 'even' && bill.receipts.isNotEmpty)
+          rv(
+            _EvenSplitCard(
+              bill: bill,
+              run: widget.run,
+              repo: widget.repo,
+              canRefund: widget.canRefund,
+              printDoc: widget.printDoc,
+            ),
+          )
+        else if (bill.receipts.isNotEmpty)
+          rv(
+            SatCard.section(
+              header: 'Struk',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final r in bill.receipts)
+                    _ReceiptRow(
+                      receipt: r,
+                      onTap: () => showReceiptSheet(
+                        context,
+                        bill: bill,
+                        receipt: r,
+                        run: widget.run,
+                        repo: widget.repo,
+                        canRefund: widget.canRefund,
+                        printDoc: widget.printDoc,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        // Pre-assigning named slips before anyone pays is still a real
+        // workflow, so it stays — just no longer the only way in. ADR-0067.
+        if (!picking) rv(_AddReceiptButton(bill: bill, run: widget.run, repo: widget.repo)),
       ],
     );
   }
@@ -466,11 +597,25 @@ class _TotalsCard extends StatelessWidget {
           // matching the printed slip: above Layanan when the discount reduced
           // the base service and tax were computed on, below Pajak otherwise.
           if (bill.discountAmount > 0 && bill.taxAfterDiscount)
-            row('Diskon', -bill.discountAmount, color: sc.warn),
+            row(
+              // Named when the whole-bill promo is what the cut is; the generic
+              // label stays for a total that aggregates several receipts'
+              // discounts, where no single name would be honest. ADR-0070.
+              bill.billDiscount?.name ?? 'Diskon',
+              -bill.discountAmount,
+              color: sc.warn,
+            ),
           if (bill.serviceAmount > 0) row('Layanan', bill.serviceAmount),
           if (bill.taxAmount > 0) row('Pajak', bill.taxAmount),
           if (bill.discountAmount > 0 && !bill.taxAfterDiscount)
-            row('Diskon', -bill.discountAmount, color: sc.warn),
+            row(
+              // Named when the whole-bill promo is what the cut is; the generic
+              // label stays for a total that aggregates several receipts'
+              // discounts, where no single name would be honest. ADR-0070.
+              bill.billDiscount?.name ?? 'Diskon',
+              -bill.discountAmount,
+              color: sc.warn,
+            ),
           Divider(color: sc.border0, height: 16),
           row('Total', bill.total, strong: true),
           row('Terbayar', bill.paidAmount, color: sc.success),
@@ -485,116 +630,42 @@ class _TotalsCard extends StatelessWidget {
   }
 }
 
-class _ModeChooser extends StatelessWidget {
-  final Bill bill;
-  final Future<void> Function(Future<Bill> Function()) run;
-  final SettlementRepository repo;
-  const _ModeChooser({
-    required this.bill,
-    required this.run,
-    required this.repo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Sp.s3h),
-      child: Row(
-        children: [
-          Expanded(
-            child: SatButton.primary(
-              size: SatButtonSize.sm,
-              icon: Icons.payments_outlined,
-              // Short labels: three across a phone sheet leaves ~105dp each,
-              // and the icons already carry the distinction.
-              label: 'Penuh',
-              onTap: () async {
-                await run(
-                  () => repo.createReceipt(
-                    bill.visitId,
-                    mode: 'itemized',
-                    assignAll: true,
-                    label: 'Tagihan',
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: Sp.s2),
-          Expanded(
-            child: SatButton.primary(
-              size: SatButtonSize.sm,
-              icon: Icons.call_split_rounded,
-              label: 'Per item',
-              onTap: () => run(
-                () => repo.createReceipt(
-                  bill.visitId,
-                  mode: 'itemized',
-                  label: 'A',
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: Sp.s2),
-          Expanded(
-            child: SatButton.primary(
-              size: SatButtonSize.sm,
-              icon: Icons.safety_divider_rounded,
-              label: 'Rata',
-              onTap: () async {
-                // Switching to an even split rebuilds every receipt, taking
-                // line discounts with them — an even receipt owns no lines to
-                // carry one (ADR-0037). Warn before that is destroyed.
-                final lineDiscounts = [
-                  for (final rc in bill.receipts)
-                    ...rc.discounts.where((d) => d.isLine),
-                ];
-                if (lineDiscounts.isNotEmpty) {
-                  if (!await _confirm(
-                    context,
-                    title: 'Diskon per item akan hilang',
-                    message:
-                        'Split rata membagi total tanpa kepemilikan item, '
-                        'jadi ${lineDiscounts.length} diskon per item akan '
-                        'dihapus. Diskon seluruh pesanan bisa dipasang lagi '
-                        'setelahnya.',
-                    confirmLabel: 'Ya, lanjutkan',
-                  )) {
-                    return;
-                  }
-                }
-                if (!context.mounted) return;
-                final n = await _askInt(
-                  context,
-                  'Bagi rata berapa orang?',
-                  initial: bill.pax > 1 ? bill.pax : 2,
-                );
-                if (n != null) {
-                  await run(() => repo.splitEven(bill.visitId, n));
-                }
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// `_ModeChooser` is gone with ADR-0067. It asked, once and up front, how the
+// whole table would pay — a prediction about people who had not reached for a
+// wallet yet. The question is now asked per payment by `SettlePane`'s mode row,
+// where the answer is known.
 
 class _LinesSection extends StatelessWidget {
   final Bill bill;
   final Future<void> Function(Future<Bill> Function()) run;
   final SettlementRepository repo;
+
+  /// Per-item mode is active, so the list is a picker: tapping a line puts it
+  /// on the receipt the settle pane is about to mint (ADR-0067).
+  final bool selectable;
+
+  /// ticketId → units chosen for the pending payment.
+  final Map<String, int> selection;
+  final void Function(BillLine)? onToggle;
+  final void Function(BillLine, int)? onUnits;
+
   const _LinesSection({
     required this.bill,
     required this.run,
     required this.repo,
+    this.selectable = false,
+    this.selection = const {},
+    this.onToggle,
+    this.onUnits,
   });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final assignable = bill.mode == 'itemized' && bill.receipts.isNotEmpty;
+    // Pre-assignment (`Atur`) and tap-to-pick are the same act at different
+    // speeds, so they never share a row: picking wins while it is on.
+    final assignable =
+        !selectable && bill.mode == 'itemized' && bill.receipts.isNotEmpty;
 
     // Group lines by their `(table, sentAt)` batch — same key the KDS uses
     // (HH:mm) — oldest-first. Headers only appear with 2+ batches; a single
@@ -653,10 +724,37 @@ class _LinesSection extends StatelessWidget {
     final assigned = l.assignedUnits;
     final hasNote = l.note?.trim().isNotEmpty == true;
     final pending = assignable && l.unassignedUnits > 0;
+    // Free units are what a picker can take; anything already owned by a
+    // receipt is locked, and a fully-owned line cannot be picked at all.
+    final free = l.unassignedUnits;
+    final picked = selection[l.ticketId] ?? 0;
+    final pickable = selectable && free > 0;
     return ListTile(
       dense: true,
-      tileColor: pending ? sc.warn.withValues(alpha: 0.08) : null,
-      shape: pending ? RoundedRectangleBorder(borderRadius: SatR.a(8)) : null,
+      onTap: pickable ? () => onToggle?.call(l) : null,
+      tileColor: picked > 0
+          ? sc.accentSoft
+          : pending
+          ? sc.warn.withValues(alpha: 0.08)
+          : null,
+      shape: (pending || picked > 0)
+          ? RoundedRectangleBorder(borderRadius: SatR.a(8))
+          : null,
+      leading: selectable
+          ? Icon(
+              picked > 0
+                  ? Icons.check_circle_rounded
+                  : free == 0
+                  ? Icons.lock_rounded
+                  : Icons.circle_outlined,
+              size: 20,
+              color: picked > 0
+                  ? sc.accentText
+                  : free == 0
+                  ? sc.textDim
+                  : sc.textLo,
+            )
+          : null,
       title: Text(
         '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
         style: SatType.bodyM(color: sc.textHi),
@@ -684,6 +782,36 @@ class _LinesSection extends StatelessWidget {
             Text(
               'Catatan: ${l.note!.trim()}',
               style: SatType.bodyS(color: sc.textLo),
+            ),
+          // The partial case only. A line split between two guests is rare, so
+          // it reveals a stepper rather than taxing the common whole-line tap
+          // with one (ADR-0037 survives, the frequent gesture stays one tap).
+          if (pickable && picked > 0 && free > 1)
+            Padding(
+              padding: const EdgeInsets.only(top: Sp.s1),
+              child: Row(
+                children: [
+                  Text(
+                    '$picked dari $free',
+                    style: SatType.labelS(color: sc.accentText),
+                  ),
+                  const SizedBox(width: Sp.s2),
+                  SatIconButton.plain(
+                    icon: Icons.remove_rounded,
+                    tooltip: 'Kurangi unit',
+                    onTap: picked <= 1
+                        ? null
+                        : () => onUnits?.call(l, picked - 1),
+                  ),
+                  SatIconButton.plain(
+                    icon: Icons.add_rounded,
+                    tooltip: 'Tambah unit',
+                    onTap: picked >= free
+                        ? null
+                        : () => onUnits?.call(l, picked + 1),
+                  ),
+                ],
+              ),
             ),
         ],
       ),
@@ -1381,32 +1509,115 @@ class _EvenSplitCard extends StatelessWidget {
     );
   }
 
-  /// One share's full card in a sheet. `run` is wrapped to close the sheet
-  /// first — the sheet holds a snapshot of the receipt, so leaving it open
-  /// after a mutation would show stale money.
   Future<void> _shareSheet(BuildContext context, BillReceipt r) =>
-      showSatSheet<void>(
+      showReceiptSheet(
         context,
-        builder: (ctx) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s3,
-            left: Sp.s3h,
-            right: Sp.s3h,
-            top: Sp.s3h,
-          ),
-          child: _ReceiptCard(
-            bill: bill,
-            receipt: r,
-            run: (fn) async {
-              Navigator.of(ctx).pop();
-              await run(fn);
-            },
-            repo: repo,
-            canRefund: canRefund,
-            printDoc: printDoc,
+        bill: bill,
+        receipt: r,
+        run: run,
+        repo: repo,
+        canRefund: canRefund,
+        printDoc: printDoc,
+      );
+}
+
+/// One receipt's full card in a sheet — every per-receipt act (bayar, refund,
+/// buka ulang, diskon, cetak) reached exactly one way (L2-17/18).
+///
+/// The list behind it stays thin rows: a bill with four receipts used to be a
+/// screen of near-identical cards, and the fact a cashier is scanning for is
+/// *which one is still owing*, which a row answers and a card buries. Same
+/// reasoning ADR-0063 applied to even shares, now applied to both kinds.
+///
+/// `run` is wrapped to close the sheet first — the sheet holds a snapshot of
+/// the receipt, so leaving it open after a mutation would show stale money.
+Future<void> showReceiptSheet(
+  BuildContext context, {
+  required Bill bill,
+  required BillReceipt receipt,
+  required Future<void> Function(Future<Bill> Function()) run,
+  required SettlementRepository repo,
+  required bool canRefund,
+  required Future<void> Function(BillReceipt?) printDoc,
+}) => showSatSheet<void>(
+  context,
+  builder: (ctx) => Padding(
+    padding: EdgeInsets.only(
+      bottom: MediaQuery.of(ctx).viewInsets.bottom + Sp.s3,
+      left: Sp.s3h,
+      right: Sp.s3h,
+      top: Sp.s3h,
+    ),
+    child: SingleChildScrollView(
+      child: _ReceiptCard(
+        bill: bill,
+        receipt: receipt,
+        run: (fn) async {
+          Navigator.of(ctx).pop();
+          await run(fn);
+        },
+        repo: repo,
+        canRefund: canRefund,
+        printDoc: printDoc,
+      ),
+    ),
+  ),
+);
+
+/// One itemized receipt as a thin row: its letter, what it owns, what it owes,
+/// and a chevron into [showReceiptSheet]. The letter is the identity (ADR-0063)
+/// and the item count is what a cashier actually recognises a guest by.
+class _ReceiptRow extends StatelessWidget {
+  final BillReceipt receipt;
+  final VoidCallback onTap;
+  const _ReceiptRow({required this.receipt, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final paid = receipt.isPaid;
+    final items = receipt.lines.fold<int>(0, (a, l) => a + l.qtyUnits);
+    return Semantics(
+      button: true,
+      label:
+          '${receiptTitle(receipt.label)}, '
+          '${paid ? 'lunas' : 'belum bayar'}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: SatR.a(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
+          child: Row(
+            children: [
+              ReceiptBadge(receipt.label.trim(), filled: paid, dense: true),
+              const SizedBox(width: Sp.s2h),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      formatIDR(receipt.total),
+                      style: SatType.monoM(color: sc.textHi),
+                    ),
+                    Text(
+                      '$items item',
+                      style: SatType.labelS(color: sc.textLo),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                paid ? 'Lunas' : 'Belum bayar',
+                style: SatType.labelS(color: paid ? sc.success : sc.warn),
+              ),
+              const SizedBox(width: Sp.s1h),
+              Icon(Icons.chevron_right_rounded, size: 18, color: sc.textDim),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 /// One share inside [_EvenSplitCard] — position, amount, paid state, and a
@@ -1614,68 +1825,84 @@ class _AddReceiptButton extends StatelessWidget {
   }
 }
 
-/// Undo the billing-method choice (Bayar penuh / Split per item / Split rata)
-/// while **no payment has been recorded** — wipes every receipt so the bill
-/// drops back to the [_ModeChooser]. Confirm-guarded; hidden the instant any
-/// money lands (then a paid receipt must be reopened first). See ADR-0023.
-class _ResetMethodButton extends StatelessWidget {
-  final Bill bill;
-  final Future<void> Function(Future<Bill> Function()) run;
-  final SettlementRepository repo;
-  const _ResetMethodButton({
-    required this.bill,
-    required this.run,
-    required this.repo,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SatButton.ghost(
-        label: 'Ganti metode pembayaran',
-        icon: Icons.refresh_rounded,
-        onTap: () async {
-          if (await _confirm(
-            context,
-            title: 'Ganti metode pembayaran',
-            message:
-                'Hapus semua struk dan pilih ulang cara penagihan? '
-                'Belum ada pembayaran yang tercatat, jadi aman diulang.',
-            confirmLabel: 'Ya, ganti',
-          )) {
-            await run(() => repo.resetBilling(bill));
-          }
-        },
-      ),
-    );
-  }
-}
+// `_ResetMethodButton` is gone with ADR-0067. It existed to undo a mode the
+// bill had been committed to; mode is now chosen per payment and nothing is
+// minted until confirm, so there is no committed choice left to undo. Deleting
+// one unpaid receipt is still available and is the whole of that story now.
 
-/// Bill-close bar — the cashier's happy-path **Lunas** act (lock a fully-settled
-/// bill). Only mounted when `bill.fullySettled`; the tak-tertagih write-off for
-/// an unsettled bill lives in [_TopActions]. NOT table-freeing. See ADR-0024.
-class _CloseBar extends StatelessWidget {
+/// the one act that recovers a mistake.
+class _DonePane extends StatelessWidget {
   final Bill bill;
-  final VoidCallback onClose;
-  const _CloseBar({required this.bill, required this.onClose});
+  final VoidCallback onPrint;
+  final VoidCallback onReopen;
+  const _DonePane({
+    required this.bill,
+    required this.onPrint,
+    required this.onReopen,
+  });
+
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final writeOff = bill.outstanding > 0;
+    final parts = bill.receipts.length;
     return Container(
-      // No bottom safe-area inset: the drawer/sheet container already wraps
-      // this body in a SafeArea (ADR-0064).
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      // No bottom safe-area inset: the page/sheet container already wraps this
+      // body in a SafeArea.
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: SatBox.d(
         color: sc.bg1,
         border: Border(top: SatB.side(color: sc.border0)),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: SatButton.primary(
-          label: 'Tutup tagihan',
-          icon: Icons.check_circle_outline,
-          onTap: onClose,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                writeOff
+                    ? Icons.report_gmailerrorred_rounded
+                    : Icons.check_circle_rounded,
+                size: 28,
+                color: writeOff ? sc.urgent : sc.success,
+              ),
+              const SizedBox(width: Sp.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      writeOff ? 'Tagihan tak tertagih' : 'Tagihan lunas',
+                      style: SatType.labelL(color: sc.textHi),
+                    ),
+                    const SizedBox(height: Sp.sHair),
+                    Text(
+                      writeOff
+                          ? '${formatIDR(bill.outstanding)} dicatat sebagai '
+                                'kerugian.'
+                          : '${formatIDR(bill.total)} diterima penuh'
+                                '${parts > 1 ? ' dalam $parts bagian' : ''}.',
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.s3h),
+          SatButton.primary(
+            label: writeOff ? 'Cetak tagihan' : 'Cetak struk lunas',
+            icon: Icons.print_rounded,
+            onTap: onPrint,
+          ),
+          const SizedBox(height: Sp.s2),
+          SatButton.outline(
+            label: 'Buka ulang',
+            icon: Icons.lock_open_rounded,
+            onTap: onReopen,
+          ),
+        ],
       ),
     );
   }
@@ -1687,22 +1914,31 @@ class _CloseBar extends StatelessWidget {
 /// manager-approved, so it is demoted to a guarded icon — always shown but
 /// disabled unless the bill is unsettled AND the cashier holds refund
 /// authority. See ADR-0023 / ADR-0024.
-class _TopActions extends StatelessWidget {
+class _TopActions extends ConsumerWidget {
   final Bill bill;
   final bool canRefund;
   final Future<void> Function(BillReceipt?) printDoc;
   final VoidCallback onWriteOff;
+  final Future<void> Function(Future<Bill> Function()) run;
+  final SettlementRepository repo;
   const _TopActions({
     required this.bill,
     required this.canRefund,
     required this.printDoc,
     required this.onWriteOff,
+    required this.run,
+    required this.repo,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final paid = bill.paidAmount > 0;
     final canWriteOff = !bill.fullySettled && canRefund;
+    final disc = bill.billDiscount;
+    // A bill discount moves the bill total, and an amount receipt's claim is
+    // frozen at mint time (ADR-0068) — so once money is in, it is the server's
+    // no, not ours. Disabled here rather than failing there.
+    final canDiscount = bill.billClosedAt == null && !paid;
     return Row(
       children: [
         Expanded(
@@ -1710,6 +1946,20 @@ class _TopActions extends StatelessWidget {
             label: paid ? 'Cetak struk meja' : 'Cetak tagihan meja',
             icon: Icons.receipt_long_outlined,
             onTap: () => printDoc(null),
+          ),
+        ),
+        const SizedBox(width: Sp.s2),
+        // The table-wide promo (ADR-0070). Named once applied, because a cut
+        // with no name on it is the one a manager queries later.
+        Expanded(
+          child: SatButton.outline(
+            label: disc?.name ?? 'Diskon',
+            icon: Icons.local_offer_outlined,
+            onTap: canDiscount
+                ? () => disc == null
+                      ? _apply(context, ref)
+                      : _remove(context, ref, disc.id)
+                : null,
           ),
         ),
         const SizedBox(width: Sp.s2),
@@ -1721,6 +1971,43 @@ class _TopActions extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _apply(BuildContext context, WidgetRef ref) async {
+    final picked = await showDiscountSheet(
+      context,
+      ref,
+      DiscountTarget.bill(base: bill.subtotal, title: 'Seluruh tagihan'),
+    );
+    if (picked == null) return;
+    await run(
+      () => repo.applyBillDiscount(
+        bill.visitId,
+        presetId: picked.presetId,
+        approverPin: picked.approverPin,
+      ),
+    );
+  }
+
+  /// Confirm-guarded, like every other discount removal here. No PIN prompt:
+  /// the server rejects a caller without the capability, and asking for one up
+  /// front would claim an authority check the client does not do.
+  Future<void> _remove(
+    BuildContext context,
+    WidgetRef ref,
+    String discountId,
+  ) async {
+    final disc = bill.billDiscount!;
+    final ok = await _confirm(
+      context,
+      title: 'Hapus diskon tagihan',
+      message:
+          'Hapus "${disc.name}" (${formatIDR(disc.amount)}) '
+          'dari seluruh tagihan?',
+      confirmLabel: 'Ya, hapus',
+    );
+    if (!ok) return;
+    await run(() => repo.removeBillDiscount(bill.visitId, discountId));
   }
 }
 
@@ -1785,36 +2072,9 @@ Future<bool> _confirm(
   return ok == true;
 }
 
-Future<int?> _askInt(BuildContext context, String title, {int initial = 2}) {
-  final ctl = TextEditingController(text: '$initial');
-  return showSatDialog<int>(
-    context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
-      content: SatField.number(controller: ctl, hint: '', autofocus: true),
-      actions: [
-        SatButton.ghost(
-          label: AppStrings.cancel,
-          onTap: () => Navigator.pop(ctx),
-        ),
-        SatButton.primary(
-          label: 'Bagi',
-          onTap: () => Navigator.pop(ctx, int.tryParse(ctl.text).let((v) => v)),
-        ),
-      ],
-    ),
-  );
-}
-
-extension<T> on T {
-  R let<R>(R Function(T) f) => f(this);
-}
-
-String _shortWhen(DateTime d) {
-  final l = d.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(l.day)}/${two(l.month)} ${two(l.hour)}:${two(l.minute)}';
-}
+// `_askInt` went with `_ModeChooser` (ADR-0067). Asking "bagi rata berapa
+// orang?" in a modal made sense when the split was a one-off commitment; the
+// settle pane now carries a stepper beside the per-head figure it changes.
 
 /// `HH:mm` local — the batch (`sentAt`) grouping key, matching the KDS.
 String _hhmm(DateTime d) {
@@ -1907,310 +2167,13 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
   return out;
 }
 
-String _dayKey(DateTime d) {
-  final l = d.toLocal();
-  return '${l.year}-${l.month}-${l.day}';
-}
+/// The venue-wide Past bills list used to live here as `VenueHistoryView`, the
+/// body of a Riwayat tab. ADR-0069 made a settled bill close itself, so "already
+/// paid" and "history" became the same set and the tab folded into the cashier
+/// screen's **Lunas** segment — which renders a `BillCard` per closed bill, the
+/// same card a live one gets. The row tile, its day grouping and its filter bar
+/// went with it; the table filter survives as the segment's range + filter row.
 
-String _dayLabel(DateTime d) {
-  final l = d.toLocal();
-  final now = SatClock.now();
-  final diff = DateTime(
-    now.year,
-    now.month,
-    now.day,
-  ).difference(DateTime(l.year, l.month, l.day)).inDays;
-  if (diff == 0) return 'Hari ini';
-  if (diff == 1) return 'Kemarin';
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(l.day)}/${two(l.month)}';
-}
-
-/// The cashier's venue-wide Past bills list (last 7 days) — the body of the
-/// Riwayat tab on the cashier screen. Newest-first, grouped by day, each row led
-/// by its table. A table-filter chip narrows the list client-side (the rows are
-/// already loaded); chips are derived from the rows themselves, so a
-/// since-deleted table's history stays reachable. See ADR-0024.
-class VenueHistoryView extends ConsumerStatefulWidget {
-  const VenueHistoryView({super.key});
-  @override
-  ConsumerState<VenueHistoryView> createState() => _VenueHistoryViewState();
-}
-
-class _VenueHistoryViewState extends ConsumerState<VenueHistoryView> {
-  String? _tableFilter; // tableId; null ⇒ all tables
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final async = ref.watch(venueHistoryProvider);
-    return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => Center(
-        child: Text(
-          'Gagal memuat riwayat.',
-          style: SatType.bodyM(color: sc.textLo),
-        ),
-      ),
-      data: (rows) {
-        if (rows.isEmpty) return const _HistoryEmpty();
-        // tableId → frozen label, in first-seen (newest-first) order, for chips.
-        final tables = <String, String?>{};
-        for (final r in rows) {
-          tables.putIfAbsent(r.tableId, () => r.tableLabel);
-        }
-        // A filter that no longer matches any row (its table aged out) falls
-        // back to "all" rather than showing an empty list.
-        final active = _tableFilter != null && tables.containsKey(_tableFilter)
-            ? _tableFilter
-            : null;
-        final filtered = active == null
-            ? rows
-            : [
-                for (final r in rows)
-                  if (r.tableId == active) r,
-              ];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _FilterBar(
-              tables: tables,
-              selected: active,
-              onSelect: (id) => setState(() => _tableFilter = id),
-            ),
-            Expanded(child: _DayGroupedList(rows: filtered)),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _HistoryEmpty extends StatelessWidget {
-  const _HistoryEmpty();
-  @override
-  Widget build(BuildContext context) => const SatEmpty(
-    icon: Icons.history_toggle_off_rounded,
-    title: 'Belum ada tagihan 7 hari terakhir.',
-  );
-}
-
-/// Horizontal table-filter chips. Hidden when only one table is present
-/// (nothing to narrow). "Semua" clears the filter.
-class _FilterBar extends StatelessWidget {
-  final Map<String, String?> tables;
-  final String? selected;
-  final ValueChanged<String?> onSelect;
-  const _FilterBar({
-    required this.tables,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (tables.length <= 1) return const SizedBox(height: Sp.s1);
-    final entries = tables.entries.toList()
-      ..sort((a, b) => (a.value ?? '').compareTo(b.value ?? ''));
-    return SizedBox(
-      height: 52,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-        children: [
-          SatChip.select(
-            label: 'Semua',
-            selected: selected == null,
-            onTap: () => onSelect(null),
-          ),
-          for (final e in entries)
-            Padding(
-              padding: const EdgeInsets.only(left: Sp.s2),
-              child: SatChip.select(
-                label: 'Meja ${e.value ?? '—'}',
-                selected: selected == e.key,
-                onTap: () => onSelect(e.key),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Newest-first rows with a day header inserted at each date boundary.
-class _DayGroupedList extends StatelessWidget {
-  final List<PastBillSummary> rows;
-  const _DayGroupedList({required this.rows});
-
-  @override
-  Widget build(BuildContext context) {
-    if (rows.isEmpty) return const _HistoryEmpty();
-    final items = <Object>[]; // String header | PastBillSummary tile
-    String? lastKey;
-    for (final r in rows) {
-      final key = _dayKey(r.closedAt);
-      if (key != lastKey) {
-        items.add(_dayLabel(r.closedAt));
-        lastKey = key;
-      }
-      items.add(r);
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-      itemCount: items.length,
-      itemBuilder: (_, i) {
-        final it = items[i];
-        if (it is String) {
-          return Reveal(
-            index: i,
-            child: _DayHeader(it, first: i == 0),
-          );
-        }
-        return Reveal(
-          index: i,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: Sp.s2),
-            child: _PastBillTile(it as PastBillSummary, showTableChip: true),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _DayHeader extends StatelessWidget {
-  final String label;
-  final bool first;
-  const _DayHeader(this.label, {required this.first});
-
-  @override
-  Widget build(BuildContext context) => SatSectionLabel(
-    label,
-    padding: EdgeInsets.fromLTRB(4, first ? Sp.s1 : Sp.s4, 4, Sp.s2),
-  );
-}
-
-/// Square table-label badge leading a venue-wide history row.
-class _TableChip extends StatelessWidget {
-  final String? label;
-  const _TableChip(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: SatBox.d(color: sc.bg3, borderRadius: SatR.a(12)),
-      alignment: Alignment.center,
-      child: Text(label ?? '—', style: SatType.monoM(color: sc.textHi)),
-    );
-  }
-}
-
-/// Square Bawa pulang glyph leading a takeaway history row — mirrors the
-/// Aktif tab's takeaway treatment (the long takeaway label rides the title,
-/// not this chip). See ADR-0026.
-class _TakeawayChip extends StatelessWidget {
-  const _TakeawayChip();
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: SatBox.d(color: sc.accentSoft, borderRadius: SatR.a(12)),
-      alignment: Alignment.center,
-      child: Icon(Icons.shopping_bag_rounded, size: 20, color: sc.accentText),
-    );
-  }
-}
-
-class _PastBillTile extends StatelessWidget {
-  final PastBillSummary b;
-
-  /// Lead the row with the table label — set in the venue-wide Riwayat list
-  /// (rows span tables); left off the per-table view (every row is one table).
-  final bool showTableChip;
-  const _PastBillTile(this.b, {this.showTableChip = false});
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return PressScale(
-      child: Material(
-        color: sc.bg1,
-        borderRadius: SatR.a(14),
-        child: InkWell(
-          borderRadius: SatR.a(14),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => PastBillDetailScreen(
-                sessionId: b.sessionId,
-                tableLabel: b.tableLabel,
-              ),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(Sp.s3h),
-            child: Row(
-              children: [
-                if (b.isTakeaway) ...[
-                  const _TakeawayChip(),
-                  const SizedBox(width: Sp.s3),
-                ] else if (showTableChip) ...[
-                  _TableChip(b.tableLabel),
-                  const SizedBox(width: Sp.s3),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        b.isTakeaway
-                            ? (b.tableLabel?.trim().isNotEmpty == true
-                                  ? b.tableLabel!
-                                  : 'Bawa pulang')
-                            : _shortWhen(b.closedAt),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: SatType.labelM(color: sc.textHi),
-                      ),
-                      const SizedBox(height: Sp.s1),
-                      Text(
-                        b.isTakeaway
-                            ? '${_shortWhen(b.closedAt)} · ${b.ticketCount} item'
-                            : '${b.pax} tamu · ${b.ticketCount} item',
-                        style: SatType.bodyS(color: sc.textLo),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      formatIDR(b.netTotal),
-                      style: SatType.monoM(color: sc.textHi),
-                    ),
-                    if (b.isWriteOff) ...[
-                      const SizedBox(height: Sp.s1),
-                      Text(
-                        'tak tertagih ${formatIDR(b.lossAmount)}',
-                        style: SatType.labelS(color: sc.urgent),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Read-only Struk pembayaran detail for one closed (past) bill.
 class PastBillDetailScreen extends ConsumerWidget {

@@ -279,6 +279,8 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     required String idempotencyKey,
     required List<CartLineDto> lines,
     String guestName = '',
+    String channel = 'bungkus',
+    bool prepaid = false,
     String? existingVisitId,
     String? actorId,
   }) async {
@@ -318,6 +320,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     final raw = await api.postJson('/orders', {
       'takeaway': true,
       'guestName': guestName,
+      // Only read when the server mints a fresh visit; appending to an open
+      // takeaway leaves the channel it was created with alone. ADR-0066.
+      'channel': channel,
+      'prepaid': prepaid,
       'visitId': ?existingVisitId,
       'idempotencyKey': idempotencyKey,
       'lines': [for (final l in lines) l.toJson()],

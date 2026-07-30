@@ -68,6 +68,90 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await syncVisitMoney(db, hub, visitId);
   }
 
+  /// The money-side close: stamp the visit, audit it, then either snapshot
+  /// (the table is already freed, so this completes ADR-0024's pair) or mirror
+  /// a Lunas pill onto the still-occupied table and let the snapshot defer.
+  ///
+  /// Shared by the automatic Lunas close (ADR-0069) and the manual tak-tertagih
+  /// write-off, because they differ only in `loss` and the audit line.
+  Future<bool> performBillClose(
+    Visit visit, {
+    required String? actorId,
+    required int loss,
+    String? reason,
+  }) async {
+    final visitId = visit.id;
+    final now = SatClock.now().toUtc();
+    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+      VisitsCompanion(
+        billClosedAt: Value(now),
+        billClosedBy: Value(actorId),
+        lossAmount: Value(loss),
+      ),
+    );
+    await _audit(
+      db,
+      AuditType.billClosed,
+      loss > 0
+          ? 'Tagihan tak tertagih ${_rupiah(loss)} ${visit.tableLabel ?? ''}'
+          : 'Tutup tagihan ${visit.tableLabel ?? ''}',
+      tableId: visit.tableId,
+      actor: actorId,
+      reason: reason,
+    );
+    final fresh = await _visit(db, visitId);
+    final snapshotted = fresh != null && fresh.tableFreedAt != null;
+    if (snapshotted) {
+      await snapshotVisitAndDelete(
+        db,
+        hub,
+        fresh,
+        billClosedBy: actorId,
+        lossAmount: loss,
+      );
+    } else {
+      final tbl = await (db.select(
+        db.venueTables,
+      )..where((t) => t.currentVisitId.equals(visitId))).getSingleOrNull();
+      if (tbl != null) {
+        await (db.update(db.venueTables)..where((t) => t.id.equals(tbl.id)))
+            .write(VenueTablesCompanion(billClosedAt: Value(now)));
+        final fresh2 = await (db.select(
+          db.venueTables,
+        )..where((t) => t.id.equals(tbl.id))).getSingleOrNull();
+        if (fresh2 != null) {
+          hub.broadcast(WsEventTypes.tableUpdated, tableJson(fresh2));
+        }
+      }
+      hub.broadcast(WsEventTypes.billUpdated, {
+        'visitId': visitId,
+        'billClosed': true,
+      });
+    }
+    return snapshotted;
+  }
+
+  /// ADR-0069 — a bill closes itself the moment it settles. Only ever the Lunas
+  /// path: a write-off has `outstanding > 0` by definition, so it can never
+  /// reach here. Returns true when it closed (and therefore already broadcast).
+  Future<bool> autoCloseIfSettled(String visitId, String? actorId) async {
+    final v = await _visit(db, visitId);
+    if (v == null || v.billClosedAt != null) return false;
+    final bill = await _buildBill(db, visitId);
+    if (bill == null || bill['fullySettled'] != true) return false;
+    await performBillClose(v, actorId: actorId, loss: 0);
+    return true;
+  }
+
+  /// Every mutation that can move a bill *towards* settled goes through this
+  /// rather than [broadcastBill] — payment, assignment, split, discount. The
+  /// ones that can only move it away (refund, reopen, deleting a receipt) keep
+  /// the plain broadcast, so a reopen is not undone a millisecond later.
+  Future<void> settleOrBroadcast(String visitId, String? actorId) async {
+    if (await autoCloseIfSettled(visitId, actorId)) return;
+    await broadcastBill(visitId);
+  }
+
   /// Reject mutations on a bill the cashier already locked (bill-closed but the
   /// table not yet freed — the "lingering" state). Reopen first to correct.
   Future<Response?> lockGuard(String visitId) async {
@@ -118,7 +202,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return _ok(bill);
   });
 
-  // Create a receipt. {mode: itemized|even, label?, assignAll?: bool}.
+  // Create a receipt.
+  // {mode: itemized|even, label?, assignAll?: bool, lines?: [{ticketId,
+  // qtyUnits}]}.
+  //
+  // `lines` mints and assigns in one transaction — the tap-to-select-and-pay
+  // fast path (ADR-0067) selects lines and confirms in a single gesture, and
+  // splitting that into create + N assigns would leave a half-built receipt
+  // behind on any failure. On the money path that is not a trade worth making.
   r.post('/settlement/visits/<visitId>/receipts', (
     Request req,
     String visitId,
@@ -148,9 +239,30 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       if (body['assignAll'] == true) {
         await _assignAllUnassigned(db, visitId, id);
       }
+      for (final l in (body['lines'] as List? ?? const [])) {
+        final m = (l as Map).cast<String, dynamic>();
+        final ticketId = m['ticketId'] as String?;
+        if (ticketId == null || ticketId.isEmpty) continue;
+        final want = (m['qtyUnits'] as num?)?.toInt() ?? 0;
+        if (want <= 0) continue;
+        // Clamp to what is actually free, so two cashiers racing the same line
+        // cannot assign it twice.
+        final free = await _freeUnits(db, ticketId);
+        if (free <= 0) continue;
+        await db
+            .into(db.receiptLines)
+            .insert(
+              ReceiptLinesCompanion.insert(
+                id: _uuid.v4(),
+                receiptId: id,
+                ticketId: ticketId,
+                qtyUnits: Value(want < free ? want : free),
+              ),
+            );
+      }
       await _recompute(db, visitId);
     });
-    await broadcastBill(visitId);
+    await settleOrBroadcast(visitId, (await resolve(req))?.id);
     return _ok({'receiptId': id, 'bill': await _buildBill(db, visitId)});
   });
 
@@ -246,7 +358,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       }
       await _recompute(db, visitId);
     });
-    await broadcastBill(visitId);
+    await settleOrBroadcast(visitId, (await resolve(req))?.id);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -265,20 +377,23 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final n = ((body['n'] as num?)?.toInt() ?? 2).clamp(1, 50);
     final bill = await _buildBill(db, visitId);
     if (bill == null) return _err(404, 'no_bill', 'visit has no sent lines');
-    final paid = await (db.select(
+    // ADR-0068: shares are cut from the **untracked remainder**, not from the
+    // whole bill, so an even split can sit beside an itemized receipt without
+    // the two claiming the same money. Nothing is wiped, which is what lets
+    // the mode be chosen per payment (ADR-0067).
+    final existing = await (db.select(
       db.receipts,
-    )..where((x) => x.visitId.equals(visitId) & x.status.equals('paid'))).get();
-    if (paid.isNotEmpty) {
-      return _err(
-        409,
-        'receipt_paid',
-        'reopen paid receipts before re-splitting',
-      );
+    )..where((x) => x.visitId.equals(visitId))).get();
+    final claimed = existing.fold<int>(0, (a, r) => a + r.total);
+    final remainder = (bill['total'] as int) - claimed;
+    if (remainder <= 0) {
+      return _err(409, 'nothing_left', 'tidak ada sisa untuk dibagi');
     }
-    final total = bill['total'] as int;
-    final shares = distributeEven(total, n);
+    final shares = distributeEvenRounded(remainder, n);
+    // Number the new shares after any that already exist, so a second split
+    // does not mint a second "Bagian 1".
+    final from = existing.where((r) => r.mode == 'even').length;
     await db.transaction(() async {
-      await _clearReceipts(db, visitId);
       for (var i = 0; i < n; i++) {
         await db
             .into(db.receipts)
@@ -288,14 +403,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
                 tableId: visit.tableId,
                 visitId: Value(visitId),
                 mode: const Value('even'),
-                label: Value('Bagian ${i + 1}/$n'),
+                label: Value('Bagian ${from + i + 1}/${from + n}'),
                 total: Value(shares[i]),
                 createdAt: SatClock.now().toUtc(),
               ),
             );
       }
     });
-    await broadcastBill(visitId);
+    await settleOrBroadcast(visitId, (await resolve(req))?.id);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -438,7 +553,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         .insert(
           DiscountsCompanion.insert(
             id: _uuid.v4(),
-            receiptId: receiptId,
+            receiptId: Value(receiptId),
             ticketId: Value(ticketId),
             presetId: Value(preset.id),
             // Snapshot: a later preset edit or delete must not rewrite this.
@@ -459,7 +574,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       tableId: rec.tableId,
       actor: actor?.id,
     );
-    await broadcastBill(visitId);
+    await settleOrBroadcast(visitId, actor?.id);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -512,6 +627,157 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       AuditType.discountRemoved,
       'Hapus diskon ${row.name}',
       tableId: rec.tableId,
+      actor: actor?.id,
+    );
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // BILL-SCOPE discount (ADR-0070) — a table-wide promo. Attaches to the visit
+  // rather than to any receipt, which is what lets it be applied before the
+  // first receipt is minted (ADR-0067). {presetId, approverPin?}.
+  r.post('/settlement/visits/<visitId>/discounts', (
+    Request req,
+    String visitId,
+  ) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+
+    // A bill discount moves the bill total, and an amount receipt's claim is
+    // frozen at mint time (ADR-0068) — so once any money has been taken the
+    // quote a guest was given can no longer be revised silently.
+    final paid = await (db.select(
+      db.receipts,
+    )..where((x) => x.visitId.equals(visitId) & x.status.equals('paid'))).get();
+    if (paid.isNotEmpty) {
+      return _err(
+        409,
+        'receipt_paid',
+        'buka ulang struk yang sudah dibayar sebelum ubah diskon tagihan',
+      );
+    }
+
+    final actor = await resolve(req);
+    String? approvedBy;
+    if (!(await capsOf(req)).contains(Capability.applyDiscount.name)) {
+      approvedBy = await resolveStepUp(body['approverPin'] as String?);
+      if (approvedBy == null) {
+        return _err(
+          403,
+          'approval_required',
+          'butuh persetujuan manajer untuk memberi diskon',
+        );
+      }
+    }
+
+    final preset =
+        await (db.select(db.discountPresets)
+              ..where((x) => x.id.equals(body['presetId'] as String? ?? '')))
+            .getSingleOrNull();
+    if (preset == null) return _err(404, 'no_preset', 'preset not found');
+    if (!preset.active) {
+      return _err(409, 'preset_inactive', 'preset diskon tidak aktif');
+    }
+    if (preset.scope != 'bill') {
+      return _err(409, 'scope_mismatch', 'preset ini bukan diskon tagihan');
+    }
+    if (await _billDiscount(db, visitId) != null) {
+      return _err(
+        409,
+        'discount_exists',
+        'sudah ada diskon tagihan — hapus dulu untuk mengganti',
+      );
+    }
+
+    await db
+        .into(db.discounts)
+        .insert(
+          DiscountsCompanion.insert(
+            id: _uuid.v4(),
+            visitId: Value(visitId),
+            presetId: Value(preset.id),
+            // Snapshot, same as every other scope: a later preset edit must
+            // not rewrite what was already given away.
+            name: preset.name,
+            kind: preset.kind,
+            value: Value(preset.value),
+            byUserId: Value(actor?.id),
+            approvedByUserId: Value(approvedBy),
+            at: SatClock.now().toUtc(),
+          ),
+        );
+    // _recompute resolves the rupiah amount against the current base and fans
+    // it out across the itemized receipts.
+    await _recompute(db, visitId);
+    await _audit(
+      db,
+      AuditType.discountApplied,
+      'Diskon tagihan ${preset.name}',
+      tableId: visit.tableId,
+      actor: actor?.id,
+    );
+    await settleOrBroadcast(visitId, actor?.id);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // Remove the bill-scope discount. POST for the same reason as the receipt
+  // one — a step-up PIN must never ride a query string.
+  r.post('/settlement/visits/<visitId>/discounts/<discountId>/remove', (
+    Request req,
+    String visitId,
+    String discountId,
+  ) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final paid = await (db.select(
+      db.receipts,
+    )..where((x) => x.visitId.equals(visitId) & x.status.equals('paid'))).get();
+    if (paid.isNotEmpty) {
+      return _err(
+        409,
+        'receipt_paid',
+        'buka ulang struk yang sudah dibayar sebelum ubah diskon tagihan',
+      );
+    }
+    final actor = await resolve(req);
+    if (!(await capsOf(req)).contains(Capability.applyDiscount.name)) {
+      final raw = await req.readAsString();
+      final pin = raw.isEmpty
+          ? null
+          : (jsonDecode(raw) as Map<String, dynamic>)['approverPin'] as String?;
+      if (await resolveStepUp(pin) == null) {
+        return _err(
+          403,
+          'approval_required',
+          'butuh persetujuan manajer untuk mengubah diskon',
+        );
+      }
+    }
+    final row =
+        await (db.select(db.discounts)..where(
+              (x) =>
+                  x.id.equals(discountId) &
+                  x.visitId.equals(visitId) &
+                  x.receiptId.isNull(),
+            ))
+            .getSingleOrNull();
+    if (row == null) return _err(404, 'no_discount', 'diskon tidak ditemukan');
+    await (db.delete(db.discounts)..where((x) => x.id.equals(discountId))).go();
+    await _recompute(db, visitId);
+    await _audit(
+      db,
+      AuditType.discountRemoved,
+      'Hapus diskon tagihan ${row.name}',
+      tableId: visit.tableId,
       actor: actor?.id,
     );
     await broadcastBill(visitId);
@@ -573,7 +839,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         actor: user?.id,
       );
     });
-    await broadcastBill(visitId);
+    await settleOrBroadcast(visitId, user?.id);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -797,6 +1063,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final outstanding = bill['outstanding'] as int;
     final fullyAssigned = bill['fullyAssigned'] == true;
     if (!writeOff) {
+      // Since ADR-0069 a settled bill has already closed itself, so reaching
+      // here on the Lunas path means it is not settled. Kept as a route for
+      // the client that races the auto-close, not as a step in the flow.
       if (outstanding > 0 || !fullyAssigned) {
         return _err(
           409,
@@ -815,56 +1084,13 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       }
     }
     final loss = writeOff ? outstanding : 0;
-    final now = SatClock.now().toUtc();
-    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
-      VisitsCompanion(
-        billClosedAt: Value(now),
-        billClosedBy: Value(user?.id),
-        lossAmount: Value(loss),
-      ),
-    );
-    await _audit(
-      db,
-      AuditType.billClosed,
-      writeOff
-          ? 'Tagihan tak tertagih ${_rupiah(loss)} ${visit.tableLabel ?? ''}'
-          : 'Tutup tagihan ${visit.tableLabel ?? ''}',
-      tableId: visit.tableId,
-      actor: user?.id,
+    final snapshotted = await performBillClose(
+      visit,
+      actorId: user?.id,
+      loss: loss,
       reason: writeOff ? (body['reason'] as String?)?.trim() : null,
     );
-    // Second axis? If the table was already freed, this completes the visit.
-    final fresh = await _visit(db, visitId);
-    if (fresh != null && fresh.tableFreedAt != null) {
-      await snapshotVisitAndDelete(
-        db,
-        hub,
-        fresh,
-        billClosedBy: user?.id,
-        lossAmount: loss,
-      );
-    } else {
-      // Locked while the table is still occupied — mirror onto the table row
-      // so the floor shows a Lunas pill. Snapshot defers to table-close.
-      final tbl = await (db.select(
-        db.venueTables,
-      )..where((t) => t.currentVisitId.equals(visitId))).getSingleOrNull();
-      if (tbl != null) {
-        await (db.update(db.venueTables)..where((t) => t.id.equals(tbl.id)))
-            .write(VenueTablesCompanion(billClosedAt: Value(now)));
-        final fresh2 = await (db.select(
-          db.venueTables,
-        )..where((t) => t.id.equals(tbl.id))).getSingleOrNull();
-        if (fresh2 != null) {
-          hub.broadcast(WsEventTypes.tableUpdated, tableJson(fresh2));
-        }
-      }
-      hub.broadcast(WsEventTypes.billUpdated, {
-        'visitId': visitId,
-        'billClosed': true,
-      });
-    }
-    return _ok({'closed': true, 'snapshotted': fresh?.tableFreedAt != null});
+    return _ok({'closed': true, 'snapshotted': snapshotted});
   });
 
   // Reopen (unlock) a bill-closed-but-not-yet-snapshotted bill, to correct it.
@@ -934,6 +1160,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           'tableId': s.tableId,
           'tableLabel': s.tableLabel,
           'kind': s.kind,
+          // Frozen at snapshot so the Lunas segment renders the same card a
+          // live bill does, channel pill and all. ADR-0066.
+          'channel': s.channel,
+          'prepaid': s.prepaid,
           'pax': s.pax,
           'closedAt': s.closedAt.toIso8601String(),
           'subtotal': s.subtotal,
@@ -989,6 +1219,16 @@ Future<int> _assignedUnits(
   return sum;
 }
 
+/// Units of a line no receipt has claimed yet.
+Future<int> _freeUnits(AppDatabase db, String ticketId) async {
+  final t = await (db.select(
+    db.tickets,
+  )..where((x) => x.id.equals(ticketId))).getSingleOrNull();
+  if (t == null) return 0;
+  final free = t.qty - await _assignedUnits(db, ticketId);
+  return free < 0 ? 0 : free;
+}
+
 Future<void> _assignAllUnassigned(
   AppDatabase db,
   String visitId,
@@ -1013,27 +1253,10 @@ Future<void> _assignAllUnassigned(
   }
 }
 
-/// Tear down every receipt on a visit — used when re-splitting. Discount rows
-/// go with their receipt: this is how switching to an even split disposes of
-/// line discounts, which even receipts cannot carry (ADR-0037). The cashier is
-/// warned before this runs.
-Future<void> _clearReceipts(AppDatabase db, String visitId) async {
-  final recs = await (db.select(
-    db.receipts,
-  )..where((x) => x.visitId.equals(visitId))).get();
-  for (final rec in recs) {
-    await (db.delete(
-      db.receiptLines,
-    )..where((x) => x.receiptId.equals(rec.id))).go();
-    await (db.delete(
-      db.payments,
-    )..where((x) => x.receiptId.equals(rec.id))).go();
-    await (db.delete(
-      db.discounts,
-    )..where((x) => x.receiptId.equals(rec.id))).go();
-  }
-  await (db.delete(db.receipts)..where((x) => x.visitId.equals(visitId))).go();
-}
+// `_clearReceipts` is gone with ADR-0067. Its only caller was `split-even`,
+// which used to replace every receipt on the visit; shares are now cut from the
+// untracked remainder instead, so nothing is torn down. Deleting one receipt
+// still goes through the delete route, which cascades its own rows.
 
 Future<List<Ticket>> _sentTickets(AppDatabase db, String visitId) async {
   final rows = await (db.select(
@@ -1092,7 +1315,9 @@ Future<Map<String, List<Discount>>> _discountsByReceipt(
   )..where((x) => x.receiptId.isIn(ids))).get();
   final out = <String, List<Discount>>{};
   for (final d in rows) {
-    (out[d.receiptId] ??= <Discount>[]).add(d);
+    // Non-null by the `receiptId.isIn` filter above — a bill discount
+    // (receiptId null) never reaches here. ADR-0070.
+    (out[d.receiptId!] ??= <Discount>[]).add(d);
   }
   return out;
 }
@@ -1146,13 +1371,38 @@ Future<void> _recompute(AppDatabase db, String visitId) async {
   final billSub = tickets.values.fold<int>(0, (a, t) => a + t.price * t.qty);
   final assignedSub =
       subtotals.fold<int>(0, (a, b) => a + b) + _sum(lineDiscounts);
-  final fullyAssigned = await _fullyAssigned(db, tickets.values);
-  final billTotal = fullyAssigned
-      ? computeBreakdown(
+  final allUnitsAssigned = await _fullyAssigned(db, tickets.values);
+  // A bill-scope discount belongs to the visit, so it has to be fanned out
+  // across the itemized receipts before they can each be totalled — same job
+  // `distributeFixed` does for a fixed service charge. Amount receipts are
+  // excluded on purpose: their claim was frozen at mint time (ADR-0068), and a
+  // discount applied afterwards must not silently re-quote a guest.
+  final billDiscRow = await _billDiscount(db, visitId);
+  final billDiscAmount = billDiscRow == null
+      ? 0
+      : await _resolveDiscountRow(
+          db,
+          billDiscRow,
           billSub - _sum(lineDiscounts),
-          cfg,
-          discount: _sum(orderDiscounts),
-        ).total
+        );
+  if (billDiscAmount > 0 && itemized.isNotEmpty) {
+    final fanned = distributeFixed(subtotals, billDiscAmount);
+    for (var i = 0; i < itemized.length; i++) {
+      orderDiscounts[i] += fanned[i];
+    }
+  }
+  // Whatever the amount receipts already claim is not the itemized side's to
+  // account for, so it comes off the target they have to hit.
+  final amountClaim = recs
+      .where((r) => r.mode == 'even')
+      .fold<int>(0, (a, r) => a + r.total);
+  final billTotal = allUnitsAssigned
+      ? computeBreakdown(
+              billSub - _sum(lineDiscounts),
+              cfg,
+              discount: _sum(orderDiscounts),
+            ).total -
+            amountClaim
       : null;
   final breakdowns = splitItemized(
     subtotals,
@@ -1265,7 +1515,15 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
   final recs = await (db.select(
     db.receipts,
   )..where((x) => x.visitId.equals(visitId))).get();
-  final mode = recs.any((r) => r.mode == 'even') ? 'even' : 'itemized';
+  // A bill can hold both kinds at once since ADR-0067, so this is a
+  // description, not a setting. `mixed` is a real answer.
+  final anyAmount = recs.any((r) => r.mode == 'even');
+  final anyItemized = recs.any((r) => r.mode != 'even');
+  final mode = anyAmount && anyItemized
+      ? 'mixed'
+      : anyAmount
+      ? 'even'
+      : 'itemized';
 
   // Aggregate the receipts' discounts up to bill level. Without this the bill
   // total stays undiscounted while the receipts shrink, so `outstanding` never
@@ -1278,10 +1536,14 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
   final billOrderDiscount = _sum(
     allDiscounts.where((d) => d.ticketId == null).map((d) => d.amount),
   );
+  // The bill-scope discount (ADR-0070) belongs to the visit, not to any
+  // receipt, so it is fetched separately and lands in the same slot an order
+  // discount does — same position in the ADR-0038 stack, different owner.
+  final billDisc = await _billDiscount(db, visitId);
   final billBreak = computeBreakdown(
     billSub - billLineDiscount,
     cfg,
-    discount: billOrderDiscount,
+    discount: billOrderDiscount + (billDisc?.amount ?? 0),
   );
 
   var paidNet = 0;
@@ -1367,8 +1629,17 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       'sentAt': t.sentAt.toIso8601String(),
     });
   }
-  final fullyAssigned = linesJson.every(
+  final allUnitsAssigned = linesJson.every(
     (l) => (l['assignedUnits'] as int) >= (l['qty'] as int),
+  );
+  // Gates whether the bill closes itself (ADR-0069), so it lives in
+  // `bill_math` as a named pure function with its own test rather than as an
+  // expression here. See [isFullyAssigned].
+  final fullyAssigned = isFullyAssigned(
+    hasReceipts: recs.isNotEmpty,
+    allUnitsAssigned: allUnitsAssigned,
+    receiptsClaim: recs.fold<int>(0, (a, r) => a + r.total),
+    billTotal: billBreak.total,
   );
   final allReceiptsPaid =
       recs.isNotEmpty && recs.every((r) => r.status == 'paid');
@@ -1382,12 +1653,20 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
     // dineIn | takeaway — lets the cashier branch its copy ("Bawa pulang"
     // vs a detached walkout). See ADR-0026.
     'kind': visit.kind,
+    // How a takeaway reached us, and whether an aggregator already settled it.
+    // The channel pill is a takeaway's stand-in for a dine-in's zone. ADR-0066.
+    'channel': visit.channel,
+    'prepaid': visit.prepaid,
     'status': detached ? 'detached' : 'occupied',
     'detached': detached,
     'tableFreedAt': visit.tableFreedAt?.toIso8601String(),
     'billClosedAt': visit.billClosedAt?.toIso8601String(),
     'pax': visit.pax,
     'guestName': visit.guestName,
+    // The card leads with zone (dine-in) or channel (takeaway), and states how
+    // long the party has been sitting — both facts the old row tile dropped.
+    'zoneId': visit.zoneId,
+    'openedAt': visit.openedAt?.toIso8601String(),
     'mode': mode,
     'subtotal': billBreak.subtotal,
     // Total give-back on this bill (line + whole-order). Reporting/display
@@ -1401,10 +1680,21 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
     'outstanding': outstanding,
     'fullyAssigned': fullyAssigned,
     'fullySettled': fullyAssigned && allReceiptsPaid,
+    // The bill-scope discount row, so the totals ladder and the printed slip
+    // can name it. Receipt-scoped rows still ride on their receipt. ADR-0070.
+    'billDiscount': billDisc == null ? null : _discountJson(billDisc),
     'lines': linesJson,
     'receipts': receiptsJson,
   };
 }
+
+/// The one bill-scope [[Diskon (discount)]] on a visit, or null. At most one by
+/// the `idx_discounts_bill_uniq` partial index. ADR-0070.
+Future<Discount?> _billDiscount(AppDatabase db, String visitId) =>
+    (db.select(db.discounts)..where(
+          (x) => x.visitId.equals(visitId) & x.receiptId.isNull(),
+        ))
+        .getSingleOrNull();
 
 /// Reconstruct a bill-shaped map for a CLOSED session (past bill), from the
 /// snapshot tables — for the Struk pembayaran detail view.
@@ -1524,10 +1814,18 @@ Map<String, dynamic> _summarize(Map<String, dynamic> bill) => {
   'tableFreedAt': bill['tableFreedAt'],
   'pax': bill['pax'],
   'guestName': bill['guestName'],
+  'zoneId': bill['zoneId'],
+  'openedAt': bill['openedAt'],
+  'channel': bill['channel'],
+  'prepaid': bill['prepaid'],
   'total': bill['total'],
   'paidAmount': bill['paidAmount'],
   'outstanding': bill['outstanding'],
   'receiptCount': (bill['receipts'] as List).length,
+  'lineCount': (bill['lines'] as List).length,
+  // The card's pill row states the discount by name, so the label has to reach
+  // the list payload — the amount alone would render as an unexplained cut.
+  'billDiscountLabel': (bill['billDiscount'] as Map?)?['name'],
   // Just the letter and its paid-ness — enough for the /kasir tile's progress
   // strip, without shipping every line and payment into a list payload. See
   // ADR-0063.
