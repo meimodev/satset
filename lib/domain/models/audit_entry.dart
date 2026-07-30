@@ -65,6 +65,16 @@ class AuditEntry {
   final String? approvedBy;
   final String? reason;
 
+  /// Who performed the audited act. Always stamped server-side from the JWT —
+  /// attribution for a void or comp is evidence (ADR-0006), never a
+  /// client-supplied field.
+  ///
+  /// Null on legacy rows written before attribution existed. Such rows belong
+  /// to nobody, and on a personal screen they are shown to **nobody** — the
+  /// opposite of the [[Pesanan board]]'s unowned rule, because an unattributed
+  /// void surfaced on every handset would leak the venue's integrity log.
+  final String? actorUserId;
+
   const AuditEntry({
     required this.id,
     required this.type,
@@ -73,5 +83,6 @@ class AuditEntry {
     required this.when,
     this.approvedBy,
     this.reason,
+    this.actorUserId,
   });
 }

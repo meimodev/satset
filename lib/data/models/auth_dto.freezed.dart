@@ -665,6 +665,13 @@ mixin _$MeDto {
   List<String> get capabilities => throw _privateConstructorUsedError;
   int? get avatarColorHex => throw _privateConstructorUsedError;
 
+  /// Start of the caller's open shift, server-authoritative (ADR-0065). Null
+  /// when they have no open shift — after "Akhiri shift", or once the
+  /// business-day boundary has retired a forgotten one. Also null against a
+  /// legacy host that predates the field, which is why the client keeps its
+  /// device-local `loginAt` as a fallback.
+  String? get shiftStartedAt => throw _privateConstructorUsedError;
+
   /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
   /// Absent or 0 on a venue with no demo data.
   int get demoClockOffsetSeconds => throw _privateConstructorUsedError;
@@ -691,6 +698,7 @@ abstract class $MeDtoCopyWith<$Res> {
     String? zoneAssigned,
     List<String> capabilities,
     int? avatarColorHex,
+    String? shiftStartedAt,
     int demoClockOffsetSeconds,
   });
 }
@@ -717,6 +725,7 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
     Object? zoneAssigned = freezed,
     Object? capabilities = null,
     Object? avatarColorHex = freezed,
+    Object? shiftStartedAt = freezed,
     Object? demoClockOffsetSeconds = null,
   }) {
     return _then(
@@ -749,6 +758,10 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
                 ? _value.avatarColorHex
                 : avatarColorHex // ignore: cast_nullable_to_non_nullable
                       as int?,
+            shiftStartedAt: freezed == shiftStartedAt
+                ? _value.shiftStartedAt
+                : shiftStartedAt // ignore: cast_nullable_to_non_nullable
+                      as String?,
             demoClockOffsetSeconds: null == demoClockOffsetSeconds
                 ? _value.demoClockOffsetSeconds
                 : demoClockOffsetSeconds // ignore: cast_nullable_to_non_nullable
@@ -775,6 +788,7 @@ abstract class _$$MeDtoImplCopyWith<$Res> implements $MeDtoCopyWith<$Res> {
     String? zoneAssigned,
     List<String> capabilities,
     int? avatarColorHex,
+    String? shiftStartedAt,
     int demoClockOffsetSeconds,
   });
 }
@@ -800,6 +814,7 @@ class __$$MeDtoImplCopyWithImpl<$Res>
     Object? zoneAssigned = freezed,
     Object? capabilities = null,
     Object? avatarColorHex = freezed,
+    Object? shiftStartedAt = freezed,
     Object? demoClockOffsetSeconds = null,
   }) {
     return _then(
@@ -832,6 +847,10 @@ class __$$MeDtoImplCopyWithImpl<$Res>
             ? _value.avatarColorHex
             : avatarColorHex // ignore: cast_nullable_to_non_nullable
                   as int?,
+        shiftStartedAt: freezed == shiftStartedAt
+            ? _value.shiftStartedAt
+            : shiftStartedAt // ignore: cast_nullable_to_non_nullable
+                  as String?,
         demoClockOffsetSeconds: null == demoClockOffsetSeconds
             ? _value.demoClockOffsetSeconds
             : demoClockOffsetSeconds // ignore: cast_nullable_to_non_nullable
@@ -852,6 +871,7 @@ class _$MeDtoImpl implements _MeDto {
     required this.zoneAssigned,
     required final List<String> capabilities,
     this.avatarColorHex,
+    this.shiftStartedAt,
     this.demoClockOffsetSeconds = 0,
   }) : _capabilities = capabilities;
 
@@ -879,6 +899,14 @@ class _$MeDtoImpl implements _MeDto {
   @override
   final int? avatarColorHex;
 
+  /// Start of the caller's open shift, server-authoritative (ADR-0065). Null
+  /// when they have no open shift — after "Akhiri shift", or once the
+  /// business-day boundary has retired a forgotten one. Also null against a
+  /// legacy host that predates the field, which is why the client keeps its
+  /// device-local `loginAt` as a fallback.
+  @override
+  final String? shiftStartedAt;
+
   /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
   /// Absent or 0 on a venue with no demo data.
   @override
@@ -887,7 +915,7 @@ class _$MeDtoImpl implements _MeDto {
 
   @override
   String toString() {
-    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities, avatarColorHex: $avatarColorHex, demoClockOffsetSeconds: $demoClockOffsetSeconds)';
+    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities, avatarColorHex: $avatarColorHex, shiftStartedAt: $shiftStartedAt, demoClockOffsetSeconds: $demoClockOffsetSeconds)';
   }
 
   @override
@@ -908,6 +936,8 @@ class _$MeDtoImpl implements _MeDto {
             ) &&
             (identical(other.avatarColorHex, avatarColorHex) ||
                 other.avatarColorHex == avatarColorHex) &&
+            (identical(other.shiftStartedAt, shiftStartedAt) ||
+                other.shiftStartedAt == shiftStartedAt) &&
             (identical(other.demoClockOffsetSeconds, demoClockOffsetSeconds) ||
                 other.demoClockOffsetSeconds == demoClockOffsetSeconds));
   }
@@ -923,6 +953,7 @@ class _$MeDtoImpl implements _MeDto {
     zoneAssigned,
     const DeepCollectionEquality().hash(_capabilities),
     avatarColorHex,
+    shiftStartedAt,
     demoClockOffsetSeconds,
   );
 
@@ -949,6 +980,7 @@ abstract class _MeDto implements MeDto {
     required final String? zoneAssigned,
     required final List<String> capabilities,
     final int? avatarColorHex,
+    final String? shiftStartedAt,
     final int demoClockOffsetSeconds,
   }) = _$MeDtoImpl;
 
@@ -968,6 +1000,14 @@ abstract class _MeDto implements MeDto {
   List<String> get capabilities;
   @override
   int? get avatarColorHex;
+
+  /// Start of the caller's open shift, server-authoritative (ADR-0065). Null
+  /// when they have no open shift — after "Akhiri shift", or once the
+  /// business-day boundary has retired a forgotten one. Also null against a
+  /// legacy host that predates the field, which is why the client keeps its
+  /// device-local `loginAt` as a fallback.
+  @override
+  String? get shiftStartedAt;
 
   /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
   /// Absent or 0 on a venue with no demo data.

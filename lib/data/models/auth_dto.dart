@@ -57,6 +57,13 @@ class MeDto with _$MeDto {
     required List<String> capabilities,
     int? avatarColorHex,
 
+    /// Start of the caller's open shift, server-authoritative (ADR-0065). Null
+    /// when they have no open shift — after "Akhiri shift", or once the
+    /// business-day boundary has retired a forgotten one. Also null against a
+    /// legacy host that predates the field, which is why the client keeps its
+    /// device-local `loginAt` as a fallback.
+    String? shiftStartedAt,
+
     /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
     /// Absent or 0 on a venue with no demo data.
     @Default(0) int demoClockOffsetSeconds,

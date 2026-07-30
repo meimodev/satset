@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/server/shift.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
@@ -629,39 +630,35 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
 
   // ---------- audit ----------
 
+  /// **Your own** audit rows for **this shift** — the feed and the integrity
+  /// counters behind the "Saya" tab (ADR-0065).
+  ///
+  /// Scoped from the bearer, never from a query parameter: the caller cannot
+  /// name a user, so there is no way to read a colleague's log. Bounded by the
+  /// shift window rather than a row limit, so the counters can never be
+  /// silently truncated — "3 pembatalan" means three, not three among the rows
+  /// that fit in the page.
+  ///
+  /// Fails **closed**. No session, or no open shift, yields an empty list: a
+  /// user with no shift has no shift activity, and defaulting to the venue-wide
+  /// log would leak every colleague's voids onto a personal screen.
+  ///
+  /// There is deliberately no `POST /audit`. Audit rows are written only by the
+  /// server paths that perform the audited act, which stamp `actorUserId` from
+  /// the JWT — attribution for voids and comps is evidence (ADR-0006), so it is
+  /// never taken from a client-supplied field.
   r.get('/audit', (Request req) async {
-    final rows = await (db.select(
-      db.auditEntries,
-    )..orderBy([(a) => OrderingTerm.desc(a.at)])).get();
+    final me = await _actor(req, db, auth);
+    if (me == null) return _ok(const []);
+    final since = await openShiftOf(db, me.id);
+    if (since == null) return _ok(const []);
+    final rows =
+        await (db.select(db.auditEntries)
+              ..where((a) => a.actorUserId.equals(me.id))
+              ..where((a) => a.at.isBiggerOrEqualValue(since))
+              ..orderBy([(a) => OrderingTerm.desc(a.at)]))
+            .get();
     return _ok([for (final e in rows) _auditJson(e)]);
-  });
-
-  r.post('/audit', (Request req) async {
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final id = (body['id'] as String?) ?? _uuid.v4();
-    final at = body['at'] != null
-        ? DateTime.tryParse(body['at'] as String) ?? SatClock.now()
-        : SatClock.now();
-    await db
-        .into(db.auditEntries)
-        .insertOnConflictUpdate(
-          AuditEntriesCompanion.insert(
-            id: id,
-            type: body['type'] as String,
-            title: body['title'] as String,
-            tableId: Value(body['tableId'] as String?),
-            at: at,
-            approvedBy: Value(body['approvedBy'] as String?),
-            reason: Value(body['reason'] as String?),
-            actorUserId: Value(body['actorUserId'] as String?),
-          ),
-        );
-    final row = await (db.select(
-      db.auditEntries,
-    )..where((a) => a.id.equals(id))).getSingleOrNull();
-    if (row == null) return Response.internalServerError();
-    hub?.broadcast(WsEventTypes.auditCreated, _auditJson(row));
-    return _ok(_auditJson(row));
   });
 
   r.delete('/staff/<id>', (Request req, String id) async {

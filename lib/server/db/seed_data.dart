@@ -185,7 +185,6 @@ class DummyData {
       pax: 2,
       status: TableStatus.occupied,
       elapsed: '0:18',
-      mine: true,
       openAmount: 245000,
       lastActorId: 'maya',
     ),
@@ -195,7 +194,6 @@ class DummyData {
       pax: 4,
       status: TableStatus.ready,
       elapsed: '0:42',
-      mine: true,
       openAmount: 612000,
       readyCount: 2,
       lastActorId: 'maya',
@@ -212,7 +210,6 @@ class DummyData {
       pax: 6,
       status: TableStatus.pending,
       elapsed: '0:08',
-      mine: true,
       lastActorId: 'maya',
     ),
     VenueTable(

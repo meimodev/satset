@@ -244,7 +244,6 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
           pax: pax.clamp(0, prev.capacity < 1 ? 1 : prev.capacity),
           openedAt: prev.openedAt ?? now,
           elapsed: prev.elapsed ?? _elapsedStr(prev.openedAt ?? now),
-          mine: true,
           lastActorId: userId ?? prev.lastActorId,
           guestName: guestName,
           guestNotes: guestNotes,
@@ -309,7 +308,6 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
           status: TableStatus.pending,
           openedAt: prev.openedAt ?? now,
           elapsed: prev.elapsed ?? _elapsedStr(prev.openedAt ?? now),
-          mine: true,
           lastActorId: userId ?? prev.lastActorId,
         ),
       );

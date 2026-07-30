@@ -63,6 +63,7 @@ _$MeDtoImpl _$$MeDtoImplFromJson(Map<String, dynamic> json) => _$MeDtoImpl(
       .map((e) => e as String)
       .toList(),
   avatarColorHex: (json['avatarColorHex'] as num?)?.toInt(),
+  shiftStartedAt: json['shiftStartedAt'] as String?,
   demoClockOffsetSeconds:
       (json['demoClockOffsetSeconds'] as num?)?.toInt() ?? 0,
 );
@@ -76,5 +77,6 @@ Map<String, dynamic> _$$MeDtoImplToJson(_$MeDtoImpl instance) =>
       'zoneAssigned': instance.zoneAssigned,
       'capabilities': instance.capabilities,
       'avatarColorHex': instance.avatarColorHex,
+      'shiftStartedAt': instance.shiftStartedAt,
       'demoClockOffsetSeconds': instance.demoClockOffsetSeconds,
     };

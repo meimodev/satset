@@ -5,7 +5,6 @@ import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,12 +25,26 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
+import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
+/// What the "Saya" tab shows: a **live snapshot** of the shift you are in, not a
+/// cumulative tally of it.
+///
+/// Every count here describes what you are holding *right now* — outstanding
+/// lines, seated covers, tables in hand. Closing a table correctly therefore
+/// makes these numbers go **down**, which is intended: this screen answers
+/// "what is on my plate", not "what did I do tonight". The cumulative reading
+/// (sales, tickets per hour, covers served across the shift) needs closed
+/// [[Close (table) / Table session|TableSessions]], which clients never receive
+/// — see ADR-0065 for why that endpoint was declined.
+///
+/// The integrity counts are the exception: they come from the audit feed, which
+/// *is* shift-cumulative and scoped server-side to you.
 class _ShiftMetrics {
   final String name;
   final String roleLabel;
@@ -39,11 +52,19 @@ class _ShiftMetrics {
   final int? avatarColorHex;
   final String shiftStart;
   final Duration elapsed;
-  final int ticketCount;
+
+  /// Outstanding lines on the tables you hold — [isOutstandingTicket].
+  final int openTickets;
+
+  /// Outstanding lines split by where the food is, for the breakdown card.
+  final Map<TicketStatus, int> byStatus;
+
   final int openCovers;
+  final int openTables;
+
+  /// Your voids this shift. Comps are **inside** this number, not beside it: a
+  /// comp is a void carrying reason `comp`, never its own audit type.
   final int voidCount;
-  final int compCount;
-  final int modifyCount;
 
   const _ShiftMetrics({
     required this.name,
@@ -52,14 +73,13 @@ class _ShiftMetrics {
     required this.avatarColorHex,
     required this.shiftStart,
     required this.elapsed,
-    required this.ticketCount,
+    required this.openTickets,
+    required this.byStatus,
     required this.openCovers,
+    required this.openTables,
     required this.voidCount,
-    required this.compCount,
-    required this.modifyCount,
   });
 
-  int get elapsedMinutes => elapsed.inMinutes;
   String get elapsedLabel => formatElapsedId(elapsed);
 
   double get shiftProgress {
@@ -72,6 +92,7 @@ _ShiftMetrics _computeMetrics({
   required List<VenueTable> tables,
   required Map<String, List<Ticket>> tickets,
   required List<AuditEntry> audit,
+  required String? meId,
   required String userName,
   required String userInitials,
   required int? userAvatarColorHex,
@@ -79,8 +100,16 @@ _ShiftMetrics _computeMetrics({
   required String shiftStart,
   required Duration elapsed,
 }) {
-  final myTables = tables.where((t) => t.mine).toList();
-  int ticketCount = 0;
+  // A table is yours when you are its current handler (`lastActorId`) — the
+  // same server-authoritative key the Pesanan board scopes on (ADR-0056). The
+  // old `VenueTable.mine` flag was set optimistically on seat and never
+  // restored from the server, so it silently emptied this screen on every WS
+  // update, resync and relaunch.
+  final myTables = (meId == null || meId.isEmpty)
+      ? const <VenueTable>[]
+      : tables.where((t) => t.lastActorId == meId).toList();
+
+  final byStatus = <TicketStatus, int>{};
   for (final t in myTables) {
     // Lines are keyed by visitId (ADR-0034); resolve through the table's
     // current visit rather than its (reused) id.
@@ -89,17 +118,20 @@ _ShiftMetrics _computeMetrics({
         ? (tickets[vid] ?? const <Ticket>[])
         : const <Ticket>[];
     for (final tk in lines) {
-      if (tk.status == TicketStatus.voided) continue;
-      ticketCount++;
+      if (!isOutstandingTicket(tk.status)) continue;
+      byStatus[tk.status] = (byStatus[tk.status] ?? 0) + 1;
     }
   }
-  final openCovers = myTables.fold<int>(
-    0,
-    (s, t) => s + (t.status != TableStatus.available ? t.pax : 0),
-  );
+  final openTickets = byStatus.values.fold<int>(0, (a, b) => a + b);
+
+  final live = myTables
+      .where((t) => t.status != TableStatus.available)
+      .toList();
+  final openCovers = live.fold<int>(0, (s, t) => s + t.pax);
+
+  // `audit` arrives pre-scoped to this user and this shift by the server, so a
+  // plain count is already "my voids this shift" (ADR-0065).
   final voidCount = audit.where((a) => a.type == AuditType.voidItem).length;
-  final compCount = audit.where((a) => a.type == AuditType.comp).length;
-  final modifyCount = audit.where((a) => a.type == AuditType.modify).length;
 
   return _ShiftMetrics(
     name: userName,
@@ -108,11 +140,11 @@ _ShiftMetrics _computeMetrics({
     avatarColorHex: userAvatarColorHex,
     shiftStart: shiftStart,
     elapsed: elapsed,
-    ticketCount: ticketCount,
+    openTickets: openTickets,
+    byStatus: byStatus,
     openCovers: openCovers,
+    openTables: live.length,
     voidCount: voidCount,
-    compCount: compCount,
-    modifyCount: modifyCount,
   );
 }
 
@@ -150,7 +182,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final theme = ref.watch(satThemeProvider);
     final user = ref.watch(authStateProvider).user;
     final roles = ref.watch(rolesRepositoryProvider);
-    // Hide staff/role admin audit rows from users without `manageStaff`.
+    // The feed is already scoped to this user and shift server-side, so these
+    // are all your own rows. The `manageStaff` filter still applies: a waiter
+    // whose PIN was reset by a manager should not read that row on their own
+    // shift summary, even though it is filed against them.
     final canManageStaff =
         user != null &&
         !user.disabled &&
@@ -192,6 +227,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       tables: tables,
       tickets: tickets,
       audit: audit,
+      meId: user?.id,
       userName: user?.name ?? '—',
       userInitials: user?.initials ?? '—',
       userAvatarColorHex: user?.avatarColorHex,
@@ -204,42 +240,58 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     final l = context.layout;
 
-    Future<void> endShift() async {
-      // Admin (Server mode): logout kills the embedded server — every staff
-      // device disconnects and cannot reconnect until an admin re-signs-in.
-      // Confirm first, warning about live tables. See ADR-0015.
-      final isServer = ref.read(serverRuntimeProvider) != null;
-      if (isServer) {
-        final liveCount = tables
-            .where((t) => t.status != TableStatus.available)
-            .length;
-        final ok = await showSatDialog<bool>(
-          context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Akhiri sesi admin?'),
-            content: Text(
-              liveCount > 0
-                  ? '$liveCount meja masih aktif. Keluar akan mematikan server — '
-                        'semua staff terputus dan tidak bisa menyambung sampai '
-                        'admin masuk lagi.'
-                  : 'Keluar akan mematikan server. Staff tidak bisa menyambung '
-                        'sampai admin masuk lagi.',
-            ),
-            actions: [
-              SatButton.ghost(
-                label: AppStrings.cancel,
-                onTap: () => Navigator.pop(ctx, false),
-              ),
-              SatButton.danger(
-                label: 'Keluar & matikan',
-                onTap: () => Navigator.pop(ctx, true),
-              ),
-            ],
-          ),
-        );
-        if (ok != true) return;
-      }
+    // A Server-mode admin has exactly one exit. Their sign-out kills the
+    // embedded server either way (ADR-0015), so an exit promising to preserve
+    // their shift while taking the venue offline would be a lie — for this one
+    // user the "lightweight" action is the most destructive in the app.
+    // Everyone else, admin-clients included, gets both.
+    final isServer = ref.read(serverRuntimeProvider) != null;
+
+    // "Keluar" — drop the session, leave the shift running. The next PIN
+    // sign-in resumes it, on this handset or another (ADR-0065). No confirm:
+    // it is the frequent action and nothing is lost.
+    Future<void> switchUser() async {
       await ref.read(authStateProvider.notifier).signOut();
+      if (context.mounted) context.go('/pin');
+    }
+
+    // "Akhiri shift & keluar" — close the shift *and* sign out.
+    Future<void> endShift() async {
+      final liveCount = tables
+          .where((t) => t.status != TableStatus.available)
+          .length;
+      final ok = await showSatDialog<bool>(
+        context,
+        builder: (ctx) => AlertDialog(
+          title: Text(isServer ? 'Akhiri sesi admin?' : 'Akhiri shift?'),
+          content: Text(
+            isServer
+                ? (liveCount > 0
+                      ? '$liveCount meja masih aktif. Keluar akan mematikan server — '
+                            'semua staff terputus dan tidak bisa menyambung sampai '
+                            'admin masuk lagi.'
+                      : 'Keluar akan mematikan server. Staff tidak bisa menyambung '
+                            'sampai admin masuk lagi.')
+                // Spell out the one thing that separates this from "Keluar":
+                // the shift closes, so signing back in starts a new one.
+                : 'Shift ditutup dan hitungannya berhenti. Masuk lagi akan '
+                      'memulai shift baru. Untuk menyerahkan perangkat tanpa '
+                      'menutup shift, pakai "Keluar".',
+          ),
+          actions: [
+            SatButton.ghost(
+              label: AppStrings.cancel,
+              onTap: () => Navigator.pop(ctx, false),
+            ),
+            SatButton.danger(
+              label: isServer ? 'Keluar & matikan' : 'Akhiri shift',
+              onTap: () => Navigator.pop(ctx, true),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+      await ref.read(authStateProvider.notifier).signOut(endShift: true);
       if (context.mounted) context.go('/pin');
     }
 
@@ -251,6 +303,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         theme: theme,
         onPickTheme: pickTheme,
         onEndShift: endShift,
+        onSwitchUser: isServer ? null : switchUser,
       );
     }
     return _MePhone(
@@ -260,6 +313,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       theme: theme,
       onPickTheme: pickTheme,
       onEndShift: endShift,
+      onSwitchUser: isServer ? null : switchUser,
     );
   }
 }
@@ -274,6 +328,9 @@ class _MePhone extends StatelessWidget {
   final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
 
+  /// Null for a Server-mode admin, who has no shift-preserving exit.
+  final VoidCallback? onSwitchUser;
+
   const _MePhone({
     required this.m,
     required this.audit,
@@ -281,6 +338,7 @@ class _MePhone extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
+    required this.onSwitchUser,
   });
 
   @override
@@ -303,7 +361,7 @@ class _MePhone extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-              child: _EndShiftButton(onPressed: onEndShift),
+              child: _EndShiftButton(onPressed: onEndShift, onSwitchUser: onSwitchUser),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -344,6 +402,9 @@ class _MeTablet extends StatelessWidget {
   final VoidCallback onPickTheme;
   final VoidCallback onEndShift;
 
+  /// Null for a Server-mode admin, who has no shift-preserving exit.
+  final VoidCallback? onSwitchUser;
+
   const _MeTablet({
     required this.m,
     required this.audit,
@@ -351,6 +412,7 @@ class _MeTablet extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
+    required this.onSwitchUser,
   });
 
   @override
@@ -388,7 +450,7 @@ class _MeTablet extends StatelessWidget {
                     children: [
                       _Identity(m: m, big: true, showShiftLine: false),
                       const SizedBox(height: Sp.s3h),
-                      _EndShiftButton(onPressed: onEndShift),
+                      _EndShiftButton(onPressed: onEndShift, onSwitchUser: onSwitchUser),
                       const SizedBox(height: Sp.s3h),
                       _KpiGrid(m: m, columns: 4),
                       const SizedBox(height: Sp.s3),
@@ -548,19 +610,21 @@ class _KpiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Present tense throughout: these are live counts of what you hold now, so
+    // past-tense labels ("Tiket dikirim") would promise a shift total the
+    // numbers do not carry.
     final items = <_Kpi>[
-      _Kpi(label: 'Tiket dikirim', value: '${m.ticketCount}'),
+      _Kpi(label: 'Tiket terbuka', value: '${m.openTickets}'),
       _Kpi(label: 'Cover dilayani', value: '${m.openCovers}'),
       _Kpi(
         label: 'Pembatalan',
         value: '${m.voidCount}',
         tone: m.voidCount > 0 ? _Tone.urgent : _Tone.normal,
       ),
-      _Kpi(
-        label: 'Comp / modif',
-        value: '${m.compCount + m.modifyCount}',
-        tone: m.compCount > 0 ? _Tone.warn : _Tone.normal,
-      ),
+      // Replaces a "Comp / modif" box that could only ever read zero:
+      // `AuditType.comp` and `.modify` are emitted nowhere, because a comp is a
+      // void carrying reason `comp` and lands in Pembatalan above.
+      _Kpi(label: 'Meja aktif', value: '${m.openTables}'),
     ];
 
     if (columns >= 4) {
@@ -654,6 +718,14 @@ class _KpiBox extends StatelessWidget {
   }
 }
 
+/// Where your outstanding food currently is — the same lines the "Tiket
+/// terbuka" box totals, split by status.
+///
+/// This replaced a "tiket / jam" rate that divided a *live* ticket count by
+/// *shift-long* elapsed minutes. That ratio fell as you closed tables, so it
+/// read highest when you were furthest behind and reached zero at the end of a
+/// well-run shift. An honest rate needs cumulative sent counts, which this
+/// screen deliberately does not fetch (ADR-0065).
 class _PacingCard extends StatelessWidget {
   final _ShiftMetrics m;
   final bool big;
@@ -662,8 +734,23 @@ class _PacingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final ratio = (m.ticketCount / math.max(m.elapsedMinutes, 1));
-    final perHour = (ratio * 60).toStringAsFixed(1);
+    // Kitchen order, not enum order: the closer to the guest, the later it
+    // reads — so a waiter scans left-to-right toward what to pick up next.
+    const order = [
+      (TicketStatus.held, 'ditahan'),
+      (TicketStatus.sent, 'terkirim'),
+      (TicketStatus.prep, 'disiapkan'),
+      (TicketStatus.cooked, 'matang'),
+      (TicketStatus.ready, 'siap'),
+    ];
+    final parts = <String>[
+      for (final (s, label) in order)
+        if ((m.byStatus[s] ?? 0) > 0) '${m.byStatus[s]} $label',
+    ];
+    final hasAny = parts.isNotEmpty;
+    // A lull is the common case mid-shift, and three zeros would read as
+    // broken. Say the state in words instead.
+    final text = hasAny ? parts.join(' · ') : 'Tidak ada tiket terbuka';
     return Container(
       padding: EdgeInsets.fromLTRB(18, big ? 18 : 16, 18, big ? 18 : 16),
       decoration: SatBox.d(
@@ -677,24 +764,27 @@ class _PacingCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: SatBox.d(
-              color: sc.accentSoft,
+              color: hasAny ? sc.accentSoft : sc.bg3,
               borderRadius: SatR.a(10),
             ),
             alignment: Alignment.center,
             child: Icon(
-              Icons.show_chart_rounded,
+              hasAny
+                  ? Icons.receipt_long_outlined
+                  : Icons.check_circle_outline_rounded,
               size: 18,
-              color: sc.accentText,
+              color: hasAny ? sc.accentText : sc.textLo,
             ),
           ),
           const SizedBox(width: Sp.s3h),
           Expanded(
             child: Text(
-              '$perHour tiket / jam',
-              style: SatType.labelL(color: sc.textHi),
+              text,
+              style: SatType.labelL(
+                color: hasAny ? sc.textHi : sc.textLo,
+              ),
             ),
           ),
-          Text(m.elapsedLabel, style: SatType.monoM(color: sc.textHi)),
         ],
       ),
     );
@@ -870,20 +960,54 @@ class _AuditRow extends StatelessWidget {
   }
 }
 
+/// The shift's two exits (ADR-0065).
+///
+/// Hierarchy follows frequency, not severity of name: handing a shared handset
+/// to a colleague happens many times a service and gets the prominent control,
+/// while ending a shift happens once and is deliberately quieter so it takes
+/// aim. [onSwitchUser] is null for a Server-mode admin, who has only one exit
+/// because their sign-out takes the venue offline regardless (ADR-0015).
 class _EndShiftButton extends StatelessWidget {
   final VoidCallback onPressed;
-  const _EndShiftButton({required this.onPressed});
+  final VoidCallback? onSwitchUser;
+  const _EndShiftButton({required this.onPressed, this.onSwitchUser});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final endShift = SizedBox(
       width: double.infinity,
-      child: SatButton.outline(
+      child: SatButton.ghost(
         label: 'Akhiri shift & keluar',
         icon: Icons.logout_rounded,
         size: SatButtonSize.lg,
         onTap: onPressed,
       ),
+    );
+    if (onSwitchUser == null) {
+      // Sole exit for a Server-mode admin — carries the weight, so it keeps the
+      // stronger outline treatment rather than reading as a footnote.
+      return SizedBox(
+        width: double.infinity,
+        child: SatButton.outline(
+          label: 'Akhiri shift & keluar',
+          icon: Icons.logout_rounded,
+          size: SatButtonSize.lg,
+          onTap: onPressed,
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SatButton.outline(
+          label: 'Keluar',
+          icon: Icons.swap_horiz_rounded,
+          size: SatButtonSize.lg,
+          onTap: onSwitchUser!,
+        ),
+        const SizedBox(height: Sp.s2),
+        endShift,
+      ],
     );
   }
 }

@@ -8,6 +8,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/firebase_token_verifier.dart';
+import 'package:satset/server/shift.dart';
 
 /// [venueId] is this host's cloud venue (ADR-0017); [verifier] admits
 /// admin-clients by their Firebase ID token. Both are empty/no-op on a legacy
@@ -107,6 +108,7 @@ Router authRoutes(
     final caps = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
+    final shiftStartedAt = await resumeOrOpenShift(auth.db, session.userId);
     return Response.ok(
       jsonEncode({
         'token': session.token,
@@ -114,13 +116,33 @@ Router authRoutes(
         'roleId': me?.roleId ?? '',
         'capabilities': caps,
         'expiresAt': session.expiresAt.toIso8601String(),
+        'shiftStartedAt': shiftStartedAt.toIso8601String(),
       }),
       headers: {'content-type': 'application/json'},
     );
   });
 
+  /// Drops the staff session. `{"endShift": true}` additionally closes the
+  /// shift — the difference between "Keluar" (hand the handset over, shift
+  /// keeps running) and "Akhiri shift & keluar". Both effects land in one
+  /// request so there is no window where the session is gone but the shift
+  /// is still open. See ADR-0065.
   r.post('/auth/logout', (Request req) async {
     final t = _bearer(req);
+    // Resolve before revoking — afterwards the token no longer identifies anyone.
+    final user = await auth.resolveBearer(t);
+    var alsoEndShift = false;
+    try {
+      final raw = await req.readAsString();
+      if (raw.isNotEmpty) {
+        final body = jsonDecode(raw) as Map<String, dynamic>;
+        alsoEndShift = body['endShift'] == true;
+      }
+    } catch (_) {
+      // A bodiless or malformed logout is still a logout; it just keeps the
+      // shift open, which is the non-destructive reading.
+    }
+    if (alsoEndShift && user != null) await endShift(auth.db, user.id);
     if (t != null) await auth.revoke(t);
     return Response(204);
   });
@@ -162,6 +184,11 @@ Router authRoutes(
     final caps = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
+    // Read-only: a profile fetch must not *start* a shift, so a stamp older
+    // than today's rollover reports as null rather than being re-anchored.
+    // Matters on session restore — a token that survives overnight would
+    // otherwise hand the client yesterday's clock. Only a login opens a shift.
+    final shift = await openShiftOf(auth.db, user.id);
     return Response.ok(
       jsonEncode({
         'userId': user.id,
@@ -171,6 +198,7 @@ Router authRoutes(
         'zoneAssigned': user.zoneAssigned,
         'capabilities': caps,
         'avatarColorHex': user.avatarColorHex,
+        'shiftStartedAt': shift?.toIso8601String(),
         // Demo clock offset (ADR-0053 §2). Rides the bootstrap as well as the
         // WS broadcast so a device that missed the event — or reconnected
         // after one — recovers the right clock on its own (ADR-0021).

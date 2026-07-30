@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/audit_entry.dart';
@@ -12,9 +13,24 @@ final auditStatusProvider = StateProvider<AsyncValue<void>>(
   (_) => const AsyncValue.data(null),
 );
 
+/// The signed-in user's own audit rows for their current shift — the feed and
+/// the integrity counters behind the "Saya" tab. Scoped by the **server** from
+/// the bearer (ADR-0065); the client never asks for a particular user's log.
+///
+/// Because the cache is per-user, it is dropped and refetched whenever the
+/// signed-in user changes. Handsets are shared, so without that the next person
+/// to PIN in would inherit the previous waiter's voids.
 class AuditRepository extends StateNotifier<List<AuditEntry>> {
   AuditRepository(this._ref) : super(const <AuditEntry>[]) {
     Future.microtask(_bootstrap);
+    _ref.listen<String?>(authStateProvider.select((s) => s.user?.id), (
+      prev,
+      next,
+    ) {
+      if (prev == next) return;
+      state = const <AuditEntry>[];
+      Future.microtask(_bootstrap);
+    });
   }
 
   final Ref _ref;
@@ -56,6 +72,11 @@ class AuditRepository extends StateNotifier<List<AuditEntry>> {
     _wsSub = _ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type != WsEventTypes.auditCreated) return;
       final e = _fromJson(ev.payload);
+      // `GET /audit` hands us only our own rows, but the WS fan-out is
+      // venue-wide — without this filter the first colleague to void an item
+      // would land in our feed and inflate our integrity counters.
+      final meId = _ref.read(authStateProvider).user?.id;
+      if (meId == null || e.actorUserId != meId) return;
       if (state.any((x) => x.id == e.id)) return;
       state = [e, ...state];
     });
@@ -73,31 +94,8 @@ class AuditRepository extends StateNotifier<List<AuditEntry>> {
       when: (j['at'] as String?) ?? '',
       approvedBy: j['approvedBy'] as String?,
       reason: j['reason'] as String?,
+      actorUserId: j['actorUserId'] as String?,
     );
-  }
-
-  void add(AuditEntry e) {
-    // Optimistic insert. Server WS broadcasts to all peers including us,
-    // but duplicate guards above swallow our own echo.
-    state = [e, ...state];
-    final cfg = _ref.read(apiConfigProvider);
-    if (cfg == null) return;
-    unawaited(() async {
-      try {
-        await _ref.read(apiClientProvider).postJson('/audit', {
-          'id': e.id,
-          'type': e.type.name,
-          'title': e.title,
-          'tableId': e.tableId.isEmpty ? null : e.tableId,
-          'at': e.when,
-          'approvedBy': e.approvedBy,
-          'reason': e.reason,
-        });
-      } catch (err) {
-        SatLog.repo('audit.add fail $err');
-        state = state.where((x) => x.id != e.id).toList();
-      }
-    }());
   }
 }
 

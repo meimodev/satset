@@ -1,6 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/domain/models/ticket.dart';
+
+/// Whether a line is **outstanding** — sent to the kitchen and not yet done.
+///
+/// Exactly the union of the Pesanan board's **Disiapkan** and **Siap** buckets,
+/// named once so the "Saya" tab counts the same lines the board shows. The board
+/// itself keeps those two buckets apart and so still enumerates them separately;
+/// this is the combined question, which only the shift summary asks.
+///
+/// Excluded, deliberately:
+/// - `draft` — composed but never sent; not the kitchen's problem yet.
+/// - `pendingReview` — a [[Guest order]] awaiting staff approval (ADR-0028).
+///   Not *your* outstanding work until you approve it, and the "Belum ditinjau"
+///   alert already covers that state.
+/// - `served`, `voided` — done, one way or the other.
+bool isOutstandingTicket(TicketStatus s) => switch (s) {
+  TicketStatus.sent ||
+  TicketStatus.prep ||
+  TicketStatus.cooked ||
+  TicketStatus.held ||
+  TicketStatus.ready => true,
+  TicketStatus.draft ||
+  TicketStatus.acknowledged ||
+  TicketStatus.pendingReview ||
+  TicketStatus.served ||
+  TicketStatus.voided => false,
+};
 
 /// Whether a Pesanan board row belongs to the signed-in user (ADR-0056).
 ///

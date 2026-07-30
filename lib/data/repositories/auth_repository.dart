@@ -159,6 +159,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       SatClock.adopt(Duration(seconds: me.demoClockOffsetSeconds));
       final loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
+      // The server opens/resumes the shift and is authoritative (ADR-0065) —
+      // that is what lets a shift survive onto a different handset. The local
+      // stamp stays as the fallback for a legacy host with no such field.
+      final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
       state = AuthState(
         isAuthenticated: true,
         user: AppUser(
@@ -166,7 +170,7 @@ class AuthRepository extends StateNotifier<AuthState> {
           name: me.name,
           initials: me.initials,
           role: _roleFromCapabilities(caps),
-          shiftStartedAt: loginAt.toIso8601String(),
+          shiftStartedAt: shiftStartedAt,
           zoneAssigned: me.zoneAssigned ?? '',
           roleId: me.roleId,
           avatarColorHex: me.avatarColorHex,
@@ -370,6 +374,8 @@ class AuthRepository extends StateNotifier<AuthState> {
     };
     final loginAt = SatClock.now();
     await storage.writeLoginAt(loginAt);
+    // Server-authoritative shift; local stamp is the legacy-host fallback.
+    final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
     state = AuthState(
       isAuthenticated: true,
       user: AppUser(
@@ -377,7 +383,7 @@ class AuthRepository extends StateNotifier<AuthState> {
         name: me.name,
         initials: me.initials,
         role: _roleFromCapabilities(caps),
-        shiftStartedAt: loginAt.toIso8601String(),
+        shiftStartedAt: shiftStartedAt,
         zoneAssigned: me.zoneAssigned ?? '',
         roleId: me.roleId,
         avatarColorHex: me.avatarColorHex,
@@ -443,6 +449,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       SatClock.adopt(Duration(seconds: me.demoClockOffsetSeconds));
       final loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
+      // The server opens/resumes the shift and is authoritative (ADR-0065) —
+      // that is what lets a shift survive onto a different handset. The local
+      // stamp stays as the fallback for a legacy host with no such field.
+      final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
       state = AuthState(
         isAuthenticated: true,
         user: AppUser(
@@ -450,7 +460,7 @@ class AuthRepository extends StateNotifier<AuthState> {
           name: me.name,
           initials: me.initials,
           role: _roleFromCapabilities(caps),
-          shiftStartedAt: loginAt.toIso8601String(),
+          shiftStartedAt: shiftStartedAt,
           zoneAssigned: me.zoneAssigned ?? '',
           roleId: me.roleId,
           avatarColorHex: me.avatarColorHex,
@@ -723,6 +733,12 @@ class AuthRepository extends StateNotifier<AuthState> {
         loginAt = SatClock.now();
         await storage.writeLoginAt(loginAt);
       }
+      // A restore must not resurrect a retired shift: `/auth/me` reports the
+      // shift read-only and returns null once the business-day boundary has
+      // passed, so a token that survives overnight no longer hands us
+      // yesterday's clock. Falling back to the local stamp only when the host
+      // has no opinion at all.
+      final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
       state = AuthState(
         isAuthenticated: true,
         user: AppUser(
@@ -730,7 +746,7 @@ class AuthRepository extends StateNotifier<AuthState> {
           name: me.name,
           initials: me.initials,
           role: _roleFromCapabilities(caps),
-          shiftStartedAt: loginAt.toIso8601String(),
+          shiftStartedAt: shiftStartedAt,
           zoneAssigned: me.zoneAssigned ?? '',
           roleId: me.roleId,
           avatarColorHex: me.avatarColorHex,
@@ -754,8 +770,16 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signOut() async {
-    SatLog.repo('auth.signOut');
+  /// Drops the staff session. [endShift] additionally closes the shift — the
+  /// difference between "Keluar" (hand the handset over; your shift keeps
+  /// running and the next sign-in resumes it) and "Akhiri shift & keluar".
+  /// See ADR-0065.
+  ///
+  /// Server-mode admins only ever reach this with [endShift] true: their
+  /// sign-out kills the venue's server either way (ADR-0015), so a
+  /// shift-preserving exit would be a lie.
+  Future<void> signOut({bool endShift = false}) async {
+    SatLog.repo('auth.signOut endShift=$endShift');
     // Fleet operator / report owner: no local server, just drop the Firebase
     // session. See ADR-0016, ADR-0036.
     if (state.isSuperAdmin || state.isOwner) {
@@ -769,6 +793,19 @@ class AuthRepository extends StateNotifier<AuthState> {
     if (rt != null) {
       // Admin / Server mode: killing the server is the venue's off switch.
       // Connected staff drop and cannot reconnect until an admin re-signs-in.
+      //
+      // Close the shift first, over loopback while our own server is still up —
+      // a Server-mode admin has no shift-preserving exit (ADR-0065 §admin), so
+      // leaving the stamp set would silently resume this shift on the next
+      // sign-in. Best-effort: a failure here must not block the teardown, and
+      // the business-day boundary retires the stamp regardless.
+      if (ref.read(apiConfigProvider) != null) {
+        try {
+          await ref.read(apiClientProvider).postJson('/auth/logout', {
+            'endShift': true,
+          });
+        } catch (_) {}
+      }
       await _killAdminSession();
       return;
     }
@@ -776,7 +813,9 @@ class AuthRepository extends StateNotifier<AuthState> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg != null) {
       try {
-        await ref.read(apiClientProvider).postJson('/auth/logout', {});
+        await ref.read(apiClientProvider).postJson('/auth/logout', {
+          'endShift': endShift,
+        });
       } catch (_) {}
     }
     await storage.clearSession();

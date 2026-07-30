@@ -12,7 +12,6 @@ class VenueTable {
 
   final TableStatus status;
   final String? elapsed;
-  final bool mine;
   final int openAmount;
   final int readyCount;
   final String? lastActorId;
@@ -52,7 +51,6 @@ class VenueTable {
     this.active = true,
     this.status = TableStatus.available,
     this.elapsed,
-    this.mine = false,
     this.openAmount = 0,
     this.readyCount = 0,
     this.lastActorId,
@@ -91,7 +89,6 @@ class VenueTable {
     bool? active,
     TableStatus? status,
     String? elapsed,
-    bool? mine,
     int? openAmount,
     int? readyCount,
     String? lastActorId,
@@ -115,7 +112,6 @@ class VenueTable {
       active: active ?? this.active,
       status: status ?? this.status,
       elapsed: elapsed ?? this.elapsed,
-      mine: mine ?? this.mine,
       openAmount: openAmount ?? this.openAmount,
       readyCount: readyCount ?? this.readyCount,
       lastActorId: lastActorId ?? this.lastActorId,
