@@ -7,13 +7,26 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
+
+/// Bearer-token user, for audit attribution. Null when no auth helper is
+/// configured (server-mode boot before the secret loads).
+Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
+  if (auth == null) return null;
+  final token = req.headers['authorization']?.replaceFirst(
+    RegExp(r'^[Bb]earer\s+'),
+    '',
+  );
+  return auth.resolveBearer(token);
+}
 
 Future<Response?> _requireCap(
   Request req,
@@ -102,19 +115,42 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     );
   });
 
-  // Sold-out toggle. Body: { "unavailable": bool }. Permission: markSoldOut
-  // (staff can flip availability without full editMenu).
+  // Sold-out toggle. Body: { "unavailable": bool, "reason"?: String }.
+  // Permission: markSoldOut (staff can flip availability without full
+  // editMenu).
+  //
+  // Audited, because pulling a dish mid-service is a decision someone made and
+  // a manager later asks about. Only this manual path writes a row — the
+  // auto-habis derived from zero stock is the stock trail's story, and echoing
+  // it here would bury the human calls under bookkeeping.
   r.post('/menu/items/<id>/availability', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.markSoldOut);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final value = body['unavailable'] as bool?;
     if (value == null) return Response(400, body: 'unavailable required');
+    final before = await (db.select(
+      db.menuItems,
+    )..where((i) => i.id.equals(id))).getSingleOrNull();
     await (db.update(db.menuItems)..where((i) => i.id.equals(id))).write(
       MenuItemsCompanion(unavailable: Value(value)),
     );
     final out = await _readItem(db, id);
     if (out == null) return Response.notFound('item not found');
+    // Only a real flip is an event; re-asserting the current state is not.
+    if (before != null && before.unavailable != value) {
+      final reason = (body['reason'] as String?)?.trim();
+      await writeAudit(
+        db,
+        hub: hub,
+        type: value ? AuditType.menuKilled : AuditType.menuRestored,
+        title: value
+            ? 'Stop jual ${before.name}'
+            : 'Jual lagi ${before.name}',
+        actorUserId: (await _actor(req, db, auth))?.id,
+        reason: (reason != null && reason.isNotEmpty) ? reason : null,
+      );
+    }
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'upsert', 'item': out});
     return Response.ok(
       jsonEncode(out),

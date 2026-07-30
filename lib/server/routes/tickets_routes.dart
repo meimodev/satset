@@ -7,6 +7,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/tables_routes.dart'
@@ -155,10 +156,17 @@ const _voidReasonLabels = <String, String>{
   'customerChange': 'Tamu berubah pikiran',
   'outOfStock': 'Stok habis',
   'kitchenError': 'Komplain / kualitas dapur',
+  'comp': 'Kompensasi manajer',
   'other': 'Lainnya',
 };
 
 /// Persist + broadcast a void audit row stamped with the acting waiter.
+///
+/// A comp is a void carrying reason code `comp` (ADR-0006) — the same
+/// transition, a different permission. It is typed as [AuditType.comp] here so
+/// the venue log can count the two apart; without this split every giveaway
+/// reads as a cancellation and the comp tile is stuck at zero. Rows written
+/// before this existed stay `voidItem`.
 Future<void> _emitVoidAudit(
   AppDatabase db,
   WsHub hub, {
@@ -170,36 +178,21 @@ Future<void> _emitVoidAudit(
   final reason = (reasonText != null && reasonText.trim().isNotEmpty)
       ? reasonText
       : (_voidReasonLabels[reasonCode] ?? reasonCode);
-  final id = const Uuid().v4();
-  final amount = _auditRupiah.format(ticket.price * ticket.qty);
-  await db
-      .into(db.auditEntries)
-      .insertOnConflictUpdate(
-        AuditEntriesCompanion.insert(
-          id: id,
-          type: AuditType.voidItem.name,
-          title: 'Dibatalkan ×${ticket.qty} ${ticket.name} · $amount',
-          tableId: Value(ticket.tableId),
-          at: SatClock.now(),
-          reason: Value(reason),
-          actorUserId: Value(actorUserId),
-        ),
-      );
-  final row = await (db.select(
-    db.auditEntries,
-  )..where((a) => a.id.equals(id))).getSingleOrNull();
-  if (row != null) {
-    hub.broadcast(WsEventTypes.auditCreated, {
-      'id': row.id,
-      'type': row.type,
-      'title': row.title,
-      'tableId': row.tableId,
-      'at': row.at.toIso8601String(),
-      'approvedBy': row.approvedBy,
-      'reason': row.reason,
-      'actorUserId': row.actorUserId,
-    });
-  }
+  final isComp = reasonCode == 'comp';
+  final value = ticket.price * ticket.qty;
+  final amount = _auditRupiah.format(value);
+  await writeAudit(
+    db,
+    hub: hub,
+    type: isComp ? AuditType.comp : AuditType.voidItem,
+    title: isComp
+        ? 'Digratiskan ×${ticket.qty} ${ticket.name} · $amount'
+        : 'Dibatalkan ×${ticket.qty} ${ticket.name} · $amount',
+    tableId: ticket.tableId,
+    reason: reason,
+    actorUserId: actorUserId,
+    amountCents: value,
+  );
 }
 
 Map<String, dynamic> _tableToJson(VenueTable t) => {
@@ -543,6 +536,149 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         'visitId': orderVisitId,
         if (rejected.isNotEmpty) 'rejected': rejected,
       }),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
+  /// Edit a line the kitchen does not yet own. Body: `{qty?, note?,
+  /// modifiers?, unitPrice?}`.
+  ///
+  /// **Only a `held` line may change.** Once a line is fired it belongs to the
+  /// station, and the cook's copy is the order — a waiter cannot rewrite what
+  /// someone is already cooking, so from `sent` onward the sole remedy is a
+  /// void with a reason. That freeze is the whole rule; this route enforces it
+  /// with a 409 rather than trusting the UI to hide the button. See
+  /// docs/adr/0066-kitchen-ownership-freezes-a-line.md.
+  ///
+  /// Variant is deliberately *not* editable: a different variant is a
+  /// different dish at a different price, and often a different station.
+  ///
+  /// Like the create path, the client owns the modifier snapshot and its
+  /// resolved unit price (ADR-0011) — the server stores both verbatim. The
+  /// audit row carries the before/after value so a price that moves without a
+  /// matching modifier change is visible after the fact.
+  r.patch('/tickets/<id>', (Request req, String id) async {
+    final denied = await _requireCap(req, db, auth, Capability.modifyOrder);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final current = await (db.select(
+      db.tickets,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (current == null) return Response.notFound('ticket not found');
+
+    if (ticketStatusFromKey(current.status) != TicketStatus.held) {
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'line_frozen',
+          'message':
+              'hanya pesanan tertahan yang bisa diubah — '
+              'batalkan bila sudah masuk dapur',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
+    final newQty = (body['qty'] as num?)?.toInt() ?? current.qty;
+    if (newQty < 1) {
+      return Response(
+        400,
+        body: jsonEncode({
+          'code': 'bad_qty',
+          'message': 'qty must be >= 1 — void the line instead',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    final newNote = body.containsKey('note')
+        ? (body['note'] as String?)
+        : current.note;
+    final modsChanged = body.containsKey('modifiers');
+    final newModsJson = modsChanged
+        ? jsonEncode(body['modifiers'] ?? const [])
+        : current.modifiersJson;
+    final newPrice = (body['unitPrice'] as num?)?.toInt() ?? current.price;
+
+    final actor = await _actor(req, db, auth);
+    Ticket? row;
+    await db.transaction(() async {
+      // Re-book stock from scratch rather than diffing: the line was never
+      // touched by the kitchen, so the old consumption reverses cleanly, and a
+      // modifier swap can change *which* ingredients are needed, not just how
+      // many. `untouched: true` is safe precisely because of the held rule
+      // above — nothing has been cooked, so nothing is wasted.
+      if (newQty != current.qty || modsChanged) {
+        await reverseTicketStock(
+          db,
+          ticketId: id,
+          untouched: true,
+          userId: actor?.id,
+          note: 'Ubah pesanan',
+        );
+        final recipes = await loadRecipes(db);
+        final ingredientRows = await db.select(db.ingredients).get();
+        final item = await (db.select(
+          db.menuItems,
+        )..where((i) => i.id.equals(current.itemId))).getSingleOrNull();
+        final need = await needForLine(
+          db,
+          itemId: current.itemId,
+          variantName: current.variantName,
+          optionIds: optionIdsOf(newModsJson),
+          qty: newQty,
+          recipes: recipes,
+          running: {for (final i in ingredientRows) i.id: i.stockOnHand},
+          ingredientNames: {for (final i in ingredientRows) i.id: i.name},
+          variantIdsByName: item == null
+              ? const {}
+              : variantIdsByName(item.variantsJson),
+        );
+        if (need.need.isNotEmpty) {
+          await consumeForTicket(
+            db,
+            ticketId: id,
+            need: need.need,
+            sourceLabel: current.name,
+            userId: actor?.id,
+          );
+        }
+      }
+
+      await (db.update(db.tickets)..where((t) => t.id.equals(id))).write(
+        TicketsCompanion(
+          qty: Value(newQty),
+          note: Value(newNote),
+          modifiersJson: Value(newModsJson),
+          price: Value(newPrice),
+        ),
+      );
+      row = await (db.select(
+        db.tickets,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
+    });
+
+    final before = current.price * current.qty;
+    final after = newPrice * newQty;
+    await writeAudit(
+      db,
+      hub: hub,
+      type: AuditType.modify,
+      title: current.qty == newQty
+          ? 'Ubah ${current.name}'
+          : 'Ubah ×${current.qty} → ×$newQty ${current.name}',
+      tableId: current.tableId,
+      actorUserId: actor?.id,
+      reason: before == after
+          ? null
+          : '${_auditRupiah.format(before)} → ${_auditRupiah.format(after)}',
+      // The magnitude of the change, not the new total — the tile answers
+      // "how much did edits move", which a full line value would drown.
+      amountCents: (after - before).abs(),
+    );
+
+    if (row != null) hub.broadcast(WsEventTypes.ticketUpdated, _toJson(row!));
+    return Response.ok(
+      jsonEncode(_toJson(row!)),
       headers: {'content-type': 'application/json'},
     );
   });

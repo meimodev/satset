@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
 
   /// At most one whole-order discount per receipt, and one line discount per
   /// line — the ADR-0037 no-stacking rule, enforced in the schema rather than
@@ -702,6 +702,25 @@ class AppDatabase extends _$AppDatabase {
         // rename is overwritten, which is the tradeoff taken for a consistent
         // result on every device.
         await _fixMenuTagCodes();
+      }
+      if (from < 42) {
+        // The venue audit log (ADR-0067) needs two things the personal feed
+        // never did: a summable amount, and attribution that survives the
+        // actor being renamed or deleted.
+        //
+        // `amount_cents` is a magnitude — direction is implied by the type, so
+        // a void and a refund both store a positive number and no tile ever
+        // has to reason about a sign. Null where money is meaningless (fire,
+        // table moves, staff edits).
+        //
+        // Name and role are snapshotted at write rather than joined at read.
+        // `staffDeleted` is a real audit type, so a live join would blank the
+        // attribution on every row an ex-employee ever wrote — the one thing
+        // an integrity log may not do. Rows written before this migration
+        // have neither and fall back to the live join.
+        await _safeAddColumnOn('audit_entries', 'amount_cents', type: 'INTEGER');
+        await _safeAddColumnOn('audit_entries', 'actor_name', type: 'TEXT');
+        await _safeAddColumnOn('audit_entries', 'actor_role_name', type: 'TEXT');
       }
     },
     onCreate: (m) async {

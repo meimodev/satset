@@ -10,6 +10,13 @@ enum AuditType {
   discountRemoved,
   billReopened,
   billClosed,
+
+  /// A human pulled an item off the menu mid-service, or put it back. Only
+  /// the manual toggle writes these — auto-sold-out at zero stock is derived
+  /// from the stock trail and would otherwise bury the human decisions this
+  /// log exists to record.
+  menuKilled,
+  menuRestored,
   staffCreated,
   staffDeleted,
   staffDisabled,
@@ -52,6 +59,8 @@ bool isAdminAuditType(AuditType t) {
     case AuditType.discountRemoved:
     case AuditType.billReopened:
     case AuditType.billClosed:
+    case AuditType.menuKilled:
+    case AuditType.menuRestored:
       return false;
   }
 }
@@ -75,6 +84,18 @@ class AuditEntry {
   /// void surfaced on every handset would leak the venue's integrity log.
   final String? actorUserId;
 
+  /// What the act was worth, as a magnitude — see the DB column doc. Direction
+  /// lives in [type], so nothing downstream has to interpret a sign. Null when
+  /// money is not the point, and on rows written before v42.
+  final int? amountCents;
+
+  /// Actor attribution as it stood when the act happened. Snapshotted server-
+  /// side so a later rename or deletion cannot rewrite the trail; null on
+  /// pre-v42 rows, where the server falls back to a live join. Both null means
+  /// nobody is on record — the venue log renders that as "Sistem".
+  final String? actorName;
+  final String? actorRoleName;
+
   const AuditEntry({
     required this.id,
     required this.type,
@@ -84,5 +105,8 @@ class AuditEntry {
     this.approvedBy,
     this.reason,
     this.actorUserId,
+    this.amountCents,
+    this.actorName,
+    this.actorRoleName,
   });
 }

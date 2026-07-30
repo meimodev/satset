@@ -3,7 +3,6 @@ import 'package:satset/server/routes/tables_routes.dart' show tableRowToJson;
 import 'package:satset/server/demo_clock.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'dart:async';
-import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
@@ -12,9 +11,11 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:satset/data/models/ws_event_dto.dart';
-import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_entry.dart'
+    show AuditType, isAdminAuditType;
 import 'package:satset/server/shift.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/db/seed.dart';
@@ -69,8 +70,8 @@ Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
   return auth.resolveBearer(token);
 }
 
-/// Write an audit row + WS-broadcast it. Same shape as POST /audit so
-/// clients render server-emitted entries identically to user-emitted ones.
+/// Write an audit row + WS-broadcast it. Thin shim over [writeAudit] kept for
+/// the string-typed call sites in this file.
 Future<void> _emitAudit(
   AppDatabase db,
   WsHub? hub, {
@@ -78,26 +79,14 @@ Future<void> _emitAudit(
   required String title,
   String? tableId,
   String? actorUserId,
-}) async {
-  final id = _uuid.v4();
-  final at = SatClock.now();
-  await db
-      .into(db.auditEntries)
-      .insertOnConflictUpdate(
-        AuditEntriesCompanion.insert(
-          id: id,
-          type: type,
-          title: title,
-          tableId: Value(tableId),
-          at: at,
-          actorUserId: Value(actorUserId),
-        ),
-      );
-  final row = await (db.select(
-    db.auditEntries,
-  )..where((a) => a.id.equals(id))).getSingleOrNull();
-  if (row != null) hub?.broadcast(WsEventTypes.auditCreated, _auditJson(row));
-}
+}) => writeAudit(
+  db,
+  hub: hub,
+  type: AuditType.values.byName(type),
+  title: title,
+  tableId: tableId,
+  actorUserId: actorUserId,
+);
 
 /// Reject the mutation if applying it would leave zero enabled users
 /// holding a role with [Capability.manageStaff]. [virtualUserId] is the user
@@ -156,6 +145,118 @@ Future<bool> _roleHasManageStaff(AppDatabase db, String roleId) async {
   return (jsonDecode(r.capabilitiesJson) as List).cast<String>().contains(
     Capability.manageStaff.name,
   );
+}
+
+/// The `WHERE` for one venue-log request, built once and reused by the page,
+/// the summary and the CSV. Sharing it is the point: three hand-rolled copies
+/// is how a tile ends up counting rows the table below it does not show.
+Future<Expression<bool> Function($AuditEntriesTable)> _venueAuditFilter(
+  Request req,
+  AppDatabase db,
+  ServerAuth? auth,
+  Map<String, String> q,
+) async {
+  final from = DateTime.tryParse(q['from'] ?? '');
+  final wanted = (q['type'] ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toSet();
+
+  // Fails closed on an unresolvable caller: no session ⇒ no admin rows.
+  final me = await _actor(req, db, auth);
+  var canSeeAdmin = false;
+  if (auth == null) {
+    // No auth configured (dev / pre-secret boot) — the cap check upstream is
+    // already a no-op, so don't hide rows it never gated.
+    canSeeAdmin = true;
+  } else if (me != null) {
+    canSeeAdmin = await _roleHasManageStaff(db, me.roleId);
+  }
+  final hidden = canSeeAdmin
+      ? const <String>{}
+      : {for (final t in AuditType.values.where(isAdminAuditType)) t.name};
+
+  return (a) {
+    Expression<bool> e = const Constant(true);
+    if (from != null) e = e & a.at.isBiggerOrEqualValue(from);
+    if (wanted.isNotEmpty) e = e & a.type.isIn(wanted.toList());
+    if (hidden.isNotEmpty) e = e & a.type.isNotIn(hidden.toList());
+    return e;
+  };
+}
+
+/// Per-type `{count, amount}` over the whole filtered window.
+///
+/// `amount` is a sum of magnitudes within one type (see the column doc), so it
+/// is always meaningful and never mixes directions. Types that carry no money
+/// sum to null and are reported as 0.
+Future<Map<String, dynamic>> _venueAuditSummary(
+  AppDatabase db,
+  Expression<bool> Function($AuditEntriesTable) filter,
+) async {
+  final t = db.auditEntries;
+  final count = t.id.count();
+  final total = t.amountCents.sum();
+  final q = db.selectOnly(t)
+    ..addColumns([t.type, count, total])
+    ..where(filter(t))
+    ..groupBy([t.type]);
+  final rows = await q.get();
+  return {
+    for (final r in rows)
+      r.read(t.type)!: {
+        'count': r.read(count) ?? 0,
+        'amount': r.read(total) ?? 0,
+      },
+  };
+}
+
+/// Render rows, resolving attribution for pre-v42 entries that carry no
+/// snapshot. Batched into two queries regardless of page size — a per-row join
+/// would turn a 50-row page into 100 round trips.
+Future<List<Map<String, dynamic>>> _auditJsonWithFallback(
+  AppDatabase db,
+  List<AuditEntry> rows,
+) async {
+  final needing = {
+    for (final e in rows)
+      if (e.actorName == null && e.actorUserId != null) e.actorUserId!,
+  };
+  if (needing.isEmpty) return [for (final e in rows) auditJson(e)];
+
+  final users = await (db.select(
+    db.users,
+  )..where((u) => u.id.isIn(needing.toList()))).get();
+  final roles = await (db.select(
+    db.roles,
+  )..where((r) => r.id.isIn(users.map((u) => u.roleId).toSet().toList()))).get();
+  final roleById = {for (final r in roles) r.id: r};
+  final byId = {for (final u in users) u.id: u};
+
+  return [
+    for (final e in rows)
+      auditJson(
+        e,
+        fallbackName: byId[e.actorUserId]?.name,
+        fallbackRoleName: roleById[byId[e.actorUserId]?.roleId]?.name,
+      ),
+  ];
+}
+
+({DateTime at, String id})? _decodeCursor(String? raw) {
+  if (raw == null) return null;
+  final i = raw.lastIndexOf('|');
+  if (i <= 0) return null;
+  final at = DateTime.tryParse(raw.substring(0, i));
+  if (at == null) return null;
+  return (at: at, id: raw.substring(i + 1));
+}
+
+String _csvCell(Object? v) {
+  final s = '$v';
+  if (!s.contains(RegExp(r'[",\n\r]'))) return s;
+  return '"${s.replaceAll('"', '""')}"';
 }
 
 Response _adminRoleForbidden() => Response(
@@ -658,7 +759,108 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
               ..where((a) => a.at.isBiggerOrEqualValue(since))
               ..orderBy([(a) => OrderingTerm.desc(a.at)]))
             .get();
-    return _ok([for (final e in rows) _auditJson(e)]);
+    return _ok([for (final e in rows) auditJson(e)]);
+  });
+
+  /// The **venue-wide** integrity log (ADR-0067) — every actor, paged back
+  /// through history. Deliberately a separate route from `/audit` above rather
+  /// than a parameter on it: that one's whole contract is that scope comes from
+  /// the bearer and cannot be widened by a query string, and this one is a
+  /// different product behind a different permission.
+  ///
+  /// `viewReports` reads it. Admin rows (staff and role edits) additionally
+  /// require `manageStaff` — a user who can read shift figures has no business
+  /// in the venue's personnel history — and they are filtered out of the
+  /// summary as well, so the tiles never count rows the table cannot show.
+  ///
+  /// Paged by keyset on `(at, id)`, never by offset: rows arrive at the head
+  /// while a manager reads, and an offset window would silently re-show or skip
+  /// a void. `id` breaks ties because a burst of voids lands in the same
+  /// millisecond and `at` alone would drop rows at the page boundary.
+  ///
+  /// `summary` rides page one only, computed over the **whole filtered
+  /// window** rather than the loaded page — a tile reading "3 pembatalan" has
+  /// to mean three in the venue, not three in the rows that fit.
+  r.get('/audit/venue', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.viewReports);
+    if (denied != null) return denied;
+    final q = req.requestedUri.queryParameters;
+    final filter = await _venueAuditFilter(req, db, auth, q);
+    final limit = (int.tryParse(q['limit'] ?? '') ?? 50).clamp(1, 200);
+
+    final sel = db.select(db.auditEntries)
+      ..where(filter)
+      ..orderBy([
+        (a) => OrderingTerm.desc(a.at),
+        (a) => OrderingTerm.desc(a.id),
+      ])
+      // One extra row is the cheapest way to know whether another page exists
+      // without a second COUNT over the same window.
+      ..limit(limit + 1);
+    final cursor = _decodeCursor(q['before']);
+    if (cursor != null) {
+      sel.where(
+        (a) =>
+            a.at.isSmallerThanValue(cursor.at) |
+            (a.at.equals(cursor.at) & a.id.isSmallerThanValue(cursor.id)),
+      );
+    }
+    final rows = await sel.get();
+    final hasMore = rows.length > limit;
+    final page = hasMore ? rows.sublist(0, limit) : rows;
+
+    return _ok({
+      'items': await _auditJsonWithFallback(db, page),
+      'nextCursor': hasMore && page.isNotEmpty
+          ? '${page.last.at.toIso8601String()}|${page.last.id}'
+          : null,
+      if (q['before'] == null) 'summary': await _venueAuditSummary(db, filter),
+    });
+  });
+
+  /// Same window, same filters, **unpaged** — an audit export that stopped at
+  /// the loaded page would be a truncated record wearing the word "complete".
+  /// Rendered server-side for that reason: the client never owns the full set.
+  r.get('/audit/venue.csv', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.viewReports);
+    if (denied != null) return denied;
+    final q = req.requestedUri.queryParameters;
+    final filter = await _venueAuditFilter(req, db, auth, q);
+    final rows =
+        await (db.select(db.auditEntries)
+              ..where(filter)
+              ..orderBy([
+                (a) => OrderingTerm.desc(a.at),
+                (a) => OrderingTerm.desc(a.id),
+              ]))
+            .get();
+    final json = await _auditJsonWithFallback(db, rows);
+    final buf = StringBuffer()
+      ..writeln(
+        'Waktu,Jenis,Pengguna,Peran,Kejadian,Meja,Jumlah,Alasan,Disetujui',
+      );
+    for (final e in json) {
+      buf.writeln(
+        [
+          e['at'],
+          e['type'],
+          e['actorName'] ?? '',
+          e['actorRoleName'] ?? '',
+          e['title'],
+          e['tableId'] ?? '',
+          e['amountCents']?.toString() ?? '',
+          e['reason'] ?? '',
+          e['approvedBy'] ?? '',
+        ].map(_csvCell).join(','),
+      );
+    }
+    return Response.ok(
+      buf.toString(),
+      headers: {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': 'attachment; filename="audit.csv"',
+      },
+    );
   });
 
   r.delete('/staff/<id>', (Request req, String id) async {
@@ -885,17 +1087,6 @@ Map<String, dynamic> _roleJson(Role r) => {
   'name': r.name,
   'colorHex': r.colorHex,
   'capabilities': jsonDecode(r.capabilitiesJson),
-};
-
-Map<String, dynamic> _auditJson(AuditEntry e) => {
-  'id': e.id,
-  'type': e.type,
-  'title': e.title,
-  'tableId': e.tableId,
-  'at': e.at.toIso8601String(),
-  'approvedBy': e.approvedBy,
-  'reason': e.reason,
-  'actorUserId': e.actorUserId,
 };
 
 Map<String, dynamic> _staffJson(User u) => {

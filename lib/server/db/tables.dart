@@ -456,6 +456,21 @@ class AuditEntries extends Table {
   TextColumn get approvedBy => text().nullable()();
   TextColumn get reason => text().nullable()();
   TextColumn get actorUserId => text().nullable()();
+
+  /// What the audited act was worth, as a **magnitude** — never signed.
+  /// Direction is carried by [type]: a void, a comp, a discount and a refund
+  /// all store a positive number, and every tile on the venue log sums within
+  /// one type, so no reader ever has to decide what a negative means here.
+  /// Null for types where money is not the point (fire, tableMoved, staff and
+  /// role edits) and on rows written before v42.
+  IntColumn get amountCents => integer().nullable()();
+
+  /// Who acted, snapshotted at write time — not a join key. Staff get renamed
+  /// and deleted (`staffDeleted` is itself an audit type); resolving these at
+  /// read would let a later personnel change rewrite the trail. Null on
+  /// pre-v42 rows, which fall back to a live join against `users`/`roles`.
+  TextColumn get actorName => text().nullable()();
+  TextColumn get actorRoleName => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
