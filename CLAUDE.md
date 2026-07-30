@@ -52,7 +52,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 - `ui/core/widgets/` — the shared vocabulary (ADR-0055): controls (`sat_button`, `sat_icon_button`, `sat_chip`, `sat_toggle`, `sat_stepper`, `sat_tabs`, `sat_field`, `sat_dropdown`, `sat_card`, `sat_empty`, `sat_sheet_header`, `pulse_dot`) plus chrome (`sat_app_bar`, `satset_top_bar`, `tablet_chrome`, `ready_banner`, `ready_toast`). **`CATALOG.md` in that folder lists every shared widget and token — read it before writing a new widget, and update it in the same commit when you add or remove one.** Enforced by `test/design_tokens_test.dart`, which is now all bans, no baselines: raw Material buttons, text inputs and dropdowns, literal type sizes, off-scale spacing, literal radii, hardcoded colours, roleless tap targets and duplicated widget class names all fail CI.
 - `ui/features/<area>/` — screens grouped by flow. Each feature owns `view_models/` and `views/` (or top-level screens + `widgets/`).
   - Order-taking: `tables/` → `menu/` (+ `modifier_sheet.dart`) → `review/` → `sent/` → `orders/`.
-  - Admin: `admin/` (`venue_hub_screen`, `alerts_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
+  - Admin: `admin/` (`venue_hub_screen`, `alerts_screen`, `audit_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
   - Onboarding: `onboarding/views/` (`mode_select_screen`, `pair_screen`, `forbidden_screen`).
   - Auth: `auth/views/pin_screen.dart`.
   - Other: `me/`, `void_flow/`, `shell/app_shell.dart`, `_stub/`.
@@ -64,13 +64,14 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 
 **`lib/data/`** — IO + caching, exposes Riverpod providers consumed by UI.
 - `models/` — wire DTOs (freezed + json_serializable): `auth_dto`, `pair_dto`, `menu_dto`, `order_dto`, `ticket_dto`, `table_dto`, `ws_event_dto`.
-- `repositories/` — `auth_repository`, `tables_repository`, `tickets_repository`, `menu_repository`, `zones_repository`, `staff_repository`, `roles_repository`, `audit_repository`. Each is a `StateNotifier` that hits the embedded server over HTTP/WS and re-emits domain models.
+- `repositories/` — `auth_repository`, `tables_repository`, `tickets_repository`, `menu_repository`, `zones_repository`, `staff_repository`, `roles_repository`, `audit_repository` (own shift), `venue_audit_repository` (venue-wide, paged). Each is a `StateNotifier` that hits the embedded server over HTTP/WS and re-emits domain models.
 - `services/` — `api_client` (HTTP + `apiConfigProvider`), `ws_client` (WebSocket fan-out), `mdns_browser_service`, `prefs_service`, `secure_storage_service`, `error_bus_service`.
 
 **`lib/server/`** — embedded shelf server (runs in-process in Server mode).
 - `server.dart` — bootstrap, mounts router, runs TLS listener.
 - `routes/` — `auth_routes`, `tables_routes`, `tickets_routes`, `menu_routes`, `reference_routes`, `health_routes`.
 - `db/` — Drift: `database.dart`, `tables.dart` (schema), `seed.dart` + `seed_data.dart` (DB seeded on first boot — no more `DummyData`).
+- `audit_log.dart` — **the** audit writer (`writeAudit`) + wire shape (`auditJson`). Every route that audits an act goes through it; hand-rolling the insert is how a new column reaches three call sites out of four.
 - `auth.dart` (PIN + JWT), `pairing.dart` (QR pair flow), `tls.dart` (self-signed cert), `mdns.dart` (advertise), `ws_hub.dart` (WebSocket broadcast).
 
 **`lib/core/log/`** — `sat_log.dart` (logger), `sat_nav_observer.dart` (router observer).
@@ -86,6 +87,7 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 - `/book` — **debug builds only** (`if (kDebugMode)`). Widget book: every `core/widgets/` widget in all its states against stub data, with theme/skin, text-scale, reduced-motion and phone/tablet toggles. In the pair-gate bypass set, so it works unpaired. Two entries: a debug button on `PinScreen` (pre-pairing) and a "Book" item at the foot of `TabletSideRail` (pushed, not `go`ne — back returns to your tab). Lives in `lib/ui/features/_book/`. See ADR-0054 — add an entry there in the same commit as a new shared widget.
 - `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
   - `/alerts` = alert config (thresholds + sounds + this-device mute), reached from the Venue hub. Gated `editSettings`.
+  - `/audit` = venue-wide integrity log (ADR-0067), reached from the Venue hub. Gated `viewReports`; admin rows need `manageStaff` on top, enforced server-side. **Tablet only** — the phone route renders an explanation.
 - **Outside the shell** (root-navigator pushes, full-page transitions):
   - `/table/:id` (+ `/menu`, `/review`, `/sent` subroutes) — order-taking flow.
   - `/menuadm/:id` — menu item editor.

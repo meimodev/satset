@@ -44,7 +44,7 @@ Never hardcode a `Color`, a spacing number, or a curve. Go through these.
 | `darken(Color, [amount])` | `colors.dart` | Far end of an avatar/badge gradient. Blends toward black so a saturated hue keeps its identity. |
 | `satBarrier`, `satMediaScrim`, `satShadowInk` | `colors.dart` | Dimming and shadow that must stay dark on *both* themes — modal barrier, label-over-photo scrim, ambient shadow. Not `sc.scrim`: that token is an opaque blend base and paints the layer underneath out entirely. |
 | `context.layout` | `layout.dart` | Phone/tablet breakpoints, `useTabletShell`. |
-| `courseVisual`, `roleVisual`, `zoneVisual` | `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart` | Course/role/zone color + icon. One hue vocabulary — don't re-map. |
+| `courseVisual`, `roleVisual`, `zoneVisual`, `auditTone` | `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart`, `audit_visuals.dart` | Course/role/zone/audit-type color + icon. One hue vocabulary — don't re-map. `auditTone` is shared by the personal feed and the venue log, so a void looks the same on both; it is an exhaustive switch, so a new `AuditType` won't compile until it has one. |
 | `format.dart` | `format.dart` | Currency, time, duration formatting. |
 
 User-facing strings go through `lib/core/localization/app_strings.dart`. Never inline.

@@ -177,7 +177,12 @@ Future<Expression<bool> Function($AuditEntriesTable)> _venueAuditFilter(
       ? const <String>{}
       : {for (final t in AuditType.values.where(isAdminAuditType)) t.name};
 
-  return (a) {
+  // The parameter type is spelled out on purpose. Left to inference here it
+  // lands as `dynamic`, every column comparison below becomes a dynamic call,
+  // and `isBiggerOrEqualValue` — an extension, so not dispatchable at runtime
+  // — throws NoSuchMethod on the first filtered request. It analyses clean
+  // either way, which is what makes it worth a comment.
+  return ($AuditEntriesTable a) {
     Expression<bool> e = const Constant(true);
     if (from != null) e = e & a.at.isBiggerOrEqualValue(from);
     if (wanted.isNotEmpty) e = e & a.type.isIn(wanted.toList());
