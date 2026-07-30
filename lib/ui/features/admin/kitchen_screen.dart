@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -254,7 +255,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
               child: Text(
-                'Antrian Persiapan',
+                AppStrings.kitchenQueueTitle,
                 style: SatType.h2(color: sc.textHi),
               ),
             ),
@@ -291,7 +292,7 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
     }
 
     return AdminPage(
-      title: 'Antrian Persiapan',
+      title: AppStrings.kitchenQueueTitle,
       sub:
           '${orders.length} order aktif · $itemCount item · tahan untuk tandai selesai',
       topTrailing: headTrailing,

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -29,8 +30,9 @@ import 'package:satset/ui/core/widgets/satset_top_bar.dart' show SatBackButton;
 class SatAppBar extends ConsumerWidget {
   final VoidCallback? onBack;
 
-  /// Path to the current screen, coarsest first: `['Meja', 'T5', 'Teras']`.
-  /// Tablet only.
+  /// Path to the current screen *below the venue*, coarsest first:
+  /// `['Meja 5', 'Teras']`. The venue's own name is prepended here rather than
+  /// at the call site — see [_venuePrefixed]. Tablet only.
   final List<String> crumbs;
 
   /// Extra status chips, rendered ahead of the sync indicator on both layouts.
@@ -52,8 +54,25 @@ class SatAppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.layout;
-    return l.useTabletShell ? _tablet(context) : _phone(context);
+    // Only the tablet branch renders crumbs, so the venue name is only read
+    // there — a phone bar must not subscribe to venue settings for nothing.
+    if (!l.useTabletShell) return _phone(context);
+    return _tablet(
+      context,
+      _venuePrefixed(
+        ref.watch(venueSettingsProvider.select((s) => s.displayName)),
+      ),
+    );
   }
+
+  /// Every trail in the app leads with the venue's name, prepended in one place
+  /// so no screen can forget it and none has to plumb the setting (ADR-0058).
+  /// An unnamed venue drops the segment rather than printing a placeholder that
+  /// would read as the Venue *hub* — the trail fails short, never confident.
+  List<String> _venuePrefixed(String venueName) => [
+    if (venueName.isNotEmpty) venueName,
+    ...crumbs,
+  ];
 
   Color _resolveBg(SatColors sc) {
     if (backgroundColor != null) return backgroundColor!;
@@ -127,7 +146,7 @@ class SatAppBar extends ConsumerWidget {
     );
   }
 
-  Widget _tablet(BuildContext context) {
+  Widget _tablet(BuildContext context, List<String> trail) {
     final sc = context.sat;
 
     return Container(
@@ -143,7 +162,7 @@ class SatAppBar extends ConsumerWidget {
             SatBackButton(onTap: onBack!),
             const SizedBox(width: Sp.s2h),
           ],
-          Expanded(child: _Crumbs(crumbs)),
+          Expanded(child: _Crumbs(trail)),
           const SizedBox(width: Sp.s4),
           for (final pill in trailingPills) ...[
             pill,
@@ -162,7 +181,8 @@ class SatAppBar extends ConsumerWidget {
   }
 }
 
-/// `Meja › T5 › Teras` — the trail, coarsest first, current segment brightest.
+/// `Warung Sebelah › Meja 5 › Teras` — the trail, coarsest first, current
+/// segment brightest.
 ///
 /// Ellipsizes as one line rather than wrapping: the bar is a fixed 64h and a
 /// second crumb line would push the rule off the slab.

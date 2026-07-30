@@ -12,7 +12,6 @@ import 'package:satset/data/repositories/guest_orders_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
-import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
 import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
@@ -28,19 +27,23 @@ String _firstSegment(String loc) {
   return parts.length > 1 ? '/${parts[1]}' : '/';
 }
 
-/// Shell routes that are a rail destination in their own right. Everything not
-/// listed belongs to the Venue hub — the default points at `venue`, not
-/// `tables`. See ADR-0058: the hub grows children (Stok, Peringatan, …) far more
-/// often than the app grows top-level destinations, and an unlisted hub child
-/// used to light up Meja. A *new top-level destination* must be added here or it
-/// will read as Venue.
-const _railRoutes = <String, String>{
-  '/tables': 'tables',
-  '/orders': 'orders',
-  '/guestorders': 'guest',
-  '/kitchen': 'kitchen',
-  '/kasir': 'kasir',
-  '/me': 'me',
+/// Shell routes that are a rail destination in their own right, each with the
+/// label that names it — `(rail id, crumb label)`. Everything not listed belongs
+/// to the Venue hub — the default points at `venue`, not `tables`. See ADR-0058:
+/// the hub grows children (Stok, Peringatan, …) far more often than the app
+/// grows top-level destinations, and an unlisted hub child used to light up
+/// Meja. A *new top-level destination* must be added here or it will read as
+/// Venue.
+///
+/// The label is the same `AppStrings.tab*` constant the rail button renders, so
+/// the trail and the rail cannot disagree about what a destination is called.
+const _railRoutes = <String, (String, String)>{
+  '/tables': ('tables', AppStrings.tabMeja),
+  '/orders': ('orders', AppStrings.tabPesanan),
+  '/guestorders': ('guest', AppStrings.tabMandiri),
+  '/kitchen': ('kitchen', AppStrings.tabAntrian),
+  '/kasir': ('kasir', AppStrings.tabKasir),
+  '/me': ('me', AppStrings.tabSaya),
 };
 
 /// Venue hub children → their crumb trail's tail segment. One map feeds both the
@@ -59,32 +62,23 @@ const venueHubCrumbs = <String, String>{
 };
 
 /// Which rail item owns [loc].
-String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)] ?? 'venue';
+String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)]?.$1 ?? 'venue';
 
-/// The crumb trail for [loc], given the rail item [activeTabFor] resolved it to.
-List<String> crumbsFor(
-  String loc,
-  String activeTab,
-  String zoneName,
-  String venueName,
-) {
-  switch (activeTab) {
-    case 'orders':
-      return [AppStrings.crumbTeras, AppStrings.crumbPesananSaya];
-    case 'guest':
-      return [AppStrings.crumbTeras, AppStrings.crumbPesananMandiri];
-    case 'me':
-      return ['Maya Anjani', AppStrings.crumbRingkasanShift];
-    case 'kitchen':
-      return ['Stasiun', AppStrings.crumbAntrianPersiapan];
-    case 'kasir':
-      return [AppStrings.tabKasir];
-    case 'venue':
-      return [AppStrings.venueHubTitle, ?venueHubCrumbs[_firstSegment(loc)]];
-    default:
-      final venue = venueName.isEmpty ? AppStrings.venueHubTitle : venueName;
-      return [venue, zoneName];
+/// The crumb trail for [loc], *without* the venue name — `SatAppBar` prepends
+/// that for every trail in the app, shell or pushed, so it is not repeated here.
+///
+/// One shape, no per-route cases: the destination that owns [loc], then the hub
+/// child's own label if it is one. `/me`'s tail is [userName] instead of `Saya`:
+/// on shared hardware "which account am I in?" is a live question, and the rail
+/// avatar shows initials only. An unnamed user falls back to the label.
+List<String> crumbsFor(String loc, String userName) {
+  final dest = _railRoutes[_firstSegment(loc)];
+  if (dest == null) {
+    // Venue hub: the hub itself, then the child screen if this path is one.
+    return [AppStrings.tabVenue, ?venueHubCrumbs[_firstSegment(loc)]];
   }
+  final (id, label) = dest;
+  return [id == 'me' && userName.isNotEmpty ? userName : label];
 }
 
 class AppShell extends ConsumerWidget {
@@ -109,10 +103,8 @@ class AppShell extends ConsumerWidget {
         ref.watch(authStateProvider).has(Capability.takeOrder) &&
         ref.watch(venueSettingsProvider.select((s) => s.guestOrderingEnabled));
     final guestCount = ref.watch(guestOrdersProvider).length;
-    final zones = ref.watch(zonesProvider);
-    final zoneName = zones.isEmpty ? '—' : zones.first.name;
-    final venueName = ref.watch(
-      venueSettingsProvider.select((s) => s.displayName),
+    final userName = ref.watch(
+      authStateProvider.select((s) => s.user?.name ?? ''),
     );
 
     if (l.useTabletShell) {
@@ -124,7 +116,7 @@ class AppShell extends ConsumerWidget {
           showKasir: showKasir,
           showGuest: showGuest,
           guestCount: guestCount,
-          crumbs: crumbsFor(loc, activeTab, zoneName, venueName),
+          crumbs: crumbsFor(loc, userName),
           child: Column(
             children: [
               const AdminGraceBanner(),

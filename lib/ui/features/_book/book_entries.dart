@@ -1174,7 +1174,8 @@ List<BookEntry> bookEntries() => [
           [_auth(BookStubs.waiterAuth), _ws(WsConnState.open)],
           SatAppBar(
             onBack: () {},
-            crumbs: const ['Teras', 'Meja 5', 'Pesanan'],
+            // Venue-less: the bar prepends the venue's own name itself.
+            crumbs: const ['Meja 5', 'Teras'],
           ),
         ),
       ),

@@ -249,22 +249,31 @@ class AppStrings {
   static const String zoneAdminDeleteTableConfirmSub =
       'akan dihapus permanen dari zona.';
 
-  // App Shell Tabs
+  // App Shell Tabs. Each of these is read twice — by the side rail button and
+  // by the crumb trail that names the same destination (ADR-0058). One constant
+  // per destination is what keeps the two saying the same word.
   static const String tabMeja = 'Meja';
   static const String tabPesanan = 'Pesanan';
   static const String tabMandiri = 'Mandiri';
+  static const String tabAntrian = 'Antrian';
   static const String tabKasir = 'Kasir';
+  static const String tabVenue = 'Venue';
   static const String tabSaya = 'Saya';
 
   /// Caps label ahead of the running shift timer in the tablet top bar.
   static const String shiftLabel = 'SHIFT';
 
-  // Breadcrumbs
-  static const String crumbTeras = 'Teras';
-  static const String crumbPesananSaya = 'Pesanan saya';
-  static const String crumbPesananMandiri = 'Pesanan mandiri';
-  static const String crumbRingkasanShift = 'Ringkasan shift';
-  static const String crumbAntrianPersiapan = 'Antrian Persiapan';
+  /// Heading of the kitchen queue screen (`/kitchen`), whose crumb tail is the
+  /// shorter [tabAntrian].
+  static const String kitchenQueueTitle = 'Antrian Persiapan';
+
+  // Breadcrumbs. Trail tails only — the venue name and the destination segment
+  // are prepended by SatAppBar and the tab* constants above.
+  static const String crumbTambahItem = 'Tambah item';
+  static const String crumbTinjau = 'Tinjau';
+  static const String crumbBawaPulang = 'Bawa pulang';
+  static const String crumbPesananBaru = 'Pesanan baru';
+  static const String crumbDiskon = 'Diskon';
   static const String crumbMenuAdmin = 'Menu admin';
   static const String crumbStafAkun = 'Staf & akun';
   static const String crumbLaporanShift = 'Laporan shift';

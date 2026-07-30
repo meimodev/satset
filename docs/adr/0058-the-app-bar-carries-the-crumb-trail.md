@@ -16,6 +16,12 @@ Amended again (see "Unlisted shell routes belong to the Venue hub" below) after
 rail item now come from one mapping, and the shell's default destination
 inverted from `tables` to `venue`.
 
+Amended a third time (see "Every segment is real, and the venue leads" below).
+Three of the five hand-written shell trails led with a design-mock literal
+(`Teras`, `Stasiun`, `Maya Anjani`). Every trail now leads with the venue's own
+name, prepended inside `SatAppBar`, and the per-route switch is gone. The
+single-segment `/kasir` consequence recorded below no longer holds.
+
 ## Context
 
 `SatAppBar` declared four public parameters — `title`, `crumbs`,
@@ -154,3 +160,88 @@ latent ordering trap — `/menuadm` starts with `/me`, and only survived because
 - `test/shell_active_tab_test.dart` pins path → (rail item, trail) for every
   shell route, plus the `/menuadm`-vs-`/me` collision and an unmapped hub path
   asserting the short trail. Pure functions, no pump.
+
+## Amendment — every segment is real, and the venue leads
+
+### Context
+
+The previous amendment fixed *which* switch answered for a route. It did not look
+at what the surviving cases said. Three of the five led with a literal lifted
+from the design mock and never revisited:
+
+- `/orders` and `/guestorders` → `Teras`, the name of a **seed zone**. The order
+  board deliberately mixes zones (`zoneName` is resolved per row, and takeaway
+  rows have none), so no zone was ever true for the screen.
+- `/kitchen` → `Stasiun`. There is no station in the domain — no model, no field.
+  A plausible-sounding word, invented.
+- `/me` → `Maya Anjani`, the mock user, while the real name sat on
+  `authStateProvider`.
+
+Two more were true-but-stale. `/tables` read `zones.first.name` while the zone a
+waiter is actually looking at is `_activeZone`, local `State` inside
+`TablesScreen` — and the screen already prints that zone in its own head, 40px
+below. `/orders`' tail `Pesanan saya` is false whenever `ordersShowAllProvider`
+is on.
+
+A bar that says where you are is worth more than the space it costs. A bar that
+says where you *aren't* is worse than a blank one, and five of six shell routes
+were doing that.
+
+### Decision
+
+**Every segment must be derivable from live state or a fixed destination name.**
+No invented segments. A segment with no source is omitted, not padded — extending
+"fail short, never confident" from hub children to the whole trail.
+
+**The venue's name leads every trail, prepended inside `SatAppBar`.** One place,
+so no screen can forget it and none has to plumb the setting. The alternative,
+per-call-site prefixing, is thirteen call sites that must each remember. An
+unnamed venue drops the segment rather than printing `Venue`, which would read as
+the hub. The phone branch does not read the setting at all — it renders no crumbs.
+
+**The trail's destination segment is the rail button's own label**, the same
+`AppStrings.tab*` constant, held in `_railRoutes` alongside the rail id. The rail
+and the trail naming the same destination differently was only ever prevented by
+two files being edited in lockstep; now it is structural. `tabAntrian` and
+`tabVenue` were added, and the six rail labels stopped being literals.
+
+**`crumbsFor`'s five cases collapsed to one shape** — destination, then hub child
+if it is one — with exactly one dynamic tail: `/me` renders the logged-in user's
+name instead of `Saya`. On shared hardware "which account am I in?" is a live
+question, the rail avatar shows initials only, and `Saya` is redundant with the
+avatar you just tapped. An unnamed user falls back to the label.
+
+**Pushed (non-shell) trails take the prefix too, and it was measured, not
+assumed.** IBM Plex Mono at 0.6em advance plus 0.04em tracking: monoS 11
+≈7px/char, monoM 13 ≈8.3px/char, separator ≈35px. The worst trail,
+`Warung Sebelah › Meja 12 › Teras`, is ≈322px against ≈495px of crumb slot at the
+600dp-shortest-side floor (960×600 landscape, minus rail 76, padding 48, back 50,
+gap 16, sync ≈110, shift ≈150) and ≈820px at 1280dp. It fits, so uniformity was
+affordable and the trails stay one shape everywhere.
+
+**The bare `Meja` segment was dropped where a table name follows.**
+`Meja › Meja 12` is an echo, and a table name identifies itself. Decided per
+screen, not by comparing strings at runtime — that would be magic that breaks on
+a renamed table. Tableless variants keep `Bawa pulang` / `Pesanan baru`, since
+nothing else in those trails names the flow.
+
+### Consequences
+
+- Trails now read `Warung Sebelah › Antrian`, `Warung Sebelah › Venue ›
+  Konfigurasi`, `Warung Sebelah › Meja 12 › Teras`. Hub children are three deep.
+- `crumbsFor(loc, userName)` no longer takes a zone or a venue, and `AppShell`
+  stopped watching `zonesProvider` — the zone left the trail entirely. It is
+  still on screen, in `TablesScreen`'s own head, where it tracks the selection.
+- `SatAppBar` watches `venueSettingsProvider` on tablet. Every bar in the app
+  rebuilds when the venue is renamed, which is correct and rare.
+- Deleted: `crumbTeras`, `crumbPesananSaya`, `crumbPesananMandiri`,
+  `crumbRingkasanShift`, and the `'Stasiun'` / `'Maya Anjani'` literals.
+  `crumbAntrianPersiapan` became `kitchenQueueTitle`, which is what it always
+  was — the kitchen screen's heading, now sourced from `AppStrings` at both of
+  its call sites rather than typed twice.
+- `test/shell_active_tab_test.dart` pins venue-less trails, since the prefix is
+  no longer that function's business. `test/tablet_crumb_prefix_test.dart` covers
+  the prefix and the unnamed-venue drop by reading the rendered span.
+- **A trail is now only as honest as the venue's `displayName`.** The server
+  accepts an empty one (it only `.trim()`s), which is why the drop-the-segment
+  branch exists rather than a placeholder.
