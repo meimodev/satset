@@ -15,10 +15,14 @@ import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
+import 'package:satset/ui/features/menu/view_models/menu_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
@@ -50,6 +54,67 @@ class MenuScreen extends ConsumerStatefulWidget {
 
 class _MenuScreenState extends ConsumerState<MenuScreen> {
   String _cat = 'mains';
+  final _search = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // The provider is autoDispose, so this is normally ''. Seeding keeps the
+    // field and the query in step if the provider outlived the last mount.
+    _search.text = ref.read(menuSearchProvider);
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  /// Picking a category clears the query — a live query ignores the category
+  /// entirely, so leaving it set would make the tap look like it did nothing.
+  void _selectCategory(String id) {
+    _clearSearch();
+    setState(() => _cat = id);
+  }
+
+  void _clearSearch() {
+    _search.clear();
+    ref.read(menuSearchProvider.notifier).state = '';
+  }
+
+  /// Shared by both layouts — the phone strip and the tablet header slot.
+  Widget _searchField(String query) => SatField.search(
+    controller: _search,
+    hint: 'Cari item, deskripsi…',
+    suffix: query.isEmpty
+        ? null
+        : SatIconButton.plain(
+            icon: Icons.close,
+            tooltip: AppStrings.hapusPencarian,
+            onTap: _clearSearch,
+            size: 32,
+          ),
+    onChanged: (t) => ref.read(menuSearchProvider.notifier).state = t,
+  );
+
+  /// Shown in place of the grid when a query matches nothing. An empty grid
+  /// alone is indistinguishable from a failed menu load, which this screen
+  /// already renders separately.
+  ///
+  /// Scrollable because this state only ever appears with the keyboard up —
+  /// which leaves the slot the grid had roughly 90dp tall, less than the
+  /// column needs. The grid itself scrolls for the same reason.
+  Widget _noMatches(String query) => SingleChildScrollView(
+    child: SatEmpty(
+      icon: Icons.search_off,
+      title: AppStrings.takAdaItemCocok,
+      body: '“$query”',
+      action: SatButton.outline(
+        label: AppStrings.hapusPencarian,
+        onTap: _clearSearch,
+      ),
+    ),
+  );
 
   bool get _isTakeaway => widget.takeawayVisitId != null;
   String get _backFallback => _isTakeaway
@@ -113,9 +178,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
 
     final menuStatus = ref.watch(menuStatusProvider);
     final allItems = ref.watch(menuItemsProvider);
-    final items = allItems
-        .where((i) => _cat == 'all' || i.categoryId == _cat)
-        .toList();
+    final query = ref.watch(menuSearchProvider);
+    final items = filterMenuItems(allItems, categoryId: _cat, query: query);
+    // A live query ignores the category entirely, so the chip row is hidden
+    // while searching rather than left showing a filter that is not applied.
+    final searching = query.trim().isNotEmpty;
+    final noMatches = items.isEmpty && searching;
 
     if (menuStatus.isLoading) {
       return Scaffold(
@@ -235,65 +303,49 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                             ],
                           ),
                         ),
-                        Container(
-                          height: 36,
-                          width: 200,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Sp.s3,
-                          ),
-                          decoration: SatBox.d(
-                            color: sc.bg2,
-                            border: SatB.all(color: sc.border0),
-                            borderRadius: SatR.a(10),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.search, size: 14, color: sc.textLo),
-                              const SizedBox(width: Sp.s2),
-                              Text(
-                                'Cari menu…',
-                                style: SatType.bodyM(color: sc.textLo),
-                              ),
-                            ],
-                          ),
-                        ),
+                        SizedBox(width: 280, child: _searchField(query)),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
-                    decoration: SatBox.d(
-                      border: Border(bottom: SatB.side(color: sc.border0)),
+                  if (!searching)
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
+                      decoration: SatBox.d(
+                        border: Border(bottom: SatB.side(color: sc.border0)),
+                      ),
+                      child: _CatTabs(active: _cat, onChange: _selectCategory),
                     ),
-                    child: _CatTabs(
-                      active: _cat,
-                      onChange: (id) => setState(() => _cat = id),
-                    ),
-                  ),
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final dynamicCols = l.responsiveColumns(
-                          constraints.maxWidth,
-                          minTileWidth: 175,
-                        );
-                        return GridView.count(
-                          crossAxisCount: dynamicCols,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.70,
-                          padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
-                          children: [
-                            for (final it in items)
-                              _ItemCard(
-                                item: it,
-                                inCart: inCartQty[it.id] ?? 0,
-                                onTap: () => _openItem(it),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
+                    child: noMatches
+                        ? _noMatches(query)
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              final dynamicCols = l.responsiveColumns(
+                                constraints.maxWidth,
+                                minTileWidth: 175,
+                              );
+                              return GridView.count(
+                                crossAxisCount: dynamicCols,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                                childAspectRatio: 0.70,
+                                padding: const EdgeInsets.fromLTRB(
+                                  28,
+                                  14,
+                                  28,
+                                  28,
+                                ),
+                                children: [
+                                  for (final it in items)
+                                    _ItemCard(
+                                      item: it,
+                                      inCart: inCartQty[it.id] ?? 0,
+                                      onTap: () => _openItem(it),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
@@ -345,57 +397,42 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Container(
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: Sp.s3),
-                  decoration: SatBox.d(
-                    color: sc.bg2,
-                    borderRadius: SatR.a(14),
-                    border: SatB.all(color: sc.border0),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search, size: 16, color: sc.textLo),
-                      const SizedBox(width: Sp.s2h),
-                      Text(
-                        'Cari menu…',
-                        style: SatType.bodyM(color: sc.textLo),
-                      ),
-                    ],
-                  ),
-                ),
+                child: _searchField(query),
               ),
-              _CatTabs(
-                active: _cat,
-                onChange: (id) => setState(() => _cat = id),
-              ),
-              const SizedBox(height: Sp.s2),
+              if (!searching) ...[
+                _CatTabs(active: _cat, onChange: _selectCategory),
+                const SizedBox(height: Sp.s2),
+              ],
               Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: l.contentMaxWidth),
-                    child: GridView.count(
-                      crossAxisCount: cols,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 0.74,
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        4,
-                        16,
-                        l.bottomInset + 80,
-                      ),
-                      children: [
-                        for (final it in items)
-                          _ItemCard(
-                            item: it,
-                            inCart: inCartQty[it.id] ?? 0,
-                            onTap: () => _openItem(it),
+                child: noMatches
+                    ? _noMatches(query)
+                    : Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: l.contentMaxWidth,
                           ),
-                      ],
-                    ),
-                  ),
-                ),
+                          child: GridView.count(
+                            crossAxisCount: cols,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 0.74,
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              4,
+                              16,
+                              l.bottomInset + 80,
+                            ),
+                            children: [
+                              for (final it in items)
+                                _ItemCard(
+                                  item: it,
+                                  inCart: inCartQty[it.id] ?? 0,
+                                  onTap: () => _openItem(it),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),
@@ -448,18 +485,14 @@ class _CatTabs extends ConsumerWidget {
         itemBuilder: (_, i) {
           final c = cats[i];
           final isActive = active == c.id;
-          // Glow's active category is a solid slab, not a tint: it sits in a
-          // row of transparent siblings on a bone ground, where a 34% wash of
-          // fluorescent lime reads as a highlighter smear rather than a state.
-          // On the dark palette the slab *is* the lime, per the source's
-          // `glowNoir` override.
+          // The selected category is the accent, flat, in every skin — every
+          // palette pairs its own `accentInk` with it, so this stays legible
+          // from lembut's amber through Glow's lime.
+          final activeFill = sc.accent;
+          final activeInk = sc.accentInk;
+          // Glow keeps its tighter label face on the chip; the colour above is
+          // skin-independent, this is not.
           final glow = SatShape.glow;
-          final activeFill = glow
-              ? (SatShape.glowNoir ? sc.accent : sc.slab.bg0)
-              : sc.accentSoft;
-          final activeInk = glow
-              ? (SatShape.glowNoir ? sc.accentInk : sc.slab.textHi)
-              : sc.accentText;
           return PressScale(
             child: GestureDetector(
               onTap: () => onChange(c.id),
@@ -801,8 +834,7 @@ class _TabletCartPane extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
                                       child: Text(
