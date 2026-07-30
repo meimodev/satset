@@ -47,6 +47,7 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   soundOverdue: json['soundOverdue'] as String? ?? 'alert',
   soundUngreeted: json['soundUngreeted'] as String? ?? 'chime',
   soundPickup: json['soundPickup'] as String? ?? 'chime',
+  soundGuestPending: json['soundGuestPending'] as String? ?? 'doorbell',
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -90,4 +91,5 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'soundOverdue': instance.soundOverdue,
   'soundUngreeted': instance.soundUngreeted,
   'soundPickup': instance.soundPickup,
+  'soundGuestPending': instance.soundGuestPending,
 };

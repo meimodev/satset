@@ -420,6 +420,11 @@ class VenueSettings extends Table {
   TextColumn get soundUngreeted =>
       text().withDefault(const Constant('chime'))();
   TextColumn get soundPickup => text().withDefault(const Constant('chime'))();
+
+  /// Preset for the guest-order arrival cue (ADR-0064). Defaults to a clip that
+  /// is *not* the ready chime: the two demand different actions.
+  TextColumn get soundGuestPending =>
+      text().withDefault(const Constant('doorbell'))();
   @override
   Set<Column> get primaryKey => {id};
 }

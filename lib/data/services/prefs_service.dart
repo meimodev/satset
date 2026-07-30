@@ -15,7 +15,6 @@ class PrefsService {
   static const _kMode = 'satset.app_mode';
   static const _kPairedHost = 'satset.paired.host';
   static const _kPairedPort = 'satset.paired.port';
-  static const _kAudioAlert = 'satset.audio_alert';
   static const _kMutedAlerts = 'satset.muted_alerts';
   static const _kDevicePrinters = 'satset.device_printers';
 
@@ -51,16 +50,11 @@ class PrefsService {
     }
   }
 
-  bool audioAlertEnabled() => _p.getBool(_kAudioAlert) ?? true;
-  Future<void> setAudioAlertEnabled(bool v) async {
-    await _p.setBool(_kAudioAlert, v);
-  }
-
-  /// Device-local per-event mute (ADR-0044). Orthogonal to the venue-wide
-  /// sound choice (which clip) and to the venue-wide `*AlertEnabled` flags
-  /// (venue policy) — this is one operator silencing one cue on their own
-  /// handset. Stored as preset-stable enum names so adding an event never
-  /// invalidates a stored set.
+  /// Device-local per-event mute — the *only* device-level audio axis
+  /// (ADR-0044). Orthogonal to the venue-wide sound choice (which clip) and to
+  /// the venue-wide `*AlertEnabled` flags (whether the cue sounds at all) —
+  /// this is one operator silencing one cue on their own handset. Stored as
+  /// preset-stable enum names so adding an event never invalidates a stored set.
   Set<AlertEvent> mutedAlerts() {
     final raw = _p.getStringList(_kMutedAlerts);
     if (raw == null || raw.isEmpty) return const {};
@@ -113,12 +107,6 @@ class PrefsService {
     await _p.setString(_kTheme, key);
   }
 }
-
-/// Live read of the audio-alert flag. Returns true while prefs are loading.
-final audioAlertEnabledProvider = Provider<bool>((ref) {
-  final p = ref.watch(prefsServiceProvider).valueOrNull;
-  return p?.audioAlertEnabled() ?? true;
-});
 
 /// Device-local muted cues. Empty = every cue this device's role receives
 /// will play. See ADR-0044.

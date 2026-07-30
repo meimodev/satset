@@ -131,11 +131,19 @@ class AlertSoundService {
       AlertEvent.overdue => s.soundOverdue,
       AlertEvent.ungreeted => s.soundUngreeted,
       AlertEvent.pickup => s.soundPickup,
+      AlertEvent.guestPending => s.soundGuestPending,
     };
     return resolveSoundId(event, stored);
   }
 
   void _onEvent(WsEventDto ev) {
+    // A guest order does not fire to the kitchen — it waits on a waiter to
+    // approve it, so the cue goes to waiter devices at submit, not to the
+    // pass. Without it the review queue was a passive badge (ADR-0064).
+    if (ev.type == WsEventTypes.guestOrderSubmitted) {
+      if (_mode == AppMode.client) _play(AlertEvent.guestPending);
+      return;
+    }
     if (ev.type != WsEventTypes.ticketCreated &&
         ev.type != WsEventTypes.ticketUpdated) {
       return;
@@ -335,12 +343,8 @@ class AlertSoundService {
 
   void _play(AlertEvent event) {
     final prefs = ref.read(prefsServiceProvider).valueOrNull;
-    if (!(prefs?.audioAlertEnabled() ?? true)) {
-      SatLog.vm('alert.skip ${event.name} (muted)');
-      return;
-    }
-    // Device-local per-event mute — one annoying cue no longer costs the
-    // operator every other cue (ADR-0044).
+    // Device-local per-event mute, the only device-level axis — one annoying
+    // cue never costs the operator every other cue (ADR-0044).
     if (prefs?.mutedAlerts().contains(event) ?? false) {
       SatLog.vm('alert.skip ${event.name} (event muted)');
       return;

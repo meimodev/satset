@@ -59,7 +59,9 @@ mixin _$VenueSettingsDto {
   int get reservationGraceMins => throw _privateConstructorUsedError;
 
   /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
-  /// unreviewed before the floor card goes critical. Visual only, never a cue.
+  /// unreviewed before the floor card goes critical. The *arrival* of a guest
+  /// order is announced immediately by `AlertEvent.guestPending` (ADR-0064);
+  /// this threshold is the standing state for one that went unanswered.
   int get pendingReviewMins => throw _privateConstructorUsedError;
   bool get ungreetedAlertEnabled => throw _privateConstructorUsedError;
   bool get pickupAlertEnabled => throw _privateConstructorUsedError;
@@ -73,6 +75,7 @@ mixin _$VenueSettingsDto {
   String get soundOverdue => throw _privateConstructorUsedError;
   String get soundUngreeted => throw _privateConstructorUsedError;
   String get soundPickup => throw _privateConstructorUsedError;
+  String get soundGuestPending => throw _privateConstructorUsedError;
 
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -130,6 +133,7 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     String soundOverdue,
     String soundUngreeted,
     String soundPickup,
+    String soundGuestPending,
   });
 }
 
@@ -186,6 +190,7 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? soundOverdue = null,
     Object? soundUngreeted = null,
     Object? soundPickup = null,
+    Object? soundGuestPending = null,
   }) {
     return _then(
       _value.copyWith(
@@ -341,6 +346,10 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.soundPickup
                 : soundPickup // ignore: cast_nullable_to_non_nullable
                       as String,
+            soundGuestPending: null == soundGuestPending
+                ? _value.soundGuestPending
+                : soundGuestPending // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -395,6 +404,7 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     String soundOverdue,
     String soundUngreeted,
     String soundPickup,
+    String soundGuestPending,
   });
 }
 
@@ -450,6 +460,7 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? soundOverdue = null,
     Object? soundUngreeted = null,
     Object? soundPickup = null,
+    Object? soundGuestPending = null,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -605,6 +616,10 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.soundPickup
             : soundPickup // ignore: cast_nullable_to_non_nullable
                   as String,
+        soundGuestPending: null == soundGuestPending
+            ? _value.soundGuestPending
+            : soundGuestPending // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -652,6 +667,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.soundOverdue = 'alert',
     this.soundUngreeted = 'chime',
     this.soundPickup = 'chime',
+    this.soundGuestPending = 'doorbell',
   });
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -751,7 +767,9 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   final int reservationGraceMins;
 
   /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
-  /// unreviewed before the floor card goes critical. Visual only, never a cue.
+  /// unreviewed before the floor card goes critical. The *arrival* of a guest
+  /// order is announced immediately by `AlertEvent.guestPending` (ADR-0064);
+  /// this threshold is the standing state for one that went unanswered.
   @override
   @JsonKey()
   final int pendingReviewMins;
@@ -785,10 +803,13 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final String soundPickup;
+  @override
+  @JsonKey()
+  final String soundGuestPending;
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, pendingReviewMins: $pendingReviewMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, guestOrderingEnabled: $guestOrderingEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, pendingReviewMins: $pendingReviewMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, guestOrderingEnabled: $guestOrderingEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, soundGuestPending: $soundGuestPending)';
   }
 
   @override
@@ -867,7 +888,9 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
             (identical(other.soundUngreeted, soundUngreeted) ||
                 other.soundUngreeted == soundUngreeted) &&
             (identical(other.soundPickup, soundPickup) ||
-                other.soundPickup == soundPickup));
+                other.soundPickup == soundPickup) &&
+            (identical(other.soundGuestPending, soundGuestPending) ||
+                other.soundGuestPending == soundGuestPending));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -912,6 +935,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     soundOverdue,
     soundUngreeted,
     soundPickup,
+    soundGuestPending,
   ]);
 
   /// Create a copy of VenueSettingsDto
@@ -971,6 +995,7 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final String soundOverdue,
     final String soundUngreeted,
     final String soundPickup,
+    final String soundGuestPending,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -1040,7 +1065,9 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   int get reservationGraceMins;
 
   /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
-  /// unreviewed before the floor card goes critical. Visual only, never a cue.
+  /// unreviewed before the floor card goes critical. The *arrival* of a guest
+  /// order is announced immediately by `AlertEvent.guestPending` (ADR-0064);
+  /// this threshold is the standing state for one that went unanswered.
   @override
   int get pendingReviewMins;
   @override
@@ -1063,6 +1090,8 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   String get soundUngreeted;
   @override
   String get soundPickup;
+  @override
+  String get soundGuestPending;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

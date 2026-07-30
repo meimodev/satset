@@ -250,6 +250,11 @@ class _ThresholdCard extends ConsumerWidget {
 /// two audible cues) a venue-wide on/off. "Off" is this switch, never a
 /// degenerate threshold — a disabled cue and a mistyped one must stay
 /// distinguishable (ADR-0044).
+///
+/// The switch silences the **sound** only. The threshold keeps driving the
+/// floor card's standing state and the report SLA, so the stepper stays live
+/// when the switch is off — locking it implied the number had stopped
+/// mattering, which was never true.
 class _MinutesRow extends StatelessWidget {
   const _MinutesRow({
     required this.label,
@@ -285,10 +290,7 @@ class _MinutesRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: SatType.bodyM(color: on ? sc.textMd : sc.textLo),
-                ),
+                Text(label, style: SatType.bodyM(color: sc.textMd)),
                 const SizedBox(height: Sp.sHair),
                 Text(hint, style: SatType.bodyS(color: sc.textLo)),
               ],
@@ -305,7 +307,7 @@ class _MinutesRow extends StatelessWidget {
           _step(
             sc,
             Icons.remove,
-            on && value > min ? () => onChanged(value - step) : null,
+            value > min ? () => onChanged(value - step) : null,
           ),
           const SizedBox(width: Sp.s2),
           SizedBox(
@@ -313,14 +315,14 @@ class _MinutesRow extends StatelessWidget {
             child: Text(
               '$value min',
               textAlign: TextAlign.center,
-              style: SatType.monoM(color: on ? sc.textHi : sc.textLo),
+              style: SatType.monoM(color: sc.textHi),
             ),
           ),
           const SizedBox(width: Sp.s2),
           _step(
             sc,
             Icons.add,
-            on && value < max ? () => onChanged(value + step) : null,
+            value < max ? () => onChanged(value + step) : null,
           ),
         ],
       ),
@@ -376,6 +378,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     (AlertEvent.overdue, AppStrings.venueSettingsSoundOverdue),
     (AlertEvent.ungreeted, AppStrings.venueSettingsSoundUngreeted),
     (AlertEvent.pickup, AppStrings.venueSettingsSoundPickup),
+    (AlertEvent.guestPending, AppStrings.venueSettingsSoundGuestPending),
   ];
 
   String _currentId(VenueSettingsDto s, AlertEvent e) => switch (e) {
@@ -385,6 +388,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     AlertEvent.overdue => s.soundOverdue,
     AlertEvent.ungreeted => s.soundUngreeted,
     AlertEvent.pickup => s.soundPickup,
+    AlertEvent.guestPending => s.soundGuestPending,
   };
 
   void _patch(AlertEvent e, String id) {
@@ -402,6 +406,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
         n.patch(soundUngreeted: id);
       case AlertEvent.pickup:
         n.patch(soundPickup: id);
+      case AlertEvent.guestPending:
+        n.patch(soundGuestPending: id);
     }
   }
 
@@ -554,6 +560,7 @@ class _DeviceMuteCard extends ConsumerWidget {
     AlertEvent.overdue: AppStrings.venueSettingsSoundOverdue,
     AlertEvent.ungreeted: AppStrings.venueSettingsSoundUngreeted,
     AlertEvent.pickup: AppStrings.venueSettingsSoundPickup,
+    AlertEvent.guestPending: AppStrings.venueSettingsSoundGuestPending,
   };
 
   /// Mirrors the routing in `AlertSoundService`: the kitchen (Server mode)
@@ -568,6 +575,7 @@ class _DeviceMuteCard extends ConsumerWidget {
     AlertEvent.voided,
     AlertEvent.ungreeted,
     AlertEvent.pickup,
+    AlertEvent.guestPending,
   };
 
   @override

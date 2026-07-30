@@ -132,6 +132,7 @@ class AppStrings {
   static const String venueSettingsSoundOverdue = 'Lewat waktu';
   static const String venueSettingsSoundUngreeted = 'Belum dilayani';
   static const String venueSettingsSoundPickup = 'Menunggu diantar';
+  static const String venueSettingsSoundGuestPending = 'Pesanan tamu masuk';
 
   // Waktu & Peringatan (ADR-0043/0044). Every service threshold lives in one
   // named section — an owner chasing "why does the floor beep" looks for
@@ -143,10 +144,12 @@ class AppStrings {
       'Menu tanpa "Waktu siap" sendiri ikut angka ini.';
   static const String venueSettingsTimingPickup = 'Menunggu diantar';
   static const String venueSettingsTimingPickupHint =
-      'Makanan siap tapi belum diantar selama ini.';
+      'Makanan siap tapi belum diantar selama ini. '
+      'Saklar mematikan bunyinya saja — tanda di kartu meja tetap jalan.';
   static const String venueSettingsTimingUngreeted = 'Belum dilayani';
   static const String venueSettingsTimingUngreetedHint =
-      'Meja terisi tapi belum ada pesanan terkirim.';
+      'Meja terisi tapi belum ada pesanan terkirim. '
+      'Saklar mematikan bunyinya saja — tanda di kartu meja tetap jalan.';
   static const String venueSettingsTimingUngreetedEscalate =
       'Naik ke semua waiter setelah';
   static const String venueSettingsTimingUngreetedEscalateHint =

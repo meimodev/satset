@@ -433,6 +433,17 @@ final menuItemsProvider = Provider<List<MenuItem>>(
   (ref) => ref.watch(menuRepositoryProvider).items,
 );
 
+/// Item id → its own `Waktu siap` override, null where the item inherits the
+/// venue default. Built once per menu snapshot so the KDS, the order boards and
+/// the alert sweep can all resolve a line's target without re-scanning the menu
+/// per line. See ADR-0043.
+/// `dependencies` is required, not decorative: the widget book overrides
+/// [menuItemsProvider] in a nested scope, and without this declaration this
+/// provider would keep serving the root menu inside it.
+final prepTimeByItemProvider = Provider<Map<String, int?>>((ref) {
+  return {for (final i in ref.watch(menuItemsProvider)) i.id: i.prepTime};
+}, dependencies: [menuItemsProvider]);
+
 /// All tags, snapshot order (sorted server-side by kind+sortOrder).
 final menuTagsProvider = Provider<List<MenuTag>>(
   (ref) => ref.watch(menuRepositoryProvider).tags,

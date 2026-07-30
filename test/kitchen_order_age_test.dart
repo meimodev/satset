@@ -10,9 +10,10 @@ Ticket _line({
   Duration sent = Duration.zero,
   Duration? fired,
   Duration? ready,
+  String itemId = 'i',
 }) => Ticket(
-  id: 's$sent$status',
-  itemId: 'i',
+  id: 's$sent$status$itemId',
+  itemId: itemId,
   name: 'Nasi Goreng',
   course: CourseId.mains,
   price: 25000,
@@ -23,14 +24,21 @@ Ticket _line({
   readyAtTime: ready == null ? null : _t0.add(ready),
 );
 
-KitchenOrder _order(List<Ticket> tickets, Duration nowOffset, {DateTime? fb}) =>
-    KitchenOrder.resolve(
-      tableId: 'T1',
-      sentAt: '12:00',
-      tickets: tickets,
-      now: _t0.add(nowOffset),
-      fallbackFreeze: fb,
-    );
+KitchenOrder _order(
+  List<Ticket> tickets,
+  Duration nowOffset, {
+  DateTime? fb,
+  int venueTargetMins = 10,
+  Map<String, int?> prepByItem = const {},
+}) => KitchenOrder.resolve(
+  tableId: 'T1',
+  sentAt: '12:00',
+  tickets: tickets,
+  now: _t0.add(nowOffset),
+  venueTargetMins: venueTargetMins,
+  prepByItem: prepByItem,
+  fallbackFreeze: fb,
+);
 
 void main() {
   test('complete batch freezes at its last ready stamp', () {
@@ -41,9 +49,93 @@ void main() {
 
     expect(o.complete, isTrue);
     expect(o.age, const Duration(minutes: 14));
-    // 14m is past the 10m threshold, but a finished batch is not work.
+    // 14m is past the 10m target, but a finished batch is not work.
     expect(o.late, isFalse);
     expect(o.warn, isFalse);
+  });
+
+  group('the target is the venue setting, resolved per line (ADR-0043)', () {
+    test('a batch of inherit-only lines uses the venue default', () {
+      final lines = [_line(status: TicketStatus.prep)];
+      expect(_order(lines, const Duration(minutes: 12)).targetMins, 10);
+      // Move the venue knob and the board moves with it — the whole point of
+      // the setting, and what the old hardcoded 10 ignored.
+      expect(
+        _order(lines, const Duration(minutes: 12), venueTargetMins: 20).late,
+        isFalse,
+      );
+    });
+
+    test("a batch of fast items is late on its own clock, not the venue's", () {
+      final o = _order(
+        [_line(status: TicketStatus.prep, itemId: 'teh')],
+        const Duration(minutes: 6),
+        venueTargetMins: 15,
+        prepByItem: const {'teh': 5},
+      );
+
+      expect(o.targetMins, 5);
+      expect(o.late, isTrue, reason: 'a 6-minute-old 5-minute drink is late');
+    });
+
+    test('the slowest line paces the batch', () {
+      final o = _order(
+        [
+          _line(status: TicketStatus.prep, itemId: 'teh'),
+          _line(status: TicketStatus.prep, itemId: 'iga'),
+        ],
+        const Duration(minutes: 20),
+        venueTargetMins: 15,
+        prepByItem: const {'teh': 5, 'iga': 40},
+      );
+
+      expect(o.targetMins, 40);
+      expect(
+        o.late,
+        isFalse,
+        reason: 'the drink must not drag the grill order into red',
+      );
+    });
+
+    test('an item with no override inherits inside a mixed batch', () {
+      final o = _order(
+        [
+          _line(status: TicketStatus.prep, itemId: 'teh'),
+          _line(status: TicketStatus.prep, itemId: 'nasi'),
+        ],
+        const Duration(minutes: 1),
+        venueTargetMins: 15,
+        prepByItem: const {'teh': 5, 'nasi': null},
+      );
+
+      expect(o.targetMins, 15);
+    });
+
+    test('warn is 0.7 of the batch target, not a second constant', () {
+      final lines = [_line(status: TicketStatus.prep, itemId: 'iga')];
+      const prep = {'iga': 40};
+
+      expect(
+        _order(
+          lines,
+          const Duration(minutes: 28),
+          prepByItem: prep,
+        ).warn,
+        isTrue,
+      );
+      expect(
+        _order(
+          lines,
+          const Duration(minutes: 27),
+          prepByItem: prep,
+        ).warn,
+        isFalse,
+      );
+      // Late outranks warn — they never both read true.
+      final red = _order(lines, const Duration(minutes: 41), prepByItem: prep);
+      expect(red.late, isTrue);
+      expect(red.warn, isFalse);
+    });
   });
 
   test('incomplete batch runs live and can be late', () {

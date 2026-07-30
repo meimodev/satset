@@ -182,6 +182,9 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         soundUngreeted: body.containsKey('soundUngreeted')
             ? Value((body['soundUngreeted'] as String).trim())
             : const Value.absent(),
+        soundGuestPending: body.containsKey('soundGuestPending')
+            ? Value((body['soundGuestPending'] as String).trim())
+            : const Value.absent(),
         soundPickup: body.containsKey('soundPickup')
             ? Value((body['soundPickup'] as String).trim())
             : const Value.absent(),
@@ -336,6 +339,7 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   'soundOverdue': s.soundOverdue,
   'soundUngreeted': s.soundUngreeted,
   'soundPickup': s.soundPickup,
+  'soundGuestPending': s.soundGuestPending,
 };
 
 /// Best-effort private LAN IPv4 the server is reachable at, for building guest

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
-import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -24,7 +23,6 @@ import 'package:satset/data/services/printer_discovery_service.dart';
 import 'package:satset/data/repositories/system_status_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
-import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -436,33 +434,16 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     );
   }
 
+  // Audio lives entirely on /alerts (ADR-0044): a device-wide "Alert audio"
+  // switch here silently overrode the per-event mute list two screens away, so
+  // an operator who muted one cue there could not tell why nothing sounded.
   Widget _opsCard(BuildContext context, SatColors sc) {
-    final audio = ref.watch(audioAlertEnabledProvider);
     return _sectionCard(
       context,
       sc,
       title: 'Operasional',
       tag: 'RUNTIME',
       rows: [
-        AdminRow(
-          label: 'Alert audio',
-          value: Row(
-            children: [
-              const Spacer(),
-              SatToggle(
-                value: audio,
-                semanticLabel: 'Alert audio',
-                onChanged: (v) async {
-                  final prefs = ref.read(prefsServiceProvider).valueOrNull;
-                  if (prefs == null) return;
-                  await prefs.setAudioAlertEnabled(v);
-                  if (!context.mounted) return;
-                  ref.invalidate(prefsServiceProvider);
-                },
-              ),
-            ],
-          ),
-        ),
         AdminRow(
           label: 'Tindakan',
           value: Row(
@@ -574,9 +555,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                   context,
                   sc,
                   label: 'Operasional',
-                  value: ref.watch(audioAlertEnabledProvider)
-                      ? 'Audio on'
-                      : 'Audio off',
+                  value: 'Mulai ulang server',
                   onTap: () => _openDetail(
                     context,
                     'Operasional',
