@@ -5,8 +5,8 @@
 // number on the one screen whose entire job is being trustworthy. That is why
 // these five and not others.
 //
-// See docs/adr/0066-kitchen-ownership-freezes-a-line.md and
-// docs/adr/0067-venue-audit-log.md.
+// See docs/adr/0071-kitchen-ownership-freezes-a-line.md and
+// docs/adr/0072-venue-audit-log.md.
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;

@@ -19,7 +19,7 @@ import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import '_common.dart';
 
-/// The venue-wide integrity log (ADR-0067).
+/// The venue-wide integrity log (ADR-0072).
 ///
 /// Tablet only, deliberately: six columns side by side is what lets a manager
 /// scan forty rows for the one that looks wrong, and a phone cannot show them

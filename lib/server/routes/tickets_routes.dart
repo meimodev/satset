@@ -247,6 +247,10 @@ Future<SubmitOrderResult> submitOrder(
   required List<Map<String, dynamic>> lines,
   bool takeaway = false,
   String? guestName,
+  /// How a takeaway reached the venue, and whether an aggregator already
+  /// settled it. Ignored for dine-in. ADR-0066.
+  String takeawayChannel = 'bungkus',
+  bool takeawayPrepaid = false,
   String? appendVisitId,
   String? actorId,
   bool canOverrideStock = false,
@@ -292,6 +296,10 @@ Future<SubmitOrderResult> submitOrder(
               ? guestName
               : 'Bawa pulang',
           actorId: actorId,
+          // ADR-0066. Defaults to a walk-in wanting it wrapped, which is what
+          // every takeaway was before the channel existed.
+          channel: takeawayChannel,
+          prepaid: takeawayPrepaid,
         );
         visitId = v.id;
       }
@@ -493,6 +501,8 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       lines: lines,
       takeaway: takeaway,
       guestName: guestName,
+      takeawayChannel: (body['channel'] as String?) ?? 'bungkus',
+      takeawayPrepaid: body['prepaid'] == true,
       appendVisitId: appendVisitId,
       actorId: actorId,
       canOverrideStock: canOverrideStock,
@@ -548,7 +558,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   /// someone is already cooking, so from `sent` onward the sole remedy is a
   /// void with a reason. That freeze is the whole rule; this route enforces it
   /// with a 409 rather than trusting the UI to hide the button. See
-  /// docs/adr/0066-kitchen-ownership-freezes-a-line.md.
+  /// docs/adr/0071-kitchen-ownership-freezes-a-line.md.
   ///
   /// Variant is deliberately *not* editable: a different variant is a
   /// different dish at a different price, and often a different station.

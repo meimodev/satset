@@ -125,7 +125,7 @@ class VenueAuditState {
   );
 }
 
-/// The venue-wide integrity log (ADR-0067) — every actor, paged back through
+/// The venue-wide integrity log (ADR-0072) — every actor, paged back through
 /// history, behind `viewReports`.
 ///
 /// Separate from [AuditRepository], which is one user's own shift and caches a

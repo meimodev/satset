@@ -1,4 +1,4 @@
-# ADR-0067 — The venue audit log
+# ADR-0072 — The venue audit log
 
 ## Status
 
@@ -60,7 +60,7 @@ negative means; sign bugs on this screen are the expensive kind. Null where
 money is not the point.
 
 **Actor name and role are snapshotted at write time**, with a live join as
-fallback for pre-v42 rows. An audit trail that a later rename or deletion can
+fallback for pre-v43 rows. An audit trail that a later rename or deletion can
 rewrite is not one.
 
 **Export is server-rendered and unpaged.** The client holds only the pages it
@@ -87,11 +87,11 @@ learn the feature exists.
 
 ## Consequences
 
-Rows written before schema v42 have no amount and no actor snapshot, and
+Rows written before schema v43 have no amount and no actor snapshot, and
 comps among them remain typed as voids. The screen renders `—` rather than
 guessing.
 
-The tile set diverges from the design prototype. "Refire" is gone (ADR-0066),
+The tile set diverges from the design prototype. "Refire" is gone (ADR-0071),
 and "Total events" is demoted to the sub-header in favour of a second money
 tile — every tile now answers "did money move oddly?", which is what the
 screen is for.

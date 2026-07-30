@@ -217,7 +217,7 @@ Future<Map<String, dynamic>> _venueAuditSummary(
   };
 }
 
-/// Render rows, resolving attribution for pre-v42 entries that carry no
+/// Render rows, resolving attribution for pre-v43 entries that carry no
 /// snapshot. Batched into two queries regardless of page size — a per-row join
 /// would turn a 50-row page into 100 round trips.
 Future<List<Map<String, dynamic>>> _auditJsonWithFallback(
@@ -769,7 +769,7 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     return _ok([for (final e in rows) auditJson(e)]);
   });
 
-  /// The **venue-wide** integrity log (ADR-0067) — every actor, paged back
+  /// The **venue-wide** integrity log (ADR-0072) — every actor, paged back
   /// through history. Deliberately a separate route from `/audit` above rather
   /// than a parameter on it: that one's whole contract is that scope comes from
   /// the bearer and cannot be widened by a query string, and this one is a

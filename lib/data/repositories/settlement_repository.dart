@@ -108,17 +108,52 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return Bill.fromJson((map['bill'] as Map).cast<String, dynamic>());
   }
 
+  /// Mint a receipt. [lines] assigns in the same transaction — the
+  /// tap-to-select-and-pay fast path needs mint + assign to be one act, so a
+  /// failure cannot strand a half-built receipt on the bill (ADR-0067).
   Future<Bill> createReceipt(
     String visitId, {
     String mode = 'itemized',
     String? label,
     bool assignAll = false,
+    List<BillReceiptLine> lines = const [],
+  }) async => (await mintReceipt(
+    visitId,
+    mode: mode,
+    label: label,
+    assignAll: assignAll,
+    lines: lines,
+  )).bill;
+
+  /// As [createReceipt], but hands back the new receipt's id.
+  ///
+  /// The settle pane mints and pays in one gesture (ADR-0067), so it needs the
+  /// id the route already returns and [createReceipt] discards.
+  Future<({String receiptId, Bill bill})> mintReceipt(
+    String visitId, {
+    String mode = 'itemized',
+    String? label,
+    bool assignAll = false,
+    List<BillReceiptLine> lines = const [],
   }) async {
     final raw = await ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/receipts',
-      {'mode': mode, 'label': ?label, 'assignAll': assignAll},
+      {
+        'mode': mode,
+        'label': ?label,
+        'assignAll': assignAll,
+        if (lines.isNotEmpty)
+          'lines': [
+            for (final l in lines)
+              {'ticketId': l.ticketId, 'qtyUnits': l.qtyUnits},
+          ],
+      },
     );
-    return _billFrom(raw);
+    final map = (raw as Map).cast<String, dynamic>();
+    return (
+      receiptId: map['receiptId'] as String,
+      bill: Bill.fromJson((map['bill'] as Map).cast<String, dynamic>()),
+    );
   }
 
   Future<Bill> deleteReceipt(String receiptId) async {
@@ -294,6 +329,33 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   }) async {
     final raw = await ref.read(apiClientProvider).postJson(
       '/settlement/receipts/$receiptId/discounts/$discountId/remove',
+      {'approverPin': ?approverPin},
+    );
+    return _billFrom(raw);
+  }
+
+  /// The table-wide promo (ADR-0070). Attaches to the visit, not a receipt, so
+  /// it can be applied before the first receipt is minted — which under
+  /// ADR-0067 is most of the time. Rejected once any receipt is paid.
+  Future<Bill> applyBillDiscount(
+    String visitId, {
+    required String presetId,
+    String? approverPin,
+  }) async {
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/visits/$visitId/discounts',
+      {'presetId': presetId, 'approverPin': ?approverPin},
+    );
+    return _billFrom(raw);
+  }
+
+  Future<Bill> removeBillDiscount(
+    String visitId,
+    String discountId, {
+    String? approverPin,
+  }) async {
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/visits/$visitId/discounts/$discountId/remove',
       {'approverPin': ?approverPin},
     );
     return _billFrom(raw);

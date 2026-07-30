@@ -250,7 +250,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   }
 
   /// Flip an item's sold-out state. [reason] rides along on the *kill*
-  /// direction only and lands on the audit row (ADR-0067) — "Burger off" with
+  /// direction only and lands on the audit row (ADR-0072) — "Burger off" with
   /// no why tells a manager reading the log nothing.
   Future<void> toggleAvailability(String id, {String? reason}) async {
     final cur = state.items.where((i) => i.id == id).firstOrNull;

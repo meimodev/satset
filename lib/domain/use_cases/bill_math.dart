@@ -215,11 +215,84 @@ List<MoneyBreakdown> splitItemized(
 }
 
 /// Even split of [billTotal] into [n] receipts, remainder onto the first.
+///
+/// Exact to the rupiah. Use [distributeEvenRounded] for shares a guest is
+/// actually asked to hand over — nobody pays Rp 87.334.
 List<int> distributeEven(int billTotal, int n) {
   if (n <= 0) return const [];
   final base = billTotal ~/ n;
   final out = List<int>.filled(n, base);
   out[0] += billTotal - base * n;
+  return out;
+}
+
+/// Is every rupiah of the bill claimed by some receipt?
+///
+/// The predicate that decides whether a bill can be settled — and, since
+/// ADR-0069, whether it **closes itself**. Two decisions hang off it, so it is
+/// a named pure function rather than an expression buried in a route.
+///
+/// Two readings, because there are two kinds of receipt (ADR-0068):
+///
+/// - [allUnitsAssigned] — every unit owned by an itemized receipt. For a purely
+///   itemized bill this is the answer, and it agrees with the money reading
+///   because `splitItemized` targets the bill total exactly once assignment is
+///   complete.
+/// - [receiptsClaim] ≥ [billTotal] — an amount receipt owns no lines, so on a
+///   bill holding one the question is a money question.
+///
+/// A bill with **no receipts at all** is never fully assigned, whatever the
+/// arithmetic says: nobody has claimed anything.
+bool isFullyAssigned({
+  required bool hasReceipts,
+  required bool allUnitsAssigned,
+  required int receiptsClaim,
+  required int billTotal,
+}) =>
+    hasReceipts && (allUnitsAssigned || receiptsClaim >= billTotal);
+
+/// The smallest note/coin a guest is asked to produce. Rp 100 is the smallest
+/// denomination still in real circulation here.
+const int cashRoundingStep = 100;
+
+/// Even split of [billTotal] into [n] **note-friendly** shares (ADR-0068).
+///
+/// Each head is rounded **up** to [step] and the resulting surplus is handed
+/// back walking from the last head forward, so the people who pay earliest hand
+/// over round numbers and the shortfall accrues to whoever pays latest. The
+/// sub-step remainder can only ever sit on one head, and it goes to the last one
+/// for the same reason.
+///
+/// Contrast the design source, which rounds to Rp 1.000 and lets the final payer
+/// absorb the whole difference — on a small bill that produces a payer who owes
+/// nothing. Spreading the surplus means no share is zero and no single payer is
+/// the unlucky one.
+///
+/// Always sums to [billTotal] exactly. Falls back to [distributeEven] when the
+/// bill is too small for [step] to mean anything (`billTotal < n * step`),
+/// because rounding a Rp 50 bill across two heads can only invent money.
+List<int> distributeEvenRounded(
+  int billTotal,
+  int n, {
+  int step = cashRoundingStep,
+}) {
+  if (n <= 0) return const [];
+  if (step <= 1 || billTotal <= 0 || billTotal < n * step) {
+    return distributeEven(billTotal, n);
+  }
+  // ceil(billTotal / n / step) * step, in integers.
+  final hi = ((billTotal + n * step - 1) ~/ (n * step)) * step;
+  final out = List<int>.filled(n, hi);
+  var surplus = hi * n - billTotal; // < n * step by construction
+  final ragged = surplus % step;
+  if (ragged > 0) {
+    out[n - 1] -= ragged;
+    surplus -= ragged;
+  }
+  for (var i = n - 1; i >= 0 && surplus > 0; i--) {
+    out[i] -= step;
+    surplus -= step;
+  }
   return out;
 }
 

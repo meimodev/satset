@@ -143,6 +143,10 @@ void main() {
       '_ThemeIconButton',
       // Animated availability pill that cross-fades success<->urgent on tap.
       '_StatusToggle',
+      // A cash-pad key: two lines (denomination over a ×N count) whose fill is
+      // driven by the running tally, in a fixed 7-key grid. SatButton is a
+      // single-label horizontal row with no count and no per-key state.
+      '_NoteButton',
     };
     final hits = <String>[];
     for (final file in files) {

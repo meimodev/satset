@@ -598,3 +598,15 @@ const Color satQrQuiet = Color(0xFFFFFFFF);
 /// uses `SatShape.hardShadow` instead. Opacity belongs to the caller: a floating
 /// tab bar sits higher than a chip and casts accordingly.
 const Color satShadowInk = Color(0xFF000000);
+
+/// Thermal roll, and the two inks on it — for the print **preview** (ADR-0066),
+/// which is a picture of a physical object rather than a surface of the app.
+///
+/// Deliberately outside the palette on every theme and skin: re-skinning the
+/// preview would make it disagree with the thing it previews, and the cashier
+/// is looking at it precisely to check what the paper will say. Same reasoning
+/// as [satQrQuiet] and [satMediaChrome] — some surfaces answer to the world,
+/// not the theme.
+const Color satPaperGround = Color(0xFFF7F5F0);
+const Color satPaperInk = Color(0xFF1A1A1A);
+const Color satPaperFaint = Color(0xFF6B6B6B);

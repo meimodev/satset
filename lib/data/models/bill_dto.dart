@@ -45,15 +45,38 @@ class BillSummary {
   final DateTime? tableFreedAt;
   final int pax;
   final String? guestName;
+
+  /// The card leads with the zone (dine-in) or the [channel] (takeaway), and
+  /// states how long the party has been sitting.
+  final String zoneId;
+  final DateTime? openedAt;
+
+  /// bungkus | telepon | gofood | grab, empty for dine-in. The card's channel
+  /// pill — a takeaway's stand-in for a dine-in's zone. ADR-0066.
+  final String channel;
+
+  /// An aggregator already settled this order, so there is nothing to collect.
+  /// Not derived from [channel]: an aggregator order can be cash-on-delivery.
+  final bool prepaid;
   final int total;
   final int paidAmount;
   final int outstanding;
   final int receiptCount;
 
-  /// Letter + paid-ness per receipt, in bill order — the `/kasir` tile's
-  /// progress strip. Empty on a bill whose method has not been chosen yet.
-  /// ADR-0063.
+  /// Sent, non-voided lines on the bill — the card's `N item` pill.
+  final int lineCount;
+
+  /// The bill-scope discount's name, or null. The card states it by name; the
+  /// amount alone would read as an unexplained cut. ADR-0070.
+  final String? billDiscountLabel;
+
+  /// Letter + paid-ness per receipt, in bill order — the `/kasir` card's
+  /// progress strip. Empty on a bill nobody has paid into yet. ADR-0063.
   final List<BillSummaryReceipt> receipts;
+
+  /// itemized | even | **mixed**. A description of what the receipts are, not a
+  /// setting — mode is chosen per payment since ADR-0067, so one bill can hold
+  /// both kinds.
   final String mode;
   final bool fullySettled;
 
@@ -67,16 +90,30 @@ class BillSummary {
     required this.tableFreedAt,
     required this.pax,
     required this.guestName,
+    required this.zoneId,
+    required this.openedAt,
+    required this.channel,
+    required this.prepaid,
     required this.total,
     required this.paidAmount,
     required this.outstanding,
     required this.receiptCount,
+    required this.lineCount,
+    required this.billDiscountLabel,
     required this.receipts,
     required this.mode,
     required this.fullySettled,
   });
 
   bool get isTakeaway => kind == 'takeaway';
+
+  /// Amount receipts on this bill, and how many are settled — the card's
+  /// `Bagi 3 · 1 bayar` pill. An amount receipt carries no letter (ADR-0063),
+  /// so it is counted rather than named.
+  int get evenShareCount =>
+      receipts.where((r) => r.label.startsWith('Bagian ')).length;
+  int get evenSharesPaid =>
+      receipts.where((r) => r.label.startsWith('Bagian ') && r.paid).length;
 
   factory BillSummary.fromJson(Map<String, dynamic> j) => BillSummary(
     visitId: j['visitId'] as String? ?? '',
@@ -88,10 +125,16 @@ class BillSummary {
     tableFreedAt: DateTime.tryParse(j['tableFreedAt'] as String? ?? ''),
     pax: _int(j['pax']),
     guestName: j['guestName'] as String?,
+    zoneId: j['zoneId'] as String? ?? '',
+    openedAt: DateTime.tryParse(j['openedAt'] as String? ?? ''),
+    channel: j['channel'] as String? ?? '',
+    prepaid: j['prepaid'] as bool? ?? false,
     total: _int(j['total']),
     paidAmount: _int(j['paidAmount']),
     outstanding: _int(j['outstanding']),
     receiptCount: _int(j['receiptCount']),
+    lineCount: _int(j['lineCount']),
+    billDiscountLabel: j['billDiscountLabel'] as String?,
     receipts: [
       for (final r in (j['receipts'] as List? ?? const []))
         BillSummaryReceipt.fromJson((r as Map).cast<String, dynamic>()),
@@ -125,9 +168,14 @@ class PastBillSummary {
   final String tableId;
   final String? tableLabel;
 
-  /// dineIn | takeaway — frozen at snapshot. Drives the Riwayat row's chip +
-  /// layout (Bawa pulang glyph vs table-label chip). ADR-0026.
+  /// dineIn | takeaway — frozen at snapshot. Drives the card's chip + layout
+  /// (Bawa pulang glyph vs table-label chip). ADR-0026.
   final String kind;
+
+  /// Channel + prepaid, frozen at snapshot so a closed GoFood order still reads
+  /// as one in the cashier's Lunas segment. ADR-0066.
+  final String channel;
+  final bool prepaid;
   final int pax;
   final DateTime closedAt;
   final int netTotal;
@@ -139,6 +187,8 @@ class PastBillSummary {
     required this.tableId,
     required this.tableLabel,
     required this.kind,
+    required this.channel,
+    required this.prepaid,
     required this.pax,
     required this.closedAt,
     required this.netTotal,
@@ -154,6 +204,8 @@ class PastBillSummary {
     tableId: j['tableId'] as String? ?? '',
     tableLabel: j['tableLabel'] as String?,
     kind: j['kind'] as String? ?? 'dineIn',
+    channel: j['channel'] as String? ?? '',
+    prepaid: j['prepaid'] as bool? ?? false,
     pax: _int(j['pax']),
     closedAt:
         DateTime.tryParse(j['closedAt'] as String? ?? '') ?? SatClock.now(),
@@ -395,11 +447,22 @@ class Bill {
   final DateTime? billClosedAt;
   final int pax;
   final String? guestName;
+
+  /// Takeaway channel + prepaid flag. ADR-0066.
+  final String channel;
+  final bool prepaid;
+
+  /// itemized | even | **mixed** — a description of the receipts, not a
+  /// setting. Mode is chosen per payment since ADR-0067.
   final String mode;
   final int subtotal;
 
-  /// Total give-back on this bill (line + whole-order), across every receipt.
+  /// Total give-back on this bill (line + whole-order + bill scope).
   final int discountAmount;
+
+  /// The one bill-scope discount, or null — it belongs to the visit rather
+  /// than to any receipt, so the totals ladder reads it from here. ADR-0070.
+  final BillDiscount? billDiscount;
   final int serviceAmount;
   final int taxAmount;
   final int total;
@@ -425,9 +488,12 @@ class Bill {
     required this.billClosedAt,
     required this.pax,
     required this.guestName,
+    required this.channel,
+    required this.prepaid,
     required this.mode,
     required this.subtotal,
     required this.discountAmount,
+    required this.billDiscount,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
@@ -453,9 +519,16 @@ class Bill {
     billClosedAt: DateTime.tryParse(j['billClosedAt'] as String? ?? ''),
     pax: _int(j['pax']),
     guestName: j['guestName'] as String?,
+    channel: j['channel'] as String? ?? '',
+    prepaid: j['prepaid'] as bool? ?? false,
     mode: j['mode'] as String? ?? 'itemized',
     subtotal: _int(j['subtotal']),
     discountAmount: _int(j['discountAmount']),
+    billDiscount: j['billDiscount'] == null
+        ? null
+        : BillDiscount.fromJson(
+            (j['billDiscount'] as Map).cast<String, dynamic>(),
+          ),
     serviceAmount: _int(j['serviceAmount']),
     taxAmount: _int(j['taxAmount']),
     total: _int(j['total']),

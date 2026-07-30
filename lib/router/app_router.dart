@@ -57,7 +57,7 @@ Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/reports')) return Capability.viewReports;
   // Same permission as reports: both answer "what really happened in my
   // venue". Admin rows inside the log carry a second `manageStaff` check
-  // server-side (ADR-0067) — the route gate cannot express that.
+  // server-side (ADR-0072) — the route gate cannot express that.
   if (loc.startsWith('/audit')) return Capability.viewReports;
   if (loc.startsWith('/venue/diskon')) return Capability.editSettings;
   if (loc.startsWith('/menuadm') ||

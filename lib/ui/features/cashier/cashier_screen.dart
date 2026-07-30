@@ -1,28 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:satset/ui/core/widgets/sat_tabs.dart';
-import 'package:satset/ui/core/widgets/sat_empty.dart';
-import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
-import 'package:satset/ui/core/design/receipt_visuals.dart';
-import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
-import 'package:satset/ui/features/cashier/receipt_badge.dart';
-import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_empty.dart';
+import 'package:satset/ui/core/widgets/tablet_chrome.dart';
+import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
+import 'package:satset/ui/features/cashier/widgets/bill_card.dart';
 
-enum _CashierTab { aktif, riwayat }
+/// Which slice of the venue's money the cashier is looking at.
+///
+/// There is no separate Riwayat tab any more. Since ADR-0069 a bill closes
+/// itself the instant it settles, so "already paid" and "history" name the same
+/// set — [_Segment.lunas] reads the snapshot rows, and [_Segment.semua] shows
+/// both sources in one grid.
+enum _Segment { perluDitagih, lunas, semua }
 
-/// Venue-wide cashier surface (`/kasir`). Two tabs off one segmented toggle:
-/// **Aktif** — every payable visit with its live total/outstanding (tap to
-/// settle); **Riwayat** — venue-wide [[Past bills]], last 7 days, filterable by
-/// table. Gated by `Capability.settleBill`. See ADR-0023 / ADR-0024.
+/// How far back the Lunas segment reaches. Today is what a cashier means on
+/// shift; the 7-day window is the old Riwayat, folded in rather than tabbed.
+enum _Range { hariIni, tujuhHari }
+
+/// Venue-wide cashier surface (`/kasir`). Gated by `Capability.settleBill`.
+/// See ADR-0066 for the card grid and ADR-0069 for why Lunas reads history.
 class CashierScreen extends ConsumerStatefulWidget {
   const CashierScreen({super.key});
 
@@ -31,278 +41,398 @@ class CashierScreen extends ConsumerStatefulWidget {
 }
 
 class _CashierScreenState extends ConsumerState<CashierScreen> {
-  _CashierTab _tab = _CashierTab.aktif;
+  _Segment _seg = _Segment.perluDitagih;
+  _Range _range = _Range.hariIni;
+
+  /// Set by tapping the Meja ditutup stat — the one count on this screen that
+  /// means "go chase someone", so it doubles as a filter.
+  bool _detachedOnly = false;
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final bills = ref.watch(settlementProvider);
+    final history = ref.watch(venueHistoryProvider);
+    final zones = {for (final z in ref.watch(zonesProvider)) z.id: z};
+
+    final open = [
+      for (final b in bills)
+        // A seated table that has ordered nothing has no bill to take. It stays
+        // reachable under Semua; it is not work.
+        if (b.lineCount > 0) b,
+    ];
+    final unpaid = [
+      for (final b in open)
+        if (!b.fullySettled) b,
+    ];
+    final closed = history.valueOrNull ?? const <PastBillSummary>[];
+
     return Scaffold(
       backgroundColor: sc.bg0,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
-              child: Row(
-                children: [
-                  Text('Kasir', style: SatType.h2(color: sc.textHi)),
-                  const Spacer(),
-                  SatTabs(
-                    tabs: const [
-                      SatTab(label: 'Aktif'),
-                      SatTab(label: 'Riwayat'),
-                    ],
-                    selected: _tab.index,
-                    onSelected: (i) =>
-                        setState(() => _tab = _CashierTab.values[i]),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: Duration(
-                  milliseconds: motionEnabled(context) ? 220 : 0,
-                ),
-                switchInCurve: satEaseOut,
-                switchOutCurve: satEaseOut,
-                transitionBuilder: (child, anim) =>
-                    FadeTransition(opacity: anim, child: child),
-                child: KeyedSubtree(
-                  key: ValueKey(_tab),
-                  child: _tab == _CashierTab.aktif
-                      ? const _PayableList()
-                      : const VenueHistoryView(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// iOS-style two-segment pill switching the cashier between live bills and
-/// history. Chrome, not a CTA — the selected segment reads as a raised tile
-/// rather than an accent button.
-/// The Aktif tab: live payable visits, pull-to-refresh.
-class _PayableList extends ConsumerWidget {
-  const _PayableList();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bills = ref.watch(settlementProvider);
-    final status = ref.watch(settlementStatusProvider);
-    return RefreshIndicator(
-      onRefresh: () => ref.read(settlementProvider.notifier).refresh(),
-      child: CustomScrollView(
-        slivers: [
-          if (status.isLoading && bills.isEmpty)
-            const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (status.hasError && bills.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: SatEmpty(
-                icon: Icons.cloud_off_rounded,
-                title: 'Gagal memuat tagihan',
-                body: 'Tarik untuk coba lagi.',
-              ),
-            )
-          else if (bills.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: SatEmpty(
-                icon: Icons.receipt_long_outlined,
-                title: 'Belum ada meja yang siap dibayar',
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-              sliver: SliverList.separated(
-                itemCount: bills.length,
-                separatorBuilder: (_, _) => const SizedBox(height: Sp.s2),
-                itemBuilder: (_, i) =>
-                    Reveal(index: i, child: _PayableTile(bills[i])),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PayableTile extends StatelessWidget {
-  final BillSummary b;
-  const _PayableTile(this.b);
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final settled = b.fullySettled;
-    final partial = !settled && b.paidAmount > 0;
-    final (badgeColor, badgeText) = settled
-        ? (sc.success, 'Lunas')
-        : partial
-        ? (sc.warn, 'Sebagian')
-        : (sc.textLo, 'Belum bayar');
-    // Only a genuine per-guest split earns a strip. "Bayar penuh" labels its
-    // lone receipt 'Tagihan' and an even share is 'Bagian 1/3' — neither is a
-    // letter, so both fall out here with no extra branch. ADR-0063.
-    final letters = [
-      for (final r in b.receipts)
-        if (isReceiptLetter(r.label.trim())) r,
-    ];
-    return Semantics(
-      button: true,
-      label: badgeText,
-      child: PressScale(
-        child: Material(
-          color: sc.bg1,
-          borderRadius: SatR.a(16),
-          child: InkWell(
-            borderRadius: SatR.a(16),
-            // The bill is an overlay, not a page (ADR-0064) — a right drawer on
-            // tablet, a tall sheet on a phone. `showSatDrawer`/`showSatSheet`
-            // are root-navigator by construction, so the floating phone tab bar
-            // can no longer float over "Tutup tagihan".
-            onTap: () => openCashierBill(context, visitId: b.visitId),
-            child: Padding(
-              padding: const EdgeInsets.all(Sp.s3h),
-              child: Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: SatBox.d(
-                      color: b.isTakeaway
-                          ? sc.accentSoft
-                          : (b.detached ? sc.warnSoft : sc.bg3),
-                      borderRadius: SatR.a(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: b.isTakeaway
-                        ? Icon(
-                            Icons.shopping_bag_rounded,
-                            size: 20,
-                            color: sc.accentText,
-                          )
-                        : Text(
-                            b.tableLabel ?? '—',
-                            style: SatType.monoM(
-                              color: b.detached ? sc.warn : sc.textHi,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: Sp.s3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          b.isTakeaway
-                              ? (b.guestName?.trim().isNotEmpty == true
-                                    ? '${b.tableLabel ?? 'Bawa pulang'} · ${b.guestName}'
-                                    : (b.tableLabel ?? 'Bawa pulang'))
-                              : (b.guestName?.trim().isNotEmpty == true
-                                    ? b.guestName!
-                                    : 'Meja ${b.tableLabel ?? ''}'.trim()),
-                          style: SatType.labelM(color: sc.textHi),
-                        ),
-                        const SizedBox(height: Sp.s1),
-                        Text(
-                          b.isTakeaway
-                              ? (b.detached
-                                    ? 'Bawa pulang · sudah diserahkan'
-                                    : 'Bawa pulang · belum diserahkan')
-                              : (b.detached
-                                    ? 'Meja sudah ditutup · belum lunas'
-                                    : '${b.pax} tamu · ${b.receiptCount} struk'
-                                          '${b.mode == 'even' ? ' · rata' : ''}'),
-                          style: ((b.detached || b.isTakeaway)
-                              ? SatType.labelS(
-                                  color: b.isTakeaway
-                                      ? sc.accentText
-                                      : (b.detached ? sc.warn : sc.textLo),
-                                )
-                              : SatType.bodyS(
-                                  color: b.isTakeaway
-                                      ? sc.accentText
-                                      : (b.detached ? sc.warn : sc.textLo),
-                                )),
-                        ),
-                        if (letters.isNotEmpty) ...[
-                          const SizedBox(height: Sp.s1h),
-                          _ReceiptStrip(letters),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await ref.read(settlementProvider.notifier).refresh();
+            ref.invalidate(venueHistoryProvider);
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        formatIDR(b.outstanding),
-                        style: SatType.monoM(
-                          color: settled ? sc.textLo : sc.textHi,
+                      _Header(
+                        running: unpaid.length,
+                        takeaway: open.where((b) => b.isTakeaway).length,
+                        settled: closed.length,
+                        outstanding: unpaid.fold<int>(
+                          0,
+                          (a, b) => a + b.outstanding,
                         ),
                       ),
-                      const SizedBox(height: Sp.s1h),
-                      AnimatedContainer(
-                        duration: satMotion(context, 240),
-                        curve: satEaseOut,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Sp.s2,
-                          vertical: Sp.sHair,
-                        ),
-                        decoration: SatBox.d(
-                          color: badgeColor.withValues(alpha: 0.15),
-                          borderRadius: SatR.a(6),
-                        ),
-                        child: AnimatedDefaultTextStyle(
-                          duration: satMotion(context, 240),
-                          curve: satEaseOut,
-                          style: SatType.labelS(color: badgeColor),
-                          child: Text(badgeText),
-                        ),
+                      const SizedBox(height: Sp.s4),
+                      _StatRow(
+                        bills: open,
+                        detachedOnly: _detachedOnly,
+                        onDetachedTap: () => setState(() {
+                          _detachedOnly = !_detachedOnly;
+                          if (_detachedOnly) _seg = _Segment.perluDitagih;
+                        }),
                       ),
+                      const SizedBox(height: Sp.s4),
+                      _SegmentRow(
+                        selected: _seg,
+                        perluDitagih: unpaid.length,
+                        lunas: closed.length,
+                        semua: open.length + closed.length,
+                        onSelected: (s) => setState(() {
+                          _seg = s;
+                          if (s != _Segment.perluDitagih) _detachedOnly = false;
+                        }),
+                      ),
+                      if (_seg != _Segment.perluDitagih) ...[
+                        const SizedBox(height: Sp.s2h),
+                        _RangeRow(
+                          selected: _range,
+                          onSelected: (r) => setState(() => _range = r),
+                        ),
+                      ],
+                      const SizedBox(height: Sp.s3h),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+              ..._body(open, unpaid, _inRange(closed), zones, history),
+            ],
           ),
         ),
       ),
     );
   }
+
+  List<PastBillSummary> _inRange(List<PastBillSummary> rows) {
+    if (_range == _Range.tujuhHari) return rows;
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    return [
+      for (final r in rows)
+        if (!r.closedAt.isBefore(startOfDay)) r,
+    ];
+  }
+
+  List<Widget> _body(
+    List<BillSummary> open,
+    List<BillSummary> unpaid,
+    List<PastBillSummary> closed,
+    Map<String, Zone> zones,
+    AsyncValue<List<PastBillSummary>> history,
+  ) {
+    final status = ref.watch(settlementStatusProvider);
+    if (status.isLoading && open.isEmpty && _seg == _Segment.perluDitagih) {
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+    if (status.hasError && open.isEmpty && _seg == _Segment.perluDitagih) {
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: SatEmpty(
+            icon: Icons.cloud_off_rounded,
+            title: 'Gagal memuat tagihan',
+            body: 'Tarik untuk coba lagi.',
+          ),
+        ),
+      ];
+    }
+
+    final live = switch (_seg) {
+      _Segment.perluDitagih => [
+        for (final b in unpaid)
+          if (!_detachedOnly || b.detached) b,
+      ],
+      _Segment.lunas => const <BillSummary>[],
+      _Segment.semua => open,
+    };
+    final past = _seg == _Segment.perluDitagih
+        ? const <PastBillSummary>[]
+        : closed;
+
+    if (live.isEmpty && past.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: SatEmpty(
+            icon: Icons.receipt_long_outlined,
+            title: switch (_seg) {
+              _Segment.perluDitagih => _detachedOnly
+                  ? 'Tidak ada meja tertutup yang belum lunas'
+                  : 'Tidak ada tagihan terbuka',
+              _Segment.lunas => _range == _Range.hariIni
+                  ? 'Belum ada tagihan lunas hari ini'
+                  : 'Belum ada tagihan lunas 7 hari terakhir',
+              _Segment.semua => 'Belum ada tagihan',
+            },
+          ),
+        ),
+      ];
+    }
+
+    // Sorted before the two sources are interleaved so Semua reads as one list:
+    // the work first (biggest outstanding), then what is already done.
+    final sortedLive = [...live]
+      ..sort((a, b) {
+        if (a.detached != b.detached) return a.detached ? -1 : 1;
+        return b.outstanding.compareTo(a.outstanding);
+      });
+    final sortedPast = [...past]
+      ..sort((a, b) => b.closedAt.compareTo(a.closedAt));
+
+    final cards = <Widget>[
+      for (final b in sortedLive)
+        BillCard.fromSummary(
+          b,
+          zone: zones[b.zoneId],
+          onTap: () => openCashierBill(context, visitId: b.visitId),
+        ),
+      for (final p in sortedPast)
+        BillCard.fromPastBill(
+          p,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PastBillDetailScreen(
+                sessionId: p.sessionId,
+                tableLabel: p.tableLabel,
+              ),
+            ),
+          ),
+        ),
+    ];
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            // One column on a phone falls out of this: at 360dp the card is
+            // wider than the extent, so the grid gives it the full row.
+            maxCrossAxisExtent: context.layout.useTabletShell ? 340 : 640,
+            mainAxisSpacing: Sp.s2h,
+            crossAxisSpacing: Sp.s2h,
+            mainAxisExtent: 232,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (_, i) => Reveal(index: i, child: cards[i]),
+            childCount: cards.length,
+          ),
+        ),
+      ),
+      if (history.isLoading && past.isEmpty && _seg != _Segment.perluDitagih)
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: Sp.s6),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+    ];
+  }
 }
 
-/// Split-progress strip on a payable tile: one [[Split bill]] letter per
-/// receipt, filled once that guest has settled and outlined while they have
-/// not. Lets the cashier see *who is still owing* without opening the bill.
-/// The tile's own Lunas/Sebagian chip still carries the state in words —
-/// the fill is a scan aid, never the only signal. ADR-0063.
-class _ReceiptStrip extends StatelessWidget {
-  final List<BillSummaryReceipt> receipts;
-  const _ReceiptStrip(this.receipts);
+/// Title, what the shift looks like in one line, and the number the owner asks
+/// about — how much money is still out there.
+class _Header extends StatelessWidget {
+  final int running;
+  final int takeaway;
+  final int settled;
+  final int outstanding;
+  const _Header({
+    required this.running,
+    required this.takeaway,
+    required this.settled,
+    required this.outstanding,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: Sp.s1,
-      runSpacing: Sp.s1,
+    final sc = context.sat;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final r in receipts)
-          ReceiptBadge(r.label.trim(), filled: r.paid, dense: true),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Kasir', style: SatType.h2(color: sc.textHi)),
+              const SizedBox(height: Sp.s1),
+              Text(
+                '$running tagihan berjalan · $takeaway tanpa meja · '
+                '$settled lunas',
+                style: SatType.bodyS(color: sc.textLo),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: Sp.s3),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text('Belum tertagih', style: SatType.labelS(color: sc.textLo)),
+            const SizedBox(height: Sp.s1),
+            Text(formatIDR(outstanding), style: SatType.monoL(color: sc.textHi)),
+          ],
+        ),
       ],
     );
   }
+}
+
+/// Four counts, three of them a state of the money and one an instruction.
+///
+/// The design source's fourth card counts takeaways; that pointed at a Tanpa
+/// meja segment which is not shipping, so the slot went to the detached count —
+/// the aggregate that actually asks the cashier to do something, and the one
+/// L1-5 demoted from a card tint to a pill.
+class _StatRow extends StatelessWidget {
+  final List<BillSummary> bills;
+  final bool detachedOnly;
+  final VoidCallback onDetachedTap;
+  const _StatRow({
+    required this.bills,
+    required this.detachedOnly,
+    required this.onDetachedTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final unpaid = bills.where((b) => !b.fullySettled).toList();
+    final belumBayar = unpaid.where((b) => b.paidAmount == 0).length;
+    final sebagian = unpaid.where((b) => b.paidAmount > 0).length;
+    final diterima = bills.fold<int>(0, (a, b) => a + b.paidAmount);
+    final ditutup = unpaid.where((b) => b.detached).length;
+
+    final tiles = <Widget>[
+      TabletStatTile(
+        value: '$belumBayar',
+        label: 'Belum bayar',
+        valueColor: sc.urgent,
+      ),
+      TabletStatTile(
+        value: '$sebagian',
+        label: 'Sebagian',
+        valueColor: sc.info,
+      ),
+      TabletStatTile(
+        value: formatIDR(diterima),
+        label: 'Sudah diterima',
+        valueColor: sc.success,
+      ),
+      TabletStatTile(
+        value: '$ditutup',
+        label: 'Meja ditutup',
+        valueColor: sc.warn,
+        selected: detachedOnly,
+        onTap: ditutup == 0 && !detachedOnly ? null : onDetachedTap,
+      ),
+    ];
+    return Row(
+      children: [
+        for (var i = 0; i < tiles.length; i++) ...[
+          if (i > 0) const SizedBox(width: Sp.s2h),
+          Expanded(child: tiles[i]),
+        ],
+      ],
+    );
+  }
+}
+
+class _SegmentRow extends StatelessWidget {
+  final _Segment selected;
+  final int perluDitagih;
+  final int lunas;
+  final int semua;
+  final ValueChanged<_Segment> onSelected;
+  const _SegmentRow({
+    required this.selected,
+    required this.perluDitagih,
+    required this.lunas,
+    required this.semua,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: Sp.s2,
+    runSpacing: Sp.s2,
+    children: [
+      SatChip.select(
+        label: 'Perlu ditagih',
+        count: perluDitagih,
+        selected: selected == _Segment.perluDitagih,
+        onTap: () => onSelected(_Segment.perluDitagih),
+      ),
+      SatChip.select(
+        label: 'Lunas',
+        count: lunas,
+        selected: selected == _Segment.lunas,
+        onTap: () => onSelected(_Segment.lunas),
+      ),
+      SatChip.select(
+        label: 'Semua',
+        count: semua,
+        selected: selected == _Segment.semua,
+        onTap: () => onSelected(_Segment.semua),
+      ),
+    ],
+  );
+}
+
+class _RangeRow extends StatelessWidget {
+  final _Range selected;
+  final ValueChanged<_Range> onSelected;
+  const _RangeRow({required this.selected, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: Sp.s2,
+    children: [
+      SatChip.select(
+        label: 'Hari ini',
+        selected: selected == _Range.hariIni,
+        onTap: () => onSelected(_Range.hariIni),
+      ),
+      SatChip.select(
+        label: '7 hari',
+        selected: selected == _Range.tujuhHari,
+        onTap: () => onSelected(_Range.tujuhHari),
+      ),
+    ],
+  );
 }
 
 /// Whether the signed-in account can open the cashier surface.

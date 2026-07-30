@@ -1182,7 +1182,7 @@ class _MenuRoleChip extends StatelessWidget {
 ///
 /// Only the kill direction prompts: putting a dish back needs no
 /// justification, and a second sheet there would be friction for its own sake.
-/// The reason lands on the audit row (ADR-0067) — a manager reading "Burger
+/// The reason lands on the audit row (ADR-0072) — a manager reading "Burger
 /// Wagyu stop jual" later wants the "out of brioche" beside it.
 Future<void> _toggleAvailability(
   BuildContext context,

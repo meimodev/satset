@@ -40,6 +40,8 @@ class SubmitOrderUseCase {
   Future<({List<String> ticketIds, String visitId})> takeaway({
     required List<CartItem> cart,
     String guestName = '',
+    String channel = 'bungkus',
+    bool prepaid = false,
     String? existingVisitId,
     String? actorId,
   }) async {
@@ -50,6 +52,8 @@ class SubmitOrderUseCase {
       idempotencyKey: const Uuid().v4(),
       lines: _lines(cart),
       guestName: guestName,
+      channel: channel,
+      prepaid: prepaid,
       existingVisitId: existingVisitId,
       actorId: actorId,
     );

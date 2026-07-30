@@ -27,16 +27,21 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
-/// What the caller wants to discount: a whole receipt, or one of its lines.
+/// What the caller wants to discount: the whole [[Bill (tab)]], a receipt, or
+/// one of a receipt's lines — the three scopes ADR-0070 settled.
 class DiscountTarget {
-  final BillReceipt receipt;
+  /// Null ⇒ a **bill**-scope discount, which belongs to the visit rather than
+  /// to any receipt. That is the common case now: receipts are minted per
+  /// payment (ADR-0067), so at the moment the cashier reaches for a table-wide
+  /// promo there is usually no receipt to attach it to.
+  final BillReceipt? receipt;
 
-  /// Null ⇒ whole-order discount.
+  /// Null ⇒ whole-order (or bill) discount.
   final String? ticketId;
 
-  /// Base the discount will be resolved against — the receipt subtotal, or the
-  /// value of the units this receipt owns of that line. Used only to preview
-  /// the amount; the server re-resolves it authoritatively.
+  /// Base the discount will be resolved against — the bill or receipt subtotal,
+  /// or the value of the units this receipt owns of that line. Used only to
+  /// preview the amount; the server re-resolves it authoritatively.
   final int base;
   final String title;
 
@@ -47,8 +52,17 @@ class DiscountTarget {
     required this.title,
   });
 
+  /// The whole bill — a table-wide promo. ADR-0070.
+  const DiscountTarget.bill({required this.base, required this.title})
+    : receipt = null,
+      ticketId = null;
+
   bool get isLine => ticketId != null;
-  String get scope => isLine ? 'line' : 'order';
+  String get scope => receipt == null
+      ? 'bill'
+      : isLine
+      ? 'line'
+      : 'order';
 }
 
 /// Returns `(presetId, approverPin)` to apply, or null if dismissed.
@@ -69,11 +83,17 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
       builder: (c) => AlertDialog(
         title: const Text('Belum ada preset diskon'),
         content: Text(
-          target.isLine
-              ? 'Belum ada preset diskon per item. Tambahkan di '
-                    'Pengaturan venue › Diskon.'
-              : 'Belum ada preset diskon per pesanan. Tambahkan di '
-                    'Pengaturan venue › Diskon.',
+          switch (target.scope) {
+            'line' =>
+              'Belum ada preset diskon per item. Tambahkan di '
+                  'Pengaturan venue › Diskon.',
+            'bill' =>
+              'Belum ada preset diskon tagihan. Tambahkan di '
+                  'Pengaturan venue › Diskon.',
+            _ =>
+              'Belum ada preset diskon per pesanan. Tambahkan di '
+                  'Pengaturan venue › Diskon.',
+          },
         ),
         actions: [
           SatButton.ghost(
@@ -103,9 +123,11 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
             ),
             const SizedBox(height: Sp.sHair),
             Text(
-              target.isLine
-                  ? 'Berlaku untuk item ini'
-                  : 'Berlaku seluruh struk',
+              switch (target.scope) {
+                'line' => 'Berlaku untuk item ini',
+                'bill' => 'Berlaku seluruh tagihan · semua struk',
+                _ => 'Berlaku seluruh struk',
+              },
               style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s3),

@@ -1,4 +1,4 @@
-# ADR-0066 — Kitchen ownership freezes a line
+# ADR-0071 — Kitchen ownership freezes a line
 
 ## Status
 
@@ -71,7 +71,7 @@ A guest who changes their mind after the course is fired still costs a void.
 That is the honest outcome: the food is being made, and the venue's log should
 say a line was cancelled, because one was.
 
-The "Ubah" tile on the venue audit log (ADR-0067) counts held-line edits only.
+The "Ubah" tile on the venue audit log (ADR-0072) counts held-line edits only.
 It is narrower than the "post-send mods" the design prototype showed, and the
 prototype's `3 pre-prep · 2 acknowledged` split does not exist — there is no
 acknowledged case to count.

@@ -340,7 +340,7 @@ class _ActionList extends StatelessWidget {
       );
       // Editing is offered only here, and only here it is safe: once the line
       // is fired the kitchen owns it and the sole remedy is a void
-      // (ADR-0066). The server enforces the same rule with a 409.
+      // (ADR-0071). The server enforces the same rule with a 409.
       rows.add(
         _ActionItem(
           id: 'modify',

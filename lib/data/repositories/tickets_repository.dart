@@ -279,6 +279,8 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     required String idempotencyKey,
     required List<CartLineDto> lines,
     String guestName = '',
+    String channel = 'bungkus',
+    bool prepaid = false,
     String? existingVisitId,
     String? actorId,
   }) async {
@@ -318,6 +320,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     final raw = await api.postJson('/orders', {
       'takeaway': true,
       'guestName': guestName,
+      // Only read when the server mints a fresh visit; appending to an open
+      // takeaway leaves the channel it was created with alone. ADR-0066.
+      'channel': channel,
+      'prepaid': prepaid,
       'visitId': ?existingVisitId,
       'idempotencyKey': idempotencyKey,
       'lines': [for (final l in lines) l.toJson()],
@@ -381,7 +387,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }
 
   /// Edit a line the kitchen does not yet own — qty, note and modifiers on a
-  /// `held` row (ADR-0066). The server rejects anything past `held` with a 409,
+  /// `held` row (ADR-0071). The server rejects anything past `held` with a 409,
   /// so this is a request, not a local mutation with a sync afterwards: the
   /// optimistic write lands only once the server has agreed.
   Future<void> modifyLine(

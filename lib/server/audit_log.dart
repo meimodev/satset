@@ -17,7 +17,7 @@ const _uuid = Uuid();
 /// audits an act goes through [writeAudit]; everything that reads one renders
 /// [auditJson].
 ///
-/// See docs/adr/0067-venue-audit-log.md.
+/// See docs/adr/0072-venue-audit-log.md.
 Future<AuditEntry?> writeAudit(
   AppDatabase db, {
   required AuditType type,
@@ -76,7 +76,7 @@ Future<({String name, String? roleName})?> resolveActor(
 /// Wire shape for one audit row, shared by the personal feed, the venue log
 /// and the WebSocket fan-out.
 ///
-/// [fallbackName] / [fallbackRoleName] fill in for rows written before v42,
+/// [fallbackName] / [fallbackRoleName] fill in for rows written before v43,
 /// which carry no snapshot. The read path resolves those with a live join and
 /// passes them here; a row whose actor has since been deleted keeps a null
 /// name and renders as "Sistem" client-side.

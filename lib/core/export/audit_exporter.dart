@@ -11,7 +11,7 @@ import 'package:satset/data/services/api_client.dart';
 /// shape, and a sheet asking "CSV or PDF?" with one answer is a step that buys
 /// nothing. A 500-row PDF of an audit trail serves nobody.
 ///
-/// The bytes are **rendered by the server** and fetched whole (ADR-0067). The
+/// The bytes are **rendered by the server** and fetched whole (ADR-0072). The
 /// client holds only the pages it has scrolled, so exporting from local state
 /// would produce a file that stops wherever the reader happened to stop —
 /// a truncated record carrying the word "lengkap".

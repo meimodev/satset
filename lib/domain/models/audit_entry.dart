@@ -117,12 +117,12 @@ class AuditEntry {
 
   /// What the act was worth, as a magnitude — see the DB column doc. Direction
   /// lives in [type], so nothing downstream has to interpret a sign. Null when
-  /// money is not the point, and on rows written before v42.
+  /// money is not the point, and on rows written before v43.
   final int? amountCents;
 
   /// Actor attribution as it stood when the act happened. Snapshotted server-
   /// side so a later rename or deletion cannot rewrite the trail; null on
-  /// pre-v42 rows, where the server falls back to a live join. Both null means
+  /// pre-v43 rows, where the server falls back to a live join. Both null means
   /// nobody is on record — the venue log renders that as "Sistem".
   final String? actorName;
   final String? actorRoleName;
