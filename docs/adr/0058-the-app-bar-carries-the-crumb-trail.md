@@ -11,6 +11,11 @@ Two decisions below no longer hold: phone no longer keeps `LoginClock` (it
 adopts `_ShiftCluster`, and `LoginClock` is deleted), and the phone clock is
 now conditional on there being no back button.
 
+Amended again (see "Unlisted shell routes belong to the Venue hub" below) after
+`/stock` and `/alerts` shipped with the rail lighting up Meja: the trail and the
+rail item now come from one mapping, and the shell's default destination
+inverted from `tables` to `venue`.
+
 ## Context
 
 `SatAppBar` declared four public parameters — `title`, `crumbs`,
@@ -87,3 +92,65 @@ to its last segment on nearly every screen. The parent is one back-tap away.
   `LoginClock` already did on phone. One timer per bar, disposed with the state.
 - Goldens were untouched: the golden set covers the Controls group only, and
   `SatAppBar` is chrome.
+
+## Amendment — unlisted shell routes belong to the Venue hub
+
+### Context
+
+`app_shell.dart` computed the trail and the rail's active item in two parallel
+hand-written switches over the same paths — `_activeFor` and `_crumbsFor`. Both
+were allowlists that ended in a fallthrough, and the fallthroughs disagreed:
+`_activeFor` defaulted to `'tables'`, `_crumbsFor`'s `venue` case defaulted to
+`Konfigurasi`.
+
+`/stock` and `/alerts` were added to the Venue hub and to neither switch. The
+result: opening Stok or Peringatan lit up **Meja** in the side rail and captioned
+the screen `Venue › Konfigurasi`. Two further liars came from the same shape —
+`/venue`, the hub root, claimed its own settings child's label, and `/kasir` had
+no case at all, so it fell to the `[venue › zone]` trail meant for `/tables`.
+
+Three bugs, one cause: two allowlists that have to be edited in lockstep, and a
+default in each that asserts something specific and false.
+
+### Decision
+
+**One mapping, both answers.** `venueHubCrumbs` maps a hub path to its trail's
+tail segment. The rail reads it (anything absent is `venue`), the crumb reads it,
+and the two can no longer drift. `activeTabFor` and `crumbsFor` are top-level, so
+they are checkable without pumping a shell.
+
+**The default inverted to `venue`, not `tables`.** `_railRoutes` now lists the
+six destinations that own a route outright, and *everything else* is a hub child.
+The alternative — keep the allowlist and add the two missing entries — fixes this
+instance and leaves the trap armed for the next hub screen. The inversion picks
+which mistake is possible: the hub grows children often, and those now self-heal;
+the app grows top-level destinations rarely, and forgetting one is the loud
+failure. That is the trade, and it is deliberate.
+
+Route metadata (a `tab` on each `GoRoute`) was rejected as the fix. It removes
+the mapping entirely, but rewrites every route for a mapping that is still one
+small function.
+
+**Missing entries fail short, never confident.** A hub path with no entry renders
+`[Venue]` — one truthful segment — rather than borrowing a sibling's label. Same
+for the hub root. `Konfigurasi` is now attached to `/venue-settings` explicitly,
+which is the only path it was ever true for. Deriving the tail from the path was
+rejected: it emits English into a Bahasa Indonesia UI, against `AppStrings`.
+
+**Matching is on the first path segment, not `startsWith`.** The old chain had a
+latent ordering trap — `/menuadm` starts with `/me`, and only survived because
+`/menuadm` happened to be tested first. Segment matching removes the whole class.
+
+### Consequences
+
+- `/kasir` gets a single-segment `[Kasir]` trail. It reads flatter than its
+  two-segment siblings (`Stasiun › Antrian Persiapan`); the alternative needed
+  new copy for a second segment that the screen's own Aktif/Riwayat tabs would
+  immediately make stale.
+- `crumbsFor`'s `default:` is now reachable only by `'tables'` — the one case the
+  `[venue › zone]` trail was written for.
+- **A new top-level destination that is not added to `_railRoutes` will show
+  Venue as active.** This is the accepted cost of the inversion.
+- `test/shell_active_tab_test.dart` pins path → (rail item, trail) for every
+  shell route, plus the `/menuadm`-vs-`/me` collision and an unmapped hub path
+  asserting the short trail. Pure functions, no pump.
