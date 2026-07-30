@@ -18,6 +18,7 @@ import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/domain/models/user.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
@@ -198,19 +199,29 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         );
         final pad = EdgeInsets.fromLTRB(hpad, 0, hpad, 0);
         if (grid) {
+          // Column-major masonry rather than a SliverGrid: cards are
+          // variable-height (a modifier line, a wrapped item name) and a grid
+          // would pin every cell to the tallest case. Dealt alternately so the
+          // oldest line is still top-left and reading stays left→right per
+          // pair. Not lazily built — a segment is dozens of rows, not
+          // thousands.
+          Widget column(int start) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = start; i < rows.length; i += 2) orderRow(rows[i]),
+            ],
+          );
           slivers.add(
             SliverPadding(
               padding: pad,
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  mainAxisExtent: 120,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, i) => orderRow(rows[i]),
-                  childCount: rows.length,
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: column(0)),
+                    const SizedBox(width: Sp.s2),
+                    Expanded(child: column(1)),
+                  ],
                 ),
               ),
             ),
@@ -260,7 +271,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
                 const SizedBox(height: Sp.s1h),
                 Text(
-                  '${active.length} BERJALAN · ${ready.length} SIAP DIAMBIL',
+                  '${active.length} berjalan · ${ready.length} siap diambil',
                   style: SatType.monoS(color: sc.textLo),
                 ),
               ],
@@ -326,7 +337,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               ),
               const SizedBox(height: Sp.s1),
               Text(
-                '${active.length} aktif · ${ready.length} siap diambil',
+                '${active.length} berjalan · ${ready.length} siap diambil',
                 style: SatType.monoS(color: sc.textLo),
               ),
             ],
@@ -498,11 +509,24 @@ class _OrderRow extends ConsumerWidget {
     final t = row.ticket;
     final isReady = t.status == TicketStatus.ready;
     final isVoided = t.status == TicketStatus.voided;
+    final terminal = isVoided || t.status == TicketStatus.served;
+    final target = lineTargetMins(ref, t.itemId);
+
+    // Past its own resolved target (ADR-0043/0064) — never the prototype's flat
+    // 20 minutes, which would have the board disagree with the KDS and the
+    // audible cue about when a line is late. Terminal lines can't be late.
+    ref.watch(elapsedTickerProvider);
+    final slow =
+        !terminal &&
+        SatClock.now().difference(t.kitchenClockStart).inMinutes >= target;
+
     final bg = isReady ? sc.successSoft : sc.bg2;
-    final border = isReady ? sc.success.withValues(alpha: 0.3) : sc.border0;
+    final border = slow
+        ? sc.urgent
+        : (isReady ? sc.success.withValues(alpha: 0.3) : sc.border0);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: Sp.s1h),
+      padding: const EdgeInsets.only(bottom: Sp.s2),
       child: Opacity(
         opacity: isVoided ? 0.55 : 1,
         child: Material(
@@ -512,133 +536,168 @@ class _OrderRow extends ConsumerWidget {
             onTap: onTap,
             borderRadius: SatR.a(16),
             child: Container(
-              padding: const EdgeInsets.all(Sp.s3h),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s4,
+                vertical: Sp.s3h,
+              ),
               decoration: SatBox.d(
                 borderRadius: SatR.a(16),
-                border: SatB.all(color: border),
+                border: SatB.all(color: border, width: slow ? 2 : 1),
               ),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    constraints: const BoxConstraints(
-                      minWidth: 42,
-                      maxWidth: 88,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Sp.s2h,
-                      vertical: Sp.s2,
-                    ),
-                    decoration: SatBox.d(
-                      color: isReady
-                          ? sc.success.withValues(alpha: 0.2)
-                          : sc.bg3,
-                      borderRadius: SatR.a(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (row.isTakeaway) ...[
-                          Icon(
-                            Icons.shopping_bag_rounded,
-                            size: 13,
-                            color: isReady ? sc.success : sc.textMd,
-                          ),
-                          const SizedBox(width: Sp.s1),
-                        ],
-                        Flexible(
-                          child: Text(
-                            row.token,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: SatType.monoM(
-                              color: isReady ? sc.success : sc.textHi,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: Sp.s3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              if (t.qty > 1)
-                                TextSpan(
-                                  text: '×${t.qty} ',
-                                  style: SatType.monoM(color: sc.textMd),
-                                ),
-                              TextSpan(
-                                text: t.name,
-                                style: SatType.bodyM(color: sc.textHi),
-                              ),
-                              if (t.variantName.isNotEmpty)
-                                TextSpan(
-                                  text: ' · ${t.variantName}',
-                                  style: SatType.bodyM(color: sc.textMd),
-                                ),
-                            ],
-                          ),
-                        ),
-                        if (t.modifiers.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: Sp.s1),
-                            child: Text(
-                              t.modifiers
-                                      .take(2)
-                                      .map((m) => m.display)
-                                      .join(' · ') +
-                                  (t.modifiers.length > 2 ? ' · …' : ''),
-                              style: SatType.bodyS(color: sc.textMd),
-                            ),
-                          ),
-                        const SizedBox(height: Sp.s2),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                  // Head — who and where, then how long it has been waiting.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
                           children: [
-                            if (row.zoneName.isNotEmpty)
-                              Text(
-                                row.zoneName,
-                                style: SatType.monoS(color: sc.textLo),
+                            if (row.isTakeaway) ...[
+                              // Takeaway rows carry no zone, so without the bag
+                              // they read as a table with a missing one.
+                              Icon(
+                                Icons.shopping_bag_rounded,
+                                size: 14,
+                                color: isReady ? sc.success : sc.textMd,
                               ),
-                            StatusChip(status: t.status),
-                            ElapsedPill(
-                              clockStart: t.kitchenClockStart,
-                              sentAtClock: t.sentAt,
-                              terminal:
-                                  isVoided || t.status == TicketStatus.served,
-                              targetMins: lineTargetMins(ref, t.itemId),
+                              const SizedBox(width: Sp.s1h),
+                            ],
+                            Flexible(
+                              child: Text(
+                                row.token,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: SatType.monoM(
+                                  color: isReady ? sc.success : sc.textHi,
+                                ),
+                              ),
                             ),
-                            if (row.orderer != null)
+                            if (row.zoneName.isNotEmpty) ...[
+                              const SizedBox(width: Sp.s2),
+                              Flexible(
+                                child: SatChip.tag(
+                                  label: row.zoneName,
+                                  size: SatChipSize.sm,
+                                ),
+                              ),
+                            ],
+                            if (row.orderer != null) ...[
+                              const SizedBox(width: Sp.s2),
                               StaffAvatar(actor: row.orderer!, size: 20),
+                            ],
                           ],
                         ),
+                      ),
+                      const SizedBox(width: Sp.s2),
+                      _ElapsedStack(
+                        clockStart: t.kitchenClockStart,
+                        sentAtClock: t.sentAt,
+                        terminal: terminal,
+                        late: slow,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Sp.s2h),
+                  // Body — what was ordered.
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        if (t.qty > 1)
+                          TextSpan(
+                            text: '×${t.qty} ',
+                            style: SatType.monoM(color: sc.textMd),
+                          ),
+                        TextSpan(
+                          text: t.name,
+                          style: SatType.bodyM(color: sc.textHi),
+                        ),
+                        if (t.variantName.isNotEmpty)
+                          TextSpan(
+                            text: ' · ${t.variantName}',
+                            style: SatType.bodyM(color: sc.textMd),
+                          ),
                       ],
                     ),
                   ),
-                  if (isReady)
-                    SatButton.success(
-                      label: 'Sajikan',
-                      icon: Icons.check_rounded,
-                      size: SatButtonSize.sm,
-                      onTap: onServe,
-                    )
-                  else
-                    Icon(Icons.chevron_right, size: 16, color: sc.textLo),
+                  if (t.modifiers.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Sp.s1),
+                      child: Text(
+                        t.modifiers.take(2).map((m) => m.display).join(' · ') +
+                            (t.modifiers.length > 2 ? ' · …' : ''),
+                        style: SatType.bodyS(color: sc.textMd),
+                      ),
+                    ),
+                  const SizedBox(height: Sp.s2h),
+                  // Foot — state, then the actions. The chevron stays on every
+                  // row so the card's own tap target is never ambiguous.
+                  Row(
+                    children: [
+                      StatusChip(status: t.status),
+                      const Spacer(),
+                      if (isReady) ...[
+                        SatButton.success(
+                          label: 'Sajikan',
+                          icon: Icons.check_rounded,
+                          size: SatButtonSize.sm,
+                          onTap: onServe,
+                        ),
+                        const SizedBox(width: Sp.s2),
+                      ],
+                      Icon(Icons.chevron_right, size: 16, color: sc.textLo),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The head's elapsed readout: "14m" over "sejak 18:02". Both facts at once —
+/// how long the kitchen has owned the line, and the clock a waiter quotes to a
+/// guest. Colour follows [_OrderRow]'s late test, so ring and number always
+/// agree. Terminal lines freeze to the sent clock, like [ElapsedPill].
+class _ElapsedStack extends ConsumerWidget {
+  final DateTime clockStart;
+  final String sentAtClock;
+  final bool terminal;
+  final bool late;
+  const _ElapsedStack({
+    required this.clockStart,
+    required this.sentAtClock,
+    required this.terminal,
+    required this.late,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    if (terminal) {
+      return Text(sentAtClock, style: SatType.caption(color: sc.textLo));
+    }
+    ref.watch(elapsedTickerProvider);
+    final d = SatClock.now().difference(clockStart);
+    final mins = d.inMinutes;
+    final label = mins < 1
+        ? '<1m'
+        : (d.inHours > 0 ? '${d.inHours}j ${mins.remainder(60)}m' : '${mins}m');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: SatType.monoM(color: late ? sc.urgent : sc.textHi),
+        ),
+        Text(
+          'sejak $sentAtClock',
+          style: SatType.caption(color: sc.textMd),
+        ),
+      ],
     );
   }
 }
