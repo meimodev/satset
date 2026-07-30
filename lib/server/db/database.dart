@@ -59,7 +59,12 @@ class AppDatabase extends _$AppDatabase {
   // main, because a device that had already taken 41 would otherwise skip the
   // cashier migration silently and run against a schema with no `channel`, no
   // `prepaid` and a NOT NULL `receipt_id`.
-  int get schemaVersion => 42;
+  //
+  // 43 is the venue audit log, which hit the same collision against 42 and is
+  // resolved the same way and for the same reason: a device that had already
+  // taken 42 as the cashier pass would never run the audit migration, and
+  // every read of the log would fail on a missing `amount_cents`.
+  int get schemaVersion => 43;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -763,6 +768,25 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('DROP INDEX IF EXISTS $ix');
         }
         await _createDiscountIndexes();
+      }
+      if (from < 43) {
+        // The venue audit log (ADR-0072) needs two things the personal feed
+        // never did: a summable amount, and attribution that survives the
+        // actor being renamed or deleted.
+        //
+        // `amount_cents` is a magnitude — direction is implied by the type, so
+        // a void and a refund both store a positive number and no tile ever
+        // has to reason about a sign. Null where money is meaningless (fire,
+        // table moves, staff edits).
+        //
+        // Name and role are snapshotted at write rather than joined at read.
+        // `staffDeleted` is a real audit type, so a live join would blank the
+        // attribution on every row an ex-employee ever wrote — the one thing
+        // an integrity log may not do. Rows written before this migration
+        // have neither and fall back to the live join.
+        await _safeAddColumnOn('audit_entries', 'amount_cents', type: 'INTEGER');
+        await _safeAddColumnOn('audit_entries', 'actor_name', type: 'TEXT');
+        await _safeAddColumnOn('audit_entries', 'actor_role_name', type: 'TEXT');
       }
     },
     onCreate: (m) async {

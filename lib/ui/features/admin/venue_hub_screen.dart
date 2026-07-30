@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/data/repositories/stock_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/venue_audit_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -27,6 +28,11 @@ class _HubSection {
   final String route;
   final Color Function(SatColors) tint;
   final String Function(WidgetRef ref)? badgeBuilder;
+
+  /// Badge shown instead of [badgeBuilder]'s on a phone. Only set where the
+  /// destination is genuinely tablet-shaped, so the card can say so before the
+  /// tap rather than after it.
+  final String? phoneBadge;
   final bool Function(WidgetRef ref)? hasAlert;
 
   const _HubSection({
@@ -36,6 +42,7 @@ class _HubSection {
     required this.route,
     required this.tint,
     this.badgeBuilder,
+    this.phoneBadge,
     this.hasAlert,
   });
 }
@@ -132,6 +139,26 @@ final _sections = <_HubSection>[
     route: '/reports',
     tint: (sc) => sc.urgent,
     badgeBuilder: (ref) => 'Laporan shift',
+  ),
+  _HubSection(
+    label: AppStrings.venueHubSectionAudit,
+    sub: AppStrings.venueHubSectionAuditSub,
+    icon: Icons.history,
+    route: '/audit',
+    tint: (sc) => sc.info,
+    badgeBuilder: (ref) {
+      final n = ref
+          .watch(venueAuditProvider)
+          .summary
+          .values
+          .fold<int>(0, (a, t) => a + t.count);
+      return AppStrings.auditEventCount(n);
+    },
+    // The log is a tablet screen (six columns at a glance), so the phone card
+    // says so before the tap rather than after it. The card still navigates —
+    // a manager on a handset should learn the feature exists and where to find
+    // it, not meet a dead control.
+    phoneBadge: AppStrings.auditTabletOnlyBadge,
   ),
 ];
 
@@ -667,7 +694,10 @@ class _HubCard extends ConsumerWidget {
     final iconBox = big ? 46.0 : 40.0;
     final iconSize = big ? 22.0 : 20.0;
 
-    final badgeText = section.badgeBuilder?.call(ref);
+    final badgeText =
+        (!context.layout.useTabletShell && section.phoneBadge != null)
+        ? section.phoneBadge
+        : section.badgeBuilder?.call(ref);
     final hasAlert = section.hasAlert?.call(ref) ?? false;
 
     return PressScale(

@@ -16,6 +16,7 @@ import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 
 const _uuid = Uuid();
@@ -1085,7 +1086,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'},
       );
     }
-    String? auditId;
+    AuditEntry? auditRow;
     final movingVisitId = source.currentVisitId;
     await db.transaction(() async {
       // Re-point the live visit + its tickets/receipts from source → target.
@@ -1153,21 +1154,17 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
           moneyState: Value(null),
         ),
       );
-      auditId = _uuid.v4();
       final srcLabel = source.label ?? source.id;
       final tgtLabel = target.label ?? target.id;
-      await db
-          .into(db.auditEntries)
-          .insert(
-            AuditEntriesCompanion.insert(
-              id: auditId!,
-              type: AuditType.tableMoved.name,
-              title: 'Pindah meja $srcLabel → $tgtLabel',
-              tableId: Value(targetId),
-              at: now,
-              actorUserId: Value(moverId),
-            ),
-          );
+      // No hub here: the broadcast must not fire until the transaction that
+      // moved the tables has committed.
+      auditRow = await writeAudit(
+        db,
+        type: AuditType.tableMoved,
+        title: 'Pindah meja $srcLabel → $tgtLabel',
+        tableId: targetId,
+        actorUserId: moverId,
+      );
     });
     // Broadcast both table rows + the audit row.
     final srcRow = await (db.select(
@@ -1182,22 +1179,8 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (tgtRow != null) {
       hub.broadcast(WsEventTypes.tableUpdated, _toJson(tgtRow));
     }
-    if (auditId != null) {
-      final a = await (db.select(
-        db.auditEntries,
-      )..where((e) => e.id.equals(auditId!))).getSingleOrNull();
-      if (a != null) {
-        hub.broadcast(WsEventTypes.auditCreated, {
-          'id': a.id,
-          'type': a.type,
-          'title': a.title,
-          'tableId': a.tableId,
-          'at': a.at.toIso8601String(),
-          'approvedBy': a.approvedBy,
-          'reason': a.reason,
-          'actorUserId': a.actorUserId,
-        });
-      }
+    if (auditRow != null) {
+      hub.broadcast(WsEventTypes.auditCreated, auditJson(auditRow!));
     }
     if (tgtRow == null) return Response.notFound('target table not found');
     return Response.ok(

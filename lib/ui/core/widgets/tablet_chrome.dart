@@ -119,6 +119,14 @@ class TabletSideRail extends StatelessWidget {
                     active: active,
                   ),
                   _RailBtn(
+                    id: 'kitchen',
+                    label: AppStrings.tabAntrian,
+                    icon: Icons.receipt_long_outlined,
+                    route: '/kitchen',
+                    active: active,
+                    badge: kitchenCount,
+                  ),
+                  _RailBtn(
                     id: 'orders',
                     label: AppStrings.tabPesanan,
                     icon: Icons.description_outlined,
@@ -137,14 +145,6 @@ class TabletSideRail extends StatelessWidget {
                       badge: guestCount,
                       alert: guestCount > 0,
                     ),
-                  _RailBtn(
-                    id: 'kitchen',
-                    label: AppStrings.tabAntrian,
-                    icon: Icons.receipt_long_outlined,
-                    route: '/kitchen',
-                    active: active,
-                    badge: kitchenCount,
-                  ),
                   if (showKasir)
                     _RailBtn(
                       id: 'kasir',

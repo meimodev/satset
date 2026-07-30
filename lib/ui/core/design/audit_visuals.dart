@@ -1,0 +1,134 @@
+import 'package:flutter/material.dart';
+
+import 'package:satset/domain/models/audit_entry.dart';
+import 'package:satset/ui/core/design/colors.dart';
+
+/// Visual + label mapping for [AuditType]. Lives in the UI layer so the domain
+/// model carries no Flutter imports, and in one file so the personal feed
+/// ("Saya") and the venue log speak the same vocabulary — a void has to look
+/// like a void on both screens or the colour stops being a signal.
+///
+/// The icon set is deliberately shared while the *shape* is not: the personal
+/// feed draws a soft-backed icon puck, the venue log a short text pill. Both
+/// read [auditTone].
+typedef AuditTone = ({IconData icon, Color bg, Color fg});
+
+AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
+  AuditType.voidItem => (
+    icon: Icons.delete_outline,
+    bg: sc.urgentSoft,
+    fg: sc.urgent,
+  ),
+  AuditType.comp => (
+    icon: Icons.card_giftcard_rounded,
+    bg: sc.warnSoft,
+    fg: sc.warn,
+  ),
+  AuditType.modify => (icon: Icons.edit_outlined, bg: sc.infoSoft, fg: sc.info),
+  AuditType.fire => (
+    icon: Icons.local_fire_department,
+    bg: sc.accentSoft,
+    fg: sc.accentText,
+  ),
+  AuditType.tableMoved => (
+    icon: Icons.swap_horiz_rounded,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+  AuditType.paymentRecorded => (
+    icon: Icons.payments_outlined,
+    bg: sc.successSoft,
+    fg: sc.success,
+  ),
+  AuditType.refund => (icon: Icons.undo_rounded, bg: sc.warnSoft, fg: sc.warn),
+  AuditType.discountApplied => (
+    icon: Icons.sell_outlined,
+    bg: sc.warnSoft,
+    fg: sc.warn,
+  ),
+  AuditType.discountRemoved => (
+    icon: Icons.sell_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+  AuditType.billReopened => (
+    icon: Icons.lock_open_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+  AuditType.billClosed => (
+    icon: Icons.receipt_long_outlined,
+    bg: sc.successSoft,
+    fg: sc.success,
+  ),
+  AuditType.menuKilled => (
+    icon: Icons.remove_circle_outline,
+    bg: sc.urgentSoft,
+    fg: sc.urgent,
+  ),
+  AuditType.menuRestored => (
+    icon: Icons.add_circle_outline,
+    bg: sc.successSoft,
+    fg: sc.success,
+  ),
+  AuditType.staffCreated => (
+    icon: Icons.person_add_alt_1,
+    bg: sc.successSoft,
+    fg: sc.success,
+  ),
+  AuditType.staffDeleted => (
+    icon: Icons.person_remove,
+    bg: sc.urgentSoft,
+    fg: sc.urgent,
+  ),
+  AuditType.staffDisabled => (
+    icon: Icons.block,
+    bg: sc.urgentSoft,
+    fg: sc.urgent,
+  ),
+  AuditType.staffEnabled => (
+    icon: Icons.check_circle_outline,
+    bg: sc.successSoft,
+    fg: sc.success,
+  ),
+  AuditType.staffRoleChanged => (
+    icon: Icons.badge_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+  AuditType.staffPinSet => (
+    icon: Icons.lock_reset,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+  AuditType.staffPinReset => (
+    icon: Icons.lock_reset,
+    bg: sc.warnSoft,
+    fg: sc.warn,
+  ),
+  AuditType.roleCreated => (
+    icon: Icons.shield_outlined,
+    bg: sc.successSoft,
+    fg: sc.success,
+  ),
+  AuditType.roleRenamed => (
+    icon: Icons.edit_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+  AuditType.roleDeleted => (
+    icon: Icons.shield_outlined,
+    bg: sc.urgentSoft,
+    fg: sc.urgent,
+  ),
+  AuditType.roleColorChanged => (
+    icon: Icons.palette_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+  AuditType.roleCapabilityChanged => (
+    icon: Icons.key_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
+};

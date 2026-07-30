@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -110,6 +111,12 @@ Future<void> shareExportBytes({
     text: text,
   );
 }
+
+/// UTF-8 with a BOM, so Excel opens Indonesian text and Rupiah correctly
+/// instead of mojibake. Every CSV export goes out through this — a file that
+/// opens wrong is a file the venue does not trust.
+Uint8List csvBytes(String csv) =>
+    Uint8List.fromList([0xEF, 0xBB, 0xBF, ...utf8.encode(csv)]);
 
 /// RFC-4180 cell escaping: wrap in quotes when the value carries a comma,
 /// quote, or newline; double any embedded quotes.

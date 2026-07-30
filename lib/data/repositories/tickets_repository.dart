@@ -386,6 +386,59 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     state = next;
   }
 
+  /// Edit a line the kitchen does not yet own — qty, note and modifiers on a
+  /// `held` row (ADR-0071). The server rejects anything past `held` with a 409,
+  /// so this is a request, not a local mutation with a sync afterwards: the
+  /// optimistic write lands only once the server has agreed.
+  Future<void> modifyLine(
+    String tableId,
+    String ticketId, {
+    required int qty,
+    required String? note,
+    required List<TicketModifier> modifiers,
+    required int unitPrice,
+  }) async {
+    SatLog.repo(
+      'tickets.modify id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} '
+      'qty=$qty',
+    );
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg != null) {
+      await ref.read(apiClientProvider).patchJson('/tickets/$ticketId', {
+        'qty': qty,
+        'note': note,
+        'unitPrice': unitPrice,
+        'modifiers': [
+          for (final m in modifiers)
+            {
+              'groupId': m.groupId,
+              'optionId': m.optionId,
+              'label': m.label,
+              'priceDelta': m.priceDelta,
+            },
+        ],
+      });
+    }
+    final key = _keyOfTicket(ticketId);
+    if (key == null) return;
+    final next = Map<String, List<Ticket>>.from(state);
+    final list = next[key];
+    if (list == null) return;
+    next[key] = [
+      for (final t in list)
+        if (t.id == ticketId)
+          t.copyWith(
+            qty: qty,
+            note: note,
+            modifiers: modifiers,
+            price: unitPrice,
+          )
+        else
+          t,
+    ];
+    state = next;
+  }
+
   String _nowStamp(DateTime d) {
     String pad(int n) => n.toString().padLeft(2, '0');
     return '${pad(d.hour)}:${pad(d.minute)}';

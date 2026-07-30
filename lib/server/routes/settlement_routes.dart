@@ -12,6 +12,7 @@ import 'package:satset/core/printing/bill_struk_renderer.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/auth.dart';
@@ -98,6 +99,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       tableId: visit.tableId,
       actor: actorId,
       reason: reason,
+      // Only a write-off moves money; a normal close is bookkeeping, so it
+      // carries no amount rather than a zero the venue log would tally.
+      amountCents: loss > 0 ? loss : null,
     );
     final fresh = await _visit(db, visitId);
     final snapshotted = fresh != null && fresh.tableFreedAt != null;
@@ -548,11 +552,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     }
 
+    final discountId = _uuid.v4();
     await db
         .into(db.discounts)
         .insert(
           DiscountsCompanion.insert(
-            id: _uuid.v4(),
+            // Captured rather than inlined so the audit row below can read the
+            // resolved rupiah back off this discount (ADR-0072).
+            id: discountId,
+            // Nullable since ADR-0070 — a bill-level discount has no receipt.
             receiptId: Value(receiptId),
             ticketId: Value(ticketId),
             presetId: Value(preset.id),
@@ -567,12 +575,18 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         );
     // _recompute resolves the rupiah amount against the current base.
     await _recompute(db, visitId);
+    // Audit the resolved rupiah, not the preset's rate — a "15%" row tells a
+    // manager nothing about how much left the till.
+    final applied = await (db.select(
+      db.discounts,
+    )..where((x) => x.id.equals(discountId))).getSingleOrNull();
     await _audit(
       db,
       AuditType.discountApplied,
       'Diskon ${preset.name}${ticketId == null ? '' : ' (item)'}',
       tableId: rec.tableId,
       actor: actor?.id,
+      amountCents: applied?.amount,
     );
     await settleOrBroadcast(visitId, actor?.id);
     return _ok({'bill': await _buildBill(db, visitId)});
@@ -628,6 +642,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       'Hapus diskon ${row.name}',
       tableId: rec.tableId,
       actor: actor?.id,
+      amountCents: row.amount,
     );
     await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
@@ -837,6 +852,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         'Pembayaran ${_rupiah(amount)} ($method) ${rec.label}',
         tableId: rec.tableId,
         actor: user?.id,
+        amountCents: amount,
       );
     });
     await settleOrBroadcast(visitId, user?.id);
@@ -912,6 +928,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         tableId: rec.tableId,
         actor: user?.id,
         reason: (body['note'] as String?)?.trim(),
+        // The payment row stores this negative; the audit column is a
+        // magnitude, so the sign is dropped here deliberately.
+        amountCents: amount,
       );
     });
     await broadcastBill(visitId);
@@ -1487,21 +1506,16 @@ Future<void> _audit(
   required String tableId,
   String? actor,
   String? reason,
-}) async {
-  await db
-      .into(db.auditEntries)
-      .insert(
-        AuditEntriesCompanion.insert(
-          id: _uuid.v4(),
-          type: type.name,
-          title: title,
-          tableId: Value(tableId),
-          at: SatClock.now().toUtc(),
-          actorUserId: Value(actor),
-          reason: Value(reason),
-        ),
-      );
-}
+  int? amountCents,
+}) => writeAudit(
+  db,
+  type: type,
+  title: title,
+  tableId: tableId,
+  actorUserId: actor,
+  reason: reason,
+  amountCents: amountCents,
+);
 
 /// Build the full bill JSON for one visit, or null if it has no sent lines.
 Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {

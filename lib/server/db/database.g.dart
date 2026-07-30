@@ -7837,6 +7837,39 @@ class $AuditEntriesTable extends AuditEntries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _amountCentsMeta = const VerificationMeta(
+    'amountCents',
+  );
+  @override
+  late final GeneratedColumn<int> amountCents = GeneratedColumn<int>(
+    'amount_cents',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorNameMeta = const VerificationMeta(
+    'actorName',
+  );
+  @override
+  late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
+    'actor_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorRoleNameMeta = const VerificationMeta(
+    'actorRoleName',
+  );
+  @override
+  late final GeneratedColumn<String> actorRoleName = GeneratedColumn<String>(
+    'actor_role_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7847,6 +7880,9 @@ class $AuditEntriesTable extends AuditEntries
     approvedBy,
     reason,
     actorUserId,
+    amountCents,
+    actorName,
+    actorRoleName,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7913,6 +7949,30 @@ class $AuditEntriesTable extends AuditEntries
         ),
       );
     }
+    if (data.containsKey('amount_cents')) {
+      context.handle(
+        _amountCentsMeta,
+        amountCents.isAcceptableOrUnknown(
+          data['amount_cents']!,
+          _amountCentsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor_name')) {
+      context.handle(
+        _actorNameMeta,
+        actorName.isAcceptableOrUnknown(data['actor_name']!, _actorNameMeta),
+      );
+    }
+    if (data.containsKey('actor_role_name')) {
+      context.handle(
+        _actorRoleNameMeta,
+        actorRoleName.isAcceptableOrUnknown(
+          data['actor_role_name']!,
+          _actorRoleNameMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7954,6 +8014,18 @@ class $AuditEntriesTable extends AuditEntries
         DriftSqlType.string,
         data['${effectivePrefix}actor_user_id'],
       ),
+      amountCents: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount_cents'],
+      ),
+      actorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_name'],
+      ),
+      actorRoleName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_role_name'],
+      ),
     );
   }
 
@@ -7972,6 +8044,21 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
   final String? approvedBy;
   final String? reason;
   final String? actorUserId;
+
+  /// What the audited act was worth, as a **magnitude** — never signed.
+  /// Direction is carried by [type]: a void, a comp, a discount and a refund
+  /// all store a positive number, and every tile on the venue log sums within
+  /// one type, so no reader ever has to decide what a negative means here.
+  /// Null for types where money is not the point (fire, tableMoved, staff and
+  /// role edits) and on rows written before v43.
+  final int? amountCents;
+
+  /// Who acted, snapshotted at write time — not a join key. Staff get renamed
+  /// and deleted (`staffDeleted` is itself an audit type); resolving these at
+  /// read would let a later personnel change rewrite the trail. Null on
+  /// pre-v43 rows, which fall back to a live join against `users`/`roles`.
+  final String? actorName;
+  final String? actorRoleName;
   const AuditEntry({
     required this.id,
     required this.type,
@@ -7981,6 +8068,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     this.approvedBy,
     this.reason,
     this.actorUserId,
+    this.amountCents,
+    this.actorName,
+    this.actorRoleName,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8000,6 +8090,15 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     }
     if (!nullToAbsent || actorUserId != null) {
       map['actor_user_id'] = Variable<String>(actorUserId);
+    }
+    if (!nullToAbsent || amountCents != null) {
+      map['amount_cents'] = Variable<int>(amountCents);
+    }
+    if (!nullToAbsent || actorName != null) {
+      map['actor_name'] = Variable<String>(actorName);
+    }
+    if (!nullToAbsent || actorRoleName != null) {
+      map['actor_role_name'] = Variable<String>(actorRoleName);
     }
     return map;
   }
@@ -8022,6 +8121,15 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       actorUserId: actorUserId == null && nullToAbsent
           ? const Value.absent()
           : Value(actorUserId),
+      amountCents: amountCents == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amountCents),
+      actorName: actorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorName),
+      actorRoleName: actorRoleName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorRoleName),
     );
   }
 
@@ -8039,6 +8147,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       approvedBy: serializer.fromJson<String?>(json['approvedBy']),
       reason: serializer.fromJson<String?>(json['reason']),
       actorUserId: serializer.fromJson<String?>(json['actorUserId']),
+      amountCents: serializer.fromJson<int?>(json['amountCents']),
+      actorName: serializer.fromJson<String?>(json['actorName']),
+      actorRoleName: serializer.fromJson<String?>(json['actorRoleName']),
     );
   }
   @override
@@ -8053,6 +8164,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       'approvedBy': serializer.toJson<String?>(approvedBy),
       'reason': serializer.toJson<String?>(reason),
       'actorUserId': serializer.toJson<String?>(actorUserId),
+      'amountCents': serializer.toJson<int?>(amountCents),
+      'actorName': serializer.toJson<String?>(actorName),
+      'actorRoleName': serializer.toJson<String?>(actorRoleName),
     };
   }
 
@@ -8065,6 +8179,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     Value<String?> approvedBy = const Value.absent(),
     Value<String?> reason = const Value.absent(),
     Value<String?> actorUserId = const Value.absent(),
+    Value<int?> amountCents = const Value.absent(),
+    Value<String?> actorName = const Value.absent(),
+    Value<String?> actorRoleName = const Value.absent(),
   }) => AuditEntry(
     id: id ?? this.id,
     type: type ?? this.type,
@@ -8074,6 +8191,11 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
     reason: reason.present ? reason.value : this.reason,
     actorUserId: actorUserId.present ? actorUserId.value : this.actorUserId,
+    amountCents: amountCents.present ? amountCents.value : this.amountCents,
+    actorName: actorName.present ? actorName.value : this.actorName,
+    actorRoleName: actorRoleName.present
+        ? actorRoleName.value
+        : this.actorRoleName,
   );
   AuditEntry copyWithCompanion(AuditEntriesCompanion data) {
     return AuditEntry(
@@ -8089,6 +8211,13 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       actorUserId: data.actorUserId.present
           ? data.actorUserId.value
           : this.actorUserId,
+      amountCents: data.amountCents.present
+          ? data.amountCents.value
+          : this.amountCents,
+      actorName: data.actorName.present ? data.actorName.value : this.actorName,
+      actorRoleName: data.actorRoleName.present
+          ? data.actorRoleName.value
+          : this.actorRoleName,
     );
   }
 
@@ -8102,7 +8231,10 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
           ..write('at: $at, ')
           ..write('approvedBy: $approvedBy, ')
           ..write('reason: $reason, ')
-          ..write('actorUserId: $actorUserId')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('amountCents: $amountCents, ')
+          ..write('actorName: $actorName, ')
+          ..write('actorRoleName: $actorRoleName')
           ..write(')'))
         .toString();
   }
@@ -8117,6 +8249,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     approvedBy,
     reason,
     actorUserId,
+    amountCents,
+    actorName,
+    actorRoleName,
   );
   @override
   bool operator ==(Object other) =>
@@ -8129,7 +8264,10 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
           other.at == this.at &&
           other.approvedBy == this.approvedBy &&
           other.reason == this.reason &&
-          other.actorUserId == this.actorUserId);
+          other.actorUserId == this.actorUserId &&
+          other.amountCents == this.amountCents &&
+          other.actorName == this.actorName &&
+          other.actorRoleName == this.actorRoleName);
 }
 
 class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
@@ -8141,6 +8279,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
   final Value<String?> approvedBy;
   final Value<String?> reason;
   final Value<String?> actorUserId;
+  final Value<int?> amountCents;
+  final Value<String?> actorName;
+  final Value<String?> actorRoleName;
   final Value<int> rowid;
   const AuditEntriesCompanion({
     this.id = const Value.absent(),
@@ -8151,6 +8292,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     this.approvedBy = const Value.absent(),
     this.reason = const Value.absent(),
     this.actorUserId = const Value.absent(),
+    this.amountCents = const Value.absent(),
+    this.actorName = const Value.absent(),
+    this.actorRoleName = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AuditEntriesCompanion.insert({
@@ -8162,6 +8306,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     this.approvedBy = const Value.absent(),
     this.reason = const Value.absent(),
     this.actorUserId = const Value.absent(),
+    this.amountCents = const Value.absent(),
+    this.actorName = const Value.absent(),
+    this.actorRoleName = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type),
@@ -8176,6 +8323,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     Expression<String>? approvedBy,
     Expression<String>? reason,
     Expression<String>? actorUserId,
+    Expression<int>? amountCents,
+    Expression<String>? actorName,
+    Expression<String>? actorRoleName,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8187,6 +8337,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
       if (approvedBy != null) 'approved_by': approvedBy,
       if (reason != null) 'reason': reason,
       if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (amountCents != null) 'amount_cents': amountCents,
+      if (actorName != null) 'actor_name': actorName,
+      if (actorRoleName != null) 'actor_role_name': actorRoleName,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8200,6 +8353,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     Value<String?>? approvedBy,
     Value<String?>? reason,
     Value<String?>? actorUserId,
+    Value<int?>? amountCents,
+    Value<String?>? actorName,
+    Value<String?>? actorRoleName,
     Value<int>? rowid,
   }) {
     return AuditEntriesCompanion(
@@ -8211,6 +8367,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
       approvedBy: approvedBy ?? this.approvedBy,
       reason: reason ?? this.reason,
       actorUserId: actorUserId ?? this.actorUserId,
+      amountCents: amountCents ?? this.amountCents,
+      actorName: actorName ?? this.actorName,
+      actorRoleName: actorRoleName ?? this.actorRoleName,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8242,6 +8401,15 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     if (actorUserId.present) {
       map['actor_user_id'] = Variable<String>(actorUserId.value);
     }
+    if (amountCents.present) {
+      map['amount_cents'] = Variable<int>(amountCents.value);
+    }
+    if (actorName.present) {
+      map['actor_name'] = Variable<String>(actorName.value);
+    }
+    if (actorRoleName.present) {
+      map['actor_role_name'] = Variable<String>(actorRoleName.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8259,6 +8427,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
           ..write('approvedBy: $approvedBy, ')
           ..write('reason: $reason, ')
           ..write('actorUserId: $actorUserId, ')
+          ..write('amountCents: $amountCents, ')
+          ..write('actorName: $actorName, ')
+          ..write('actorRoleName: $actorRoleName, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -25311,6 +25482,9 @@ typedef $$AuditEntriesTableCreateCompanionBuilder =
       Value<String?> approvedBy,
       Value<String?> reason,
       Value<String?> actorUserId,
+      Value<int?> amountCents,
+      Value<String?> actorName,
+      Value<String?> actorRoleName,
       Value<int> rowid,
     });
 typedef $$AuditEntriesTableUpdateCompanionBuilder =
@@ -25323,6 +25497,9 @@ typedef $$AuditEntriesTableUpdateCompanionBuilder =
       Value<String?> approvedBy,
       Value<String?> reason,
       Value<String?> actorUserId,
+      Value<int?> amountCents,
+      Value<String?> actorName,
+      Value<String?> actorRoleName,
       Value<int> rowid,
     });
 
@@ -25372,6 +25549,21 @@ class $$AuditEntriesTableFilterComposer
 
   ColumnFilters<String> get actorUserId => $composableBuilder(
     column: $table.actorUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amountCents => $composableBuilder(
+    column: $table.amountCents,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorRoleName => $composableBuilder(
+    column: $table.actorRoleName,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -25424,6 +25616,21 @@ class $$AuditEntriesTableOrderingComposer
     column: $table.actorUserId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get amountCents => $composableBuilder(
+    column: $table.amountCents,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorRoleName => $composableBuilder(
+    column: $table.actorRoleName,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AuditEntriesTableAnnotationComposer
@@ -25460,6 +25667,19 @@ class $$AuditEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get actorUserId => $composableBuilder(
     column: $table.actorUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get amountCents => $composableBuilder(
+    column: $table.amountCents,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actorName =>
+      $composableBuilder(column: $table.actorName, builder: (column) => column);
+
+  GeneratedColumn<String> get actorRoleName => $composableBuilder(
+    column: $table.actorRoleName,
     builder: (column) => column,
   );
 }
@@ -25503,6 +25723,9 @@ class $$AuditEntriesTableTableManager
                 Value<String?> approvedBy = const Value.absent(),
                 Value<String?> reason = const Value.absent(),
                 Value<String?> actorUserId = const Value.absent(),
+                Value<int?> amountCents = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                Value<String?> actorRoleName = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AuditEntriesCompanion(
                 id: id,
@@ -25513,6 +25736,9 @@ class $$AuditEntriesTableTableManager
                 approvedBy: approvedBy,
                 reason: reason,
                 actorUserId: actorUserId,
+                amountCents: amountCents,
+                actorName: actorName,
+                actorRoleName: actorRoleName,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -25525,6 +25751,9 @@ class $$AuditEntriesTableTableManager
                 Value<String?> approvedBy = const Value.absent(),
                 Value<String?> reason = const Value.absent(),
                 Value<String?> actorUserId = const Value.absent(),
+                Value<int?> amountCents = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                Value<String?> actorRoleName = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AuditEntriesCompanion.insert(
                 id: id,
@@ -25535,6 +25764,9 @@ class $$AuditEntriesTableTableManager
                 approvedBy: approvedBy,
                 reason: reason,
                 actorUserId: actorUserId,
+                amountCents: amountCents,
+                actorName: actorName,
+                actorRoleName: actorRoleName,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

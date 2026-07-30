@@ -20,6 +20,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/server/server.dart' show serverRuntimeProvider;
+import 'package:satset/ui/core/design/audit_visuals.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -862,75 +863,7 @@ class _AuditRow extends StatelessWidget {
       if (entry.approvedBy != null) 'disetujui ${entry.approvedBy}',
       if (entry.reason != null) entry.reason!,
     ].join(' · ');
-    final (icon, bg, fg) = switch (entry.type) {
-      AuditType.voidItem => (Icons.delete_outline, sc.urgentSoft, sc.urgent),
-      AuditType.comp => (Icons.card_giftcard_rounded, sc.warnSoft, sc.warn),
-      AuditType.modify => (Icons.edit_outlined, sc.infoSoft, sc.info),
-      AuditType.fire => (
-        Icons.local_fire_department,
-        sc.accentSoft,
-        sc.accentText,
-      ),
-      AuditType.tableMoved => (Icons.swap_horiz_rounded, sc.infoSoft, sc.info),
-      AuditType.paymentRecorded => (
-        Icons.payments_outlined,
-        sc.successSoft,
-        sc.success,
-      ),
-      AuditType.refund => (Icons.undo_rounded, sc.warnSoft, sc.warn),
-      AuditType.discountApplied => (Icons.sell_outlined, sc.warnSoft, sc.warn),
-      AuditType.discountRemoved => (Icons.sell_outlined, sc.infoSoft, sc.info),
-      AuditType.billReopened => (
-        Icons.lock_open_outlined,
-        sc.infoSoft,
-        sc.info,
-      ),
-      AuditType.billClosed => (
-        Icons.receipt_long_outlined,
-        sc.successSoft,
-        sc.success,
-      ),
-      AuditType.staffCreated => (
-        Icons.person_add_alt_1,
-        sc.successSoft,
-        sc.success,
-      ),
-      AuditType.staffDeleted => (Icons.person_remove, sc.urgentSoft, sc.urgent),
-      AuditType.staffDisabled => (Icons.block, sc.urgentSoft, sc.urgent),
-      AuditType.staffEnabled => (
-        Icons.check_circle_outline,
-        sc.successSoft,
-        sc.success,
-      ),
-      AuditType.staffRoleChanged => (
-        Icons.badge_outlined,
-        sc.infoSoft,
-        sc.info,
-      ),
-      AuditType.staffPinSet => (Icons.lock_reset, sc.infoSoft, sc.info),
-      AuditType.staffPinReset => (Icons.lock_reset, sc.warnSoft, sc.warn),
-      AuditType.roleCreated => (
-        Icons.shield_outlined,
-        sc.successSoft,
-        sc.success,
-      ),
-      AuditType.roleRenamed => (Icons.edit_outlined, sc.infoSoft, sc.info),
-      AuditType.roleDeleted => (
-        Icons.shield_outlined,
-        sc.urgentSoft,
-        sc.urgent,
-      ),
-      AuditType.roleColorChanged => (
-        Icons.palette_outlined,
-        sc.infoSoft,
-        sc.info,
-      ),
-      AuditType.roleCapabilityChanged => (
-        Icons.key_outlined,
-        sc.infoSoft,
-        sc.info,
-      ),
-    };
+    final (:icon, :bg, :fg) = auditTone(entry.type, sc);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s3),
       child: Row(

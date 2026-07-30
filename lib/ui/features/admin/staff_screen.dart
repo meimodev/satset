@@ -186,21 +186,32 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
             ),
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 200,
-              mainAxisExtent: 168,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: filtered.length,
-            itemBuilder: (ctx, i) => _StaffCard(
-              user: filtered[i],
-              role: _roleOf(filtered[i], roles),
-              onTap: () => _openDetail(filtered[i]),
-            ),
+          // ponytail: Wrap, not a shrinkWrap GridView — a nested sliver grid
+          // inside AdminPage's SingleChildScrollView trips
+          // `child.hasSize` during paint. Same tiles, plain box layout.
+          LayoutBuilder(
+            builder: (ctx, c) {
+              const gap = 12.0;
+              const maxTile = 200.0;
+              final cols = (c.maxWidth / maxTile).ceil().clamp(1, 12);
+              final w = (c.maxWidth - gap * (cols - 1)) / cols;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final u in filtered)
+                    SizedBox(
+                      width: w,
+                      height: 168,
+                      child: _StaffCard(
+                        user: u,
+                        role: _roleOf(u, roles),
+                        onTap: () => _openDetail(u),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
       ],
     );
@@ -829,7 +840,10 @@ class _StaffCard extends StatelessWidget {
                 AppStrings.staffNoRole,
                 style: SatType.monoS(color: sc.textLo),
               ),
-            const Spacer(),
+            // ponytail: fixed gap, not a Spacer — SatCard shrink-wraps its
+            // child (Column mainAxisSize.min), so a flex child here gets
+            // unbounded height and the whole page fails layout.
+            const SizedBox(height: Sp.s2),
             Text('PIN ${user.pin}', style: SatType.monoS(color: sc.textLo)),
           ],
         ),
