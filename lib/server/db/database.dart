@@ -54,11 +54,11 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  // 41 belongs to main (the Indonesian menu-tag code fix). This branch was cut
-  // before it and independently reached for 41, which would have left every
-  // device already on 41 skipping the cashier migration entirely — no
-  // `channel`, no `prepaid`, no nullable `receipt_id`. Renumbered to 42; the
-  // merge with main keeps both blocks.
+  // 41 is the Indonesian menu-tag code fix; 42 is the cashier pass. The two
+  // were developed in parallel and both reached for 41 — resolved in favour of
+  // main, because a device that had already taken 41 would otherwise skip the
+  // cashier migration silently and run against a schema with no `channel`, no
+  // `prepaid` and a NOT NULL `receipt_id`.
   int get schemaVersion => 42;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
@@ -707,6 +707,14 @@ class AppDatabase extends _$AppDatabase {
           type: "TEXT NOT NULL DEFAULT 'doorbell'",
         );
       }
+      if (from < 41) {
+        // Badge codes were abbreviated from the English tag id while the name
+        // beside them was Indonesian — a card read `SH` for `Kerang`. Force
+        // every seeded code onto the Indonesian abbreviation; an admin's own
+        // rename is overwritten, which is the tradeoff taken for a consistent
+        // result on every device.
+        await _fixMenuTagCodes();
+      }
       if (from < 42) {
         // The cashier reconciliation pass (ADR-0066..0070).
         //
@@ -854,21 +862,24 @@ class AppDatabase extends _$AppDatabase {
   /// items' `allergens_json` / `dietary_json` refs stay valid with no item
   /// migration. INSERT OR IGNORE preserves any admin edits on re-run.
   Future<void> _seedMenuTags() async {
+    // Codes derive from the Indonesian `name`, not the English `id` — the
+    // badge on a menu card is read by Indonesian-speaking staff. `SS` (SuSu)
+    // vs `SF` (SulFit) breaks the collision both words want.
     const allergens = [
       ['gluten', 'Gluten', 'GL'],
-      ['nut', 'Kacang', 'NU'],
-      ['dairy', 'Susu', 'DA'],
-      ['shellfish', 'Kerang', 'SH'],
-      ['egg', 'Telur', 'EG'],
-      ['soy', 'Kedelai', 'SO'],
-      ['sesame', 'Wijen', 'SE'],
-      ['sulfites', 'Sulfit', 'SU'],
+      ['nut', 'Kacang', 'KC'],
+      ['dairy', 'Susu', 'SS'],
+      ['shellfish', 'Kerang', 'KR'],
+      ['egg', 'Telur', 'TL'],
+      ['soy', 'Kedelai', 'KD'],
+      ['sesame', 'Wijen', 'WJ'],
+      ['sulfites', 'Sulfit', 'SF'],
     ];
     const diets = [
       ['vegetarian', 'Vegetarian', 'VG'],
       ['vegan', 'Vegan', 'VN'],
-      ['glutenFree', 'Bebas gluten', 'GF'],
-      ['dairyFree', 'Bebas susu', 'DF'],
+      ['glutenFree', 'Bebas gluten', 'BG'],
+      ['dairyFree', 'Bebas susu', 'BS'],
       ['spicy', 'Pedas', 'PD'],
       ['halal', 'Halal', 'HL'],
       ['signature', 'Andalan', 'AD'],
@@ -885,6 +896,31 @@ class AppDatabase extends _$AppDatabase {
 
     await ins(allergens, 'allergen');
     await ins(diets, 'diet');
+  }
+
+  /// Re-point every seeded tag's `code` at the Indonesian abbreviation (v41).
+  ///
+  /// `_seedMenuTags` is INSERT OR IGNORE, so it cannot correct a row that
+  /// already exists — this is the paired UPDATE. Only ids the seed owns are
+  /// touched; an admin-created tag keeps whatever code it was given.
+  Future<void> _fixMenuTagCodes() async {
+    const codes = {
+      'nut': 'KC',
+      'dairy': 'SS',
+      'shellfish': 'KR',
+      'egg': 'TL',
+      'soy': 'KD',
+      'sesame': 'WJ',
+      'sulfites': 'SF',
+      'glutenFree': 'BG',
+      'dairyFree': 'BS',
+    };
+    for (final e in codes.entries) {
+      await customStatement('UPDATE menu_tags SET code = ? WHERE id = ?', [
+        e.value,
+        e.key,
+      ]);
+    }
   }
 
   Future<void> _safeAddColumn(String column, {String type = 'TEXT'}) =>

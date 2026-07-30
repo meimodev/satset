@@ -44,7 +44,7 @@ void main() {
   }
 
   Future<void> upgrade() =>
-      db.migration.onUpgrade!(db.createMigrator(), 41, 42);
+      db.migration.onUpgrade(db.createMigrator(), 41, 42);
 
   Future<Set<String>> columnsOf(String table) async {
     final rows = await db

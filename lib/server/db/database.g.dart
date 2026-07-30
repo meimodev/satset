@@ -11607,7 +11607,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
 
   /// Takeaway channel + prepaid flag, frozen at snapshot so history can still
   /// tell a GoFood order from a walk-in bungkus. Empty / false for dine-in and
-  /// for pre-v41 rows. ADR-0066.
+  /// for pre-v42 rows. ADR-0066.
   final String channel;
   final bool prepaid;
   const TableSession({

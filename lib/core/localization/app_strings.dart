@@ -270,6 +270,10 @@ class AppStrings {
   /// shorter [tabAntrian].
   static const String kitchenQueueTitle = 'Antrian Persiapan';
 
+  // Menu search (order flow).
+  static const String hapusPencarian = 'Hapus pencarian';
+  static const String takAdaItemCocok = 'Tak ada item cocok';
+
   // Breadcrumbs. Trail tails only — the venue name and the destination segment
   // are prepended by SatAppBar and the tab* constants above.
   static const String crumbTambahItem = 'Tambah item';
