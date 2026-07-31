@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 
 /// Cloud control plane for the super admin. READS go straight to Firestore
@@ -165,3 +166,26 @@ final fleetVenuesProvider = StreamProvider<List<Venue>>(
 final fleetAdminsProvider = StreamProvider<List<AdminProfile>>(
   (ref) => ref.watch(fleetServiceProvider).watchAdmins(),
 );
+
+/// Wall-clock tick driving the console's offline / lockout readouts.
+///
+/// Those are `now − lastSeenAt`, computed during build — and the venue that has
+/// gone dark is exactly the one that stops writing, so Firestore pushes no
+/// snapshot and nothing rebuilds. Without this the tile of a venue that just
+/// died keeps reading "Online" for as long as the screen stays open, and the
+/// urgency sort freezes with it.
+final fleetTickProvider = StreamProvider<DateTime>(
+  (ref) => Stream<DateTime>.periodic(
+    const Duration(seconds: 30),
+    (_) => SatClock.now(),
+  ),
+);
+
+/// True while the fleet is being served from Firestore's local cache rather
+/// than the server. The super admin is online-only (ADR-0016): there is no
+/// local server behind this screen, so cached venues are a picture of the past
+/// and every mutation would fail. Drives the banner + the mutation lock.
+final fleetOfflineProvider = Provider<bool>((ref) {
+  final venues = ref.watch(fleetVenuesProvider).valueOrNull;
+  return venues != null && venues.any((v) => v.fromCache);
+});

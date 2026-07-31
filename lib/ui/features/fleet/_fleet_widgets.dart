@@ -5,37 +5,187 @@ import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
 /// Shared visual language for the Fleet console + venue editor, so the two
 /// surfaces read as one system. Venue tiles and admin rows are the same
-/// [FleetTile]; status is always carried by the leading icon **tint**, never a
-/// separate pill (see CONTEXT.md "Fleet console").
+/// [FleetTile]; status stays out of the pill row and rides the leading icon —
+/// but as **tint plus glyph**, never tint alone (see CONTEXT.md "Fleet
+/// console"). An active venue used to differ from a killed one only by the
+/// icon's hue, which a red/green-blind operator cannot read.
 
-/// Status → (tint, soft bg, label). One source of truth for both venue tiles
-/// (kill switch) and admin rows (per-operator ban).
-({Color tint, Color soft, String label}) fleetStatusVisual(
+/// Status → (tint, soft bg, label, glyph). One source of truth for both venue
+/// tiles (kill switch) and admin rows (per-operator ban).
+///
+/// [activeIcon] is what the row *is* when nothing is wrong — a storefront for a
+/// venue, a person for an admin. The non-active glyphs are the same for both:
+/// what happened to the row matters more than what kind of row it is.
+({Color tint, Color soft, String label, IconData icon}) fleetStatusVisual(
   SatColors sc,
-  AdminStatus s,
-) {
+  AdminStatus s, {
+  required IconData activeIcon,
+}) {
   return switch (s) {
     AdminStatus.active => (
       tint: sc.success,
       soft: sc.successSoft,
       label: 'AKTIF',
+      icon: activeIcon,
     ),
     AdminStatus.suspended => (
       tint: sc.warn,
       soft: sc.warnSoft,
       label: 'TANGGUH',
+      icon: Icons.pause_circle_outline,
     ),
     AdminStatus.banned => (
       tint: sc.urgent,
       soft: sc.urgentSoft,
       label: 'BLOKIR',
+      icon: Icons.block,
     ),
-    AdminStatus.unknown => (tint: sc.textLo, soft: sc.bg3, label: '?'),
+    AdminStatus.unknown => (
+      tint: sc.textLo,
+      soft: sc.bg3,
+      label: '?',
+      icon: Icons.help_outline,
+    ),
   };
+}
+
+// ── Shared page metrics ─────────────────────────────────────────────────────
+
+/// The gutter and the column cap both fleet surfaces run on.
+///
+/// Shared because the console pushes straight into the editor: two screens one
+/// tap apart on different gutters make every push slide the content sideways,
+/// and a list capped to a readable column that opens into a full-bleed form
+/// throws away the line length it was capped for. On a landscape tablet the
+/// uncapped editor stretched a two-field address form across a metre.
+const fleetGutter = Sp.s4;
+const fleetColumnMax = 720.0;
+
+// ── Subscription ────────────────────────────────────────────────────────────
+
+/// The plans the console offers. The wire takes any string (`setVenueBilling`
+/// trims and stores it verbatim), which is exactly why the *client* holds a
+/// closed list: a plan typed by hand is `pro` on one venue and `Pro ` on the
+/// next, and nothing downstream can group them again.
+const fleetPlans = <String, String>{
+  'free': 'Free',
+  'basic': 'Basic',
+  'pro': 'Pro',
+  'enterprise': 'Enterprise',
+};
+
+/// [fleetPlans] widened by whatever [current] already is, so opening a venue
+/// that sits on a legacy plan doesn't quietly re-plan it as a side effect of
+/// rendering a dropdown that cannot represent it.
+List<String> fleetPlanKeys(String current) => [
+  ...fleetPlans.keys,
+  if (current.isNotEmpty && !fleetPlans.containsKey(current)) current,
+];
+
+String fleetPlanLabel(String key) =>
+    fleetPlans[key] ?? (key.isEmpty ? '—' : key);
+
+/// The plan picker itself, so the create dialog and the venue editor cannot
+/// drift into offering two different lists of plans.
+Widget fleetPlanDropdown({
+  required String value,
+  required ValueChanged<String> onChanged,
+  String label = 'Paket',
+}) => SatDropdown<String>(
+  value: value,
+  label: label,
+  options: [
+    for (final k in fleetPlanKeys(value)) SatOption(k, fleetPlanLabel(k)),
+  ],
+  onChanged: (x) => onChanged(x ?? value),
+);
+
+/// How far ahead of a paid-through date the console starts saying so. Two weeks
+/// is an invoice's worth of notice — this screen exists to bill a venue *before*
+/// it lapses, and a console that only flags the lapse has already lost the
+/// month it was meant to protect.
+const fleetRenewWarn = Duration(days: 14);
+
+/// Time left on the subscription, once inside [fleetRenewWarn] and still ahead
+/// of us. Null when there is no date, when it is further out than the window,
+/// or when it has already passed — a lapsed date belongs to
+/// [fleetBillingTrouble], and reporting it here as well would put a warn pill
+/// and an urgent pill on the same row saying the same thing.
+Duration? fleetSubscriptionEnding(Venue v, DateTime now) {
+  final until = v.paidUntil;
+  if (until == null) return null;
+  final left = until.difference(now);
+  return left > Duration.zero && left <= fleetRenewWarn ? left : null;
+}
+
+/// Adds [months] to a subscription without letting the day of month run over
+/// into the next one: `31 Jan + 1 bulan` is 28 Feb, not 3 Mar. Two free days is
+/// a rounding error until it is thirty venues wide.
+DateTime fleetAddMonths(DateTime from, int months) {
+  final lastDay = DateTime(from.year, from.month + months + 1, 0).day;
+  return DateTime(
+    from.year,
+    from.month + months,
+    from.day.clamp(1, lastDay),
+    from.hour,
+    from.minute,
+  );
+}
+
+// ── Urgency + billing derivations ───────────────────────────────────────────
+// Pure and `now`-taking rather than methods on the screen, so the console's
+// sort order and its billing verdict can be pinned by a test: these are the two
+// places on the fleet surface where a wrong answer costs someone money.
+
+/// The console only flags a venue once it nears the lockout, to avoid alarming
+/// on routine nightly closure.
+const fleetLockoutWarn = Duration(hours: 48);
+
+/// Remaining offline-grace before this venue's next cold boot would be blocked
+/// by the staleness guard. Derived from `lastSeenAt` as a cloud proxy for the
+/// device-local `adminConfirmedAt` (both ride the same heartbeat, so they freeze
+/// together when the venue goes dark). Reuses the same
+/// [FirebaseAdminService.staleAfter] the venue boot gate enforces. Null unless
+/// within [fleetLockoutWarn] of the limit. See CONTEXT.md "Venue offline
+/// duration".
+Duration? fleetLockoutRisk(Venue v, DateTime now) {
+  final last = v.lastSeenAt;
+  if (last == null) return null;
+  final remaining = FirebaseAdminService.staleAfter - now.difference(last);
+  return remaining <= fleetLockoutWarn ? remaining : null;
+}
+
+/// True once the paid-through date is behind us, whatever the flag says.
+bool fleetPaidUntilPassed(Venue v, DateTime now) {
+  final until = v.paidUntil;
+  return until != null && until.isBefore(now);
+}
+
+/// Overdue, or "paid" with a `paidUntil` that has already passed — the second is
+/// the one nobody notices, because the flag still says paid.
+bool fleetBillingTrouble(Venue v, DateTime now) =>
+    v.billingStatus == 'overdue' || fleetPaidUntilPassed(v, now);
+
+/// Sort key for the console list; lower sorts higher. 0 = at or past the
+/// offline lockout, 1 = approaching it, 2 = billing needs a hand, 3 =
+/// subscription about to run out, 4 = deliberately not running, 5 = fine.
+///
+/// Ranked by *kind* of trouble because sorting on lockout alone filed an
+/// overdue venue under W. A subscription about to end outranks a suspended
+/// venue on purpose: the suspension is a decision someone already made and
+/// nothing is owed on it, while the renewal is an invoice nobody has sent yet.
+int fleetUrgencyRank(Venue v, DateTime now) {
+  final risk = fleetLockoutRisk(v, now);
+  if (risk != null) return risk <= Duration.zero ? 0 : 1;
+  if (fleetBillingTrouble(v, now)) return 2;
+  if (fleetSubscriptionEnding(v, now) != null) return 3;
+  if (v.status != AdminStatus.active) return 4;
+  return 5;
 }
 
 /// A pill carrying one fleet signal (billing, offline, lockout-risk). Status is
@@ -55,6 +205,13 @@ class FleetTile extends StatelessWidget {
   final String title;
   final String? sub;
   final bool subMono;
+
+  /// Steady attributes — plan, last-seen, paid-through — as one mono line.
+  /// Deliberately not pills: a pill is a container, and a container says "look
+  /// at me". These never need looking at, they need to be *there* when the
+  /// operator asks. Keeping them out of [pills] is what lets a pill mean
+  /// trouble again.
+  final String? meta;
   final List<Widget> pills;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -67,6 +224,7 @@ class FleetTile extends StatelessWidget {
     required this.title,
     this.sub,
     this.subMono = false,
+    this.meta,
     this.pills = const [],
     this.trailing,
     this.onTap,
@@ -106,31 +264,51 @@ class FleetTile extends StatelessWidget {
             child: Icon(icon, size: iconSize, color: tint),
           ),
           SizedBox(width: big ? 14 : 12),
+          // Merged so the row announces as one unit — name, sub and pills read
+          // as unrelated fragments otherwise. Scoped to the content column, not
+          // the whole tile: the trailing `⋮` has to stay its own target.
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: Sp.s1),
-                  child: Text(title, style: SatType.labelL(color: sc.textHi)),
-                ),
-                if (sub != null) ...[
-                  const SizedBox(height: Sp.s1),
-                  Text(
-                    sub!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: subMono
-                        ? SatType.monoS(color: sc.textLo)
-                        : SatType.bodyS(color: sc.textLo),
+            child: MergeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: Sp.s1),
+                    child: Text(title, style: SatType.labelL(color: sc.textHi)),
                   ),
+                  if (sub != null) ...[
+                    const SizedBox(height: Sp.s1),
+                    // `textMd`, not `textLo`: this line is the venue's address
+                    // and the admin's email — the identifying detail — and
+                    // `textLo` on `bg2` measures 3.86:1 on the dark palette.
+                    Text(
+                      sub!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: subMono
+                          ? SatType.monoS(color: sc.textMd)
+                          : SatType.bodyS(color: sc.textMd),
+                    ),
+                  ],
+                  if (meta != null) ...[
+                    const SizedBox(height: Sp.s1h),
+                    Text(
+                      meta!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SatType.caption(color: sc.textMd),
+                    ),
+                  ],
+                  // Generous above the pills, tight above everything else: the
+                  // gap is what says "the lines above are this venue, the
+                  // things below are what is wrong with it".
+                  if (pills.isNotEmpty) ...[
+                    const SizedBox(height: Sp.s2h),
+                    Wrap(spacing: Sp.s1h, runSpacing: Sp.s1h, children: pills),
+                  ],
                 ],
-                if (pills.isNotEmpty) ...[
-                  const SizedBox(height: Sp.s2h),
-                  Wrap(spacing: 8, runSpacing: 8, children: pills),
-                ],
-              ],
+              ),
             ),
           ),
           if (trailing != null) ...[const SizedBox(width: Sp.s1), trailing!],
@@ -158,15 +336,22 @@ class FleetTile extends StatelessWidget {
 
 /// `⋮` quick-action menu shared by venue tiles + admin rows. `danger` keys
 /// render in `urgent`.
+///
+/// [tooltip] is required for the same reason `SatIconButton` requires one: with
+/// no text child Flutter derives no semantics, and this is the control that
+/// holds every destructive fleet action. `PopupMenuButton` slips past the
+/// guard test's `IconButton` ban, so the requirement is enforced here.
 Widget fleetMenu(
   SatColors sc, {
   required bool enabled,
+  required String tooltip,
   required Map<String, String> items,
   required Set<String> dangerKeys,
   required ValueChanged<String> onSelected,
 }) => PopupMenuButton<String>(
   enabled: enabled,
-  icon: Icon(Icons.more_vert, color: sc.textLo),
+  tooltip: tooltip,
+  icon: Icon(Icons.more_vert, color: sc.textMd),
   color: sc.bg2,
   onSelected: onSelected,
   itemBuilder: (_) => [
@@ -184,16 +369,74 @@ Widget fleetMenu(
 );
 
 /// Themed snackbar used across both fleet screens.
+///
+/// The error surface is an **opaque** `urgent` fill, not `urgentSoft`: the soft
+/// tokens are 11–14% alpha, so a snackbar painted with one showed the screen
+/// through it and read fainter than the success toast it was supposed to
+/// contradict. On a console whose every mutation is a Cloud Function that can
+/// be refused, a failure that looks like a success is the worst state the
+/// screen can reach.
 void fleetToast(BuildContext context, String msg, {bool error = false}) {
   final sc = context.sat;
+  final bg = error ? sc.urgent : sc.bg3;
+  final fg = error ? onFill(sc.urgent) : sc.textHi;
   ScaffoldMessenger.of(context)
     ..clearSnackBars()
     ..showSnackBar(
       SnackBar(
-        content: Text(msg, style: SatType.bodyM(color: sc.textHi)),
-        backgroundColor: error ? sc.urgentSoft : sc.bg3,
+        backgroundColor: bg,
+        duration: Duration(seconds: error ? 6 : 3),
+        content: Row(
+          children: [
+            if (error) ...[
+              Icon(Icons.error_outline, size: 18, color: fg),
+              const SizedBox(width: Sp.s2),
+            ],
+            Expanded(child: Text(msg, style: SatType.bodyM(color: fg))),
+          ],
+        ),
       ),
     );
+}
+
+/// Shown while the console is reading Firestore's local cache instead of the
+/// server. A super admin is online-only by design (ADR-0016) — it has no local
+/// server and no offline tolerance — so stale data that renders identically to
+/// live data is how a kill switch gets flipped against a picture from twenty
+/// minutes ago. Mutations are disabled for as long as this is up.
+class FleetOfflineBanner extends StatelessWidget {
+  const FleetOfflineBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(Sp.s4, Sp.s2, Sp.s4, 0),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.s3,
+        vertical: Sp.s2h,
+      ),
+      decoration: SatBox.d(
+        color: sc.warnSoft,
+        borderRadius: SatR.a(12),
+        border: SatB.all(color: sc.warn.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 16, color: sc.warn),
+          const SizedBox(width: Sp.s2),
+          Expanded(
+            child: Text(
+              'Tidak terhubung — data tersimpan, bisa sudah berubah. '
+              'Perubahan dinonaktifkan sampai tersambung.',
+              style: SatType.labelS(color: sc.warn),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Strips the `[code]` prefix Cloud Functions errors carry.
@@ -209,27 +452,31 @@ class FleetHeader extends StatelessWidget {
   final String title;
   final IconData icon;
   final Widget? trailing;
+
+  /// Overrides the kicker's accent when the kicker is carrying a count that is
+  /// itself the news — "3 PERLU TINDAKAN" in `urgent`. Null keeps the accent.
+  final Color? kickerColor;
   const FleetHeader({
     super.key,
     required this.kicker,
     required this.title,
     this.icon = Icons.travel_explore_rounded,
     this.trailing,
+    this.kickerColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final kc = kickerColor ?? sc.accentText;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, size: 14, color: sc.accentText),
+            Icon(icon, size: 14, color: kc),
             const SizedBox(width: Sp.s1h),
-            Expanded(
-              child: Text(kicker, style: SatType.caption(color: sc.accentText)),
-            ),
+            Expanded(child: Text(kicker, style: SatType.caption(color: kc))),
             ?trailing,
           ],
         ),
@@ -240,58 +487,9 @@ class FleetHeader extends StatelessWidget {
   }
 }
 
-/// Full-width primary action button in the fleet theme (matches the hub seed
-/// banner's filled button).
-class FleetPrimaryButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool busy;
-  final VoidCallback? onTap;
-  const FleetPrimaryButton({
-    super.key,
-    required this.label,
-    required this.icon,
-    this.busy = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Material(
-      color: onTap == null ? sc.bg3 : sc.accent,
-      borderRadius: SatR.a(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: SatR.a(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (busy)
-                SizedBox(
-                  width: Sp.s4,
-                  height: 15,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: sc.bg0,
-                  ),
-                )
-              else
-                Icon(icon, size: 18, color: onTap == null ? sc.textLo : sc.bg0),
-              const SizedBox(width: Sp.s2),
-              Text(
-                label,
-                style: SatType.labelM(
-                  color: onTap == null ? sc.textLo : sc.bg0,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// `FleetPrimaryButton` lived here and inked itself with `sc.bg0` — the page
+// ground — on the theory that whatever the page is, the fill is its opposite.
+// True on the charcoal palettes and false on every light one: under Neon Terang
+// `bg0` is bone, so a lime button carried a near-white label at 1.03:1 and read
+// as an empty slab. `SatButton.primary` / `.danger` own that ink decision
+// properly (ADR-0055), which is the whole argument against a local button.

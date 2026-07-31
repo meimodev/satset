@@ -225,9 +225,19 @@ class SatButton extends StatelessWidget {
   }
 
   _SatButtonPalette _palette(SatColors sc) => switch (_kind) {
+    // The ring is `accentText`, not decoration: on Neon Terang the lime fill
+    // (#E1FF0F) sits at 1.03:1 against the bone ground and 1.09:1 against a
+    // white card — the label is crisp and the *button* has no edge, which is
+    // WCAG 1.4.11 (3:1 for a control's boundary) failed outright. `accentText`
+    // is the token that already means "this accent, made legible on this
+    // ground": it rings at 6.3–7.4:1 on every Glow surface, and on the dark
+    // palettes it *is* `accent`, so those buttons are unchanged. The other
+    // filled kinds need no ring — `success` and `urgent` clear 5.7:1+ on their
+    // own in both directions.
     _SatButtonKind.primary => _SatButtonPalette(
       fill: sc.accent,
       ink: sc.accentInk,
+      border: sc.accentText,
     ),
     _SatButtonKind.neutral => _SatButtonPalette(fill: sc.bg3, ink: sc.textHi),
     _SatButtonKind.outline => _SatButtonPalette(

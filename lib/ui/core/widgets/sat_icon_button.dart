@@ -68,10 +68,12 @@ class SatIconButton extends StatelessWidget {
         on ? sc.textHi : sc.textDim,
         on ? sc.border1 : sc.border0,
       ),
+      // Rings itself for the same reason `SatButton.primary` does: a lime fill
+      // on Glow's bone ground has no edge of its own. See that palette's note.
       _IconKind.primary => (
         on ? sc.accent : sc.bg3,
         on ? sc.accentInk : sc.textDim,
-        null,
+        on ? sc.accentText : null,
       ),
       _IconKind.danger => (
         null,

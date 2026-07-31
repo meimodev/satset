@@ -3,6 +3,7 @@ import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,24 +11,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/data/services/fleet_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
-/// Per-venue management surface, opened from a Fleet console tile. Owns this
-/// venue's identity (name/address, cloud source of truth per ADR-0018),
-/// billing (plan/billingStatus/paidUntil), its **admins** (the per-venue admin
-/// list — add/status/reset/delete; there is no fleet-wide admin roster), and
-/// venue delete. The kill switch (`status`) is deliberately NOT here: it stays a
-/// guarded quick-action on the venue tile so its destructive mid-service
-/// friction is preserved.
+/// Everything a super admin does to one venue, opened from a Fleet console
+/// tile: its **access** (the kill switch), its **subscription**
+/// (plan / billingStatus / paidUntil), its **accounts** (per-venue admins and
+/// report-only owners — there is no fleet-wide roster), its identity
+/// (name/address, cloud source of truth per ADR-0018), and delete.
 ///
-/// Identity/billing Save diffs each group and fires only the callables whose
-/// fields changed: `updateVenue` for name/address, `setVenueBilling` for
-/// billing. Admin actions fire immediately (no Save gate). The admin list is
-/// watched live, so additions/removals appear without reopening — and the
-/// delete-venue guard re-enables the instant the last admin is removed.
+/// Section order is the order the operator arrives in. Access first, because a
+/// venue is opened either to cut it off or to check why it is cut off; then the
+/// subscription, which is the recurring act; then the people; and only then the
+/// name and address, which is bookkeeping. Identity used to lead, so the two
+/// questions the screen exists to answer sat below a fold.
+///
+/// **Two commit models, split by consequence.** Access and account actions fire
+/// immediately, each behind its own confirmation — a kill switch that waits for
+/// a Save the operator might not press is a kill switch that does not work.
+/// Identity and subscription are *fields*, so they stage and commit on Save,
+/// which diffs each group and fires only the callables whose values changed:
+/// `updateVenue` for name/address, `setVenueBilling` for the subscription.
+///
+/// The venue's live document is watched rather than trusted from the tile that
+/// pushed it, so the access card shows the state as it is now — including a
+/// change made from another device while this screen is open.
 class VenueEditScreen extends ConsumerStatefulWidget {
   const VenueEditScreen({super.key, required this.venue});
 
@@ -44,10 +56,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   late final TextEditingController _address = TextEditingController(
     text: widget.venue.address,
   );
-  late final TextEditingController _plan = TextEditingController(
-    text: widget.venue.plan,
-  );
 
+  late String _planKey = widget.venue.plan;
   late String _billingStatus = _normBilling(widget.venue.billingStatus);
   late DateTime? _paidUntil = widget.venue.paidUntil;
 
@@ -58,11 +68,15 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   FleetService get _svc => ref.read(fleetServiceProvider);
 
+  /// Mutations are locked while Firestore serves the cache — see
+  /// [fleetOfflineProvider]. The editor writes venues *and* credentials, so it
+  /// gets the same lock the console has.
+  bool get _offline => ref.read(fleetOfflineProvider);
+
   @override
   void dispose() {
     _name.dispose();
     _address.dispose();
-    _plan.dispose();
     super.dispose();
   }
 
@@ -72,6 +86,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// Runs a one-shot admin/venue mutation with the shared busy + toast cycle.
   Future<void> _run(Future<void> Function() action, String okMsg) async {
     if (_busy) return;
+    if (_offline) {
+      fleetToast(
+        context,
+        'Tidak terhubung — perubahan tidak dikirim.',
+        error: true,
+      );
+      return;
+    }
     setState(() => _busy = true);
     try {
       await action();
@@ -83,17 +105,36 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     }
   }
 
+  /// True once a staged field differs from the venue this screen opened on.
+  /// Drives the Save button, so "nothing to save" is legible before the tap
+  /// rather than as a silent pop afterwards.
+  bool get _dirty {
+    final v = widget.venue;
+    return _nameText != v.name ||
+        _address.text.trim() != v.address ||
+        _planKey != v.plan ||
+        _billingStatus != _normBilling(v.billingStatus) ||
+        _paidUntil != v.paidUntil;
+  }
+
   Future<void> _save() async {
     if (_busy || !_nameValid) return;
+    if (_offline) {
+      fleetToast(
+        context,
+        'Tidak terhubung — perubahan tidak dikirim.',
+        error: true,
+      );
+      return;
+    }
     final v = widget.venue;
 
     final newName = _nameText;
     final newAddress = _address.text.trim();
-    final newPlan = _plan.text.trim();
 
     final nameChanged = newName != v.name;
     final addressChanged = newAddress != v.address;
-    final planChanged = newPlan != v.plan;
+    final planChanged = _planKey != v.plan;
     final billingStatusChanged =
         _billingStatus != _normBilling(v.billingStatus);
     final paidUntilChanged = _paidUntil != v.paidUntil;
@@ -119,7 +160,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       if (planChanged || billingStatusChanged || paidUntilChanged) {
         await _svc.setVenueBilling(
           v.id,
-          plan: planChanged ? newPlan : null,
+          plan: planChanged ? _planKey : null,
           billingStatus: billingStatusChanged ? _billingStatus : null,
           paidUntil: paidUntilChanged ? _paidUntil : null,
           clearPaidUntil: paidUntilChanged && _paidUntil == null,
@@ -149,8 +190,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final v = widget.venue;
-    // Live per-venue admin list — drives both the ADMIN section and the
-    // delete-venue guard (delete needs zero admins).
+    // The live document, not the tile's snapshot: the access card is a control
+    // as well as a readout, and a control that shows a stale state is how a
+    // venue gets suspended twice and un-suspended never. Falls back to the
+    // pushed snapshot while the stream is warming (or after a delete).
+    final live = (ref.watch(fleetVenuesProvider).valueOrNull ?? const <Venue>[])
+        .firstWhere((x) => x.id == v.id, orElse: () => v);
+    // Live per-venue admin list — drives both the accounts sections and the
+    // delete-venue guard (delete needs zero accounts).
     final admins = ref.watch(fleetAdminsProvider);
     final forVenue = (admins.valueOrNull ?? const <AdminProfile>[])
         .where((a) => a.venueId == v.id)
@@ -170,12 +217,20 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         backgroundColor: sc.bg0,
         elevation: 0,
         iconTheme: IconThemeData(color: sc.textHi),
-        title: Text('Edit venue', style: SatType.h3(color: sc.textHi)),
+        // The venue's own name, not "Edit venue". This screen holds the kill
+        // switch; which venue is about to go dark is not a detail to infer from
+        // the field below it.
+        title: Text(
+          live.name.isEmpty ? '(tanpa nama)' : live.name,
+          overflow: TextOverflow.ellipsis,
+          style: SatType.h3(color: sc.textHi),
+        ),
         actions: [
           SatButton.ghost(
             label: AppStrings.save,
-            onTap: _busy || !_nameValid ? null : _save,
+            onTap: _busy || !_nameValid || !_dirty ? null : _save,
           ),
+          const SizedBox(width: Sp.s2),
         ],
         bottom: _busy
             ? PreferredSize(
@@ -187,29 +242,260 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               )
             : null,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
+      // Capped to the console's column so the push does not change the shape of
+      // the page under the operator's thumb, and so a landscape tablet stops
+      // stretching a two-field address form across a metre of glass.
+      //
+      // **Seams carry the grouping**, because six equally-spaced cards make a
+      // kill switch and an address field peers. One beat (Sp.s3) inside a
+      // concern, two (Sp.s6) between concerns, three (Sp.s9) before the
+      // irreversible: Akses ‖ Langganan ‖ Admin · Pemilik ‖ Identitas ⦀ Bahaya.
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: fleetColumnMax),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              fleetGutter,
+              Sp.s3,
+              fleetGutter,
+              Sp.s12,
+            ),
+            children: [
+              if (ref.watch(fleetOfflineProvider)) ...[
+                const FleetOfflineBanner(),
+                const SizedBox(height: Sp.s4),
+              ],
+              _accessCard(sc, live),
+              const SizedBox(height: Sp.s6),
+              _subscriptionCard(sc),
+              const SizedBox(height: Sp.s6),
+              _principalSection(
+                sc,
+                admins,
+                venueAdmins,
+                role: 'admin',
+                title: 'Admin venue',
+                tag: 'AKUN',
+                addLabel: 'Tambah admin',
+                emptyMsg: 'Belum ada admin untuk venue ini.',
+              ),
+              // Admins and owners are one concern read as one block — who is
+              // attached to this venue — so they sit a single beat apart.
+              const SizedBox(height: Sp.s3),
+              _principalSection(
+                sc,
+                admins,
+                venueOwners,
+                role: 'owner',
+                title: 'Pemilik',
+                tag: 'LAPORAN',
+                addLabel: 'Tambah pemilik',
+                emptyMsg: 'Belum ada pemilik untuk venue ini.',
+              ),
+              const SizedBox(height: Sp.s6),
+              SatCard.titled(
+                title: 'Identitas',
+                tag: 'DATA',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SatField.text(
+                      controller: _name,
+                      label: 'Nama venue',
+                      hint: '',
+                      onChanged: (_) => setState(() {}),
+                      errorText: _nameValid ? null : 'Nama wajib diisi',
+                    ),
+                    const SizedBox(height: Sp.s3h),
+                    SatField.text(
+                      controller: _address,
+                      label: 'Alamat',
+                      hint: 'opsional',
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Sp.s9),
+              _dangerZone(sc, [...venueAdmins, ...venueOwners]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Access ───────────────────────────────────────────────────────────────
+
+  /// The kill switch, given a surface of its own. It used to live only in the
+  /// console tile's `⋮`, which meant the screen you open to decide whether to
+  /// cut a venue off could not cut it off — and nothing on it said what the
+  /// current state actually does to the venue's staff.
+  ///
+  /// State first as a sentence, transitions second, weighted by consequence:
+  /// activate is `success`, suspend is a plain fill because it is reversible,
+  /// blocking is `danger`. Three identical buttons would make "pause them for
+  /// an hour" and "lock them out until I say otherwise" the same gesture.
+  Widget _accessCard(SatColors sc, Venue live) {
+    final vis = fleetStatusVisual(
+      sc,
+      live.status,
+      activeIcon: Icons.storefront_outlined,
+    );
+    final can = !_busy && !_offline;
+    return SatCard.titled(
+      title: 'Akses venue',
+      tag: 'KENDALI',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _sectionLabel(sc, 'IDENTITAS'),
-          const SizedBox(height: Sp.s2h),
-          SatField.text(
-            controller: _name,
-            label: 'Nama venue',
-            hint: '',
-            onChanged: (_) => setState(() {}),
-            errorText: _nameValid ? null : 'Nama wajib diisi',
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: SatBox.d(
+                  color: vis.tint.withValues(alpha: 0.12),
+                  borderRadius: SatR.a(14),
+                ),
+                child: Icon(vis.icon, size: 22, color: vis.tint),
+              ),
+              const SizedBox(width: Sp.s3h),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(vis.label, style: SatType.labelL(color: vis.tint)),
+                    const SizedBox(height: Sp.s1),
+                    Text(
+                      _accessMeaning(live.status),
+                      style: SatType.bodyS(color: sc.textMd),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: Sp.s3h),
-          SatField.text(
-            controller: _address,
-            label: 'Alamat',
-            hint: 'opsional',
+          const SizedBox(height: Sp.s4),
+          Wrap(
+            spacing: Sp.s2,
+            runSpacing: Sp.s2,
+            children: [
+              if (live.status != AdminStatus.active)
+                SatButton.success(
+                  label: 'Aktifkan',
+                  icon: Icons.play_arrow_rounded,
+                  size: SatButtonSize.sm,
+                  onTap: can
+                      ? () => _run(
+                          () => _svc.setVenueStatus(live.id, AdminStatus.active),
+                          '${live.name} diaktifkan',
+                        )
+                      : null,
+                ),
+              if (live.status != AdminStatus.suspended)
+                SatButton.neutral(
+                  label: 'Tangguhkan',
+                  icon: Icons.pause_circle_outline,
+                  size: SatButtonSize.sm,
+                  onTap: can
+                      ? () => _confirm(
+                          'Tangguhkan ${live.name}?',
+                          'Server venue mati sekarang juga dan semua staf '
+                              'terputus — termasuk di tengah jam ramai.',
+                          'Tangguhkan',
+                          () => _run(
+                            () => _svc.setVenueStatus(
+                              live.id,
+                              AdminStatus.suspended,
+                            ),
+                            '${live.name} ditangguhkan',
+                          ),
+                        )
+                      : null,
+                ),
+              if (live.status != AdminStatus.banned)
+                SatButton.danger(
+                  label: 'Blokir',
+                  icon: Icons.block,
+                  size: SatButtonSize.sm,
+                  onTap: can
+                      ? () => _confirm(
+                          'Blokir ${live.name}?',
+                          'Server venue mati dan tetap terblokir sampai '
+                              'diubah di sini.',
+                          'Blokir',
+                          () => _run(
+                            () => _svc.setVenueStatus(
+                              live.id,
+                              AdminStatus.banned,
+                            ),
+                            '${live.name} diblokir',
+                          ),
+                        )
+                      : null,
+                ),
+            ],
           ),
-          const SizedBox(height: Sp.s7),
-          _sectionLabel(sc, 'TAGIHAN'),
-          const SizedBox(height: Sp.s2h),
-          SatField.text(controller: _plan, label: 'Paket', hint: ''),
-          const SizedBox(height: Sp.s3h),
+        ],
+      ),
+    );
+  }
+
+  /// What the status *does*, not what it is called. "TANGGUH" tells an operator
+  /// nothing about whether the waiters can still take orders.
+  String _accessMeaning(AdminStatus s) => switch (s) {
+    AdminStatus.active =>
+      'Server venue berjalan dan staf bisa masuk seperti biasa.',
+    AdminStatus.suspended =>
+      'Server venue mati. Staf tidak bisa masuk sampai diaktifkan lagi.',
+    AdminStatus.banned =>
+      'Venue terblokir. Server mati dan tetap terkunci sampai diubah di sini.',
+    AdminStatus.unknown =>
+      'Status tidak dikenali di cloud. Setel ulang dengan tombol di bawah.',
+  };
+
+  // ── Subscription ─────────────────────────────────────────────────────────
+
+  /// Plan, term and flag in one place, with the term editable the way it is
+  /// actually used. Extending a paid venue was a date picker: five taps to land
+  /// on a day a year out, on the single most repeated act in the console. The
+  /// quick terms compute from the later of today and the current expiry, so
+  /// renewing early adds to what is left instead of throwing it away.
+  Widget _subscriptionCard(SatColors sc) {
+    final can = !_busy && !_offline;
+    return SatCard.titled(
+      title: 'Langganan',
+      tag: 'TAGIHAN',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          fleetPlanDropdown(
+            value: _planKey,
+            onChanged: (x) => setState(() => _planKey = x),
+          ),
+          const SizedBox(height: Sp.s4),
+          _paidUntilRow(sc),
+          const SizedBox(height: Sp.s3),
+          Wrap(
+            spacing: Sp.s2,
+            runSpacing: Sp.s2,
+            children: [
+              for (final (months, label) in const [
+                (1, '+1 bulan'),
+                (3, '+3 bulan'),
+                (12, '+1 tahun'),
+              ])
+                SatButton.outline(
+                  label: label,
+                  size: SatButtonSize.sm,
+                  onTap: can ? () => _extend(months) : null,
+                ),
+            ],
+          ),
+          const SizedBox(height: Sp.s4),
           SatDropdown<String>(
             value: _billingStatus,
             label: 'Status tagihan',
@@ -221,89 +507,106 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             onChanged: (x) =>
                 setState(() => _billingStatus = x ?? _billingStatus),
           ),
-          const SizedBox(height: Sp.s3h),
-          _paidUntilRow(sc),
-          const SizedBox(height: Sp.s7),
-          _principalSection(
-            sc,
-            admins,
-            venueAdmins,
-            role: 'admin',
-            label: 'ADMIN',
-            addLabel: 'Tambah admin',
-            emptyMsg: 'Belum ada admin untuk venue ini.',
-          ),
-          const SizedBox(height: Sp.s7),
-          _principalSection(
-            sc,
-            admins,
-            venueOwners,
-            role: 'owner',
-            label: 'PEMILIK (LAPORAN)',
-            addLabel: 'Tambah pemilik',
-            emptyMsg: 'Belum ada pemilik untuk venue ini.',
-          ),
-          const SizedBox(height: Sp.s8),
-          _dangerZone(sc, [...venueAdmins, ...venueOwners]),
         ],
       ),
     );
   }
 
-  // ── Admins ───────────────────────────────────────────────────────────────
+  /// Extends the term and flips the flag with it. Keeping them separate is what
+  /// produces the console's worst state — a venue reading `paid` with a date
+  /// three weeks gone, which looks healthy on every tile and bills nobody — so
+  /// the act that sets a future date is the act that says it is paid.
+  void _extend(int months) {
+    final now = SatClock.now();
+    final p = _paidUntil;
+    final base = (p != null && p.isAfter(now)) ? p : now;
+    setState(() {
+      _paidUntil = fleetAddMonths(base, months);
+      _billingStatus = 'paid';
+    });
+  }
+
+  // ── Accounts ─────────────────────────────────────────────────────────────
 
   Widget _principalSection(
     SatColors sc,
     AsyncValue<List<AdminProfile>> all,
     List<AdminProfile> rows, {
     required String role,
-    required String label,
+    required String title,
+    required String tag,
     required String addLabel,
     required String emptyMsg,
   }) {
     final loading = all.isLoading && !all.hasValue;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _sectionLabel(sc, label),
-        const SizedBox(height: Sp.s2h),
-        FleetPrimaryButton(
-          label: addLabel,
-          icon: Icons.person_add_alt_1,
-          onTap: _busy ? null : () => _createPrincipalDialog(role),
-        ),
-        const SizedBox(height: Sp.s3),
-        if (all.hasError)
-          Text(
-            'Gagal memuat: ${fleetErrText(all.error!)}',
-            style: SatType.bodyS(color: sc.urgent),
-          )
-        else if (loading)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: Sp.s5),
-            child: Center(
-              child: CircularProgressIndicator(color: sc.accentText),
+    return SatCard.titled(
+      title: title,
+      tag: tag,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (all.hasError) ...[
+            Text(
+              'Gagal memuat: ${fleetErrText(all.error!)}',
+              style: SatType.bodyS(color: sc.urgent),
             ),
-          )
-        else if (rows.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: Sp.s3h),
-            child: Text(emptyMsg, style: SatType.bodyM(color: sc.textLo)),
-          )
-        else
-          for (var i = 0; i < rows.length; i++) ...[
-            _adminRow(sc, rows[i]),
-            if (i != rows.length - 1) const SizedBox(height: Sp.s2),
-          ],
-      ],
+            const SizedBox(height: Sp.s2),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SatButton.outline(
+                label: 'Coba lagi',
+                icon: Icons.refresh,
+                size: SatButtonSize.sm,
+                onTap: () => ref.invalidate(fleetAdminsProvider),
+              ),
+            ),
+          ]
+          else if (loading)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Sp.s5),
+              child: Center(
+                child: CircularProgressIndicator(color: sc.accentText),
+              ),
+            )
+          else if (rows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Sp.s3h),
+              child: Text(emptyMsg, style: SatType.bodyM(color: sc.textLo)),
+            )
+          else
+            for (var i = 0; i < rows.length; i++) ...[
+              _adminRow(sc, rows[i]),
+              SizedBox(height: i == rows.length - 1 ? Sp.s3h : Sp.s2),
+            ],
+          // Adding follows the list rather than heading it: the operator reads
+          // who is already on the venue before deciding to add another, and a
+          // full-width primary above an empty list was the loudest thing on a
+          // screen whose loudest thing should be the kill switch.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SatButton.outline(
+              label: addLabel,
+              icon: Icons.person_add_alt_1,
+              size: SatButtonSize.sm,
+              onTap: _busy || _offline
+                  ? null
+                  : () => _createPrincipalDialog(role),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _adminRow(SatColors sc, AdminProfile a) {
-    final vis = fleetStatusVisual(sc, a.status);
+    final vis = fleetStatusVisual(
+      sc,
+      a.status,
+      activeIcon: Icons.person_outline_rounded,
+    );
     return FleetTile(
       big: false,
-      icon: Icons.person_outline_rounded,
+      icon: vis.icon,
       tint: vis.tint,
       title: a.name.isEmpty ? '(tanpa nama)' : a.name,
       sub: a.email ?? a.uid,
@@ -314,7 +617,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       ],
       trailing: fleetMenu(
         sc,
-        enabled: !_busy,
+        enabled: !_busy && !_offline,
+        tooltip: 'Tindakan akun',
         items: {
           if (a.status != AdminStatus.active) 'activate': 'Aktifkan',
           if (a.status != AdminStatus.suspended) 'suspend': 'Tangguhkan',
@@ -353,72 +657,116 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       case 'delete':
         _confirm(
           'Hapus ${a.name}?',
-          'Akun login & datanya dihapus permanen.',
+          'Akun login & datanya dihapus permanen. '
+              '${a.email ?? a.uid} tidak bisa masuk lagi.',
+          'Hapus',
           () => _run(() => _svc.deleteAdmin(a.uid), '${a.name} dihapus'),
         );
     }
   }
 
+  /// Three required fields and one exit: the old version validated *after* the
+  /// dialog popped, so a forgotten password closed the sheet and created
+  /// nothing, with no message. Validation is now inside, and the password is
+  /// masked — this gets typed on a tablet held in someone else's dining room.
   Future<void> _createPrincipalDialog(String role) async {
     final name = TextEditingController();
     final email = TextEditingController();
     final pw = TextEditingController();
+    var pwVisible = false;
     final sc = context.sat;
     final roleLabel = role == 'owner' ? 'pemilik' : 'admin';
-    final ok = await showSatDialog<bool>(
-      context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: sc.bg1,
-        title: Text(
-          'Tambah $roleLabel · ${widget.venue.name}',
-          style: SatType.h3(color: sc.textHi),
+    try {
+      final ok = await showSatDialog<bool>(
+        context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setLocal) {
+            final emailText = email.text.trim();
+            final emailValid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                .hasMatch(emailText);
+            final pwText = pw.text;
+            final valid =
+                name.text.trim().isNotEmpty && emailValid && pwText.length >= 6;
+            return AlertDialog(
+              backgroundColor: sc.bg1,
+              title: Text(
+                'Tambah $roleLabel · ${widget.venue.name}',
+                style: SatType.h3(color: sc.textHi),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SatField.text(
+                    controller: name,
+                    label: 'Nama',
+                    hint: '',
+                    autofocus: true,
+                    onChanged: (_) => setLocal(() {}),
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  SatField.text(
+                    controller: email,
+                    label: 'Email',
+                    hint: '',
+                    onChanged: (_) => setLocal(() {}),
+                    errorText: emailText.isEmpty || emailValid
+                        ? null
+                        : 'Format email tidak valid',
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  SatField.password(
+                    controller: pw,
+                    label: 'Password awal',
+                    hint: '',
+                    visible: pwVisible,
+                    onToggle: () => setLocal(() => pwVisible = !pwVisible),
+                    onChanged: (_) => setLocal(() {}),
+                    errorText: pwText.isEmpty || pwText.length >= 6
+                        ? null
+                        : 'Minimal 6 karakter',
+                  ),
+                ],
+              ),
+              actions: [
+                SatButton.ghost(
+                  label: AppStrings.cancel,
+                  onTap: () => Navigator.pop(ctx, false),
+                ),
+                SatButton.primary(
+                  label: AppStrings.save,
+                  onTap: valid ? () => Navigator.pop(ctx, true) : null,
+                ),
+              ],
+            );
+          },
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SatField.text(controller: name, label: 'Nama', hint: ''),
-            const SizedBox(height: Sp.s3),
-            SatField.text(controller: email, label: 'Email', hint: ''),
-            const SizedBox(height: Sp.s3),
-            SatField.text(controller: pw, label: 'Password awal', hint: ''),
-          ],
+      );
+      if (ok != true) return;
+      await _run(
+        () => _svc.createAdmin(
+          email: email.text,
+          password: pw.text,
+          name: name.text,
+          venueId: widget.venue.id,
+          role: role,
         ),
-        actions: [
-          SatButton.ghost(
-            label: AppStrings.cancel,
-            onTap: () => Navigator.pop(ctx, false),
-          ),
-          SatButton.primary(
-            label: AppStrings.save,
-            onTap: () => Navigator.pop(ctx, true),
-          ),
-        ],
-      ),
-    );
-    if (ok != true ||
-        name.text.trim().isEmpty ||
-        email.text.trim().isEmpty ||
-        pw.text.trim().isEmpty) {
-      return;
+        '${role == 'owner' ? 'Pemilik' : 'Admin'} dibuat',
+      );
+    } finally {
+      name.dispose();
+      email.dispose();
+      pw.dispose();
     }
-    await _run(
-      () => _svc.createAdmin(
-        email: email.text,
-        password: pw.text,
-        name: name.text,
-        venueId: widget.venue.id,
-        role: role,
-      ),
-      '${role == 'owner' ? 'Pemilik' : 'Admin'} dibuat',
-    );
   }
 
   // ── Danger zone ────────────────────────────────────────────────────────────
 
+  /// Not a [SatCard]: the whole point is that it does not look like the five
+  /// surfaces above it.
   Widget _dangerZone(SatColors sc, List<AdminProfile> admins) {
     final blocked = admins.isNotEmpty;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      padding: const EdgeInsets.all(Sp.s4),
       decoration: SatBox.d(
         color: sc.urgentSoft,
         border: SatB.all(color: sc.urgent),
@@ -431,39 +779,17 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           const SizedBox(height: Sp.s2h),
           Text(
             blocked
-                ? 'Hapus semua admin venue ini dulu sebelum menghapus venue.'
-                : 'Menghapus venue tidak dapat dibatalkan.',
+                ? 'Hapus semua akun venue ini dulu sebelum menghapus venue. '
+                      'Untuk sekadar memutus akses, pakai Tangguhkan di atas.'
+                : 'Menghapus venue tidak dapat dibatalkan. Untuk sekadar '
+                      'memutus akses, pakai Tangguhkan di atas.',
             style: SatType.bodyM(color: sc.textMd),
           ),
           const SizedBox(height: Sp.s3h),
-          Material(
-            color: blocked || _busy ? sc.bg3 : sc.urgent,
-            borderRadius: SatR.a(12),
-            child: InkWell(
-              onTap: blocked || _busy ? null : _confirmDeleteVenue,
-              borderRadius: SatR.a(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: Sp.s3),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.delete_outline,
-                      size: 18,
-                      color: blocked || _busy ? sc.textLo : sc.bg0,
-                    ),
-                    const SizedBox(width: Sp.s2),
-                    Text(
-                      'Hapus venue',
-                      style: SatType.labelM(
-                        color: blocked || _busy ? sc.textLo : sc.bg0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          SatButton.danger(
+            label: 'Hapus venue',
+            icon: Icons.delete_outline,
+            onTap: blocked || _busy || _offline ? null : _confirmDeleteVenue,
           ),
         ],
       ),
@@ -472,15 +798,28 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   void _confirmDeleteVenue() {
     final v = widget.venue;
-    _confirm('Hapus ${v.name}?', 'Venue dihapus permanen.', () async {
-      await _run(() => _svc.deleteVenue(v.id), '${v.name} dihapus');
-      if (mounted) Navigator.of(context).pop();
-    });
+    _confirm(
+      'Hapus ${v.name}?',
+      'Venue dihapus permanen dari fleet. Tidak bisa dibatalkan.',
+      'Hapus venue',
+      () async {
+        await _run(() => _svc.deleteVenue(v.id), '${v.name} dihapus');
+        if (mounted) Navigator.of(context).pop();
+      },
+    );
   }
 
   // ── Small pieces ───────────────────────────────────────────────────────────
 
-  void _confirm(String title, String body, VoidCallback onYes) {
+  /// [confirmLabel] names the act rather than saying "Lanjut" — the difference
+  /// between confirming a suspend and confirming a permanent delete should be
+  /// legible on the button, not only in the title.
+  void _confirm(
+    String title,
+    String body,
+    String confirmLabel,
+    VoidCallback onYes,
+  ) {
     final sc = context.sat;
     showSatDialog<void>(
       context,
@@ -494,7 +833,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             onTap: () => Navigator.pop(ctx),
           ),
           SatButton.danger(
-            label: 'Lanjut',
+            label: confirmLabel,
             onTap: () {
               Navigator.pop(ctx);
               onYes();
@@ -505,45 +844,111 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     );
   }
 
-  Widget _sectionLabel(SatColors sc, String text) =>
-      Text(text, style: SatType.caption(color: sc.accentText));
-
   Widget _paidUntilRow(SatColors sc) {
+    final now = SatClock.now();
     final p = _paidUntil;
-    final label = p == null
-        ? 'Belum diatur'
-        : '${p.year}-${p.month.toString().padLeft(2, '0')}-${p.day.toString().padLeft(2, '0')}';
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-      decoration: SatBox.d(
-        color: sc.bg1,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Berlaku sampai (paidUntil)',
-                  style: SatType.bodyS(color: sc.textMd),
-                ),
-                const SizedBox(height: Sp.sHair),
-                Text(label, style: SatType.labelL(color: sc.textHi)),
-              ],
-            ),
+    final expired = p != null && p.isBefore(now);
+    final label = p == null ? 'Belum diatur' : formatShortDateId(p);
+    // The date alone makes the operator do the arithmetic. "12 Agu" is not an
+    // answer to "do I invoice this venue today"; "18 hari lagi" is.
+    final remain = p == null
+        ? null
+        : expired
+        ? 'Sudah lewat'
+        : '${p.difference(now).inDays} hari lagi';
+    final tint = p == null
+        ? sc.textMd
+        : expired
+        ? sc.urgent
+        : (p.difference(now) <= fleetRenewWarn ? sc.warn : sc.textMd);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // A *field*, not a surface: `bg1` on the card's `bg2` with its own
+        // radius made this a card inside a card, sitting between two dropdowns
+        // that fill with `bg2` at `SatR.md`. It is the same kind of thing they
+        // are — a labelled value you can change — so it wears their chrome.
+        Container(
+          padding: const EdgeInsets.fromLTRB(Sp.s3h, Sp.s2, Sp.s2, Sp.s2),
+          decoration: SatBox.d(
+            color: sc.bg2,
+            border: SatB.all(color: expired ? sc.urgent : sc.border0),
+            borderRadius: SatR.md,
           ),
-          if (p != null)
-            IconButton(
-              tooltip: 'Hapus tanggal',
-              icon: Icon(Icons.clear, color: sc.textLo, size: 20),
-              onPressed: () => setState(() => _paidUntil = null),
-            ),
-          SatButton.ghost(label: 'Pilih', onTap: _pickPaidUntil),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Berlaku sampai',
+                      style: SatType.bodyS(color: sc.textMd),
+                    ),
+                    const SizedBox(height: Sp.sHair),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            style: SatType.labelL(
+                              color: expired ? sc.urgent : sc.textHi,
+                            ),
+                          ),
+                        ),
+                        if (remain != null) ...[
+                          const SizedBox(width: Sp.s2),
+                          Text(
+                            remain,
+                            style: SatType.caption(color: tint),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (p != null)
+                SatIconButton.plain(
+                  icon: Icons.clear,
+                  tooltip: 'Hapus tanggal',
+                  onTap: () => setState(() => _paidUntil = null),
+                ),
+              SatButton.ghost(label: 'Pilih', onTap: _pickPaidUntil),
+            ],
+          ),
+        ),
+        // The flag and the date can disagree, and when they do the flag wins
+        // everywhere else in the app — a venue reading `paid` with a date three
+        // weeks gone looks fine on the console tile and bills nobody.
+        if (_billingMismatch case final warning?) ...[
+          const SizedBox(height: Sp.s2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 16, color: sc.warn),
+              const SizedBox(width: Sp.s2),
+              Expanded(
+                child: Text(warning, style: SatType.bodyS(color: sc.warn)),
+              ),
+            ],
+          ),
         ],
-      ),
+      ],
     );
+  }
+
+  /// Reads the billing flag against the date, in the direction that costs
+  /// money: `paid` past its date, and `paid` with no date at all.
+  String? get _billingMismatch {
+    if (_billingStatus != 'paid') return null;
+    final p = _paidUntil;
+    if (p == null) return 'Ditandai lunas tanpa tanggal berlaku.';
+    if (p.isBefore(SatClock.now())) {
+      return 'Ditandai lunas tapi masa berlakunya sudah lewat — '
+          'perpanjang tanggalnya atau ubah status ke overdue.';
+    }
+    return null;
   }
 }

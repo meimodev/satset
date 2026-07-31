@@ -34,6 +34,12 @@ String formatBarClockId(DateTime d) {
   return '$hh:$mm · ${_idShortDays[d.weekday - 1]}';
 }
 
+/// A calendar date with no time: "12 Agu 2026". For dates that are a *fact*
+/// rather than a moment in service — a billing period's end, a paid-until.
+final _shortDate = DateFormat('d MMM yyyy', 'id_ID');
+
+String formatShortDateId(DateTime d) => _shortDate.format(d);
+
 final _grouping = NumberFormat.decimalPattern('id_ID');
 
 /// Group an integer amount for seeding a rupiah text field: `14500` → `14.500`.
