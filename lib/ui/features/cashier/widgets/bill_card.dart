@@ -21,12 +21,18 @@ enum BillCardState { open, partial, settled, writeOff }
 
 /// One payable bill on the `/kasir` grid.
 ///
-/// Five stacked rows, per the design source: identity, the amount that matters,
-/// a paid-progress bar, a pill row of everything else true about the bill, and
-/// a foot that names who owns it and what tapping does. The amount is the point
-/// — it is the only thing at display size, and the caption under it says which
-/// number it is, because "Rp 340.000" means the opposite thing on a settled
-/// bill than on an open one.
+/// Stacked rows, per the design source: identity (the name, and the status
+/// pill hard against the far edge), the zone or channel it belongs to, the
+/// amount that matters, a paid-progress bar, a pill row of everything else true
+/// about the bill, and a foot that names who owns it and what tapping does. The
+/// amount is the point — it is the only thing at display size, and the caption
+/// under it says which number it is, because "Rp 340.000" means the opposite
+/// thing on a settled bill than on an open one.
+///
+/// The card's outline repeats the status colour, so the state is legible from
+/// the grid without reading the pill. An open bill has no status, so it takes
+/// the neutral `border0` — on Perlu Ditagih, where most bills are open, a
+/// coloured outline on every card would mean nothing.
 class BillCard extends StatelessWidget {
   final String label;
   final BillCardState state;
@@ -167,10 +173,29 @@ class BillCard extends StatelessWidget {
     BillCardState.open => null,
   };
 
+  /// The zone (dine-in) or channel (takeaway) this bill belongs to, or null
+  /// when neither is known — every past dine-in bill, which carries no zone.
+  Widget? _tag() {
+    if (channel != null) {
+      return SatChip.tag(
+        label: channel!.label,
+        hue: channel!.hue,
+        size: SatChipSize.sm,
+      );
+    }
+    if (zone != null) {
+      // Full name, not `short`: this card has a row to itself and the dense
+      // floor grids are what `short` was cut for.
+      return SatChip.tag(label: zone!.name, size: SatChipSize.sm);
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     final pill = _statePill(sc);
+    final tag = _tag();
     // The bar only earns its row while money is partly in. On an untouched or
     // a finished bill it would be a flat rule saying nothing.
     final showBar =
@@ -185,7 +210,11 @@ class BillCard extends StatelessWidget {
         child: PressScale(
           child: Material(
             color: sc.bg1,
-            borderRadius: SatR.a(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: SatR.a(16),
+              // The pill's colour, or the neutral rule when there is no status.
+              side: SatB.side(color: pill?.$1 ?? sc.border0, width: 1.5),
+            ),
             child: InkWell(
               borderRadius: SatR.a(16),
               onTap: onTap,
@@ -196,6 +225,10 @@ class BillCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _identity(sc, pill),
+                    if (tag != null) ...[
+                      const SizedBox(height: Sp.s2),
+                      tag,
+                    ],
                     const SizedBox(height: Sp.s3),
                     _amount(sc),
                     if (showBar) ...[
@@ -216,30 +249,23 @@ class BillCard extends StatelessWidget {
     );
   }
 
+  /// The name and nothing else on the left, the status hard against the right.
+  /// The name gets a second line before it will ellipsize — real labels ("Meja
+  /// 12", "Bawa pulang") never reach it, so the truncation is a guard against
+  /// the card's fixed height rather than something a cashier meets.
   Widget _identity(SatColors sc, (Color, String)? pill) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Flexible(
+      Expanded(
         child: Text(
           label,
           style: SatType.h3(color: sc.textHi),
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      const SizedBox(width: Sp.s2),
-      if (channel != null)
-        SatChip.tag(
-          label: channel!.label,
-          hue: channel!.hue,
-          size: SatChipSize.sm,
-        )
-      else if (zone != null)
-        SatChip.tag(
-          label: zone!.short.isNotEmpty ? zone!.short : zone!.name,
-          size: SatChipSize.sm,
-        ),
-      const Spacer(),
-      if (pill != null)
+      if (pill != null) ...[
+        const SizedBox(width: Sp.s2),
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: Sp.s2,
@@ -251,6 +277,7 @@ class BillCard extends StatelessWidget {
           ),
           child: Text(pill.$2, style: SatType.labelS(color: pill.$1)),
         ),
+      ],
     ],
   );
 
