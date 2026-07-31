@@ -237,18 +237,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     return [
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        sliver: SliverGrid(
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        sliver: SliverToBoxAdapter(
+          child: _Masonry(
+            cards: cards,
             // One column on a phone falls out of this: at 360dp the card is
-            // wider than the extent, so the grid gives it the full row.
-            maxCrossAxisExtent: context.layout.useTabletShell ? 340 : 640,
-            mainAxisSpacing: Sp.s2h,
-            crossAxisSpacing: Sp.s2h,
-            mainAxisExtent: 232,
-          ),
-          delegate: SliverChildBuilderDelegate(
-            (_, i) => Reveal(index: i, child: cards[i]),
-            childCount: cards.length,
+            // wider than the extent, so it gets the full row.
+            maxColumnWidth: context.layout.useTabletShell ? 340 : 640,
           ),
         ),
       ),
@@ -261,6 +255,56 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         ),
     ];
   }
+}
+
+/// The bill grid. Columns of self-sizing cards rather than a [SliverGrid],
+/// because a bill card's height is its content: three rows of pills on one
+/// bill, none on the next. Every tile in a `SliverGrid` gets the same extent,
+/// so that screen had to carry a fixed height budgeted for the fattest card —
+/// which both overflowed when a card grew past it and left dead space under
+/// every card that did not.
+///
+/// ponytail: builds every card up front rather than lazily, and packs
+/// round-robin rather than balancing column heights. A venue's open bills are
+/// tens, not thousands, and round-robin is what keeps reading order matching
+/// the sort — the biggest outstanding first, left to right. If either stops
+/// holding, this wants `flutter_staggered_grid_view`'s `SliverMasonryGrid`.
+class _Masonry extends StatelessWidget {
+  final List<Widget> cards;
+  final double maxColumnWidth;
+
+  const _Masonry({required this.cards, required this.maxColumnWidth});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, c) {
+      // The same rule SliverGridDelegateWithMaxCrossAxisExtent applied.
+      final cols = (c.maxWidth / maxColumnWidth).ceil().clamp(1, 8);
+      final columns = List.generate(cols, (_) => <Widget>[]);
+      for (var i = 0; i < cards.length; i++) {
+        columns[i % cols].add(Reveal(index: i, child: cards[i]));
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < cols; i++) ...[
+            if (i > 0) const SizedBox(width: Sp.s2h),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var j = 0; j < columns[i].length; j++) ...[
+                    if (j > 0) const SizedBox(height: Sp.s2h),
+                    columns[i][j],
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      );
+    },
+  );
 }
 
 /// Title, what the shift looks like in one line, and the number the owner asks
