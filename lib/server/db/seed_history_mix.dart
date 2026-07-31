@@ -1,5 +1,5 @@
-/// The hand-authored order mix behind the [[Demo seed (venue mid-service)]]
-/// (ADR-0053 §6).
+/// The hand-authored order mix behind the [[Generic seed (sample data)]]'s
+/// fabricated month (ADR-0053 §6, carried into ADR-0073).
 ///
 /// Routing the seed through the production order path fixes *how* rows are
 /// written; it does nothing for what they contain. Uniform random baskets
@@ -20,24 +20,50 @@ const itemWeights = <String, double>{
   // Mains — the rice and noodle plates are what the room actually eats.
   'nasi-goreng': 10.0,
   'mie-goreng': 7.5,
+  'nasi-campur': 6.5,
+  'ayam-bakar': 5.5,
+  'soto-ayam': 4.5,
   'crispy-tempeh': 4.0,
   'rendang': 3.5,
+  'cap-cay': 3.0,
+  'ikan-bakar': 2.8,
+  'pepes-tahu': 2.2,
   'burger': 2.0,
+  'bebek-goreng': 1.8,
   // Starters — roughly half of tables take one, satay leading.
   'sate-ayam': 5.5,
   'lumpia': 3.5,
   'gado-gado': 3.0,
+  'tahu-isi': 2.6,
+  'perkedel': 2.2,
+  'sate-lilit': 1.8,
   // Sides — cheap, frequent, often added late.
   'krupuk-side': 6.0,
+  'nasi-putih': 5.5,
+  'kentang-goreng': 4.0,
+  'sayur-urap': 2.0,
+  'telur-balado': 1.8,
   // Desserts — one table in three, and almost always the same one.
   'pisang': 5.0,
+  'es-campur': 3.0,
+  'dadar-gulung': 1.6,
+  'panna-cotta': 1.2,
   // Drinks — iced tea is ordered more than everything else combined.
   'es-teh': 14.0,
+  'air-mineral': 7.0,
   'bintang': 6.0,
+  'es-jeruk': 5.0,
+  'kopi-susu': 4.0,
   'kombucha': 2.5,
+  'bali-hai': 2.2,
   'margarita': 2.0,
   'rose': 1.5,
+  'mojito': 1.4,
+  'sauvignon': 1.2,
+  'guinness': 1.1,
   'negroni': 1.0,
+  'espresso-martini': 0.9,
+  'shiraz': 0.8,
 };
 
 /// Weight for an item the table does not name (a venue that added its own

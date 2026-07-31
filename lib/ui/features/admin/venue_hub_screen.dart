@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/ui/features/admin/widgets/seed_data_dialog.dart';
 import 'package:satset/data/repositories/generic_seed.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
@@ -162,42 +162,53 @@ final _sections = <_HubSection>[
   ),
 ];
 
-class VenueHubScreen extends ConsumerWidget {
+class VenueHubScreen extends ConsumerStatefulWidget {
   const VenueHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VenueHubScreen> createState() => _VenueHubScreenState();
+}
+
+class _VenueHubScreenState extends ConsumerState<VenueHubScreen> {
+  bool _prompted = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.layout;
-    final seed = ref.watch(genericSeedProvider);
-    final showSeed = seed.showPrompt;
-    final showDemo = seed.canSeedDemo || seed.hasDemo;
+
+    // The first-run prompt is mandatory and blocking (ADR-0073): an empty
+    // venue answers "muat contoh data" or "lewati" before it reaches a single
+    // hub tile. `_prompted` keeps a rebuild from stacking a second dialog —
+    // the *answer* is persisted server-side, so this flag only guards the
+    // frame, never the promise.
+    //
+    // Watched, not listened. `/seed/state` is fetched when the provider is
+    // first read, which on a warm navigation has already happened by the time
+    // this screen mounts — a change-only listener would then never fire and
+    // the mandatory prompt would silently not appear.
+    final mustPrompt = ref.watch(
+      genericSeedProvider.select((s) => s.mustPrompt),
+    );
+    if (mustPrompt && !_prompted) {
+      _prompted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showSeedDataDialog(context);
+      });
+    }
 
     if (l.useTabletShell) {
-      var idx = 0;
       return AdminPage(
         title: AppStrings.venueHubTitle,
         sub: AppStrings.venueHubSubtitle,
         children: [
-          Reveal(index: idx++, child: const _VenueHeroStrip()),
+          const Reveal(index: 0, child: _VenueHeroStrip()),
           const SizedBox(height: Sp.s4),
-          if (showSeed) ...[
-            Reveal(index: idx++, child: const SeedDataBanner()),
-            const SizedBox(height: Sp.s4),
-          ],
-          if (showDemo) ...[
-            Reveal(index: idx++, child: const DemoDataBanner()),
-            const SizedBox(height: Sp.s4),
-          ],
-          _HubGrid(sections: _sections, seedOffset: idx, big: true),
+          _HubGrid(sections: _sections, seedOffset: 1, big: true),
         ],
       );
     }
 
-    return _PhoneHub(
-      sections: _sections,
-      showSeed: showSeed,
-      showDemo: showDemo,
-    );
+    return _PhoneHub(sections: _sections);
   }
 }
 
@@ -393,190 +404,6 @@ class _StatBadge extends StatelessWidget {
   }
 }
 
-/// Demo-dataset controls (ADR-0052). Offers the load action while the venue
-/// has not traded, and refresh/reset once demo data is present — the live half
-/// decays within minutes, so refresh is the common action, not an edge case.
-class DemoDataBanner extends ConsumerWidget {
-  const DemoDataBanner({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final st = ref.watch(genericSeedProvider);
-    final ctrl = ref.read(genericSeedProvider.notifier);
-
-    Future<void> run(Future<void> Function() action) async {
-      try {
-        await action();
-      } catch (_) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              st.canSeedDemo
-                  ? AppStrings.venueHubDemoError
-                  : AppStrings.venueHubDemoRefused,
-            ),
-          ),
-        );
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(Sp.s4),
-      decoration: SatBox.d(
-        color: sc.info.withValues(alpha: 0.10),
-        borderRadius: SatR.a(16),
-        border: SatB.all(color: sc.info.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.science_rounded, size: 18, color: sc.info),
-              const SizedBox(width: Sp.s2),
-              Expanded(
-                child: Text(
-                  AppStrings.venueHubDemoTitle,
-                  style: SatType.labelL(color: sc.textHi),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: Sp.s1h),
-          Text(
-            st.demoSeeding
-                ? AppStrings.venueHubDemoBodyRunning
-                : st.demoIncomplete
-                ? AppStrings.venueHubDemoBodyIncomplete
-                : st.hasDemo
-                ? AppStrings.venueHubDemoBodyLoaded
-                : AppStrings.venueHubDemoBody,
-            style: SatType.bodyM(color: sc.textLo),
-          ),
-          const SizedBox(height: Sp.s3h),
-          if (st.demoSeeding) ...[
-            // A month through the production order path takes minutes; a bare
-            // spinner cannot be told from a hang (ADR-0053 §8).
-            ClipRRect(
-              borderRadius: SatR.a(999),
-              child: LinearProgressIndicator(
-                value: st.demoDaysDone / st.demoDaysTotal,
-                minHeight: 6,
-                backgroundColor: sc.bg3,
-                valueColor: AlwaysStoppedAnimation(sc.info),
-              ),
-            ),
-            const SizedBox(height: Sp.s2),
-            Text(
-              '${AppStrings.venueHubDemoProgress} · '
-              '${st.demoDaysDone}/${st.demoDaysTotal}',
-              style: SatType.monoS(color: sc.textLo),
-            ),
-          ] else
-            Row(
-              children: [
-                if (st.hasDemo || st.demoIncomplete)
-                  Expanded(
-                    child: SatButton.primary(
-                      label: AppStrings.venueHubDemoBtnReset,
-                      busy: st.loading,
-                      onTap: st.loading ? null : () => run(ctrl.resetDemo),
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: SatButton.primary(
-                      label: st.loading
-                          ? AppStrings.loading
-                          : AppStrings.venueHubDemoBtnLoad,
-                      busy: st.loading,
-                      onTap: st.loading ? null : () => run(ctrl.seedDemo),
-                    ),
-                  ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class SeedDataBanner extends ConsumerWidget {
-  const SeedDataBanner({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final st = ref.watch(genericSeedProvider);
-    final ctrl = ref.read(genericSeedProvider.notifier);
-    return Container(
-      padding: const EdgeInsets.all(Sp.s4),
-      decoration: SatBox.d(
-        color: sc.accent.withValues(alpha: 0.10),
-        borderRadius: SatR.a(16),
-        border: SatB.all(color: sc.accent.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_fix_high_rounded, size: 18, color: sc.accentText),
-              const SizedBox(width: Sp.s2),
-              Expanded(
-                child: Text(
-                  AppStrings.venueHubSeedTitle,
-                  style: SatType.labelL(color: sc.textHi),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: Sp.s1h),
-          Text(
-            AppStrings.venueHubSeedBody,
-            style: SatType.bodyM(color: sc.textLo),
-          ),
-          const SizedBox(height: Sp.s3h),
-          Row(
-            children: [
-              Expanded(
-                child: SatButton.primary(
-                  label: st.loading
-                      ? AppStrings.loading
-                      : AppStrings.venueHubSeedBtnLoad,
-                  busy: st.loading,
-                  onTap: st.loading
-                      ? null
-                      : () async {
-                          try {
-                            await ctrl.seed();
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(AppStrings.venueHubSeedError),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                ),
-              ),
-              const SizedBox(width: Sp.s2h),
-              SatButton.outline(
-                label: AppStrings.venueHubSeedBtnLater,
-                onTap: st.loading ? null : ctrl.dismiss,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _HubGrid extends StatelessWidget {
   final List<_HubSection> sections;
   final int seedOffset;
@@ -618,13 +445,7 @@ class _HubGrid extends StatelessWidget {
 
 class _PhoneHub extends StatelessWidget {
   final List<_HubSection> sections;
-  final bool showSeed;
-  final bool showDemo;
-  const _PhoneHub({
-    required this.sections,
-    this.showSeed = false,
-    this.showDemo = false,
-  });
+  const _PhoneHub({required this.sections});
 
   @override
   Widget build(BuildContext context) {
@@ -664,18 +485,7 @@ class _PhoneHub extends StatelessWidget {
         ),
         const Reveal(index: 2, child: _VenueHeroStrip()),
         const SizedBox(height: Sp.s3h),
-        if (showSeed) ...[
-          const Reveal(index: 3, child: SeedDataBanner()),
-          const SizedBox(height: Sp.s3),
-        ],
-        if (showDemo) ...[
-          Reveal(index: showSeed ? 4 : 3, child: const DemoDataBanner()),
-          const SizedBox(height: Sp.s3),
-        ],
-        _HubGrid(
-          sections: sections,
-          seedOffset: 3 + (showSeed ? 1 : 0) + (showDemo ? 1 : 0),
-        ),
+        _HubGrid(sections: sections, seedOffset: 3),
       ],
     );
   }

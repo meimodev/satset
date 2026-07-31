@@ -6,6 +6,8 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/data/repositories/generic_seed.dart';
+import 'package:satset/ui/features/admin/widgets/seed_data_dialog.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -454,6 +456,19 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                 onTap: () => _confirmRestart(),
               ),
             ],
+          ),
+        ),
+        // The permanent way back in after the first-run prompt was skipped
+        // (ADR-0073). Without this a single tap on "Lewati" would put the
+        // sample data permanently out of reach.
+        AdminRow(
+          label: AppStrings.settingsSeedTitle,
+          value: SatButton.outline(
+            label: ref.watch(genericSeedProvider).hasSampleData
+                ? AppStrings.venueHubSeedBtnClear
+                : AppStrings.venueHubSeedBtnLoad,
+            size: SatButtonSize.sm,
+            onTap: () => showSeedDataDialog(context),
           ),
           last: true,
         ),

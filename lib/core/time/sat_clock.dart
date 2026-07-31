@@ -3,51 +3,40 @@
 /// Every **domain** timestamp — when a line was sent, fired, ready, served,
 /// when a bill closed, when a payment landed, when an audit row was written —
 /// and every elapsed-time computation in the UI reads [now] instead of
-/// `DateTime.now()`, so a venue holding demo data can run on a shifted clock
-/// and every screen agrees about what time it is (ADR-0053).
+/// `DateTime.now()`.
+///
+/// In shipped builds the offset is **always zero**: ADR-0073 removed the demo
+/// clock along with the live snapshot it existed to hold, so a seeded venue
+/// runs on real time and the sample seed backdates by passing each row's
+/// instant explicitly into the write path instead. The seam stays because it
+/// is what lets a test travel in time without every call site knowing, and
+/// because reinstating a shifted clock would otherwise mean touching 120 call
+/// sites again.
 ///
 /// **Security never reads this.** JWT issuance and validation, session expiry,
 /// the pairing-token window and TLS certificate validity call [realNow]: a
 /// rewound auth clock keeps tokens alive past their stated lifetime, which is
-/// an authentication defect that outlives the demo.
-///
-/// On a venue with no demo data [offset] is zero and [now] == [realNow].
+/// an authentication defect that outlives whatever shifted the clock.
 class SatClock {
   SatClock._();
 
   static Duration _offset = Duration.zero;
 
-  /// Demo time minus real time. Set from the host's `/auth/me` bootstrap and
-  /// its `demo.clock` broadcast; zero on any venue without demo data.
+  /// App time minus real time. Zero everywhere outside a test.
   static Duration get offset => _offset;
 
-  /// Whether the app is currently running on a shifted clock.
-  static bool get isShifted => _offset != Duration.zero;
-
-  /// The app's current time — real time plus the demo offset.
-  ///
-  /// Note this still *runs*: the offset is a fixed shift re-anchored when the
-  /// host boots, so timers tick, lateness climbs and alerts escalate normally
-  /// during a session (ADR-0053 §1). It is not a frozen clock.
+  /// The app's current time. Still *runs*: the offset is a fixed shift, so
+  /// timers tick, lateness climbs and alerts escalate normally. Never a frozen
+  /// clock.
   static DateTime now() => DateTime.now().add(_offset);
 
-  /// Wall-clock time, ignoring any demo offset. For auth, pairing, TLS and
-  /// anything else where being wrong is a security bug rather than a cosmetic
-  /// one.
+  /// Wall-clock time, ignoring any offset. For auth, pairing, TLS and anything
+  /// else where being wrong is a security bug rather than a cosmetic one.
   static DateTime realNow() => DateTime.now();
 
-  /// Apply an offset. Called on the host when it boots against demo data, and
-  /// on every client from the host's bootstrap/broadcast.
+  /// Apply an offset. A test seam — production code never calls this.
   static void adopt(Duration value) => _offset = value;
 
-  /// Return to real time — the venue no longer holds demo data.
+  /// Return to real time.
   static void clear() => _offset = Duration.zero;
-
-  /// Re-anchor so that [now] reads [anchor], then run forward from there.
-  ///
-  /// This is what the host does at boot: the demo snapshot was authored to be
-  /// read at [anchor], so pinning the clock back to it makes every seeded
-  /// state read at the age it was written for, however long ago that was.
-  static void anchorTo(DateTime anchor) =>
-      _offset = anchor.difference(DateTime.now());
 }

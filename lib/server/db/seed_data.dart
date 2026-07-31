@@ -1,4 +1,3 @@
-import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
@@ -22,67 +21,6 @@ class DummyData {
   static const roleKasirId = 'role-kasir';
   static const roleAdminId = 'role-admin';
 
-  static const maya = AppUser(
-    id: 'maya',
-    name: 'Maya',
-    initials: 'MA',
-    role: UserRole.waiter,
-    shiftStartedAt: '17:30',
-    zoneAssigned: 'Terrace',
-    roleId: roleWaiterId,
-    pin: '100001',
-    avatarColorHex: 0xFFC08AFF,
-  );
-
-  static const budi = AppUser(
-    id: 'budi',
-    name: 'Budi',
-    initials: 'BU',
-    role: UserRole.waiter,
-    shiftStartedAt: '17:30',
-    zoneAssigned: 'Garden',
-    roleId: roleWaiterId,
-    pin: '100002',
-    avatarColorHex: 0xFF6DB5FF,
-  );
-
-  static const rina = AppUser(
-    id: 'rina',
-    name: 'Rina',
-    initials: 'RI',
-    role: UserRole.waiter,
-    shiftStartedAt: '17:30',
-    zoneAssigned: 'Indoor',
-    roleId: roleWaiterId,
-    pin: '100003',
-    avatarColorHex: 0xFF4DD487,
-  );
-
-  static const koki = AppUser(
-    id: 'koki',
-    name: 'Komang',
-    initials: 'KT',
-    role: UserRole.kitchen,
-    shiftStartedAt: '16:30',
-    zoneAssigned: '—',
-    roleId: roleKitchenId,
-    pin: '100004',
-    avatarColorHex: 0xFFFF9233,
-  );
-
-  static const bos = AppUser(
-    id: 'bos',
-    name: 'Pak Nyoman',
-    initials: 'PN',
-    role: UserRole.admin,
-    shiftStartedAt: '17:00',
-    zoneAssigned: '—',
-    roleId: roleAdminId,
-    pin: '100000',
-    avatarColorHex: 0xFFFFC04D,
-  );
-
-  static const users = <AppUser>[maya, budi, rina, koki, bos];
 
   static List<Role> initialRoles() => <Role>[
     Role(
@@ -139,196 +77,6 @@ class DummyData {
     ),
   ];
 
-  static AppUser? userById(String? id) {
-    if (id == null) return null;
-    for (final u in users) {
-      if (u.id == id) return u;
-    }
-    return null;
-  }
-
-  static const zones = <Zone>[
-    Zone(
-      id: 'terrace',
-      name: 'Teras',
-      short: 'Ter',
-      colorHex: 0xFFFF9233,
-      iconKey: 'deck',
-    ),
-    Zone(
-      id: 'garden',
-      name: 'Taman',
-      short: 'Tam',
-      colorHex: 0xFF4DD487,
-      iconKey: 'park',
-    ),
-    Zone(
-      id: 'indoor',
-      name: 'Dalam',
-      short: 'Dlm',
-      colorHex: 0xFF6DB5FF,
-      iconKey: 'weekend',
-    ),
-    Zone(
-      id: 'bar',
-      name: 'Bar',
-      short: 'Bar',
-      colorHex: 0xFFC08AFF,
-      iconKey: 'localBar',
-    ),
-  ];
-
-  static const tables = <VenueTable>[
-    VenueTable(
-      id: 'T1',
-      zoneId: 'terrace',
-      pax: 2,
-      status: TableStatus.occupied,
-      elapsed: '0:18',
-      openAmount: 245000,
-      lastActorId: 'maya',
-    ),
-    VenueTable(
-      id: 'T2',
-      zoneId: 'terrace',
-      pax: 4,
-      status: TableStatus.ready,
-      elapsed: '0:42',
-      openAmount: 612000,
-      readyCount: 2,
-      lastActorId: 'maya',
-    ),
-    VenueTable(
-      id: 'T3',
-      zoneId: 'terrace',
-      pax: 2,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'T4',
-      zoneId: 'terrace',
-      pax: 6,
-      status: TableStatus.pending,
-      elapsed: '0:08',
-      lastActorId: 'maya',
-    ),
-    VenueTable(
-      id: 'T5',
-      zoneId: 'terrace',
-      pax: 3,
-      status: TableStatus.occupied,
-      elapsed: '1:14',
-      openAmount: 880000,
-      lastActorId: 'rina',
-    ),
-    VenueTable(
-      id: 'T6',
-      zoneId: 'terrace',
-      pax: 2,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'G1',
-      zoneId: 'garden',
-      pax: 4,
-      status: TableStatus.occupied,
-      elapsed: '0:32',
-      openAmount: 425000,
-      lastActorId: 'budi',
-    ),
-    VenueTable(
-      id: 'G2',
-      zoneId: 'garden',
-      pax: 2,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'G3',
-      zoneId: 'garden',
-      pax: 5,
-      status: TableStatus.occupied,
-      elapsed: '0:54',
-      openAmount: 690000,
-      lastActorId: 'budi',
-    ),
-    VenueTable(
-      id: 'G4',
-      zoneId: 'garden',
-      pax: 2,
-      status: TableStatus.ready,
-      elapsed: '0:21',
-      openAmount: 180000,
-      readyCount: 1,
-      lastActorId: 'budi',
-    ),
-    VenueTable(
-      id: 'I1',
-      zoneId: 'indoor',
-      pax: 2,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'I2',
-      zoneId: 'indoor',
-      pax: 4,
-      status: TableStatus.occupied,
-      elapsed: '0:46',
-      openAmount: 535000,
-      lastActorId: 'rina',
-    ),
-    VenueTable(
-      id: 'I3',
-      zoneId: 'indoor',
-      pax: 2,
-      status: TableStatus.pending,
-      elapsed: '0:03',
-      lastActorId: 'rina',
-    ),
-    VenueTable(
-      id: 'I4',
-      zoneId: 'indoor',
-      pax: 4,
-      status: TableStatus.occupied,
-      elapsed: '1:32',
-      openAmount: 1120000,
-      lastActorId: 'rina',
-    ),
-    VenueTable(
-      id: 'I5',
-      zoneId: 'indoor',
-      pax: 6,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'I6',
-      zoneId: 'indoor',
-      pax: 2,
-      status: TableStatus.occupied,
-      elapsed: '0:12',
-      openAmount: 95000,
-      lastActorId: 'budi',
-    ),
-    VenueTable(
-      id: 'B1',
-      zoneId: 'bar',
-      pax: 2,
-      status: TableStatus.occupied,
-      elapsed: '0:24',
-      openAmount: 145000,
-      lastActorId: 'maya',
-    ),
-    VenueTable(id: 'B2', zoneId: 'bar', pax: 1, status: TableStatus.available),
-    VenueTable(id: 'B3', zoneId: 'bar', pax: 3, status: TableStatus.available),
-    VenueTable(
-      id: 'B4',
-      zoneId: 'bar',
-      pax: 2,
-      status: TableStatus.occupied,
-      elapsed: '0:38',
-      openAmount: 270000,
-      lastActorId: 'rina',
-    ),
-  ];
 
   static const categories = <MenuCategory>[
     MenuCategory(id: 'all', name: 'Semua'),
@@ -621,6 +369,334 @@ class DummyData {
       basePrice: 38000,
       variants: const [Variant(id: 'reg', name: '', price: 38000)],
     ),
+
+    // ---- Pembuka ----
+    MenuItem(
+      id: 'tahu-isi',
+      name: 'Tahu Isi (4 buah)',
+      categoryId: 'starters',
+      description: 'Tahu goreng isi sayur, saus cabai rawit',
+      allergens: const ['soy', 'gluten'],
+      prepTime: 8,
+      basePrice: 48000,
+      variants: const [Variant(id: 'reg', name: '', price: 48000)],
+    ),
+    MenuItem(
+      id: 'perkedel',
+      name: 'Perkedel Kentang (5 buah)',
+      categoryId: 'starters',
+      description: 'Kentang tumbuk, bawang goreng, telur',
+      allergens: const ['egg'],
+      prepTime: 9,
+      basePrice: 45000,
+      variants: const [Variant(id: 'reg', name: '', price: 45000)],
+    ),
+    MenuItem(
+      id: 'sate-lilit',
+      name: 'Sate Lilit Ikan (5 tusuk)',
+      categoryId: 'starters',
+      description: 'Ikan cincang, kelapa parut, bumbu Bali, batang serai',
+      allergens: const ['fish'],
+      prepTime: 11,
+      basePrice: 78000,
+      variants: const [Variant(id: 'reg', name: '', price: 78000)],
+    ),
+
+    // ---- Utama ----
+    MenuItem(
+      id: 'ayam-bakar',
+      name: 'Ayam Bakar Bumbu Bali',
+      categoryId: 'mains',
+      description: 'Setengah ayam bakar arang, sambal matah, nasi putih',
+      prepTime: 18,
+      basePrice: 95000,
+      variants: const [
+        Variant(id: 'half', name: 'Setengah', price: 95000),
+        Variant(id: 'whole', name: 'Utuh', price: 165000),
+      ],
+      modifierGroups: const [
+        ModifierGroup(
+          id: 'spice',
+          name: 'Tingkat pedas',
+          required: true,
+          options: [
+            ModifierOption(id: 'no', name: 'Tidak pedas'),
+            ModifierOption(id: 'md', name: 'Sedang'),
+            ModifierOption(id: 'hot', name: 'Pedas'),
+          ],
+        ),
+      ],
+    ),
+    MenuItem(
+      id: 'ikan-bakar',
+      name: 'Ikan Bakar Jimbaran',
+      categoryId: 'mains',
+      description: 'Ikan segar bakar sambal matah, jeruk nipis, nasi putih',
+      allergens: const ['fish'],
+      prepTime: 20,
+      basePrice: 125000,
+      variants: const [Variant(id: 'reg', name: '', price: 125000)],
+    ),
+    MenuItem(
+      id: 'bebek-goreng',
+      name: 'Bebek Goreng Crispy',
+      categoryId: 'mains',
+      description: 'Bebek ungkep, digoreng renyah, sambal ijo, lalapan',
+      prepTime: 22,
+      basePrice: 135000,
+      variants: const [Variant(id: 'reg', name: '', price: 135000)],
+    ),
+    MenuItem(
+      id: 'nasi-campur',
+      name: 'Nasi Campur Bali',
+      categoryId: 'mains',
+      description: 'Nasi, ayam sisit, telur, urap, krupuk, sambal',
+      allergens: const ['egg', 'shellfish'],
+      prepTime: 14,
+      basePrice: 92000,
+      variants: const [Variant(id: 'reg', name: '', price: 92000)],
+      modifierGroups: const [
+        ModifierGroup(
+          id: 'spice',
+          name: 'Tingkat pedas',
+          required: true,
+          options: [
+            ModifierOption(id: 'no', name: 'Tidak pedas'),
+            ModifierOption(id: 'md', name: 'Sedang'),
+            ModifierOption(id: 'hot', name: 'Pedas'),
+          ],
+        ),
+      ],
+    ),
+    MenuItem(
+      id: 'cap-cay',
+      name: 'Cap Cay Goreng',
+      categoryId: 'mains',
+      description: 'Sayur campur, udang, bakso ikan, saus tiram',
+      allergens: const ['shellfish', 'soy'],
+      prepTime: 12,
+      basePrice: 78000,
+      variants: const [Variant(id: 'reg', name: '', price: 78000)],
+      modifierGroups: const [
+        ModifierGroup(
+          id: 'protein',
+          name: 'Pilih protein',
+          required: true,
+          options: [
+            ModifierOption(id: 'prawn', name: 'Udang'),
+            ModifierOption(id: 'chicken', name: 'Ayam', priceDelta: -8000),
+            ModifierOption(id: 'veg', name: 'Sayur saja', priceDelta: -15000),
+          ],
+        ),
+      ],
+    ),
+    MenuItem(
+      id: 'soto-ayam',
+      name: 'Soto Ayam',
+      categoryId: 'mains',
+      description: 'Kuah kunyit, suwiran ayam, soun, telur, bawang goreng',
+      allergens: const ['egg'],
+      prepTime: 13,
+      basePrice: 72000,
+      variants: const [Variant(id: 'reg', name: '', price: 72000)],
+    ),
+    MenuItem(
+      id: 'pepes-tahu',
+      name: 'Pepes Tahu Kemangi',
+      categoryId: 'mains',
+      description: 'Tahu bumbu kuning, kemangi, dibungkus daun pisang',
+      allergens: const ['soy'],
+      prepTime: 16,
+      basePrice: 62000,
+      dietary: const ['vegan'],
+      variants: const [Variant(id: 'reg', name: '', price: 62000)],
+    ),
+
+    // ---- Pendamping ----
+    MenuItem(
+      id: 'nasi-putih',
+      name: 'Nasi Putih',
+      categoryId: 'sides',
+      description: 'Semangkuk nasi kukus',
+      prepTime: 2,
+      basePrice: 18000,
+      dietary: const ['vegan'],
+      variants: const [Variant(id: 'reg', name: '', price: 18000)],
+    ),
+    MenuItem(
+      id: 'kentang-goreng',
+      name: 'Kentang Goreng',
+      categoryId: 'sides',
+      description: 'Potongan tebal, garam laut, mayo sambal',
+      allergens: const ['egg'],
+      prepTime: 8,
+      basePrice: 42000,
+      variants: const [Variant(id: 'reg', name: '', price: 42000)],
+    ),
+    MenuItem(
+      id: 'sayur-urap',
+      name: 'Urap Sayur',
+      categoryId: 'sides',
+      description: 'Sayur kukus, kelapa parut berbumbu',
+      prepTime: 6,
+      basePrice: 35000,
+      dietary: const ['vegan'],
+      variants: const [Variant(id: 'reg', name: '', price: 35000)],
+    ),
+    MenuItem(
+      id: 'telur-balado',
+      name: 'Telur Balado (2 butir)',
+      categoryId: 'sides',
+      description: 'Telur rebus goreng, sambal balado',
+      allergens: const ['egg'],
+      prepTime: 7,
+      basePrice: 32000,
+      variants: const [Variant(id: 'reg', name: '', price: 32000)],
+    ),
+
+    // ---- Penutup ----
+    MenuItem(
+      id: 'es-campur',
+      name: 'Es Campur',
+      categoryId: 'desserts',
+      description: 'Es serut, santan, sirup, buah, es krim kelapa',
+      allergens: const ['dairy'],
+      prepTime: 6,
+      basePrice: 48000,
+      variants: const [Variant(id: 'reg', name: '', price: 48000)],
+    ),
+    MenuItem(
+      id: 'dadar-gulung',
+      name: 'Dadar Gulung (3 buah)',
+      categoryId: 'desserts',
+      description: 'Dadar pandan isi kelapa gula merah',
+      allergens: const ['gluten', 'egg'],
+      prepTime: 8,
+      basePrice: 42000,
+      variants: const [Variant(id: 'reg', name: '', price: 42000)],
+    ),
+    MenuItem(
+      id: 'panna-cotta',
+      name: 'Panna Cotta Kelapa',
+      categoryId: 'desserts',
+      description: 'Santan, gula aren, kelapa panggang',
+      prepTime: 4,
+      basePrice: 55000,
+      variants: const [Variant(id: 'reg', name: '', price: 55000)],
+    ),
+
+    // ---- Cocktail / Anggur ----
+    // Seeded without a resep on purpose, like the cocktails above: an item
+    // with no recipe consumes nothing and never goes auto-habis (ADR-0040 §4).
+    MenuItem(
+      id: 'mojito',
+      name: 'Mojito',
+      categoryId: 'cocktails',
+      description: 'Rum putih, mint, lime, soda',
+      prepTime: 4,
+      basePrice: 105000,
+      variants: const [Variant(id: 'reg', name: '', price: 105000)],
+    ),
+    MenuItem(
+      id: 'espresso-martini',
+      name: 'Espresso Martini',
+      categoryId: 'cocktails',
+      description: 'Vodka, kopi espresso, kahlua',
+      prepTime: 5,
+      basePrice: 135000,
+      variants: const [Variant(id: 'reg', name: '', price: 135000)],
+    ),
+    MenuItem(
+      id: 'sauvignon',
+      name: 'Sauvignon Blanc',
+      categoryId: 'wine',
+      description: 'Marlborough, kering, aroma jeruk',
+      allergens: const ['sulfites'],
+      prepTime: 1,
+      basePrice: 105000,
+      variants: const [
+        Variant(id: 'glass', name: 'Gelas', price: 105000),
+        Variant(id: 'bottle', name: 'Botol', price: 545000),
+      ],
+    ),
+    MenuItem(
+      id: 'shiraz',
+      name: 'Shiraz',
+      categoryId: 'wine',
+      description: 'Barossa, penuh, aroma buah gelap',
+      allergens: const ['sulfites'],
+      prepTime: 1,
+      basePrice: 115000,
+      variants: const [
+        Variant(id: 'glass', name: 'Gelas', price: 115000),
+        Variant(id: 'bottle', name: 'Botol', price: 595000),
+      ],
+    ),
+
+    // ---- Bir ----
+    MenuItem(
+      id: 'bali-hai',
+      name: 'Bali Hai',
+      categoryId: 'beer',
+      description: '330ml. Lager lokal, ringan.',
+      allergens: const ['gluten'],
+      prepTime: 1,
+      basePrice: 40000,
+      variants: const [Variant(id: 'reg', name: '', price: 40000)],
+    ),
+    MenuItem(
+      id: 'guinness',
+      name: 'Guinness Draught',
+      categoryId: 'beer',
+      description: '330ml. Stout, impor.',
+      allergens: const ['gluten'],
+      prepTime: 1,
+      basePrice: 78000,
+      variants: const [Variant(id: 'reg', name: '', price: 78000)],
+    ),
+
+    // ---- Non-alkohol ----
+    MenuItem(
+      id: 'es-jeruk',
+      name: 'Es Jeruk Peras',
+      categoryId: 'soft',
+      description: 'Jeruk peras segar, es batu',
+      prepTime: 2,
+      basePrice: 30000,
+      dietary: const ['vegan'],
+      variants: const [Variant(id: 'reg', name: '', price: 30000)],
+      modifierGroups: const [
+        ModifierGroup(
+          id: 'sweet',
+          name: 'Tingkat manis',
+          options: [
+            ModifierOption(id: 'less', name: 'Kurang manis'),
+            ModifierOption(id: 'norm', name: 'Normal'),
+            ModifierOption(id: 'extra', name: 'Ekstra manis'),
+          ],
+        ),
+      ],
+    ),
+    MenuItem(
+      id: 'kopi-susu',
+      name: 'Es Kopi Susu',
+      categoryId: 'soft',
+      description: 'Espresso, susu segar, gula aren',
+      allergens: const ['dairy'],
+      prepTime: 3,
+      basePrice: 35000,
+      variants: const [Variant(id: 'reg', name: '', price: 35000)],
+    ),
+    MenuItem(
+      id: 'air-mineral',
+      name: 'Air Mineral',
+      categoryId: 'soft',
+      description: '600ml, dingin atau suhu ruang',
+      prepTime: 1,
+      basePrice: 15000,
+      dietary: const ['vegan'],
+      variants: const [Variant(id: 'reg', name: '', price: 15000)],
+    ),
   ];
 
   static MenuItem itemById(String id) => items.firstWhere((i) => i.id == id);
@@ -705,42 +781,52 @@ class DummyData {
       colorHex: 0xFF4DD487,
       iconKey: 'deck',
     ),
+    Zone(
+      id: 'teras',
+      name: 'Teras',
+      short: 'Trs',
+      colorHex: 0xFFFF9233,
+      iconKey: 'balcony',
+    ),
+    Zone(
+      id: 'vip',
+      name: 'VIP',
+      short: 'VIP',
+      colorHex: 0xFFC08AFF,
+      iconKey: 'celebration',
+    ),
   ];
 
+  /// Twenty tables across the four zones, pax 2–10. Sized so the floor screen
+  /// has genuine density and a zone filter changes what you see; the seeded
+  /// month spreads its ~1500 bills across all of them (ADR-0073).
+  ///
+  /// `D1`/`D2`/`L1`/`L2` keep their original ids: the seed is idempotent and
+  /// re-postable, and renaming them would orphan an existing install's tables.
   static const genericTables = <VenueTable>[
-    VenueTable(
-      id: 'D1',
-      zoneId: 'indoor',
-      pax: 2,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'D2',
-      zoneId: 'indoor',
-      pax: 4,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'L1',
-      zoneId: 'outdoor',
-      pax: 2,
-      status: TableStatus.available,
-    ),
-    VenueTable(
-      id: 'L2',
-      zoneId: 'outdoor',
-      pax: 4,
-      status: TableStatus.available,
-    ),
-  ];
-
-  static List<AuditEntry> initialAudit() => const [
-    AuditEntry(
-      id: 'A0',
-      type: AuditType.fire,
-      title: 'Course Utama dibakar untuk Meja T1',
-      tableId: 'T1',
-      when: '17:46',
-    ),
+    // Dalam — the covered room.
+    VenueTable(id: 'D1', zoneId: 'indoor', pax: 2),
+    VenueTable(id: 'D2', zoneId: 'indoor', pax: 4),
+    VenueTable(id: 'D3', zoneId: 'indoor', pax: 4),
+    VenueTable(id: 'D4', zoneId: 'indoor', pax: 6),
+    VenueTable(id: 'D5', zoneId: 'indoor', pax: 2),
+    VenueTable(id: 'D6', zoneId: 'indoor', pax: 8),
+    // Luar — the garden.
+    VenueTable(id: 'L1', zoneId: 'outdoor', pax: 2),
+    VenueTable(id: 'L2', zoneId: 'outdoor', pax: 4),
+    VenueTable(id: 'L3', zoneId: 'outdoor', pax: 4),
+    VenueTable(id: 'L4', zoneId: 'outdoor', pax: 6),
+    VenueTable(id: 'L5', zoneId: 'outdoor', pax: 2),
+    // Teras — street-facing, the two-tops that turn fastest.
+    VenueTable(id: 'T1', zoneId: 'teras', pax: 2),
+    VenueTable(id: 'T2', zoneId: 'teras', pax: 2),
+    VenueTable(id: 'T3', zoneId: 'teras', pax: 4),
+    VenueTable(id: 'T4', zoneId: 'teras', pax: 4),
+    VenueTable(id: 'T5', zoneId: 'teras', pax: 6),
+    // VIP — the big-party room; few covers, the largest bills.
+    VenueTable(id: 'V1', zoneId: 'vip', pax: 4),
+    VenueTable(id: 'V2', zoneId: 'vip', pax: 6),
+    VenueTable(id: 'V3', zoneId: 'vip', pax: 8),
+    VenueTable(id: 'V4', zoneId: 'vip', pax: 10),
   ];
 }

@@ -66,7 +66,6 @@ class MeDto with _$MeDto {
 
     /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
     /// Absent or 0 on a venue with no demo data.
-    @Default(0) int demoClockOffsetSeconds,
   }) = _MeDto;
 
   factory MeDto.fromJson(Map<String, dynamic> json) => _$MeDtoFromJson(json);

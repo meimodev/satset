@@ -21307,17 +21307,6 @@ class $DemoStatesTable extends DemoStates
     requiredDuringInsert: false,
     defaultValue: const Constant('default'),
   );
-  static const VerificationMeta _anchorAtMeta = const VerificationMeta(
-    'anchorAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> anchorAt = GeneratedColumn<DateTime>(
-    'anchor_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _completeMeta = const VerificationMeta(
     'complete',
   );
@@ -21357,13 +21346,28 @@ class $DemoStatesTable extends DemoStates
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _promptAnsweredMeta = const VerificationMeta(
+    'promptAnswered',
+  );
+  @override
+  late final GeneratedColumn<bool> promptAnswered = GeneratedColumn<bool>(
+    'prompt_answered',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("prompt_answered" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    anchorAt,
     complete,
     daysDone,
     daysTotal,
+    promptAnswered,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -21379,14 +21383,6 @@ class $DemoStatesTable extends DemoStates
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('anchor_at')) {
-      context.handle(
-        _anchorAtMeta,
-        anchorAt.isAcceptableOrUnknown(data['anchor_at']!, _anchorAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_anchorAtMeta);
     }
     if (data.containsKey('complete')) {
       context.handle(
@@ -21406,6 +21402,15 @@ class $DemoStatesTable extends DemoStates
         daysTotal.isAcceptableOrUnknown(data['days_total']!, _daysTotalMeta),
       );
     }
+    if (data.containsKey('prompt_answered')) {
+      context.handle(
+        _promptAnsweredMeta,
+        promptAnswered.isAcceptableOrUnknown(
+          data['prompt_answered']!,
+          _promptAnsweredMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -21419,10 +21424,6 @@ class $DemoStatesTable extends DemoStates
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      anchorAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}anchor_at'],
-      )!,
       complete: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}complete'],
@@ -21434,6 +21435,10 @@ class $DemoStatesTable extends DemoStates
       daysTotal: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}days_total'],
+      )!,
+      promptAnswered: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}prompt_answered'],
       )!,
     );
   }
@@ -21447,46 +21452,47 @@ class $DemoStatesTable extends DemoStates
 class DemoState extends DataClass implements Insertable<DemoState> {
   final String id;
 
-  /// The instant the demo snapshot was authored to be read at. The host
-  /// re-anchors [[Demo clock]] to this on every boot, so the seeded states
-  /// read at the age they were written for however long ago that was.
-  final DateTime anchorAt;
-
   /// False while a seed job is still running. A job that is interrupted —
   /// host backgrounded, process reclaimed, app force-quit — leaves this false
-  /// forever, and the Venue Hub then offers only Hapus: partial history would
-  /// otherwise trip the seed guard while reporting a loaded venue, so the
-  /// reports look real and are quietly short (ADR-0053 §9).
+  /// forever, and the prompt then offers only "Hapus & muat ulang": partial
+  /// history would otherwise trip the seed guard while reporting a loaded
+  /// venue, so the reports look real and are quietly short (ADR-0053 §9).
   final bool complete;
 
   /// Progress for the async seed job's WS broadcasts.
   final int daysDone;
   final int daysTotal;
+
+  /// The admin answered the first-run prompt and declined. Written on **skip**
+  /// or on a **completed** seed, never when the job merely starts — an
+  /// interrupted job means the question went unanswered, so the prompt fires
+  /// again and offers to clear the partial data (ADR-0073).
+  final bool promptAnswered;
   const DemoState({
     required this.id,
-    required this.anchorAt,
     required this.complete,
     required this.daysDone,
     required this.daysTotal,
+    required this.promptAnswered,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['anchor_at'] = Variable<DateTime>(anchorAt);
     map['complete'] = Variable<bool>(complete);
     map['days_done'] = Variable<int>(daysDone);
     map['days_total'] = Variable<int>(daysTotal);
+    map['prompt_answered'] = Variable<bool>(promptAnswered);
     return map;
   }
 
   DemoStatesCompanion toCompanion(bool nullToAbsent) {
     return DemoStatesCompanion(
       id: Value(id),
-      anchorAt: Value(anchorAt),
       complete: Value(complete),
       daysDone: Value(daysDone),
       daysTotal: Value(daysTotal),
+      promptAnswered: Value(promptAnswered),
     );
   }
 
@@ -21497,10 +21503,10 @@ class DemoState extends DataClass implements Insertable<DemoState> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DemoState(
       id: serializer.fromJson<String>(json['id']),
-      anchorAt: serializer.fromJson<DateTime>(json['anchorAt']),
       complete: serializer.fromJson<bool>(json['complete']),
       daysDone: serializer.fromJson<int>(json['daysDone']),
       daysTotal: serializer.fromJson<int>(json['daysTotal']),
+      promptAnswered: serializer.fromJson<bool>(json['promptAnswered']),
     );
   }
   @override
@@ -21508,33 +21514,35 @@ class DemoState extends DataClass implements Insertable<DemoState> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'anchorAt': serializer.toJson<DateTime>(anchorAt),
       'complete': serializer.toJson<bool>(complete),
       'daysDone': serializer.toJson<int>(daysDone),
       'daysTotal': serializer.toJson<int>(daysTotal),
+      'promptAnswered': serializer.toJson<bool>(promptAnswered),
     };
   }
 
   DemoState copyWith({
     String? id,
-    DateTime? anchorAt,
     bool? complete,
     int? daysDone,
     int? daysTotal,
+    bool? promptAnswered,
   }) => DemoState(
     id: id ?? this.id,
-    anchorAt: anchorAt ?? this.anchorAt,
     complete: complete ?? this.complete,
     daysDone: daysDone ?? this.daysDone,
     daysTotal: daysTotal ?? this.daysTotal,
+    promptAnswered: promptAnswered ?? this.promptAnswered,
   );
   DemoState copyWithCompanion(DemoStatesCompanion data) {
     return DemoState(
       id: data.id.present ? data.id.value : this.id,
-      anchorAt: data.anchorAt.present ? data.anchorAt.value : this.anchorAt,
       complete: data.complete.present ? data.complete.value : this.complete,
       daysDone: data.daysDone.present ? data.daysDone.value : this.daysDone,
       daysTotal: data.daysTotal.present ? data.daysTotal.value : this.daysTotal,
+      promptAnswered: data.promptAnswered.present
+          ? data.promptAnswered.value
+          : this.promptAnswered,
     );
   }
 
@@ -21542,82 +21550,83 @@ class DemoState extends DataClass implements Insertable<DemoState> {
   String toString() {
     return (StringBuffer('DemoState(')
           ..write('id: $id, ')
-          ..write('anchorAt: $anchorAt, ')
           ..write('complete: $complete, ')
           ..write('daysDone: $daysDone, ')
-          ..write('daysTotal: $daysTotal')
+          ..write('daysTotal: $daysTotal, ')
+          ..write('promptAnswered: $promptAnswered')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, anchorAt, complete, daysDone, daysTotal);
+  int get hashCode =>
+      Object.hash(id, complete, daysDone, daysTotal, promptAnswered);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DemoState &&
           other.id == this.id &&
-          other.anchorAt == this.anchorAt &&
           other.complete == this.complete &&
           other.daysDone == this.daysDone &&
-          other.daysTotal == this.daysTotal);
+          other.daysTotal == this.daysTotal &&
+          other.promptAnswered == this.promptAnswered);
 }
 
 class DemoStatesCompanion extends UpdateCompanion<DemoState> {
   final Value<String> id;
-  final Value<DateTime> anchorAt;
   final Value<bool> complete;
   final Value<int> daysDone;
   final Value<int> daysTotal;
+  final Value<bool> promptAnswered;
   final Value<int> rowid;
   const DemoStatesCompanion({
     this.id = const Value.absent(),
-    this.anchorAt = const Value.absent(),
     this.complete = const Value.absent(),
     this.daysDone = const Value.absent(),
     this.daysTotal = const Value.absent(),
+    this.promptAnswered = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DemoStatesCompanion.insert({
     this.id = const Value.absent(),
-    required DateTime anchorAt,
     this.complete = const Value.absent(),
     this.daysDone = const Value.absent(),
     this.daysTotal = const Value.absent(),
+    this.promptAnswered = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : anchorAt = Value(anchorAt);
+  });
   static Insertable<DemoState> custom({
     Expression<String>? id,
-    Expression<DateTime>? anchorAt,
     Expression<bool>? complete,
     Expression<int>? daysDone,
     Expression<int>? daysTotal,
+    Expression<bool>? promptAnswered,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (anchorAt != null) 'anchor_at': anchorAt,
       if (complete != null) 'complete': complete,
       if (daysDone != null) 'days_done': daysDone,
       if (daysTotal != null) 'days_total': daysTotal,
+      if (promptAnswered != null) 'prompt_answered': promptAnswered,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   DemoStatesCompanion copyWith({
     Value<String>? id,
-    Value<DateTime>? anchorAt,
     Value<bool>? complete,
     Value<int>? daysDone,
     Value<int>? daysTotal,
+    Value<bool>? promptAnswered,
     Value<int>? rowid,
   }) {
     return DemoStatesCompanion(
       id: id ?? this.id,
-      anchorAt: anchorAt ?? this.anchorAt,
       complete: complete ?? this.complete,
       daysDone: daysDone ?? this.daysDone,
       daysTotal: daysTotal ?? this.daysTotal,
+      promptAnswered: promptAnswered ?? this.promptAnswered,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -21628,9 +21637,6 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (anchorAt.present) {
-      map['anchor_at'] = Variable<DateTime>(anchorAt.value);
-    }
     if (complete.present) {
       map['complete'] = Variable<bool>(complete.value);
     }
@@ -21639,6 +21645,9 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
     }
     if (daysTotal.present) {
       map['days_total'] = Variable<int>(daysTotal.value);
+    }
+    if (promptAnswered.present) {
+      map['prompt_answered'] = Variable<bool>(promptAnswered.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -21650,10 +21659,10 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
   String toString() {
     return (StringBuffer('DemoStatesCompanion(')
           ..write('id: $id, ')
-          ..write('anchorAt: $anchorAt, ')
           ..write('complete: $complete, ')
           ..write('daysDone: $daysDone, ')
           ..write('daysTotal: $daysTotal, ')
+          ..write('promptAnswered: $promptAnswered, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -31964,19 +31973,19 @@ typedef $$StockMovementsTableProcessedTableManager =
 typedef $$DemoStatesTableCreateCompanionBuilder =
     DemoStatesCompanion Function({
       Value<String> id,
-      required DateTime anchorAt,
       Value<bool> complete,
       Value<int> daysDone,
       Value<int> daysTotal,
+      Value<bool> promptAnswered,
       Value<int> rowid,
     });
 typedef $$DemoStatesTableUpdateCompanionBuilder =
     DemoStatesCompanion Function({
       Value<String> id,
-      Value<DateTime> anchorAt,
       Value<bool> complete,
       Value<int> daysDone,
       Value<int> daysTotal,
+      Value<bool> promptAnswered,
       Value<int> rowid,
     });
 
@@ -31994,11 +32003,6 @@ class $$DemoStatesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get anchorAt => $composableBuilder(
-    column: $table.anchorAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<bool> get complete => $composableBuilder(
     column: $table.complete,
     builder: (column) => ColumnFilters(column),
@@ -32011,6 +32015,11 @@ class $$DemoStatesTableFilterComposer
 
   ColumnFilters<int> get daysTotal => $composableBuilder(
     column: $table.daysTotal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get promptAnswered => $composableBuilder(
+    column: $table.promptAnswered,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -32029,11 +32038,6 @@ class $$DemoStatesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get anchorAt => $composableBuilder(
-    column: $table.anchorAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get complete => $composableBuilder(
     column: $table.complete,
     builder: (column) => ColumnOrderings(column),
@@ -32046,6 +32050,11 @@ class $$DemoStatesTableOrderingComposer
 
   ColumnOrderings<int> get daysTotal => $composableBuilder(
     column: $table.daysTotal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get promptAnswered => $composableBuilder(
+    column: $table.promptAnswered,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -32062,9 +32071,6 @@ class $$DemoStatesTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get anchorAt =>
-      $composableBuilder(column: $table.anchorAt, builder: (column) => column);
-
   GeneratedColumn<bool> get complete =>
       $composableBuilder(column: $table.complete, builder: (column) => column);
 
@@ -32073,6 +32079,11 @@ class $$DemoStatesTableAnnotationComposer
 
   GeneratedColumn<int> get daysTotal =>
       $composableBuilder(column: $table.daysTotal, builder: (column) => column);
+
+  GeneratedColumn<bool> get promptAnswered => $composableBuilder(
+    column: $table.promptAnswered,
+    builder: (column) => column,
+  );
 }
 
 class $$DemoStatesTableTableManager
@@ -32107,33 +32118,33 @@ class $$DemoStatesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<DateTime> anchorAt = const Value.absent(),
                 Value<bool> complete = const Value.absent(),
                 Value<int> daysDone = const Value.absent(),
                 Value<int> daysTotal = const Value.absent(),
+                Value<bool> promptAnswered = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DemoStatesCompanion(
                 id: id,
-                anchorAt: anchorAt,
                 complete: complete,
                 daysDone: daysDone,
                 daysTotal: daysTotal,
+                promptAnswered: promptAnswered,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                required DateTime anchorAt,
                 Value<bool> complete = const Value.absent(),
                 Value<int> daysDone = const Value.absent(),
                 Value<int> daysTotal = const Value.absent(),
+                Value<bool> promptAnswered = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DemoStatesCompanion.insert(
                 id: id,
-                anchorAt: anchorAt,
                 complete: complete,
                 daysDone: daysDone,
                 daysTotal: daysTotal,
+                promptAnswered: promptAnswered,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -6,10 +6,11 @@
 /// like a recipe card instead of like storage. See ADR-0040 for why quantities
 /// are exact integers and why units never cross a dimension.
 ///
-/// Three items are deliberately left with **no resep** — `margarita`,
-/// `negroni`, `rose`. An item without a recipe consumes nothing and is never
-/// auto-habis (ADR-0040 §4); the seed shows that state on purpose, because a
-/// live venue migrates one dish at a time.
+/// The cocktails and the wines are deliberately left with **no resep** —
+/// `margarita`, `negroni`, `mojito`, `espresso-martini`, `rose`, `sauvignon`,
+/// `shiraz`. An item without a recipe consumes nothing and is never auto-habis
+/// (ADR-0040 §4); the seed shows that state on purpose, because a live venue
+/// migrates one dish at a time.
 ///
 /// **Prices** are per display unit and sit at roughly 1.0–1.5× Indonesian
 /// market rates — tuned upward so that the derived recipe cost lands in the
@@ -359,6 +360,73 @@ const seedIngredients = <SeedIngredient>[
     lowAt: 3,
     pricePerUnit: 38000,
   ),
+  SeedIngredient(
+    'botol-balihai',
+    'Bali Hai 330 ml',
+    _pcs,
+    opening: 48,
+    lowAt: 12,
+    pricePerUnit: 16000,
+  ),
+  SeedIngredient(
+    'botol-guinness',
+    'Guinness 330 ml',
+    _pcs,
+    opening: 24,
+    lowAt: 6,
+    pricePerUnit: 32000,
+  ),
+  SeedIngredient(
+    'botol-air',
+    'Air mineral 600 ml',
+    _pcs,
+    opening: 120,
+    lowAt: 30,
+    pricePerUnit: 4000,
+  ),
+  SeedIngredient('ikan', 'Ikan segar', _kg, opening: 9, lowAt: 2, pricePerUnit: 95000),
+  SeedIngredient('bebek', 'Bebek', _kg, opening: 6, lowAt: 1.5, pricePerUnit: 88000),
+  SeedIngredient(
+    'kelapa-parut',
+    'Kelapa parut',
+    _kg,
+    opening: 5,
+    lowAt: 1,
+    pricePerUnit: 28000,
+  ),
+  SeedIngredient(
+    'jeruk-nipis',
+    'Jeruk nipis',
+    _kg,
+    opening: 4,
+    lowAt: 1,
+    pricePerUnit: 26000,
+  ),
+  SeedIngredient(
+    'daun-pisang',
+    'Daun pisang',
+    _lembar,
+    opening: 100,
+    lowAt: 25,
+    pricePerUnit: 1500,
+  ),
+  SeedIngredient(
+    'kopi',
+    'Biji kopi',
+    _kg,
+    opening: 3,
+    lowAt: 0.8,
+    pricePerUnit: 185000,
+  ),
+  SeedIngredient('susu', 'Susu segar', _l, opening: 12, lowAt: 3, pricePerUnit: 22000),
+  SeedIngredient(
+    'gula-aren',
+    'Gula aren',
+    _kg,
+    opening: 4,
+    lowAt: 1,
+    pricePerUnit: 38000,
+  ),
 
   // — dibuat sendiri ——————————————————————————————————————————
   // Produced bahan: one level only, and habis does NOT cascade — sambal at
@@ -403,9 +471,9 @@ const seedIngredientRecipes = <String, List<SeedQty>>{
   ],
 };
 
-/// Item resep, keyed by menu item id. Only **nasi-goreng** carries all three
-/// layers; the rest are base-only, which is what most of a real menu looks
-/// like. `margarita`, `negroni` and `rose` are absent on purpose.
+/// Item resep, keyed by menu item id. **nasi-goreng** and **ayam-bakar** carry
+/// all three layers; the rest are base-only, which is what most of a real menu
+/// looks like. The cocktails and wines are absent on purpose.
 const seedItemRecipes = <String, SeedRecipe>{
   'gado-gado': SeedRecipe(
     base: [
@@ -534,6 +602,191 @@ const seedItemRecipes = <String, SeedRecipe>{
   ),
   'bintang': SeedRecipe(base: [SeedQty('botol-bintang', 1, _pcs)]),
   'kombucha': SeedRecipe(base: [SeedQty('kombucha', 330, _ml)]),
+
+  // ---- Pembuka ----
+  'tahu-isi': SeedRecipe(
+    base: [
+      SeedQty('tahu', 4, _pcs),
+      SeedQty('sayur', 80, _g),
+      SeedQty('tepung', 60, _g),
+      SeedQty('minyak', 80, _ml),
+    ],
+  ),
+  'perkedel': SeedRecipe(
+    base: [
+      SeedQty('kentang', 300, _g),
+      SeedQty('telur', 1, _butir),
+      SeedQty('bawang-merah', 30, _g),
+      SeedQty('minyak', 70, _ml),
+    ],
+  ),
+  'sate-lilit': SeedRecipe(
+    base: [
+      SeedQty('ikan', 180, _g),
+      SeedQty('kelapa-parut', 60, _g),
+      SeedQty('tusuk-sate', 5, _pcs),
+      SeedQty('cabai', 15, _g),
+      SeedQty('bawang-merah', 20, _g),
+    ],
+  ),
+
+  // ---- Utama ----
+  'ayam-bakar': SeedRecipe(
+    base: [
+      SeedQty('ayam', 500, _g),
+      SeedQty('kecap', 40, _ml),
+      SeedQty('cabai', 25, _g),
+      SeedQty('bawang-merah', 30, _g),
+      SeedQty('beras', 200, _g),
+    ],
+    byVariant: {
+      'whole': [
+        SeedQty('ayam', 1000, _g),
+        SeedQty('kecap', 70, _ml),
+        SeedQty('cabai', 40, _g),
+        SeedQty('bawang-merah', 50, _g),
+        SeedQty('beras', 350, _g),
+      ],
+    },
+    byOption: {
+      'hot': [SeedQty('sambal', 30, _g)],
+      'md': [SeedQty('sambal', 15, _g)],
+    },
+  ),
+  'ikan-bakar': SeedRecipe(
+    base: [
+      SeedQty('ikan', 350, _g),
+      SeedQty('sambal', 40, _g),
+      SeedQty('jeruk-nipis', 30, _g),
+      SeedQty('beras', 200, _g),
+      SeedQty('minyak', 20, _ml),
+    ],
+  ),
+  'bebek-goreng': SeedRecipe(
+    base: [
+      SeedQty('bebek', 400, _g),
+      SeedQty('minyak', 150, _ml),
+      SeedQty('sambal', 50, _g),
+      SeedQty('sayur', 60, _g),
+    ],
+  ),
+  'nasi-campur': SeedRecipe(
+    base: [
+      SeedQty('beras', 250, _g),
+      SeedQty('ayam', 120, _g),
+      SeedQty('telur', 1, _butir),
+      SeedQty('sayur', 80, _g),
+      SeedQty('kelapa-parut', 30, _g),
+      SeedQty('krupuk', 2, _pcs),
+    ],
+    byOption: {
+      'hot': [SeedQty('sambal', 30, _g)],
+      'md': [SeedQty('sambal', 15, _g)],
+    },
+  ),
+  // Base carries no protein: each option adds one, the way nasi-goreng does.
+  'cap-cay': SeedRecipe(
+    base: [
+      SeedQty('sayur', 250, _g),
+      SeedQty('bawang-putih', 10, _g),
+      SeedQty('minyak', 30, _ml),
+      SeedQty('garam', 4, _g),
+    ],
+    byOption: {
+      'prawn': [SeedQty('udang', 80, _g)],
+      'chicken': [SeedQty('ayam', 90, _g)],
+    },
+  ),
+  'soto-ayam': SeedRecipe(
+    base: [
+      SeedQty('ayam', 150, _g),
+      SeedQty('mie', 80, _g),
+      SeedQty('telur', 1, _butir),
+      SeedQty('bawang-merah', 25, _g),
+      SeedQty('minyak', 20, _ml),
+    ],
+  ),
+  'pepes-tahu': SeedRecipe(
+    base: [
+      SeedQty('tahu', 3, _pcs),
+      SeedQty('daun-pisang', 2, _lembar),
+      SeedQty('cabai', 15, _g),
+      SeedQty('bawang-merah', 20, _g),
+    ],
+  ),
+
+  // ---- Pendamping ----
+  'nasi-putih': SeedRecipe(base: [SeedQty('beras', 180, _g)]),
+  'kentang-goreng': SeedRecipe(
+    base: [
+      SeedQty('kentang', 250, _g),
+      SeedQty('minyak', 100, _ml),
+      SeedQty('garam', 5, _g),
+      SeedQty('sambal', 20, _g),
+    ],
+  ),
+  'sayur-urap': SeedRecipe(
+    base: [
+      SeedQty('sayur', 180, _g),
+      SeedQty('kelapa-parut', 50, _g),
+      SeedQty('cabai', 10, _g),
+    ],
+  ),
+  'telur-balado': SeedRecipe(
+    base: [
+      SeedQty('telur', 2, _butir),
+      SeedQty('sambal', 45, _g),
+      SeedQty('minyak', 30, _ml),
+    ],
+  ),
+
+  // ---- Penutup ----
+  'es-campur': SeedRecipe(
+    base: [
+      SeedQty('es-batu', 300, _g),
+      SeedQty('santan', 120, _ml),
+      SeedQty('gula', 30, _g),
+      SeedQty('es-krim', 80, _ml),
+      SeedQty('pisang', 1, _pcs),
+    ],
+  ),
+  'dadar-gulung': SeedRecipe(
+    base: [
+      SeedQty('tepung', 70, _g),
+      SeedQty('kelapa-parut', 60, _g),
+      SeedQty('gula', 40, _g),
+      SeedQty('telur', 1, _butir),
+      SeedQty('santan', 60, _ml),
+    ],
+  ),
+  'panna-cotta': SeedRecipe(
+    base: [
+      SeedQty('santan', 150, _ml),
+      SeedQty('gula-aren', 35, _g),
+      SeedQty('kelapa-parut', 20, _g),
+      SeedQty('es-krim', 40, _ml),
+    ],
+  ),
+
+  // ---- Bir / Non-alkohol ----
+  'bali-hai': SeedRecipe(base: [SeedQty('botol-balihai', 1, _pcs)]),
+  'guinness': SeedRecipe(base: [SeedQty('botol-guinness', 1, _pcs)]),
+  'air-mineral': SeedRecipe(base: [SeedQty('botol-air', 1, _pcs)]),
+  'es-jeruk': SeedRecipe(
+    base: [
+      SeedQty('jeruk-nipis', 120, _g),
+      SeedQty('gula', 25, _g),
+      SeedQty('es-batu', 250, _g),
+    ],
+  ),
+  'kopi-susu': SeedRecipe(
+    base: [
+      SeedQty('kopi', 18, _g),
+      SeedQty('susu', 150, _ml),
+      SeedQty('gula-aren', 20, _g),
+      SeedQty('es-batu', 200, _g),
+    ],
+  ),
 };
 
 /// `{base, byVariant, byOption}` payload for `writeRecipes`.

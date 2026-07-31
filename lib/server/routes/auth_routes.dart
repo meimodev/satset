@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:satset/server/demo_clock.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:shelf/shelf.dart';
@@ -199,10 +198,6 @@ Router authRoutes(
         'capabilities': caps,
         'avatarColorHex': user.avatarColorHex,
         'shiftStartedAt': shift?.toIso8601String(),
-        // Demo clock offset (ADR-0053 §2). Rides the bootstrap as well as the
-        // WS broadcast so a device that missed the event — or reconnected
-        // after one — recovers the right clock on its own (ADR-0021).
-        'demoClockOffsetSeconds': DemoClock.offsetSeconds(),
       }),
       headers: {'content-type': 'application/json'},
     );

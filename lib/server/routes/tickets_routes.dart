@@ -216,7 +216,7 @@ const _orderUuid = Uuid();
 
 /// One submitted order, written exactly the way `POST /orders` writes it.
 ///
-/// Extracted from the route handler so the [[Demo seed (venue mid-service)]]
+/// Extracted from the route handler so the [[Generic seed (sample data)|sample seed]]
 /// can replay a month of service through the **production** path — idempotency
 /// claim, visit resolution, recipe coverage, per-line stock rejection, ticket
 /// insert, consumption, table transition — rather than inserting rows that

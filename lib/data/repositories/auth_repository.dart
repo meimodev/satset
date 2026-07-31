@@ -153,10 +153,6 @@ class AuthRepository extends StateNotifier<AuthState> {
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
       };
-      // Adopt the host's demo clock BEFORE stamping anything: on a demo venue
-      // the shift can be days, and a login stamped in real time would sort
-      // outside the timeline every other row lives in (ADR-0053 §2).
-      SatClock.adopt(Duration(seconds: me.demoClockOffsetSeconds));
       final loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
       // The server opens/resumes the shift and is authoritative (ADR-0065) —
@@ -443,10 +439,6 @@ class AuthRepository extends StateNotifier<AuthState> {
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
       };
-      // Adopt the host's demo clock BEFORE stamping anything: on a demo venue
-      // the shift can be days, and a login stamped in real time would sort
-      // outside the timeline every other row lives in (ADR-0053 §2).
-      SatClock.adopt(Duration(seconds: me.demoClockOffsetSeconds));
       final loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
       // The server opens/resumes the shift and is authoritative (ADR-0065) —

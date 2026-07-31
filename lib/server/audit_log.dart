@@ -28,8 +28,18 @@ Future<AuditEntry?> writeAudit(
   String? approvedBy,
   int? amountCents,
   WsHub? hub,
+
+  /// Stamp this instead of "now". The sample seed replays a month through the
+  /// audit writer and each row belongs at its own moment; dragging `SatClock`
+  /// through the month would swing the running app's clock instead. Production
+  /// callers pass nothing. Mirrors `submitOrder`'s override (ADR-0073).
+  DateTime? at,
+
+  /// Prefix the generated id, so a seeded row is deletable by tag and a real
+  /// row written afterward is not. Production callers pass nothing.
+  String? idPrefix,
 }) async {
-  final id = _uuid.v4();
+  final id = '${idPrefix ?? ''}${_uuid.v4()}';
   final actor = await resolveActor(db, actorUserId);
   await db
       .into(db.auditEntries)
@@ -39,7 +49,7 @@ Future<AuditEntry?> writeAudit(
           type: type.name,
           title: title,
           tableId: Value(tableId),
-          at: SatClock.now(),
+          at: at ?? SatClock.now(),
           reason: Value(reason),
           approvedBy: Value(approvedBy),
           actorUserId: Value(actorUserId),
