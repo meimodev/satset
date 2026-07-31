@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:satset/server/demo_clock.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'dart:collection';
 import 'dart:convert';
@@ -149,9 +148,6 @@ class ServerRuntime {
   }) async {
     final db = await AppDatabase.open();
     await seedInfra(db);
-    // Re-anchor the demo clock before any route can answer: a venue holding
-    // demo data must serve demo time from its first request (ADR-0053 §1).
-    await DemoClock.reanchor(db);
     final tls = await ServerTls.loadOrCreate();
     final hub = WsHub();
     final auth = ServerAuth(db, secret: await ServerAuth.loadOrCreateSecret());

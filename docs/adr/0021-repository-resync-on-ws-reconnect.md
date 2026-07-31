@@ -14,7 +14,7 @@ On the Server-mode **host**, that publish happens during server boot
 (`mode_select_view_model`), and `AppShell` immediately watches
 `totalReadyCountProvider` → `tablesProvider`, so the tables repo's bootstrap
 `GET /tables` can fire **before the admin token is written** (401) or **before
-first-run [[Generic seed (first-run sample data)|seeding]]** populated the DB
+first-run [[Generic seed (sample data)|seeding]]** populated the DB
 (`200 n=0`). Either way the initial list comes back empty.
 
 With purely incremental WS handlers there is **no recovery**: the list can only

@@ -949,27 +949,31 @@ class StockMovements extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Single-row state for the [[Demo seed (venue mid-service)]] (ADR-0053).
+/// Single-row state for the [[Generic seed (sample data)]] job and its
+/// first-run prompt (ADR-0073).
 ///
-/// Exists only while the venue holds demo data; [[Demo reset]] deletes it.
+/// Venue-wide, not per device: "never ask again" is a property of the venue,
+/// so skipping on the tablet also skips on the phone.
 class DemoStates extends Table {
   TextColumn get id => text().withDefault(const Constant('default'))();
 
-  /// The instant the demo snapshot was authored to be read at. The host
-  /// re-anchors [[Demo clock]] to this on every boot, so the seeded states
-  /// read at the age they were written for however long ago that was.
-  DateTimeColumn get anchorAt => dateTime()();
-
   /// False while a seed job is still running. A job that is interrupted —
   /// host backgrounded, process reclaimed, app force-quit — leaves this false
-  /// forever, and the Venue Hub then offers only Hapus: partial history would
-  /// otherwise trip the seed guard while reporting a loaded venue, so the
-  /// reports look real and are quietly short (ADR-0053 §9).
+  /// forever, and the prompt then offers only "Hapus & muat ulang": partial
+  /// history would otherwise trip the seed guard while reporting a loaded
+  /// venue, so the reports look real and are quietly short (ADR-0053 §9).
   BoolColumn get complete => boolean().withDefault(const Constant(false))();
 
   /// Progress for the async seed job's WS broadcasts.
   IntColumn get daysDone => integer().withDefault(const Constant(0))();
   IntColumn get daysTotal => integer().withDefault(const Constant(0))();
+
+  /// The admin answered the first-run prompt and declined. Written on **skip**
+  /// or on a **completed** seed, never when the job merely starts — an
+  /// interrupted job means the question went unanswered, so the prompt fires
+  /// again and offers to clear the partial data (ADR-0073).
+  BoolColumn get promptAnswered =>
+      boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

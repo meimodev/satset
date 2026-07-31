@@ -103,34 +103,40 @@ class AppStrings {
       'catatan audit.';
   static String auditEventCount(int n) => '$n kejadian';
   static String auditNewRows(int n) => '$n baru';
+  // Sample data — one seed, one prompt (ADR-0073).
   static const String venueHubSeedTitle = 'Mulai cepat';
   static const String venueHubSeedBody =
-      'Muat contoh data restoran umum: 2 zona (Dalam & Luar) dengan meja, menu lengkap, dan 2 staf (pelayan & dapur). Bisa diubah kapan saja.';
-  static const String venueHubSeedBtnLoad = 'Muat contoh data';
-  static const String venueHubSeedBtnLater = 'Nanti';
-  static const String venueHubSeedError = 'Gagal memuat contoh data';
-
-  // Demo seed — a venue mid-service (ADR-0052).
-  static const String venueHubDemoTitle = 'Data demo';
-  static const String venueHubDemoBody =
-      'Muat satu bulan riwayat penjualan dan satu potret layanan berjalan — '
-      'meja terisi, pesanan di dapur, tagihan terbayar. Untuk demo dan '
-      'peninjauan tampilan, bukan untuk venue yang sudah berjalan.';
-  static const String venueHubDemoBodyLoaded =
-      'Venue berjalan pada waktu demo, jadi potret layanan tetap terbaca wajar '
-      'setiap kali dibuka. Data bertahan sampai dihapus.';
-  static const String venueHubDemoBodyRunning =
+      'Muat contoh data restoran umum: 4 zona dengan 20 meja, menu lengkap, '
+      '2 staf (pelayan & dapur), dan sebulan riwayat penjualan supaya laporan '
+      'dan catatan audit langsung terbaca. Semua bisa diubah atau dihapus '
+      'kapan saja.';
+  static const String venueHubSeedBodyRunning =
       'Menyusun sebulan riwayat lewat jalur pesanan sungguhan. Biarkan '
       'aplikasi terbuka sampai selesai.';
-  static const String venueHubDemoBodyIncomplete =
-      'Pemuatan data demo terhenti sebelum selesai. Data yang ada tidak utuh — '
-      'hapus dulu sebelum memuat ulang.';
-  static const String venueHubDemoBtnLoad = 'Muat data demo';
-  static const String venueHubDemoBtnReset = 'Hapus';
-  static const String venueHubDemoError = 'Gagal memuat data demo';
-  static const String venueHubDemoRefused =
-      'Venue sudah punya riwayat pesanan. Data demo tidak dimuat.';
-  static const String venueHubDemoProgress = 'Menyusun data demo';
+  static const String venueHubSeedBodyDone =
+      'Contoh data siap. Laporan, catatan audit dan riwayat stok sudah terisi.';
+  static const String venueHubSeedBodyIncomplete =
+      'Pemuatan contoh data terhenti sebelum selesai. Data yang ada tidak utuh '
+      '— hapus dulu sebelum memuat ulang.';
+  static const String venueHubSeedBodyFailed =
+      'Pemuatan contoh data gagal. Data yang sempat masuk tidak utuh — hapus '
+      'dulu sebelum mencoba lagi.';
+  static const String venueHubSeedBodyLoaded =
+      'Venue ini memakai contoh data. Hapus untuk membuang riwayat penjualan '
+      'buatan; zona, meja, menu dan staf tetap ada.';
+  static const String venueHubSeedBtnLoad = 'Muat contoh data';
+  static const String venueHubSeedBtnSkip = 'Lewati';
+  static const String venueHubSeedBtnClear = 'Hapus contoh data';
+  static const String venueHubSeedBtnClearRetry = 'Hapus & muat ulang';
+  static const String venueHubSeedBtnDone = 'Selesai';
+  static const String venueHubSeedError = 'Gagal memuat contoh data';
+  static const String venueHubSeedRefused =
+      'Venue sudah punya riwayat pesanan. Contoh data tidak dimuat.';
+  static const String venueHubSeedProgress = 'Menyusun contoh data';
+  static String venueHubSeedDays(int done, int total) => 'hari $done/$total';
+  static const String settingsSeedTitle = 'Contoh data';
+  static const String settingsSeedSubtitle =
+      'Muat atau hapus data contoh restoran';
 
   // Venue Settings Screen (formerly Venue Identity Screen)
   static const String venueSettingsTitle = 'Pengaturan Venue';

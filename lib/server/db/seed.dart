@@ -4,8 +4,10 @@ import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 
 import '../stock.dart';
+import '../ws_hub.dart';
 import 'database.dart';
 import 'seed_data.dart' as seed;
+import 'seed_history.dart';
 import 'seed_inventory_data.dart';
 
 /// Always-on **infra** seed. Runs on every Server boot; idempotent.
@@ -39,15 +41,17 @@ Future<bool> needsGenericSeed(AppDatabase db) async {
   return !hasNonAdminUser;
 }
 
-/// The prompted **generic restaurant** dataset (ADR-0017): 2 zones
-/// (Dalam / Luar) with 2 tables each, the generic menu (categories + items),
+/// The **reference half** of the generic restaurant dataset (ADR-0017): 4
+/// zones with 20 tables between them, the generic menu (categories + items),
 /// the inventory half — bahan + resep with opening stock (ADR-0042) — and
 /// 2 staff — one waiter, one kitchen — with their roles + capabilities.
 ///
 /// Idempotent (`insertOnConflictUpdate`). Seeds **no** PIN admin (admin is
-/// Firebase-only) and **no** fake report history. Safe to call from the
-/// admin-triggered seed endpoint; callers should broadcast the relevant WS
-/// events afterward so paired devices refetch.
+/// Firebase-only).
+///
+/// This writes no transactional rows. The fabricated month that makes the
+/// reports and the audit log readable is [seedSampleVenue], which runs this
+/// first and then generates on top of it (ADR-0073).
 Future<void> seedGenericRestaurant(AppDatabase db) async {
   await seedInfra(db);
 
@@ -193,6 +197,42 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
   // Recipes changed which items *can* go habis, so the cached flag signatures
   // no longer describe the same menu.
   stockFlags.invalidate();
+}
+
+/// **The** sample dataset (ADR-0073): the reference half above, plus a
+/// fabricated month of settled service and the audit trail that goes with it.
+///
+/// One action, not two. ADR-0052 §1 kept these apart so an owner loading
+/// sample data on opening day would not inherit invented walkouts; ADR-0073
+/// merges them and moves that protection onto [canSeedSample] (which refuses
+/// outright on a venue that has traded) plus [clearSampleData] (which removes
+/// every fabricated row and leaves the menu standing).
+///
+/// Writes ~1500 bills through the production order path. Expect several
+/// minutes on a mid-range tablet — callers run it as a job and report progress
+/// rather than blocking on it.
+Future<void> seedSampleVenue(
+  AppDatabase db, {
+  WsHub? hub,
+  void Function(int day, int total)? onDay,
+}) async {
+  if (!await canSeedSample(db)) {
+    throw const SampleSeedRefused(
+      'Venue sudah punya riwayat pesanan. Contoh data tidak dimuat.',
+    );
+  }
+  await seedGenericRestaurant(db);
+
+  final rng = sampleRng();
+  final menu = await loadSampleMenu(db);
+  if (menu.isEmpty) return;
+
+  // A detached hub when none is attached (tests, headless seeding): the close
+  // path broadcasts per visit, and a month of backdated sessions has no live
+  // listener worth notifying anyway.
+  await seedHistory(db, hub ?? WsHub(), rng, menu, onDay: onDay);
+  await seedAdminAudit(db, rng);
+  await recomputeBalances(db);
 }
 
 /// Bahan + resep (ADR-0042).

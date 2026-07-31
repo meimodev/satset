@@ -1,6 +1,6 @@
 # Organic demo data and the demo clock
 
-Status: accepted
+Status: superseded by [0073](0073-the-generic-seed-fabricates-a-month.md)
 
 **Amends [0052](0052-demo-seed-a-venue-mid-service.md).** ADR-0052 built the [[Demo seed (venue mid-service)|demo seed]] and accepted two compromises to keep it cheap: the live half decays and is repaired by pressing **Segarkan**, and the fabricated month is written as direct row inserts with statistically flat contents. Both turned out to be the wrong trade once the dataset was used. A demo opened the next morning shows every table hours-basi until someone remembers a button, and the reports it produces are visibly synthetic — a flat hourly curve, cocktails selling as fast as rice, no drink attached to a main.
 

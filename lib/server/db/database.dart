@@ -64,7 +64,7 @@ class AppDatabase extends _$AppDatabase {
   // resolved the same way and for the same reason: a device that had already
   // taken 42 as the cashier pass would never run the audit migration, and
   // every read of the log would fail on a missing `amount_cents`.
-  int get schemaVersion => 43;
+  int get schemaVersion => 44;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -788,6 +788,36 @@ class AppDatabase extends _$AppDatabase {
         await _safeAddColumnOn('audit_entries', 'actor_name', type: 'TEXT');
         await _safeAddColumnOn('audit_entries', 'actor_role_name', type: 'TEXT');
       }
+      if (from < 44) {
+        // The sample seed absorbs the demo seed (ADR-0073). The demo clock is
+        // gone, so `anchor_at` goes with it; `prompt_answered` replaces the
+        // in-memory "Nanti" with a venue-wide, permanent answer.
+        //
+        // Any demo data an upgrading device holds is dropped outright rather
+        // than migrated: its ids carry the old `demo-` tag that the new clear
+        // path does not know, so leaving it in place would strand rows nothing
+        // can delete. The guard means such a venue never traded for real.
+        await _safeAddColumnOn(
+          'demo_states',
+          'prompt_answered',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeDropColumnOn('demo_states', 'anchor_at');
+        for (final t in const [
+          'tickets',
+          'visits',
+          'receipts',
+          'payments',
+          'stock_movements',
+          'audit_entries',
+          'table_sessions',
+          'venue_tables',
+          'zones',
+        ]) {
+          await customStatement("DELETE FROM $t WHERE id LIKE 'demo-%'");
+        }
+        await customStatement('DELETE FROM demo_states');
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -898,6 +928,11 @@ class AppDatabase extends _$AppDatabase {
       ['soy', 'Kedelai', 'KD'],
       ['sesame', 'Wijen', 'WJ'],
       ['sulfites', 'Sulfit', 'SF'],
+      // Appended, not inserted in place: `sort_order` is the list index and
+      // INSERT OR IGNORE leaves an existing install's rows alone, so slotting
+      // a new tag mid-list would collide with whatever already holds that
+      // index there.
+      ['fish', 'Ikan', 'IK'],
     ];
     const diets = [
       ['vegetarian', 'Vegetarian', 'VG'],

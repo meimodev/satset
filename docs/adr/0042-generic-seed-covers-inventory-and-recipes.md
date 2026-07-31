@@ -2,7 +2,7 @@
 
 Status: accepted
 
-The prompted [[Generic seed (first-run sample data)|generic restaurant seed]] (ADR-0017) predates ingredient-level inventory (ADR-0040/0041), so a freshly seeded venue had a full menu and an empty inventory: no [[Bahan (Ingredient)|bahan]], no [[Resep (Recipe)|resep]], every stock screen blank and no dish able to go auto-habis. Extending the dataset is mostly authoring, but two of its decisions are baked into shipped venues' history and are the reason this ADR exists: **how opening stock arrives** and **what a re-seed is allowed to overwrite**.
+The prompted [[Generic seed (sample data)|generic restaurant seed]] (ADR-0017) predates ingredient-level inventory (ADR-0040/0041), so a freshly seeded venue had a full menu and an empty inventory: no [[Bahan (Ingredient)|bahan]], no [[Resep (Recipe)|resep]], every stock screen blank and no dish able to go auto-habis. Extending the dataset is mostly authoring, but two of its decisions are baked into shipped venues' history and are the reason this ADR exists: **how opening stock arrives** and **what a re-seed is allowed to overwrite**.
 
 ## Decision
 

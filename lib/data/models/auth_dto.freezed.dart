@@ -672,10 +672,6 @@ mixin _$MeDto {
   /// device-local `loginAt` as a fallback.
   String? get shiftStartedAt => throw _privateConstructorUsedError;
 
-  /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
-  /// Absent or 0 on a venue with no demo data.
-  int get demoClockOffsetSeconds => throw _privateConstructorUsedError;
-
   /// Serializes this MeDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -699,7 +695,6 @@ abstract class $MeDtoCopyWith<$Res> {
     List<String> capabilities,
     int? avatarColorHex,
     String? shiftStartedAt,
-    int demoClockOffsetSeconds,
   });
 }
 
@@ -726,7 +721,6 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
     Object? capabilities = null,
     Object? avatarColorHex = freezed,
     Object? shiftStartedAt = freezed,
-    Object? demoClockOffsetSeconds = null,
   }) {
     return _then(
       _value.copyWith(
@@ -762,10 +756,6 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
                 ? _value.shiftStartedAt
                 : shiftStartedAt // ignore: cast_nullable_to_non_nullable
                       as String?,
-            demoClockOffsetSeconds: null == demoClockOffsetSeconds
-                ? _value.demoClockOffsetSeconds
-                : demoClockOffsetSeconds // ignore: cast_nullable_to_non_nullable
-                      as int,
           )
           as $Val,
     );
@@ -789,7 +779,6 @@ abstract class _$$MeDtoImplCopyWith<$Res> implements $MeDtoCopyWith<$Res> {
     List<String> capabilities,
     int? avatarColorHex,
     String? shiftStartedAt,
-    int demoClockOffsetSeconds,
   });
 }
 
@@ -815,7 +804,6 @@ class __$$MeDtoImplCopyWithImpl<$Res>
     Object? capabilities = null,
     Object? avatarColorHex = freezed,
     Object? shiftStartedAt = freezed,
-    Object? demoClockOffsetSeconds = null,
   }) {
     return _then(
       _$MeDtoImpl(
@@ -851,10 +839,6 @@ class __$$MeDtoImplCopyWithImpl<$Res>
             ? _value.shiftStartedAt
             : shiftStartedAt // ignore: cast_nullable_to_non_nullable
                   as String?,
-        demoClockOffsetSeconds: null == demoClockOffsetSeconds
-            ? _value.demoClockOffsetSeconds
-            : demoClockOffsetSeconds // ignore: cast_nullable_to_non_nullable
-                  as int,
       ),
     );
   }
@@ -872,7 +856,6 @@ class _$MeDtoImpl implements _MeDto {
     required final List<String> capabilities,
     this.avatarColorHex,
     this.shiftStartedAt,
-    this.demoClockOffsetSeconds = 0,
   }) : _capabilities = capabilities;
 
   factory _$MeDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -907,15 +890,9 @@ class _$MeDtoImpl implements _MeDto {
   @override
   final String? shiftStartedAt;
 
-  /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
-  /// Absent or 0 on a venue with no demo data.
-  @override
-  @JsonKey()
-  final int demoClockOffsetSeconds;
-
   @override
   String toString() {
-    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities, avatarColorHex: $avatarColorHex, shiftStartedAt: $shiftStartedAt, demoClockOffsetSeconds: $demoClockOffsetSeconds)';
+    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities, avatarColorHex: $avatarColorHex, shiftStartedAt: $shiftStartedAt)';
   }
 
   @override
@@ -937,9 +914,7 @@ class _$MeDtoImpl implements _MeDto {
             (identical(other.avatarColorHex, avatarColorHex) ||
                 other.avatarColorHex == avatarColorHex) &&
             (identical(other.shiftStartedAt, shiftStartedAt) ||
-                other.shiftStartedAt == shiftStartedAt) &&
-            (identical(other.demoClockOffsetSeconds, demoClockOffsetSeconds) ||
-                other.demoClockOffsetSeconds == demoClockOffsetSeconds));
+                other.shiftStartedAt == shiftStartedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -954,7 +929,6 @@ class _$MeDtoImpl implements _MeDto {
     const DeepCollectionEquality().hash(_capabilities),
     avatarColorHex,
     shiftStartedAt,
-    demoClockOffsetSeconds,
   );
 
   /// Create a copy of MeDto
@@ -981,7 +955,6 @@ abstract class _MeDto implements MeDto {
     required final List<String> capabilities,
     final int? avatarColorHex,
     final String? shiftStartedAt,
-    final int demoClockOffsetSeconds,
   }) = _$MeDtoImpl;
 
   factory _MeDto.fromJson(Map<String, dynamic> json) = _$MeDtoImpl.fromJson;
@@ -1008,11 +981,6 @@ abstract class _MeDto implements MeDto {
   /// device-local `loginAt` as a fallback.
   @override
   String? get shiftStartedAt;
-
-  /// Demo clock offset the host is running on, in seconds (ADR-0053 §2).
-  /// Absent or 0 on a venue with no demo data.
-  @override
-  int get demoClockOffsetSeconds;
 
   /// Create a copy of MeDto
   /// with the given fields replaced by the non-null parameter values.

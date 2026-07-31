@@ -1,6 +1,6 @@
 # Demo seed: a venue mid-service, separate from the generic seed
 
-Status: accepted
+Status: superseded by [0073](0073-the-generic-seed-fabricates-a-month.md)
 
 Every screen in this app has states that only exist against **transactional** data: a [[Basi (stale)|basi]] table, a late course on the [[KDS / Antrian Persiapan|KDS]], a [[Split bill|split]], a [[Walkout (tak tertagih)|walkout]], a stock-driven [[Habis / Sold out (menu item out of stock)|habis]], a [[Reports|report]] with real settled figures, an [[Audio alert|alert]] at its second escalation. None of them can be reached from the [[Generic seed (first-run sample data)|generic seed]], which by design seeds reference data only. Reviewing or demoing those states today means hand-driving a live venue through an hour of service, once per state, per device.
 
