@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/services/owner_report_service.dart';
 
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/auth_dto.dart';
 import 'package:satset/data/repositories/auth_error.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/repositories/venue_subscription.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/data/services/mdns_browser_service.dart';
@@ -213,6 +215,35 @@ class AuthRepository extends StateNotifier<AuthState> {
         SatLog.repo('auth.signInAsAdmin blocked uid=$uid status=no-doc');
         await fb.signOut();
         state = state.copyWith(busy: false, error: _eligibilityMessage(null));
+        return false;
+      }
+
+      // A dictated temporary password, checked before every divert and long
+      // before `bootServer`. The account holds a credential that travelled by
+      // voice over WhatsApp, so it buys exactly one thing: the right to replace
+      // itself. No eligibility read, no mDNS lookup, no server. See ADR-0075.
+      if (profile.mustChangePassword) {
+        final expired = profile.expiredTempPassword(SatClock.now());
+        SatLog.repo(
+          'auth.signInAsAdmin temp-password uid=$uid expired=$expired',
+        );
+        if (expired) {
+          await fb.signOut();
+          state = state.copyWith(
+            busy: false,
+            error: AppStrings.tempPasswordExpired,
+          );
+          return false;
+        }
+        // Not signed out, unlike every other rejection here. This one is a
+        // continuation rather than a refusal: `changeOwnPassword` is authorized
+        // by the token this sign-in just minted, and dropping it would leave the
+        // change form with no way to prove who is asking. The session buys
+        // nothing else — no local JWT, no server, and Firestore rules give a
+        // plain admin only its own doc and one heartbeat field.
+        ref.read(pendingPasswordChangeProvider.notifier).state =
+            PendingPasswordChange(uid: uid, email: email, name: profile.name);
+        state = state.copyWith(busy: false, error: null);
         return false;
       }
 
@@ -550,6 +581,11 @@ class AuthRepository extends StateNotifier<AuthState> {
         await _killAdminSession();
         return;
       }
+      // Publish the whole document, not just the fields this listener acts on.
+      // The subscription fields were always arriving here and being dropped,
+      // which is why the venue paying the bill was the one party in the system
+      // that could not see its own billing state. See [venueCloudDocProvider].
+      ref.read(venueCloudDocProvider.notifier).state = venue;
       // Cloud owns venue identity (ADR-0018): mirror name/address into the
       // local VenueSettings. The 60s heartbeat rewrites `lastSeenAt`, which
       // re-fires this snapshot, so a diff-guard keeps it a no-op when nothing
@@ -649,6 +685,10 @@ class AuthRepository extends StateNotifier<AuthState> {
     _heartbeat = null;
     _reportPublisher?.stop();
     _reportPublisher = null;
+    // Drop the cached venue doc with the listener that fed it. Left standing,
+    // the next admin to sign in on this device sees the previous venue's
+    // subscription state until their own first snapshot lands.
+    ref.read(venueCloudDocProvider.notifier).state = null;
     try {
       await ref.read(firebaseAdminServiceProvider).signOut();
     } catch (_) {}
@@ -829,4 +869,26 @@ final authStateProvider = StateNotifierProvider<AuthRepository, AuthState>(
     ref: ref,
     storage: ref.watch(secureStorageServiceProvider),
   ),
+);
+
+/// An admin who just signed in with a temporary password and has not replaced
+/// it yet. See ADR-0075.
+class PendingPasswordChange {
+  final String uid;
+  final String email;
+  final String name;
+  const PendingPasswordChange({
+    required this.uid,
+    required this.email,
+    required this.name,
+  });
+}
+
+/// Set by [AuthRepository.signInAsAdmin] when a temporary password is presented,
+/// consumed by the PIN screen to open the change form. Deliberately *not* a
+/// route redirect: the sign-in is already abandoned (Firebase is signed out
+/// again) so there is no session for a redirect guard to reason about, and
+/// backing out of the form lands where it should — the PIN screen, signed out.
+final pendingPasswordChangeProvider = StateProvider<PendingPasswordChange?>(
+  (_) => null,
 );

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,6 +48,16 @@ class AdminProfile {
   /// Only populated by the fleet console read (`admins/{uid}.email`); null on
   /// the self-eligibility read, which doesn't need it.
   final String? email;
+
+  /// Set by `resetAdminPassword` when the super admin mints a temporary password
+  /// to dictate. While true the account holds a credential that travelled by
+  /// voice, so sign-in stops before eligibility and before any server boots.
+  /// See ADR-0075.
+  final bool mustChangePassword;
+
+  /// When the temporary password was minted. Paired with [mustChangePassword]
+  /// to age it out — a code read aloud over the phone cannot live forever.
+  final DateTime? passwordResetAt;
   final bool fromCache;
   const AdminProfile({
     required this.uid,
@@ -57,6 +68,8 @@ class AdminProfile {
     required this.avatarColorHex,
     required this.fromCache,
     this.email,
+    this.mustChangePassword = false,
+    this.passwordResetAt,
   });
 
   bool get isActive => status == AdminStatus.active;
@@ -65,6 +78,21 @@ class AdminProfile {
   /// Read-only cloud report viewer (ADR-0036): diverts to `/owner`, never pairs
   /// or boots a server.
   bool get isOwner => role == AdminRole.owner;
+
+  /// True once a temporary password has outlived [FirebaseAdminService.otpTtl].
+  ///
+  /// The hourly sweep re-randomizes it at Firebase, but the sweep runs on a
+  /// schedule and this comparison does not — it closes the window between the
+  /// code expiring and the sweep next waking up.
+  bool expiredTempPassword(DateTime now) {
+    if (!mustChangePassword) return false;
+    final at = passwordResetAt;
+    // No timestamp on a flagged account means the write half-landed. Treat it as
+    // expired: refusing a code the operator can trivially re-mint is the cheaper
+    // mistake.
+    if (at == null) return true;
+    return now.difference(at) > FirebaseAdminService.otpTtl;
+  }
 }
 
 /// Snapshot of a `venues/{vid}` doc — the fleet-level record many admins share.
@@ -97,7 +125,20 @@ class Venue {
 /// Why a cold-boot admin session could not start. `superAdmin` means the cached
 /// session belongs to a fleet operator, which never auto-boots a local server;
 /// `owner` means a read-only report viewer, which diverts to `/owner` (ADR-0036).
-enum AdminBootGate { noUser, ok, ineligible, staleOffline, superAdmin, owner }
+enum AdminBootGate {
+  noUser,
+  ok,
+  ineligible,
+  staleOffline,
+  superAdmin,
+  owner,
+
+  /// A temporary password is outstanding on this account (ADR-0075). The cached
+  /// session is signed out rather than booted: the operator reset the credential
+  /// for a reason, and a device that reboots into a running server would be the
+  /// one place that reset did not reach.
+  mustChangePassword,
+}
 
 class AdminBootDecision {
   final AdminBootGate gate;
@@ -109,16 +150,27 @@ class AdminBootDecision {
 /// admin registry. Firebase gates *entry + eligibility*; the embedded server
 /// stays the capability authority. Android-only; only exercised in Server mode.
 class FirebaseAdminService {
-  FirebaseAdminService({fb.FirebaseAuth? auth, FirebaseFirestore? firestore})
-    : _auth = auth ?? fb.FirebaseAuth.instance,
-      _fs = firestore ?? FirebaseFirestore.instance;
+  FirebaseAdminService({
+    fb.FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+  }) : _auth = auth ?? fb.FirebaseAuth.instance,
+       _fs = firestore ?? FirebaseFirestore.instance,
+       _fn = functions ?? FirebaseFunctions.instance;
 
   final fb.FirebaseAuth _auth;
   final FirebaseFirestore _fs;
+  final FirebaseFunctions _fn;
 
   /// Hard block: if the listener has not confirmed `active` from the server
   /// within this window while offline, the server refuses to start.
   static const staleAfter = Duration(days: 7);
+
+  /// How long a dictated temporary password stays usable. Must match
+  /// `OTP_TTL_MS` in `functions/index.js` — the sweep kills the credential at
+  /// Firebase, this refuses it here, and the two disagreeing would mean a code
+  /// that the app accepts and the account no longer has. See ADR-0075.
+  static const otpTtl = Duration(hours: 24);
 
   fb.User? get currentUser => _auth.currentUser;
 
@@ -135,6 +187,20 @@ class FirebaseAdminService {
       _auth.signInWithEmailAndPassword(email: email.trim(), password: password);
 
   Future<void> signOut() => _auth.signOut();
+
+  /// Sets the signed-in admin's own password and clears the
+  /// `mustChangePassword` flag, in one callable.
+  ///
+  /// Goes through a Cloud Function rather than `User.updatePassword` because the
+  /// flag lives on `admins/{uid}`, which `firestore.rules` denies to every
+  /// client — and splitting the two would leave a window where the password is
+  /// new but the app still demands a change. Not a [FleetService] method: the
+  /// caller is the subject, not the fleet operator. See ADR-0075.
+  Future<void> changeOwnPassword(String password) async {
+    await _fn.httpsCallable('changeOwnPassword').call<dynamic>({
+      'password': password,
+    });
+  }
 
   DocumentReference<Map<String, dynamic>> _doc(String uid) =>
       _fs.collection('admins').doc(uid);
@@ -155,6 +221,8 @@ class FirebaseAdminService {
       name: (d['name'] as String?)?.trim() ?? '',
       venueId: (d['venueId'] as String?)?.trim() ?? '',
       avatarColorHex: (d['avatarColorHex'] as num?)?.toInt(),
+      mustChangePassword: d['mustChangePassword'] == true,
+      passwordResetAt: (d['passwordResetAt'] as Timestamp?)?.toDate(),
       fromCache: snap.metadata.isFromCache,
     );
   }
@@ -237,6 +305,13 @@ class FirebaseAdminService {
       // A report owner diverts to /owner, never boots a server (ADR-0036).
       if (server.isOwner) {
         return AdminBootDecision(AdminBootGate.owner, server);
+      }
+      // Checked before eligibility, matching the sign-in gauntlet: an
+      // outstanding temporary password is the operator saying this account's
+      // credential is no longer trusted, and a device that cold-boots into a
+      // running server is exactly where that would go unnoticed.
+      if (server.mustChangePassword) {
+        return AdminBootDecision(AdminBootGate.mustChangePassword, server);
       }
       if (!server.isActive) {
         return AdminBootDecision(AdminBootGate.ineligible, server);

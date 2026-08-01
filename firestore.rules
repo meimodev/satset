@@ -96,6 +96,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Fleet audit trail: who did what to which venue/admin, written by the
+    // Cloud Functions (Admin SDK, bypasses these rules) and by nothing else.
+    // Read is super-only — a venue admin has no business reading the fleet's
+    // history, and the records name other venues. Write is denied outright
+    // rather than scoped: a log the subject of the log can edit is not a log,
+    // and there is no client that legitimately appends to this.
+    match /fleet_audit/{entry} {
+      allow read: if isSuper();
+      allow write: if false;
+    }
+
     // Everything else denied.
     match /{document=**} {
       allow read, write: if false;

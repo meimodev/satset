@@ -143,6 +143,7 @@ All collapse to a static final frame under reduced motion. Callers never branch 
 | `ExitGuard` | `exit_guard.dart` | Back-to-exit confirmation. Mount inside go_router's `Navigator`. |
 | `AlertHost` | `alert_host.dart` | App-wide alert sound keep-alive + `ReadyToast` host. Wrap the router child. |
 | `AdminGraceBanner` | `admin_grace_banner.dart` | Offline-stale countdown on a Server-mode device. |
+| `VenueBillingBanner` | `venue_billing_banner.dart` | Subscription ending/lapsed notice. `editSettings` only; taps to WhatsApp. |
 
 ---
 

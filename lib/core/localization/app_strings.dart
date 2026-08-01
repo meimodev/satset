@@ -389,6 +389,80 @@ class AppStrings {
 
   static const String resetRequestFailed = 'Gagal membuka WhatsApp.';
 
+  // Langganan venue (ADR-0074). Tidak ada payment gateway: banner langganan
+  // membuka WhatsApp yang sama seperti "Lupa password?", dengan nama dan id
+  // venue sudah terisi supaya super admin langsung menemukan venue-nya.
+
+  static String billingRequestMessage(String venueName, String venueId) =>
+      'Halo, saya mau perpanjang langganan SatSet.\n'
+      'Venue: $venueName\n'
+      'ID: $venueId\n'
+      'Mohon dibantu.';
+
+  /// Sisa masa langganan, dibulatkan ke hari. Hari ini bukan "0 hari lagi" —
+  /// nol hari terbaca seperti "sudah lewat", padahal venue masih jalan.
+  static String billingEndsIn(int days) =>
+      days >= 1 ? 'Langganan berakhir $days hari lagi.' : 'Langganan berakhir hari ini.';
+
+  static const String billingLapsed = 'Masa langganan sudah lewat.';
+
+  /// Layanan tidak berhenti sendiri (lihat ADR-0074) — jadi banner ini menjanjikan
+  /// tepat itu, bukan ancaman yang tidak akan terjadi.
+  static const String billingCta = 'Ketuk untuk perpanjang lewat WhatsApp.';
+
+  // Sandi sementara (ADR-0075). Super admin membuat kode 8 angka, menyebutkannya
+  // ke admin venue lewat telepon, dan admin wajib menggantinya saat masuk.
+
+  static const String tempPasswordTitle = 'Ganti sandi';
+
+  /// Jalan keluar dari layar ganti sandi. Bukan "Batal" — tidak ada yang
+  /// dibatalkan; sesi Firebase-nya ditutup dan admin kembali ke layar masuk.
+  static const String logout = 'Keluar';
+
+  /// Alasan layar ini muncul, ditulis sebagai fakta bukan peringatan — admin
+  /// venue tidak melakukan kesalahan apa pun, sandinya memang baru direset.
+  static const String tempPasswordReason =
+      'Anda masuk dengan sandi sementara. Buat sandi baru untuk melanjutkan.';
+
+  static const String tempPasswordNew = 'Sandi baru';
+  static const String tempPasswordConfirm = 'Ulangi sandi baru';
+
+  static String tempPasswordTooShort(int min) => 'Minimal $min karakter.';
+
+  static const String tempPasswordMismatch = 'Sandi tidak sama.';
+
+  /// Menolak sandi baru yang sama dengan kode yang barusan disebutkan lewat
+  /// telepon — kode itu sudah didengar orang lain, jadi menyimpannya sama saja
+  /// dengan tidak mengganti apa pun.
+  static const String tempPasswordReused =
+      'Sandi baru tidak boleh sama dengan sandi sementara.';
+
+  static const String tempPasswordSaved = 'Sandi berhasil diganti.';
+
+  static const String tempPasswordExpired =
+      'Sandi sementara sudah kadaluarsa. Minta yang baru ke pengelola.';
+
+  static const String tempPasswordPending =
+      'Sandi akun ini baru direset. Masuk dengan sandi sementara untuk '
+      'menggantinya.';
+
+  // Sisi super admin: dialog yang menampilkan kode sekali saja.
+
+  static const String tempPasswordIssuedTitle = 'Sandi sementara';
+
+  static const String tempPasswordIssuedHint =
+      'Berlaku 24 jam. Sebutkan ke admin venue — mereka wajib mengganti sandi '
+      'saat masuk.';
+
+  /// Ditampilkan sekali dan tidak bisa dibuka lagi; kalau operator menutup
+  /// dialog sebelum menyebutkannya, jalan keluarnya adalah reset ulang.
+  static const String tempPasswordIssuedOnce =
+      'Kode ini hanya muncul sekali.';
+
+  static String tempPasswordShareMessage(String code) =>
+      'Sandi sementara SatSet Anda: $code\n'
+      'Berlaku 24 jam. Anda akan diminta membuat sandi baru saat masuk.';
+
   // Staf & akun (staff_screen). Layar ini sebelumnya ditulis penuh dalam bahasa
   // Inggris — satu-satunya layar yang begitu. Istilah yang tetap dipakai apa
   // adanya: PIN, admin, avatar. Itu sudah jadi kata pinjaman di dapur, dan
