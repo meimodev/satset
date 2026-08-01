@@ -554,6 +554,20 @@ class _AdminAuthForm extends StatelessWidget {
   }
 }
 
+/// Half the switcher's inner width, less the [Sp.s1] gutter between the two
+/// tabs — the travel distance of the sliding pill behind them.
+///
+/// Clamped at zero because [LayoutBuilder] hands out `maxWidth: 0` on the frame
+/// before the parent has been laid out (the renderer logs `Width is zero. 0,0`
+/// three times on this screen's first build), and `(0 - 4) / 2` is `-2.0`,
+/// which `Container` rejects outright:
+/// `BoxConstraints has a negative minimum width`. The screen recovered on the
+/// next frame, so the only symptom was an assertion in every debug boot —
+/// noise that trains you to scroll past the log where a real error will land.
+@visibleForTesting
+double modeSwitcherPillWidth(double maxWidth) =>
+    ((maxWidth - Sp.s1) / 2).clamp(0.0, double.infinity);
+
 class _ModeSwitcher extends StatelessWidget {
   final SignInMode mode;
   final ValueChanged<SignInMode> onChange;
@@ -572,7 +586,7 @@ class _ModeSwitcher extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final pillW = (constraints.maxWidth - 4) / 2;
+          final pillW = modeSwitcherPillWidth(constraints.maxWidth);
           return Stack(
             children: [
               AnimatedAlign(
