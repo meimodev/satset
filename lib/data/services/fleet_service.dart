@@ -19,14 +19,21 @@ class FleetService {
 
   // ── Reads (live) ───────────────────────────────────────────────────────────
 
+  /// `includeMetadataChanges` is load-bearing, not a tuning knob. Firestore
+  /// persistence is on by default on Android, so the listener delivers the
+  /// cached snapshot first (`isFromCache: true`) and the server's answer
+  /// second — and when the documents are unchanged that second delivery is a
+  /// *metadata-only* change, which the default listener suppresses. `fromCache`
+  /// then stays true forever, [fleetOfflineProvider] latches, and every
+  /// mutation on both fleet screens is disabled for the life of the session.
   Stream<List<Venue>> watchVenues() => _fs
       .collection('venues')
-      .snapshots()
+      .snapshots(includeMetadataChanges: true)
       .map((q) => [for (final d in q.docs) _venue(d)]);
 
   Stream<List<AdminProfile>> watchAdmins() => _fs
       .collection('admins')
-      .snapshots()
+      .snapshots(includeMetadataChanges: true)
       .map((q) => [for (final d in q.docs) _admin(d)]);
 
   Venue _venue(QueryDocumentSnapshot<Map<String, dynamic>> d) {

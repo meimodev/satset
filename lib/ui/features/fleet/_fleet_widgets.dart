@@ -234,21 +234,25 @@ class FleetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final radius = big ? 16.0 : 14.0;
-    final iconBox = big ? 48.0 : 40.0;
-    final iconSize = big ? 22.0 : 18.0;
+    // On the scale, not near it. These were 16/14/48/40/22/18/12 as literals —
+    // the only place on the fleet surface that opted out of the token ramp.
+    final radius = big ? SatR.xl : SatR.lg;
+    final iconBox = big ? Sp.s12 : Sp.s10;
+    final iconSize = big ? Sp.s5 : Sp.s4h;
 
     final body = Container(
       padding: EdgeInsets.fromLTRB(
-        big ? 16 : 14,
-        14,
-        trailing == null ? 16 : 6,
-        14,
+        big ? Sp.s4 : Sp.s3h,
+        Sp.s3h,
+        // The `⋮` carries its own touch padding; a full gutter behind it puts
+        // the glyph a thumb's width off the tile's right edge.
+        trailing == null ? Sp.s4 : Sp.s1h,
+        Sp.s3h,
       ),
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(radius),
+        borderRadius: radius,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,12 +262,12 @@ class FleetTile extends StatelessWidget {
             height: iconBox,
             decoration: SatBox.d(
               color: tint.withValues(alpha: 0.12),
-              borderRadius: SatR.a(big ? 14 : 12),
+              borderRadius: big ? SatR.lg : SatR.md,
             ),
             alignment: Alignment.center,
             child: Icon(icon, size: iconSize, color: tint),
           ),
-          SizedBox(width: big ? 14 : 12),
+          SizedBox(width: big ? Sp.s3h : Sp.s3),
           // Merged so the row announces as one unit — name, sub and pills read
           // as unrelated fragments otherwise. Scoped to the content column, not
           // the whole tile: the trailing `⋮` has to stay its own target.
@@ -275,7 +279,15 @@ class FleetTile extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(top: Sp.s1),
-                    child: Text(title, style: SatType.labelL(color: sc.textHi)),
+                    child: Text(
+                      title,
+                      // Capped so a venue named by someone with a keyboard
+                      // cannot push the pills — the row's actual news — off
+                      // the bottom of a tile the operator is scanning past.
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: SatType.labelL(color: sc.textHi),
+                    ),
                   ),
                   if (sub != null) ...[
                     const SizedBox(height: Sp.s1),
@@ -293,11 +305,18 @@ class FleetTile extends StatelessWidget {
                   ],
                   if (meta != null) ...[
                     const SizedBox(height: Sp.s1h),
+                    // `monoS`, not `caption`. Both are mono, but `caption` is
+                    // the section-cap role — 10 · w600 · 1.2em tracking, sized
+                    // for `PERLU TINDAKAN` — and this line reads
+                    // "Free · s/d 12 Agu · Online". Sentence case at caps
+                    // tracking is what made the tile's quietest line compete
+                    // with its title. `monoS` is the timestamp role (ADR-0055),
+                    // which is what these facts are.
                     Text(
                       meta!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: SatType.caption(color: sc.textMd),
+                      style: SatType.monoS(color: sc.textMd),
                     ),
                   ],
                   // Generous above the pills, tight above everything else: the
@@ -322,12 +341,8 @@ class FleetTile extends StatelessWidget {
       child: PressScale(
         child: Material(
           color: Colors.transparent,
-          borderRadius: SatR.a(radius),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: SatR.a(radius),
-            child: body,
-          ),
+          borderRadius: radius,
+          child: InkWell(onTap: onTap, borderRadius: radius, child: body),
         ),
       ),
     );
@@ -465,25 +480,70 @@ class FleetHeader extends StatelessWidget {
     this.kickerColor,
   });
 
+  /// Above this text scale the actions drop below the title instead of sitting
+  /// beside it. A `sm` primary button plus an icon button is ~150dp at 1.0 and
+  /// grows with the type; past ~1.3 there is no width left on a 360dp handset
+  /// for a title to be a title next to it.
+  static const _stackAbove = 1.3;
+
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     final kc = kickerColor ?? sc.accentText;
-    return Column(
+
+    // The kicker and the title are one block. They used to be two rows of a
+    // Column with the actions parked in the *kicker's* row, which aligned a
+    // 32dp button against a 10pt caption and left the h2 below relating to
+    // nothing — and, being an unwrapped Row, overflowed outright once the
+    // system text scale grew the button past the space the kicker was holding.
+    final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
-            Icon(icon, size: 14, color: kc),
+            Icon(icon, size: Sp.s3h, color: kc),
             const SizedBox(width: Sp.s1h),
-            Expanded(child: Text(kicker, style: SatType.caption(color: kc))),
-            ?trailing,
+            Flexible(
+              child: Text(
+                kicker,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: SatType.caption(color: kc),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: Sp.s1),
-        Text(title, style: SatType.h2(color: sc.textHi)),
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: SatType.h2(color: sc.textHi),
+        ),
       ],
     );
+
+    if (trailing case final t?) {
+      if (MediaQuery.textScalerOf(context).scale(1) > _stackAbove) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [titleBlock, const SizedBox(height: Sp.s3), t],
+        );
+      }
+      // Bottoms aligned: the actions sit on the title's line, not the kicker's,
+      // so the biggest thing on the row and the loudest control share a baseline.
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(child: titleBlock),
+          const SizedBox(width: Sp.s3),
+          t,
+        ],
+      );
+    }
+    return titleBlock;
   }
 }
 

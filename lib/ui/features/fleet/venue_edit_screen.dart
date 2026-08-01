@@ -390,7 +390,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                   size: SatButtonSize.sm,
                   onTap: can
                       ? () => _run(
-                          () => _svc.setVenueStatus(live.id, AdminStatus.active),
+                          () =>
+                              _svc.setVenueStatus(live.id, AdminStatus.active),
                           '${live.name} diaktifkan',
                         )
                       : null,
@@ -560,8 +561,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 onTap: () => ref.invalidate(fleetAdminsProvider),
               ),
             ),
-          ]
-          else if (loading)
+          ] else if (loading)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: Sp.s5),
               child: Center(
@@ -670,93 +670,24 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// nothing, with no message. Validation is now inside, and the password is
   /// masked — this gets typed on a tablet held in someone else's dining room.
   Future<void> _createPrincipalDialog(String role) async {
-    final name = TextEditingController();
-    final email = TextEditingController();
-    final pw = TextEditingController();
-    var pwVisible = false;
-    final sc = context.sat;
-    final roleLabel = role == 'owner' ? 'pemilik' : 'admin';
-    try {
-      final ok = await showSatDialog<bool>(
-        context,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setLocal) {
-            final emailText = email.text.trim();
-            final emailValid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                .hasMatch(emailText);
-            final pwText = pw.text;
-            final valid =
-                name.text.trim().isNotEmpty && emailValid && pwText.length >= 6;
-            return AlertDialog(
-              backgroundColor: sc.bg1,
-              title: Text(
-                'Tambah $roleLabel · ${widget.venue.name}',
-                style: SatType.h3(color: sc.textHi),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SatField.text(
-                    controller: name,
-                    label: 'Nama',
-                    hint: '',
-                    autofocus: true,
-                    onChanged: (_) => setLocal(() {}),
-                  ),
-                  const SizedBox(height: Sp.s3),
-                  SatField.text(
-                    controller: email,
-                    label: 'Email',
-                    hint: '',
-                    onChanged: (_) => setLocal(() {}),
-                    errorText: emailText.isEmpty || emailValid
-                        ? null
-                        : 'Format email tidak valid',
-                  ),
-                  const SizedBox(height: Sp.s3),
-                  SatField.password(
-                    controller: pw,
-                    label: 'Password awal',
-                    hint: '',
-                    visible: pwVisible,
-                    onToggle: () => setLocal(() => pwVisible = !pwVisible),
-                    onChanged: (_) => setLocal(() {}),
-                    errorText: pwText.isEmpty || pwText.length >= 6
-                        ? null
-                        : 'Minimal 6 karakter',
-                  ),
-                ],
-              ),
-              actions: [
-                SatButton.ghost(
-                  label: AppStrings.cancel,
-                  onTap: () => Navigator.pop(ctx, false),
-                ),
-                SatButton.primary(
-                  label: AppStrings.save,
-                  onTap: valid ? () => Navigator.pop(ctx, true) : null,
-                ),
-              ],
-            );
-          },
-        ),
-      );
-      if (ok != true) return;
-      await _run(
-        () => _svc.createAdmin(
-          email: email.text,
-          password: pw.text,
-          name: name.text,
-          venueId: widget.venue.id,
-          role: role,
-        ),
-        '${role == 'owner' ? 'Pemilik' : 'Admin'} dibuat',
-      );
-    } finally {
-      name.dispose();
-      email.dispose();
-      pw.dispose();
-    }
+    final draft = await showSatDialog<PrincipalDraft>(
+      context,
+      builder: (_) => NewPrincipalDialog(
+        roleLabel: role == 'owner' ? 'pemilik' : 'admin',
+        venueName: widget.venue.name,
+      ),
+    );
+    if (draft == null) return;
+    await _run(
+      () => _svc.createAdmin(
+        email: draft.email,
+        password: draft.password,
+        name: draft.name,
+        venueId: widget.venue.id,
+        role: role,
+      ),
+      '${role == 'owner' ? 'Pemilik' : 'Admin'} dibuat',
+    );
   }
 
   // ── Danger zone ────────────────────────────────────────────────────────────
@@ -899,10 +830,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                         ),
                         if (remain != null) ...[
                           const SizedBox(width: Sp.s2),
-                          Text(
-                            remain,
-                            style: SatType.caption(color: tint),
-                          ),
+                          Text(remain, style: SatType.caption(color: tint)),
                         ],
                       ],
                     ),
@@ -950,5 +878,117 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           'perpanjang tanggalnya atau ubah status ke overdue.';
     }
     return null;
+  }
+}
+
+/// What [NewPrincipalDialog] pops with — the three fields `createAdmin` needs.
+typedef PrincipalDraft = ({String name, String email, String password});
+
+/// The add-admin / add-owner form, as a widget that **owns its controllers**.
+///
+/// Same reason as the console's `_NewVenueDialog`: `showDialog`'s future
+/// completes when the route pops, not when it has finished animating out, so
+/// disposing the controllers at the call site fed a disposed controller to a
+/// field that was still rebuilding — and cancelling the dialog took the app
+/// down with it.
+class NewPrincipalDialog extends StatefulWidget {
+  const NewPrincipalDialog({
+    super.key,
+    required this.roleLabel,
+    required this.venueName,
+  });
+
+  final String roleLabel;
+  final String venueName;
+
+  @override
+  State<NewPrincipalDialog> createState() => _NewPrincipalDialogState();
+}
+
+class _NewPrincipalDialogState extends State<NewPrincipalDialog> {
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _pw = TextEditingController();
+  bool _pwVisible = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _pw.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final emailText = _email.text.trim();
+    final emailValid = RegExp(
+      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+    ).hasMatch(emailText);
+    final pwText = _pw.text;
+    final valid =
+        _name.text.trim().isNotEmpty && emailValid && pwText.length >= 6;
+
+    return AlertDialog(
+      backgroundColor: sc.bg1,
+      title: Text(
+        'Tambah ${widget.roleLabel} · ${widget.venueName}',
+        style: SatType.h3(color: sc.textHi),
+      ),
+      // Scrollable and un-autofocused for the same reason as the console's
+      // create-venue dialog: three fields plus two error lines do not fit in
+      // what a raised keyboard leaves of a landscape tablet.
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SatField.text(
+            controller: _name,
+            label: 'Nama',
+            hint: '',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: Sp.s3),
+          SatField.text(
+            controller: _email,
+            label: 'Email',
+            hint: '',
+            onChanged: (_) => setState(() {}),
+            errorText: emailText.isEmpty || emailValid
+                ? null
+                : 'Format email tidak valid',
+          ),
+          const SizedBox(height: Sp.s3),
+          SatField.password(
+            controller: _pw,
+            label: 'Password awal',
+            hint: '',
+            visible: _pwVisible,
+            onToggle: () => setState(() => _pwVisible = !_pwVisible),
+            onChanged: (_) => setState(() {}),
+            errorText: pwText.isEmpty || pwText.length >= 6
+                ? null
+                : 'Minimal 6 karakter',
+          ),
+        ],
+      ),
+      actions: [
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(context),
+        ),
+        SatButton.primary(
+          label: AppStrings.save,
+          onTap: valid
+              ? () => Navigator.pop(context, (
+                  name: _name.text,
+                  email: _email.text,
+                  password: _pw.text,
+                ))
+              : null,
+        ),
+      ],
+    );
   }
 }

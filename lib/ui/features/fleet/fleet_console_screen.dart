@@ -415,8 +415,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
 
   bool _paidUntilPassed(Venue v) => fleetPaidUntilPassed(v, SatClock.now());
 
-  Duration? _endingSoon(Venue v) =>
-      fleetSubscriptionEnding(v, SatClock.now());
+  Duration? _endingSoon(Venue v) => fleetSubscriptionEnding(v, SatClock.now());
 
   bool _isLive(Venue v) {
     final last = v.lastSeenAt;
@@ -450,7 +449,12 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         if (billingBad)
           fleetPill(sc, _billingBadText(v), sc.urgent, sc.urgentSoft),
         if (_endingSoon(v) case final left?)
-          fleetPill(sc, 'Berakhir ${_daysLeftText(left)}', sc.warn, sc.warnSoft),
+          fleetPill(
+            sc,
+            'Berakhir ${_daysLeftText(left)}',
+            sc.warn,
+            sc.warnSoft,
+          ),
         if (_lockoutRisk(v) case final risk?)
           fleetPill(
             sc,
@@ -481,7 +485,11 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   String _metaLine(Venue v) {
     final parts = <String>[fleetPlanLabel(v.plan)];
     final until = v.paidUntil;
-    if (until != null && !_paidUntilPassed(v)) {
+    // Suppressed while the "Berakhir N hari lagi" pill is up. The pill is the
+    // same date having already done the arithmetic, so carrying both put "s/d
+    // 12 Agu" and "Berakhir 5 hari lagi" on one tile — and the quiet copy of a
+    // fact is what teaches the eye to stop reading the loud one.
+    if (until != null && !_paidUntilPassed(v) && _endingSoon(v) == null) {
       parts.add('s/d ${formatShortDateId(until)}');
     }
     parts.add(_offlineText(v));
@@ -536,74 +544,22 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
 
   /// Validation lives **inside** the dialog: the old version checked the name
   /// after the sheet had already popped, so an empty name closed the dialog and
-  /// created nothing, silently.
+  /// created nothing, silently. The dialog also *owns* its controllers — see
+  /// [NewVenueDialog].
   Future<void> _createVenueDialog() async {
-    final name = TextEditingController();
-    final addr = TextEditingController();
-    var plan = fleetPlans.keys.first;
-    final sc = context.sat;
-    try {
-      final ok = await showSatDialog<bool>(
-        context,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setLocal) {
-            final valid = name.text.trim().isNotEmpty;
-            return AlertDialog(
-              backgroundColor: sc.bg1,
-              title: Text('Venue baru', style: SatType.h3(color: sc.textHi)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SatField.text(
-                    controller: name,
-                    label: 'Nama venue',
-                    hint: '',
-                    autofocus: true,
-                    onChanged: (_) => setLocal(() {}),
-                  ),
-                  const SizedBox(height: Sp.s3),
-                  SatField.text(
-                    controller: addr,
-                    label: 'Alamat',
-                    hint: 'opsional',
-                  ),
-                  const SizedBox(height: Sp.s3),
-                  // The plan is set at creation because a venue created on
-                  // `free` and re-planned later spends its first week billing
-                  // nobody, and nothing on the console says so.
-                  fleetPlanDropdown(
-                    value: plan,
-                    onChanged: (x) => setLocal(() => plan = x),
-                  ),
-                ],
-              ),
-              actions: [
-                SatButton.ghost(
-                  label: AppStrings.cancel,
-                  onTap: () => Navigator.pop(ctx, false),
-                ),
-                SatButton.primary(
-                  label: AppStrings.save,
-                  onTap: valid ? () => Navigator.pop(ctx, true) : null,
-                ),
-              ],
-            );
-          },
-        ),
-      );
-      if (ok != true) return;
-      await _run(
-        () => _svc.createVenue(
-          name: name.text,
-          address: addr.text,
-          plan: plan,
-        ),
-        'Venue dibuat',
-      );
-    } finally {
-      name.dispose();
-      addr.dispose();
-    }
+    final draft = await showSatDialog<VenueDraft>(
+      context,
+      builder: (_) => const NewVenueDialog(),
+    );
+    if (draft == null) return;
+    await _run(
+      () => _svc.createVenue(
+        name: draft.name,
+        address: draft.address,
+        plan: draft.plan,
+      ),
+      'Venue dibuat',
+    );
   }
 
   /// [confirmLabel] names the act — "Tangguhkan", "Blokir", "Keluar". A danger
@@ -650,10 +606,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         children: [
           Icon(Icons.cloud_off_rounded, size: Sp.s10, color: sc.urgent),
           const SizedBox(height: Sp.s3),
-          Text(
-            'Gagal memuat fleet',
-            style: SatType.labelL(color: sc.textHi),
-          ),
+          Text('Gagal memuat fleet', style: SatType.labelL(color: sc.textHi)),
           const SizedBox(height: Sp.s1h),
           Text(
             fleetErrText(e),
@@ -688,5 +641,95 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     if (d.inMinutes < 60) return 'Offline ${d.inMinutes}m';
     if (d.inHours < 24) return 'Offline ${d.inHours}j';
     return 'Offline ${d.inDays}h';
+  }
+}
+
+/// What [NewVenueDialog] pops with — the three fields the console needs to
+/// call `createVenue`, read once, at the moment of the tap.
+typedef VenueDraft = ({String name, String address, String plan});
+
+/// The create-venue form, as a widget that **owns its controllers**.
+///
+/// They used to live in `_createVenueDialog` and be disposed in its `finally`.
+/// But `showDialog`'s future completes when the route is *popped*, not when it
+/// has finished animating out, and the dialog's fields keep rebuilding through
+/// that transition — so the `finally` handed a disposed controller to a live
+/// `TextField`. On the tablet that was "A TextEditingController was used after
+/// being disposed", then a torn-down subtree still holding inherited
+/// dependencies, and a red screen over the whole console: cancelling the dialog
+/// killed the app. Owning them here ties their lifetime to the dialog's own
+/// element, which is disposed when the route is really gone.
+class NewVenueDialog extends StatefulWidget {
+  const NewVenueDialog({super.key});
+
+  @override
+  State<NewVenueDialog> createState() => _NewVenueDialogState();
+}
+
+class _NewVenueDialogState extends State<NewVenueDialog> {
+  final _name = TextEditingController();
+  final _addr = TextEditingController();
+  String _plan = fleetPlans.keys.first;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _addr.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final valid = _name.text.trim().isNotEmpty;
+    return AlertDialog(
+      backgroundColor: sc.bg1,
+      title: Text('Venue baru', style: SatType.h3(color: sc.textHi)),
+      // Scrollable, and the name field does **not** autofocus. The keyboard
+      // takes half a landscape tablet; raised on open it left the form 183px
+      // overflowed, actions painted across the Alamat field under yellow tape.
+      // Not raising it means the operator sees all three fields before typing,
+      // and `scrollable` — which puts title, content and actions in one scroll
+      // view — absorbs the keyboard when it does come up, instead of crushing
+      // the content into whatever strip the fixed title and actions leave.
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SatField.text(
+            controller: _name,
+            label: 'Nama venue',
+            hint: '',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: Sp.s3),
+          SatField.text(controller: _addr, label: 'Alamat', hint: 'opsional'),
+          const SizedBox(height: Sp.s3),
+          // The plan is set at creation because a venue created on `free` and
+          // re-planned later spends its first week billing nobody, and nothing
+          // on the console says so.
+          fleetPlanDropdown(
+            value: _plan,
+            onChanged: (x) => setState(() => _plan = x),
+          ),
+        ],
+      ),
+      actions: [
+        SatButton.ghost(
+          label: AppStrings.cancel,
+          onTap: () => Navigator.pop(context),
+        ),
+        SatButton.primary(
+          label: AppStrings.save,
+          onTap: valid
+              ? () => Navigator.pop(context, (
+                  name: _name.text,
+                  address: _addr.text,
+                  plan: _plan,
+                ))
+              : null,
+        ),
+      ],
+    );
   }
 }
