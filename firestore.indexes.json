@@ -7,6 +7,14 @@
         { "fieldPath": "mustChangePassword", "order": "ASCENDING" },
         { "fieldPath": "passwordResetAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "venues",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "paidUntil", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -20,7 +20,32 @@ initializeApp();
 const db = getFirestore();
 const auth = getAuth();
 
-const STATUSES = ["active", "suspended", "banned"];
+// Two states, not three. `banned` did exactly what `suspended` does — stop the
+// venue's server, lock its staff out — so the pair only ever offered a choice of
+// tone on the most destructive control in the console. Removed in ADR-0076;
+// documents still holding it parse to "unknown" on the client, which fails the
+// isActive test, so they stay blocked.
+const STATUSES = ["active", "suspended"];
+
+// The plans a venue can hold. A trial has a term, a partner has a price; a plan
+// with neither would be a hole in the model, which is what free/basic/pro/
+// enterprise were. Not enforced on write — a venue on a legacy plan keeps it
+// until someone re-plans it deliberately.
+const PLANS = ["trial", "partner"];
+const CYCLES = ["monthly", "yearly"];
+
+// How long a partner keeps trading past its term before the cutoff sweep
+// suspends it. A trial gets none of this — going dark on the stated date is what
+// a trial is for. Must stay equal to `fleetGraceAfterLapse` in
+// lib/data/services/venue_billing.dart: two numbers for one promise is how the
+// console's warning and the venue's cutoff become different facts.
+const GRACE_AFTER_LAPSE_MS = 7 * 24 * 60 * 60 * 1000;
+
+// The actor recorded when the schedule acts rather than a person. `actorUid` is
+// a free string with no reference, so a reserved value costs nothing — and the
+// one class of change nobody remembers making is the one whose audit row gets
+// wanted at 09:00 when a venue rings to ask why it is dark.
+const SYSTEM_ACTOR = "system";
 
 /**
  * How long a temporary password stays usable. Enforced twice on purpose: the
@@ -134,7 +159,13 @@ function auditFields(snap, keys) {
   return out;
 }
 
-const VENUE_BILLING_KEYS = ["plan", "billingStatus", "paidUntil"];
+const VENUE_BILLING_KEYS = [
+  "plan",
+  "trialStartAt",
+  "paidUntil",
+  "priceMonthly",
+  "billingCycle",
+];
 
 // ── Admin account lifecycle ──────────────────────────────────────────────────
 
@@ -401,20 +432,81 @@ exports.sweepExpiredTempPasswords = onSchedule("every 60 minutes", async () => {
   if (retired > 0) logger.info("temp passwords retired", { retired });
 });
 
+/**
+ * Suspends venues whose subscription has run out. See ADR-0076.
+ *
+ * This overturns ADR-0074's central invariant ("nothing auto-suspends on
+ * non-payment") deliberately. What survives of that ADR's argument is the reason
+ * a **partner** gets `GRACE_AFTER_LAPSE_MS` and a **trial** gets none: a
+ * mis-typed date must not take a paying restaurant offline mid-service, whereas
+ * a trial going dark on its stated end date is the trial working.
+ *
+ * Only `active` venues are touched, and only ones with a term — a null
+ * `paidUntil` never lapses, so a venue created before anyone set a term sits
+ * idle rather than being cut off at creation.
+ *
+ * **Nothing here has to avoid re-firing.** The editor disables `Aktifkan` while
+ * a venue is past its cutoff, so an operator cannot put back what this took
+ * down without first giving it a future date — which is the same rule stated
+ * from the other end, and needs no `autoSuspendedAt` bookkeeping to hold.
+ *
+ * Runs hourly beside the temp-password sweep. An hour of slop on a date-grained
+ * cutoff is not worth a tighter schedule.
+ */
+exports.sweepLapsedSubscriptions = onSchedule("every 60 minutes", async () => {
+  const now = Date.now();
+  // The widest term that could possibly be due, so the query stays a range scan
+  // rather than a full collection read. The per-plan cutoff is applied below.
+  const newest = Timestamp.fromMillis(now);
+  const live = await db
+    .collection("venues")
+    .where("status", "==", "active")
+    .where("paidUntil", "<", newest)
+    .get();
+
+  let suspended = 0;
+  for (const doc of live.docs) {
+    const paidUntil = doc.get("paidUntil");
+    if (!paidUntil) continue;
+    const grace = doc.get("plan") === "trial" ? 0 : GRACE_AFTER_LAPSE_MS;
+    if (paidUntil.toMillis() + grace >= now) continue;
+    try {
+      await doc.ref.update({ status: "suspended" });
+      await writeFleetAudit(
+        SYSTEM_ACTOR,
+        "autoSuspendVenue",
+        { type: "venue", id: doc.id, name: doc.get("name") },
+        { status: "active", plan: doc.get("plan"), paidUntil },
+        { status: "suspended" },
+      );
+      suspended++;
+    } catch (e) {
+      // One broken venue must not strand the rest of the sweep.
+      logger.error("subscription sweep failed", { vid: doc.id, err: String(e) });
+    }
+  }
+  if (suspended > 0) logger.info("venues auto-suspended", { suspended });
+});
+
 // ── Venue lifecycle ──────────────────────────────────────────────────────────
 
 exports.createVenue = onCall(async (request) => {
   const actor = await assertSuper(request);
   const name = reqStr(request.data, "name");
   const address = (request.data.address || "").toString().trim();
-  const plan = (request.data.plan || "free").toString().trim();
+  const plan = (request.data.plan || "trial").toString().trim();
+  // Plan only, no term (ADR-0076). A null `paidUntil` never lapses, so a venue
+  // created here waits for someone to open the editor and decide how long it
+  // runs rather than inheriting a default length nobody chose.
   const ref = await db.collection("venues").add({
     name,
     address,
     status: "active",
     plan,
-    billingStatus: "trial",
+    trialStartAt: plan === "trial" ? FieldValue.serverTimestamp() : null,
     paidUntil: null,
+    priceMonthly: null,
+    billingCycle: "monthly",
     lastSeenAt: null,
     createdAt: FieldValue.serverTimestamp(),
   });
@@ -422,7 +514,6 @@ exports.createVenue = onCall(async (request) => {
     address,
     status: "active",
     plan,
-    billingStatus: "trial",
   });
   return { vid: ref.id };
 });
@@ -473,14 +564,38 @@ exports.setVenueBilling = onCall(async (request) => {
   const actor = await assertSuper(request);
   const vid = reqStr(request.data, "vid");
   const patch = {};
-  if (typeof request.data.plan === "string") patch.plan = request.data.plan.trim();
-  if (typeof request.data.billingStatus === "string") {
-    patch.billingStatus = request.data.billingStatus.trim();
+  if (typeof request.data.plan === "string") {
+    const plan = request.data.plan.trim();
+    if (!PLANS.includes(plan)) {
+      throw new HttpsError("invalid-argument", `plan must be one of ${PLANS}.`);
+    }
+    patch.plan = plan;
   }
-  if (typeof request.data.paidUntil === "number") {
-    patch.paidUntil = Timestamp.fromMillis(request.data.paidUntil);
-  } else if (request.data.paidUntil === null) {
-    patch.paidUntil = null;
+  if (typeof request.data.billingCycle === "string") {
+    const cycle = request.data.billingCycle.trim();
+    if (!CYCLES.includes(cycle)) {
+      throw new HttpsError("invalid-argument", `billingCycle must be one of ${CYCLES}.`);
+    }
+    patch.billingCycle = cycle;
+  }
+  // A negative rate would sail through and read as a discount on every surface
+  // that formats it, so it is refused rather than clamped — the operator typed
+  // something they did not mean and should see that.
+  if (typeof request.data.priceMonthly === "number") {
+    const price = Math.trunc(request.data.priceMonthly);
+    if (!(price >= 0)) {
+      throw new HttpsError("invalid-argument", "priceMonthly must not be negative.");
+    }
+    patch.priceMonthly = price;
+  } else if (request.data.priceMonthly === null) {
+    patch.priceMonthly = null;
+  }
+  for (const key of ["trialStartAt", "paidUntil"]) {
+    if (typeof request.data[key] === "number") {
+      patch[key] = Timestamp.fromMillis(request.data[key]);
+    } else if (request.data[key] === null) {
+      patch[key] = null;
+    }
   }
   if (Object.keys(patch).length === 0) {
     throw new HttpsError("invalid-argument", "Nothing to update.");

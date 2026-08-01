@@ -406,8 +406,13 @@ class AppStrings {
 
   static const String billingLapsed = 'Masa langganan sudah lewat.';
 
-  /// Layanan tidak berhenti sendiri (lihat ADR-0074) — jadi banner ini menjanjikan
-  /// tepat itu, bukan ancaman yang tidak akan terjadi.
+  /// Tanggal venue benar-benar berhenti melayani (ADR-0076). Sejak sweep
+  /// otomatis ada, banner boleh menyebut tanggalnya — dan harus: venue yang
+  /// dimatikan tanpa pernah diberi tahu tanggalnya persis kegagalan yang mau
+  /// dicegah ADR-0074, cuma datang dari arah sebaliknya.
+  static String billingStopsOn(String date) =>
+      'Venue berhenti melayani $date.';
+
   static const String billingCta = 'Ketuk untuk perpanjang lewat WhatsApp.';
 
   // Sandi sementara (ADR-0075). Super admin membuat kode 8 angka, menyebutkannya

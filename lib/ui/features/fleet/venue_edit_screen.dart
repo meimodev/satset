@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
@@ -22,7 +22,7 @@ import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 /// Everything a super admin does to one venue, opened from a Fleet console
 /// tile: its **access** (the kill switch), its **subscription**
-/// (plan / billingStatus / paidUntil), its **accounts** (per-venue admins and
+/// (plan, term and price — ADR-0076), its **accounts** (per-venue admins and
 /// report-only owners — there is no fleet-wide roster), its identity
 /// (name/address, cloud source of truth per ADR-0018), and delete.
 ///
@@ -59,14 +59,52 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     text: widget.venue.address,
   );
 
+  // Seeded already-grouped: `SatField.money` groups as you type, so an ungrouped
+  // seed would reformat itself the first time the operator touched it and read
+  // as the field editing itself.
+  late final TextEditingController _price = TextEditingController(
+    text: switch (widget.venue.priceMonthly) {
+      final v? => groupRupiah(v),
+      null => '',
+    },
+  );
+
   late String _planKey = widget.venue.plan;
-  late String _billingStatus = _normBilling(widget.venue.billingStatus);
+  late DateTime? _trialStartAt = widget.venue.trialStartAt;
   late DateTime? _paidUntil = widget.venue.paidUntil;
+  late bool _yearly = widget.venue.isYearly;
 
   bool _busy = false;
 
-  static String _normBilling(String s) =>
-      const {'trial', 'paid', 'overdue'}.contains(s) ? s : 'trial';
+  /// Blank means "no agreed rate", which is not the same as zero — a partner
+  /// nobody has priced yet must not read as a free one. The field groups
+  /// thousands as you type, so the separators come back off here.
+  ///
+  /// Only meaningful on a partner: a trial has no price, and reading the field
+  /// on a plan that never renders it would save a stale rate from before the
+  /// plan was switched.
+  int? get _priceValue {
+    if (_planKey == venuePlanTrial) return null;
+    final digits = _price.text.replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.isEmpty ? null : int.tryParse(digits);
+  }
+
+  bool get _priceValid =>
+      _planKey == venuePlanTrial ||
+      _price.text.replaceAll(RegExp(r'[^0-9]'), '').isEmpty ||
+      _priceValue != null;
+
+  /// The trial start only exists on a trial. Same argument as [_priceValue]:
+  /// switching a venue to `partner` should clear the start date it no longer
+  /// has, not carry it invisibly on the document.
+  DateTime? get _trialStartValue =>
+      _planKey == venuePlanTrial ? _trialStartAt : null;
+
+  /// A trial has no cycle to speak of, so it records the default rather than
+  /// keeping whatever the venue held while it was a partner.
+  String get _cycleValue => _planKey != venuePlanTrial && _yearly
+      ? venueCycleYearly
+      : venueCycleMonthly;
 
   FleetService get _svc => ref.read(fleetServiceProvider);
 
@@ -79,6 +117,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   void dispose() {
     _name.dispose();
     _address.dispose();
+    _price.dispose();
     super.dispose();
   }
 
@@ -134,12 +173,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     return _nameText != v.name ||
         _address.text.trim() != v.address ||
         _planKey != v.plan ||
-        _billingStatus != _normBilling(v.billingStatus) ||
-        _paidUntil != v.paidUntil;
+        _trialStartValue != v.trialStartAt ||
+        _paidUntil != v.paidUntil ||
+        _priceValue != v.priceMonthly ||
+        _cycleValue != v.billingCycle;
   }
 
   Future<void> _save() async {
-    if (_busy || !_nameValid) return;
+    if (_busy || !_nameValid || !_priceValid) return;
     if (_offline) {
       fleetToast(
         context,
@@ -153,18 +194,25 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final newName = _nameText;
     final newAddress = _address.text.trim();
 
+    final newPrice = _priceValue;
+    final newCycle = _cycleValue;
+    final newTrialStart = _trialStartValue;
+
     final nameChanged = newName != v.name;
     final addressChanged = newAddress != v.address;
     final planChanged = _planKey != v.plan;
-    final billingStatusChanged =
-        _billingStatus != _normBilling(v.billingStatus);
+    final trialStartChanged = newTrialStart != v.trialStartAt;
     final paidUntilChanged = _paidUntil != v.paidUntil;
+    final priceChanged = newPrice != v.priceMonthly;
+    final cycleChanged = newCycle != v.billingCycle;
+    final billingChanged =
+        planChanged ||
+        trialStartChanged ||
+        paidUntilChanged ||
+        priceChanged ||
+        cycleChanged;
 
-    if (!nameChanged &&
-        !addressChanged &&
-        !planChanged &&
-        !billingStatusChanged &&
-        !paidUntilChanged) {
+    if (!nameChanged && !addressChanged && !billingChanged) {
       Navigator.of(context).pop();
       return;
     }
@@ -178,13 +226,17 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           address: addressChanged ? newAddress : null,
         );
       }
-      if (planChanged || billingStatusChanged || paidUntilChanged) {
+      if (billingChanged) {
         await _svc.setVenueBilling(
           v.id,
           plan: planChanged ? _planKey : null,
-          billingStatus: billingStatusChanged ? _billingStatus : null,
+          trialStartAt: trialStartChanged ? newTrialStart : null,
+          clearTrialStartAt: trialStartChanged && newTrialStart == null,
           paidUntil: paidUntilChanged ? _paidUntil : null,
           clearPaidUntil: paidUntilChanged && _paidUntil == null,
+          priceMonthly: priceChanged ? newPrice : null,
+          clearPriceMonthly: priceChanged && newPrice == null,
+          billingCycle: cycleChanged ? newCycle : null,
         );
       }
       if (!mounted) return;
@@ -197,14 +249,23 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   }
 
   Future<void> _pickPaidUntil() async {
+    final picked = await _pickDate(_paidUntil);
+    if (picked != null) setState(() => _paidUntil = picked);
+  }
+
+  Future<void> _pickTrialStart() async {
+    final picked = await _pickDate(_trialStartAt);
+    if (picked != null) setState(() => _trialStartAt = picked);
+  }
+
+  Future<DateTime?> _pickDate(DateTime? initial) {
     final now = SatClock.now();
-    final picked = await showDatePicker(
+    return showDatePicker(
       context: context,
-      initialDate: _paidUntil ?? now,
+      initialDate: initial ?? now,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 5),
     );
-    if (picked != null) setState(() => _paidUntil = picked);
   }
 
   @override
@@ -353,10 +414,16 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// cut a venue off could not cut it off — and nothing on it said what the
   /// current state actually does to the venue's staff.
   ///
-  /// State first as a sentence, transitions second, weighted by consequence:
-  /// activate is `success`, suspend is a plain fill because it is reversible,
-  /// blocking is `danger`. Three identical buttons would make "pause them for
-  /// an hour" and "lock them out until I say otherwise" the same gesture.
+  /// State first as a sentence, transitions second. **Two states, not three**
+  /// (ADR-0076): `Blokir` did exactly what `Tangguhkan` does to a venue, so the
+  /// pair asked the operator to pick a severity of *tone* at the one moment —
+  /// mid-service, on the most destructive control in the console — when the only
+  /// question that matters is whether the venue stops.
+  ///
+  /// `Aktifkan` is disabled while the venue is past its subscription cutoff. The
+  /// sweep would only put it back within the hour, and a button that undoes
+  /// itself reads as broken; more to the point, an unpaid venue that can be
+  /// switched on is not a subscription.
   Widget _accessCard(SatColors sc, Venue live) {
     final vis = fleetStatusVisual(
       sc,
@@ -364,6 +431,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       activeIcon: Icons.storefront_outlined,
     );
     final can = !_busy && !_offline;
+    // From the live document, never the staged fields: enabling the button on an
+    // uncommitted date would let the operator activate a venue whose term is
+    // still the old one, and the sweep would take it down again within the hour.
+    final lapsed = fleetCutoffDue(live, SatClock.now());
     return SatCard.titled(
       title: 'Akses venue',
       tag: 'KENDALI',
@@ -400,6 +471,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             ],
           ),
           const SizedBox(height: Sp.s4),
+          if (lapsed) ...[
+            Text(
+              'Langganan sudah lewat batas. Perpanjang dulu di bawah sebelum '
+              'venue bisa diaktifkan.',
+              style: SatType.bodyS(color: sc.warn),
+            ),
+            const SizedBox(height: Sp.s3),
+          ],
           Wrap(
             spacing: Sp.s2,
             runSpacing: Sp.s2,
@@ -409,7 +488,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                   label: 'Aktifkan',
                   icon: Icons.play_arrow_rounded,
                   size: SatButtonSize.sm,
-                  onTap: can
+                  onTap: can && !lapsed
                       ? () => _run(
                           () =>
                               _svc.setVenueStatus(live.id, AdminStatus.active),
@@ -438,27 +517,6 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                         )
                       : null,
                 ),
-              if (live.status != AdminStatus.banned)
-                SatButton.danger(
-                  label: 'Blokir',
-                  icon: Icons.block,
-                  size: SatButtonSize.sm,
-                  onTap: can
-                      ? () => _confirm(
-                          'Blokir ${live.name}?',
-                          'Server venue mati dan tetap terblokir sampai '
-                              'diubah di sini.',
-                          'Blokir',
-                          () => _run(
-                            () => _svc.setVenueStatus(
-                              live.id,
-                              AdminStatus.banned,
-                            ),
-                            '${live.name} diblokir',
-                          ),
-                        )
-                      : null,
-                ),
             ],
           ),
         ],
@@ -473,21 +531,30 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       'Server venue berjalan dan staf bisa masuk seperti biasa.',
     AdminStatus.suspended =>
       'Server venue mati. Staf tidak bisa masuk sampai diaktifkan lagi.',
-    AdminStatus.banned =>
-      'Venue terblokir. Server mati dan tetap terkunci sampai diubah di sini.',
     AdminStatus.unknown =>
-      'Status tidak dikenali di cloud. Setel ulang dengan tombol di bawah.',
+      'Status tidak dikenali di cloud. Venue tetap tidak bisa melayani. '
+          'Setel ulang dengan tombol di bawah.',
   };
 
   // ── Subscription ─────────────────────────────────────────────────────────
 
-  /// Plan, term and flag in one place, with the term editable the way it is
+  /// Plan, term and price in one place, with the term editable the way it is
   /// actually used. Extending a paid venue was a date picker: five taps to land
   /// on a day a year out, on the single most repeated act in the console. The
   /// quick terms compute from the later of today and the current expiry, so
   /// renewing early adds to what is left instead of throwing it away.
+  ///
+  /// **The plan decides which fields exist** (ADR-0076). A trial has a start and
+  /// an end and no price; a partner has a rate and a cycle. Rendering both sets
+  /// at once and letting the operator work out which apply is how a partner ends
+  /// up with a trial start date nobody meant to set.
+  ///
+  /// There is no billing flag any more. The dates say it — which is the whole
+  /// point, because a flag reading `paid` over a date three weeks gone looked
+  /// healthy on every surface and billed nobody.
   Widget _subscriptionCard(SatColors sc) {
     final can = !_busy && !_offline;
+    final trial = _planKey == venuePlanTrial;
     return SatCard.titled(
       title: 'Langganan',
       tag: 'TAGIHAN',
@@ -499,17 +566,43 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             onChanged: (x) => setState(() => _planKey = x),
           ),
           const SizedBox(height: Sp.s4),
+          if (trial) ...[
+            _dateRow(
+              sc,
+              label: 'Mulai coba',
+              value: _trialStartAt,
+              empty: 'belum diatur',
+              onPick: can ? _pickTrialStart : null,
+              onClear: can && _trialStartAt != null
+                  ? () => setState(() => _trialStartAt = null)
+                  : null,
+            ),
+            const SizedBox(height: Sp.s3),
+          ] else ...[
+            SatField.money(
+              controller: _price,
+              label: 'Harga per bulan',
+              hint: '0',
+              enabled: can,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: Sp.s3),
+            _yearlyRow(sc, can),
+            const SizedBox(height: Sp.s4),
+          ],
           _paidUntilRow(sc),
+          const SizedBox(height: Sp.s2),
+          _cutoffNote(sc, trial),
           const SizedBox(height: Sp.s3),
           Wrap(
             spacing: Sp.s2,
             runSpacing: Sp.s2,
             children: [
-              for (final (months, label) in const [
-                (1, '+1 bulan'),
-                (3, '+3 bulan'),
-                (12, '+1 tahun'),
-              ])
+              // A yearly partner renews by the year. Offering +1 bulan beside a
+              // cycle that says otherwise makes the checkbox decorative.
+              for (final (months, label) in _yearly && !trial
+                  ? const [(12, '+1 tahun')]
+                  : const [(1, '+1 bulan'), (3, '+3 bulan'), (12, '+1 tahun')])
                 SatButton.outline(
                   label: label,
                   size: SatButtonSize.sm,
@@ -517,35 +610,21 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: Sp.s4),
-          SatDropdown<String>(
-            value: _billingStatus,
-            label: 'Status tagihan',
-            options: const [
-              SatOption('trial', 'trial'),
-              SatOption('paid', 'paid'),
-              SatOption('overdue', 'overdue'),
-            ],
-            onChanged: (x) =>
-                setState(() => _billingStatus = x ?? _billingStatus),
-          ),
         ],
       ),
     );
   }
 
-  /// Extends the term and flips the flag with it. Keeping them separate is what
-  /// produces the console's worst state — a venue reading `paid` with a date
-  /// three weeks gone, which looks healthy on every tile and bills nobody — so
-  /// the act that sets a future date is the act that says it is paid.
+  /// Extends the term from the later of today and the current expiry, so
+  /// renewing early adds to what is left rather than throwing it away.
+  ///
+  /// There is no flag to flip alongside it any more: since ADR-0076 the date
+  /// *is* the billing state, so the act that sets a future date is the whole act.
   void _extend(int months) {
     final now = SatClock.now();
     final p = _paidUntil;
     final base = (p != null && p.isAfter(now)) ? p : now;
-    setState(() {
-      _paidUntil = fleetAddMonths(base, months);
-      _billingStatus = 'paid';
-    });
+    setState(() => _paidUntil = fleetAddMonths(base, months));
   }
 
   // ── Accounts ─────────────────────────────────────────────────────────────
@@ -640,14 +719,15 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         sc,
         enabled: !_busy && !_offline,
         tooltip: 'Tindakan akun',
+        // No `Blokir` since ADR-0076: it did the same thing as `Tangguhkan`,
+        // and an account that should never come back is deleted, not blocked.
         items: {
           if (a.status != AdminStatus.active) 'activate': 'Aktifkan',
           if (a.status != AdminStatus.suspended) 'suspend': 'Tangguhkan',
-          if (a.status != AdminStatus.banned) 'ban': 'Blokir',
           if (a.email != null) 'reset': 'Reset password',
           'delete': 'Hapus',
         },
-        dangerKeys: const {'ban', 'delete'},
+        dangerKeys: const {'delete'},
         onSelected: (k) => _onAdminAction(a, k),
       ),
     );
@@ -664,11 +744,6 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         _run(
           () => _svc.setAdminStatus(a.uid, AdminStatus.suspended),
           '${a.name} ditangguhkan',
-        );
-      case 'ban':
-        _run(
-          () => _svc.setAdminStatus(a.uid, AdminStatus.banned),
-          '${a.name} diblokir',
         );
       case 'reset':
         _resetPassword(a);
@@ -920,10 +995,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   }
 
   Widget _paidUntilRow(SatColors sc) {
+    final can = !_busy && !_offline;
     final now = SatClock.now();
     final p = _paidUntil;
     final expired = p != null && p.isBefore(now);
-    final label = p == null ? 'Belum diatur' : formatShortDateId(p);
     // The date alone makes the operator do the arithmetic. "12 Agu" is not an
     // answer to "do I invoice this venue today"; "18 hari lagi" is.
     final remain = p == null
@@ -937,91 +1012,150 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         ? sc.urgent
         : (p.difference(now) <= fleetRenewWarn ? sc.warn : sc.textMd);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return _dateRow(
+      sc,
+      label: _planKey == venuePlanTrial ? 'Selesai coba' : 'Berlaku sampai',
+      value: p,
+      empty: 'Belum diatur',
+      note: remain,
+      noteTint: tint,
+      alarm: expired,
+      onPick: can ? _pickPaidUntil : null,
+      onClear: can && p != null
+          ? () => setState(() => _paidUntil = null)
+          : null,
+    );
+  }
+
+  /// A labelled date you can change. A *field*, not a surface: `bg1` on the
+  /// card's `bg2` with its own radius made this a card inside a card, sitting
+  /// between two dropdowns that fill with `bg2` at `SatR.md`. It is the same
+  /// kind of thing they are, so it wears their chrome.
+  Widget _dateRow(
+    SatColors sc, {
+    required String label,
+    required DateTime? value,
+    required String empty,
+    required VoidCallback? onPick,
+    VoidCallback? onClear,
+    String? note,
+    Color? noteTint,
+    bool alarm = false,
+  }) => Container(
+    padding: const EdgeInsets.fromLTRB(Sp.s3h, Sp.s2, Sp.s2, Sp.s2),
+    decoration: SatBox.d(
+      color: sc.bg2,
+      border: SatB.all(color: alarm ? sc.urgent : sc.border0),
+      borderRadius: SatR.md,
+    ),
+    child: Row(
       children: [
-        // A *field*, not a surface: `bg1` on the card's `bg2` with its own
-        // radius made this a card inside a card, sitting between two dropdowns
-        // that fill with `bg2` at `SatR.md`. It is the same kind of thing they
-        // are — a labelled value you can change — so it wears their chrome.
-        Container(
-          padding: const EdgeInsets.fromLTRB(Sp.s3h, Sp.s2, Sp.s2, Sp.s2),
-          decoration: SatBox.d(
-            color: sc.bg2,
-            border: SatB.all(color: expired ? sc.urgent : sc.border0),
-            borderRadius: SatR.md,
-          ),
-          child: Row(
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Berlaku sampai',
-                      style: SatType.bodyS(color: sc.textMd),
+              Text(label, style: SatType.bodyS(color: sc.textMd)),
+              const SizedBox(height: Sp.sHair),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      value == null ? empty : formatShortDateId(value),
+                      style: SatType.labelL(
+                        color: alarm ? sc.urgent : sc.textHi,
+                      ),
                     ),
-                    const SizedBox(height: Sp.sHair),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            label,
-                            style: SatType.labelL(
-                              color: expired ? sc.urgent : sc.textHi,
-                            ),
-                          ),
-                        ),
-                        if (remain != null) ...[
-                          const SizedBox(width: Sp.s2),
-                          Text(remain, style: SatType.caption(color: tint)),
-                        ],
-                      ],
+                  ),
+                  if (note != null) ...[
+                    const SizedBox(width: Sp.s2),
+                    Text(
+                      note,
+                      style: SatType.caption(color: noteTint ?? sc.textMd),
                     ),
                   ],
-                ),
+                ],
               ),
-              if (p != null)
-                SatIconButton.plain(
-                  icon: Icons.clear,
-                  tooltip: 'Hapus tanggal',
-                  onTap: () => setState(() => _paidUntil = null),
-                ),
-              SatButton.ghost(label: 'Pilih', onTap: _pickPaidUntil),
             ],
           ),
         ),
-        // The flag and the date can disagree, and when they do the flag wins
-        // everywhere else in the app — a venue reading `paid` with a date three
-        // weeks gone looks fine on the console tile and bills nobody.
-        if (_billingMismatch case final warning?) ...[
-          const SizedBox(height: Sp.s2),
-          Row(
+        if (onClear != null)
+          SatIconButton.plain(
+            icon: Icons.clear,
+            tooltip: 'Hapus tanggal',
+            onTap: onClear,
+          ),
+        SatButton.ghost(label: 'Pilih', onTap: onPick),
+      ],
+    ),
+  );
+
+  /// The yearly discount, stated as money rather than as a percentage the
+  /// operator has to trust. Two months off is the offer; showing the total it
+  /// produces is what makes the checkbox checkable without a calculator.
+  Widget _yearlyRow(SatColors sc, bool can) {
+    final m = _priceValue;
+    final total = m == null ? null : m * venueYearlyMonthsCharged;
+    return Row(
+      children: [
+        SatToggle(
+          value: _yearly,
+          onChanged: can ? (x) => setState(() => _yearly = x) : null,
+        ),
+        const SizedBox(width: Sp.s3),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.warning_amber_rounded, size: 16, color: sc.warn),
-              const SizedBox(width: Sp.s2),
-              Expanded(
-                child: Text(warning, style: SatType.bodyS(color: sc.warn)),
+              Text('Bayar tahunan', style: SatType.labelM(color: sc.textHi)),
+              const SizedBox(height: Sp.sHair),
+              Text(
+                total == null
+                    ? 'Hemat 2 bulan — isi harga bulanan dulu.'
+                    : '${formatIDR(total)} per tahun — hemat 2 bulan.',
+                style: SatType.bodyS(color: sc.textMd),
               ),
             ],
           ),
-        ],
+        ),
       ],
     );
   }
 
-  /// Reads the billing flag against the date, in the direction that costs
-  /// money: `paid` past its date, and `paid` with no date at all.
-  String? get _billingMismatch {
-    if (_billingStatus != 'paid') return null;
+  /// What happens if nobody extends this, and when. Stated because since
+  /// ADR-0076 something does happen — the sweep suspends the venue — and an
+  /// operator who cannot see the cutoff date cannot warn anyone about it.
+  Widget _cutoffNote(SatColors sc, bool trial) {
     final p = _paidUntil;
-    if (p == null) return 'Ditandai lunas tanpa tanggal berlaku.';
-    if (p.isBefore(SatClock.now())) {
-      return 'Ditandai lunas tapi masa berlakunya sudah lewat — '
-          'perpanjang tanggalnya atau ubah status ke overdue.';
+    if (p == null) {
+      return Text(
+        'Tanpa tanggal, langganan tidak pernah habis dan venue tidak '
+        'ditangguhkan otomatis.',
+        style: SatType.bodyS(color: sc.textLo),
+      );
     }
-    return null;
+    final cutoff = trial ? p : p.add(fleetGraceAfterLapse);
+    final overdue = cutoff.isBefore(SatClock.now());
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          overdue ? Icons.block : Icons.schedule,
+          size: 16,
+          color: overdue ? sc.urgent : sc.textLo,
+        ),
+        const SizedBox(width: Sp.s2),
+        Expanded(
+          child: Text(
+            trial
+                ? 'Venue ditangguhkan otomatis ${formatShortDateId(cutoff)}, '
+                      'tepat saat masa coba habis.'
+                : 'Venue ditangguhkan otomatis ${formatShortDateId(cutoff)} — '
+                      '7 hari tenggang setelah jatuh tempo.',
+            style: SatType.bodyS(color: overdue ? sc.urgent : sc.textLo),
+          ),
+        ),
+      ],
+    );
   }
 }
 

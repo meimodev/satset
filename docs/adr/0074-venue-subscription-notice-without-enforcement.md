@@ -1,6 +1,6 @@
 # ADR-0074 — Venue subscription notice, without enforcement
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0076](0076-two-plans-and-a-subscription-that-cuts-off.md) — the mirroring stands, the "no enforcement" invariant does not
 **Date:** 2026-07-31
 **Amends:** [ADR-0016](0016-fleet-superadmin-cloud-control-plane.md) (fleet audit)
 

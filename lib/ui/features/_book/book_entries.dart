@@ -1500,6 +1500,8 @@ List<BookEntry> bookEntries() => [
               tier: VenueBillingTier.ending,
               paidUntil: SatClock.now().add(const Duration(days: 6)),
               remaining: const Duration(days: 6),
+              // A partner: seven days of grace past the term (ADR-0076).
+              cutoffAt: SatClock.now().add(const Duration(days: 13)),
             ),
           ),
         ], const VenueBillingBanner()),
@@ -1513,6 +1515,8 @@ List<BookEntry> bookEntries() => [
               tier: VenueBillingTier.ending,
               paidUntil: SatClock.now().add(const Duration(hours: 5)),
               remaining: const Duration(hours: 5),
+              // A trial: no grace, so the cutoff is the term.
+              cutoffAt: SatClock.now().add(const Duration(hours: 5)),
             ),
           ),
         ], const VenueBillingBanner()),
@@ -1526,6 +1530,8 @@ List<BookEntry> bookEntries() => [
               tier: VenueBillingTier.lapsed,
               paidUntil: SatClock.now().subtract(const Duration(days: 3)),
               remaining: null,
+              // Lapsed but still trading — four days of grace left to renew in.
+              cutoffAt: SatClock.now().add(const Duration(days: 4)),
             ),
           ),
         ], const VenueBillingBanner()),
@@ -1539,6 +1545,7 @@ List<BookEntry> bookEntries() => [
               tier: VenueBillingTier.lapsed,
               paidUntil: null,
               remaining: null,
+              cutoffAt: null,
             ),
           ),
         ], const VenueBillingBanner()),

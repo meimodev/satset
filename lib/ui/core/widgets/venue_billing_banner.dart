@@ -7,6 +7,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_subscription.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -21,10 +22,11 @@ import 'package:satset/ui/core/design/typography.dart';
 /// read by a waiter mid-shift is a different message than the same words read by
 /// the person who pays the bill, and only one of them can act on it.
 ///
-/// **It never threatens.** Billing is independent of the kill switch (CONTEXT.md
-/// "Venue billing", ADR-0074): a lapsed venue keeps trading until a super admin
-/// explicitly suspends it. Copy that implied automatic shutdown would be a lie
-/// the code does not tell.
+/// **It names the day service stops.** ADR-0074 forbade that, on the grounds
+/// that nothing auto-suspended and so the threat would have been a lie. ADR-0076
+/// made it true — the cutoff sweep suspends a lapsed trial on its end date and a
+/// lapsed partner seven days after — so the banner states the date as a fact.
+/// The alternative is a venue that finds out by hitting it mid-service.
 class VenueBillingBanner extends ConsumerWidget {
   const VenueBillingBanner({super.key});
 
@@ -40,9 +42,16 @@ class VenueBillingBanner extends ConsumerWidget {
     final lapsed = notice.tier == VenueBillingTier.lapsed;
     final fg = lapsed ? sc.urgent : sc.warn;
     final bg = lapsed ? sc.urgentSoft : sc.warnSoft;
-    final line = lapsed
+    final head = lapsed
         ? AppStrings.billingLapsed
         : AppStrings.billingEndsIn(notice.remaining?.inDays ?? 0);
+    // The cutoff, when there is one. A term with no end date never lapses, so
+    // that banner keeps the old shape — it has no date to promise.
+    final line = switch (notice.cutoffAt) {
+      final at? =>
+        '$head ${AppStrings.billingStopsOn(formatShortDateIdSafe(at))}',
+      null => head,
+    };
 
     return Semantics(
       button: true,

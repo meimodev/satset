@@ -40,6 +40,18 @@ final _shortDate = DateFormat('d MMM yyyy', 'id_ID');
 
 String formatShortDateId(DateTime d) => _shortDate.format(d);
 
+const _idShortMonths = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+];
+
+/// [formatShortDateId] without the locale-data dependency, for widgets that can
+/// mount before `main` has loaded it — the same reason [formatBarClockId] is
+/// hand-rolled. The shell banners build on first frame, and a widget test that
+/// mounts one directly would otherwise throw `LocaleDataException`.
+String formatShortDateIdSafe(DateTime d) =>
+    '${d.day} ${_idShortMonths[d.month - 1]} ${d.year}';
+
 final _grouping = NumberFormat.decimalPattern('id_ID');
 
 /// Group an integer amount for seeding a rupiah text field: `14500` → `14.500`.

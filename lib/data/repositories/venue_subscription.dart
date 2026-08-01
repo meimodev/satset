@@ -26,8 +26,9 @@ enum VenueBillingTier {
   /// broken yet and service is unaffected.
   ending,
 
-  /// Overdue, or paid-through with a date already behind us. The second is the
-  /// one nobody notices, because the flag still says paid.
+  /// The term has run out. Since ADR-0076 this is a countdown rather than a
+  /// state — the venue keeps trading until [VenueBillingNotice.cutoffAt], and
+  /// then it does not.
   lapsed,
 }
 
@@ -43,20 +44,29 @@ class VenueBillingNotice {
   /// Time left, on [VenueBillingTier.ending] only.
   final Duration? remaining;
 
+  /// The day the venue stops serving if nobody renews — the trial's end date,
+  /// or a partner's term plus [fleetGraceAfterLapse].
+  ///
+  /// Carried on the notice because the banner now **names** it. ADR-0074 forbade
+  /// that as a threat the code could not carry out; ADR-0076 made it true, and a
+  /// venue cut off without ever being told the date would be ADR-0074's own
+  /// failure case arriving from the other direction.
+  final DateTime? cutoffAt;
+
   const VenueBillingNotice({
     required this.tier,
     required this.paidUntil,
     required this.remaining,
+    required this.cutoffAt,
   });
 }
 
 /// Derives the notice from the live venue doc.
 ///
-/// **Reads the same two predicates the fleet console ranks on**, so the warning
-/// the super admin sees and the warning the venue sees can never be about
-/// different things. Enforcement is deliberately absent: billing is independent
-/// of the kill switch, and only an explicit `setVenueStatus` stops a venue
-/// trading. See CONTEXT.md "Venue billing" and ADR-0074.
+/// **Reads the same predicates the fleet console ranks on**, so the warning the
+/// super admin sees and the warning the venue sees can never be about different
+/// things. Since ADR-0076 that includes the cutoff: the console quotes the day
+/// the sweep will act, and so does this. See CONTEXT.md "Subscription cutoff".
 final venueBillingNoticeProvider = Provider<VenueBillingNotice?>((ref) {
   final v = ref.watch(venueCloudDocProvider);
   if (v == null) return null;
@@ -67,6 +77,7 @@ final venueBillingNoticeProvider = Provider<VenueBillingNotice?>((ref) {
       tier: VenueBillingTier.lapsed,
       paidUntil: v.paidUntil,
       remaining: null,
+      cutoffAt: venueCutoffAt(v),
     );
   }
   if (fleetSubscriptionEnding(v, now) case final left?) {
@@ -74,6 +85,7 @@ final venueBillingNoticeProvider = Provider<VenueBillingNotice?>((ref) {
       tier: VenueBillingTier.ending,
       paidUntil: v.paidUntil,
       remaining: left,
+      cutoffAt: venueCutoffAt(v),
     );
   }
   return null;

@@ -501,12 +501,16 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         sc,
         enabled: !_busy && !offline,
         tooltip: 'Tindakan venue',
+        // `Aktifkan` is withheld from a venue past its subscription cutoff — the
+        // sweep would only take it down again, and the way back is a future date
+        // set in the editor. See ADR-0076.
         items: {
-          if (v.status != AdminStatus.active) 'activate': 'Aktifkan',
+          if (v.status != AdminStatus.active &&
+              !fleetCutoffDue(v, SatClock.now()))
+            'activate': 'Aktifkan',
           if (v.status != AdminStatus.suspended) 'suspend': 'Tangguhkan (kill)',
-          if (v.status != AdminStatus.banned) 'ban': 'Blokir',
         },
-        dangerKeys: const {'ban'},
+        dangerKeys: const {},
         onSelected: (k) => _onVenueAction(v, k),
       ),
     );
@@ -530,14 +534,15 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     return parts.join('  ·  ');
   }
 
-  /// Billing carries its own expiry, because `paidUntil` in the past with the
-  /// flag still on `paid` is the failure this screen exists to catch and the
-  /// flag alone never shows it.
+  /// A lapsed term, and the date the sweep acts on it — a venue that is merely
+  /// late reads differently from one about to go dark, and the operator's whole
+  /// job in that gap is to get it renewed before the second one happens.
   String _billingBadText(Venue v) {
-    final until = v.paidUntil;
-    return _paidUntilPassed(v)
-        ? 'Tagihan lewat ${formatShortDateId(until!)}'
-        : 'Tagihan ${v.billingStatus}';
+    final cutoff = venueCutoffAt(v);
+    if (cutoff == null) return 'Tagihan lewat';
+    return fleetCutoffDue(v, SatClock.now())
+        ? 'Ditangguhkan ${formatShortDateId(cutoff)}'
+        : 'Lewat — mati ${formatShortDateId(cutoff)}';
   }
 
   String _daysLeftText(Duration left) =>
@@ -559,16 +564,6 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
           () => _run(
             () => _svc.setVenueStatus(v.id, AdminStatus.suspended),
             '${v.name} ditangguhkan',
-          ),
-        );
-      case 'ban':
-        _confirm(
-          'Blokir ${v.name}?',
-          'Server venue mati dan tetap terblokir sampai diubah di sini.',
-          'Blokir',
-          () => _run(
-            () => _svc.setVenueStatus(v.id, AdminStatus.banned),
-            '${v.name} diblokir',
           ),
         );
     }
@@ -703,7 +698,7 @@ class NewVenueDialog extends StatefulWidget {
 class _NewVenueDialogState extends State<NewVenueDialog> {
   final _name = TextEditingController();
   final _addr = TextEditingController();
-  String _plan = fleetPlans.keys.first;
+  String _plan = venuePlanTrial;
 
   @override
   void dispose() {
@@ -739,9 +734,10 @@ class _NewVenueDialogState extends State<NewVenueDialog> {
           const SizedBox(height: Sp.s3),
           SatField.text(controller: _addr, label: 'Alamat', hint: 'opsional'),
           const SizedBox(height: Sp.s3),
-          // The plan is set at creation because a venue created on `free` and
-          // re-planned later spends its first week billing nobody, and nothing
-          // on the console says so.
+          // Plan only. Term and price belong to the editor (ADR-0076) — two
+          // places that can set a term are two places that will drift, and a
+          // trial created here with no date simply never lapses until someone
+          // opens it and decides how long it runs.
           fleetPlanDropdown(
             value: _plan,
             onChanged: (x) => setState(() => _plan = x),

@@ -47,12 +47,8 @@ export 'package:satset/data/services/venue_billing.dart';
       label: 'TANGGUH',
       icon: Icons.pause_circle_outline,
     ),
-    AdminStatus.banned => (
-      tint: sc.urgent,
-      soft: sc.urgentSoft,
-      label: 'BLOKIR',
-      icon: Icons.block,
-    ),
+    // Also where a pre-0076 `banned` doc lands: blocked, but the console can no
+    // longer name a state it can no longer set.
     AdminStatus.unknown => (
       tint: sc.textLo,
       soft: sc.bg3,
@@ -80,11 +76,13 @@ const fleetColumnMax = 720.0;
 /// trims and stores it verbatim), which is exactly why the *client* holds a
 /// closed list: a plan typed by hand is `pro` on one venue and `Pro ` on the
 /// next, and nothing downstream can group them again.
+/// Two plans, and each carries data rather than being a recorded string
+/// (ADR-0076): a trial has a term, a partner has a price. A plan with neither
+/// would be a hole in the model, which is what the old free/basic/pro/enterprise
+/// tiers were.
 const fleetPlans = <String, String>{
-  'free': 'Free',
-  'basic': 'Basic',
-  'pro': 'Pro',
-  'enterprise': 'Enterprise',
+  venuePlanTrial: 'Trial',
+  venuePlanPartner: 'Partner',
 };
 
 /// [fleetPlans] widened by whatever [current] already is, so opening a venue

@@ -11,12 +11,16 @@ import 'package:satset/data/services/secure_storage_service.dart';
 /// Only `active` permits operation. See
 /// docs/adr/0015-firebase-admin-auth-and-server-kill-switch.md and
 /// docs/adr/0016-fleet-superadmin-cloud-control-plane.md.
-enum AdminStatus { active, suspended, banned, unknown }
+///
+/// Two states, not three: `banned` was removed in ADR-0076 because it did
+/// exactly what `suspended` does to a venue, so the pair offered a
+/// severity-of-tone choice at the worst possible moment. Docs still carrying it
+/// parse to [unknown], which fails [isActive] — they stay blocked, no migration.
+enum AdminStatus { active, suspended, unknown }
 
 AdminStatus _parseStatus(String? raw) => switch (raw) {
   'active' => AdminStatus.active,
   'suspended' => AdminStatus.suspended,
-  'banned' => AdminStatus.banned,
   _ => AdminStatus.unknown,
 };
 
@@ -102,9 +106,25 @@ class Venue {
   final AdminStatus status;
   final String name;
   final String address;
+
+  /// `trial` or `partner` (ADR-0076). Kept as a String rather than an enum so a
+  /// venue sitting on a pre-0076 plan renders as itself instead of being
+  /// silently re-planned by the act of opening an editor.
   final String plan;
-  final String billingStatus;
+
+  /// When a trial began. Recorded and displayed; enforces nothing — a trial
+  /// dated to start next week is active today. The end is [paidUntil].
+  final DateTime? trialStartAt;
+
+  /// The subscription term's end, for both plans. Null never lapses, so a venue
+  /// created before anyone set a term sits idle instead of being cut off.
   final DateTime? paidUntil;
+
+  /// Agreed monthly rate in whole rupiah. Partner only; a trial has no price.
+  final int? priceMonthly;
+
+  /// `monthly` or `yearly`. Yearly is two months off — see [venuePriceTotal].
+  final String billingCycle;
   final DateTime? lastSeenAt;
   final bool fromCache;
   const Venue({
@@ -113,14 +133,23 @@ class Venue {
     required this.name,
     required this.address,
     required this.plan,
-    required this.billingStatus,
+    required this.trialStartAt,
     required this.paidUntil,
+    required this.priceMonthly,
+    required this.billingCycle,
     required this.lastSeenAt,
     required this.fromCache,
   });
 
   bool get isActive => status == AdminStatus.active;
+  bool get isTrial => plan == venuePlanTrial;
+  bool get isYearly => billingCycle == venueCycleYearly;
 }
+
+const venuePlanTrial = 'trial';
+const venuePlanPartner = 'partner';
+const venueCycleMonthly = 'monthly';
+const venueCycleYearly = 'yearly';
 
 /// Why a cold-boot admin session could not start. `superAdmin` means the cached
 /// session belongs to a fleet operator, which never auto-boots a local server;
@@ -238,9 +267,12 @@ class FirebaseAdminService {
       status: _parseStatus(d['status'] as String?),
       name: (d['name'] as String?)?.trim() ?? '',
       address: (d['address'] as String?)?.trim() ?? '',
-      plan: (d['plan'] as String?)?.trim() ?? 'free',
-      billingStatus: (d['billingStatus'] as String?)?.trim() ?? 'trial',
+      plan: (d['plan'] as String?)?.trim() ?? venuePlanTrial,
+      trialStartAt: (d['trialStartAt'] as Timestamp?)?.toDate(),
       paidUntil: (d['paidUntil'] as Timestamp?)?.toDate(),
+      priceMonthly: (d['priceMonthly'] as num?)?.toInt(),
+      billingCycle:
+          (d['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
       lastSeenAt: (d['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: snap.metadata.isFromCache,
     );

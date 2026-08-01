@@ -708,7 +708,6 @@ class AuthRepository extends StateNotifier<AuthState> {
     if (p == null) return 'Akun admin belum terdaftar. Hubungi pengelola.';
     return switch (p.status) {
       AdminStatus.suspended => 'Akun admin ditangguhkan. Hubungi pengelola.',
-      AdminStatus.banned => 'Akun admin diblokir.',
       _ => 'Akun admin tidak aktif.',
     };
   }
@@ -720,7 +719,8 @@ class AuthRepository extends StateNotifier<AuthState> {
     if (v == null) return 'Venue tidak ditemukan. Hubungi pengelola.';
     return switch (v.status) {
       AdminStatus.suspended => 'Venue ditangguhkan. Hubungi pengelola.',
-      AdminStatus.banned => 'Venue diblokir.',
+      // Also where a pre-ADR-0076 `banned` document lands: it parses to
+      // `unknown`, fails `isActive`, and stops the venue exactly as before.
       _ => 'Venue tidak aktif.',
     };
   }

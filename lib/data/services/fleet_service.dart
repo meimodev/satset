@@ -43,9 +43,12 @@ class FleetService {
       status: _status(m['status'] as String?),
       name: (m['name'] as String?)?.trim() ?? '',
       address: (m['address'] as String?)?.trim() ?? '',
-      plan: (m['plan'] as String?)?.trim() ?? 'free',
-      billingStatus: (m['billingStatus'] as String?)?.trim() ?? 'trial',
+      plan: (m['plan'] as String?)?.trim() ?? venuePlanTrial,
+      trialStartAt: (m['trialStartAt'] as Timestamp?)?.toDate(),
       paidUntil: (m['paidUntil'] as Timestamp?)?.toDate(),
+      priceMonthly: (m['priceMonthly'] as num?)?.toInt(),
+      billingCycle:
+          (m['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
       lastSeenAt: (m['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: d.metadata.isFromCache,
     );
@@ -72,16 +75,18 @@ class FleetService {
   static AdminStatus _status(String? raw) => switch (raw) {
     'active' => AdminStatus.active,
     'suspended' => AdminStatus.suspended,
-    'banned' => AdminStatus.banned,
     _ => AdminStatus.unknown,
   };
 
   // ── Mutations (callables) ───────────────────────────────────────────────────
 
+  /// Creates a venue with a plan and nothing else. Term and price are the
+  /// editor's job (ADR-0076) — two places that can set a term are two places
+  /// that will drift. A `trial` is stamped `trialStartAt` server-side.
   Future<String> createVenue({
     required String name,
     String address = '',
-    String plan = 'free',
+    String plan = venuePlanTrial,
   }) async {
     final r = await _call('createVenue', {
       'name': name,
@@ -98,20 +103,33 @@ class FleetService {
   Future<void> setVenueStatus(String vid, AdminStatus status) =>
       _call('setVenueStatus', {'vid': vid, 'status': _statusKey(status)});
 
+  /// Nulls are "leave alone", so clearing a nullable field needs its own flag —
+  /// the alternative is a patch that cannot distinguish "no opinion" from
+  /// "remove this", which on `paidUntil` is the difference between leaving a
+  /// term standing and handing a venue an unlimited one.
   Future<void> setVenueBilling(
     String vid, {
     String? plan,
-    String? billingStatus,
+    DateTime? trialStartAt,
+    bool clearTrialStartAt = false,
     DateTime? paidUntil,
     bool clearPaidUntil = false,
+    int? priceMonthly,
+    bool clearPriceMonthly = false,
+    String? billingCycle,
   }) => _call('setVenueBilling', {
     'vid': vid,
     'plan': ?plan,
-    'billingStatus': ?billingStatus,
+    'billingCycle': ?billingCycle,
+    if (clearTrialStartAt)
+      'trialStartAt': null
+    else if (trialStartAt != null)
+      'trialStartAt': trialStartAt.millisecondsSinceEpoch,
     if (clearPaidUntil)
       'paidUntil': null
     else if (paidUntil != null)
       'paidUntil': paidUntil.millisecondsSinceEpoch,
+    if (clearPriceMonthly) 'priceMonthly': null else 'priceMonthly': ?priceMonthly,
   });
 
   Future<void> deleteVenue(String vid) => _call('deleteVenue', {'vid': vid});
@@ -173,9 +191,7 @@ class FleetService {
 
   static String _statusKey(AdminStatus s) => switch (s) {
     AdminStatus.active => 'active',
-    AdminStatus.suspended => 'suspended',
-    AdminStatus.banned => 'banned',
-    AdminStatus.unknown => 'suspended',
+    AdminStatus.suspended || AdminStatus.unknown => 'suspended',
   };
 }
 

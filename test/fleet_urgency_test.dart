@@ -2,26 +2,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 
-/// The fleet console's sort order and its billing verdict, pinned. Both are
-/// money paths: the sort decides which venue the super admin sees first, and
-/// the verdict decides whether a venue that stopped paying still looks fine.
+/// The fleet console's sort order and its billing verdicts, pinned. All money
+/// paths: the sort decides which venue the super admin sees first, the verdict
+/// decides whether a venue that stopped paying still looks fine, and since
+/// ADR-0076 the cutoff decides when one actually stops trading.
 void main() {
   final now = DateTime(2026, 7, 31, 12);
 
   Venue venue({
     String name = 'Warung',
     AdminStatus status = AdminStatus.active,
-    String billingStatus = 'paid',
+    String plan = venuePlanPartner,
+    DateTime? trialStartAt,
     DateTime? paidUntil,
+    int? priceMonthly,
+    String billingCycle = venueCycleMonthly,
     DateTime? lastSeenAt,
   }) => Venue(
     id: name,
     status: status,
     name: name,
     address: '',
-    plan: 'free',
-    billingStatus: billingStatus,
+    plan: plan,
+    trialStartAt: trialStartAt,
     paidUntil: paidUntil,
+    priceMonthly: priceMonthly,
+    billingCycle: billingCycle,
     lastSeenAt: lastSeenAt,
     fromCache: false,
   );
@@ -62,11 +68,7 @@ void main() {
   });
 
   group('billing trouble', () {
-    test('an overdue flag is trouble', () {
-      expect(fleetBillingTrouble(venue(billingStatus: 'overdue'), now), isTrue);
-    });
-
-    test('paid with a future date is not', () {
+    test('a future date is not trouble', () {
       expect(
         fleetBillingTrouble(
           venue(paidUntil: now.add(const Duration(days: 30))),
@@ -76,7 +78,7 @@ void main() {
       );
     });
 
-    test('paid with a date already gone is trouble — the silent case', () {
+    test('a date already gone is trouble', () {
       expect(
         fleetBillingTrouble(
           venue(paidUntil: now.subtract(const Duration(days: 3))),
@@ -86,8 +88,56 @@ void main() {
       );
     });
 
-    test('trial with no date is left alone', () {
-      expect(fleetBillingTrouble(venue(billingStatus: 'trial'), now), isFalse);
+    test('no date at all is left alone', () {
+      // The overwhelmingly common state for a venue nobody has termed yet.
+      expect(fleetBillingTrouble(venue(), now), isFalse);
+    });
+  });
+
+  group('cutoff', () {
+    test('a trial is cut off on its end date, with no grace', () {
+      final v = venue(
+        plan: venuePlanTrial,
+        paidUntil: now.subtract(const Duration(hours: 1)),
+      );
+      expect(venueCutoffAt(v), v.paidUntil);
+      expect(fleetCutoffDue(v, now), isTrue);
+    });
+
+    test('a partner keeps trading through the grace window', () {
+      final v = venue(paidUntil: now.subtract(const Duration(days: 3)));
+      // Lapsed, and the operator should be chasing it — but not dark yet.
+      expect(fleetBillingTrouble(v, now), isTrue);
+      expect(fleetCutoffDue(v, now), isFalse);
+    });
+
+    test('a partner is cut off once the grace window closes', () {
+      final v = venue(
+        paidUntil: now.subtract(fleetGraceAfterLapse + const Duration(days: 1)),
+      );
+      expect(fleetCutoffDue(v, now), isTrue);
+    });
+
+    test('a term-less venue never lapses and is never cut off', () {
+      // Otherwise a venue created before anyone set a term goes dark on the
+      // sweep's first pass after it was made.
+      expect(venueCutoffAt(venue()), isNull);
+      expect(fleetCutoffDue(venue(), now), isFalse);
+    });
+  });
+
+  group('price', () {
+    test('a yearly partner is charged ten months, not twelve', () {
+      final v = venue(priceMonthly: 250000, billingCycle: venueCycleYearly);
+      expect(venuePriceTotal(v), 2500000);
+    });
+
+    test('a monthly partner is charged its rate', () {
+      expect(venuePriceTotal(venue(priceMonthly: 250000)), 250000);
+    });
+
+    test('an unpriced venue has no total, which is not the same as zero', () {
+      expect(venuePriceTotal(venue()), isNull);
     });
   });
 
@@ -155,7 +205,8 @@ void main() {
         FirebaseAdminService.staleAfter - const Duration(hours: 6),
       ),
     );
-    Venue unpaid() => venue(name: 'unpaid', billingStatus: 'overdue');
+    Venue unpaid() =>
+        venue(name: 'unpaid', paidUntil: now.subtract(const Duration(days: 2)));
     Venue expiring() =>
         venue(name: 'expiring', paidUntil: now.add(const Duration(days: 5)));
     Venue killed() =>
@@ -196,7 +247,7 @@ void main() {
     test('a lockout beats unpaid even when the venue is also unpaid', () {
       final both = venue(
         name: 'both',
-        billingStatus: 'overdue',
+        paidUntil: now.subtract(const Duration(days: 2)),
         lastSeenAt: now.subtract(
           FirebaseAdminService.staleAfter + const Duration(hours: 1),
         ),
