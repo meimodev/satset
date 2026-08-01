@@ -13,6 +13,7 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
+import 'package:satset/ui/core/widgets/venue_billing_banner.dart';
 import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
@@ -119,7 +120,11 @@ class AppShell extends ConsumerWidget {
           crumbs: crumbsFor(loc, userName),
           child: Column(
             children: [
+              // Connectivity before commerce: the grace banner is a countdown to
+              // the server refusing to boot, which is operational and immediate.
+              // A subscription is neither.
               const AdminGraceBanner(),
+              const VenueBillingBanner(),
               Expanded(child: child),
             ],
           ),
@@ -134,6 +139,7 @@ class AppShell extends ConsumerWidget {
           children: [
             const SatAppBar(),
             const AdminGraceBanner(),
+            const VenueBillingBanner(),
             Expanded(
               child: Stack(
                 children: [
