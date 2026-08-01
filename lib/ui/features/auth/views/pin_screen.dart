@@ -20,6 +20,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
+import 'package:satset/ui/features/auth/views/change_password_screen.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
 class PinScreen extends ConsumerStatefulWidget {
@@ -96,7 +97,35 @@ class _PinScreenState extends ConsumerState<PinScreen>
           password: _adminPassword.text,
         );
     if (!mounted) return;
-    if (ok) context.go('/venue');
+    if (ok) {
+      context.go('/venue');
+      return;
+    }
+    // Not a failure: a temporary password was accepted and the gauntlet stopped
+    // to collect a real one (ADR-0075). The Firebase session is still live so
+    // the form below can authorize the change.
+    final pending = ref.read(pendingPasswordChangeProvider);
+    if (pending != null) await _changeTempPassword(pending);
+  }
+
+  /// Runs the forced change, then re-enters sign-in with the password the admin
+  /// just chose. Re-entering rather than continuing from where the gauntlet
+  /// stopped is deliberate: eligibility, the venue kill switch and the
+  /// host-vs-client decision all still have to happen, and there is exactly one
+  /// place that knows how to do them in the right order.
+  Future<void> _changeTempPassword(PendingPasswordChange pending) async {
+    final newPassword = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => ChangePasswordScreen(
+          pending: pending,
+          tempPassword: _adminPassword.text,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+    if (!mounted || newPassword == null) return;
+    _adminPassword.text = newPassword;
+    await _signInAdmin();
   }
 
   /// Hands the reset off to a human. See ADR-0059: there is no self-serve
@@ -976,6 +1005,7 @@ String? _bootBlockText(String? code) => switch (code) {
   'stale' =>
     'Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.',
   'ineligible' => 'Akses admin dicabut. Hubungi pengelola.',
+  'resetpending' => AppStrings.tempPasswordPending,
   _ => null,
 };
 

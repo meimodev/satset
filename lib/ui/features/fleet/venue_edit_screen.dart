@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/core/localization/app_strings.dart';
@@ -83,23 +85,42 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   String get _nameText => _name.text.trim();
   bool get _nameValid => _nameText.isNotEmpty;
 
+  /// The venue as the fleet currently holds it, falling back to the snapshot
+  /// this screen was pushed with while the stream warms (or after a delete).
+  ///
+  /// Everything that reads venue state goes through here rather than
+  /// `widget.venue`. The pushed snapshot froze the instant the tile was tapped;
+  /// diffing Save against it meant a billing change made from another device
+  /// while this screen sat open was silently overwritten with the old value on
+  /// the next Save.
+  Venue get _live =>
+      (ref.read(fleetVenuesProvider).valueOrNull ?? const <Venue>[]).firstWhere(
+        (x) => x.id == widget.venue.id,
+        orElse: () => widget.venue,
+      );
+
   /// Runs a one-shot admin/venue mutation with the shared busy + toast cycle.
-  Future<void> _run(Future<void> Function() action, String okMsg) async {
-    if (_busy) return;
+  /// Returns whether the mutation actually landed — callers that navigate on
+  /// success need to know, and a caught-and-toasted error used to be
+  /// indistinguishable from a clean run.
+  Future<bool> _run(Future<void> Function() action, String okMsg) async {
+    if (_busy) return false;
     if (_offline) {
       fleetToast(
         context,
         'Tidak terhubung — perubahan tidak dikirim.',
         error: true,
       );
-      return;
+      return false;
     }
     setState(() => _busy = true);
     try {
       await action();
       if (mounted) fleetToast(context, okMsg);
+      return true;
     } catch (e) {
       if (mounted) fleetToast(context, fleetErrText(e), error: true);
+      return false;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -109,7 +130,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// Drives the Save button, so "nothing to save" is legible before the tap
   /// rather than as a silent pop afterwards.
   bool get _dirty {
-    final v = widget.venue;
+    final v = _live;
     return _nameText != v.name ||
         _address.text.trim() != v.address ||
         _planKey != v.plan ||
@@ -127,7 +148,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       );
       return;
     }
-    final v = widget.venue;
+    final v = _live;
 
     final newName = _nameText;
     final newAddress = _address.text.trim();
@@ -650,10 +671,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           '${a.name} diblokir',
         );
       case 'reset':
-        _run(
-          () => _svc.resetAdminPassword(a.email!),
-          'Link reset dibuat untuk ${a.email}',
-        );
+        _resetPassword(a);
       case 'delete':
         _confirm(
           'Hapus ${a.name}?',
@@ -663,6 +681,124 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           () => _run(() => _svc.deleteAdmin(a.uid), '${a.name} dihapus'),
         );
     }
+  }
+
+  // ── Temporary password ─────────────────────────────────────────────────────
+
+  /// Mints a temporary password and shows it once.
+  ///
+  /// This action used to call `generatePasswordResetLink` and throw the link
+  /// away — the operator got a toast, the admin got nothing, and there is no
+  /// mail sender in this project to have sent it. What the operator actually
+  /// does is phone the venue, so the act is now a code to read out. See
+  /// ADR-0075.
+  Future<void> _resetPassword(AdminProfile a) async {
+    if (_busy) return;
+    if (_offline) {
+      fleetToast(
+        context,
+        'Tidak terhubung — perubahan tidak dikirim.',
+        error: true,
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    String? otp;
+    try {
+      otp = await _svc.resetAdminPassword(a.uid);
+    } catch (e) {
+      if (mounted) fleetToast(context, fleetErrText(e), error: true);
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted || otp == null || otp.isEmpty) return;
+    await _showOtpDialog(a, otp);
+  }
+
+  /// The code, once. There is no way back to it — the digits exist only in this
+  /// dialog and in the account itself, so the copy says so rather than letting
+  /// an operator discover it by closing the sheet too early.
+  Future<void> _showOtpDialog(AdminProfile a, String otp) {
+    final sc = context.sat;
+    final pretty = otp.length == 8
+        ? '${otp.substring(0, 4)} ${otp.substring(4)}'
+        : otp;
+    return showSatDialog<void>(
+      context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: sc.bg1,
+        title: Text(
+          AppStrings.tempPasswordIssuedTitle,
+          style: SatType.h3(color: sc.textHi),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              a.email ?? a.name,
+              style: SatType.monoS(color: sc.textMd),
+            ),
+            const SizedBox(height: Sp.s4),
+            // Sized up and given its own surface because this is dictated down a
+            // phone line in a loud room — the operator reads it off the glass
+            // once and must not misread a digit.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: Sp.s4),
+              decoration: SatBox.d(
+                color: sc.bg2,
+                border: SatB.all(color: sc.border0),
+                borderRadius: SatR.md,
+              ),
+              child: Text(
+                pretty,
+                textAlign: TextAlign.center,
+                style: SatType.monoDisplay(color: sc.textHi),
+              ),
+            ),
+            const SizedBox(height: Sp.s3),
+            Text(
+              AppStrings.tempPasswordIssuedHint,
+              style: SatType.bodyS(color: sc.textMd),
+            ),
+            const SizedBox(height: Sp.s2),
+            Text(
+              AppStrings.tempPasswordIssuedOnce,
+              style: SatType.bodyS(color: sc.warn),
+            ),
+          ],
+        ),
+        actions: [
+          SatButton.ghost(
+            label: 'Salin',
+            icon: Icons.copy_rounded,
+            onTap: () async {
+              await Clipboard.setData(ClipboardData(text: otp));
+              if (ctx.mounted) fleetToast(ctx, 'Kode disalin');
+            },
+          ),
+          SatButton.outline(
+            label: 'Kirim WA',
+            icon: Icons.chat_outlined,
+            // No recipient: the fleet does not store venue phone numbers, so
+            // this opens WhatsApp's own contact picker with the message ready.
+            onTap: () => launchUrl(
+              Uri.parse(
+                'https://wa.me/?text='
+                '${Uri.encodeComponent(AppStrings.tempPasswordShareMessage(pretty))}',
+              ),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          SatButton.primary(
+            label: AppStrings.close,
+            onTap: () => Navigator.pop(ctx),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Three required fields and one exit: the old version validated *after* the
@@ -734,8 +870,16 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       'Venue dihapus permanen dari fleet. Tidak bisa dibatalkan.',
       'Hapus venue',
       () async {
-        await _run(() => _svc.deleteVenue(v.id), '${v.name} dihapus');
-        if (mounted) Navigator.of(context).pop();
+        // Pops only on a delete that actually landed. It used to pop
+        // unconditionally, so a `failed-precondition` (an admin added between
+        // opening this screen and confirming) or an offline block closed the
+        // editor as though the venue were gone — and the console behind it
+        // still listed it.
+        final ok = await _run(
+          () => _svc.deleteVenue(v.id),
+          '${v.name} dihapus',
+        );
+        if (ok && mounted) Navigator.of(context).pop();
       },
     );
   }

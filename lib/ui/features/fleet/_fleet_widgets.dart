@@ -8,6 +8,14 @@ import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
+// The billing verdicts moved down to `data/services` when the venue's own shell
+// banner started needing them — `lib/data/` cannot import `lib/ui/`, and two
+// copies of "is this subscription ending" is exactly the drift they exist to
+// prevent. Imported *and* re-exported so every fleet call site (and its test)
+// still reads them from here.
+import 'package:satset/data/services/venue_billing.dart';
+export 'package:satset/data/services/venue_billing.dart';
+
 /// Shared visual language for the Fleet console + venue editor, so the two
 /// surfaces read as one system. Venue tiles and admin rows are the same
 /// [FleetTile]; status stays out of the pill row and rides the leading icon —
@@ -105,24 +113,6 @@ Widget fleetPlanDropdown({
   onChanged: (x) => onChanged(x ?? value),
 );
 
-/// How far ahead of a paid-through date the console starts saying so. Two weeks
-/// is an invoice's worth of notice — this screen exists to bill a venue *before*
-/// it lapses, and a console that only flags the lapse has already lost the
-/// month it was meant to protect.
-const fleetRenewWarn = Duration(days: 14);
-
-/// Time left on the subscription, once inside [fleetRenewWarn] and still ahead
-/// of us. Null when there is no date, when it is further out than the window,
-/// or when it has already passed — a lapsed date belongs to
-/// [fleetBillingTrouble], and reporting it here as well would put a warn pill
-/// and an urgent pill on the same row saying the same thing.
-Duration? fleetSubscriptionEnding(Venue v, DateTime now) {
-  final until = v.paidUntil;
-  if (until == null) return null;
-  final left = until.difference(now);
-  return left > Duration.zero && left <= fleetRenewWarn ? left : null;
-}
-
 /// Adds [months] to a subscription without letting the day of month run over
 /// into the next one: `31 Jan + 1 bulan` is 28 Feb, not 3 Mar. Two free days is
 /// a rounding error until it is thirty venues wide.
@@ -159,17 +149,6 @@ Duration? fleetLockoutRisk(Venue v, DateTime now) {
   final remaining = FirebaseAdminService.staleAfter - now.difference(last);
   return remaining <= fleetLockoutWarn ? remaining : null;
 }
-
-/// True once the paid-through date is behind us, whatever the flag says.
-bool fleetPaidUntilPassed(Venue v, DateTime now) {
-  final until = v.paidUntil;
-  return until != null && until.isBefore(now);
-}
-
-/// Overdue, or "paid" with a `paidUntil` that has already passed — the second is
-/// the one nobody notices, because the flag still says paid.
-bool fleetBillingTrouble(Venue v, DateTime now) =>
-    v.billingStatus == 'overdue' || fleetPaidUntilPassed(v, now);
 
 /// Sort key for the console list; lower sorts higher. 0 = at or past the
 /// offline lockout, 1 = approaching it, 2 = billing needs a hand, 3 =

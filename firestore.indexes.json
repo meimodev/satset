@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "admins",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mustChangePassword", "order": "ASCENDING" },
+        { "fieldPath": "passwordResetAt", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

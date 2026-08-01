@@ -140,9 +140,26 @@ class FleetService {
 
   Future<void> deleteAdmin(String uid) => _call('deleteAdmin', {'uid': uid});
 
-  Future<String?> resetAdminPassword(String email) async {
-    final r = await _call('resetAdminPassword', {'email': email});
-    return r['link'] as String?;
+  /// Mints a temporary password for [uid] and returns the digits for the
+  /// operator to dictate. Shown once and never retrievable again — the callable
+  /// stores only a hash-free flag, and the audit row records the email and not
+  /// the code. See ADR-0075.
+  ///
+  /// Keyed on `uid` rather than the email it used to take: the email is a field
+  /// on the doc that this callable has to read anyway, and identifying an
+  /// account to reset by a mutable, non-unique-by-construction string was one
+  /// typo away from resetting the wrong venue's admin.
+  Future<String?> resetAdminPassword(String uid) async {
+    final r = await _call('resetAdminPassword', {'uid': uid});
+    return r['otp'] as String?;
+  }
+
+  /// One-time migration (ADR-0017): stamps `{role, venueId}` custom claims onto
+  /// every admin doc that predates them, so those accounts can join a Main
+  /// Device as admin-clients. Idempotent — returns how many it touched.
+  Future<int> backfillAdminClaims() async {
+    final r = await _call('backfillAdminClaims', const {});
+    return (r['updated'] as num?)?.toInt() ?? 0;
   }
 
   Future<Map<String, dynamic>> _call(

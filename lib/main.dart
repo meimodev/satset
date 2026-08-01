@@ -67,6 +67,12 @@ Future<void> main() async {
         case AdminBootGate.ineligible:
           await fbAdmin.signOut();
           adminBootBlock = 'ineligible';
+        case AdminBootGate.mustChangePassword:
+          // Sign the cached session out so the PIN screen asks for the
+          // temporary password, which routes into the change screen. No server
+          // boots on a credential the operator has just replaced. See ADR-0075.
+          await fbAdmin.signOut();
+          adminBootBlock = 'resetpending';
         case AdminBootGate.staleOffline:
           adminBootBlock = 'stale';
         case AdminBootGate.superAdmin:

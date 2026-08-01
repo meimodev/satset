@@ -38,6 +38,9 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/widgets/venue_billing_banner.dart';
+import 'package:satset/data/repositories/venue_subscription.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/widgets/sat_tabs.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
@@ -119,6 +122,9 @@ Override _ws(WsConnState s) => wsConnStateProvider.overrideWith((ref) => s);
 
 Override _grace(AdminGrace? g) =>
     adminOfflineGraceProvider.overrideWith((ref) => Stream.value(g));
+
+Override _billing(VenueBillingNotice? n) =>
+    venueBillingNoticeProvider.overrideWithValue(n);
 
 final _menu = <Override>[
   menuItemsProvider.overrideWith((ref) => BookStubs.menuItems),
@@ -1467,6 +1473,75 @@ List<BookEntry> bookEntries() => [
         (c, r) => _scope([
           _grace(const AdminGrace(Duration(hours: -2))),
         ], const AdminGraceBanner()),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'VenueBillingBanner',
+    group: _gChrome,
+    note:
+        'Capability-gated, unlike AdminGraceBanner beside it: a waiter holding '
+        'the host tablet should not read the venue\'s billing state. Never '
+        'threatens shutdown — billing is independent of the kill switch.',
+    states: [
+      BookState(
+        'in good standing — renders nothing',
+        (c, r) => _scope([
+          _auth(BookStubs.adminAuth),
+          _billing(null),
+        ], const VenueBillingBanner()),
+      ),
+      BookState(
+        'ending — inside the 14-day window',
+        (c, r) => _scope([
+          _auth(BookStubs.adminAuth),
+          _billing(
+            VenueBillingNotice(
+              tier: VenueBillingTier.ending,
+              paidUntil: SatClock.now().add(const Duration(days: 6)),
+              remaining: const Duration(days: 6),
+            ),
+          ),
+        ], const VenueBillingBanner()),
+      ),
+      BookState(
+        'ending today — not "0 hari lagi"',
+        (c, r) => _scope([
+          _auth(BookStubs.adminAuth),
+          _billing(
+            VenueBillingNotice(
+              tier: VenueBillingTier.ending,
+              paidUntil: SatClock.now().add(const Duration(hours: 5)),
+              remaining: const Duration(hours: 5),
+            ),
+          ),
+        ], const VenueBillingBanner()),
+      ),
+      BookState(
+        'lapsed — urgent',
+        (c, r) => _scope([
+          _auth(BookStubs.adminAuth),
+          _billing(
+            VenueBillingNotice(
+              tier: VenueBillingTier.lapsed,
+              paidUntil: SatClock.now().subtract(const Duration(days: 3)),
+              remaining: null,
+            ),
+          ),
+        ], const VenueBillingBanner()),
+      ),
+      BookState(
+        'lapsed, but a waiter is looking — renders nothing',
+        (c, r) => _scope([
+          _auth(BookStubs.waiterAuth),
+          _billing(
+            const VenueBillingNotice(
+              tier: VenueBillingTier.lapsed,
+              paidUntil: null,
+              remaining: null,
+            ),
+          ),
+        ], const VenueBillingBanner()),
       ),
     ],
   ),
