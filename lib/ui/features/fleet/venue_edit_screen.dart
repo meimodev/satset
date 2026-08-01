@@ -372,7 +372,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 title: 'Pemilik',
                 tag: 'LAPORAN',
                 addLabel: 'Tambah pemilik',
-                emptyMsg: 'Belum ada pemilik untuk venue ini.',
+                emptyMsg:
+                    'Belum ada akun pemilik — akses baca laporan dari luar '
+                    'venue, bukan peran staf.',
               ),
               const SizedBox(height: Sp.s6),
               SatCard.titled(
