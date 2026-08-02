@@ -40,10 +40,11 @@ class ModeSelectViewModel extends StateNotifier<ModeSelectState> {
     try {
       await _prefs.setAppMode(mode);
       if (mode == AppMode.server && Platform.isAndroid) {
-        // The Main-Device decision (host vs. join-as-admin-client) is made in
-        // AuthRepository.signInAsAdmin before this runs, so reaching here means
-        // we are becoming the venue host. The `venueId` is advertised in the
-        // mDNS TXT so other admins discover us. See ADR-0017.
+        // The Main-Device guard runs in AuthRepository.signInAsAdmin before
+        // this does — a device that found an existing host for this venue was
+        // refused there (ADR-0077), so reaching here means we are becoming the
+        // venue host. The `venueId` is advertised in the mDNS TXT precisely so
+        // the next device can find us and stop. See ADR-0017.
         var rt = _ref.read(serverRuntimeProvider);
         rt ??= await ServerRuntime.boot(venueId: venueId);
         _ref.read(serverRuntimeProvider.notifier).state = rt;

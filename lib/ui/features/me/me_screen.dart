@@ -245,7 +245,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     // embedded server either way (ADR-0015), so an exit promising to preserve
     // their shift while taking the venue offline would be a lie — for this one
     // user the "lightweight" action is the most destructive in the app.
-    // Everyone else, admin-clients included, gets both.
+    // Everyone else — staff on this handset — gets both.
     final isServer = ref.read(serverRuntimeProvider) != null;
 
     // "Keluar" — drop the session, leave the shift running. The next PIN

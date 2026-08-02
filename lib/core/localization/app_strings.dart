@@ -484,13 +484,17 @@ class AppStrings {
       'Tidak ada staf yang cocok dengan filter ini';
   static const String staffNewRolePill = '+ Peran baru';
   static const String staffRoleBadgeAdmin = 'ADMIN';
+
+  /// Stands in for the edit/rename/delete controls on the admin role row. The
+  /// role is created and held by the fleet operator, not by this screen.
+  static const String staffRoleManagedByOperator = 'Dikelola pengelola';
   static const String staffRoleColor = 'Warna peran';
   static const String staffColor = 'Warna';
   static const String staffAvatarColor = 'Warna avatar';
   static const String staffMatrixTitle = 'Matriks peran × izin';
   static const String staffMatrixHint =
-      'Ketuk sel untuk mengubah. Penjaga admin terakhir mencegah pencabutan '
-      'pemegang “Kelola staf” yang terakhir.';
+      'Ketuk sel untuk mengubah. Baris peran admin dikunci — dikelola '
+      'pengelola, bukan dari layar ini.';
   static const String staffRole = 'Peran';
   static const String staffNoRole = 'Tanpa peran';
   static const String staffName = 'Nama';
@@ -510,10 +514,6 @@ class AppStrings {
       'Peran admin hanya bisa dibuat oleh super admin';
   static const String staffErrAdminPromoteBlocked =
       'Menaikkan ke peran admin tidak bisa dari sini';
-  static const String staffErrLastManageStaff =
-      'Tidak bisa mencabut peran terakhir yang punya “Kelola staf”';
-  static const String staffErrLastAdminRole =
-      'Tidak bisa menghapus peran admin terakhir';
   static const String staffErrNeedNonAdminRole = 'Buat peran non-admin dulu';
   static const String staffErrColorTaken =
       'Warna avatar sudah dipakai akun lain';

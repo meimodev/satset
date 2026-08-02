@@ -642,12 +642,34 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     required String emptyMsg,
   }) {
     final loading = all.isLoading && !all.hasValue;
+    // One ACTIVE admin per venue (ADR-0077); owners are uncapped.
+    final activeCount = role != 'admin' ? 0 : fleetActiveAdmins(rows);
+    final atCap = activeCount >= 1;
+    final overCap = activeCount >= 2;
     return SatCard.titled(
       title: title,
       tag: tag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (overCap) ...[
+            Container(
+              padding: const EdgeInsets.all(Sp.s3),
+              decoration: SatBox.d(
+                color: sc.warnSoft,
+                border: SatB.all(color: sc.warn),
+                borderRadius: SatR.a(12),
+              ),
+              child: Text(
+                'Venue ini punya $activeCount admin aktif. Satu venue kini '
+                'hanya boleh punya satu admin aktif — tangguhkan yang lain, '
+                'sisakan akun di perangkat yang memegang data venue. Admin '
+                'yang tersisa aktif tidak akan bisa masuk.',
+                style: SatType.bodyS(color: sc.textHi),
+              ),
+            ),
+            const SizedBox(height: Sp.s3),
+          ],
           if (all.hasError) ...[
             Text(
               'Gagal memuat: ${fleetErrText(all.error!)}',
@@ -690,11 +712,22 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               label: addLabel,
               icon: Icons.person_add_alt_1,
               size: SatButtonSize.sm,
-              onTap: _busy || _offline
+              onTap: _busy || _offline || atCap
                   ? null
                   : () => _createPrincipalDialog(role),
             ),
           ),
+          // Says why the button is dead, and says the handover sequence in the
+          // same breath — the operator reaching for it is usually replacing
+          // someone, not adding a second seat.
+          if (atCap) ...[
+            const SizedBox(height: Sp.s2),
+            Text(
+              'Satu venue, satu admin aktif. Untuk mengganti admin: '
+              'tangguhkan yang lama dulu, lalu tambah yang baru.',
+              style: SatType.bodyS(color: sc.textLo),
+            ),
+          ],
         ],
       ),
     );

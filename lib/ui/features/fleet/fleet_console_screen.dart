@@ -146,16 +146,6 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                           onTap: _busy || offline ? null : _createVenueDialog,
                         ),
                         const SizedBox(width: Sp.s1),
-                        // Fleet-wide maintenance, kept out of the toolbar
-                        // proper: it is run about once in the product's life.
-                        fleetMenu(
-                          sc,
-                          enabled: !_busy && !offline,
-                          tooltip: 'Alat fleet',
-                          items: const {'backfill': 'Perbaiki klaim akun'},
-                          dangerKeys: const {},
-                          onSelected: (_) => _confirmBackfill(),
-                        ),
                         SatIconButton.plain(
                           icon: Icons.logout,
                           tooltip: 'Keluar',
@@ -273,30 +263,6 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     'Perlu email & password lagi untuk masuk.',
     'Keluar',
     () => ref.read(authStateProvider.notifier).signOut(),
-  );
-
-  /// The one-time claims migration (ADR-0017), which until now was a deployed,
-  /// super-gated, audited callable that nothing in the app could reach.
-  ///
-  /// Accounts created before custom claims shipped cannot join a Main Device as
-  /// admin-clients until this runs. Idempotent, so re-running it costs one write
-  /// per admin and breaks nothing — which is why it gets a plain confirm rather
-  /// than the danger treatment.
-  void _confirmBackfill() => _confirm(
-    'Perbaiki klaim akun?',
-    'Menulis ulang role & venue pada token semua akun admin. Aman diulang.',
-    'Jalankan',
-    () async {
-      setState(() => _busy = true);
-      try {
-        final n = await ref.read(fleetServiceProvider).backfillAdminClaims();
-        if (mounted) fleetToast(context, '$n akun diperbarui');
-      } catch (e) {
-        if (mounted) fleetToast(context, fleetErrText(e), error: true);
-      } finally {
-        if (mounted) setState(() => _busy = false);
-      }
-    },
   );
 
   Widget _venueList(

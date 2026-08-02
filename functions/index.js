@@ -171,8 +171,8 @@ const VENUE_BILLING_KEYS = [
 
 // Roles a super admin may mint via createAdmin. `super` is seeded by hand, not
 // through this callable. `owner` is a read-only cloud report viewer (ADR-0036):
-// it never pairs, never runs a server, and is excluded from the admin-client
-// token gate — it only reads its venue's published report snapshot.
+// it never pairs, never runs a server, and only reads its venue's published
+// report snapshot — so owners stay uncapped where admins do not (ADR-0077).
 const CREATABLE_ROLES = ["admin", "owner"];
 
 exports.createAdmin = onCall(async (request) => {
@@ -191,6 +191,27 @@ exports.createAdmin = onCall(async (request) => {
     throw new HttpsError("not-found", "Venue does not exist.");
   }
 
+  // One ACTIVE admin per venue (ADR-0077). The cap counts `active` rather than
+  // documents so handing a venue to a new operator is suspend-then-create with
+  // no window where the venue has nobody: the outgoing admin's doc survives for
+  // the audit trail and stops counting the moment it is suspended. Owners are
+  // deliberately not capped — they are powerless on the floor.
+  if (role === "admin") {
+    const held = await db
+      .collection("admins")
+      .where("venueId", "==", venueId)
+      .where("role", "==", "admin")
+      .where("status", "==", "active")
+      .limit(1)
+      .get();
+    if (!held.empty) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Venue already has an active admin. Suspend it before creating another.",
+      );
+    }
+  }
+
   let user;
   try {
     user = await auth.createUser({ email, password, displayName: name });
@@ -198,9 +219,13 @@ exports.createAdmin = onCall(async (request) => {
     throw new HttpsError("already-exists", e.message || "Could not create user.");
   }
 
-  // Custom claims {role, venueId} ride the admin's Firebase ID token so a
-  // Main-Device host can verify them offline when admitting an admin-client
-  // (ADR-0017). The Firestore admins/{uid} doc stays the human-readable record.
+  // Custom claims {role, venueId} ride the admin's Firebase ID token. Their one
+  // consumer — a host verifying a joining admin-client offline — was retired
+  // with admin-client itself (ADR-0077), so nothing reads these today. They are
+  // written anyway because claims are the one thing that cannot be reconstructed
+  // cheaply after the fact: `backfillAdminClaims` had to exist for precisely the
+  // gap that dropping this line would reopen. One call, no maintenance.
+  // Security rules read the Firestore doc, never the token.
   await auth.setCustomUserClaims(user.uid, { role, venueId });
 
   const avatarColorHex =
@@ -231,37 +256,30 @@ exports.createAdmin = onCall(async (request) => {
   return { uid: user.uid };
 });
 
-/**
- * One-time backfill: stamp {role, venueId} custom claims onto every existing
- * admin from their Firestore doc, so admins created before claims shipped can
- * still join as admin-clients (ADR-0017). Idempotent; super-only.
- */
-exports.backfillAdminClaims = onCall(async (request) => {
-  const actor = await assertSuper(request);
-  const snap = await db.collection("admins").get();
-  let updated = 0;
-  for (const doc of snap.docs) {
-    const role = doc.get("role") || "admin";
-    const venueId = doc.get("venueId") || "";
-    try {
-      await auth.setCustomUserClaims(doc.id, { role, venueId });
-      updated++;
-    } catch (_) {
-      // Auth user may be gone; skip and continue.
-    }
-  }
-  await writeFleetAudit(actor, "backfillAdminClaims", { type: "fleet" }, null, {
-    updated,
-  });
-  return { ok: true, updated };
-});
-
 exports.setAdminStatus = onCall(async (request) => {
   const actor = await assertSuper(request);
   const uid = reqStr(request.data, "uid");
   const status = reqStatus(request.data);
   const ref = db.collection("admins").doc(uid);
   const prev = await ref.get();
+  // The same one-active-admin cap as createAdmin, enforced on the other door
+  // into `active` (ADR-0077). Without it, reactivating a suspended admin walks
+  // a venue back to two — which is exactly the handover sequence in reverse.
+  if (status === "active" && prev.get("role") === "admin") {
+    const held = await db
+      .collection("admins")
+      .where("venueId", "==", prev.get("venueId") || "")
+      .where("role", "==", "admin")
+      .where("status", "==", "active")
+      .limit(1)
+      .get();
+    if (!held.empty && held.docs[0].id !== uid) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Venue already has an active admin. Suspend it first.",
+      );
+    }
+  }
   await ref.update({ status });
   // Mirror suspend/ban onto the Auth user so they can't even sign in.
   await auth.updateUser(uid, { disabled: status !== "active" });

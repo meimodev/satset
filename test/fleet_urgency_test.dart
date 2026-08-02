@@ -255,4 +255,62 @@ void main() {
       expect(fleetUrgencyRank(both, now), 0);
     });
   });
+
+  group('one active admin per venue (ADR-0077)', () {
+    AdminProfile principal({
+      required String uid,
+      AdminRole role = AdminRole.admin,
+      AdminStatus status = AdminStatus.active,
+    }) => AdminProfile(
+      uid: uid,
+      status: status,
+      role: role,
+      name: uid,
+      venueId: 'v1',
+      avatarColorHex: null,
+      fromCache: false,
+    );
+
+    test('an empty venue leaves the seat open', () {
+      expect(fleetActiveAdmins(const <AdminProfile>[]), 0);
+    });
+
+    test('one active admin fills the seat', () {
+      expect(fleetActiveAdmins([principal(uid: 'a')]), 1);
+    });
+
+    test('a suspended admin frees the seat, so handover needs no delete', () {
+      final rows = [principal(uid: 'a', status: AdminStatus.suspended)];
+      expect(fleetActiveAdmins(rows), 0);
+    });
+
+    test('owners never occupy the seat, however many there are', () {
+      final rows = [
+        principal(uid: 'o1', role: AdminRole.owner),
+        principal(uid: 'o2', role: AdminRole.owner),
+      ];
+      expect(fleetActiveAdmins(rows), 0);
+    });
+
+    test('an owner alongside the admin still leaves exactly one', () {
+      final rows = [
+        principal(uid: 'a'),
+        principal(uid: 'o1', role: AdminRole.owner),
+      ];
+      expect(fleetActiveAdmins(rows), 1);
+    });
+
+    test('a venue predating the cap reads as over it, not as one', () {
+      final rows = [principal(uid: 'a'), principal(uid: 'b')];
+      // Two is what raises the warning; nothing is auto-suspended.
+      expect(fleetActiveAdmins(rows), 2);
+    });
+
+    test('an unknown status does not sneak into the count', () {
+      // `status: banned` from a pre-ADR-0076 doc parses to unknown and fails
+      // isActive everywhere else — it must not hold the seat either.
+      final rows = [principal(uid: 'a', status: AdminStatus.unknown)];
+      expect(fleetActiveAdmins(rows), 0);
+    });
+  });
 }

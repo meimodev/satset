@@ -46,7 +46,8 @@ class ServerAuth {
     final h = hashPin(pin);
     // Demo users use PIN sign-in. Reject the dedicated admin from this path
     // even when its `pinHash` happens to collide (it shouldn't, but be
-    // defensive): admin must use /auth/admin/login.
+    // defensive): the venue's one admin is authed in-process by Firebase,
+    // never by PIN (ADR-0077).
     final user =
         await (db.select(db.users)..where(
               (u) =>

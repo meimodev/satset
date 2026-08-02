@@ -530,3 +530,25 @@ class FleetHeader extends StatelessWidget {
 // `bg0` is bone, so a lime button carried a near-white label at 1.03:1 and read
 // as an empty slab. `SatButton.primary` / `.danger` own that ink decision
 // properly (ADR-0055), which is the whole argument against a local button.
+
+/// How many admins of this venue currently occupy the one admin seat
+/// (ADR-0077).
+///
+/// Counts `role == admin` **and** `status == active`. Both narrowings are the
+/// point, not tidiness:
+///
+/// - **Owners never count.** They are read-only cloud report viewers, powerless
+///   on the floor by four separate exclusions, so a venue may hold as many as
+///   it likes (ADR-0036).
+/// - **Suspended admins never count.** That is what makes handing a venue to a
+///   new operator a suspend-then-create with no window where the venue has
+///   nobody, and it leaves the outgoing admin's document standing for the audit
+///   trail instead of demanding a delete.
+///
+/// `>= 1` means the seat is taken and the add button is dead. `>= 2` means this
+/// venue predates the cap and someone must be suspended by hand — nothing is
+/// auto-suspended, because only the operator knows which device holds the
+/// venue's database.
+int fleetActiveAdmins(Iterable<AdminProfile> venueAdmins) => venueAdmins
+    .where((a) => a.role == AdminRole.admin && a.status == AdminStatus.active)
+    .length;

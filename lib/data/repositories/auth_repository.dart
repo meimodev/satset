@@ -16,12 +16,9 @@ import 'package:satset/data/repositories/venue_subscription.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/data/services/mdns_browser_service.dart';
-import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
-import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
-import 'package:uuid/uuid.dart';
 import 'package:satset/server/server.dart' show serverRuntimeProvider;
 
 /// Derive the legacy [UserRole] bucket from the server-authoritative
@@ -66,6 +63,15 @@ class AuthState {
   /// The owner's venue id (`admins/{uid}.venueId`), used to read `reports/{vid}`.
   /// Empty unless [isOwner].
   final String ownerVenueId;
+
+  /// Set when admin sign-in stopped because another device on the LAN is
+  /// already hosting this venue — carries that host's mDNS label so the block
+  /// screen can name the device instead of describing it. A venue has one
+  /// admin on one device (ADR-0077); the second device is refused rather than
+  /// admitted as a client. Transient by nature: it clears the moment the other
+  /// device stops hosting, which is why the Firebase session is kept alive and
+  /// only this flag is raised.
+  final String? hostOccupied;
   const AuthState({
     this.isAuthenticated = false,
     this.user,
@@ -76,6 +82,7 @@ class AuthState {
     this.isSuperAdmin = false,
     this.isOwner = false,
     this.ownerVenueId = '',
+    this.hostOccupied,
   });
 
   AuthState copyWith({
@@ -88,6 +95,7 @@ class AuthState {
     bool? isSuperAdmin,
     bool? isOwner,
     String? ownerVenueId,
+    String? hostOccupied,
   }) => AuthState(
     isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     user: user ?? this.user,
@@ -98,6 +106,9 @@ class AuthState {
     isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
     isOwner: isOwner ?? this.isOwner,
     ownerVenueId: ownerVenueId ?? this.ownerVenueId,
+    // Reset-by-default like `error`: both describe the last attempt, and a
+    // block that survived into the next one would be a lie.
+    hostOccupied: hostOccupied,
   );
 
   bool has(Capability c) => capabilities.contains(c);
@@ -295,7 +306,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       }
 
       // Venue-level kill switch: the venue this admin belongs to must be active
-      // too (one venue → many admins). See ADR-0016.
+      // too. See ADR-0016.
       if (profile.venueId.isEmpty) {
         SatLog.repo('auth.signInAsAdmin blocked uid=$uid no-venue');
         await fb.signOut();
@@ -314,31 +325,23 @@ class AuthRepository extends StateNotifier<AuthState> {
 
       await storage.writeAdminConfirmedAt(SatClock.now());
 
-      // Main-Device model (ADR-0017): if another device already hosts this
-      // venue on the LAN, join it as an admin-client instead of booting a
-      // rival server (which would split the data). Otherwise become the host.
+      // Main-Device guard (ADR-0017, narrowed by ADR-0077): a venue has one
+      // admin on one device. If another device already hosts this venue on the
+      // LAN, refuse — booting a rival server would split the data, and joining
+      // as an admin-client is no longer a thing. The Firebase session is left
+      // signed in: the condition clears as soon as the other device stops
+      // hosting, and charging a password re-entry for that would be a tax on
+      // the person standing between both devices.
       final host = await ref
           .read(mdnsBrowserServiceProvider)
           .findVenueHost(profile.venueId);
       if (host != null) {
-        final joined = await _establishAdminClientSession(
-          host: host,
-          uid: uid,
-          profile: profile,
-        );
-        if (!joined) {
-          await fb.signOut();
-          state = state.copyWith(
-            busy: false,
-            error: 'Gagal bergabung ke server venue. Coba lagi.',
-          );
-          return false;
-        }
         SatLog.repo(
-          'auth.signInAsAdmin joined-as-client host=${host.label} '
+          'auth.signInAsAdmin refused host-occupied host=${host.label} '
           'venue=${profile.venueId}',
         );
-        return true;
+        state = state.copyWith(busy: false, hostOccupied: host.label);
+        return false;
       }
 
       // Eligible + no existing host — boot the embedded server (scoped to this
@@ -370,6 +373,16 @@ class AuthRepository extends StateNotifier<AuthState> {
       );
       return false;
     }
+  }
+
+  /// Drop the Firebase session an admin was left holding while blocked by
+  /// [AuthState.hostOccupied] — the way off that screen when the block is not
+  /// going to clear (a surplus admin account on a venue that predates the cap,
+  /// rather than a device that will be switched off in a minute).
+  Future<void> abandonHostOccupied() async {
+    SatLog.repo('auth.abandonHostOccupied');
+    await ref.read(firebaseAdminServiceProvider).signOut();
+    state = const AuthState();
   }
 
   /// Provision the local admin user for [uid], mint a session in-process, then
@@ -419,83 +432,6 @@ class AuthRepository extends StateNotifier<AuthState> {
       busy: false,
     );
     return true;
-  }
-
-  /// Join an existing venue [[Main Device]] host as an **admin-client** over
-  /// the LAN (ADR-0017): point at the host (we already hold its TLS
-  /// fingerprint from mDNS, so no QR pairing is needed), present this admin's
-  /// Firebase ID token to `/auth/admin`, and adopt the local admin JWT the host
-  /// issues. This device runs as a **client** — it hosts no server/DB.
-  Future<bool> _establishAdminClientSession({
-    required DiscoveredServer host,
-    required String uid,
-    required AdminProfile profile,
-  }) async {
-    ref.read(apiConfigProvider.notifier).state = ApiConfig(
-      baseUri: Uri.parse('https://${host.host}:${host.port}'),
-      trustedFingerprint: host.fingerprint,
-    );
-    try {
-      final prefs = await ref.read(prefsServiceProvider.future);
-      await prefs.setAppMode(AppMode.client);
-    } catch (_) {
-      // Mode persistence is best-effort; the live apiConfig already routes us.
-    }
-    // forceRefresh so freshly-set {role, venueId} claims are present.
-    final idToken = await ref
-        .read(firebaseAdminServiceProvider)
-        .currentIdToken(forceRefresh: true);
-    if (idToken == null || idToken.isEmpty) return false;
-    var deviceId = await storage.readDeviceId();
-    if (deviceId == null || deviceId.isEmpty) {
-      deviceId = const Uuid().v4();
-      await storage.writeDeviceId(deviceId);
-    }
-    try {
-      final api = ref.read(apiClientProvider);
-      final res =
-          (await api.postJson('/auth/admin', {
-                    'idToken': idToken,
-                    'deviceId': deviceId,
-                  })
-                  as Map)
-              .cast<String, dynamic>();
-      final token = res['token'] as String?;
-      if (token == null || token.isEmpty) return false;
-      await storage.writeToken(token);
-      final me = MeDto.fromJson(
-        (await api.getJson('/auth/me') as Map).cast<String, dynamic>(),
-      );
-      final caps = <Capability>{
-        for (final k in me.capabilities)
-          if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
-      };
-      final loginAt = SatClock.now();
-      await storage.writeLoginAt(loginAt);
-      // The server opens/resumes the shift and is authoritative (ADR-0065) —
-      // that is what lets a shift survive onto a different handset. The local
-      // stamp stays as the fallback for a legacy host with no such field.
-      final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
-      state = AuthState(
-        isAuthenticated: true,
-        user: AppUser(
-          id: me.userId,
-          name: me.name,
-          initials: me.initials,
-          role: _roleFromCapabilities(caps),
-          shiftStartedAt: shiftStartedAt,
-          zoneAssigned: me.zoneAssigned ?? '',
-          roleId: me.roleId,
-          avatarColorHex: me.avatarColorHex,
-        ),
-        capabilities: caps,
-        busy: false,
-      );
-      return true;
-    } catch (e) {
-      SatLog.repo('auth.adminClient join fail $e');
-      return false;
-    }
   }
 
   /// Establish a fleet-operator session: no local server, no Drift, no venue.

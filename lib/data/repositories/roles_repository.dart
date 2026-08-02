@@ -184,9 +184,6 @@ class RolesRepository extends StateNotifier<List<Role>> {
     }());
   }
 
-  /// Count roles holding [c]. Used by last-admin guard.
-  int capabilityHolders(Capability c) => state.where((r) => r.has(c)).length;
-
   // ---- helpers ----
 
   void _mutate(String id, Role Function(Role) f) {

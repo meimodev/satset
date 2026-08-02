@@ -240,6 +240,23 @@ class _PinScreenState extends ConsumerState<PinScreen>
       return const _RestoreLoadingScreen();
     }
 
+    // Signed in at Firebase, refused the venue: another device already hosts it
+    // (ADR-0077). Takes the whole screen rather than sitting under the form —
+    // the form is not the next action, and leaving it there invites a retype of
+    // a password that was never wrong.
+    final occupiedBy = ref.watch(
+      authStateProvider.select((s) => s.hostOccupied),
+    );
+    if (occupiedBy != null) {
+      return _HostOccupiedScreen(
+        hostLabel: occupiedBy,
+        busy: state.adminBusy,
+        onRetry: _signInAdmin,
+        onSignOut: () =>
+            ref.read(authStateProvider.notifier).abandonHostOccupied(),
+      );
+    }
+
     ref.listen<PinState>(pinViewModelProvider, (prev, next) {
       final wasPaired = prev?.selectedServer?.paired ?? false;
       final isPaired = next.selectedServer?.paired ?? false;
@@ -870,6 +887,94 @@ class _ServerRow extends StatelessWidget {
                     ),
                   ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when admin sign-in passed Firebase but the venue already has a host on
+/// the LAN (ADR-0077). A venue runs on one device; the second is refused rather
+/// than admitted as a client.
+///
+/// Two causes land here and the copy carries both, because the device cannot
+/// tell them apart: the ordinary one is another tablet still switched on, which
+/// clears itself the moment it stops hosting — hence **Coba lagi** rather than a
+/// forced sign-out. The other is a surplus admin account on a venue that
+/// predates the cap, which no amount of retrying fixes and only the fleet
+/// operator can resolve.
+class _HostOccupiedScreen extends StatelessWidget {
+  final String hostLabel;
+  final bool busy;
+  final VoidCallback onRetry;
+  final VoidCallback onSignOut;
+  const _HostOccupiedScreen({
+    required this.hostLabel,
+    required this.busy,
+    required this.onRetry,
+    required this.onSignOut,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Scaffold(
+      backgroundColor: sc.bg0,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(Sp.s6),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Icon(Icons.devices_other, size: 44, color: sc.warn),
+                  const SizedBox(height: Sp.s4),
+                  Text(
+                    'Venue ini sudah punya perangkat utama',
+                    style: SatType.h2(color: sc.textHi),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  // The device is named, not described: the operator is
+                  // standing between both of them and needs to know which one
+                  // to walk over to.
+                  Text(
+                    hostLabel,
+                    style: SatType.monoM(color: sc.accentText),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  Text(
+                    'Satu venue berjalan di satu perangkat. Tutup aplikasi di '
+                    'perangkat itu, lalu coba lagi di sini.',
+                    style: SatType.bodyM(color: sc.textMd),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: Sp.s2h),
+                  Text(
+                    'Kalau perangkat itu memang yang dipakai, akun ini bukan '
+                    'admin utama venue — hubungi operator.',
+                    style: SatType.bodyS(color: sc.textLo),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: Sp.s6),
+                  SatButton.primary(
+                    label: 'Coba lagi',
+                    icon: Icons.refresh,
+                    onTap: busy ? null : onRetry,
+                  ),
+                  const SizedBox(height: Sp.s2h),
+                  SatButton.ghost(
+                    label: 'Keluar',
+                    onTap: busy ? null : onSignOut,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

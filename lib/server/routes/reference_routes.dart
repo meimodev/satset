@@ -136,7 +136,9 @@ Future<Response?> _guardLastAdmin(
 /// Whether [roleId] currently carries `manageStaff` — i.e. an admin-level
 /// role. Used to enforce "admin is Firebase-only": such a role may never be
 /// assigned to a PIN user, nor newly created/granted, from the venue's own
-/// staff screen (only a super admin makes admins). See ADR-0017.
+/// staff screen (only a super admin makes admins). Since ADR-0077 it also
+/// makes the role **immutable and undeletable** from that screen — the venue's
+/// one admin cannot be edited out of its own capabilities. See ADR-0017.
 Future<bool> _roleHasManageStaff(AppDatabase db, String roleId) async {
   final r = await (db.select(
     db.roles,
@@ -434,19 +436,26 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     )..where((r) => r.id.equals(id))).getSingleOrNull();
     if (prev == null) return Response.notFound('role not found');
 
+    // An admin-level role is infrastructure, not a role this screen owns: it
+    // belongs to the venue's one Firebase admin (ADR-0077). Immutable from here
+    // in **both** directions. Blocking only the grant left the far worse edit
+    // open — stripping `editSettings` or `viewReports` off the admin role locks
+    // the venue's only admin out of the screens that could put them back, and
+    // admin is Firebase-only, so there is no second admin role to repair it
+    // from. Refuse the whole PATCH, name and colour included, so the server
+    // agrees with the locked row the staff screen renders.
+    if (await _roleHasManageStaff(db, id)) {
+      return _adminRoleForbidden();
+    }
+
     Set<String>? nextCapsKeys;
     if (body.containsKey('capabilities')) {
       nextCapsKeys = <String>{
         for (final c in (body['capabilities'] as List)) c as String,
       };
-      // Can't newly grant manageStaff to a role that lacked it (would create a
-      // local admin). Roles that already have it (the seeded admin role) keep
-      // it. See ADR-0017.
-      final prevCaps = (jsonDecode(prev.capabilitiesJson) as List)
-          .cast<String>()
-          .toSet();
-      if (nextCapsKeys.contains(Capability.manageStaff.name) &&
-          !prevCaps.contains(Capability.manageStaff.name)) {
+      // Can't newly grant manageStaff to a role that lacked it — that would mint
+      // a local admin as a backdoor. See ADR-0017.
+      if (nextCapsKeys.contains(Capability.manageStaff.name)) {
         return _adminRoleForbidden();
       }
       final guard = await _guardLastAdmin(
@@ -526,6 +535,12 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
       db.roles,
     )..where((r) => r.id.equals(id))).getSingleOrNull();
     if (prev == null) return Response.notFound('role not found');
+    // Same lock as PATCH: the admin role is the venue's Firebase admin's, and
+    // deleting it would strand that account's user row on a role lookup that
+    // returns nothing. See ADR-0077.
+    if (await _roleHasManageStaff(db, id)) {
+      return _adminRoleForbidden();
+    }
     // Block delete while any staff row still references the role; sign-in
     // would otherwise crash on role lookup.
     final inUse = await (db.select(

@@ -172,14 +172,6 @@ class FleetService {
     return r['otp'] as String?;
   }
 
-  /// One-time migration (ADR-0017): stamps `{role, venueId}` custom claims onto
-  /// every admin doc that predates them, so those accounts can join a Main
-  /// Device as admin-clients. Idempotent — returns how many it touched.
-  Future<int> backfillAdminClaims() async {
-    final r = await _call('backfillAdminClaims', const {});
-    return (r['updated'] as num?)?.toInt() ?? 0;
-  }
-
   Future<Map<String, dynamic>> _call(
     String name,
     Map<String, dynamic> args,

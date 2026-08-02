@@ -305,23 +305,36 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               sc.violetSoft,
             ),
           const SizedBox(width: Sp.s2),
-          SatButton.outline(
-            label: AppStrings.staffColor,
-            size: SatButtonSize.sm,
-            onTap: () => _pickRoleColor(r),
-          ),
-          const SizedBox(width: Sp.s1h),
-          SatButton.outline(
-            label: AppStrings.a11yRename,
-            size: SatButtonSize.sm,
-            onTap: () => _renameRole(r),
-          ),
-          const SizedBox(width: Sp.s1h),
-          SatButton.danger(
-            label: AppStrings.delete,
-            size: SatButtonSize.sm,
-            onTap: memberCount == 0 ? () => _deleteRole(r) : null,
-          ),
+          // The admin role is infrastructure, not a role this screen hands out:
+          // it belongs to the venue's one Firebase admin (ADR-0077), and every
+          // path that could assign, grant or mint it is already refused here and
+          // at the server. Shown but locked rather than hidden — a person in the
+          // Orang tab holds it, so a list that omitted it would leave that row
+          // pointing at a role defined nowhere.
+          if (isAdminRole)
+            Text(
+              AppStrings.staffRoleManagedByOperator,
+              style: SatType.bodyS(color: sc.textLo),
+            )
+          else ...[
+            SatButton.outline(
+              label: AppStrings.staffColor,
+              size: SatButtonSize.sm,
+              onTap: () => _pickRoleColor(r),
+            ),
+            const SizedBox(width: Sp.s1h),
+            SatButton.outline(
+              label: AppStrings.a11yRename,
+              size: SatButtonSize.sm,
+              onTap: () => _renameRole(r),
+            ),
+            const SizedBox(width: Sp.s1h),
+            SatButton.danger(
+              label: AppStrings.delete,
+              size: SatButtonSize.sm,
+              onTap: memberCount == 0 ? () => _deleteRole(r) : null,
+            ),
+          ],
         ],
       ),
     );
@@ -420,43 +433,78 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
   Widget _capCell(Role r, Capability c) {
     final sc = context.sat;
     final on = r.has(c);
-    return GestureDetector(
-      onTap: () => _toggleCap(r, c, !on),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: Sp.s1),
-        height: 26,
-        decoration: SatBox.d(
-          color: on ? sc.successSoft : sc.bg3,
-          border: SatB.all(color: on ? sc.success : sc.border1),
-          borderRadius: SatR.a(6),
+    // The admin role's whole row is read-only (ADR-0077). Not a disabled tap
+    // that toasts — the cells simply aren't controls, and dimming them says so
+    // before a finger arrives. Stripping `editSettings` here was the one edit
+    // that could lock a venue's only admin out of the screen holding the fix.
+    final locked = r.has(Capability.manageStaff);
+    final cell = Container(
+      margin: const EdgeInsets.symmetric(horizontal: Sp.s1),
+      height: 26,
+      decoration: SatBox.d(
+        color: on && !locked ? sc.successSoft : sc.bg3,
+        border: SatB.all(
+          color: locked
+              ? sc.border0
+              : on
+              ? sc.success
+              : sc.border1,
         ),
-        alignment: Alignment.center,
-        child: Text(
-          on ? '✓' : '—',
-          style: SatType.monoM(color: on ? sc.success : sc.textDim),
+        borderRadius: SatR.a(6),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        on ? '✓' : '—',
+        style: SatType.monoM(
+          color: locked
+              ? sc.textDim
+              : on
+              ? sc.success
+              : sc.textDim,
         ),
+      ),
+    );
+    // Returned bare, with no tap target at all — a locked cell is not a
+    // disabled control, it is not a control. TalkBack reads the row's state
+    // without ever offering an action on it.
+    if (locked) {
+      return Semantics(
+        label: '${r.name}, ${c.label}, ${on ? 'aktif' : 'nonaktif'}, terkunci',
+        excludeSemantics: true,
+        child: cell,
+      );
+    }
+    return Semantics(
+      button: true,
+      toggled: on,
+      label: '${r.name}, ${c.label}',
+      child: GestureDetector(
+        onTap: () => _toggleCap(r, c, !on),
+        child: cell,
       ),
     );
   }
 
   void _toggleCap(Role r, Capability c, bool on) {
+    // The admin role is read-only here, in both directions (ADR-0077). The
+    // cells don't call this, but the guard stays: it is the rule, and the next
+    // caller of _toggleCap will not remember that the matrix hides its cells.
+    if (r.has(Capability.manageStaff)) {
+      _toast(AppStrings.staffRoleManagedByOperator);
+      return;
+    }
     // Admin is Firebase-only: a local admin can't newly grant manageStaff to a
-    // role (it would mint an admin-level role as a backdoor). Roles that
-    // already hold it keep it. Server enforces the same. See ADR-0017.
-    if (on && c == Capability.manageStaff && !r.has(Capability.manageStaff)) {
+    // role (it would mint an admin-level role as a backdoor). Server enforces
+    // the same. See ADR-0017.
+    if (on && c == Capability.manageStaff) {
       _toast(AppStrings.staffErrAdminBySuperOnly);
       return;
     }
-    // Guard: removing last manageStaff holder
-    if (!on && c == Capability.manageStaff) {
-      final holders = ref
-          .read(rolesRepositoryProvider.notifier)
-          .capabilityHolders(Capability.manageStaff);
-      if (holders <= 1) {
-        _toast(AppStrings.staffErrLastManageStaff);
-        return;
-      }
-    }
+    // The old "don't revoke the last manageStaff holder" guard lived here. It
+    // is unreachable now and gone: revoking manageStaff means `r` already had
+    // it, and a role that has it returned above. The invariant it protected is
+    // now held by something stronger than a count — the admin role cannot be
+    // edited at all.
     ref.read(rolesRepositoryProvider.notifier).setCapability(r.id, c, on);
   }
 
@@ -599,14 +647,12 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       AppStrings.staffDeleteRoleBody,
     );
     if (ok != true) return;
+    // The admin role has no delete button to reach this, and the server refuses
+    // it besides (ADR-0077) — but this is the function a future caller will
+    // reach for, so it states the rule rather than trusting the caller.
     if (r.has(Capability.manageStaff)) {
-      final holders = ref
-          .read(rolesRepositoryProvider.notifier)
-          .capabilityHolders(Capability.manageStaff);
-      if (holders <= 1) {
-        _toast(AppStrings.staffErrLastAdminRole);
-        return;
-      }
+      _toast(AppStrings.staffRoleManagedByOperator);
+      return;
     }
     ref.read(rolesRepositoryProvider.notifier).delete(r.id);
   }

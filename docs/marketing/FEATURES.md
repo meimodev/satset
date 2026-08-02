@@ -21,13 +21,12 @@ Cloud (Firebase) is used only for three things that are *not* on the critical pa
 | Actor | Session type | Server? | Pairing? | Lands on |
 |---|---|---|---|---|
 | **Host / Main Device** | Firebase admin (email+password) | Boots embedded server | — | `/venue` |
-| **Admin client** | Firebase admin, joins existing host over LAN | No | Auto (mDNS + `POST /auth/admin`) | `/venue` |
 | **Staff (waiter/kitchen/cashier)** | 6-digit PIN → JWT | No | QR / auto-claim | `/tables` |
 | **Fleet super admin** | Firebase, `role=super` | No | Bypasses pair gate | `/fleet` |
 | **Owner (read-only)** | Firebase, `role=owner` | No | Bypasses pair gate | `/owner` |
 | **Guest** | Stateless guest JWT, 2h | — | Table QR, cleartext | `/t/<tableId>` web SPA |
 
-**Main Device election (ADR-0017):** on admin sign-in the app first does a 3-second mDNS scan for an existing host advertising the same `venueId`. Found → join as admin client. Not found → boot the embedded server and become host. There is never a second server for a venue by accident.
+**Main Device guard (ADR-0017, narrowed by ADR-0077):** a venue has one active admin account running on one device. On admin sign-in the app does a 3-second mDNS scan for an existing host advertising the same `venueId`. Not found → boot the embedded server and become host. Found → sign-in is refused and the device shows which host it found, so there is never a second server for a venue by accident.
 
 **Ports:** `7443` (TLS staff API + WebSocket), `8080` (cleartext guest plane).
 

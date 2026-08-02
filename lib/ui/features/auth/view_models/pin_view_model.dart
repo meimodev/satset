@@ -407,7 +407,16 @@ class PinViewModel extends StateNotifier<PinState> {
       state = state.copyWith(adminBusy: false);
       return true;
     }
-    final err = _ref.read(authStateProvider).error;
+    final auth = _ref.read(authStateProvider);
+    // Refused because another device already hosts this venue (ADR-0077). The
+    // credentials were fine — the block screen says so itself, so labelling this
+    // "password salah" would send the admin to retype a correct password.
+    if (auth.hostOccupied != null) {
+      SatLog.vm('PinVM submitAdmin result=host-occupied');
+      state = state.copyWith(adminBusy: false, adminError: null);
+      return false;
+    }
+    final err = auth.error;
     SatLog.vm('PinVM submitAdmin result=fail err=$err');
     state = state.copyWith(
       adminBusy: false,

@@ -4,77 +4,15 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
-import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/server/auth.dart';
-import 'package:satset/server/firebase_token_verifier.dart';
 import 'package:satset/server/shift.dart';
 
-/// [venueId] is this host's cloud venue (ADR-0017); [verifier] admits
-/// admin-clients by their Firebase ID token. Both are empty/no-op on a legacy
-/// un-gated server, which simply rejects `/auth/admin`.
-Router authRoutes(
-  ServerAuth auth, {
-  String venueId = '',
-  FirebaseTokenVerifier? verifier,
-}) {
+/// Staff PIN sessions only. The host admin (the one admin this venue has) is
+/// authed in-process, not over HTTP — and since ADR-0077 there is no second
+/// admin device to admit, so the old `/auth/admin` ID-token door is gone along
+/// with the offline Firebase verifier that guarded it.
+Router authRoutes(ServerAuth auth) {
   final r = Router();
-
-  // The host admin (the Main Device operator) is authed in-process — no HTTP.
-  // OTHER admins of the same venue join over the LAN as admin-clients via
-  // `/auth/admin`: they present a Firebase ID token, the host verifies it
-  // offline (custom claims {role, venueId}) and issues a local admin JWT. The
-  // local server stays the capability authority. See ADR-0017.
-  r.post('/auth/admin', (Request req) async {
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final idToken = (body['idToken'] as String?) ?? '';
-    final deviceId = (body['deviceId'] as String?) ?? '';
-    if (idToken.isEmpty || deviceId.isEmpty) {
-      return _err(400, 'bad_request', 'idToken+deviceId required');
-    }
-    if (venueId.isEmpty || verifier == null) {
-      return _err(
-        409,
-        'no_venue_scope',
-        'This server is not venue-scoped and cannot admit admins',
-      );
-    }
-    final v = await verifier.verify(idToken);
-    if (v == null) {
-      return _err(401, 'invalid_token', 'Firebase token tidak valid');
-    }
-    if (v.role != 'admin' && v.role != 'super') {
-      return _err(403, 'not_admin', 'Akun ini bukan admin');
-    }
-    if (v.venueId != venueId) {
-      SatLog.srv('auth.admin wrong-venue token=${v.venueId} host=$venueId');
-      return _err(403, 'wrong_venue', 'Admin bukan dari venue ini');
-    }
-    final userId = await auth.provisionAdminUser(
-      firebaseUid: v.uid,
-      name: v.name.isEmpty ? 'Admin' : v.name,
-    );
-    final session = await auth.mintSession(userId: userId, deviceId: deviceId);
-    final me = await auth.resolveBearer(session.token);
-    final role = me == null
-        ? null
-        : await (auth.db.select(
-            auth.db.roles,
-          )..where((rr) => rr.id.equals(me.roleId))).getSingleOrNull();
-    final caps = role == null
-        ? const <String>[]
-        : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
-    SatLog.srv('auth.admin ok uid=${v.uid} venue=$venueId');
-    return Response.ok(
-      jsonEncode({
-        'token': session.token,
-        'userId': session.userId,
-        'roleId': me?.roleId ?? '',
-        'capabilities': caps,
-        'expiresAt': session.expiresAt.toIso8601String(),
-      }),
-      headers: {'content-type': 'application/json'},
-    );
-  });
 
   r.post('/auth/login', (Request req) async {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
@@ -213,8 +151,3 @@ String? _bearer(Request req) {
   return h.substring(7).trim();
 }
 
-Response _err(int status, String code, String message) => Response(
-  status,
-  body: jsonEncode({'code': code, 'message': message}),
-  headers: {'content-type': 'application/json'},
-);

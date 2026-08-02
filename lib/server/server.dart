@@ -15,7 +15,6 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'auth.dart';
-import 'firebase_token_verifier.dart';
 import 'db/database.dart';
 import 'db/seed.dart';
 import 'guest_app_html.dart';
@@ -129,16 +128,6 @@ class ServerRuntime {
   /// so a guest browser loads with no cert warning.
   static const guestPort = 8080;
   static const defaultVersion = '1.0.0';
-
-  /// Firebase project id (matches `android/app/google-services.json`). Used to
-  /// verify admin-client ID tokens (ADR-0017).
-  static const firebaseProjectId = 'satset-3a795';
-
-  /// Offline verifier for admin-client Firebase ID tokens. Lazily built; only
-  /// exercised when this host is venue-scoped (`venueId` non-empty).
-  late final FirebaseTokenVerifier _tokenVerifier = FirebaseTokenVerifier(
-    projectId: firebaseProjectId,
-  );
 
   static Future<ServerRuntime> boot({
     int port = defaultPort,
@@ -330,14 +319,7 @@ class ServerRuntime {
   Router _buildRouter() {
     final r = Router();
     r.mount('/', healthRoutes().call);
-    r.mount(
-      '/',
-      authRoutes(
-        auth,
-        venueId: venueId,
-        verifier: venueId.isEmpty ? null : _tokenVerifier,
-      ).call,
-    );
+    r.mount('/', authRoutes(auth).call);
     r.mount('/', menuRoutes(db, hub, auth).call);
     r.mount('/', stockRoutes(db, hub, auth).call);
     r.mount('/', tablesRoutes(db, hub, auth).call);
@@ -535,9 +517,6 @@ Middleware _authMiddleware(ServerAuth auth) {
   const skip = {
     '/healthz',
     '/auth/login',
-    // Admin-client bootstrap: authenticated by a Firebase ID token in the body,
-    // not a local bearer (it has none yet). See ADR-0017.
-    '/auth/admin',
     '/pair/claim',
     '/pair/auto-claim',
   };
