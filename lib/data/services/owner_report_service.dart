@@ -22,6 +22,52 @@ import 'package:satset/core/log/sat_log.dart';
 /// query param and double as the Firestore field names.
 const kOwnerReportRanges = ['today', 'd7'];
 
+/// Wrapper key for a list that sits directly inside another list.
+///
+/// Firestore has no array-of-array type — writing one throws
+/// `Invalid data. Nested arrays are not supported`, which killed **every**
+/// publish, not just the offending field: the snapshot's ops section carries a
+/// 7×12 peak-hour heatmap as `List<List<double>>`, so the owner's report doc
+/// was never written at all. A map inside an array *is* legal, and resets the
+/// SDK's array-element context, so one level of wrapping makes the payload
+/// writable while preserving order and shape. [encodeNestedForFirestore]
+/// applies it on publish, [decodeNestedFromFirestore] strips it on read, and
+/// the server, the DTOs and the shared `ReportSectionsView` stay untouched.
+const _kListWrapKey = r'$list';
+
+/// Recursively wrap lists that are themselves list elements.
+Object? encodeNestedForFirestore(Object? v, {bool inArray = false}) {
+  if (v is List) {
+    final encoded = [
+      for (final e in v) encodeNestedForFirestore(e, inArray: true),
+    ];
+    return inArray ? {_kListWrapKey: encoded} : encoded;
+  }
+  if (v is Map) {
+    return {
+      for (final e in v.entries)
+        e.key.toString(): encodeNestedForFirestore(e.value as Object?),
+    };
+  }
+  return v;
+}
+
+/// Inverse of [encodeNestedForFirestore]. Tolerates un-wrapped docs so a
+/// report published by an older build still reads.
+Object? decodeNestedFromFirestore(Object? v) {
+  if (v is Map) {
+    if (v.length == 1 && v.containsKey(_kListWrapKey)) {
+      return decodeNestedFromFirestore(v[_kListWrapKey] as Object?);
+    }
+    return {
+      for (final e in v.entries)
+        e.key.toString(): decodeNestedFromFirestore(e.value as Object?),
+    };
+  }
+  if (v is List) return [for (final e in v) decodeNestedFromFirestore(e)];
+  return v;
+}
+
 /// How often the host republishes while the server is live. Not real-time by
 /// design; the owner can force a fresh publish via a refresh request.
 const kOwnerReportInterval = Duration(minutes: 30);
@@ -78,7 +124,7 @@ class OwnerReportPublisher {
       final payload = <String, dynamic>{};
       for (final range in kOwnerReportRanges) {
         final json = await fetchSnapshot(range);
-        if (json != null) payload[range] = json;
+        if (json != null) payload[range] = encodeNestedForFirestore(json);
       }
       if (payload.isEmpty) return; // all ranges failed — keep the last good doc
       payload['generatedAt'] = FieldValue.serverTimestamp();
@@ -120,7 +166,7 @@ class OwnerReport {
     final d = snap.data() ?? const {};
     final ranges = <String, Map<String, dynamic>>{};
     for (final key in kOwnerReportRanges) {
-      final v = d[key];
+      final v = decodeNestedFromFirestore(d[key]);
       if (v is Map) ranges[key] = v.cast<String, dynamic>();
     }
     return OwnerReport(
