@@ -161,6 +161,35 @@ class BillSummaryReceipt {
       );
 }
 
+/// One page of cashier history (`/settlement/history`). Roughly three screens
+/// of bill cards on a tablet, so the first fetch covers a normal day whole.
+const historyPageSize = 60;
+
+/// The most rows that endpoint will ever hand back, however far a cashier
+/// scrolls. The client grows its limit and refetches (ADR-0079), and every
+/// `tableSession.closed` refetches at whatever limit is current — so an
+/// unbounded limit would leave a busy venue re-sending a fat payload on every
+/// bill close for the rest of the shift. Older bills are the reports' job.
+const historyPageCeiling = 300;
+
+/// One page of cashier history, plus how many rows the window actually holds.
+///
+/// [total] is not `rows.length` — it counts the whole day-window server-side,
+/// while [rows] is only the newest page of it. The Lunas count reads [total];
+/// counting loaded rows is the bug ADR-0072 documented for the audit log and
+/// ADR-0079 kept out of here.
+class PastBillPage {
+  final List<PastBillSummary> rows;
+  final int total;
+
+  const PastBillPage({required this.rows, required this.total});
+
+  static const empty = PastBillPage(rows: [], total: 0);
+
+  /// Whether the server is holding rows this page didn't ask for.
+  bool get hasMore => rows.length < total;
+}
+
 /// A closed bill in the cashier's per-table history (last 7 days), from a
 /// snapshotted TableSession. See ADR-0024.
 class PastBillSummary {

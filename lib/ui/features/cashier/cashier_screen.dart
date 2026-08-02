@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
@@ -65,7 +66,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       for (final b in open)
         if (!b.fullySettled) b,
     ];
-    final closed = history.valueOrNull ?? const <PastBillSummary>[];
+    // `valueOrNull` survives a refetch: growing the limit re-runs the provider
+    // with the old page still attached, so the grid never blinks to empty.
+    final page = history.valueOrNull ?? PastBillPage.empty;
+    final closed = page.rows;
 
     return Scaffold(
       backgroundColor: sc.bg0,
@@ -75,61 +79,87 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             await ref.read(settlementProvider.notifier).refresh();
             ref.invalidate(venueHistoryProvider);
           },
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _Header(
-                        running: unpaid.length,
-                        takeaway: open.where((b) => b.isTakeaway).length,
-                        settled: closed.length,
-                        outstanding: unpaid.fold<int>(
-                          0,
-                          (a, b) => a + b.outstanding,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              _maybeGrow(n, page, history.isLoading);
+              return false;
+            },
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Every settled count below reads `page.total`, never
+                        // `closed.length` — the rows on screen are one page of
+                        // the window, the count is the whole of it (ADR-0079).
+                        _Header(
+                          running: unpaid.length,
+                          takeaway: open.where((b) => b.isTakeaway).length,
+                          settled: page.total,
+                          outstanding: unpaid.fold<int>(
+                            0,
+                            (a, b) => a + b.outstanding,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: Sp.s4),
-                      _StatRow(
-                        bills: open,
-                        detachedOnly: _detachedOnly,
-                        onDetachedTap: () => setState(() {
-                          _detachedOnly = !_detachedOnly;
-                          if (_detachedOnly) _seg = _Segment.perluDitagih;
-                        }),
-                      ),
-                      const SizedBox(height: Sp.s4),
-                      _SegmentRow(
-                        selected: _seg,
-                        perluDitagih: unpaid.length,
-                        lunas: closed.length,
-                        semua: open.length + closed.length,
-                        onSelected: (s) => setState(() {
-                          _seg = s;
-                          if (s != _Segment.perluDitagih) _detachedOnly = false;
-                        }),
-                      ),
-                      if (_seg != _Segment.perluDitagih) ...[
-                        const SizedBox(height: Sp.s2h),
-                        _RangeRow(
-                          selected: _range,
-                          onSelected: (r) => setState(() => _range = r),
+                        const SizedBox(height: Sp.s4),
+                        _StatRow(
+                          bills: open,
+                          detachedOnly: _detachedOnly,
+                          onDetachedTap: () => setState(() {
+                            _detachedOnly = !_detachedOnly;
+                            if (_detachedOnly) _seg = _Segment.perluDitagih;
+                          }),
                         ),
+                        const SizedBox(height: Sp.s4),
+                        _SegmentRow(
+                          selected: _seg,
+                          perluDitagih: unpaid.length,
+                          lunas: page.total,
+                          semua: open.length + page.total,
+                          onSelected: (s) => setState(() {
+                            _seg = s;
+                            if (s != _Segment.perluDitagih) {
+                              _detachedOnly = false;
+                            }
+                          }),
+                        ),
+                        if (_seg != _Segment.perluDitagih) ...[
+                          const SizedBox(height: Sp.s2h),
+                          _RangeRow(
+                            selected: _range,
+                            onSelected: (r) => setState(() => _range = r),
+                          ),
+                        ],
+                        const SizedBox(height: Sp.s3h),
                       ],
-                      const SizedBox(height: Sp.s3h),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-              ..._body(open, unpaid, _inRange(closed), zones, history),
-            ],
+                ..._body(open, unpaid, _inRange(closed), zones, history, page),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Raise the history limit a page when the scroll gets within two viewports
+  /// of the end. Two viewports rather than one so the fetch lands before the
+  /// thumb does; the grid keeps its current rows while it flies (ADR-0079).
+  void _maybeGrow(ScrollNotification n, PastBillPage page, bool loading) {
+    if (_seg == _Segment.perluDitagih) return; // no history rendered here
+    if (loading || !page.hasMore) return;
+    final limit = ref.read(historyLimitProvider);
+    if (limit >= historyPageCeiling) return;
+    final m = n.metrics;
+    if (!m.hasContentDimensions) return;
+    if (m.pixels < m.maxScrollExtent - m.viewportDimension * 2) return;
+    ref.read(historyLimitProvider.notifier).state = (limit + historyPageSize)
+        .clamp(historyPageSize, historyPageCeiling);
   }
 
   List<PastBillSummary> _inRange(List<PastBillSummary> rows) {
@@ -147,7 +177,8 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     List<BillSummary> unpaid,
     List<PastBillSummary> closed,
     Map<String, Zone> zones,
-    AsyncValue<List<PastBillSummary>> history,
+    AsyncValue<PastBillPage> history,
+    PastBillPage page,
   ) {
     final status = ref.watch(settlementStatusProvider);
     if (status.isLoading && open.isEmpty && _seg == _Segment.perluDitagih) {
@@ -246,11 +277,30 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           ),
         ),
       ),
-      if (history.isLoading && past.isEmpty && _seg != _Segment.perluDitagih)
+      // Foot spinner, not a replacement for the grid: this fires both on the
+      // first load (nothing to show yet) and on every page after it (rows
+      // already up, more coming). ADR-0079.
+      if (history.isLoading && _seg != _Segment.perluDitagih)
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.only(bottom: Sp.s6),
             child: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      // Scrolled to the ceiling with older bills still behind it. Says where
+      // they are rather than leaving the list looking finished.
+      if (!history.isLoading &&
+          _seg != _Segment.perluDitagih &&
+          page.hasMore &&
+          ref.watch(historyLimitProvider) >= historyPageCeiling)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, Sp.s6),
+            child: Text(
+              AppStrings.kasirRiwayatBatas,
+              textAlign: TextAlign.center,
+              style: SatType.bodyS(color: context.sat.textDim),
+            ),
           ),
         ),
     ];

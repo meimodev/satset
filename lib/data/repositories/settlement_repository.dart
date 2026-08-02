@@ -224,22 +224,35 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _billFrom(raw);
   }
 
-  /// Past bills (last `days`, default 7), newest-first. `tableId` null ⇒
-  /// venue-wide (the cashier's Riwayat tab); set ⇒ scoped to one table. The
-  /// scoped form has no caller since ADR-0064 retired the bill-screen Riwayat
-  /// shortcut — the route keeps it. See ADR-0024.
-  Future<List<PastBillSummary>> fetchHistory({
+  /// Past bills (last `days`, default 7), newest-first, capped at `limit` rows.
+  /// `tableId` null ⇒ venue-wide (the cashier's Riwayat tab); set ⇒ scoped to
+  /// one table. The scoped form has no caller since ADR-0064 retired the
+  /// bill-screen Riwayat shortcut — the route keeps it. See ADR-0024.
+  ///
+  /// Returns the page *and* the window's true total, which is not `rows.length`
+  /// once the window outgrows a page — the cashier's Lunas count reads the
+  /// total (ADR-0079).
+  Future<PastBillPage> fetchHistory({
     String? tableId,
     int days = 7,
+    int limit = historyPageSize,
   }) async {
-    final path = tableId != null && tableId.isNotEmpty
-        ? '/settlement/history?days=$days&tableId=$tableId'
-        : '/settlement/history?days=$days';
-    final raw = await ref.read(apiClientProvider).getJson(path) as List;
-    return [
-      for (final e in raw)
-        PastBillSummary.fromJson((e as Map).cast<String, dynamic>()),
-    ];
+    final scope = tableId != null && tableId.isNotEmpty
+        ? '&tableId=$tableId'
+        : '';
+    final raw =
+        await ref
+                .read(apiClientProvider)
+                .getJson('/settlement/history?days=$days&limit=$limit$scope')
+            as Map;
+    final json = raw.cast<String, dynamic>();
+    return PastBillPage(
+      rows: [
+        for (final e in (json['rows'] as List? ?? const []))
+          PastBillSummary.fromJson((e as Map).cast<String, dynamic>()),
+      ],
+      total: (json['total'] as num?)?.toInt() ?? 0,
+    );
   }
 
   /// One past bill's full detail (Struk pembayaran view) from a session.
@@ -417,16 +430,38 @@ final billDetailProvider = FutureProvider.family.autoDispose<Bill, String>((
 // its table chips. `fetchHistory` keeps its `tableId` parameter; the route
 // still takes one.
 
-/// Venue-wide past bills (last 7 days) — backs the cashier's Riwayat tab.
-/// Refetched on *any* `tableSession.closed`: a bill closed at any table lands a
-/// new history row, so membership of the venue-wide list changes. See ADR-0024.
-final venueHistoryProvider = FutureProvider.autoDispose<List<PastBillSummary>>((
+/// How many history rows the cashier screen currently wants. Raised a page at a
+/// time as they scroll (ADR-0079); never lowered while the screen is up, so
+/// rows can't vanish from under a scrolled thumb when a bill closes.
+final historyLimitProvider = StateProvider<int>((ref) {
+  // A new pairing is a new venue's history — start at page one.
+  ref.watch(apiConfigProvider);
+  return historyPageSize;
+});
+
+/// Venue-wide past bills (last 7 days, newest `limit` rows) — backs the
+/// cashier's Lunas segment. Refetched on *any* `tableSession.closed`: a bill
+/// closed at any table lands a new history row, so membership of the
+/// venue-wide list changes. See ADR-0024.
+///
+/// ponytail: paging is a growing limit refetched whole, not a cursor — unlike
+/// the audit log next door (ADR-0072), whose pages are stable because nothing
+/// prepends to them. Here every bill close invalidates page one, so cursor
+/// pages would need reconciling against a list that moved underneath them.
+/// Ceiling is `historyPageCeiling`; past that, cursor paging is the upgrade.
+/// See ADR-0079.
+final venueHistoryProvider = FutureProvider.autoDispose<PastBillPage>((
   ref,
 ) async {
   ref.watch(apiConfigProvider);
+  // Watched, not family-keyed: re-running on a changed limit leaves the old
+  // page on the `AsyncLoading`, so growing mid-scroll shows the rows already
+  // there plus a foot spinner instead of collapsing the grid. A family would
+  // hand back a brand-new, empty instance.
+  final limit = ref.watch(historyLimitProvider);
   final sub = ref.read(wsClientProvider).events.listen((ev) {
     if (ev.type == WsEventTypes.tableSessionClosed) ref.invalidateSelf();
   });
   ref.onDispose(sub.cancel);
-  return ref.read(settlementProvider.notifier).fetchHistory();
+  return ref.read(settlementProvider.notifier).fetchHistory(limit: limit);
 });

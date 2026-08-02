@@ -317,6 +317,12 @@ class AppStrings {
   /// Caps label ahead of the running shift timer in the tablet top bar.
   static const String shiftLabel = 'SHIFT';
 
+  /// Foot of the cashier's Lunas grid once it has scrolled to the paging
+  /// ceiling (ADR-0079) and the window still holds older bills. Names where
+  /// they *are* rather than apologising for where they are not.
+  static const String kasirRiwayatBatas =
+      'Menampilkan tagihan terbaru. Tagihan lebih lama ada di Laporan.';
+
   /// Heading of the kitchen queue screen (`/kitchen`), whose crumb tail is the
   /// shorter [tabAntrian].
   static const String kitchenQueueTitle = 'Antrian Persiapan';

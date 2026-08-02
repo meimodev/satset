@@ -10,6 +10,8 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/printing/bill_struk_builder.dart';
 import 'package:satset/core/printing/bill_struk_renderer.dart';
 import 'package:satset/core/printing/struk_socket.dart';
+import 'package:satset/data/models/bill_dto.dart'
+    show historyPageCeiling, historyPageSize;
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/server/audit_log.dart';
@@ -1154,48 +1156,72 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
-  // PAST BILLS (cashier history): closed bills across the venue, capped to the
-  // last `days` (default 7), newest-first. An optional ?tableId scopes to one
-  // physical table (the bill-screen Riwayat shortcut); absent ⇒ venue-wide (the
-  // cashier's Riwayat tab). Sourced from snapshotted TableSessions. The 7-day
-  // cap is only this view's window — sessions persist longer for reports.
+  // PAST BILLS (cashier history): closed bills across the venue, newest-first,
+  // bounded on **two** axes — the last `days` (default 7) and the newest
+  // `limit` rows within it (default 60, ceiling [historyPageCeiling]). An
+  // optional ?tableId scopes to one physical table (the bill-screen Riwayat
+  // shortcut); absent ⇒ venue-wide (the cashier's Riwayat tab). Sourced from
+  // snapshotted TableSessions. Neither cap is a retention limit — sessions
+  // persist longer for reports.
+  //
+  // Returns `{rows, total}`, not a bare list: `total` counts the whole window,
+  // so the Lunas chip reads 300 on a venue that settled 300 while only 60 rows
+  // are on the wire. Counting the rows instead is the bug ADR-0072 already
+  // documented for the audit log. See ADR-0079.
   r.get('/settlement/history', (Request req) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
     final days = int.tryParse(req.url.queryParameters['days'] ?? '7') ?? 7;
+    final limit =
+        (int.tryParse(req.url.queryParameters['limit'] ?? '') ??
+                historyPageSize)
+            .clamp(1, historyPageCeiling);
     final tableId = req.url.queryParameters['tableId'];
+    final scoped = tableId != null && tableId.isNotEmpty;
     final cutoff = SatClock.now().toUtc().subtract(Duration(days: days));
+
     final q = db.select(db.tableSessions)
       ..where((s) => s.closedAt.isBiggerThanValue(cutoff))
-      ..orderBy([(s) => OrderingTerm.desc(s.closedAt)]);
-    if (tableId != null && tableId.isNotEmpty) {
-      q.where((s) => s.tableId.equals(tableId));
-    }
+      ..orderBy([(s) => OrderingTerm.desc(s.closedAt)])
+      ..limit(limit);
+    if (scoped) q.where((s) => s.tableId.equals(tableId));
     final sessions = await q.get();
-    return _ok([
-      for (final s in sessions)
-        {
-          'sessionId': s.id,
-          'tableId': s.tableId,
-          'tableLabel': s.tableLabel,
-          'kind': s.kind,
-          // Frozen at snapshot so the Lunas segment renders the same card a
-          // live bill does, channel pill and all. ADR-0066.
-          'channel': s.channel,
-          'prepaid': s.prepaid,
-          'pax': s.pax,
-          'closedAt': s.closedAt.toIso8601String(),
-          'subtotal': s.subtotal,
-          'serviceAmount': s.serviceAmount,
-          'taxAmount': s.taxAmount,
-          'netTotal': s.netTotal,
-          'discountAmount': s.discountAmount,
-          'settledTotal': s.settledTotal,
-          'lossAmount': s.lossAmount,
-          'billClosedBy': s.billClosedBy,
-          'ticketCount': s.ticketCount,
-        },
-    ]);
+
+    // Same WHERE, no limit. Counted rather than derived from `sessions`, which
+    // is exactly `limit` long once the window is fuller than a page.
+    final countCol = db.tableSessions.id.count();
+    final cq = db.selectOnly(db.tableSessions)..addColumns([countCol]);
+    cq.where(db.tableSessions.closedAt.isBiggerThanValue(cutoff));
+    if (scoped) cq.where(db.tableSessions.tableId.equals(tableId));
+    final total = (await cq.getSingle()).read(countCol) ?? 0;
+
+    return _ok({
+      'total': total,
+      'rows': [
+        for (final s in sessions)
+          {
+            'sessionId': s.id,
+            'tableId': s.tableId,
+            'tableLabel': s.tableLabel,
+            'kind': s.kind,
+            // Frozen at snapshot so the Lunas segment renders the same card a
+            // live bill does, channel pill and all. ADR-0066.
+            'channel': s.channel,
+            'prepaid': s.prepaid,
+            'pax': s.pax,
+            'closedAt': s.closedAt.toIso8601String(),
+            'subtotal': s.subtotal,
+            'serviceAmount': s.serviceAmount,
+            'taxAmount': s.taxAmount,
+            'netTotal': s.netTotal,
+            'discountAmount': s.discountAmount,
+            'settledTotal': s.settledTotal,
+            'lossAmount': s.lossAmount,
+            'billClosedBy': s.billClosedBy,
+            'ticketCount': s.ticketCount,
+          },
+      ],
+    });
   });
 
   // One past bill's detail (Struk pembayaran view) reconstructed from the
