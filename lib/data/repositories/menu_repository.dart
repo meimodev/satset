@@ -56,6 +56,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
 
   final Ref ref;
   StreamSubscription? _wsSub;
+  bool _resyncing = false;
 
   Future<void> _bootstrap() async {
     SatLog.repo('menu.bootstrap');
@@ -75,11 +76,37 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     }
     // WS: any peer's menu mutation triggers a full refetch. Cheap; the
     // snapshot is small and refetch keeps modifier-group state consistent.
+    // `connected` is the recovery path for a bootstrap that raced the auth
+    // token — on host sign-in this repository is constructed the moment
+    // `apiConfigProvider` populates, which is before `/auth/me` has minted the
+    // local bearer, so the first GET can come back 401. Without this the venue
+    // would sit on an empty menu until the app restarted. Same shape as
+    // TablesRepository. See ADR-0021.
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
-      if (ev.type != WsEventTypes.menuUpdated) return;
-      SatLog.repo('menu.ws update kind=${ev.payload['kind']}');
-      unawaited(_refetch());
+      if (ev.type == WsEventTypes.connected) {
+        unawaited(_resync());
+      } else if (ev.type == WsEventTypes.menuUpdated) {
+        SatLog.repo('menu.ws update kind=${ev.payload['kind']}');
+        unawaited(_refetch());
+      }
     });
+  }
+
+  /// Full-resync on every socket (re)connect. Guarded so overlapping connects
+  /// don't stampede; never throws — a transient failure waits for the next
+  /// connect.
+  Future<void> _resync() async {
+    if (_resyncing) return;
+    _resyncing = true;
+    try {
+      await _refetch();
+      ref.read(menuStatusProvider.notifier).state = const AsyncValue.data(null);
+      SatLog.repo('menu.resync ok');
+    } catch (e) {
+      SatLog.repo('menu.resync fail $e');
+    } finally {
+      _resyncing = false;
+    }
   }
 
   @override

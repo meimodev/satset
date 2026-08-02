@@ -28,6 +28,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
 
   final Ref ref;
   StreamSubscription? _wsSub;
+  bool _resyncing = false;
 
   /// Group key for the live-ticket map: the visitId for every group. A tableId
   /// is reused across visits, so keying by it let a reseat re-absorb the prior
@@ -49,17 +50,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     state = const <String, List<Ticket>>{};
     ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.loading();
     try {
-      final api = ref.read(apiClientProvider);
-      final raw = await api.getJson('/tickets') as List;
-      final grouped = <String, List<Ticket>>{};
-      for (final e in raw) {
-        final dto = TicketDto.fromJson((e as Map).cast<String, dynamic>());
-        grouped.putIfAbsent(_groupKey(dto), () => []).add(_toDomain(dto));
-      }
-      state = grouped;
-      SatLog.repo(
-        'tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}',
-      );
+      await _refetch();
       ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.data(
         null,
       );
@@ -67,8 +58,14 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       SatLog.repo('tickets.bootstrap fail $e');
       ref.read(ticketsStatusProvider.notifier).state = AsyncValue.error(e, st);
     }
+    // `connected` recovers a bootstrap that raced the auth token (the first
+    // GET can 401 on host sign-in) and re-pulls lines that mutated while the
+    // socket was down — incremental ticket events are lossy. Mirrors
+    // TablesRepository. See ADR-0021.
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
-      if (ev.type == WsEventTypes.ticketCreated ||
+      if (ev.type == WsEventTypes.connected) {
+        unawaited(_resync());
+      } else if (ev.type == WsEventTypes.ticketCreated ||
           ev.type == WsEventTypes.ticketUpdated) {
         final dto = TicketDto.fromJson(ev.payload);
         SatLog.repo(
@@ -98,6 +95,40 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         state = next;
       }
     });
+  }
+
+  /// Pull the authoritative live-ticket list and replace state. Shared by the
+  /// initial [_bootstrap] and the WS-reconnect [_resync].
+  Future<void> _refetch() async {
+    final api = ref.read(apiClientProvider);
+    final raw = await api.getJson('/tickets') as List;
+    final grouped = <String, List<Ticket>>{};
+    for (final e in raw) {
+      final dto = TicketDto.fromJson((e as Map).cast<String, dynamic>());
+      grouped.putIfAbsent(_groupKey(dto), () => []).add(_toDomain(dto));
+    }
+    state = grouped;
+    SatLog.repo(
+      'tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}',
+    );
+  }
+
+  /// Guarded so overlapping connects don't stampede; never throws — a
+  /// transient failure simply waits for the next connect.
+  Future<void> _resync() async {
+    if (_resyncing) return;
+    _resyncing = true;
+    try {
+      await _refetch();
+      ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.data(
+        null,
+      );
+      SatLog.repo('tickets.resync ok');
+    } catch (e) {
+      SatLog.repo('tickets.resync fail $e');
+    } finally {
+      _resyncing = false;
+    }
   }
 
   @override
