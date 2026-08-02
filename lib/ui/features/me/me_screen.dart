@@ -8,7 +8,6 @@ import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/audit_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/roles_repository.dart';
@@ -251,10 +250,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     // "Keluar" — drop the session, leave the shift running. The next PIN
     // sign-in resumes it, on this handset or another (ADR-0065). No confirm:
     // it is the frequent action and nothing is lost.
-    Future<void> switchUser() async {
-      await ref.read(authStateProvider.notifier).signOut();
-      if (context.mounted) context.go('/pin');
-    }
+    //
+    // No `context.go` afterwards: `signOut` clears the auth state (and, for an
+    // admin, `apiConfigProvider`), each of which bumps the router's refresh
+    // listener, and the redirect sends `/me` → `/pin` on its own. An explicit
+    // go here raced those two async redirects. See ADR-0078.
+    Future<void> switchUser() =>
+        ref.read(authStateProvider.notifier).signOut();
 
     // "Akhiri shift & keluar" — close the shift *and* sign out.
     Future<void> endShift() async {
@@ -292,8 +294,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         ),
       );
       if (ok != true) return;
+      // As in [switchUser]: the redirect owns the navigation. See ADR-0078.
       await ref.read(authStateProvider.notifier).signOut(endShift: true);
-      if (context.mounted) context.go('/pin');
     }
 
     if (l.useTabletShell) {

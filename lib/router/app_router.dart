@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/core/log/sat_log.dart';
@@ -68,6 +69,21 @@ Capability? _capabilityFor(String loc) {
     return Capability.manageStaff;
   }
   return null;
+}
+
+/// Holds the one frame between an unmatched location and the bounce to `/pin`.
+/// Deliberately blank: the user is about to land on a screen they recognise,
+/// and a flash of error copy they have no time to read is worse than nothing.
+class _RouteFallback extends StatelessWidget {
+  const _RouteFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) context.go('/pin');
+    });
+    return const SizedBox.shrink();
+  }
 }
 
 class _RouterRefresh extends ChangeNotifier {
@@ -141,7 +157,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         decision = '/pin';
       } else if (!loggedIn && !onboardingRoutes.contains(loc)) {
         decision = '/pin';
-      } else if (loggedIn && loc == '/pin') {
+      } else if (loggedIn && paired && loc == '/pin') {
+        // `paired` is load-bearing, not belt-and-braces. Admin sign-out clears
+        // `apiConfigProvider` and the auth state in two steps, and in the gap
+        // between them the app is logged in but unpaired — a state this branch
+        // used to answer with `/venue`, which the pair gate above immediately
+        // bounced back to `/pin`. That ping-pong tripped go_router's redirect
+        // limit and put the venue's own admin in front of a bare English
+        // "Page Not Found". See ADR-0078.
         final mode = prefs?.appMode() ?? AppMode.unset;
         decision = mode == AppMode.server ? '/venue' : '/tables';
       } else if (loggedIn) {
@@ -155,6 +178,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         SatLog.nav('redirect $loc → $decision');
       }
       return decision;
+    },
+    // No location in the app is allowed to go unmatched, so reaching here is a
+    // bug — but a bug that used to surface as go_router's bare English "Page
+    // Not Found" in front of a waiter mid-shift. Log the location that failed
+    // (the only way to name it after the fact) and land on `/pin`, which is
+    // safe for every session kind: the redirect above bounces a super admin
+    // straight to `/fleet` and a report owner to `/owner`. See ADR-0078.
+    errorBuilder: (_, state) {
+      SatLog.nav('route not found: ${state.uri} err=${state.error}');
+      return const _RouteFallback();
     },
     routes: [
       GoRoute(path: '/onboarding', builder: (_, _) => const ModeSelectScreen()),
