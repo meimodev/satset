@@ -8,6 +8,21 @@ longer holds: the prefs key was bumped so the swap reaches devices that had
 already picked. Everything else below — device-local scope, the flat theme list,
 `ThemeMode` removal, identity on the enum — still stands.
 
+**Amended 2026-08-01 — the entry point names the theme.** The Me screen opened
+this sheet from a 32px ring holding a dot of the active accent. The dot was the
+truest preview available (the roster is now six themes in three brightness
+pairs, so a sun/moon glyph cannot tell them apart), but a coloured dot in a thin
+ring reads as a status light, not a control — and 32px sits under the 44px
+target every other tap target on that screen clears.
+
+The affordance is now `SatButton.outline` at `md` (44h) labelled with the active
+theme's name, identical on phone and tablet. The label states which theme is on
+without opening the sheet, which is design principle 3 (state is never inferable
+from colour alone) applied to the picker itself; the swatch preview stays in the
+sheet, where the palettes are compared side by side anyway. TalkBack announces
+"Pilih tema, `<theme>`" via an excluding `Semantics` wrapper — a button that
+names itself "Neon Terang" says nothing about what tapping it does.
+
 ## Context
 
 The app shipped one palette family (`SatColors.dark` / `SatColors.light`) behind a

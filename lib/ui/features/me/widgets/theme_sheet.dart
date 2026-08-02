@@ -156,7 +156,7 @@ class _ThemeRow extends StatelessWidget {
   }
 }
 
-/// Three-band preview: ground, accent, ink. Enough to tell the four apart at a
+/// Three-band preview: ground, accent, ink. Enough to tell the six apart at a
 /// glance without rendering a fake screen.
 class _Swatch extends StatelessWidget {
   final Color bg;

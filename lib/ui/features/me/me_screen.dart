@@ -434,7 +434,7 @@ class _MeTablet extends StatelessWidget {
                   style: SatType.monoS(color: sc.textLo),
                 ),
               ),
-              _ThemeIconButton(theme: theme, onTap: onPickTheme),
+              _ThemeButton(theme: theme, onTap: onPickTheme),
             ],
           ),
         ),
@@ -492,54 +492,42 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           const Spacer(),
-          _ThemeIconButton(theme: theme, onTap: onPickTheme),
+          _ThemeButton(theme: theme, onTap: onPickTheme),
         ],
       ),
     );
   }
 }
 
-/// Opens the theme sheet. Shows the active theme's accent as the affordance —
-/// the palette is the thing being chosen, so the swatch is a truer preview than
-/// a sun/moon glyph (two of the four themes share a brightness).
-class _ThemeIconButton extends StatelessWidget {
+/// Opens the theme sheet, and names the theme it would change.
+///
+/// This was a 32px ring holding a dot of the active accent — a truer preview
+/// than a sun/moon glyph (the six themes are three brightness pairs), but it
+/// read as a status light rather than a control, and it sat under the 44px
+/// target every other tap target on this screen clears. The label carries the
+/// identity now; the palette preview lives in the sheet, where the swatches
+/// are judged side by side anyway.
+class _ThemeButton extends StatelessWidget {
   final SatTheme theme;
   final VoidCallback onTap;
-  const _ThemeIconButton({required this.theme, required this.onTap});
+  const _ThemeButton({required this.theme, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
-    final inner = Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: SatBox.d(
-            shape: BoxShape.circle,
-            border: SatB.all(color: sc.border1),
-          ),
-          alignment: Alignment.center,
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: SatBox.d(
-              shape: BoxShape.circle,
-              color: theme.colors.accent,
-              border: SatB.all(color: sc.border2),
-            ),
-          ),
-        ),
-      ),
-    );
+    // `excludeSemantics` because SatButton names itself after its label, which
+    // here is a theme name — "Neon Terang, button" says nothing about what the
+    // tap does. `onTap` is re-declared on the node it replaces, or the exclusion
+    // takes the activation with it.
     return Semantics(
       button: true,
-      label: AppStrings.a11yPickTheme,
-      child: inner,
+      label: '${AppStrings.a11yPickTheme}, ${theme.label}',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: SatButton.outline(
+        label: theme.label,
+        icon: Icons.palette_outlined,
+        onTap: onTap,
+      ),
     );
   }
 }
