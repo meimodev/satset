@@ -99,6 +99,38 @@ class _SettlePaneState extends State<SettlePane> {
 
   Bill get _bill => widget.bill;
 
+  /// The method every later payment on this bill is bound to, or null while
+  /// nobody has paid. The first tender sets the rule for the rest of the bill:
+  /// a guest who pays half in cash and half by card can't be settled at this
+  /// till, which is the point — a split-tender bill reconciles against neither
+  /// drawer nor statement cleanly.
+  ///
+  /// Read across every receipt, not just the one this payment will land on:
+  /// each mode mints its own receipt (ADR-0067), so a per-receipt reading would
+  /// almost never fire. Refunds carry a method too and are skipped — giving
+  /// money back doesn't decide how the next lot comes in.
+  PayMethod? get _lockedMethod {
+    BillPayment? latest;
+    for (final r in _bill.receipts) {
+      for (final p in r.payments) {
+        if (p.isRefund) continue;
+        if (latest == null || p.at.isAfter(latest.at)) latest = p;
+      }
+    }
+    if (latest == null) return null;
+    for (final m in PayMethod.values) {
+      if (m.id == latest.method) return m;
+    }
+    // A string the enum doesn't know can only come from a server that has
+    // moved on. Fail open rather than lock the cashier out of a method that
+    // isn't even on screen.
+    return null;
+  }
+
+  /// What this payment will actually be recorded as — the lock if there is one,
+  /// otherwise whatever the cashier tapped.
+  PayMethod get _pay => _lockedMethod ?? _method;
+
   /// Amount receipts already minted and still owing — Bagi rata pays the next
   /// one rather than re-splitting.
   List<BillReceipt> get _openShares => [
@@ -158,10 +190,10 @@ class _SettlePaneState extends State<SettlePane> {
       return 'Pilih item dari daftar';
     }
     if (_amount <= 0) return 'Tidak ada yang bisa ditagih';
-    if (_method == PayMethod.tunai && _tender < _amount) {
+    if (_pay == PayMethod.tunai && _tender < _amount) {
       return 'Ketuk pecahan uang yang diterima';
     }
-    if (_method.needsProof && _proof == null) {
+    if (_pay.needsProof && _proof == null) {
       return 'Lampirkan foto bukti bayar dulu';
     }
     return null;
@@ -194,7 +226,7 @@ class _SettlePaneState extends State<SettlePane> {
     if (_blocker != null || _busy) return;
     setState(() => _busy = true);
     final amount = _amount;
-    final tender = _method == PayMethod.tunai ? _tender : null;
+    final tender = _pay == PayMethod.tunai ? _tender : null;
     try {
       await widget.run(() async {
         final receiptId = switch (widget.mode) {
@@ -213,7 +245,7 @@ class _SettlePaneState extends State<SettlePane> {
         };
         return widget.repo.recordPayment(
           receiptId,
-          method: _method.id,
+          method: _pay.id,
           amount: amount,
           tendered: tender,
           photoBase64: _proof == null ? null : base64Encode(_proof!),
@@ -260,7 +292,7 @@ class _SettlePaneState extends State<SettlePane> {
               const SizedBox(height: Sp.s3h),
               _methodRow(sc),
               const SizedBox(height: Sp.s3),
-              if (_method == PayMethod.tunai)
+              if (_pay == PayMethod.tunai)
                 CashPad(
                   amount: _amount,
                   tender: _tender,
@@ -409,29 +441,45 @@ class _SettlePaneState extends State<SettlePane> {
     ],
   );
 
-  Widget _methodRow(SatColors sc) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text('Metode', style: SatType.labelS(color: sc.textLo)),
-      const SizedBox(height: Sp.s2),
-      Wrap(
-        spacing: Sp.s2,
-        runSpacing: Sp.s2,
-        children: [
-          for (final m in PayMethod.values)
-            SatChip.select(
-              label: m.label,
-              selected: _method == m,
-              onTap: () => setState(() {
-                _method = m;
-                _tender = 0;
-                _proof = null;
-              }),
-            ),
+  /// Once the bill is part-paid the row collapses to the one method that is
+  /// still allowed, rather than greying the other four. A chip that looks
+  /// tappable and swallows the tap is how a cashier mid-rush decides the app
+  /// has frozen; a row with one chip in it explains itself.
+  Widget _methodRow(SatColors sc) {
+    final locked = _lockedMethod;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Metode', style: SatType.labelS(color: sc.textLo)),
+        const SizedBox(height: Sp.s2),
+        Wrap(
+          spacing: Sp.s2,
+          runSpacing: Sp.s2,
+          children: [
+            for (final m in locked == null ? PayMethod.values : [locked])
+              SatChip.select(
+                label: m.label,
+                selected: _pay == m,
+                onTap: locked != null
+                    ? null
+                    : () => setState(() {
+                        _method = m;
+                        _tender = 0;
+                        _proof = null;
+                      }),
+              ),
+          ],
+        ),
+        if (locked != null) ...[
+          const SizedBox(height: Sp.s2),
+          Text(
+            'Terkunci — pembayaran sebelumnya ${locked.label}',
+            style: SatType.bodyS(color: sc.textLo),
+          ),
         ],
-      ),
-    ],
-  );
+      ],
+    );
+  }
 
   Widget _proofBlock(SatColors sc) => Container(
     padding: const EdgeInsets.all(Sp.s3),

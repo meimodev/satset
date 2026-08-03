@@ -4,6 +4,7 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -76,17 +77,37 @@ Future<void> openCashierBill(
 
 /// The tablet container for [CashierBillView] — a page, not an overlay
 /// (ADR-0066). Content-only body, same as the phone sheet gets; this supplies
-/// the scaffold and the way out.
-class CashierBillPage extends StatelessWidget {
+/// the scaffold, the bar and the way out.
+///
+/// The bar is the container's job, exactly as ADR-0066 prescribes — the view
+/// stays chrome-free so the phone sheet can keep its own header. It watches
+/// the bill only to name the table in the trail; the provider is the same one
+/// the view reads, so this costs a listener, not a fetch.
+class CashierBillPage extends ConsumerWidget {
   final String visitId;
   const CashierBillPage({super.key, required this.visitId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final billAsync = ref.watch(billDetailProvider(visitId));
     return Scaffold(
       backgroundColor: sc.bg0,
-      body: SafeArea(child: CashierBillView(visitId: visitId)),
+      body: SafeArea(
+        child: Column(
+          children: [
+            SatAppBar(
+              onBack: () => Navigator.of(context).pop(),
+              crumbs: billAsync.maybeWhen(
+                data: (b) => ['Kasir', b.tableLabel ?? 'Tagihan'],
+                orElse: () => const ['Kasir', 'Tagihan'],
+              ),
+              showAvatar: false,
+            ),
+            Expanded(child: CashierBillView(visitId: visitId)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -135,16 +156,20 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SatSheetHeader(
-          onClose: () => Navigator.of(context).pop(),
-          child: Text(
-            billAsync.maybeWhen(
-              data: (b) => 'Tagihan · Meja ${b.tableLabel ?? ''}'.trim(),
-              orElse: () => 'Tagihan',
+        // Phone only. The tablet container carries a `SatAppBar` whose crumbs
+        // already name the table and whose back arrow is the way out — two bars
+        // stacked would say the same thing twice.
+        if (!context.layout.useTabletShell)
+          SatSheetHeader(
+            onClose: () => Navigator.of(context).pop(),
+            child: Text(
+              billAsync.maybeWhen(
+                data: (b) => 'Tagihan · Meja ${b.tableLabel ?? ''}'.trim(),
+                orElse: () => 'Tagihan',
+              ),
+              style: SatType.labelL(color: sc.textHi),
             ),
-            style: SatType.labelL(color: sc.textHi),
           ),
-        ),
         if (_error != null)
           _ErrorLine(
             message: _error!,
@@ -443,26 +468,35 @@ class _BillBodyState extends State<_BillBody> {
     var i = 0;
     Widget rv(Widget child) => Reveal(index: i++, child: child);
     final picking = _mode == SettleMode.perItem;
+    // Picking on a phone, the lines pane *is* the task: a 360dp sheet already
+    // gives the settle pane 420dp, and totals + actions + Struk push the items
+    // the cashier is trying to tap below the fold. Everything cut here comes
+    // back one tap away — the mode row lives in the settle pane, always on
+    // screen. The tablet's left pane is its own column with room to spare, so
+    // it keeps the lot.
+    final trim = picking && !context.layout.useTabletShell;
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
       children: [
-        rv(_TotalsCard(bill)),
-        const SizedBox(height: Sp.s2),
-        rv(
-          _TopActions(
-            bill: bill,
-            canRefund: widget.canRefund,
-            printDoc: widget.printDoc,
-            onWriteOff: widget.onCloseBill,
-            run: widget.run,
-            repo: widget.repo,
+        if (!trim) ...[
+          rv(_TotalsCard(bill)),
+          const SizedBox(height: Sp.s2),
+          rv(
+            _TopActions(
+              bill: bill,
+              canRefund: widget.canRefund,
+              printDoc: widget.printDoc,
+              onWriteOff: widget.onCloseBill,
+              run: widget.run,
+              repo: widget.repo,
+            ),
           ),
-        ),
-        if (bill.detached) ...[
-          const SizedBox(height: Sp.s2h),
-          rv(const _DetachedBanner()),
+          if (bill.detached) ...[
+            const SizedBox(height: Sp.s2h),
+            rv(const _DetachedBanner()),
+          ],
+          const SizedBox(height: Sp.s3h),
         ],
-        const SizedBox(height: Sp.s3h),
         if (bill.mode == 'itemized' &&
             bill.receipts.isNotEmpty &&
             !bill.fullyAssigned) ...[
@@ -480,44 +514,46 @@ class _BillBodyState extends State<_BillBody> {
             onUnits: _setUnits,
           ),
         ),
-        const SizedBox(height: Sp.s3h),
-        // An even split's shares own no items and are interchangeable by
-        // design, so N near-identical cards are scroll with no signal in it.
-        // They collapse into one card of thin rows. ADR-0063.
-        if (bill.mode == 'even' && bill.receipts.isNotEmpty)
-          rv(
-            _EvenSplitCard(
-              bill: bill,
-              run: widget.run,
-              repo: widget.repo,
-              canRefund: widget.canRefund,
-              printDoc: widget.printDoc,
-            ),
-          )
-        else if (bill.receipts.isNotEmpty)
-          rv(
-            SatCard.section(
-              header: 'Struk',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final r in bill.receipts)
-                    _ReceiptRow(
-                      receipt: r,
-                      onTap: () => showReceiptSheet(
-                        context,
-                        bill: bill,
+        if (!trim) ...[
+          const SizedBox(height: Sp.s3h),
+          // An even split's shares own no items and are interchangeable by
+          // design, so N near-identical cards are scroll with no signal in it.
+          // They collapse into one card of thin rows. ADR-0063.
+          if (bill.mode == 'even' && bill.receipts.isNotEmpty)
+            rv(
+              _EvenSplitCard(
+                bill: bill,
+                run: widget.run,
+                repo: widget.repo,
+                canRefund: widget.canRefund,
+                printDoc: widget.printDoc,
+              ),
+            )
+          else if (bill.receipts.isNotEmpty)
+            rv(
+              SatCard.section(
+                header: 'Struk',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final r in bill.receipts)
+                      _ReceiptRow(
                         receipt: r,
-                        run: widget.run,
-                        repo: widget.repo,
-                        canRefund: widget.canRefund,
-                        printDoc: widget.printDoc,
+                        onTap: () => showReceiptSheet(
+                          context,
+                          bill: bill,
+                          receipt: r,
+                          run: widget.run,
+                          repo: widget.repo,
+                          canRefund: widget.canRefund,
+                          printDoc: widget.printDoc,
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
+        ],
         // Pre-assigning named slips before anyone pays is still a real
         // workflow, so it stays — just no longer the only way in. ADR-0067.
         if (!picking) rv(_AddReceiptButton(bill: bill, run: widget.run, repo: widget.repo)),
@@ -2193,14 +2229,33 @@ class PastBillDetailScreen extends ConsumerWidget {
         .fetchSessionBill(sessionId);
     return Scaffold(
       backgroundColor: sc.bg0,
-      appBar: AppBar(
-        backgroundColor: sc.bg1,
-        title: Text(
-          'Struk · Meja ${tableLabel ?? ''}'.trim(),
-          style: SatType.labelL(color: sc.textHi),
-        ),
+      body: Column(
+        children: [
+          // No crumbs: this pushes on the shell navigator, so on a tablet the
+          // shell's own bar sits right above with the venue → Kasir trail
+          // already on it. The back arrow is what this bar is for. The phone
+          // bar renders no crumbs at all, so there the name rides as a pill —
+          // otherwise the screen would go unnamed.
+          SatAppBar(
+            onBack: () => Navigator.of(context).pop(),
+            showAvatar: false,
+            trailingPills: context.layout.useTabletShell
+                ? const []
+                : [
+                    Text(
+                      'Struk · Meja ${tableLabel ?? ''}'.trim(),
+                      style: SatType.labelM(color: sc.textMd),
+                    ),
+                  ],
+          ),
+          Expanded(child: _body(context, sc, future)),
+        ],
       ),
-      body: FutureBuilder<Bill>(
+    );
+  }
+
+  Widget _body(BuildContext context, SatColors sc, Future<Bill> future) =>
+      FutureBuilder<Bill>(
         future: future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
@@ -2260,9 +2315,7 @@ class PastBillDetailScreen extends ConsumerWidget {
             ],
           );
         },
-      ),
-    );
-  }
+      );
 }
 
 /// Tappable proof-photo thumbnail for a non-cash payment (ADR-0025). Fetches the
