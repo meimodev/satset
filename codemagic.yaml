@@ -1,5 +1,11 @@
-# Codemagic CI — build a signed release APK on every `v*` tag and ship it to
-# Firebase App Distribution (group: testers).
+# Codemagic CI — build a signed release APK on every `v*` tag, publish it to a
+# public GitHub Release (that is the download host the website links to) and
+# ship the same file to Firebase App Distribution (group: testers).
+#
+# The website links to the stable "latest" URL, which never changes:
+#   https://github.com/meimodev/satset/releases/latest/download/satset.apk
+# The versioned file (satset-1.0.1.apk) is attached to the same release, so old
+# builds stay downloadable. Public repo → no auth on the download.
 #
 # One-time setup in the Codemagic UI before the first build:
 #   1. Connect this GitHub repo, add the app.
@@ -11,12 +17,14 @@
 #   3. Environment variables group `firebase_credentials` (mark Secure):
 #        FIREBASE_SERVICE_ACCOUNT = full JSON of a service account that has the
 #        "Firebase App Distribution Admin" role on project satset-3a795.
+#   4. Environment variables group `github_release` (mark Secure):
+#        GH_TOKEN = fine-grained PAT on meimodev/satset with Contents: write.
 #
 # Trigger a build by pushing a tag, e.g. the /push-deploy skill's `v1.0.1`.
 
 workflows:
   android-release-distribute:
-    name: Android release → Firebase App Distribution
+    name: Android release → GitHub Release + Firebase App Distribution
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
@@ -25,6 +33,7 @@ workflows:
         - satset_upload_keystore
       groups:
         - firebase_credentials   # provides FIREBASE_SERVICE_ACCOUNT
+        - github_release         # provides GH_TOKEN
       vars:
         # New Firebase Android app (id.activid.satset).
         FIREBASE_APP_ID: "1:164691917298:android:3a4bcdd9dba54d1f4b536b"
@@ -47,6 +56,23 @@ workflows:
         script: flutter pub get
       - name: Build signed release APK
         script: flutter build apk --release
+      - name: Publish the APK to a public GitHub Release
+        script: |
+          set -e
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          # Tags carry an optional severity suffix that drives the in-app update
+          # gate (ADR-0015): v1.0.2-recommended. It is not part of the version.
+          VERSION="${CM_TAG#v}"
+          VERSION="${VERSION%%-*}"
+          # Two names for one file: the versioned copy is the archive, the plain
+          # copy is what /releases/latest/download/satset.apk resolves to.
+          cp "$APK" "satset-$VERSION.apk"
+          cp "$APK" "satset.apk"
+          gh release create "$CM_TAG" \
+            --repo meimodev/satset \
+            --title "SatSet $VERSION" \
+            --generate-notes \
+            "satset-$VERSION.apk" "satset.apk"
     artifacts:
       - build/**/outputs/**/*.apk
     publishing:

@@ -27,7 +27,7 @@
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
 
     <application
-        android:label="satset"
+        android:label="SatSet"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

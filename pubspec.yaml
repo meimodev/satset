@@ -11,7 +11,6 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^2.6.1
   go_router: ^14.8.1
-  google_fonts: ^6.2.1
   uuid: ^4.5.1
   intl: ^0.20.2
   collection: ^1.19.0
@@ -68,6 +67,7 @@ dependencies:
   # docs/adr/0015-firebase-admin-auth-and-server-kill-switch.md.
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
+  firebase_crashlytics: ^4.1.3
   cloud_firestore: ^5.4.4
   # Fleet super-admin control plane: privileged mutations via callables. See
   # docs/adr/0016-fleet-superadmin-cloud-control-plane.md.
@@ -81,6 +81,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  yaml: ^3.1.2 # test/bundled_fonts_test.dart reads the font manifest
 
   # Codegen
   build_runner: ^2.4.13
@@ -98,6 +99,54 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+
+  # Every face every skin can reach, so the app never needs the network to draw
+  # a correct first frame — which is the whole promise. Archivo serves `glow`
+  # (the default theme's skin, ADR-0057) and brutal's body copy; Archivo Black +
+  # DM Mono serve the rest of `brutal`; IBM Plex serves the amber (`lembut`)
+  # themes. There is no longer a `google_fonts` fallback behind any of them.
+  # ponytail: no italics shipped — the two in-app italic spots synthesise.
+  fonts:
+    # One variable file spans Thin–Black; the weight axis is driven by
+    # FontVariation in SatType rather than by per-weight `asset:` entries.
+    - family: Archivo
+      fonts:
+        - asset: assets/fonts/Archivo-Variable.ttf
+    # Single-weight face by design — SatType.display() never passes a weight
+    # under brutal, so there is nothing here for Flutter to synthesise.
+    - family: Archivo Black
+      fonts:
+        - asset: assets/fonts/ArchivoBlack-Regular.ttf
+    # DM Mono stops at Medium. The ramp asks for w600/w700 in places; Flutter
+    # snaps those to 500, which is what google_fonts resolved to as well.
+    - family: DM Mono
+      fonts:
+        - asset: assets/fonts/DMMono-Light.ttf
+          weight: 300
+        - asset: assets/fonts/DMMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/DMMono-Medium.ttf
+          weight: 500
+    - family: IBM Plex Sans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSans-Bold.ttf
+          weight: 700
+    - family: IBM Plex Mono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexMono-Bold.ttf
+          weight: 700
 
 # App launcher icon — generate via: dart run flutter_launcher_icons
 flutter_launcher_icons:

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SatSet — Flutter 3.41+ Android-only (minSdk 29) LAN restaurant ordering app. Single APK runs in **Server** or **Client** mode, paired over Wi-Fi via mDNS + QR.
 
-Stack: `flutter_riverpod`, `go_router`, `google_fonts`, `intl`, `uuid`, `freezed`, `json_serializable`, `drift`, `shelf` (+ `shelf_router`, `shelf_web_socket`), `web_socket_channel`, `http`, `flutter_secure_storage`, `shared_preferences`, `bonsoir` (mDNS), `mobile_scanner` (QR), `basic_utils` + `dart_jsonwebtoken` + `crypto` (TLS / JWT).
+Stack: `flutter_riverpod`, `go_router`, `intl`, `uuid`, `freezed`, `json_serializable`, `drift`, `shelf` (+ `shelf_router`, `shelf_web_socket`), `web_socket_channel`, `http`, `flutter_secure_storage`, `shared_preferences`, `bonsoir` (mDNS), `mobile_scanner` (QR), `basic_utils` + `dart_jsonwebtoken` + `crypto` (TLS / JWT).
 
 ### Codegen scope
 
@@ -47,7 +47,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 ### Layers
 
 **`lib/ui/`** — Flutter only.
-- `ui/core/design/` — tokens + theme: `colors.dart`, `typography.dart`, `spacing.dart`, `layout.dart`, `theme.dart`, plus `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart`, `format.dart`, `motion.dart`. Amber-on-charcoal palette: accent `#FF9233`, dark `bg0 #0D0E10`, light `bg0 #F6F4EF`. Fonts (IBM Plex Sans + IBM Plex Mono) via `google_fonts` — needs network on first launch. See §Design Context for the intent behind these.
+- `ui/core/design/` — tokens + theme: `colors.dart`, `typography.dart`, `spacing.dart`, `layout.dart`, `theme.dart`, plus `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart`, `format.dart`, `motion.dart`. Amber-on-charcoal palette: accent `#FF9233`, dark `bg0 #0D0E10`, light `bg0 #F6F4EF`. Fonts are bundled in `assets/fonts/` and declared in `pubspec.yaml` — **nothing fetches at runtime and `google_fonts` is gone**. Archivo (one variable file, weight driven on the `wght` axis via `FontVariation`) serves the `glow` skin the default theme carries plus brutal's body copy; Archivo Black + DM Mono serve the rest of `brutal`; IBM Plex Sans + Mono serve the amber (`lembut`) themes. No italics are shipped — the two in-app italic spots synthesise. Guarded by `test/bundled_fonts_test.dart`, which fails if a role reaches for the network again. See §Design Context for the intent behind these.
 - `ui/core/state/` — cross-feature view-models (`theme_view_model.dart`, `view_mode_view_model.dart`, `ready_alert_view_model.dart`).
 - `ui/core/widgets/` — the shared vocabulary (ADR-0055): controls (`sat_button`, `sat_icon_button`, `sat_chip`, `sat_toggle`, `sat_stepper`, `sat_tabs`, `sat_field`, `sat_dropdown`, `sat_card`, `sat_empty`, `sat_sheet_header`, `pulse_dot`) plus chrome (`sat_app_bar`, `satset_top_bar`, `tablet_chrome`, `ready_banner`, `ready_toast`). **`CATALOG.md` in that folder lists every shared widget and token — read it before writing a new widget, and update it in the same commit when you add or remove one.** Enforced by `test/design_tokens_test.dart`, which is now all bans, no baselines: raw Material buttons, text inputs and dropdowns, literal type sizes, off-scale spacing, literal radii, hardcoded colours, roleless tap targets and duplicated widget class names all fail CI.
 - `ui/features/<area>/` — screens grouped by flow. Each feature owns `view_models/` and `views/` (or top-level screens + `widgets/`).
@@ -116,6 +116,7 @@ Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageS
 - **One seed, not two** (ADR-0073). `seedSampleVenue` = reference half (4 zones / 20 tables / ~42 items / 2 staff / bahan+resep) **plus** a fabricated month of ~1500 bills and its audit trail, written through the production order path. It refuses on a venue that has traded; `clearSampleData` deletes the `contoh-` tagged transactional rows only, leaving the menu standing. The old demo seed and demo clock are gone — a seeded venue runs on real time, and backdating goes through the `at`/`idPrefix` overrides on `submitOrder`, `receiveStock` and `writeAudit`. A new seeded menu item needs a resep, bahan and a weight in `seed_history_mix.dart` or the seed will reject its lines for want of stock.
 - The first-run seed prompt is a **blocking, non-dismissible dialog** on the Venue Hub, answered once and recorded server-side. Admin → Sistem → Operasional holds the permanent way back in.
 - `apiConfigProvider == null` blocks every non-onboarding route — pair before exercising data screens.
+- **Release builds run R8** (`isMinifyEnabled` + `isShrinkResources`). Dart is AOT and untouched, but a new plugin that resolves Java/Kotlin classes reflectively needs a keep rule in `android/app/proguard-rules.pro` or it fails only in release. `flutter build apk --release` is the check; debug will not catch it. Crashlytics' Gradle plugin uploads the mapping file, so minified traces stay symbolicated.
 
 ## graphify
 

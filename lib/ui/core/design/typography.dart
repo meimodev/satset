@@ -1,19 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'skin.dart';
 
 class SatType {
   SatType._();
 
-  /// Resolves every role against the platform's default face instead of
-  /// fetching IBM Plex / Archivo through `google_fonts`.
+  /// The bundled faces (`pubspec.yaml` → `flutter: fonts:`). Every skin resolves
+  /// to one of these and nothing here touches the network: a venue installs the
+  /// APK on a LAN with no WAN, picks any theme, and the first frame is correct.
+  /// Archivo serves `glow` — the skin the default theme carries (ADR-0057) — and
+  /// brutal's body copy; Archivo Black and DM Mono serve the rest of `brutal`;
+  /// Plex serves the amber (`lembut`) themes.
+  static const _archivo = 'Archivo';
+  static const _archivoBlack = 'Archivo Black';
+  static const _dmMono = 'DM Mono';
+  static const _plexSans = 'IBM Plex Sans';
+  static const _plexMono = 'IBM Plex Mono';
+
+  /// Archivo ships as one variable file, so the weight has to be driven on the
+  /// `wght` axis — a bare `fontWeight` against a single-instance family gets
+  /// synthesised, which smears the heavy end the display roles rely on.
+  static List<FontVariation> _wght(FontWeight w) => [
+    FontVariation('wght', w.value.toDouble()),
+  ];
+
+  /// Resolves every role against the platform's default face instead of the
+  /// bundled ones.
   ///
-  /// Set by the golden suite only. `google_fonts` downloads on first use, and
-  /// `flutter_test` stubs the network out — the fetch then fails
-  /// asynchronously, after the test body has finished, which is too late for
-  /// `takeException()` to catch. Bundling ~2MB of `.ttf` to satisfy a test
-  /// artifact is the wrong trade.
+  /// Set by the golden suite only. It predates the bundled faces — it was there
+  /// to stop `google_fonts` reaching for the network mid-test — but it stays for
+  /// the second reason it always had: everything the roles decide (size, weight,
+  /// tracking, height) still applies, only the face is swapped, so a golden
+  /// still fails when a role changes while staying byte-identical across
+  /// machines and Flutter's own font-resolution changes.
   ///
   /// Everything the roles decide — size, weight, tracking, height — still
   /// applies; only the face is swapped, so a golden still fails when a role
@@ -38,13 +57,11 @@ class SatType {
         color: color,
       );
     }
-    final f = switch (SatShape.skin) {
-      SatSkin.brutal || SatSkin.glow => GoogleFonts.archivo,
-      SatSkin.lembut => GoogleFonts.ibmPlexSans,
-    };
-    return f(
+    return TextStyle(
+      fontFamily: SatShape.lembut ? _plexSans : _archivo,
       fontSize: size,
       fontWeight: weight,
+      fontVariations: SatShape.lembut ? null : _wght(weight),
       letterSpacing: letterSpacing,
       height: height,
       color: color,
@@ -77,9 +94,11 @@ class SatType {
       );
     }
     if (SatShape.glow) {
-      return GoogleFonts.archivo(
+      return TextStyle(
+        fontFamily: _archivo,
         fontSize: size,
         fontWeight: weight,
+        fontVariations: _wght(weight),
         // Glow's grotesk is set without the mono ramp's tracking.
         letterSpacing: 0,
         height: height,
@@ -87,8 +106,18 @@ class SatType {
         fontFeatures: const [FontFeature.tabularFigures()],
       );
     }
-    final f = SatShape.brutal ? GoogleFonts.dmMono : GoogleFonts.ibmPlexMono;
-    return f(
+    if (SatShape.brutal) {
+      return TextStyle(
+        fontFamily: _dmMono,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing,
+        height: height,
+        color: color,
+      );
+    }
+    return TextStyle(
+      fontFamily: _plexMono,
       fontSize: size,
       fontWeight: weight,
       letterSpacing: letterSpacing,
@@ -126,7 +155,8 @@ class SatType {
         color: color,
       );
     }
-    return GoogleFonts.archivoBlack(
+    return TextStyle(
+      fontFamily: _archivoBlack,
       fontSize: size,
       letterSpacing: letterSpacing,
       height: height,

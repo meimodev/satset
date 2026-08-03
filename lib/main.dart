@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -18,6 +19,11 @@ import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/server/server.dart';
+
+/// Set once Firebase is up. The zone handler at the bottom of [main] can fire
+/// before that — an error thrown during `initializeApp` itself lands there —
+/// so it has to tolerate a null.
+FirebaseCrashlytics? _crashlytics;
 
 Future<void> main() async {
   runZonedGuarded<Future<void>>(() async {
@@ -35,6 +41,26 @@ Future<void> main() async {
     };
 
     await Firebase.initializeApp();
+
+    // Crash reporting layers on top of the handlers above rather than replacing
+    // them: SatLog stays the on-device record an operator can read on the spot,
+    // Crashlytics is the copy that survives the device. Collection is off in
+    // debug so a developer's own crashes never reach the console. Reports queue
+    // on disk and upload whenever the venue next has a WAN — which, for an app
+    // that is expected to run without one, is the only workable shape.
+    final crashlytics = FirebaseCrashlytics.instance;
+    await crashlytics.setCrashlyticsCollectionEnabled(kReleaseMode);
+    _crashlytics = crashlytics;
+    FlutterError.onError = (details) {
+      SatLog.err('flutter', details.exception, details.stack);
+      crashlytics.recordFlutterFatalError(details);
+      FlutterError.presentError(details);
+    };
+    PlatformDispatcher.instance.onError = (e, st) {
+      SatLog.err('platform', e, st);
+      crashlytics.recordError(e, st, fatal: true);
+      return false;
+    };
 
     final sp = await SharedPreferences.getInstance();
     final prefs = PrefsService(sp);
@@ -101,6 +127,10 @@ Future<void> main() async {
     }
 
     final deviceId = (await storage.readDeviceId()) ?? '';
+    // A crash from a venue fleet is unattributable without these: which tablet,
+    // and whether it was the one running the server.
+    unawaited(crashlytics.setUserIdentifier(deviceId));
+    unawaited(crashlytics.setCustomKey('mode', mode.name));
     SatLog.boot(
       'mode=${mode.name} device=${deviceId.isEmpty ? "?" : deviceId.substring(0, deviceId.length.clamp(0, 8))} '
       'api=${apiConfig?.baseUri ?? "none"}',
@@ -128,7 +158,10 @@ Future<void> main() async {
         child: _ServerLifecycle(server: server, child: const SatSetApp()),
       ),
     );
-  }, (e, st) => SatLog.err('zoned', e, st));
+  }, (e, st) {
+    SatLog.err('zoned', e, st);
+    _crashlytics?.recordError(e, st, fatal: true);
+  });
 }
 
 class _ServerLifecycle extends StatefulWidget {

@@ -6,6 +6,7 @@ plugins {
     id("kotlin-android")
     // Firebase: must be applied after the Android/Kotlin plugins.
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -22,7 +23,11 @@ if (hasReleaseKeystore) {
 
 android {
     namespace = "id.activid.satset"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned, not inherited from `flutter.compileSdkVersion`. Both resolve to 36
+    // under Flutter 3.41; taking the SDK's value meant a Flutter upgrade could
+    // move the API level the release APK is built and validated against without
+    // anything in this repo changing. Bump these deliberately.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -39,8 +44,11 @@ android {
         applicationId = "id.activid.satset"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // minSdk stays inherited: plugin manifests merge it up to 29 (ADR: the
+        // app is documented Android 10+), and hardcoding 24 here would only
+        // disagree with the merged result.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
@@ -74,6 +82,16 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+
+            // R8 only touches the Java/Kotlin side — the Dart half is AOT
+            // compiled and untouched — so the win here is the plugin glue and
+            // the unused resources that ship with MLKit and Firebase.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

@@ -23,6 +23,9 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
     // Firebase (processes android/app/google-services.json).
     id("com.google.gms.google-services") version "4.4.2" apply false
+    // Crashlytics. Also uploads the R8 mapping file on a release build, which is
+    // what keeps minified stack traces readable in the console.
+    id("com.google.firebase.crashlytics") version "3.0.2" apply false
 }
 
 include(":app")
