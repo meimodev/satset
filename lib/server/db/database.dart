@@ -63,7 +63,10 @@ class AppDatabase extends _$AppDatabase {
   // resolved the same way and for the same reason: a device that had already
   // taken 42 as the cashier pass would never run the audit migration, and
   // every read of the log would fail on a missing `amount_cents`.
-  int get schemaVersion => 45;
+  // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
+  // schema shape change, so it is the one migration in this file that cannot
+  // corrupt a device which took the number in parallel.
+  int get schemaVersion => 46;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -841,6 +844,12 @@ class AppDatabase extends _$AppDatabase {
         // device row directly, so the single-use token table has no reader.
         await customStatement('DROP TABLE IF EXISTS pair_tokens');
       }
+      if (from < 46) {
+        // Indexes only — no column or table changes, so this migration is safe
+        // to re-run and safe to reach a device that skipped intermediate
+        // versions. `IF NOT EXISTS` throughout.
+        await _createLookupIndexes();
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -854,6 +863,7 @@ class AppDatabase extends _$AppDatabase {
         'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL',
       );
       await _createDiscountIndexes();
+      await _createLookupIndexes();
       await into(venueSettings).insertOnConflictUpdate(
         VenueSettingsCompanion.insert(
           id: 'default',
@@ -924,6 +934,66 @@ class AppDatabase extends _$AppDatabase {
 
   /// Recipe lookup is per-owner on every menu render (habis derivation), and
   /// the movement ledger is only ever read per-ingredient, newest-first.
+  /// Indexes on the foreign-key columns the read paths filter and join by.
+  /// SQLite creates an index for a PRIMARY KEY and a UNIQUE constraint and for
+  /// nothing else — a plain `WHERE visit_id = ?` is a full table scan until one
+  /// exists here, which is invisible on a fresh venue and quadratic over a
+  /// season of trading.
+  ///
+  /// Deliberately *not* covered: `sessions.token` (already the primary key) and
+  /// anything on `venue_tables` / `zones` / `users`, which are bounded at tens
+  /// of rows and read entirely on most requests anyway.
+  ///
+  /// The three `discounts` indexes created by [_createDiscountIndexes] are
+  /// **partial** (`WHERE receipt_id IS NOT NULL AND ticket_id IS NULL` and
+  /// friends). SQLite will only use a partial index when the query's own WHERE
+  /// implies the index predicate, which an ordinary "discounts for this
+  /// receipt" read does not — hence the plain pair below alongside them.
+  Future<void> _createLookupIndexes() async {
+    const stmts = [
+      // Live order path: lines by visit (the stable bill key, ADR-0024) and by
+      // table for the legacy pre-v29 rows that still carry a null visit_id.
+      'CREATE INDEX IF NOT EXISTS tickets_visit ON tickets(visit_id)',
+      'CREATE INDEX IF NOT EXISTS tickets_table ON tickets(table_id)',
+      // Bill assembly: receipts for a visit, then everything hanging off each
+      // receipt. This is the settlement screen's whole read.
+      'CREATE INDEX IF NOT EXISTS receipts_visit ON receipts(visit_id)',
+      'CREATE INDEX IF NOT EXISTS payments_receipt ON payments(receipt_id)',
+      'CREATE INDEX IF NOT EXISTS receipt_lines_receipt '
+          'ON receipt_lines(receipt_id)',
+      'CREATE INDEX IF NOT EXISTS discounts_receipt ON discounts(receipt_id)',
+      'CREATE INDEX IF NOT EXISTS discounts_visit ON discounts(visit_id)',
+      // Immutable history: every snapshot table is read back by session.
+      'CREATE INDEX IF NOT EXISTS table_session_tickets_session '
+          'ON table_session_tickets(session_id)',
+      'CREATE INDEX IF NOT EXISTS table_session_receipts_session '
+          'ON table_session_receipts(session_id)',
+      'CREATE INDEX IF NOT EXISTS table_session_payments_session '
+          'ON table_session_payments(session_id)',
+      'CREATE INDEX IF NOT EXISTS table_session_discounts_session '
+          'ON table_session_discounts(session_id)',
+      'CREATE INDEX IF NOT EXISTS table_session_courses_session '
+          'ON table_session_courses(session_id)',
+      // Reports scan sessions by close time; the open-session lookup filters on
+      // the same column being null.
+      'CREATE INDEX IF NOT EXISTS table_sessions_closed_at '
+          'ON table_sessions(closed_at)',
+      // Void reversal looks for a ticket's sale and its counter-entry.
+      'CREATE INDEX IF NOT EXISTS stock_movements_ticket_reason '
+          'ON stock_movements(ticket_id, reason)',
+      // Venue audit pages on (at desc, id desc) — the composite lets SQLite
+      // walk the index for the page instead of sorting the whole log to
+      // return fifty rows. The own-shift feed filters actor first, then at.
+      'CREATE INDEX IF NOT EXISTS audit_entries_at_id '
+          'ON audit_entries(at, id)',
+      'CREATE INDEX IF NOT EXISTS audit_entries_actor_at '
+          'ON audit_entries(actor_user_id, at)',
+    ];
+    for (final s in stmts) {
+      await customStatement(s);
+    }
+  }
+
   Future<void> _createStockIndexes() async {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS recipe_lines_owner '
