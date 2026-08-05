@@ -6,6 +6,8 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 
+import '_tickers.dart';
+
 /// ADR-0043 reaches the waiter's board too: a line escalates at *its own*
 /// resolved target, not at one number shared by every dish. The pill takes both
 /// the anchor and the target from the caller, so the two things worth pinning
@@ -20,13 +22,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       ProviderScope(
-        // The live 30s heartbeat would outlive the widget tree and trip the
-        // pending-timer check; the pill reads the clock on build regardless.
-        overrides: [
-          elapsedTickerProvider.overrideWith(
-            (ref) => const Stream<DateTime>.empty(),
-          ),
-        ],
+        overrides: tickerOverrides,
         child: MaterialApp(
           theme: satTheme(SatTheme.neonTerang),
           home: Scaffold(

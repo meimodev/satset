@@ -9,6 +9,7 @@ import 'package:satset/domain/service_timing.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/state/tickers.dart';
 
 /// One line's ready target: the item's own `Waktu siap` if it has one, else the
 /// venue default. The single resolution every elapsed surface goes through, so
@@ -16,16 +17,6 @@ import 'package:satset/ui/core/design/spacing.dart';
 int lineTargetMins(WidgetRef ref, String itemId) => resolvePrepMins(
   ref.watch(prepTimeByItemProvider)[itemId],
   ref.watch(venueSettingsProvider).prepTargetMins,
-);
-
-/// Shared 30s heartbeat for live elapsed pills. autoDispose so the stream
-/// stops whenever no pill is mounted. 30s keeps minute-granularity labels
-/// fresh without rebuilding dense boards every second.
-final elapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
-  (ref) => Stream<DateTime>.periodic(
-    const Duration(seconds: 30),
-    (_) => SatClock.now(),
-  ),
 );
 
 /// "How long the kitchen has owned this line." Ticks live while the line is
@@ -50,8 +41,8 @@ class ElapsedPill extends ConsumerWidget {
   /// `resolvePrepMins(item.prepTime, venue.prepTargetMins)`.
   final int targetMins;
 
-  /// Minute-granularity label: "<1m", "8m", "1j 5m". No seconds — the 30s
-  /// ticker would make a seconds field jitter.
+  /// Minute-granularity label: "<1m", "8m", "1j 5m". No seconds — this is a
+  /// reading aid on a dense board, not a stopwatch.
   static String _short(Duration d) {
     if (d.isNegative || d.inMinutes < 1) return '<1m';
     final h = d.inHours;
@@ -81,8 +72,9 @@ class ElapsedPill extends ConsumerWidget {
       );
     }
 
-    // Live: rebuild on each heartbeat so the elapsed label stays current.
-    ref.watch(elapsedTickerProvider);
+    // Both the label and `overdue` resolve to whole minutes, so the minute
+    // ticker repaints this exactly when either can change (ADR-0081).
+    ref.watch(minuteTickerProvider);
     final d = SatClock.now().difference(clockStart);
     final overdue = d.inMinutes >= targetMins;
     return _pill(

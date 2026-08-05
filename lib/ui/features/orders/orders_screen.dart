@@ -24,6 +24,7 @@ import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/state/tickers.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -515,7 +516,7 @@ class _OrderRow extends ConsumerWidget {
     // Past its own resolved target (ADR-0043/0064) — never the prototype's flat
     // 20 minutes, which would have the board disagree with the KDS and the
     // audible cue about when a line is late. Terminal lines can't be late.
-    ref.watch(elapsedTickerProvider);
+    ref.watch(minuteTickerProvider);
     final slow =
         !terminal &&
         SatClock.now().difference(t.kitchenClockStart).inMinutes >= target;
@@ -680,7 +681,7 @@ class _ElapsedStack extends ConsumerWidget {
     if (terminal) {
       return Text(sentAtClock, style: SatType.caption(color: sc.textLo));
     }
-    ref.watch(elapsedTickerProvider);
+    ref.watch(minuteTickerProvider);
     final d = SatClock.now().difference(clockStart);
     final mins = d.inMinutes;
     final label = mins < 1

@@ -11,6 +11,8 @@ import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 
+import '_tickers.dart';
+
 /// The phone bar's width budget (ADR-0062).
 ///
 /// The bar fits a 360dp handset only because two things are conditional: the
@@ -57,6 +59,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...tickerOverrides,
           wsConnStateProvider.overrideWithValue(conn),
           authStateProvider.overrideWith(
             (ref) => _StubAuth(

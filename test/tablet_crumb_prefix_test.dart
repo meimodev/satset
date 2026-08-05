@@ -10,6 +10,8 @@ import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 
+import '_tickers.dart';
+
 /// The venue name leads every trail, and `SatAppBar` is the one place it is
 /// prepended (ADR-0058) — call sites pass venue-less trails. Two branches worth
 /// pinning: the prefix lands, and an unnamed venue drops the segment rather than
@@ -33,6 +35,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...tickerOverrides,
           wsConnStateProvider.overrideWithValue(WsConnState.open),
           venueSettingsProvider.overrideWith(
             (ref) => _StubVenue(ref: ref, name: venueName),

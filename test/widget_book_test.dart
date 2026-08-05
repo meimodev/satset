@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
-import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/features/_book/book_entries.dart';
+
+import '_tickers.dart';
 
 /// The widget book only earns its place if every state it advertises actually
 /// builds. Pumping them here catches a stub that drifted from a constructor
@@ -37,13 +38,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              // ElapsedPill ticks every 30s off a periodic stream. Harmless on
-              // a device, a pending-timer failure in a widget test.
-              elapsedTickerProvider.overrideWith(
-                (ref) => const Stream<DateTime>.empty(),
-              ),
-            ],
+            overrides: tickerOverrides,
             child: MaterialApp(
               theme: satTheme(SatTheme.amberGelap),
               home: Scaffold(

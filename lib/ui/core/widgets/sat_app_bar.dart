@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +13,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart' show SatBackButton;
 
@@ -305,34 +304,16 @@ class _SyncStatus extends ConsumerWidget {
 /// No seconds on the wall clock. The elapsed counter beside it already proves
 /// the clock is live, and a digit ticking in permanent chrome that nobody acts
 /// on is motion for its own sake — the weekday earns that width instead.
-class _ShiftCluster extends ConsumerStatefulWidget {
+class _ShiftCluster extends ConsumerWidget {
   const _ShiftCluster();
 
   @override
-  ConsumerState<_ShiftCluster> createState() => _ShiftClusterState();
-}
-
-class _ShiftClusterState extends ConsumerState<_ShiftCluster> {
-  Timer? _timer;
-  DateTime _now = SatClock.now();
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() => _now = SatClock.now());
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // A readout: the shift counter carries seconds and nothing branches on it.
+    // This cluster is already the smallest widget that renders them, so the
+    // seconds ticker stops here rather than reaching the bar (ADR-0081).
+    ref.watch(secondTickerProvider);
+    final now = SatClock.now();
     final sc = context.sat;
     final hi = SatShape.brutal && SatShape.brutalPaper
         ? SatShape.ink
@@ -344,7 +325,7 @@ class _ShiftClusterState extends ConsumerState<_ShiftCluster> {
     final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
     final elapsed = started == null
         ? '00:00:00'
-        : formatElapsedId(_now.difference(started));
+        : formatElapsedId(now.difference(started));
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -353,7 +334,7 @@ class _ShiftClusterState extends ConsumerState<_ShiftCluster> {
         const SizedBox(width: Sp.s1h),
         Text(elapsed, style: SatType.monoM(color: hi)),
         const SizedBox(width: Sp.s3h),
-        Text(formatBarClockId(_now), style: SatType.monoM(color: sc.textMd)),
+        Text(formatBarClockId(now), style: SatType.monoM(color: sc.textMd)),
       ],
     );
   }

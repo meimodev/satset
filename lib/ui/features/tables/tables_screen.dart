@@ -14,7 +14,6 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/domain/models/ticket.dart';
-import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/ui/features/tables/view_models/floor_signals.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -30,6 +29,7 @@ import 'package:satset/ui/features/tables/widgets/reservations_surface.dart';
 import 'package:satset/ui/features/tables/widgets/table_card.dart';
 import 'package:satset/ui/features/tables/widgets/takeaway_surface.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/state/tickers.dart';
 
 // Animation tuning. Lively but professional. easeOutQuart per design tokens.
 const Duration _kChipMorph = Duration(milliseconds: 240);
@@ -503,10 +503,10 @@ class _TablesZoneRow extends ConsumerWidget {
     // re-derives the same signal one level up. A zone is a dozen or two tables
     // and there are a handful of zones, so this is a cheap sweep.
     //
-    // 30s ticker, not the card's 1s one: every threshold here is
+    // The minute ticker, not the seconds one: every threshold here is
     // minute-granular, and rebuilding the whole strip once a second to move
-    // nothing is waste.
-    ref.watch(elapsedTickerProvider);
+    // nothing is waste. See ADR-0081.
+    ref.watch(minuteTickerProvider);
     final now = SatClock.now();
     final settings = ref.watch(venueSettingsProvider);
     final ticketsByVisit = ref.watch(ticketsProvider);
