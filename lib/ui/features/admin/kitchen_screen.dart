@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -15,104 +14,15 @@ import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
-import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
-import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
-import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/features/admin/kitchen/kitchen_order.dart';
+import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_orders.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
-
-// `ready` stays in the active set so a just-cooked item (now servable)
-// remains struck-through on the card instead of vanishing one-by-one. A
-// fully-ready order still clears the default view via the `done == total`
-// guard in `_buildOrders`.
-const _kitchenInProgress = {
-  TicketStatus.sent,
-  TicketStatus.prep,
-  TicketStatus.cooked,
-  TicketStatus.ready,
-};
-
-// Served items only show under the "show completed" filter — once handed to
-// the table they're done with the kitchen.
-const _kitchenCompleted = {TicketStatus.ready, TicketStatus.served};
-
-/// [fallbackFreeze] is the screen's memory of when a stamp-less complete batch
-/// was first seen finished — read here, and written back for any batch that
-/// needs one. Entries for batches that have left the queue are pruned so the
-/// map cannot grow over a service.
-List<KitchenOrder> _buildOrders(
-  Map<String, List<Ticket>> byTable, {
-  required bool showCompleted,
-  required DateTime now,
-  required Map<String, DateTime> fallbackFreeze,
-  required int venueTargetMins,
-  required Map<String, int?> prepByItem,
-}) {
-  final visible = showCompleted
-      ? {..._kitchenInProgress, ..._kitchenCompleted}
-      : _kitchenInProgress;
-  final out = <KitchenOrder>[];
-  final seen = <String>{};
-  byTable.forEach((tableId, list) {
-    final groups = <String, List<Ticket>>{};
-    for (final t in list) {
-      if (!visible.contains(t.status)) continue;
-      groups.putIfAbsent(t.sentAt, () => []).add(t);
-    }
-    groups.forEach((sentAt, tickets) {
-      // Unfinished items rise to the top so the cook always sees what's left.
-      tickets.sort((a, b) {
-        final ac = _isDone(a.status) ? 1 : 0;
-        final bc = _isDone(b.status) ? 1 : 0;
-        return ac.compareTo(bc);
-      });
-      // `byTable` is keyed by visitId (ADR-0034); use the ticket's real
-      // tableId so the card resolves a table name, not the raw visit id.
-      // Falls back to the key for takeaway (no table).
-      final resolvedId = tickets.first.tableId.isNotEmpty
-          ? tickets.first.tableId
-          : tableId;
-      final key = '$resolvedId|$sentAt';
-      var order = KitchenOrder.resolve(
-        tableId: resolvedId,
-        sentAt: sentAt,
-        tickets: tickets,
-        now: now,
-        venueTargetMins: venueTargetMins,
-        prepByItem: prepByItem,
-        fallbackFreeze: fallbackFreeze[key],
-      );
-      if (order.needsFallbackFreeze && !fallbackFreeze.containsKey(key)) {
-        fallbackFreeze[key] = now;
-        order = KitchenOrder.resolve(
-          tableId: resolvedId,
-          sentAt: sentAt,
-          tickets: tickets,
-          now: now,
-          venueTargetMins: venueTargetMins,
-          prepByItem: prepByItem,
-          fallbackFreeze: now,
-        );
-      }
-      seen.add(key);
-      if (!showCompleted && order.complete) return;
-      out.add(order);
-    });
-  });
-  fallbackFreeze.removeWhere((k, _) => !seen.contains(k));
-  // Oldest fire first — most urgent at the top of the queue. Sorted on the
-  // full timestamp, not the HH:mm grouping key: a service running past midnight
-  // would otherwise sort 00:15 ahead of 23:50 and bury the oldest ticket.
-  out.sort((a, b) => a.sentAtTime.compareTo(b.sentAtTime));
-  return out;
-}
-
-bool _isDone(TicketStatus s) => kitchenLineDone(s);
 
 /// The timer's ink. Neutral until the ticket is worth worrying about: a ticket
 /// two minutes old is not news, and spending a colour on the good case is how
@@ -190,52 +100,21 @@ class _CardEntranceState extends State<_CardEntrance>
   }
 }
 
-class KitchenScreen extends ConsumerStatefulWidget {
+class KitchenScreen extends ConsumerWidget {
   const KitchenScreen({super.key});
 
   @override
-  ConsumerState<KitchenScreen> createState() => _KitchenScreenState();
-}
-
-class _KitchenScreenState extends ConsumerState<KitchenScreen> {
-  bool _showCompleted = false;
-  // Drives the live age counters (and their color/pulse thresholds) so cards
-  // tick between ticket events, matching the other elapsed counters.
-  Timer? _tick;
-  // When a complete batch with no `readyAt` stamps was first seen finished.
-  // Screen-lifetime only — see KitchenOrder.resolve.
-  final Map<String, DateTime> _fallbackFreeze = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _tick?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     // "Late" on this board is the venue's configured target resolved per line
     // (ADR-0043) — the same number the overdue cue and the report SLA use, so
     // the pass, the phone and the report cannot tell the cook three stories.
-    final orders = _buildOrders(
-      ref.watch(ticketsProvider),
-      showCompleted: _showCompleted,
-      now: SatClock.now(),
-      fallbackFreeze: _fallbackFreeze,
-      venueTargetMins: ref.watch(venueSettingsProvider).prepTargetMins,
-      prepByItem: {
-        for (final i in ref.watch(menuItemsProvider)) i.id: i.prepTime,
-      },
-    );
+    //
+    // The queue is grouped in a provider and recomputed on ticket events and
+    // once a minute, not in this build behind a 1s timer. Station timers tick
+    // on their own inside _Timer. See ADR-0081.
+    final orders = ref.watch(kitchenOrdersProvider);
+    final showCompleted = ref.watch(kitchenShowCompletedProvider);
     final itemCount = orders.fold<int>(0, (n, o) => n + o.total);
     // Each card already turns urgent on its own, but a cook working the top of
     // a scrolled queue cannot see how many are red below the fold. The tally is
@@ -253,8 +132,9 @@ class _KitchenScreenState extends ConsumerState<KitchenScreen> {
     }
 
     final filter = _CompletedFilter(
-      value: _showCompleted,
-      onChanged: (v) => setState(() => _showCompleted = v),
+      value: showCompleted,
+      onChanged: (v) =>
+          ref.read(kitchenShowCompletedProvider.notifier).state = v,
     );
     final headTrailing = lateCount == 0
         ? filter
@@ -450,6 +330,7 @@ class _OrderCard extends ConsumerWidget {
             table: tableLabel,
             courses: order.courses,
             age: ageDur,
+            clockStart: order.clockStart,
             sentAt: order.sentAt,
             late: late,
             targetMins: order.targetMins,
@@ -520,6 +401,10 @@ class _CardHead extends StatelessWidget {
   final String table;
   final List<Course> courses;
   final Duration age;
+
+  /// Where the prep clock started, so the station timer can run live off it
+  /// rather than off a figure baked in at group time. See _Timer.
+  final DateTime clockStart;
   final String sentAt;
   final bool late;
   final int targetMins;
@@ -530,6 +415,7 @@ class _CardHead extends StatelessWidget {
     required this.table,
     required this.courses,
     required this.age,
+    required this.clockStart,
     required this.sentAt,
     required this.late,
     required this.targetMins,
@@ -583,9 +469,11 @@ class _CardHead extends StatelessWidget {
           const SizedBox(width: Sp.s2),
           _Timer(
             age: age,
+            clockStart: clockStart,
             sentAt: sentAt,
             sc: sc,
             complete: complete,
+            late: late,
             targetMins: targetMins,
             done: done,
             total: total,
@@ -599,36 +487,50 @@ class _CardHead extends StatelessWidget {
 /// Elapsed over arrival, right-aligned. Bare numerals rather than a pill: the
 /// slab already separates the head, and a tinted capsule inside a tinted slab
 /// is two containers saying one thing.
-class _Timer extends StatefulWidget {
+/// The station clock: "8:42", read from 1–2 m across a hot line.
+///
+/// The only thing on this board that moves every second, so it is the only
+/// thing that watches the seconds ticker — the queue around it is grouped in a
+/// provider that recomputes on ticket events and once a minute (ADR-0081).
+///
+/// [age] is the provider's minute-fresh figure and decides the colour tier and
+/// the pulse; the digits are read live off [clockStart] so they advance between
+/// those recomputes. A complete batch has no live clock at all — it froze at
+/// its real time-to-pass — so it renders [age] directly.
+class _Timer extends ConsumerStatefulWidget {
   final Duration age;
+  final DateTime clockStart;
   final String sentAt;
   final SatColors sc;
   final bool complete;
+  final bool late;
   final int targetMins;
   final int done;
   final int total;
   const _Timer({
     required this.age,
+    required this.clockStart,
     required this.sentAt,
     required this.sc,
     required this.complete,
+    required this.late,
     required this.targetMins,
     required this.done,
     required this.total,
   });
 
   @override
-  State<_Timer> createState() => _TimerState();
+  ConsumerState<_Timer> createState() => _TimerState();
 }
 
-class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
+class _TimerState extends ConsumerState<_Timer>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _pulse = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1400),
   );
 
-  bool get _late =>
-      !widget.complete && widget.age.inMinutes >= widget.targetMins;
+  bool get _late => widget.late;
 
   @override
   void didChangeDependencies() {
@@ -664,12 +566,22 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final sc = widget.sc;
+    // Colour and pulse follow the provider's minute-fresh age; only the digits
+    // are live, so a card cannot flicker between tiers mid-minute.
     final color = _ageColor(
       sc,
       widget.age.inMinutes,
       complete: widget.complete,
       targetMins: widget.targetMins,
     );
+    final Duration shown;
+    if (widget.complete) {
+      shown = widget.age;
+    } else {
+      ref.watch(secondTickerProvider);
+      final live = SatClock.now().difference(widget.clockStart);
+      shown = live.isNegative ? Duration.zero : live;
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
@@ -679,7 +591,7 @@ class _TimerState extends State<_Timer> with SingleTickerProviderStateMixin {
           builder: (_, child) =>
               Opacity(opacity: 1 - 0.4 * _pulse.value, child: child),
           child: Text(
-            formatStationTimer(widget.age),
+            formatStationTimer(shown),
             style: SatType.monoL(color: color),
           ),
         ),
@@ -724,8 +636,8 @@ class _ItemRowState extends State<_KdsItemRow>
   @override
   void didUpdateWidget(covariant _KdsItemRow old) {
     super.didUpdateWidget(old);
-    final cooked = _isDone(widget.ticket.status);
-    final wasCooked = _isDone(old.ticket.status);
+    final cooked = kitchenLineDone(widget.ticket.status);
+    final wasCooked = kitchenLineDone(old.ticket.status);
     if (cooked && !wasCooked && !MediaQuery.of(context).disableAnimations) {
       _flash.forward(from: 0);
     }
@@ -760,7 +672,7 @@ class _ItemRowState extends State<_KdsItemRow>
   Widget build(BuildContext context) {
     final sc = context.sat;
     final ticket = widget.ticket;
-    final cooked = _isDone(ticket.status);
+    final cooked = kitchenLineDone(ticket.status);
     final base = cooked ? sc.successSoft : Colors.transparent;
 
     return AnimatedBuilder(
