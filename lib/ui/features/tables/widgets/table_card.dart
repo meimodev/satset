@@ -18,17 +18,42 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/tables/view_models/floor_signals.dart';
 import 'package:satset/ui/core/design/spacing.dart';
-
-/// Ticks once per second to drive live elapsed-time updates on table cards.
-/// autoDispose so the stream stops when no card is watching it.
-final tableElapsedTickerProvider = StreamProvider.autoDispose<DateTime>(
-  (ref) => Stream<DateTime>.periodic(
-    const Duration(seconds: 1),
-    (_) => SatClock.now(),
-  ),
-);
+import 'package:satset/ui/core/state/tickers.dart';
 
 const Duration _kPressIn = Duration(milliseconds: 90);
+
+/// How many times a [TableCard] body has rebuilt.
+///
+/// ponytail: a counter in production code purely so a test can assert on it,
+/// which is normally the wrong trade. It earns its two lines here because the
+/// thing being protected — that the body watches the minute ticker and only the
+/// counter watches the second one — is invisible in a diff, costs twenty cards
+/// their reservation scans at 1Hz when it regresses, and has no other
+/// observable symptom. See table_card_rebuild_test.dart and ADR-0081.
+@visibleForTesting
+int tableCardBuilds = 0;
+
+/// "DUDUK 12m 20d" — how long this party has been seated.
+///
+/// A readout, and the only thing on the card that moves every second, so it is
+/// its own widget: the card body around it derives *thresholds* (basi,
+/// ungreeted, reservation holds) that can only change on a minute boundary, and
+/// wiring the body to the seconds ticker made all twenty cards on the floor
+/// rebuild — each re-scanning the reservation list twice — sixty times a minute
+/// to move this one digit. See ADR-0081.
+class _SeatedElapsed extends ConsumerWidget {
+  final DateTime since;
+  const _SeatedElapsed({required this.since});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(secondTickerProvider);
+    return Text(
+      formatElapsedId(SatClock.now().difference(since)),
+      style: SatType.monoS(color: context.sat.textLo),
+    );
+  }
+}
 
 /// A table on the floor grid.
 ///
@@ -69,12 +94,18 @@ class _TableCardState extends ConsumerState<TableCard> {
 
   @override
   Widget build(BuildContext context) {
+    tableCardBuilds++;
     final table = widget.table;
     final tablet = widget.tablet;
     final sc = context.sat;
     final brutal = SatShape.brutal;
 
-    ref.watch(tableElapsedTickerProvider);
+    // The minute ticker, not the seconds one: everything derived below —
+    // reservation holds, service state, staleness — compares whole minutes
+    // against a venue setting, so it can only change on a minute boundary. The
+    // seated counter that does move every second is _SeatedElapsed, which owns
+    // its own ticker. ADR-0081.
+    ref.watch(minuteTickerProvider);
     final now = SatClock.now();
     final settings = ref.watch(venueSettingsProvider);
     final visitId = table.currentVisitId;
@@ -299,10 +330,7 @@ class _TableCardState extends ConsumerState<TableCard> {
               ),
               if (table.openedAt != null) ...[
                 const SizedBox(width: Sp.s1h),
-                Text(
-                  formatElapsedId(now.difference(table.openedAt!)),
-                  style: SatType.monoS(color: sc.textLo),
-                ),
+                _SeatedElapsed(since: table.openedAt!),
               ] else if (hold != null) ...[
                 const SizedBox(width: Sp.s1h),
                 Text(
