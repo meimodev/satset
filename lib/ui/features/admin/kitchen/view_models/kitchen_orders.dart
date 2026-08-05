@@ -29,6 +29,21 @@ final kitchenShowCompletedProvider = StateProvider.autoDispose<bool>(
   (ref) => false,
 );
 
+/// When a complete batch carrying no `readyAt` stamps was first seen finished.
+///
+/// Deliberately **not** autoDispose. `/kitchen` sits under a plain `ShellRoute`
+/// with no state retention, so this map used to die every time a cook switched
+/// tab: a stamp-less batch re-froze at the new `now` and its card then claimed
+/// a time-to-pass of a few seconds for work that took ten minutes. CONTEXT.md
+/// §Batch says the frozen number is the batch's *real* time-to-pass, so the
+/// reset was a wrong number on the pass, not merely a lost cache.
+///
+/// Growth is bounded by [buildKitchenOrders], which prunes every entry whose
+/// batch has left the queue on each pass.
+final kitchenFallbackFreezeProvider = Provider<Map<String, DateTime>>(
+  (ref) => <String, DateTime>{},
+);
+
 /// The KDS queue: live tickets grouped into batches, oldest fire first.
 ///
 /// Recomputes when its inputs change — tickets, the venue target, per-item
@@ -41,10 +56,7 @@ final kitchenShowCompletedProvider = StateProvider.autoDispose<bool>(
 /// times a minute so that one station timer could advance a digit. The station
 /// timers now tick on their own in the leaf that renders them (ADR-0081).
 final kitchenOrdersProvider = Provider.autoDispose<List<KitchenOrder>>((ref) {
-  // Screen-lifetime memory of when a stamp-less complete batch was first seen
-  // finished. Held here rather than in widget state so the grouping pass owns
-  // its own bookkeeping; autoDispose keeps the lifetime the widget had.
-  final fallbackFreeze = <String, DateTime>{};
+  final fallbackFreeze = ref.watch(kitchenFallbackFreezeProvider);
 
   ref.watch(minuteTickerProvider);
   return buildKitchenOrders(
