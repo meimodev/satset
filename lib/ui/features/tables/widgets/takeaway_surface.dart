@@ -86,7 +86,7 @@ class _TakeawayRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final tickets = ref.watch(ticketsProvider)[visit.id] ?? const <Ticket>[];
+    final tickets = ref.watch(ticketsForVisitProvider(visit.id));
     final active = tickets
         .where((t) => t.status != TicketStatus.voided)
         .toList();

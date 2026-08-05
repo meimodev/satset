@@ -644,22 +644,45 @@ final ticketsProvider =
       return TicketsRepository(ref: ref);
     });
 
+/// Live lines for one visit — the stable bill key (ADR-0024), and the way any
+/// widget showing a single visit's lines should read them.
+///
+/// [ticketsProvider] holds every visit's lines in one map, replaced wholesale
+/// on each `ticketCreated` / `ticketUpdated` event. A widget that reads the map
+/// directly therefore rebuilds when a line is sent at *any other table*. This
+/// provider re-emits only when the identity of its own list changes: the
+/// repository rebuilds the map but reuses the untouched groups' List instances,
+/// so Riverpod's `!=` check stops the propagation here.
+///
+/// Returns `const []` for an unknown visit — and `const` matters: two calls
+/// return the identical instance, so an empty group cannot cause a rebuild
+/// either.
+final ticketsForVisitProvider = Provider.family<List<Ticket>, String>(
+  (ref, visitId) =>
+      ref.watch(ticketsProvider)[visitId] ?? const <Ticket>[],
+);
+
 /// Live dine-in lines for a table, resolved through the table's current visit.
 /// Groups are keyed by visitId (ADR-0034), and a tableId is reused across
 /// visits, so a dine-in screen must look up by the table's currentVisitId — not
 /// the tableId — to avoid re-absorbing a prior, settled visit's lines on a
 /// reseat. Returns `const []` when the table holds no live visit.
+///
+/// Prefer [ticketsForVisitProvider] where a visitId is already in hand: this
+/// one additionally watches the whole table list to resolve one, so it
+/// re-executes on every table update, and it scans that list to do so.
 final ticketsForTableProvider = Provider.family<List<Ticket>, String>((
   ref,
   tableId,
 ) {
-  final byVisit = ref.watch(ticketsProvider);
   final table = ref
       .watch(tablesProvider)
       .where((t) => t.id == tableId)
       .firstOrNull;
   final vid = table?.currentVisitId;
-  if (vid != null && vid.isNotEmpty) return byVisit[vid] ?? const [];
+  if (vid != null && vid.isNotEmpty) {
+    return ref.watch(ticketsForVisitProvider(vid));
+  }
   // Legacy pre-v29 rows (null visitId) key by tableId; honour that fallback.
-  return byVisit[tableId] ?? const [];
+  return ref.watch(ticketsForVisitProvider(tableId));
 });

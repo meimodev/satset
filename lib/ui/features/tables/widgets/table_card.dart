@@ -109,9 +109,12 @@ class _TableCardState extends ConsumerState<TableCard> {
     final now = SatClock.now();
     final settings = ref.watch(venueSettingsProvider);
     final visitId = table.currentVisitId;
+    // Through the per-visit provider, never the whole map: reading the map
+    // directly rebuilt every card on the floor whenever a line was sent at any
+    // other table.
     final lines = visitId == null
         ? const <Ticket>[]
-        : (ref.watch(ticketsProvider)[visitId] ?? const <Ticket>[]);
+        : ref.watch(ticketsForVisitProvider(visitId));
     final reservations = ref.watch(reservationsRepositoryProvider);
 
     final hold = reservationHoldFor(
