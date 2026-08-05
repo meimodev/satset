@@ -38,7 +38,6 @@ dependencies:
 
   # Discovery / pairing
   bonsoir: ^5.1.10
-  mobile_scanner: ^5.2.3
 
   # TLS / JWT / crypto
   basic_utils: ^5.7.0

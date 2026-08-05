@@ -14,7 +14,6 @@ import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/ui/features/onboarding/view_models/mode_select_view_model.dart';
-import 'package:satset/ui/features/onboarding/view_models/pair_view_model.dart';
 
 enum SignInMode { admin, staff }
 
@@ -102,7 +101,6 @@ const Object _unset = Object();
 ///   - admin credential submit (dummy: bypasses email/password)
 ///   - paired-server discovery and selection
 ///   - live mDNS server discovery + LAN-trusted auto-claim
-///   - manual + QR pairing handoff to [PairViewModel]
 ///
 /// The widget renders state and routes user intent through these actions —
 /// it does not own auth, pairing or mode logic.
@@ -425,27 +423,6 @@ class PinViewModel extends StateNotifier<PinState> {
     return false;
   }
 
-  /// Claim a pairing via QR JSON payload. Returns the paired info on success.
-  Future<PairedServerInfo?> claimQr(String qrJson) async {
-    return _runClaim(qrJson);
-  }
-
-  /// Claim a pairing via manually entered fields.
-  Future<PairedServerInfo?> claimManual({
-    required String host,
-    required int port,
-    required String fingerprint,
-    required String token,
-  }) async {
-    final payload = PairQrPayloadDto(
-      host: host,
-      port: port,
-      fingerprint: fingerprint,
-      token: token,
-    );
-    return _runClaim(jsonEncode(payload.toJson()));
-  }
-
   /// LAN-trusted auto-claim for a server surfaced via mDNS. POSTs to
   /// `/pair/auto-claim` over a TLS-pinned client; on success persists the
   /// pairing and selects the entry so the user can immediately enter PIN.
@@ -513,28 +490,6 @@ class PinViewModel extends StateNotifier<PinState> {
       );
       return false;
     }
-  }
-
-  Future<PairedServerInfo?> _runClaim(String qrJson) async {
-    SatLog.vm('PinVM claim');
-    state = state.copyWith(pairingBusy: true, pairingError: null);
-    await _persistMode(AppMode.client);
-    // Clear any stale session token so a previously-paired token cannot
-    // silently authenticate the user — Staff PIN entry is required.
-    await _storage.clearSession();
-    final vm = _ref.read(pairViewModelProvider.notifier);
-    await vm.claim(qrJson, restoreAuth: false);
-    final ps = _ref.read(pairViewModelProvider);
-    if (ps.error != null || !ps.paired) {
-      state = state.copyWith(
-        pairingBusy: false,
-        pairingError: ps.error ?? 'Pairing gagal',
-      );
-      return null;
-    }
-    await refreshPairedServers();
-    state = state.copyWith(pairingBusy: false, pairingError: null);
-    return state.selectedServer;
   }
 
   @override

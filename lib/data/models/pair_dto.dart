@@ -3,33 +3,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'pair_dto.freezed.dart';
 part 'pair_dto.g.dart';
 
-/// Payload encoded in pairing QR codes.
-@freezed
-class PairQrPayloadDto with _$PairQrPayloadDto {
-  const factory PairQrPayloadDto({
-    required String host,
-    required int port,
-    required String fingerprint,
-    required String token,
-  }) = _PairQrPayloadDto;
-
-  factory PairQrPayloadDto.fromJson(Map<String, dynamic> json) =>
-      _$PairQrPayloadDtoFromJson(json);
-}
-
-@freezed
-class PairClaimRequestDto with _$PairClaimRequestDto {
-  const factory PairClaimRequestDto({
-    required String token,
-    required String deviceId,
-    required String deviceLabel,
-    required String publicKey,
-  }) = _PairClaimRequestDto;
-
-  factory PairClaimRequestDto.fromJson(Map<String, dynamic> json) =>
-      _$PairClaimRequestDtoFromJson(json);
-}
-
+/// What `POST /pair/auto-claim` returns once the server has written the device
+/// row. `serverPublicKey` is reserved for a future signed-payload/mTLS flow and
+/// is currently empty (ADR-0003).
 @freezed
 class PairClaimResponseDto with _$PairClaimResponseDto {
   const factory PairClaimResponseDto({

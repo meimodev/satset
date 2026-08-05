@@ -27,7 +27,6 @@ class TableDto with _$TableDto {
     String? currentVisitId,
     DateTime? billClosedAt,
     String? moneyState,
-    @Default(false) bool guestOrderingEnabled,
   }) = _TableDto;
 
   factory TableDto.fromJson(Map<String, dynamic> json) =>

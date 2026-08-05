@@ -164,16 +164,6 @@ class AppStrings {
   static const String venueSettingsQrCaption = 'QR (keterangan)';
 
   static const String venueSettingsSectionTax = 'Pajak & layanan';
-  static const String venueSettingsSectionGuestOrdering = 'Pesanan mandiri';
-
-  // Turning the venue master switch off is blocked while the review queue
-  // still holds pending guest orders — switching off hides the Mandiri tab
-  // venue-wide, which would leave those orders with no staff surface.
-  static const String guestOrderingBlockTitle = 'Antrian mandiri belum kosong';
-  static String guestOrderingBlockBody(int n) =>
-      '$n pesanan mandiri masih menunggu ditinjau. Setujui atau tolak dulu '
-      'sebelum mematikan pesanan mandiri.';
-  static const String guestOrderingBlockAction = 'Lihat antrian';
   static const String venueSettingsSectionReports = 'Laporan & shift';
   static const String venueSettingsSectionSound = 'Suara';
   static const String venueSettingsSectionSoundTag = 'Nada notifikasi';
@@ -183,7 +173,6 @@ class AppStrings {
   static const String venueSettingsSoundOverdue = 'Lewat waktu';
   static const String venueSettingsSoundUngreeted = 'Belum dilayani';
   static const String venueSettingsSoundPickup = 'Menunggu diantar';
-  static const String venueSettingsSoundGuestPending = 'Pesanan tamu masuk';
 
   // Waktu & Peringatan (ADR-0043/0044). Every service threshold lives in one
   // named section — an owner chasing "why does the floor beep" looks for
@@ -215,9 +204,6 @@ class AppStrings {
       'Toleransi reservasi';
   static const String venueSettingsTimingReservationGraceHint =
       'Lewat ini chip reservasi ditandai terlambat. Status tidak berubah.';
-  static const String venueSettingsTimingPendingReview = 'Belum ditinjau';
-  static const String venueSettingsTimingPendingReviewHint =
-      'Pesanan tamu menunggu ditinjau waiter. Tanpa suara.';
   static const String venueSettingsTimingAlertsOn = 'Bunyikan peringatan';
   static const String venueSettingsTimingMuteTitle = 'Senyapkan di alat ini';
   static const String venueSettingsTimingMuteHint =
@@ -244,7 +230,6 @@ class AppStrings {
   static String staleReservationLate(int mins) =>
       'Tamu telat $mins mnt — lepas meja?';
   static String staleUngreeted(int mins) => 'Belum disapa $mins mnt';
-  static String stalePendingReview(int mins) => 'Belum ditinjau $mins mnt';
   static String staleIdle(int mins) =>
       'Selesai makan $mins mnt — tawarkan lagi';
   static String staleLongStay(String elapsed) =>
@@ -295,10 +280,6 @@ class AppStrings {
   static const String zoneAdminTableActive = 'Meja aktif';
   static const String zoneAdminTableActiveSub =
       'Matikan untuk perbaikan tanpa menghapus.';
-  static const String zoneAdminGuestOrdering = 'Pesanan mandiri';
-  static const String zoneAdminGuestOrderingSub =
-      'Tamu pindai QR meja untuk pesan sendiri.';
-  static const String zoneAdminShowQr = 'Tampilkan QR meja';
   static const String zoneAdminDeleteTableConfirmTitle = 'Hapus meja?';
   static const String zoneAdminDeleteTableConfirmSub =
       'akan dihapus permanen dari zona.';
@@ -308,7 +289,6 @@ class AppStrings {
   // per destination is what keeps the two saying the same word.
   static const String tabMeja = 'Meja';
   static const String tabPesanan = 'Pesanan';
-  static const String tabMandiri = 'Mandiri';
   static const String tabAntrian = 'Antrian';
   static const String tabKasir = 'Kasir';
   static const String tabVenue = 'Venue';

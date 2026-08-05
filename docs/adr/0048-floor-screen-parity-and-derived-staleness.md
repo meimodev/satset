@@ -5,6 +5,11 @@
 Accepted. Amends ADR-0047 (which declared layout untouched) and extends
 ADR-0044 (silent floor states).
 
+> **Amended 2026-08-05 by [ADR-0080](0080-self-order-and-token-pairing-removed.md).**
+> The fourth `crit` rule below — "guest order still unreviewed", on
+> `pendingReviewMins` — is gone with self-ordering. Threshold, setting and
+> branch all removed; the other five rules stand as written.
+
 ## Context
 
 ADR-0047 shipped the neo-brutalist skin as paint only: `SatR`/`SatB`/`SatBox`

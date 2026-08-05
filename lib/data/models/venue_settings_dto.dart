@@ -44,14 +44,8 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(20) int idleTableMins,
     @Default(15) int reservationGraceMins,
 
-    /// "Belum ditinjau" — how long a guest-sent order (ADR-0028) may sit
-    /// unreviewed before the floor card goes critical. The *arrival* of a guest
-    /// order is announced immediately by `AlertEvent.guestPending` (ADR-0064);
-    /// this threshold is the standing state for one that went unanswered.
-    @Default(6) int pendingReviewMins,
     @Default(true) bool ungreetedAlertEnabled,
     @Default(true) bool pickupAlertEnabled,
-    @Default(false) bool guestOrderingEnabled,
     // Per-event alert sound choice (ADR-0035). Each holds a preset id from
     // `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
     // original fixed cues exactly.
@@ -61,7 +55,6 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default('alert') String soundOverdue,
     @Default('chime') String soundUngreeted,
     @Default('chime') String soundPickup,
-    @Default('doorbell') String soundGuestPending,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

@@ -62,6 +62,6 @@ const Duration _morph = Duration(milliseconds: 220);
   TicketStatus.cooked => (sc.accentSoft, sc.accentText),
   TicketStatus.ready => (sc.successSoft, sc.success),
   TicketStatus.served => (sc.bg3, sc.textLo),
-  TicketStatus.pendingReview || TicketStatus.held => (sc.violetSoft, sc.violet),
+  TicketStatus.held => (sc.violetSoft, sc.violet),
   TicketStatus.voided => (sc.urgentSoft, sc.urgent),
 };

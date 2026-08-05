@@ -47,7 +47,6 @@ Flat on purpose: the pane serves each preview standalone, and a same-directory
 | `pattern-signin.html` | `/pin` — admin form, staff server list, restore loader |
 | `pattern-onboarding.html` | `/onboarding`, `/pair`, `/forbidden` — **as shipped (stock Material) and as targeted** |
 | `pattern-admin.html` | `/venue`, `_common.dart` surfaces, `/reports` chrome |
-| `pattern-guest-spa.html` | `lib/server/guest_app_html.dart` (ADR-0027 / 0029) |
 
 ### Stale after ADR-0055 — re-transcribe before the next push
 

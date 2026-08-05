@@ -8,7 +8,7 @@ Derived from source code (`lib/`, `functions/`, `firestore.rules`, `codemagic.ya
 
 A **single Android APK** (package `id.activid.satset`, Flutter, minSdk 29) that runs a whole restaurant on a local Wi-Fi network with **no internet dependency for daily operations**.
 
-One device runs in **Server mode** — it hosts an embedded HTTPS + WebSocket server, the SQLite (Drift) database, and an mDNS advertiser. Every other staff device runs in **Client mode** and pairs to it over LAN via mDNS discovery + QR/token + TLS certificate pinning. A third, cleartext HTTP plane on port 8080 serves a hand-rolled guest self-ordering web app to customer phones scanning a table QR.
+One device runs in **Server mode** — it hosts an embedded HTTPS + WebSocket server, the SQLite (Drift) database, and an mDNS advertiser. Every other staff device runs in **Client mode** and pairs to it over LAN via mDNS discovery + TLS certificate pinning.
 
 Cloud (Firebase) is used only for three things that are *not* on the critical path of taking orders: admin identity, a fleet/licensing control plane, and a periodic read-only report snapshot for absentee owners.
 
@@ -21,14 +21,13 @@ Cloud (Firebase) is used only for three things that are *not* on the critical pa
 | Actor | Session type | Server? | Pairing? | Lands on |
 |---|---|---|---|---|
 | **Host / Main Device** | Firebase admin (email+password) | Boots embedded server | — | `/venue` |
-| **Staff (waiter/kitchen/cashier)** | 6-digit PIN → JWT | No | QR / auto-claim | `/tables` |
+| **Staff (waiter/kitchen/cashier)** | 6-digit PIN → JWT | No | mDNS auto-claim | `/tables` |
 | **Fleet super admin** | Firebase, `role=super` | No | Bypasses pair gate | `/fleet` |
 | **Owner (read-only)** | Firebase, `role=owner` | No | Bypasses pair gate | `/owner` |
-| **Guest** | Stateless guest JWT, 2h | — | Table QR, cleartext | `/t/<tableId>` web SPA |
 
 **Main Device guard (ADR-0017, narrowed by ADR-0077):** a venue has one active admin account running on one device. On admin sign-in the app does a 3-second mDNS scan for an existing host advertising the same `venueId`. Not found → boot the embedded server and become host. Found → sign-in is refused and the device shows which host it found, so there is never a second server for a venue by accident.
 
-**Ports:** `7443` (TLS staff API + WebSocket), `8080` (cleartext guest plane).
+**Ports:** `7443` (TLS staff API + WebSocket).
 
 ---
 
@@ -41,13 +40,8 @@ Cloud (Firebase) is used only for three things that are *not* on the critical pa
 - Service type `_satset._tcp`. TXT records: `fp` (SHA-256 TLS fingerprint), `label`, `ver` (app version), `vid` (cloud venue id).
 - Client browser is ref-counted, filters own-host entries, dedups by `host:port` preferring entries with an explicit label.
 
-### Pairing paths
-1. **QR pair** — scan `PairQrPayload{host, port, fingerprint, token}` → `POST /pair/claim` over an HTTPS client pinned to the scanned fingerprint. Server-returned fingerprint must match or the claim is refused.
-2. **Manual pair** — same fields typed by hand on `PairScreen`.
-3. **LAN auto-claim** — for a server surfaced live over mDNS: `POST /pair/auto-claim`, pinned to the mDNS-advertised fingerprint, mints and consumes a token server-side. No manual token entry; staff still must enter their PIN.
-
-### Pair tokens
-UUID, **5-minute TTL**, single-use (`used` flag + `claimedByDeviceId`), claim is transactional and upserts the `Devices` row.
+### Pairing (ADR-0080)
+One path: **LAN auto-claim**. The client picks a server surfaced live over mDNS and `POST /pair/auto-claim` over an HTTPS client pinned to the mDNS-advertised fingerprint; the server-returned fingerprint must match or the claim is refused. The server upserts the `Devices` row directly — there are no pair tokens and no QR scan. Reaching the endpoint over a pinned connection *is* the proof of LAN presence; staff still must enter their PIN, which is what gates anything useful.
 
 ### TLS
 - Self-signed RSA-2048, CN `satset.local`, **5-year validity**, generated once and persisted to app-support dir (`satset.cert.pem` / `satset.key.pem`).
@@ -131,7 +125,7 @@ A 60-second heartbeat stamps `venues/{vid}.lastSeenAt` (the only field Firestore
 ## 4. Floor & Table Management
 
 ### Table model
-`id, zoneId, label, pax, capacity(2), active, status, openAmount, readyCount, lastActorId, lockedBy/lockedByName/lockedAt/lockExpiresAt, openedAt, guestName, guestNotes, reservationId, currentVisitId, billClosedAt, moneyState, guestOrderingEnabled`.
+`id, zoneId, label, pax, capacity(2), active, status, openAmount, readyCount, lastActorId, lockedBy/lockedByName/lockedAt/lockExpiresAt, openedAt, guestName, guestNotes, reservationId, currentVisitId, billClosedAt, moneyState`.
 
 ### Table statuses
 `available` (Kosong) → `occupied` (Terisi) → `pending` (Pesanan masuk) → `ready` (Siap ×N).
@@ -139,7 +133,7 @@ A 60-second heartbeat stamps `venues/{vid}.lastSeenAt` (the only field Firestore
 | Transition | Trigger |
 |---|---|
 | `available → occupied` | `POST /tables/:id/seat` — 409 `already_seated` if not available. Sets `openedAt` (once), `pax` clamped to `[0, capacity]`, guest name/notes/reservation link, optional lock. |
-| `occupied → pending` | First order submit, `POST /tables/:id/pending`, or guest-order approval. |
+| `occupied → pending` | First order submit or `POST /tables/:id/pending`. |
 | `→ ready` | A ticket enters `ready` and `readyCount` goes 0→1 (transactional). |
 | `ready → occupied` | `readyCount` returns to 0, or manual `POST /tables/:id/ready/decrement`. |
 | `→ available` | `POST /tables/:id/close` (all tickets terminal) or `POST /tables/:id/release` (zero tickets). |
@@ -214,7 +208,7 @@ Category tabs, item grid with photo, price (`+` suffix when multiple variants), 
 ## 6. Ticket Lifecycle & Kitchen
 
 ### Statuses
-`draft, acknowledged, pendingReview, sent, prep, cooked, ready, served, held, voided`.
+`draft, acknowledged, sent, prep, cooked, ready, served, held, voided`.
 
 ### Transition graph (enforced identically client-side and server-side; server is authoritative)
 ```
@@ -242,7 +236,7 @@ Illegal transition → `409 illegal_transition`.
 `POST /tables/:tableId/course/:course/fire` (cap `takeOrder`) flips **only** `held` rows for that exact `(tableId, course)` pair to `sent`. Also reachable per-item ("Bakar sekarang").
 
 ### Timestamps (ADR-0013)
-- `sentAt` — set at creation, re-stamped on fire and on guest-order approval.
+- `sentAt` — set at creation, re-stamped on fire.
 - `readyAt` — **set-once** (`if null`), so a served→ready undo never inflates measured prep time.
 - `servedAt` — last-write.
 
@@ -435,7 +429,6 @@ Full CRUD with a capability matrix UI (role × capability, grouped by capability
 - `short` is auto-derived from the name when not supplied and recomputed on rename.
 - Delete blocked with `409 zone_in_use` while tables reference the zone.
 - Table CRUD: label, capacity (1–20 stepper; shrinking capacity drags `pax` down), zone, active flag, per-zone reorder.
-- **Per-table guest-ordering toggle** appears only when the venue-level toggle is on; enabling it exposes a "Tampilkan QR" action rendering `http://<lanIp>:8080/t/<tableId>`, with an explicit warning that the QR must be reprinted if the server's IP changes.
 - Management affordances are admin-only; other roles see a locked pill.
 
 ---
@@ -450,11 +443,9 @@ Singleton row, `GET /venue/settings` (public, self-seeding) / `PATCH` (cap `edit
 | **Receipt (ADR-0033)** | `receiptHeader`, `receiptFooter`, `receiptTagline`, `receiptSocial`, `receiptThankYou`, `receiptQrUrl`, `receiptQrCaption`, logo (+`logoRev`) |
 | **Tax & service** | `taxEnabled`, `taxRateBps` (0–5000, step 25), `serviceEnabled`, `serviceMode` (`percent`/`fixed`), `serviceRateBps` (step 50), `serviceFixedAmount` (step 1000, cap 1,000,000) |
 | **Operations** | `businessDayStartHour` (0–23), `prepTargetMins` (1–120; drives overdue alerts and the report SLA) |
-| **Guest ordering** | `guestOrderingEnabled` (venue master switch) |
 | **Alerts (ADR-0035)** | `soundNewOrder`, `soundReady`, `soundVoid`, `soundOverdue` |
 
 - **Logo**: `GET` ungated, `PUT`/`DELETE` gated, each bumping `logoRev`; uploads downsized to ≤1024 px wide at quality 85.
-- **Guest network info**: `GET /venue/guest-net` returns `{lanIp, guestPort: 8080, guestBaseUrl}`, picking the first private IPv4 on a non-loopback interface; returns null when Wi-Fi is down so the UI shows a warning instead of a dead QR.
 - **Live receipt preview** — a 300 px monospace "paper" mock bound to the settings as you type: logo, venue name, tagline, address/phone/social, header, sample lines, subtotal/PPN/TOTAL, footer, thank-you, and the QR with caption.
 
 ---
@@ -491,36 +482,7 @@ Both are built from a shared builder that produces identical bytes whether calle
 
 ---
 
-## 14. Guest Self-Ordering
-
-### The cleartext plane (ADR-0027)
-A second, TLS-free `shelf` listener on port **8080** — guests' phones can't be asked to trust a self-signed cert. It carries no staff auth middleware and is restarted alongside the TLS listener.
-
-### Guest session
-`POST /guest/session?table=<id>` requires **both** the venue master toggle and the per-table opt-in (both default off). It auto-opens the table's visit and mints a JWT with `{scope:'guest', tableId, visitId}`, **2-hour TTL**, and — critically — **no session row**, so a guest token can never satisfy the staff bearer path. Every guest call re-checks that the visit is still open.
-
-### Guest API
-- `GET /guest/menu` — the sanitized snapshot: sold-out and unavailable items removed, empty categories dropped, no photo bytes.
-- `GET /guest/menu/photo/<itemId>` — lazily fetched, cached 24h.
-- `POST /guest/orders` — **fully re-priced and re-validated server-side**: item exists/available, qty 1–99, variant required when the item has variants, modifier groups checked for required/multi/unknown ids, note truncated to 140 chars. Idempotency key required. **One pending batch per visit at a time** (`429 pending_batch_open`).
-- `GET /guest/orders` — poll own order status.
-
-### The guest web app (ADR-0029)
-A **hand-rolled single-file HTML SPA** — inline CSS, vanilla JS, no framework, no CDN, no web fonts — so it loads instantly on a venue LAN with zero internet. Served at `/t/<tableId>`.
-
-Features: category tab bar, item list with lazy photos, item detail sheet (variant radios, modifier checkboxes/radios with required validation, qty stepper, note ≤140 chars), running cart bar, cart review with per-line removal, idempotent submit, and a live order-status screen polling every 5s with Indonesian labels (menunggu / disiapkan / siap / disajikan / ditolak). Distinct error screens for `guest_ordering_disabled`, `table_disabled`, `table_not_found` and network failure.
-
-### Staff review queue (ADR-0028)
-Guest lines land as **`pendingReview` and are never auto-fired** — the KDS never sees them until a human approves.
-
-- `GET /guest-orders` (cap `takeOrder`) — visits with pending batches, with table labels.
-- `POST /guest-orders/:visitId/approve` — flips all pending lines to `sent`, re-stamps `sentAt`, sets the table to `pending`, broadcasts.
-- `POST /guest-orders/:visitId/reject` — flips them to `voided` with reason "Ditolak (pesan mandiri)" / code `other`.
-- UI: `/guestorders` tab (visible only when guest ordering is enabled) with per-visit cards showing lines, modifiers and notes, plus Tolak / Setujui buttons; optimistic with refetch-on-failure.
-
----
-
-## 15. Cloud Control Plane
+## 14. Cloud Control Plane
 
 ### Cloud Functions (`functions/index.js`, Node 22, all gated by `assertSuper()`)
 | Function | Purpose |
@@ -552,13 +514,13 @@ The **owner** app streams that doc into the exact same report widget tree the on
 
 ---
 
-## 16. Realtime & Resilience
+## 15. Realtime & Resilience
 
 ### WebSocket hub
 In-memory fan-out; every event is a `WsEventDto{v: 1, type, payload, ts}`. Authenticated via `?token=` on upgrade. Per-socket send errors are swallowed so one dead client can't stall a broadcast.
 
 **Event types:**
-`table.created/updated/deleted`, `ticket.created/updated`, `tableSession.closed`, `bill.updated`, `menu.updated`, `zone.created/updated/deleted`, `staff.created/updated/deleted`, `roles.updated`, `reservation.created/updated/deleted`, `guestOrder.submitted`, `printer.created/updated/deleted`, `device.paired`, `device.revoked`, `session.expired`, `venueSettings.updated`, `audit.created`, `server.restarting`.
+`table.created/updated/deleted`, `ticket.created/updated`, `tableSession.closed`, `bill.updated`, `menu.updated`, `zone.created/updated/deleted`, `staff.created/updated/deleted`, `roles.updated`, `reservation.created/updated/deleted`, `printer.created/updated/deleted`, `device.paired`, `device.revoked`, `session.expired`, `venueSettings.updated`, `audit.created`, `server.restarting`.
 
 ### Reconnect & resync (ADR-0021)
 Client reconnect uses exponential backoff (`200ms × 2^n`, capped at 10s) and waits for `channel.ready` before reporting `open` (no flicker on a failed handshake). On every (re)connect a **synthetic local `connected` event** is injected, which repositories treat as "you missed events — resync":
@@ -569,7 +531,7 @@ Client reconnect uses exponential backoff (`200ms × 2^n`, capped at 10s) and wa
 - `DevicesRepository` — refetches on pair/revoke/session-expiry.
 
 ### Other resilience mechanisms
-- **Idempotency table** backs both staff order submission and guest order submission.
+- **Idempotency table** backs staff order submission.
 - **Server restart** (`POST /server/restart`, cap `manageStaff`, additionally gated behind a **PIN re-entry dialog** even for an already-authenticated admin) broadcasts `server.restarting` *before* replying 202, then rebinds both listeners on the same port and TLS context without touching the DB. Clients return within about a second via backoff.
 - **Latency instrumentation** — a rolling 100-sample window yields p50/p95 per request, surfaced in `GET /server/status`.
 - **8-second client request timeout** so a dead paired server surfaces an error instead of hanging on the OS connect timeout.
@@ -577,7 +539,7 @@ Client reconnect uses exponential backoff (`200ms × 2^n`, capped at 10s) and wa
 
 ---
 
-## 17. System & Diagnostics Screen
+## 16. System & Diagnostics Screen
 
 - **Hero**: "Server LAN OK" vs "Mode degraded", with ping ms, active sessions, paired devices, WS state, and a 6-segment health meter (WS open, reachable, sessions >0, devices paired, status present, p95 <500 ms).
 - **Stat tiles**: KDS online, paired tablets, queue depth.
@@ -590,7 +552,7 @@ Client reconnect uses exponential backoff (`200ms × 2^n`, capped at 10s) and wa
 
 ---
 
-## 18. Alerts, Design System & Cross-Cutting UI
+## 17. Alerts, Design System & Cross-Cutting UI
 
 ### Alert sounds (ADR-0035)
 Four events — `newOrder`, `orderReady`, `voided`, `overdue` — each independently mapped to one of **21 bundled presets** (Senyap/silent, alarm, alert, beep, bell, chime, click, critical alarm, ding, doorbell, facility alarm, game alarm, happy bell, harp, marimba, pop, remove, reward, short alarm, start, ting). Defaults: newOrder `alert`, ready `chime`, void `alert`, overdue `alert`; an unknown stored id degrades gracefully back to the default.
@@ -609,7 +571,7 @@ Four events — `newOrder`, `orderReady`, `voided`, `overdue` — each independe
 - Theme mode is a provider defaulting to dark.
 
 ### Responsive shells
-`AppShell` picks a tablet or phone layout from `context.layout.useTabletShell`. Hardware decides and there is no override: `MainActivity` pins orientation at launch from `smallestScreenWidthDp` — tablets landscape, phones portrait — and holds the screen awake for the whole session (ADR-0049). The tablet shell is a 76 px icon side rail (Meja, Pesanan, Mandiri when guest ordering is on, Antrian, Kasir when permitted, Venue) with badge counts and a bottom user-avatar button; the phone shell uses a top bar plus a floating tab bar. Nearly every admin screen branches explicitly between `_tablet()` and `_phone()`.
+`AppShell` picks a tablet or phone layout from `context.layout.useTabletShell`. Hardware decides and there is no override: `MainActivity` pins orientation at launch from `smallestScreenWidthDp` — tablets landscape, phones portrait — and holds the screen awake for the whole session (ADR-0049). The tablet shell is a 76 px icon side rail (Meja, Pesanan, Antrian, Kasir when permitted, Venue) with badge counts and a bottom user-avatar button; the phone shell uses a top bar plus a floating tab bar. Nearly every admin screen branches explicitly between `_tablet()` and `_phone()`.
 
 Order-taking, takeaway and menu-editor routes deliberately live **outside** the shell so root-navigator pushes give full-page transitions.
 
@@ -618,9 +580,9 @@ Shimmer skeletons that collapse to static blocks under `MediaQuery.disableAnimat
 
 ---
 
-## 19. Data Model Summary
+## 18. Data Model Summary
 
-**Live/operational tables:** `Users`, `Roles`, `Zones`, `VenueTables`, `Visits`, `DailyCounters`, `MenuCategories`, `MenuItems`, `MenuTags`, `Tickets`, `Sessions`, `Devices`, `PairTokens`, `Idempotency`, `VenueSettings`, `Printers`, `AuditEntries`, `Receipts`, `ReceiptLines`, `Payments`, `Reservations`.
+**Live/operational tables:** `Users`, `Roles`, `Zones`, `VenueTables`, `Visits`, `DailyCounters`, `MenuCategories`, `MenuItems`, `MenuTags`, `Tickets`, `Sessions`, `Devices`, `Idempotency`, `VenueSettings`, `Printers`, `AuditEntries`, `Receipts`, `ReceiptLines`, `Payments`, `Reservations`.
 
 **Immutable history tables** (written by `snapshotVisitAndDelete`, the source of truth for all reporting): `TableSessions`, `TableSessionTickets`, `TableSessionReceipts`, `TableSessionPayments`, `TableSessionCourses`.
 
@@ -628,12 +590,12 @@ Schema version 34 at time of writing. All money is stored as integer rupiah — 
 
 ---
 
-## 20. Build, Release & Testing
+## 19. Build, Release & Testing
 
 - **CI**: Codemagic workflow `android-release-distribute` on a mac_mini_m2, triggered by pushing a `v*` git tag. Injects the release keystore, runs `flutter pub get` + `flutter build apk --release`, and uploads to **Firebase App Distribution** (group `testers`) via a service account.
 - **Firebase project** `satset-3a795`; Cloud Functions on the nodejs22 runtime.
 - **Android permissions**: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE` (mDNS), `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC` + `WAKE_LOCK` (server-mode foreground service), `POST_NOTIFICATIONS`, `CAMERA`, `BLUETOOTH_CONNECT` plus legacy Bluetooth permissions capped at SDK 30. **No location permission** — a deliberate consequence of not air-scanning for Bluetooth.
-- **Key dependencies**: `flutter_riverpod`, `go_router`, `drift` + `sqlite3_flutter_libs`, `shelf`/`shelf_router`/`shelf_web_socket`/`web_socket_channel`, `flutter_secure_storage`, `bonsoir` (mDNS), `mobile_scanner` (QR), `basic_utils` + `dart_jsonwebtoken` + `crypto` (TLS/JWT), `firebase_core`/`auth`/`firestore`/`functions`, `qr_flutter`, `print_bluetooth_thermal` + `esc_pos_utils_plus`, `pdf` + `printing` + `share_plus`.
+- **Key dependencies**: `flutter_riverpod`, `go_router`, `drift` + `sqlite3_flutter_libs`, `shelf`/`shelf_router`/`shelf_web_socket`/`web_socket_channel`, `flutter_secure_storage`, `bonsoir` (mDNS), `basic_utils` + `dart_jsonwebtoken` + `crypto` (TLS/JWT), `firebase_core`/`auth`/`firestore`/`functions`, `qr_flutter`, `print_bluetooth_thermal` + `esc_pos_utils_plus`, `pdf` + `printing` + `share_plus`.
 - **Testing**: `patrol` native integration tests in `patrol_test/` (app boot, menu categories, modifier sheet, modifier snapshot) plus unit/widget tests in `test/`.
 - **Codegen** (`freezed`, `json_serializable`, `drift_dev`) is scoped to `lib/data/models/**`, `lib/domain/models/**` and `lib/server/db/**` only; all UI, repositories, services, routes and use cases are hand-written.
 
@@ -667,9 +629,6 @@ GET    /takeaway/visits            POST   /visits/<id>/handover
 ```
 GET    /tickets                    POST   /orders
 POST   /tickets/<id>/transition
-GET    /guest-orders
-POST   /guest-orders/<visitId>/approve
-POST   /guest-orders/<visitId>/reject
 GET    /kds/stations               GET    /queue/depth
 ```
 
@@ -728,7 +687,7 @@ PATCH  /reservations/<id>          DELETE /reservations/<id>
 GET    /audit                      POST   /audit
 GET    /venue/settings             PATCH  /venue/settings
 GET    /venue/logo                 PUT    /venue/logo
-DELETE /venue/logo                 GET    /venue/guest-net
+DELETE /venue/logo
 GET    /printers                   POST   /printers
 PATCH  /printers/<id>              DELETE /printers/<id>
 POST   /printers/<id>/test
@@ -737,17 +696,6 @@ GET    /server/status              POST   /server/restart
 GET    /seed/state                 POST   /seed/generic
 ```
 
-### Guest plane (cleartext, port 8080)
-```
-POST   /guest/session?table=<id>
-GET    /guest/menu
-GET    /guest/menu/photo/<itemId>
-POST   /guest/orders
-GET    /guest/orders
-GET    /t/<tableId>                (the SPA)
-```
-
----
 
 ## Appendix B — Screen / Route Map
 
@@ -761,7 +709,6 @@ GET    /t/<tableId>                (the SPA)
 | `/owner` | Owner report snapshot | owner |
 | `/tables` | Floor grid (+ reservations & takeaway strips) | — |
 | `/orders` | Orders board | `takeOrder` |
-| `/guestorders` | Guest order review queue | `takeOrder` |
 | `/kitchen` | KDS | `viewKds` |
 | `/kasir` | Cashier (Aktif / Riwayat) | `settleBill` |
 | `/venue` | Venue hub | `manageStaff` |

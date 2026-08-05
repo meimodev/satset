@@ -161,12 +161,10 @@ void main() {
     });
 
     test('crit outranks warn on the same table', () {
-      // Long-stay (warn) and an unreviewed guest order (crit) both apply.
+      // Both apply at 120 minutes open: long-stay (warn, past longStayMins 90)
+      // and an escalated ungreeted table (crit). The crit must win.
       final out = staleFor(
-        table: table(
-          status: TableStatus.pending,
-          openedAt: now.subtract(const Duration(minutes: 120)),
-        ),
+        table: table(openedAt: now.subtract(const Duration(minutes: 120))),
         lines: [
           line(
             status: TicketStatus.sent,
@@ -174,12 +172,12 @@ void main() {
           ),
         ],
         hold: null,
-        service: ServiceState.none,
+        service: ServiceState.ungreeted,
         s: s,
         now: now,
       );
       expect(out!.severity, StaleSeverity.crit);
-      expect(out.label, contains('ditinjau'));
+      expect(out.label, contains('disapa'));
     });
 
     test('a booking past its grace releases a crit on the held table', () {

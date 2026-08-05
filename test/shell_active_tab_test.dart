@@ -33,7 +33,6 @@ void main() {
     // Top-level destinations are named by the rail's own label, one segment.
     '/tables': ('tables', [AppStrings.tabMeja]),
     '/orders': ('orders', [AppStrings.tabPesanan]),
-    '/guestorders': ('guest', [AppStrings.tabMandiri]),
     '/kitchen': ('kitchen', [AppStrings.tabAntrian]),
     '/kasir': ('kasir', [AppStrings.tabKasir]),
     // The one dynamic tail: who is logged in, not the label "Saya".

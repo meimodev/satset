@@ -1,6 +1,12 @@
 # ADR-0003 — LAN pairing: mDNS discovery, QR token claim, self-signed TLS with client-side fingerprint pinning
 
-**Status:** Accepted — 2026-05-28
+**Status:** Accepted — 2026-05-28 — amended by [0080](0080-self-order-and-token-pairing-removed.md)
+
+> **Amendment (0080).** §3's QR token claim was never built — no scanner was ever wired — and
+> `POST /pair/claim`, `PairingService` and the `PairTokens` table are now removed. Pairing is
+> `POST /pair/auto-claim` only, which writes the device row directly. §1 (mDNS discovery), §2
+> (self-signed TLS + fingerprint pinning) and §4 (the fingerprint is the trust anchor) are
+> unchanged and still describe the shipping app. Read §3 as history.
 
 ## Context
 

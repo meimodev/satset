@@ -42,7 +42,6 @@ mixin _$TableDto {
   String? get currentVisitId => throw _privateConstructorUsedError;
   DateTime? get billClosedAt => throw _privateConstructorUsedError;
   String? get moneyState => throw _privateConstructorUsedError;
-  bool get guestOrderingEnabled => throw _privateConstructorUsedError;
 
   /// Serializes this TableDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -81,7 +80,6 @@ abstract class $TableDtoCopyWith<$Res> {
     String? currentVisitId,
     DateTime? billClosedAt,
     String? moneyState,
-    bool guestOrderingEnabled,
   });
 }
 
@@ -121,7 +119,6 @@ class _$TableDtoCopyWithImpl<$Res, $Val extends TableDto>
     Object? currentVisitId = freezed,
     Object? billClosedAt = freezed,
     Object? moneyState = freezed,
-    Object? guestOrderingEnabled = null,
   }) {
     return _then(
       _value.copyWith(
@@ -209,10 +206,6 @@ class _$TableDtoCopyWithImpl<$Res, $Val extends TableDto>
                 ? _value.moneyState
                 : moneyState // ignore: cast_nullable_to_non_nullable
                       as String?,
-            guestOrderingEnabled: null == guestOrderingEnabled
-                ? _value.guestOrderingEnabled
-                : guestOrderingEnabled // ignore: cast_nullable_to_non_nullable
-                      as bool,
           )
           as $Val,
     );
@@ -250,7 +243,6 @@ abstract class _$$TableDtoImplCopyWith<$Res>
     String? currentVisitId,
     DateTime? billClosedAt,
     String? moneyState,
-    bool guestOrderingEnabled,
   });
 }
 
@@ -289,7 +281,6 @@ class __$$TableDtoImplCopyWithImpl<$Res>
     Object? currentVisitId = freezed,
     Object? billClosedAt = freezed,
     Object? moneyState = freezed,
-    Object? guestOrderingEnabled = null,
   }) {
     return _then(
       _$TableDtoImpl(
@@ -377,10 +368,6 @@ class __$$TableDtoImplCopyWithImpl<$Res>
             ? _value.moneyState
             : moneyState // ignore: cast_nullable_to_non_nullable
                   as String?,
-        guestOrderingEnabled: null == guestOrderingEnabled
-            ? _value.guestOrderingEnabled
-            : guestOrderingEnabled // ignore: cast_nullable_to_non_nullable
-                  as bool,
       ),
     );
   }
@@ -411,7 +398,6 @@ class _$TableDtoImpl implements _TableDto {
     this.currentVisitId,
     this.billClosedAt,
     this.moneyState,
-    this.guestOrderingEnabled = false,
   });
 
   factory _$TableDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -465,13 +451,10 @@ class _$TableDtoImpl implements _TableDto {
   final DateTime? billClosedAt;
   @override
   final String? moneyState;
-  @override
-  @JsonKey()
-  final bool guestOrderingEnabled;
 
   @override
   String toString() {
-    return 'TableDto(id: $id, zoneId: $zoneId, label: $label, pax: $pax, capacity: $capacity, active: $active, status: $status, openAmount: $openAmount, readyCount: $readyCount, lastActorId: $lastActorId, lockedBy: $lockedBy, lockedByName: $lockedByName, lockedAt: $lockedAt, lockExpiresAt: $lockExpiresAt, openedAt: $openedAt, guestName: $guestName, guestNotes: $guestNotes, reservationId: $reservationId, currentVisitId: $currentVisitId, billClosedAt: $billClosedAt, moneyState: $moneyState, guestOrderingEnabled: $guestOrderingEnabled)';
+    return 'TableDto(id: $id, zoneId: $zoneId, label: $label, pax: $pax, capacity: $capacity, active: $active, status: $status, openAmount: $openAmount, readyCount: $readyCount, lastActorId: $lastActorId, lockedBy: $lockedBy, lockedByName: $lockedByName, lockedAt: $lockedAt, lockExpiresAt: $lockExpiresAt, openedAt: $openedAt, guestName: $guestName, guestNotes: $guestNotes, reservationId: $reservationId, currentVisitId: $currentVisitId, billClosedAt: $billClosedAt, moneyState: $moneyState)';
   }
 
   @override
@@ -514,9 +497,7 @@ class _$TableDtoImpl implements _TableDto {
             (identical(other.billClosedAt, billClosedAt) ||
                 other.billClosedAt == billClosedAt) &&
             (identical(other.moneyState, moneyState) ||
-                other.moneyState == moneyState) &&
-            (identical(other.guestOrderingEnabled, guestOrderingEnabled) ||
-                other.guestOrderingEnabled == guestOrderingEnabled));
+                other.moneyState == moneyState));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -544,7 +525,6 @@ class _$TableDtoImpl implements _TableDto {
     currentVisitId,
     billClosedAt,
     moneyState,
-    guestOrderingEnabled,
   ]);
 
   /// Create a copy of TableDto
@@ -584,7 +564,6 @@ abstract class _TableDto implements TableDto {
     final String? currentVisitId,
     final DateTime? billClosedAt,
     final String? moneyState,
-    final bool guestOrderingEnabled,
   }) = _$TableDtoImpl;
 
   factory _TableDto.fromJson(Map<String, dynamic> json) =
@@ -632,8 +611,6 @@ abstract class _TableDto implements TableDto {
   DateTime? get billClosedAt;
   @override
   String? get moneyState;
-  @override
-  bool get guestOrderingEnabled;
 
   /// Create a copy of TableDto
   /// with the given fields replaced by the non-null parameter values.

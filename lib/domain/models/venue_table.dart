@@ -38,10 +38,6 @@ class VenueTable {
   /// With [openAmount] (outstanding) drives the floor money badge. ADR-0024.
   final String? moneyState;
 
-  /// Per-table opt-in for guest self-ordering (ADR-0027/0028). Even with the
-  /// venue master toggle on, a table only shows a guest QR when this is true.
-  final bool guestOrderingEnabled;
-
   const VenueTable({
     required this.id,
     required this.zoneId,
@@ -65,7 +61,6 @@ class VenueTable {
     this.currentVisitId,
     this.billClosed = false,
     this.moneyState,
-    this.guestOrderingEnabled = false,
   });
 
   /// True when [lockedBy] is set, not equal to [userId], and the lease has
@@ -101,7 +96,6 @@ class VenueTable {
     String? guestNotes,
     String? reservationId,
     String? currentVisitId,
-    bool? guestOrderingEnabled,
   }) {
     return VenueTable(
       id: id,
@@ -124,7 +118,6 @@ class VenueTable {
       guestNotes: guestNotes ?? this.guestNotes,
       reservationId: reservationId ?? this.reservationId,
       currentVisitId: currentVisitId ?? this.currentVisitId,
-      guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
     );
   }
 }

@@ -8,10 +8,8 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
-import 'package:satset/data/repositories/guest_orders_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/domain/models/capability.dart';
-import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
 import 'package:satset/ui/core/widgets/venue_billing_banner.dart';
 import 'package:satset/ui/core/widgets/exit_guard.dart';
@@ -41,7 +39,6 @@ String _firstSegment(String loc) {
 const _railRoutes = <String, (String, String)>{
   '/tables': ('tables', AppStrings.tabMeja),
   '/orders': ('orders', AppStrings.tabPesanan),
-  '/guestorders': ('guest', AppStrings.tabMandiri),
   '/kitchen': ('kitchen', AppStrings.tabAntrian),
   '/kasir': ('kasir', AppStrings.tabKasir),
   '/me': ('me', AppStrings.tabSaya),
@@ -96,14 +93,6 @@ class AppShell extends ConsumerWidget {
 
     final activeTab = activeTabFor(loc);
     final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
-    // Mandiri is a destination only when the venue master switch is on — see
-    // CONTEXT.md "Guest ordering switches". The per-table opt-in deliberately
-    // does not enter into it: one table falling back to waiter service says
-    // nothing about the other tables still ordering.
-    final showGuest =
-        ref.watch(authStateProvider).has(Capability.takeOrder) &&
-        ref.watch(venueSettingsProvider.select((s) => s.guestOrderingEnabled));
-    final guestCount = ref.watch(guestOrdersProvider).length;
     final userName = ref.watch(
       authStateProvider.select((s) => s.user?.name ?? ''),
     );
@@ -115,8 +104,6 @@ class AppShell extends ConsumerWidget {
           readyCount: ready,
           kitchenCount: kitchenCount,
           showKasir: showKasir,
-          showGuest: showGuest,
-          guestCount: guestCount,
           crumbs: crumbsFor(loc, userName),
           child: Column(
             children: [
@@ -152,8 +139,6 @@ class AppShell extends ConsumerWidget {
                       active: activeTab,
                       readyCount: ready,
                       showKasir: showKasir,
-                      showGuest: showGuest,
-                      guestCount: guestCount,
                     ),
                   ),
                 ],
@@ -170,14 +155,10 @@ class _FloatingTabBar extends StatelessWidget {
   final String active;
   final int readyCount;
   final bool showKasir;
-  final bool showGuest;
-  final int guestCount;
   const _FloatingTabBar({
     required this.active,
     required this.readyCount,
     this.showKasir = false,
-    this.showGuest = false,
-    this.guestCount = 0,
   });
 
   @override
@@ -221,16 +202,6 @@ class _FloatingTabBar extends StatelessWidget {
             badgeAlert: readyCount > 0,
             onTap: () => context.go('/orders'),
           ),
-          if (showGuest)
-            _Tab(
-              id: 'guest',
-              label: AppStrings.tabMandiri,
-              icon: Icons.qr_code_2,
-              active: active == 'guest',
-              badge: guestCount,
-              badgeAlert: guestCount > 0,
-              onTap: () => context.go('/guestorders'),
-            ),
           if (showKasir)
             _Tab(
               id: 'kasir',

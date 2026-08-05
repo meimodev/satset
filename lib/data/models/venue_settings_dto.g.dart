@@ -37,17 +37,14 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   longStayMins: (json['longStayMins'] as num?)?.toInt() ?? 90,
   idleTableMins: (json['idleTableMins'] as num?)?.toInt() ?? 20,
   reservationGraceMins: (json['reservationGraceMins'] as num?)?.toInt() ?? 15,
-  pendingReviewMins: (json['pendingReviewMins'] as num?)?.toInt() ?? 6,
   ungreetedAlertEnabled: json['ungreetedAlertEnabled'] as bool? ?? true,
   pickupAlertEnabled: json['pickupAlertEnabled'] as bool? ?? true,
-  guestOrderingEnabled: json['guestOrderingEnabled'] as bool? ?? false,
   soundNewOrder: json['soundNewOrder'] as String? ?? 'alert',
   soundReady: json['soundReady'] as String? ?? 'chime',
   soundVoid: json['soundVoid'] as String? ?? 'alert',
   soundOverdue: json['soundOverdue'] as String? ?? 'alert',
   soundUngreeted: json['soundUngreeted'] as String? ?? 'chime',
   soundPickup: json['soundPickup'] as String? ?? 'chime',
-  soundGuestPending: json['soundGuestPending'] as String? ?? 'doorbell',
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -81,15 +78,12 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'longStayMins': instance.longStayMins,
   'idleTableMins': instance.idleTableMins,
   'reservationGraceMins': instance.reservationGraceMins,
-  'pendingReviewMins': instance.pendingReviewMins,
   'ungreetedAlertEnabled': instance.ungreetedAlertEnabled,
   'pickupAlertEnabled': instance.pickupAlertEnabled,
-  'guestOrderingEnabled': instance.guestOrderingEnabled,
   'soundNewOrder': instance.soundNewOrder,
   'soundReady': instance.soundReady,
   'soundVoid': instance.soundVoid,
   'soundOverdue': instance.soundOverdue,
   'soundUngreeted': instance.soundUngreeted,
   'soundPickup': instance.soundPickup,
-  'soundGuestPending': instance.soundGuestPending,
 };

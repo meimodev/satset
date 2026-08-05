@@ -227,14 +227,6 @@ class _ThresholdCard extends ConsumerWidget {
             max: 120,
             onChanged: (v) => n.patch(reservationGraceMins: v),
           ),
-          _MinutesRow(
-            label: AppStrings.venueSettingsTimingPendingReview,
-            hint: AppStrings.venueSettingsTimingPendingReviewHint,
-            value: s.pendingReviewMins,
-            min: 1,
-            max: 60,
-            onChanged: (v) => n.patch(pendingReviewMins: v),
-          ),
         ],
       ),
     );
@@ -378,7 +370,6 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     (AlertEvent.overdue, AppStrings.venueSettingsSoundOverdue),
     (AlertEvent.ungreeted, AppStrings.venueSettingsSoundUngreeted),
     (AlertEvent.pickup, AppStrings.venueSettingsSoundPickup),
-    (AlertEvent.guestPending, AppStrings.venueSettingsSoundGuestPending),
   ];
 
   String _currentId(VenueSettingsDto s, AlertEvent e) => switch (e) {
@@ -388,7 +379,6 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     AlertEvent.overdue => s.soundOverdue,
     AlertEvent.ungreeted => s.soundUngreeted,
     AlertEvent.pickup => s.soundPickup,
-    AlertEvent.guestPending => s.soundGuestPending,
   };
 
   void _patch(AlertEvent e, String id) {
@@ -406,8 +396,6 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
         n.patch(soundUngreeted: id);
       case AlertEvent.pickup:
         n.patch(soundPickup: id);
-      case AlertEvent.guestPending:
-        n.patch(soundGuestPending: id);
     }
   }
 
@@ -560,7 +548,6 @@ class _DeviceMuteCard extends ConsumerWidget {
     AlertEvent.overdue: AppStrings.venueSettingsSoundOverdue,
     AlertEvent.ungreeted: AppStrings.venueSettingsSoundUngreeted,
     AlertEvent.pickup: AppStrings.venueSettingsSoundPickup,
-    AlertEvent.guestPending: AppStrings.venueSettingsSoundGuestPending,
   };
 
   /// Mirrors the routing in `AlertSoundService`: the kitchen (Server mode)
@@ -575,7 +562,6 @@ class _DeviceMuteCard extends ConsumerWidget {
     AlertEvent.voided,
     AlertEvent.ungreeted,
     AlertEvent.pickup,
-    AlertEvent.guestPending,
   };
 
   @override

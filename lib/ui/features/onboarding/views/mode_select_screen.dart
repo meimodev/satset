@@ -47,7 +47,9 @@ class ModeSelectScreen extends ConsumerWidget {
                     ? null
                     : () async {
                         await vm.choose(AppMode.client);
-                        if (context.mounted) context.go('/pair');
+                        // Pairing lives on the sign-in screen: it browses mDNS
+                        // and auto-claims the server you pick (ADR-0080).
+                        if (context.mounted) context.go('/pin');
                       },
               ),
               if (s.error != null) ...[

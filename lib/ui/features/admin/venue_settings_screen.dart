@@ -3,7 +3,6 @@ import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
-import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,9 +11,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
-import 'package:satset/data/repositories/guest_orders_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
-import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -304,7 +301,6 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         const SizedBox(height: Sp.s3h),
         _PajakLayananCard(),
         const SizedBox(height: Sp.s3h),
-        _GuestOrderingCard(),
         const SizedBox(height: Sp.s3h),
         _ReportsHourCard(),
       ],
@@ -374,19 +370,6 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                     context,
                     AppStrings.venueSettingsSectionTax,
                     (c, _) => _PajakLayananCard(),
-                  ),
-                ),
-                _phoneRow(
-                  context,
-                  sc,
-                  label: AppStrings.venueSettingsSectionGuestOrdering,
-                  value: s.guestOrderingEnabled
-                      ? AppStrings.active
-                      : AppStrings.inactive,
-                  onTap: () => _openDetail(
-                    context,
-                    AppStrings.venueSettingsSectionGuestOrdering,
-                    (c, _) => _GuestOrderingCard(),
                   ),
                 ),
                 _phoneRow(
@@ -1241,211 +1224,6 @@ class _PajakLayananCard extends ConsumerWidget {
       onTap: onTap,
     );
   }
-}
-
-class _GuestOrderingCard extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final s = ref.watch(venueSettingsProvider);
-    final n = ref.read(venueSettingsProvider.notifier);
-    final net = ref.watch(guestNetInfoProvider);
-    return SatCard.titled(
-      title: AppStrings.venueSettingsSectionGuestOrdering,
-      tag: 'QR TAMU',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: Sp.s1h),
-          Text(
-            'Tamu pindai QR di meja, pesan sendiri lewat web. Pesanan masuk '
-            'antrian “Mandiri” untuk Anda setujui sebelum ke dapur.',
-            style: SatType.bodyS(color: sc.textLo),
-          ),
-          const SizedBox(height: Sp.s3h),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Aktifkan pesanan mandiri',
-                  style: SatType.bodyM(color: sc.textHi),
-                ),
-              ),
-              SatToggle(
-                value: s.guestOrderingEnabled,
-                semanticLabel: 'Pesan mandiri',
-                onChanged: (v) {
-                  // Switching off hides the Mandiri tab venue-wide, so a
-                  // pending guest order would be left with no staff surface.
-                  // Block it and hand over the queue instead of stranding it.
-                  final pending = ref.read(guestOrdersProvider).length;
-                  if (!v && pending > 0) {
-                    _guestQueueBlock(context, pending);
-                    return;
-                  }
-                  n.patch(guestOrderingEnabled: v);
-                },
-              ),
-            ],
-          ),
-          if (s.guestOrderingEnabled) ...[
-            const SizedBox(height: Sp.s3h),
-            net.when(
-              loading: () => _netRow(sc, 'Mendeteksi alamat…', sc.textLo),
-              error: (_, _) =>
-                  _driftBanner(sc, 'Gagal mendeteksi alamat jaringan.'),
-              data: (info) => info.guestBaseUrl == null
-                  ? _driftBanner(
-                      sc,
-                      'Server tidak terhubung Wi-Fi. QR tamu tidak akan '
-                      'berfungsi sampai jaringan aktif.',
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _netRow(sc, info.guestBaseUrl!, sc.textHi),
-                        const SizedBox(height: Sp.s2),
-                        _driftBanner(
-                          sc,
-                          'PENTING: alamat ini berubah jika IP server berganti. '
-                          'Jika Anda mencetak QR, cetak ulang setiap kali '
-                          'alamat di atas berubah — QR lama akan mati.',
-                          warn: true,
-                        ),
-                      ],
-                    ),
-            ),
-            const SizedBox(height: Sp.s1h),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: SatButton.ghost(
-                icon: Icons.refresh,
-                label: 'Cek ulang alamat',
-                size: SatButtonSize.sm,
-                onTap: () => ref.invalidate(guestNetInfoProvider),
-              ),
-            ),
-            Text(
-              'Aktifkan per meja dari layar Atur zona untuk menampilkan QR.',
-              style: SatType.bodyS(color: sc.textDim),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _netRow(SatColors sc, String text, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
-    decoration: SatBox.d(
-      color: sc.bg1,
-      border: SatB.all(color: sc.border0),
-      borderRadius: SatR.a(10),
-    ),
-    child: Row(
-      children: [
-        Icon(Icons.link, size: 15, color: sc.textLo),
-        const SizedBox(width: Sp.s2),
-        Expanded(
-          child: Text(text, style: SatType.monoM(color: color)),
-        ),
-      ],
-    ),
-  );
-
-  Widget _driftBanner(SatColors sc, String text, {bool warn = false}) {
-    final c = warn ? sc.warn : sc.urgent;
-    return Container(
-      padding: const EdgeInsets.all(Sp.s3),
-      decoration: SatBox.d(
-        color: c.withValues(alpha: 0.12),
-        border: SatB.all(color: c.withValues(alpha: 0.5)),
-        borderRadius: SatR.a(10),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            warn ? Icons.warning_amber_rounded : Icons.wifi_off,
-            size: 17,
-            color: c,
-          ),
-          const SizedBox(width: Sp.s2h),
-          Expanded(
-            child: Text(text, style: SatType.bodyS(color: sc.textHi)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// "Antrian mandiri belum kosong" — why the master switch would not turn off,
-/// plus the way to the queue that is blocking it. Not a confirm: there is no
-/// destructive path to take, so it offers a door, not a "do it anyway".
-///
-/// ponytail: yet another private copy of the sheet shape (menu_screen,
-/// staff_screen, zone_admin_screen, cashier_bill_screen hold the others). A
-/// shared `showSatConfirm` is still the right fix and still its own change.
-Future<void> _guestQueueBlock(BuildContext context, int pending) {
-  return showSatSheet<void>(
-    context,
-    builder: (ctx) {
-      final sc = ctx.sat;
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s3, Sp.s5, Sp.s5),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: SatBox.d(
-                    color: sc.border1,
-                    borderRadius: SatR.a(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: Sp.s4h),
-              Text(
-                AppStrings.guestOrderingBlockTitle,
-                style: SatType.labelL(color: sc.textHi),
-              ),
-              const SizedBox(height: Sp.s2),
-              Text(
-                AppStrings.guestOrderingBlockBody(pending),
-                style: SatType.bodyM(color: sc.textMd),
-              ),
-              const SizedBox(height: Sp.s4h),
-              Row(
-                children: [
-                  Expanded(
-                    child: SatButton.outline(
-                      label: AppStrings.cancel,
-                      onTap: () => Navigator.pop(ctx),
-                    ),
-                  ),
-                  const SizedBox(width: Sp.s2h),
-                  Expanded(
-                    child: SatButton.primary(
-                      label: AppStrings.guestOrderingBlockAction,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        ctx.go('/guestorders');
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
 }
 
 class _ReportsHourCard extends ConsumerWidget {

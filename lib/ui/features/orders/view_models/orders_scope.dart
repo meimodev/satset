@@ -12,9 +12,6 @@ import 'package:satset/domain/models/ticket.dart';
 ///
 /// Excluded, deliberately:
 /// - `draft` — composed but never sent; not the kitchen's problem yet.
-/// - `pendingReview` — a [[Guest order]] awaiting staff approval (ADR-0028).
-///   Not *your* outstanding work until you approve it, and the "Belum ditinjau"
-///   alert already covers that state.
 /// - `served`, `voided` — done, one way or the other.
 bool isOutstandingTicket(TicketStatus s) => switch (s) {
   TicketStatus.sent ||
@@ -24,7 +21,6 @@ bool isOutstandingTicket(TicketStatus s) => switch (s) {
   TicketStatus.ready => true,
   TicketStatus.draft ||
   TicketStatus.acknowledged ||
-  TicketStatus.pendingReview ||
   TicketStatus.served ||
   TicketStatus.voided => false,
 };

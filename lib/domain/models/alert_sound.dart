@@ -8,7 +8,7 @@ library;
 /// The moments that can sound a cue. Routing (who hears each) stays a
 /// per-device-role decision in `AlertSoundService` — see ADR-0007.
 ///
-/// [ungreeted] and [pickup] were added by ADR-0044, [guestPending] by ADR-0064.
+/// [ungreeted] and [pickup] were added by ADR-0044.
 /// The other table states ("Meja lama", "Meja selesai makan") are deliberately
 /// **visual only** and so are absent here — a cue a waiter cannot discharge is
 /// noise that devalues every other cue.
@@ -19,7 +19,6 @@ enum AlertEvent {
   overdue,
   ungreeted,
   pickup,
-  guestPending,
 }
 
 /// A selectable bundled clip. [asset] is null for the silent "none" preset.
@@ -79,10 +78,6 @@ const alertEventDefaults = <AlertEvent, String>{
   AlertEvent.overdue: 'alert',
   AlertEvent.ungreeted: 'chime',
   AlertEvent.pickup: 'chime',
-  // Deliberately not 'chime': a guest order needs a waiter to walk over and
-  // decide, so it must not be confusable with the ready cue a waiter answers
-  // by collecting a plate.
-  AlertEvent.guestPending: 'doorbell',
 };
 
 /// Preset for [id], or null if [id] is unknown (e.g. a removed preset).

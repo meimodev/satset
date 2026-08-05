@@ -26,7 +26,6 @@ part 'database.g.dart';
     Tickets,
     Sessions,
     Devices,
-    PairTokens,
     Idempotency,
     AuditEntries,
     VenueSettings,
@@ -64,7 +63,7 @@ class AppDatabase extends _$AppDatabase {
   // resolved the same way and for the same reason: a device that had already
   // taken 42 as the cashier pass would never run the audit migration, and
   // every read of the log would fail on a missing `amount_cents`.
-  int get schemaVersion => 44;
+  int get schemaVersion => 45;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -817,6 +816,30 @@ class AppDatabase extends _$AppDatabase {
           await customStatement("DELETE FROM $t WHERE id LIKE 'demo-%'");
         }
         await customStatement('DELETE FROM demo_states');
+      }
+      if (from < 45) {
+        // Guest QR self-ordering is gone (ADR-0080), and with it the venue
+        // master switch, the per-table opt-in, the review threshold and the
+        // arrival cue.
+        //
+        // `pendingReview` rows are deleted rather than remapped. They are
+        // guest orders no waiter ever approved: never fired, never billed
+        // (the bill filter excluded them by that exact status string). With
+        // the enum value gone, `ticketStatusFromKey` would read them back as
+        // `sent` — putting an unapproved order on a guest's bill. Deleting is
+        // the only reading that stays true. Nothing references tickets by id
+        // (`audit_entries` keys on `table_id`), so no row is orphaned.
+        await customStatement("DELETE FROM tickets WHERE status = 'pendingReview'");
+        await customStatement(
+          "DELETE FROM table_session_tickets WHERE status = 'pendingReview'",
+        );
+        await _safeDropColumnOn('venue_tables', 'guest_ordering_enabled');
+        await _safeDropColumnOn('venue_settings', 'guest_ordering_enabled');
+        await _safeDropColumnOn('venue_settings', 'sound_guest_pending');
+        await _safeDropColumnOn('venue_settings', 'pending_review_mins');
+        // Token pairing is gone too (ADR-0080): /pair/auto-claim writes the
+        // device row directly, so the single-use token table has no reader.
+        await customStatement('DROP TABLE IF EXISTS pair_tokens');
       }
     },
     onCreate: (m) async {

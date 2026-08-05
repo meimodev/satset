@@ -1,5 +1,7 @@
 # A guest order arriving gets its own cue
 
+**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed, and with it `AlertEvent.guestPending`. Kept for the reasoning.
+
 Extends [ADR-0028](0028-guest-orders-pending-review-not-auto-fire.md) (guest orders rest in review) and [ADR-0044](0044-table-state-alerts-channel-escalation-and-per-event-mute.md) (what earns a sound). `AlertEvent` grows a seventh member, `guestPending`, with its own venue-wide preset (`soundGuestPending`, schema v40) and its own row in the device mute list.
 
 The glossary already claimed the review queue was "announced by an Audio alert (reuses the ready-alert plumbing)". It was not. `guestOrder.submitted` reached `GuestOrdersRepository`, which silently refetched, and `AlertSoundService` dropped the event on the floor — its `_onEvent` switch only handled `sent` / `ready` / `voided`, and `pendingReview` is none of those. So a guest order landed as a passive badge, which is the one outcome the glossary's own `_Avoid_` clause names.

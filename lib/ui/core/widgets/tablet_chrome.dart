@@ -17,8 +17,6 @@ class TabletShell extends StatelessWidget {
   final int readyCount;
   final int kitchenCount;
   final bool showKasir;
-  final bool showGuest;
-  final int guestCount;
   final Widget child;
   final List<String> crumbs;
 
@@ -28,8 +26,6 @@ class TabletShell extends StatelessWidget {
     required this.readyCount,
     required this.kitchenCount,
     this.showKasir = false,
-    this.showGuest = false,
-    this.guestCount = 0,
     required this.child,
     required this.crumbs,
   });
@@ -46,8 +42,6 @@ class TabletShell extends StatelessWidget {
             readyCount: readyCount,
             kitchenCount: kitchenCount,
             showKasir: showKasir,
-            showGuest: showGuest,
-            guestCount: guestCount,
           ),
           Expanded(
             child: Column(
@@ -68,16 +62,12 @@ class TabletSideRail extends StatelessWidget {
   final int readyCount;
   final int kitchenCount;
   final bool showKasir;
-  final bool showGuest;
-  final int guestCount;
   const TabletSideRail({
     super.key,
     required this.active,
     required this.readyCount,
     required this.kitchenCount,
     this.showKasir = false,
-    this.showGuest = false,
-    this.guestCount = 0,
   });
 
   @override
@@ -135,16 +125,6 @@ class TabletSideRail extends StatelessWidget {
                     badge: readyCount,
                     alert: readyCount > 0,
                   ),
-                  if (showGuest)
-                    _RailBtn(
-                      id: 'guest',
-                      label: AppStrings.tabMandiri,
-                      icon: Icons.qr_code_2,
-                      route: '/guestorders',
-                      active: active,
-                      badge: guestCount,
-                      alert: guestCount > 0,
-                    ),
                   if (showKasir)
                     _RailBtn(
                       id: 'kasir',

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
@@ -155,17 +154,11 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
                 ((body['reservationGraceMins'] as num).toInt()).clamp(0, 240),
               )
             : const Value.absent(),
-        pendingReviewMins: body.containsKey('pendingReviewMins')
-            ? Value(((body['pendingReviewMins'] as num).toInt()).clamp(1, 120))
-            : const Value.absent(),
         ungreetedAlertEnabled: body.containsKey('ungreetedAlertEnabled')
             ? Value(body['ungreetedAlertEnabled'] == true)
             : const Value.absent(),
         pickupAlertEnabled: body.containsKey('pickupAlertEnabled')
             ? Value(body['pickupAlertEnabled'] == true)
-            : const Value.absent(),
-        guestOrderingEnabled: body.containsKey('guestOrderingEnabled')
-            ? Value(body['guestOrderingEnabled'] == true)
             : const Value.absent(),
         soundNewOrder: body.containsKey('soundNewOrder')
             ? Value((body['soundNewOrder'] as String).trim())
@@ -181,9 +174,6 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             : const Value.absent(),
         soundUngreeted: body.containsKey('soundUngreeted')
             ? Value((body['soundUngreeted'] as String).trim())
-            : const Value.absent(),
-        soundGuestPending: body.containsKey('soundGuestPending')
-            ? Value((body['soundGuestPending'] as String).trim())
             : const Value.absent(),
         soundPickup: body.containsKey('soundPickup')
             ? Value((body['soundPickup'] as String).trim())
@@ -262,26 +252,6 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     );
   });
 
-  // Guest plane network info — the LAN IPv4 the server is reachable at, the
-  // cleartext guest port (ADR-0027), and the base URL guests load by scanning a
-  // table QR. Used by the admin Floor screen to render per-table QR codes and
-  // by the master toggle card to surface the address. Staff-gated.
-  r.get('/venue/guest-net', (Request req) async {
-    final denied = await _requireCap(req, db, auth, Capability.editSettings);
-    if (denied != null) return denied;
-    final ip = await _lanIpv4();
-    const port =
-        8080; // SatServer.guestPort — kept literal to avoid an import cycle.
-    return Response.ok(
-      jsonEncode({
-        'lanIp': ip,
-        'guestPort': port,
-        'guestBaseUrl': ip == null ? null : 'http://$ip:$port',
-      }),
-      headers: {'content-type': 'application/json'},
-    );
-  });
-
   return r;
 }
 
@@ -329,52 +299,12 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   'longStayMins': s.longStayMins,
   'idleTableMins': s.idleTableMins,
   'reservationGraceMins': s.reservationGraceMins,
-  'pendingReviewMins': s.pendingReviewMins,
   'ungreetedAlertEnabled': s.ungreetedAlertEnabled,
   'pickupAlertEnabled': s.pickupAlertEnabled,
-  'guestOrderingEnabled': s.guestOrderingEnabled,
   'soundNewOrder': s.soundNewOrder,
   'soundReady': s.soundReady,
   'soundVoid': s.soundVoid,
   'soundOverdue': s.soundOverdue,
   'soundUngreeted': s.soundUngreeted,
   'soundPickup': s.soundPickup,
-  'soundGuestPending': s.soundGuestPending,
 };
-
-/// Best-effort private LAN IPv4 the server is reachable at, for building guest
-/// QR URLs. Prefers a 192.168/10/172.16-31 address on a non-loopback interface;
-/// returns null if none (e.g. Wi-Fi down) so the UI can warn instead of baking a
-/// dead URL into a QR.
-Future<String?> _lanIpv4() async {
-  try {
-    final ifaces = await NetworkInterface.list(
-      type: InternetAddressType.IPv4,
-      includeLoopback: false,
-      includeLinkLocal: false,
-    );
-    String? fallback;
-    for (final iface in ifaces) {
-      for (final addr in iface.addresses) {
-        final ip = addr.address;
-        fallback ??= ip;
-        if (ip.startsWith('192.168.') ||
-            ip.startsWith('10.') ||
-            _is172Private(ip)) {
-          return ip;
-        }
-      }
-    }
-    return fallback;
-  } catch (_) {
-    return null;
-  }
-}
-
-bool _is172Private(String ip) {
-  if (!ip.startsWith('172.')) return false;
-  final parts = ip.split('.');
-  if (parts.length < 2) return false;
-  final second = int.tryParse(parts[1]) ?? 0;
-  return second >= 16 && second <= 31;
-}

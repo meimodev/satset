@@ -7,7 +7,6 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -18,7 +17,6 @@ import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/zone_visuals.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
-import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
@@ -390,7 +388,6 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
   late int _capacity;
   late String _zoneId;
   late bool _active;
-  late bool _guestOrdering;
 
   bool get _isNew => widget.table == null;
 
@@ -402,7 +399,6 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     _capacity = t?.capacity ?? 2;
     _zoneId = t?.zoneId ?? widget.zoneId;
     _active = t?.active ?? true;
-    _guestOrdering = t?.guestOrderingEnabled ?? false;
   }
 
   @override
@@ -431,9 +427,6 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
         zoneId: _zoneId,
         active: _active,
       );
-      if (_guestOrdering != (widget.table!.guestOrderingEnabled)) {
-        n.setGuestOrdering(widget.table!.id, _guestOrdering);
-      }
     }
     Navigator.of(context).pop();
   }
@@ -447,10 +440,6 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
     if (ok != true) return;
     ref.read(tablesProvider.notifier).removeTable(widget.table!.id);
     if (mounted) Navigator.of(context).pop();
-  }
-
-  void _showQr(BuildContext context, VenueTable table) {
-    showSatDialog<void>(context, builder: (_) => _QrDialog(table: table));
   }
 
   @override
@@ -501,19 +490,6 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
             _ActiveRow(
               active: _active,
               onChanged: (v) => setState(() => _active = v),
-            ),
-          ],
-          if (!_isNew &&
-              ref.watch(
-                venueSettingsProvider.select((s) => s.guestOrderingEnabled),
-              )) ...[
-            const SizedBox(height: Sp.s3),
-            _GuestOrderRow(
-              enabled: _guestOrdering,
-              onChanged: (v) => setState(() => _guestOrdering = v),
-              onShowQr: _guestOrdering
-                  ? () => _showQr(context, widget.table!)
-                  : null,
             ),
           ],
         ],
@@ -584,201 +560,6 @@ class _ActiveRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _GuestOrderRow extends StatelessWidget {
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
-  final VoidCallback? onShowQr;
-  const _GuestOrderRow({
-    required this.enabled,
-    required this.onChanged,
-    this.onShowQr,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return Container(
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border1),
-        borderRadius: SatR.a(14),
-      ),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: () => onChanged(!enabled),
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Sp.s4,
-                vertical: Sp.s3h,
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.qr_code_2, size: 18, color: sc.accentText),
-                  const SizedBox(width: Sp.s2h),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppStrings.zoneAdminGuestOrdering,
-                          style: SatType.labelM(color: sc.textHi),
-                        ),
-                        const SizedBox(height: Sp.sHair),
-                        Text(
-                          AppStrings.zoneAdminGuestOrderingSub,
-                          style: SatType.bodyS(color: sc.textMd),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SatToggle(
-                    value: enabled,
-                    semanticLabel: AppStrings.zoneAdminGuestOrdering,
-                    onChanged: onChanged,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (onShowQr != null) ...[
-            Divider(height: 1, color: sc.border1),
-            InkWell(
-              onTap: onShowQr,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Sp.s4,
-                  vertical: Sp.s3,
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.qr_code, size: 16, color: sc.accentText),
-                    const SizedBox(width: Sp.s2),
-                    Text(
-                      AppStrings.zoneAdminShowQr,
-                      style: SatType.labelM(color: sc.accentText),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _QrDialog extends ConsumerWidget {
-  final VenueTable table;
-  const _QrDialog({required this.table});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final net = ref.watch(guestNetInfoProvider);
-    return Dialog(
-      backgroundColor: sc.bg1,
-      shape: RoundedRectangleBorder(borderRadius: SatR.a(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(Sp.s6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'QR Meja ${table.displayName}',
-              style: SatType.labelL(color: sc.textHi),
-            ),
-            const SizedBox(height: Sp.s4),
-            net.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(Sp.s10),
-                child: CircularProgressIndicator(),
-              ),
-              error: (_, _) => _warn(sc, 'Gagal mendeteksi alamat server.'),
-              data: (info) {
-                final base = info.guestBaseUrl;
-                if (base == null) {
-                  return _warn(
-                    sc,
-                    'Server tidak terhubung Wi-Fi. Sambungkan ke jaringan '
-                    'layak coba lagi.',
-                  );
-                }
-                final url = '$base/t/${table.id}';
-                return Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(Sp.s3h),
-                      decoration: SatBox.d(
-                        color: satQrQuiet,
-                        borderRadius: SatR.a(14),
-                      ),
-                      child: QrImageView(
-                        data: url,
-                        size: 220,
-                        backgroundColor: satQrQuiet,
-                      ),
-                    ),
-                    const SizedBox(height: Sp.s3),
-                    SelectableText(
-                      url,
-                      textAlign: TextAlign.center,
-                      style: SatType.monoM(color: sc.textMd),
-                    ),
-                    const SizedBox(height: Sp.s3),
-                    _warn(
-                      sc,
-                      'PENTING: cetak ulang QR jika alamat di atas berubah — '
-                      'salinan lama akan mati saat IP server berganti.',
-                      warn: true,
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: Sp.s4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: SatButton.ghost(
-                label: AppStrings.close,
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _warn(SatColors sc, String text, {bool warn = false}) {
-    final c = warn ? sc.warn : sc.urgent;
-    return Container(
-      padding: const EdgeInsets.all(Sp.s3),
-      decoration: SatBox.d(
-        color: c.withValues(alpha: 0.12),
-        border: SatB.all(color: c.withValues(alpha: 0.5)),
-        borderRadius: SatR.a(10),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            warn ? Icons.warning_amber_rounded : Icons.wifi_off,
-            size: 17,
-            color: c,
-          ),
-          const SizedBox(width: Sp.s2h),
-          Expanded(
-            child: Text(text, style: SatType.bodyS(color: sc.textHi)),
-          ),
-        ],
       ),
     );
   }

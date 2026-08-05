@@ -760,7 +760,8 @@ class _ServerList extends ConsumerWidget {
               ? Padding(
                   padding: const EdgeInsets.all(Sp.s4h),
                   child: Text(
-                    'Mencari server di jaringan… atau pasangkan manual lewat QR.',
+                    'Mencari server di jaringan… pastikan tablet server '
+                    'menyala dan berada di Wi-Fi yang sama.',
                     style: SatType.bodyM(color: sc.textMd),
                   ),
                 )

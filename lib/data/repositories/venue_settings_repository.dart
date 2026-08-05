@@ -90,17 +90,14 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     int? longStayMins,
     int? idleTableMins,
     int? reservationGraceMins,
-    int? pendingReviewMins,
     bool? ungreetedAlertEnabled,
     bool? pickupAlertEnabled,
-    bool? guestOrderingEnabled,
     String? soundNewOrder,
     String? soundReady,
     String? soundVoid,
     String? soundOverdue,
     String? soundUngreeted,
     String? soundPickup,
-    String? soundGuestPending,
   }) async {
     final prev = state;
     state = state.copyWith(
@@ -131,18 +128,15 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       longStayMins: longStayMins ?? state.longStayMins,
       idleTableMins: idleTableMins ?? state.idleTableMins,
       reservationGraceMins: reservationGraceMins ?? state.reservationGraceMins,
-      pendingReviewMins: pendingReviewMins ?? state.pendingReviewMins,
       ungreetedAlertEnabled:
           ungreetedAlertEnabled ?? state.ungreetedAlertEnabled,
       pickupAlertEnabled: pickupAlertEnabled ?? state.pickupAlertEnabled,
-      guestOrderingEnabled: guestOrderingEnabled ?? state.guestOrderingEnabled,
       soundNewOrder: soundNewOrder ?? state.soundNewOrder,
       soundReady: soundReady ?? state.soundReady,
       soundVoid: soundVoid ?? state.soundVoid,
       soundOverdue: soundOverdue ?? state.soundOverdue,
       soundUngreeted: soundUngreeted ?? state.soundUngreeted,
       soundPickup: soundPickup ?? state.soundPickup,
-      soundGuestPending: soundGuestPending ?? state.soundGuestPending,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -174,17 +168,14 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'longStayMins': ?longStayMins,
         'idleTableMins': ?idleTableMins,
         'reservationGraceMins': ?reservationGraceMins,
-        'pendingReviewMins': ?pendingReviewMins,
         'ungreetedAlertEnabled': ?ungreetedAlertEnabled,
         'pickupAlertEnabled': ?pickupAlertEnabled,
-        'guestOrderingEnabled': ?guestOrderingEnabled,
         'soundNewOrder': ?soundNewOrder,
         'soundReady': ?soundReady,
         'soundVoid': ?soundVoid,
         'soundOverdue': ?soundOverdue,
         'soundUngreeted': ?soundUngreeted,
         'soundPickup': ?soundPickup,
-        'soundGuestPending': ?soundGuestPending,
       };
       final raw = await ref
           .read(apiClientProvider)
@@ -232,31 +223,3 @@ final venueLogoBytesProvider = FutureProvider.autoDispose
         return null;
       }
     });
-
-/// The server's current LAN address for the guest plane: the base URL guests
-/// reach by scanning a table QR (`http://<lan-ip>:8080`), plus the raw IP for
-/// drift detection. Null fields mean the server couldn't resolve a LAN IPv4
-/// (Wi-Fi down) — the UI must warn rather than render a dead QR. Refetchable so
-/// the admin can re-check after a network change.
-class GuestNetInfo {
-  const GuestNetInfo({this.lanIp, this.guestPort, this.guestBaseUrl});
-  final String? lanIp;
-  final int? guestPort;
-  final String? guestBaseUrl;
-}
-
-final guestNetInfoProvider = FutureProvider<GuestNetInfo>((ref) async {
-  if (ref.read(apiConfigProvider) == null) return const GuestNetInfo();
-  try {
-    final raw = await ref.read(apiClientProvider).getJson('/venue/guest-net');
-    final m = (raw as Map).cast<String, dynamic>();
-    return GuestNetInfo(
-      lanIp: m['lanIp'] as String?,
-      guestPort: (m['guestPort'] as num?)?.toInt(),
-      guestBaseUrl: m['guestBaseUrl'] as String?,
-    );
-  } catch (e) {
-    SatLog.repo('guestNet.fetch fail $e');
-    return const GuestNetInfo();
-  }
-});

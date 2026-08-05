@@ -168,7 +168,6 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       currentVisitId: d.currentVisitId,
       billClosed: d.billClosedAt != null,
       moneyState: d.moneyState,
-      guestOrderingEnabled: d.guestOrderingEnabled,
     );
   }
 
@@ -367,29 +366,6 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     try {
       final raw = await ref.read(apiClientProvider).patchJson('/tables/$id/pax', {
         'pax': pax,
-      });
-      _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
-    } catch (_) {
-      if (prev != null) _replace(id, prev);
-      rethrow;
-    }
-  }
-
-  /// Per-table opt-in for guest self-ordering (ADR-0027/0028). Optimistic;
-  /// rolls back on failure. Goes through the generic `PATCH /tables/<id>`.
-  Future<void> setGuestOrdering(String id, bool enabled) async {
-    SatLog.repo(
-      'tables.setGuestOrdering id=${id.substring(0, id.length.clamp(0, 6))} on=$enabled',
-    );
-    final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
-    if (prev != null) {
-      _replace(id, prev.copyWith(guestOrderingEnabled: enabled));
-    }
-    final cfg = ref.read(apiConfigProvider);
-    if (cfg == null) return;
-    try {
-      final raw = await ref.read(apiClientProvider).patchJson('/tables/$id', {
-        'guestOrderingEnabled': enabled,
       });
       _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
     } catch (_) {

@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-SatSet — Flutter 3.41+ Android-only (minSdk 29) LAN restaurant ordering app. Single APK runs in **Server** or **Client** mode, paired over Wi-Fi via mDNS + QR.
+SatSet — Flutter 3.41+ Android-only (minSdk 29) LAN restaurant ordering app. Single APK runs in **Server** or **Client** mode, paired over Wi-Fi via mDNS auto-claim.
 
-Stack: `flutter_riverpod`, `go_router`, `intl`, `uuid`, `freezed`, `json_serializable`, `drift`, `shelf` (+ `shelf_router`, `shelf_web_socket`), `web_socket_channel`, `http`, `flutter_secure_storage`, `shared_preferences`, `bonsoir` (mDNS), `mobile_scanner` (QR), `basic_utils` + `dart_jsonwebtoken` + `crypto` (TLS / JWT).
+Stack: `flutter_riverpod`, `go_router`, `intl`, `uuid`, `freezed`, `json_serializable`, `drift`, `shelf` (+ `shelf_router`, `shelf_web_socket`), `web_socket_channel`, `http`, `flutter_secure_storage`, `shared_preferences`, `bonsoir` (mDNS), `basic_utils` + `dart_jsonwebtoken` + `crypto` (TLS / JWT).
 
 ### Codegen scope
 
@@ -53,7 +53,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 - `ui/features/<area>/` — screens grouped by flow. Each feature owns `view_models/` and `views/` (or top-level screens + `widgets/`).
   - Order-taking: `tables/` → `menu/` (+ `modifier_sheet.dart`) → `review/` → `sent/` → `orders/`.
   - Admin: `admin/` (`venue_hub_screen`, `alerts_screen`, `audit_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
-  - Onboarding: `onboarding/views/` (`mode_select_screen`, `pair_screen`, `forbidden_screen`).
+  - Onboarding: `onboarding/views/` (`mode_select_screen`, `forbidden_screen`). Pairing itself lives on `PinScreen` — mDNS discovery + auto-claim (ADR-0080).
   - Auth: `auth/views/pin_screen.dart`.
   - Other: `me/`, `void_flow/`, `shell/app_shell.dart`, `_stub/`.
   - Debug: `_book/` — widget book (`book_screen`, `book_entries`, `book_stubs`), debug builds only. ADR-0054.
@@ -73,7 +73,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 - `db/` — Drift: `database.dart`, `tables.dart` (schema), `seed.dart` + `seed_data.dart` (DB seeded on first boot — no more `DummyData`), `seed_history.dart` + `seed_history_mix.dart` (the fabricated month), `seed_inventory_data.dart` (bahan + resep).
 - `seed_job.dart` — job marker + the venue-wide "prompt answered" flag (ADR-0073).
 - `audit_log.dart` — **the** audit writer (`writeAudit`) + wire shape (`auditJson`). Every route that audits an act goes through it; hand-rolling the insert is how a new column reaches three call sites out of four.
-- `auth.dart` (PIN + JWT), `pairing.dart` (QR pair flow), `tls.dart` (self-signed cert), `mdns.dart` (advertise), `ws_hub.dart` (WebSocket broadcast).
+- `auth.dart` (PIN + JWT), `tls.dart` (self-signed cert), `mdns.dart` (advertise), `ws_hub.dart` (WebSocket broadcast). Pairing is a single unauthenticated `POST /pair/auto-claim` in `server.dart` that upserts the `Devices` row; there is no token table (ADR-0080).
 
 **`lib/core/log/`** — `sat_log.dart` (logger), `sat_nav_observer.dart` (router observer).
 
@@ -82,8 +82,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger `redirect` re-eval without rebuilding the router itself).
 
 - `/onboarding` — `ModeSelectScreen` (server / client).
-- `/pair` — `PairScreen` (mDNS browse + QR scan).
-- `/pin` — `PinScreen` (carries inline mode-select + pair flow if unpaired).
+- `/pin` — `PinScreen` (carries inline mode-select + mDNS discovery/auto-claim if unpaired). **The only pairing surface** — `/pair` is gone.
 - `/forbidden` — capability-denied landing.
 - `/book` — **debug builds only** (`if (kDebugMode)`). Widget book: every `core/widgets/` widget in all its states against stub data, with theme/skin, text-scale, reduced-motion and phone/tablet toggles. In the pair-gate bypass set, so it works unpaired. Two entries: a debug button on `PinScreen` (pre-pairing) and a "Book" item at the foot of `TabletSideRail` (pushed, not `go`ne — back returns to your tab). Lives in `lib/ui/features/_book/`. See ADR-0054 — add an entry there in the same commit as a new shared widget.
 - `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
@@ -148,13 +147,12 @@ Single-context layout is used (CONTEXT.md + docs/adr/ at the root). See `docs/ag
 
 ### Users
 
-Four staff roles on shared Android hardware, one guest role on the web:
+Four staff roles on shared Android hardware:
 
 - **Waiter** — phone, one-handed, walking, tray in the other hand. Glances for half a second between tables. The busiest, least forgiving context.
 - **Kitchen** — tablet KDS on a hot line, read from 1–2 m, often through steam, frequently never touched. Read-at-distance beats touch density.
 - **Cashier** — settling, splitting, capturing payment proof. Accuracy over speed; money is on the line.
 - **Owner / admin** — menu, staff, reports, inventory. Lower frequency, higher complexity tolerance. Seated, not rushed.
-- **Guest** — hand-rolled web SPA (ADR-0029), own phone, zero training, one-shot use.
 
 Job to be done: get an order from a guest's mouth into the kitchen, correctly, in seconds, without the internet. Everything else is bookkeeping around that.
 
@@ -184,7 +182,7 @@ Motion is welcome but purposeful: `satEaseOut`, transform + opacity only, always
 
 - **Legacy Windows POS.** Gray gradients, beveled buttons, 6pt dense grids, 2005 enterprise chrome. This is the thing being replaced; resembling it is failure.
 - **Generic Material 3 default.** No purple seed, no stock M3 look. `useMaterial3: true` is a substrate, overridden by `SatColors` + `SatType`. If a screen could be any Flutter demo, it's wrong.
-- **Consumer food-delivery app.** No hero photography, gradients, promo banners, or gamification. Staff tools, not a storefront. (Guest SPA may lean slightly warmer — different audience, still not this.)
+- **Consumer food-delivery app.** No hero photography, gradients, promo banners, or gamification. Staff tools, not a storefront.
 
 ### Design Principles
 

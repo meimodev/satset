@@ -191,19 +191,6 @@ TableStale? staleFor({
     }
   }
 
-  if (table.status == TableStatus.pending) {
-    final since = _earliestPendingSince(lines) ?? openedAt;
-    if (since != null) {
-      final mins = now.difference(since).inMinutes;
-      if (mins > s.pendingReviewMins) {
-        return TableStale(
-          StaleSeverity.crit,
-          AppStrings.stalePendingReview(mins),
-        );
-      }
-    }
-  }
-
   if (service == ServiceState.idle) {
     final lastServed = _latestServedAt(lines);
     if (lastServed != null) {
@@ -238,15 +225,6 @@ DateTime? _earliestReadyAt(List<Ticket> lines) {
   return out;
 }
 
-DateTime? _earliestPendingSince(List<Ticket> lines) {
-  DateTime? out;
-  for (final t in lines) {
-    if (t.status == TicketStatus.voided) continue;
-    final at = t.sentAtTime;
-    if (out == null || at.isBefore(out)) out = at;
-  }
-  return out;
-}
 
 DateTime? _latestServedAt(List<Ticket> lines) {
   DateTime? out;

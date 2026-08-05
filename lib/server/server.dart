@@ -17,11 +17,8 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'auth.dart';
 import 'db/database.dart';
 import 'db/seed.dart';
-import 'guest_app_html.dart';
 import 'mdns.dart';
-import 'pairing.dart';
 import 'routes/auth_routes.dart';
-import 'routes/guest_routes.dart';
 import 'routes/devices_routes.dart';
 import 'routes/discount_preset_routes.dart';
 import 'routes/health_routes.dart';
@@ -52,7 +49,6 @@ class ServerRuntime {
     required this.auth,
     required this.tls,
     required this.hub,
-    required this.pairing,
     required this.advertiser,
     required this.port,
     required this.label,
@@ -73,14 +69,9 @@ class ServerRuntime {
   final ServerAuth auth;
   final ServerTls tls;
   final WsHub hub;
-  final PairingService pairing;
   final SatSetAdvertiser advertiser;
   final int port;
   HttpServer? _http;
-
-  /// The cleartext guest plane listener (ADR-0027), bound to [guestPort]. Null
-  /// until started; lives/dies alongside [_http].
-  HttpServer? _guestHttp;
   Timer? _statusTicker;
   Timer? _printerHeartbeat;
   bool _restarting = false;
@@ -123,10 +114,6 @@ class ServerRuntime {
   }
 
   static const defaultPort = 7443;
-
-  /// Cleartext guest plane port (ADR-0027). Separate from the TLS [defaultPort]
-  /// so a guest browser loads with no cert warning.
-  static const guestPort = 8080;
   static const defaultVersion = '1.0.0';
 
   static Future<ServerRuntime> boot({
@@ -140,7 +127,6 @@ class ServerRuntime {
     final tls = await ServerTls.loadOrCreate();
     final hub = WsHub();
     final auth = ServerAuth(db, secret: await ServerAuth.loadOrCreateSecret());
-    final pairing = PairingService(db);
     final advertiser = SatSetAdvertiser();
 
     final rt = ServerRuntime._(
@@ -148,7 +134,6 @@ class ServerRuntime {
       auth: auth,
       tls: tls,
       hub: hub,
-      pairing: pairing,
       advertiser: advertiser,
       port: port,
       label: label,
@@ -171,8 +156,6 @@ class ServerRuntime {
     SatLog.srv(
       'boot port=$port fp=${tls.fingerprint.substring(0, tls.fingerprint.length.clamp(0, 12))}',
     );
-
-    await rt._startGuestPlane();
 
     await advertiser.start(
       port: port,
@@ -294,7 +277,6 @@ class ServerRuntime {
         port,
         securityContext: tls.context,
       );
-      await _startGuestPlane();
       await advertiser.start(
         port: port,
         fingerprint: tls.fingerprint,
@@ -335,44 +317,28 @@ class ServerRuntime {
     r.mount('/', reservationsRoutes(db, hub, auth).call);
     r.mount('/', settlementRoutes(db, hub, auth).call);
 
-    r.post('/pair/claim', (Request req) async {
-      final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-      final dev = await pairing.claim(
-        token: body['token'] as String,
-        deviceId: body['deviceId'] as String,
-        deviceLabel: body['deviceLabel'] as String,
-        publicKeyPem: body['publicKey'] as String,
-      );
-      if (dev == null) return Response(409, body: 'pair token invalid');
-      hub.broadcast(WsEventTypes.devicePaired, {
-        'id': dev.id,
-        'label': dev.label,
-        'pairedAt': dev.pairedAt.toIso8601String(),
-      });
-      unawaited(broadcastSystemStatus());
-      return Response.ok(
-        jsonEncode({
-          'deviceToken': dev.id,
-          'fingerprint': tls.fingerprint,
-          'serverPublicKey': '',
-        }),
-        headers: {'content-type': 'application/json'},
-      );
-    });
-
-    // LAN-trusted auto-claim: client reached this server via mDNS+TLS
-    // fingerprint pinning, so we issue+consume a one-shot token internally
-    // instead of requiring out-of-band token entry. PIN auth still gates
-    // anything useful after pairing.
+    // LAN-trusted auto-claim: the client reached this server via mDNS and
+    // verified its TLS fingerprint end-to-end, so reaching this handler at all
+    // is the proof of LAN presence. The device row is written directly — there
+    // is no out-of-band token to exchange. PIN auth still gates anything useful
+    // after pairing (ADR-0004).
     r.post('/pair/auto-claim', (Request req) async {
       final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-      final token = await pairing.issue();
-      final dev = await pairing.claim(
-        token: token.token,
-        deviceId: (body['deviceId'] as String?) ?? '',
-        deviceLabel: (body['deviceLabel'] as String?) ?? 'satset-client',
-        publicKeyPem: (body['publicKey'] as String?) ?? '',
-      );
+      final deviceId = (body['deviceId'] as String?) ?? '';
+      if (deviceId.isEmpty) return Response(409, body: 'auto-claim failed');
+      await db
+          .into(db.devices)
+          .insertOnConflictUpdate(
+            DevicesCompanion.insert(
+              id: deviceId,
+              label: (body['deviceLabel'] as String?) ?? 'satset-client',
+              publicKeyPem: (body['publicKey'] as String?) ?? '',
+              pairedAt: SatClock.now(),
+            ),
+          );
+      final dev = await (db.select(
+        db.devices,
+      )..where((d) => d.id.equals(deviceId))).getSingleOrNull();
       if (dev == null) return Response(409, body: 'auto-claim failed');
       hub.broadcast(WsEventTypes.devicePaired, {
         'id': dev.id,
@@ -402,52 +368,10 @@ class ServerRuntime {
     return r;
   }
 
-  /// Starts (or restarts) the cleartext guest plane (ADR-0027): a second
-  /// listener on [guestPort] serving the guest SPA + `/guest/*` API. No TLS,
-  /// no staff auth middleware — guest routes self-authorize with table-scoped
-  /// tokens, and the listener mounts nothing else.
-  Future<void> _startGuestPlane() async {
-    await _guestHttp?.close(force: true);
-    final handler = const Pipeline()
-        .addMiddleware(_corsMiddleware())
-        .addHandler(_buildGuestHandler());
-    _guestHttp = await shelf_io.serve(
-      handler,
-      InternetAddress.anyIPv4,
-      guestPort,
-    );
-    SatLog.srv('guest plane port=$guestPort');
-  }
-
-  Handler _buildGuestHandler() {
-    final api = guestRoutes(db, hub, auth);
-    return Cascade().add(api.call).add(_guestSpaHandler).handler;
-  }
-
-  /// Serves the self-contained guest SPA for any unmatched GET (`/`,
-  /// `/t/<tableId>`, …). The SPA reads the table id from the URL client-side.
-  /// `/guest/*` paths are never served the SPA — a 404 there stays a 404.
-  Response _guestSpaHandler(Request req) {
-    if (req.method != 'GET' || req.url.path.startsWith('guest/')) {
-      // Unmatched /guest/* (or non-GET): return JSON, never plaintext, so the
-      // SPA surfaces a code instead of choking on a non-JSON body.
-      SatLog.srv('guest unmatched ${req.method} /${req.url.path}');
-      return Response.notFound(
-        jsonEncode({'code': 'not_found'}),
-        headers: {'content-type': 'application/json'},
-      );
-    }
-    return Response.ok(
-      guestAppHtml,
-      headers: {'content-type': 'text/html; charset=utf-8'},
-    );
-  }
-
   Future<void> shutdown() async {
     _statusTicker?.cancel();
     _printerHeartbeat?.cancel();
     await _http?.close(force: true);
-    await _guestHttp?.close(force: true);
     await advertiser.stop();
     await hub.dispose();
     await db.close();
@@ -517,7 +441,6 @@ Middleware _authMiddleware(ServerAuth auth) {
   const skip = {
     '/healthz',
     '/auth/login',
-    '/pair/claim',
     '/pair/auto-claim',
   };
   return (Handler inner) {

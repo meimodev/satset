@@ -10,7 +10,7 @@
 
 ## The hook (elevator pitch)
 
-SatSet turns ordinary Android phones and tablets into a complete restaurant point-of-order system that lives entirely on your local network. One device becomes the "brain" (the server), the rest become waiter and kitchen stations — all paired in seconds by scanning a QR code. Orders, menu, tables, payments, and the kitchen display all sync instantly over your own Wi-Fi.
+SatSet turns ordinary Android phones and tablets into a complete restaurant point-of-order system that lives entirely on your local network. One device becomes the "brain" (the server), the rest become waiter and kitchen stations — all paired in seconds — the waiter and kitchen devices find the server on the network by themselves. Orders, menu, tables, payments, and the kitchen display all sync instantly over your own Wi-Fi.
 
 Because it runs on your LAN, **it keeps working when the internet goes down.** No subscription required to take an order. No cloud round-trip between the waiter's phone and the kitchen.
 
@@ -30,7 +30,7 @@ This is the heart of the brief. Each item below is a real, working capability fr
 
 ### 1. Easy to set up — minutes, not days
 - **One app, two modes.** A single download. Pick "Server" on your main tablet, "Client" on every waiter phone. That's it.
-- **Pair by QR scan.** Devices find the server automatically on the network and connect by scanning a code. No IP addresses, no typing, no manual configuration.
+- **Pairing that finds itself.** Devices discover the server automatically on the network and connect with one tap. No IP addresses, no typing, no codes to scan, no manual configuration.
 - **Works out of the box.** The menu, tables, and floor plan come pre-seeded so you can explore immediately, then customize.
 
 ### 2. Easy to run offline — your network is the whole system
@@ -62,16 +62,12 @@ This is the heart of the brief. Each item below is a real, working capability fr
 - **Proof-of-payment capture.** For non-cash payments, snap a photo of the transfer/receipt as proof, attached to the bill.
 - **Your branding on the receipt.** Add your venue name and details to receipts so every bill looks like yours.
 
-### 7. Easy for guests to order themselves
-- **Scan-to-order at the table.** Guests scan a QR code and browse your menu on their own phone — no app install, it's just a web page.
-- **Staff stay in control.** Guest orders land as pending for staff review before they fire to the kitchen — no surprises, no abuse.
-
-### 8. Easy to see how business is doing
+### 7. Easy to see how business is doing
 - **Reports & accounting export.** Pull real, settled sales figures for any date range you choose.
 - **Bills, payment proof, and order history in one place.** Everything you need for the books, exportable on demand.
 - **Optional cloud snapshots for owners.** Check in on venue performance remotely when you want to — without making the day-to-day depend on the cloud.
 
-### 9. Easy to manage your team
+### 8. Easy to manage your team
 - **Staff accounts with roles.** Give each person exactly the access they need — waiter, kitchen, manager — and nothing they don't.
 - **Personal PIN sign-in.** Fast for staff, secure for you. Every action is tied to the person who did it.
 
@@ -83,7 +79,7 @@ This is the heart of the brief. Each item below is a real, working capability fr
 |---|---|
 | Require constant internet | Runs on your own Wi-Fi; survives outages |
 | Monthly per-device subscriptions to operate | No subscription needed to take an order |
-| Hours of setup or a paid integrator | QR-scan pairing in minutes, self-serve |
+| Hours of setup or a paid integrator | Devices pair themselves in minutes, self-serve |
 | Expensive proprietary hardware | Runs on Android phones and tablets you may already own |
 | Cloud lag between waiter and kitchen | Instant local-network sync |
 
@@ -93,11 +89,10 @@ This is the heart of the brief. Each item below is a real, working capability fr
 
 1. **Hero** — One-liner + "runs on your Wi-Fi, works offline" + primary CTA (Download / Get Started). Visual: a phone taking an order and a tablet kitchen display, connected.
 2. **The 3 big eases** (skimmable): *Set up in minutes* · *Works without internet* · *No subscription to operate.*
-3. **How it works** — 3 steps: 1) Install one app, 2) Scan to pair your devices, 3) Start serving. (Lean on the QR pairing — it's visually distinctive.)
-4. **Feature grid** — pull from sections 3–9 above, each with an icon + one-line benefit.
+3. **How it works** — 3 steps: 1) Install one app, 2) Tap to pair your devices, 3) Start serving. (Lean on how little setup there is.)
+4. **Feature grid** — pull from sections 3–8 above, each with an icon + one-line benefit.
 5. **Built for the real floor** — moving tables, reservations, split bills, voids, sold-out. The "we thought of the messy parts" section.
-6. **Guests order themselves** — the scan-to-order story, with staff-review reassurance.
-7. **Know your numbers** — reports/exports, optional owner cloud snapshots.
+6. **Know your numbers** — reports/exports, optional owner cloud snapshots.
 8. **Why SatSet** — the differentiator table above.
 9. **CTA footer** — download + reassurance ("no internet required to run," "your data stays on your network").
 
@@ -112,11 +107,10 @@ This is the heart of the brief. Each item below is a real, working capability fr
 - Floor plan / table status screen (shows the "at a glance" promise).
 - Order-taking screen with item photos + modifiers.
 - Kitchen display with live timers.
-- QR pairing moment (the magic of setup).
-- Guest scanning a table QR to order on their own phone.
+- The pairing moment: a client device finding the server on its own (the magic of setup).
 
 ## Words to keep / avoid
-- **Keep:** "runs on your Wi-Fi," "works offline," "set up in minutes," "no subscription to operate," "scan to pair," "scan to order."
+- **Keep:** "runs on your Wi-Fi," "works offline," "set up in minutes," "no subscription to operate," "tap to pair."
 - **Avoid:** restaurant jargon like "86'd" (use "sold out"), and overpromising cloud features — the cloud parts are *optional extras*, not the foundation.
 
 ---

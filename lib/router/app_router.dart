@@ -14,11 +14,9 @@ import 'package:satset/ui/features/fleet/fleet_console_screen.dart';
 import 'package:satset/ui/features/owner/owner_report_screen.dart';
 import 'package:satset/ui/features/onboarding/views/forbidden_screen.dart';
 import 'package:satset/ui/features/onboarding/views/mode_select_screen.dart';
-import 'package:satset/ui/features/onboarding/views/pair_screen.dart';
 import 'package:satset/ui/features/shell/app_shell.dart';
 import 'package:satset/ui/features/tables/tables_screen.dart';
 import 'package:satset/ui/features/tables/table_detail_screen.dart';
-import 'package:satset/ui/features/guest_orders/guest_orders_screen.dart';
 import 'package:satset/ui/features/orders/orders_screen.dart';
 import 'package:satset/ui/features/me/me_screen.dart';
 import 'package:satset/ui/features/menu/menu_screen.dart';
@@ -48,7 +46,6 @@ Capability? _capabilityFor(String loc) {
   if (loc.startsWith('/table/') ||
       loc.startsWith('/orders') ||
       loc.startsWith('/order/') ||
-      loc.startsWith('/guestorders') ||
       loc.startsWith('/takeaway')) {
     return Capability.takeOrder;
   }
@@ -119,7 +116,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       const onboardingRoutes = {
         '/pin',
         '/onboarding',
-        '/pair',
         '/forbidden',
         if (kDebugMode) '/book',
       };
@@ -191,7 +187,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/onboarding', builder: (_, _) => const ModeSelectScreen()),
-      GoRoute(path: '/pair', builder: (_, _) => const PairScreen()),
       GoRoute(path: '/forbidden', builder: (_, _) => const ForbiddenScreen()),
       GoRoute(path: '/pin', builder: (_, _) => const PinScreen()),
       // Debug-only widget gallery. `kDebugMode` is a const, so in a release
@@ -206,10 +201,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/tables', builder: (_, _) => const TablesScreen()),
           GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
-          GoRoute(
-            path: '/guestorders',
-            builder: (_, _) => const GuestOrdersScreen(),
-          ),
           GoRoute(path: '/kitchen', builder: (_, _) => const KitchenScreen()),
           GoRoute(path: '/kasir', builder: (_, _) => const CashierScreen()),
           GoRoute(path: '/venue', builder: (_, _) => const VenueHubScreen()),

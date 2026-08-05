@@ -84,12 +84,6 @@ class VenueTables extends Table {
   /// yet locked) | null (nothing paid). `openAmount` carries the **outstanding**
   /// rupiah. Kept in sync on order/serve/void + every payment. See ADR-0024.
   TextColumn get moneyState => text().nullable()();
-
-  /// Per-table opt-in for guest QR self-ordering (ADR-0027/0028). A table only
-  /// exposes a working QR when this AND the venue master toggle
-  /// (`VenueSettings.guestOrderingEnabled`) are both true. Default off.
-  BoolColumn get guestOrderingEnabled =>
-      boolean().withDefault(const Constant(false))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -294,16 +288,6 @@ class Devices extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class PairTokens extends Table {
-  TextColumn get token => text()();
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get expiresAt => dateTime()();
-  BoolColumn get used => boolean().withDefault(const Constant(false))();
-  TextColumn get claimedByDeviceId => text().nullable()();
-  @override
-  Set<Column> get primaryKey => {token};
-}
-
 class Idempotency extends Table {
   TextColumn get key => text()();
 
@@ -399,11 +383,6 @@ class VenueSettings extends Table {
   IntColumn get reservationGraceMins =>
       integer().withDefault(const Constant(15))();
 
-  /// "Belum ditinjau" — a guest-sent order (ADR-0028) waiting on a waiter to
-  /// review it. Drives the critical stale banner on the floor card. Visual
-  /// only, never audible: the arrival itself already cued once.
-  IntColumn get pendingReviewMins => integer().withDefault(const Constant(6))();
-
   /// Venue-wide off switches for the two **audible** table cues. Distinct from
   /// the per-device mute (device-local) and from the threshold value — a
   /// disabled cue is not a mistyped one. See ADR-0044.
@@ -411,13 +390,6 @@ class VenueSettings extends Table {
       boolean().withDefault(const Constant(true))();
   BoolColumn get pickupAlertEnabled =>
       boolean().withDefault(const Constant(true))();
-
-  /// Venue master switch for guest QR self-ordering (ADR-0027/0028). Default
-  /// OFF so shipping the feature exposes no venue automatically. When true,
-  /// per-table `VenueTables.guestOrderingEnabled` controls which tables show a
-  /// working QR.
-  BoolColumn get guestOrderingEnabled =>
-      boolean().withDefault(const Constant(false))();
 
   /// Per-event alert sound choice (ADR-0035). Each holds a preset id from
   /// `alertSoundPresets` ('none' = silent). Defaults reproduce ADR-0007's
@@ -431,11 +403,6 @@ class VenueSettings extends Table {
   TextColumn get soundUngreeted =>
       text().withDefault(const Constant('chime'))();
   TextColumn get soundPickup => text().withDefault(const Constant('chime'))();
-
-  /// Preset for the guest-order arrival cue (ADR-0064). Defaults to a clip that
-  /// is *not* the ready chime: the two demand different actions.
-  TextColumn get soundGuestPending =>
-      text().withDefault(const Constant('doorbell'))();
   @override
   Set<Column> get primaryKey => {id};
 }

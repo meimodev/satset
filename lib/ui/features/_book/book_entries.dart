@@ -1303,8 +1303,6 @@ List<BookEntry> bookEntries() => [
               readyCount: 3,
               kitchenCount: 12,
               showKasir: true,
-              showGuest: true,
-              guestCount: 2,
             ),
           ),
         ),
@@ -1320,8 +1318,6 @@ List<BookEntry> bookEntries() => [
               readyCount: 147,
               kitchenCount: 268,
               showKasir: true,
-              showGuest: true,
-              guestCount: 99,
             ),
           ),
         ),
@@ -1635,7 +1631,7 @@ List<BookEntry> bookEntries() => [
           _menu,
           OrderLineCard(
             ticket: BookStubs.ticket(
-              status: TicketStatus.pendingReview,
+              status: TicketStatus.held,
               createdBy: null,
             ),
             onTap: () {},
