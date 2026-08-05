@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:satset/data/repositories/accounting_report_repository.dart';
@@ -338,6 +339,23 @@ abstract final class BookStubs {
   );
 
   static Map<String, Uint8List> historyPhotos(OrderHistory _) => const {};
+
+  /// A stand-in payment proof, 96×128 — an amber header band over ink bars
+  /// where a transfer slip carries its bank line, nominal and sender. Drawn
+  /// rather than photographed so the book stays byte-tiny and offline, and
+  /// portrait so the `cover` crop's edge-eating is visible in the thumb and
+  /// gone in the lightbox. `PaymentProofThumb` takes it via `previewBytes`,
+  /// which is the only way the book can show the loaded state at all — the
+  /// real bytes come off a paired venue server.
+  static final Uint8List proofSlip = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAGAAAACACAIAAAB7vvvtAAAA5ElEQVR42u3coQ'
+    '2AMBBA0Y5DEBg2RRAU86G6AizQVFRQerzkT/DM5U5curdVlRICQIAAAQIECBAg'
+    'FYFyvlQJECBAgAABAgQIkFqApnkZLkCAAAECBAgQIECA+gMJECBAgAABAuSiGD'
+    'dAgAABAgQIECBAgAABAgQIECBAAgQIECBAgAAB2o+zS4AAAQIECJAxDwgQIECA'
+    '7GJfDhAgQIAAARIgQIAAAbKLjXtaBQQIECBA8YAECBAgQIAAAQIESIAAvQ/0h2'
+    'ekgAABAgQIECBAgAABAgQIUCwgAQIECBAgQIAAAVKxB2ko5Vq/7Pn2AAAAAElF'
+    'TkSuQmCC',
+  );
 
   static ReportsSnapshotDto get reportsSnapshot => ReportsSnapshotDto(
     generatedAt: DateTime.now().toIso8601String(),

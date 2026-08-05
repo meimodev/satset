@@ -5,8 +5,7 @@ import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/ui/features/cashier/cashier_bill_screen.dart'
-    show PaymentProofThumb;
+import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import '_common.dart';
 import 'report_stock_section.dart';
@@ -368,32 +367,16 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
               child: Row(
                 children: [
-                  if (r.hasPhoto && widget.showProofPhotos)
-                    PaymentProofThumb(
-                      paymentId: r.paymentId,
-                      history: true,
-                      size: 44,
-                    )
-                  else
-                    // Bytes live only on the LAN server. Off-site (owner) the
-                    // proof exists but is unfetchable — say so, distinct from a
-                    // genuinely photo-less (cash/legacy) row. See ADR-0036.
-                    Container(
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: SatBox.d(
-                        color: sc.bg1,
-                        borderRadius: SatR.a(6),
-                      ),
-                      child: Icon(
-                        r.hasPhoto
-                            ? Icons.photo_camera_back_outlined
-                            : Icons.image_not_supported_rounded,
-                        size: 18,
-                        color: sc.textLo,
-                      ),
-                    ),
+                  // Bytes live only on the LAN server, so off-site (owner) the
+                  // proof exists but is unfetchable — the widget says so, in a
+                  // box the same size as a slip, and distinct from a genuinely
+                  // photo-less (cash/legacy) row. ADR-0036, ADR-0082.
+                  PaymentProofThumb(
+                    paymentId: r.paymentId,
+                    history: true,
+                    hasPhoto: r.hasPhoto,
+                    fetchable: widget.showProofPhotos,
+                  ),
                   const SizedBox(width: Sp.s3),
                   Expanded(
                     child: Column(

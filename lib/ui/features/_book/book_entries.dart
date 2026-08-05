@@ -23,6 +23,7 @@ import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/export_sheet.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
+import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/widgets/order_line_card.dart';
 import 'package:satset/ui/core/widgets/pin_sheet.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
@@ -1879,6 +1880,50 @@ List<BookEntry> bookEntries() => [
       BookState(
         'item not in the menu — shrinks',
         (c, r) => _scope(_menu, const MenuTagBadges(itemId: 'tidak-ada')),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'PaymentProofThumb',
+    group: _gContent,
+    note:
+        'One size on every surface (ADR-0082) — the thumb answers "was a real '
+        'slip attached", not "what does it say", and that judgement costs the '
+        'same pixels on a bill as in a report. The three states share a box so '
+        'a column of payment rows keeps one left edge. Tap the slip for the '
+        'lightbox; the fetching states cannot resolve here, so they are shown '
+        'via previewBytes and the flags rather than a live payment id.',
+    states: [
+      BookState(
+        'slip — tap for the lightbox',
+        (c, r) => PaymentProofThumb(
+          paymentId: null,
+          previewBytes: BookStubs.proofSlip,
+        ),
+        note:
+            'Portrait shot, square crop: the bank line and sender are outside '
+            'the thumb by design and come back at full size in the viewer.',
+      ),
+      BookState(
+        'proof exists, bytes unreachable',
+        (c, r) => const PaymentProofThumb(
+          paymentId: 'pay-1',
+          history: true,
+          fetchable: false,
+        ),
+        note:
+            'Off-site owner reading a cloud report. Blobs never leave the LAN '
+            'venue server (ADR-0036), so this says "taken, not openable" — not '
+            'the same thing as no proof.',
+      ),
+      BookState(
+        'no proof at all',
+        (c, r) => const PaymentProofThumb(paymentId: 'pay-2', hasPhoto: false),
+        note: 'Cash, or a row from before the photo was mandatory (ADR-0025).',
+      ),
+      BookState(
+        'unresolvable id — degrades, never a broken image',
+        (c, r) => const PaymentProofThumb(paymentId: 'tidak-ada'),
       ),
     ],
   ),

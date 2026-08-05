@@ -406,6 +406,24 @@ final settlementProvider =
       return SettlementRepository(ref: ref);
     });
 
+/// Proof-photo bytes for one payment, keyed by `(id, history)` — see
+/// [SettlementRepository.paymentPhoto] for what `history` selects.
+///
+/// Cached rather than fetched per build: the same slip is shown on the live
+/// bill, on the settled bill detail and in the non-cash report, and the thumb
+/// used to rebuild a `Future` inside `build()`, so every theme flip and parent
+/// `setState` re-pulled the JPEG over the pinned client. Null when unpaired.
+/// See ADR-0082.
+final proofPhotoProvider = FutureProvider.autoDispose
+    .family<Uint8List?, ({String id, bool history})>((ref, key) async {
+      if (ref.watch(apiConfigProvider) == null) return null;
+      final bytes = await ref
+          .read(settlementProvider.notifier)
+          .paymentPhoto(key.id, history: key.history);
+      ref.keepAlive();
+      return bytes;
+    });
+
 /// Canonical bill-detail source for one VISIT. Re-fetched whenever the screen
 /// invalidates it after a mutation, or on a WS `bill.updated`/`tableSession.closed`.
 final billDetailProvider = FutureProvider.family.autoDispose<Bill, String>((

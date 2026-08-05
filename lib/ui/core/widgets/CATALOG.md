@@ -158,6 +158,7 @@ All collapse to a static final frame under reduced motion. Callers never branch 
 | `TagBadgeRow` | `tag_badge_row.dart` | One wrapping row of 2-char code badges, caller passes the kind color. |
 | `MenuTagBadges` | `tag_badge_row.dart` | Allergen (red) + diet (blue) stack, live-resolved from the menu by `itemId` (ADR-0012). Prefer this over `TagBadgeRow` on line items. |
 | `MenuPhoto` | `menu_photo.dart` | Menu item photo or initials fallback. Fills parent, `BoxFit.cover`. Never a broken image (ADR-0014). |
+| `PaymentProofThumb` | `payment_proof_thumb.dart` | Every proof image in the app — a `satProofThumb` (56) square, `cover`, tap for the lightbox. Owns all three states: the slip, proof-taken-but-unreachable (`fetchable: false`, off-site owner, ADR-0036), and no-proof (`hasPhoto: false`, cash/legacy). **Pass no size** — one box everywhere, so the placeholder can never drift from the thumb beside it (ADR-0082). `previewBytes:` renders bytes you already hold instead of fetching, for the settle flow's capture preview and the book. |
 | `StaffAvatar` | `staff_avatar.dart` | Initials avatar in the account's own color. `mine: true` rings it accent. `fallbackColor:` for an account with no colour yet (staff admin passes the role's). `.raw()` when you hold a view-model row rather than an `AppUser`. **Same person = same swatch everywhere** — three screens used to inline their own, with different darkening and glyph weight, so the same waiter looked like two people between the rail and the list. |
 | `ReadyBanner` | `ready_banner.dart` | Inline ready notice. |
 | `ReadyToast` | `ready_toast.dart` | Transient ready alert with view/dismiss. Mounted by `AlertHost` — don't mount directly. |
@@ -246,6 +247,7 @@ two files fails CI. If two things really are different, name them for what they 
 | `kSatEase` `Cubic(0.16, 1, 0.3, 1)` vs `satEaseOut` `Cubic(0.22, 1, 0.36, 1)` | `satEaseOut`. Two ease curves is two hands, not one. |
 | `computeLuminance() > 0.45 ? dark : light` ×3 | `onFill(Color)` — `design/colors.dart`. Took the last hardcoded `Color(0x…)` in `lib/ui/` with it; that rule is now a hard ban. |
 | Inline avatar ×3 (`staff_screen`, `me_screen`, plus the rail) with 0.32/0.36 darkening | `StaffAvatar` / `StaffAvatar.raw`. The rail keeps its own chrome but shares the tokens. |
+| Proof thumb at 22 / 26 / 44 / 56 across four surfaces, plus a hand-rolled 44dp "no bytes" box that had to be kept in step with it by hand | `PaymentProofThumb` — `payment_proof_thumb.dart`, one `satProofThumb`, three states owned by the widget. ADR-0082. |
 | `_d(context, …)` ×2, `_motion(context, …)`, `_kEase` ×4, `_kStatusXfade` ×3 | `satMotion`, `satEaseOut`, `satStatusXfadeMs` — `design/motion.dart`. |
 | ~139 raw `FilledButton`/`OutlinedButton`/`TextButton`/`ElevatedButton` | `SatButton` / `SatIconButton`. |
 | 64 raw `TextField` + the menu editor's private `_fieldDeco`/`_input` pair | `SatField` + `satInputDecoration`. |

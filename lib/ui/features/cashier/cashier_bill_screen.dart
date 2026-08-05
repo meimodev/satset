@@ -7,6 +7,7 @@ import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -1132,11 +1133,7 @@ class _ReceiptCard extends ConsumerWidget {
                   ),
                   if (p.hasPhoto) ...[
                     const SizedBox(width: Sp.s1h),
-                    PaymentProofThumb(
-                      paymentId: p.id,
-                      history: false,
-                      size: 22,
-                    ),
+                    PaymentProofThumb(paymentId: p.id),
                   ],
                   const Spacer(),
                   Text(
@@ -1390,15 +1387,13 @@ class _ReceiptCard extends ConsumerWidget {
                   const SizedBox(height: Sp.s2),
                   Row(
                     children: [
+                      // Tappable like every other proof: pre-submit is the one
+                      // moment a blurry shot is still fixable, and `Ambil ulang`
+                      // is right there. ADR-0082.
                       if (photoBytes != null)
-                        ClipRRect(
-                          borderRadius: SatR.a(8),
-                          child: Image.memory(
-                            photoBytes!,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                          ),
+                        PaymentProofThumb(
+                          paymentId: null,
+                          previewBytes: photoBytes,
                         ),
                       if (photoBytes != null) const SizedBox(width: Sp.s3),
                       Expanded(
@@ -2298,7 +2293,6 @@ class PastBillDetailScreen extends ConsumerWidget {
                                   PaymentProofThumb(
                                     paymentId: p.id,
                                     history: true,
-                                    size: 26,
                                   ),
                                 ],
                               ],
@@ -2318,88 +2312,3 @@ class PastBillDetailScreen extends ConsumerWidget {
       );
 }
 
-/// Tappable proof-photo thumbnail for a non-cash payment (ADR-0025). Fetches the
-/// JPEG over the pinned client; [history] reads the snapshotted blob (past bills
-/// / report), otherwise the live payment blob. Tap opens a fullscreen viewer.
-class PaymentProofThumb extends ConsumerWidget {
-  final String paymentId;
-  final bool history;
-  final double size;
-  const PaymentProofThumb({
-    super.key,
-    required this.paymentId,
-    required this.history,
-    this.size = 28,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sc = context.sat;
-    final future = ref
-        .read(settlementProvider.notifier)
-        .paymentPhoto(paymentId, history: history);
-    return FutureBuilder<Uint8List>(
-      future: future,
-      builder: (context, snap) {
-        final bytes = snap.data;
-        return Semantics(
-          button: true,
-          enabled: bytes != null,
-          label: AppStrings.a11yViewPhoto,
-          child: GestureDetector(
-            onTap: bytes == null
-                ? null
-                : () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      fullscreenDialog: true,
-                      builder: (_) => _ProofViewer(bytes),
-                    ),
-                  ),
-            child: ClipRRect(
-              borderRadius: SatR.a(6),
-              child: Container(
-                width: size,
-                height: size,
-                alignment: Alignment.center,
-                color: sc.bg1,
-                child: bytes == null
-                    ? Icon(
-                        Icons.photo_rounded,
-                        size: size * 0.5,
-                        color: sc.textLo,
-                      )
-                    : Image.memory(bytes, fit: BoxFit.cover),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ProofViewer extends StatelessWidget {
-  final Uint8List bytes;
-  const _ProofViewer(this.bytes);
-
-  // A lightbox, not a themed screen — see satMediaChrome.
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: satMediaChrome,
-    appBar: AppBar(
-      backgroundColor: satMediaChrome,
-      iconTheme: const IconThemeData(color: satMediaInk),
-      title: Text(
-        'Bukti pembayaran',
-        style: SatType.labelL(color: satMediaInk),
-      ),
-    ),
-    body: Center(
-      child: InteractiveViewer(
-        minScale: 1,
-        maxScale: 5,
-        child: Image.memory(bytes),
-      ),
-    ),
-  );
-}
