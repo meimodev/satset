@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -28,6 +27,7 @@ import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
+import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
@@ -51,6 +51,10 @@ class _ShiftMetrics {
   final String initials;
   final int? avatarColorHex;
   final String shiftStart;
+
+  /// The raw shift start, for the live counter. `shiftStart` is the formatted
+  /// clock label; this is what the seconds tick against.
+  final DateTime? shiftStartedAt;
   final Duration elapsed;
 
   /// Outstanding lines on the tables you hold — [isOutstandingTicket].
@@ -72,6 +76,7 @@ class _ShiftMetrics {
     required this.initials,
     required this.avatarColorHex,
     required this.shiftStart,
+    required this.shiftStartedAt,
     required this.elapsed,
     required this.openTickets,
     required this.byStatus,
@@ -79,8 +84,6 @@ class _ShiftMetrics {
     required this.openTables,
     required this.voidCount,
   });
-
-  String get elapsedLabel => formatElapsedId(elapsed);
 
   double get shiftProgress {
     const targetMin = 8 * 60;
@@ -98,6 +101,7 @@ _ShiftMetrics _computeMetrics({
   required int? userAvatarColorHex,
   required String roleLabel,
   required String shiftStart,
+  required DateTime? shiftStartedAt,
   required Duration elapsed,
 }) {
   // A table is yours when you are its current handler (`lastActorId`) — the
@@ -139,6 +143,7 @@ _ShiftMetrics _computeMetrics({
     initials: userInitials,
     avatarColorHex: userAvatarColorHex,
     shiftStart: shiftStart,
+    shiftStartedAt: shiftStartedAt,
     elapsed: elapsed,
     openTickets: openTickets,
     byStatus: byStatus,
@@ -148,34 +153,41 @@ _ShiftMetrics _computeMetrics({
   );
 }
 
-class MeScreen extends ConsumerStatefulWidget {
+/// "MULAI 09:00 · 3J 12M 20D BERJALAN".
+///
+/// The shift counter carries seconds, and it is the only thing on this screen
+/// that does — so it is the only thing that watches the seconds ticker. The
+/// screen used to setState around all of this once a second, rebuilding the
+/// table list, the ticket map and the audit feed to move that last digit.
+/// See ADR-0081.
+class _ShiftLine extends ConsumerWidget {
+  final String shiftStart;
+  final DateTime? startedAt;
+  const _ShiftLine({required this.shiftStart, required this.startedAt});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(secondTickerProvider);
+    final started = startedAt;
+    var elapsed = started == null
+        ? Duration.zero
+        : SatClock.now().difference(started);
+    if (elapsed.isNegative) elapsed = Duration.zero;
+    return Text(
+      'MULAI $shiftStart · ${formatElapsedId(elapsed)} BERJALAN'.toUpperCase(),
+      style: SatType.monoS(color: context.sat.textLo),
+    );
+  }
+}
+
+class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
   @override
-  ConsumerState<MeScreen> createState() => _MeScreenState();
-}
-
-class _MeScreenState extends ConsumerState<MeScreen> {
-  // Drives the live shift counter so elapsed ticks between provider events,
-  // matching the other elapsed counters (kitchen, table detail).
-  Timer? _tick;
-
-  @override
-  void initState() {
-    super.initState();
-    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _tick?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The shift ring below is a whole-minute fraction of an 8h target, so the
+    // body follows the minute ticker; _ShiftLine owns the seconds.
+    ref.watch(minuteTickerProvider);
     final tables = ref.watch(tablesProvider);
     final tickets = ref.watch(ticketsProvider);
     final rawAudit = ref.watch(auditProvider);
@@ -233,6 +245,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       userAvatarColorHex: user?.avatarColorHex,
       roleLabel: roleLabel,
       shiftStart: shiftStart,
+      shiftStartedAt: shiftStartedDt,
       elapsed: elapsed,
     );
 
@@ -420,7 +433,6 @@ class _MeTablet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sc = context.sat;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -430,10 +442,9 @@ class _MeTablet extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  'MULAI ${m.shiftStart} · ${m.elapsedLabel} BERJALAN'
-                      .toUpperCase(),
-                  style: SatType.monoS(color: sc.textLo),
+                child: _ShiftLine(
+                  shiftStart: m.shiftStart,
+                  startedAt: m.shiftStartedAt,
                 ),
               ),
               _ThemeButton(theme: theme, onTap: onPickTheme),
@@ -581,9 +592,9 @@ class _Identity extends StatelessWidget {
               Text(m.roleLabel, style: SatType.bodyM(color: sc.textMd)),
               if (showShiftLine) ...[
                 const SizedBox(height: Sp.s1h),
-                Text(
-                  'MULAI ${m.shiftStart} · ${m.elapsedLabel.toUpperCase()} BERJALAN',
-                  style: SatType.monoS(color: sc.textLo),
+                _ShiftLine(
+                  shiftStart: m.shiftStart,
+                  startedAt: m.shiftStartedAt,
                 ),
               ],
             ],
