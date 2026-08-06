@@ -64,7 +64,10 @@ class PaymentProofThumb extends ConsumerWidget {
        );
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) =>
+      _held(_state(context, ref));
+
+  Widget _state(BuildContext context, WidgetRef ref) {
     if (!hasPhoto) return _Placeholder(Icons.image_not_supported_rounded);
     if (previewBytes != null) return _shot(context, previewBytes!);
     if (!fetchable || paymentId == null) {
@@ -81,6 +84,18 @@ class PaymentProofThumb extends ConsumerWidget {
     );
   }
 
+  /// Holds the box at [satProofThumb] even under tight parent constraints.
+  ///
+  /// A bare `SizedBox` does not: a parent that hands down a tight width — a
+  /// `Container(width: double.infinity)`, a stretching `Column` — wins, and the
+  /// thumb silently becomes a smeared full-width band. That is the opposite of
+  /// what ADR-0082 says this widget is for, and it is invisible from the call
+  /// site, so the guarantee belongs here rather than in every parent.
+  Widget _held(Widget child) => UnconstrainedBox(
+    alignment: Alignment.centerLeft,
+    child: SizedBox(width: satProofThumb, height: satProofThumb, child: child),
+  );
+
   Widget _shot(BuildContext context, Uint8List bytes) => Semantics(
     button: true,
     label: AppStrings.a11yViewPhoto,
@@ -93,11 +108,7 @@ class PaymentProofThumb extends ConsumerWidget {
       ),
       child: ClipRRect(
         borderRadius: SatR.a(6),
-        child: SizedBox(
-          width: satProofThumb,
-          height: satProofThumb,
-          child: Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true),
-        ),
+        child: Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true),
       ),
     ),
   );
@@ -113,8 +124,6 @@ class _Placeholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      width: satProofThumb,
-      height: satProofThumb,
       alignment: Alignment.center,
       decoration: SatBox.d(color: sc.bg1, borderRadius: SatR.a(6)),
       child: Icon(icon, size: satProofThumb * 0.4, color: sc.textLo),

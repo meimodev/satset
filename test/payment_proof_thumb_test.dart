@@ -104,6 +104,40 @@ void main() {
     expect(find.byType(InteractiveViewer), findsOneWidget);
   });
 
+  testWidgets('a tight parent cannot stretch the box', (tester) async {
+    // The widget book's stage is a `Container(width: double.infinity)`, and a
+    // stretching Column does the same. A bare SizedBox loses that argument and
+    // the thumb becomes a smeared full-width band — which is what shipped, and
+    // what every other test here missed by pumping inside a Center.
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: satTheme(SatTheme.neonTerang),
+          home: Scaffold(
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: PaymentProofThumb(
+                    paymentId: null,
+                    previewBytes: pngBytes,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.getSize(find.byType(Image)),
+      const Size(satProofThumb, satProofThumb),
+    );
+  });
+
   testWidgets('a placeholder is not tappable', (tester) async {
     await pump(
       tester,
