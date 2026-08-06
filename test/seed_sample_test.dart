@@ -10,6 +10,7 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/db/seed.dart';
+import 'package:satset/server/db/seed_data.dart';
 import 'package:satset/server/db/seed_history.dart';
 
 void main() {
@@ -43,6 +44,24 @@ void main() {
     // Reference-only: seeding the menu must not fabricate a single bill.
     expect(await db.select(db.tableSessions).get(), isEmpty);
     expect(await db.select(db.auditEntries).get(), isEmpty);
+  });
+
+  test('the reference half seeds two waiters and two kitchen', () async {
+    await seedGenericRestaurant(db);
+    final users = await db.select(db.users).get();
+    expect(users.length, 4);
+    expect(
+      users.where((u) => u.roleId == DummyData.roleWaiterId).length,
+      2,
+      reason: 'one waiter makes every report column read the same name',
+    );
+    expect(users.where((u) => u.roleId == DummyData.roleKitchenId).length, 2);
+    expect(users.map((u) => u.name).toSet(), {
+      'Pelayan 1',
+      'Pelayan 2',
+      'Dapur 1',
+      'Dapur 2',
+    });
   });
 
   test('refuses on a venue that has already traded', () async {
@@ -298,6 +317,29 @@ void main() {
           .map((s) => s.tableId)
           .toSet();
       expect(tablesUsed.length, greaterThan(15));
+
+      // Orders are taken by waiters and split between them. Picking the actor
+      // across every user row credits bills to the kitchen and to admin, and
+      // the reports' Pelayan column is then fiction.
+      final waiters = (await db.select(db.users).get())
+          .where((u) => u.roleId == DummyData.roleWaiterId)
+          .map((u) => u.id)
+          .toSet();
+      expect(waiters.length, 2);
+      // Live tickets are snapshotted and deleted at bill close (ADR-0024), so
+      // the month's attribution survives on the session snapshot, not Tickets.
+      final takers = lines.map((t) => t.createdByUserId).toList();
+      expect(takers, isNotEmpty);
+      expect(
+        takers.every(waiters.contains),
+        isTrue,
+        reason: 'a non-waiter was recorded as taking an order',
+      );
+      expect(
+        takers.toSet().length,
+        2,
+        reason: 'the month must not land on a single waiter',
+      );
     },
     timeout: const Timeout(Duration(minutes: 10)),
   );

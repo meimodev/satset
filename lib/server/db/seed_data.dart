@@ -703,8 +703,8 @@ class DummyData {
 
   // ---------------------------------------------------------------------------
   // Generic restaurant seed (prompted on first run — see ADR-0017).
-  // A minimal, clean starter set: 2 zones x 2 tables, 2 staff (1 waiter +
-  // 1 kitchen), and the generic menu above. NO PIN admin (admin is
+  // A minimal, clean starter set: 4 zones / 20 tables, 4 staff (2 waiters +
+  // 2 kitchen), and the generic menu above. NO PIN admin (admin is
   // Firebase-only) and NO fake report history.
   // ---------------------------------------------------------------------------
 
@@ -740,10 +740,17 @@ class DummyData {
     ),
   ];
 
+  /// Two of each front-of-house role, so a seeded venue can show work split
+  /// between people: the reports' Pelayan column, the per-waiter void
+  /// accountability (ADR-0006) and the audit log all read as one name
+  /// repeated when there is only ever one waiter to attribute to.
+  ///
+  /// `zoneAssigned` is matched against zone **names**, not ids — these must
+  /// stay spelled as [genericZones] spells them.
   static const genericWaiter = AppUser(
     id: 'seed-waiter',
-    name: 'Pelayan',
-    initials: 'PL',
+    name: 'Pelayan 1',
+    initials: 'P1',
     role: UserRole.waiter,
     shiftStartedAt: '',
     zoneAssigned: 'Dalam',
@@ -752,10 +759,22 @@ class DummyData {
     avatarColorHex: 0xFFC08AFF,
   );
 
+  static const genericWaiter2 = AppUser(
+    id: 'seed-waiter-2',
+    name: 'Pelayan 2',
+    initials: 'P2',
+    role: UserRole.waiter,
+    shiftStartedAt: '',
+    zoneAssigned: 'Luar',
+    roleId: roleWaiterId,
+    pin: '100003',
+    avatarColorHex: 0xFF6DB5FF,
+  );
+
   static const genericKitchen = AppUser(
     id: 'seed-kitchen',
-    name: 'Dapur',
-    initials: 'DP',
+    name: 'Dapur 1',
+    initials: 'D1',
     role: UserRole.kitchen,
     shiftStartedAt: '',
     zoneAssigned: '—',
@@ -764,7 +783,24 @@ class DummyData {
     avatarColorHex: 0xFFFF9233,
   );
 
-  static const genericUsers = <AppUser>[genericWaiter, genericKitchen];
+  static const genericKitchen2 = AppUser(
+    id: 'seed-kitchen-2',
+    name: 'Dapur 2',
+    initials: 'D2',
+    role: UserRole.kitchen,
+    shiftStartedAt: '',
+    zoneAssigned: '—',
+    roleId: roleKitchenId,
+    pin: '100004',
+    avatarColorHex: 0xFF4DD487,
+  );
+
+  static const genericUsers = <AppUser>[
+    genericWaiter,
+    genericWaiter2,
+    genericKitchen,
+    genericKitchen2,
+  ];
 
   static const genericZones = <Zone>[
     Zone(

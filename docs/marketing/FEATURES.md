@@ -547,7 +547,7 @@ Client reconnect uses exponential backoff (`200ms × 2^n`, capped at 10s) and wa
 - **Printer & KDS card**: venue printers with host:port, kind, test button and an online pill; KDS stations with staff-online and pending counts. Actions: mDNS "Cari" discovery dialog and manual "+ Printer".
 - **Devices card**: label, last session time, revoke button with confirmation, Aktif / Idle / Revoked pill.
 - **Operasional card**: master audio-alert toggle and the PIN-gated server restart.
-- **Seed data**: `GET /seed/state` reports whether the venue is still empty; a dismissible banner on the Venue Hub offers `POST /seed/generic` — an idempotent demo load (2 zones × 2 tables, a generic menu, one waiter and one kitchen user) that emits the appropriate created events and an audit entry.
+- **Seed data**: `GET /seed/state` reports whether the venue is still empty; a blocking, non-dismissible first-run dialog on the Venue Hub offers `POST /seed/generic` — an idempotent sample load (4 zones × 20 tables, a generic menu, bahan + resep with opening stock, and 4 staff: 2 waiters + 2 kitchen) followed by a fabricated month of ~1500 settled bills written through the production order path, progress streaming over `seed.progress`. `POST /seed/skip` records the answer instead; `POST /seed/clear` deletes the tagged transactional rows and leaves the menu standing. Emits the appropriate created events and an audit entry.
 - `GET /healthz` — unauthenticated liveness probe.
 
 ---

@@ -44,7 +44,7 @@ Future<bool> needsGenericSeed(AppDatabase db) async {
 /// The **reference half** of the generic restaurant dataset (ADR-0017): 4
 /// zones with 20 tables between them, the generic menu (categories + items),
 /// the inventory half — bahan + resep with opening stock (ADR-0042) — and
-/// 2 staff — one waiter, one kitchen — with their roles + capabilities.
+/// 4 staff — two waiters, two kitchen — with their roles + capabilities.
 ///
 /// Idempotent (`insertOnConflictUpdate`). Seeds **no** PIN admin (admin is
 /// Firebase-only).
@@ -105,7 +105,7 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
           );
     }
 
-    // Staff (1 waiter + 1 kitchen, hashed PINs).
+    // Staff (2 waiters + 2 kitchen, hashed PINs).
     for (final u in seed.DummyData.genericUsers) {
       await db
           .into(db.users)

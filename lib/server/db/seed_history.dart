@@ -12,6 +12,7 @@ import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 
 import 'database.dart';
+import 'seed_data.dart' as seed;
 import 'seed_history_mix.dart';
 
 /// Every row the fabricated month writes carries this id prefix. ADR-0073
@@ -163,7 +164,17 @@ Future<void> seedHistory(
   final floor = await db.select(db.venueTables).get();
   if (floor.isEmpty) return;
   final staff = await db.select(db.users).get();
-  final cashiers = staff.map((u) => u.id).toList();
+  // Orders are taken by waiters, not by whoever happens to hold a user row —
+  // picking across all of them credits the month's bills to the kitchen and
+  // to the Firebase admin, and the reports' Pelayan column is then fiction.
+  final waiters = staff
+      .where((u) => u.roleId == seed.DummyData.roleWaiterId)
+      .map((u) => u.id)
+      .toList();
+  final actors = waiters.isEmpty ? staff.map((u) => u.id).toList() : waiters;
+  // Discounts are approved by someone other than the waiter asking for one
+  // (ADR-0037) — the admin row, or the first staff row on a venue without.
+  final approver = staff.isEmpty ? null : staff.first.id;
   final recipes = await loadRecipes(db);
   final ingredients = await db.select(db.ingredients).get();
 
@@ -262,9 +273,7 @@ Future<void> seedHistory(
     for (final o in orders) {
       final table = floor[rng.nextInt(floor.length)];
       final closedAt = o.openedAt.add(Duration(minutes: 45 + rng.nextInt(60)));
-      final actor = cashiers.isEmpty
-          ? null
-          : cashiers[rng.nextInt(cashiers.length)];
+      final actor = actors.isEmpty ? null : actors[rng.nextInt(actors.length)];
 
       planned += o.lines.length;
       final res = await submitOrder(
@@ -396,7 +405,7 @@ Future<void> seedHistory(
           title: 'Diskon 10% di Meja ${table.id}',
           tableId: table.id,
           actorUserId: actor,
-          approvedBy: cashiers.isEmpty ? null : cashiers.first,
+          approvedBy: approver,
           amountCents: (breakdown.total * 0.10).round(),
           at: closedAt.subtract(const Duration(minutes: 3)),
           idPrefix: samplePrefix,
@@ -509,13 +518,28 @@ Future<void> seedAdminAudit(AppDatabase db, Random rng) async {
   final today = DateTime.now();
   final staff = await db.select(db.users).get();
   if (staff.isEmpty) return;
-  final admin = staff.first.id;
-  final waiter = staff.length > 1 ? staff[1].id : admin;
+  // By role, not by position: on a venue with no Firebase admin row yet the
+  // first two users are the seeded waiter and kitchen, and every "admin did
+  // this" line lands on the waiter.
+  String? firstWithRole(String roleId) {
+    for (final u in staff) {
+      if (u.roleId == roleId) return u.id;
+    }
+    return null;
+  }
+
+  final admin = firstWithRole(seed.DummyData.roleAdminId) ?? staff.first.id;
+  final waiter = firstWithRole(seed.DummyData.roleWaiterId) ?? admin;
 
   const events = <(int, int, AuditType, String, bool, String?)>[
-    (28, 9, AuditType.staffCreated, 'Pelayan ditambahkan', true, null),
-    (28, 9, AuditType.staffPinSet, 'PIN Pelayan diatur', true, null),
-    (27, 10, AuditType.staffCreated, 'Dapur ditambahkan', true, null),
+    (28, 9, AuditType.staffCreated, 'Pelayan 1 ditambahkan', true, null),
+    (28, 9, AuditType.staffPinSet, 'PIN Pelayan 1 diatur', true, null),
+    (27, 10, AuditType.staffCreated, 'Dapur 1 ditambahkan', true, null),
+    (27, 10, AuditType.staffPinSet, 'PIN Dapur 1 diatur', true, null),
+    (26, 9, AuditType.staffCreated, 'Pelayan 2 ditambahkan', true, null),
+    (26, 9, AuditType.staffPinSet, 'PIN Pelayan 2 diatur', true, null),
+    (25, 16, AuditType.staffCreated, 'Dapur 2 ditambahkan', true, null),
+    (25, 16, AuditType.staffPinSet, 'PIN Dapur 2 diatur', true, null),
     (
       24,
       11,
@@ -531,7 +555,7 @@ Future<void> seedAdminAudit(AppDatabase db, Random rng) async {
       16,
       14,
       AuditType.staffPinReset,
-      'PIN Pelayan direset',
+      'PIN Pelayan 1 direset',
       true,
       'Staf lupa PIN',
     ),
@@ -563,16 +587,23 @@ Future<void> seedAdminAudit(AppDatabase db, Random rng) async {
       9,
       17,
       AuditType.staffDisabled,
-      'Akun Pelayan dinonaktifkan',
+      'Akun Pelayan 1 dinonaktifkan',
       true,
       'Cuti dua minggu',
     ),
-    (7, 10, AuditType.staffEnabled, 'Akun Pelayan diaktifkan lagi', true, null),
+    (
+      7,
+      10,
+      AuditType.staffEnabled,
+      'Akun Pelayan 1 diaktifkan lagi',
+      true,
+      null,
+    ),
     (
       5,
       12,
       AuditType.staffRoleChanged,
-      'Peran Pelayan diubah ke Kasir',
+      'Peran Pelayan 1 diubah ke Kasir',
       true,
       'Pindah ke kasir sore',
     ),

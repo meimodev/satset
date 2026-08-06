@@ -983,7 +983,7 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
     });
   });
 
-  /// Load the sample dataset: 4 zones / 20 tables / the generic menu / 2 staff,
+  /// Load the sample dataset: 4 zones / 20 tables / the generic menu / 4 staff,
   /// plus a fabricated month of settled service and its audit trail.
   ///
   /// 202 and run in the background: ~1500 bills through the production order

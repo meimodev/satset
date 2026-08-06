@@ -107,7 +107,8 @@ class AppStrings {
   static const String venueHubSeedTitle = 'Mulai cepat';
   static const String venueHubSeedBody =
       'Muat contoh data restoran umum: 4 zona dengan 20 meja, menu lengkap, '
-      '2 staf (pelayan & dapur), dan sebulan riwayat penjualan supaya laporan '
+      '4 staf (2 pelayan & 2 dapur), dan sebulan riwayat penjualan supaya '
+      'laporan '
       'dan catatan audit langsung terbaca. Semua bisa diubah atau dihapus '
       'kapan saja.';
   static const String venueHubSeedBodyRunning =
