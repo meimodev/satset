@@ -6365,4 +6365,30 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get meShiftReady => 'ready';
+
+  @override
+  String venueHubBadgeMenu(int items, int cats) {
+    return '$items items · $cats categories';
+  }
+
+  @override
+  String venueHubBadgeStockLow(int n) {
+    return '$n low';
+  }
+
+  @override
+  String venueHubBadgeStockOk(int n) {
+    return '$n ingredients';
+  }
+
+  @override
+  String venueHubBadgeVenue(String tax, String svc) {
+    return 'Tax $tax% · Service $svc%';
+  }
+
+  @override
+  String get venueHubLanActive => 'LAN ACTIVE';
+
+  @override
+  String get venueHubLanLocal => 'LOCAL';
 }

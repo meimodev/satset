@@ -1780,5 +1780,11 @@
   "meShiftSent": "sent",
   "meShiftPrep": "preparing",
   "meShiftCooked": "cooked",
-  "meShiftReady": "ready"
+  "meShiftReady": "ready",
+  "venueHubBadgeMenu": "{items} items · {cats} categories",
+  "venueHubBadgeStockLow": "{n} low",
+  "venueHubBadgeStockOk": "{n} ingredients",
+  "venueHubBadgeVenue": "Tax {tax}% · Service {svc}%",
+  "venueHubLanActive": "LAN ACTIVE",
+  "venueHubLanLocal": "LOCAL"
 }

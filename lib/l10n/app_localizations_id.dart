@@ -6346,4 +6346,30 @@ class AppL10nId extends AppL10n {
 
   @override
   String get meShiftReady => 'siap';
+
+  @override
+  String venueHubBadgeMenu(int items, int cats) {
+    return '$items item · $cats kategori';
+  }
+
+  @override
+  String venueHubBadgeStockLow(int n) {
+    return '$n perhatian';
+  }
+
+  @override
+  String venueHubBadgeStockOk(int n) {
+    return '$n bahan';
+  }
+
+  @override
+  String venueHubBadgeVenue(String tax, String svc) {
+    return 'Pajak $tax% · Service $svc%';
+  }
+
+  @override
+  String get venueHubLanActive => 'LAN AKTIF';
+
+  @override
+  String get venueHubLanLocal => 'LOKAL';
 }

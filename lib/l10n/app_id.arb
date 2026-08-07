@@ -5402,5 +5402,55 @@
   "meShiftReady": "siap",
   "@meShiftReady": {
     "description": "Shift summary word, joined as \"3 siap\"."
+  },
+  "venueHubBadgeMenu": "{items} item · {cats} kategori",
+  "@venueHubBadgeMenu": {
+    "description": "Menu card badge on the venue hub",
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "cats": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubBadgeStockLow": "{n} perhatian",
+  "@venueHubBadgeStockLow": {
+    "description": "Stock card badge when ingredients are low",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubBadgeStockOk": "{n} bahan",
+  "@venueHubBadgeStockOk": {
+    "description": "Stock card badge when nothing is low",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubBadgeVenue": "Pajak {tax}% · Service {svc}%",
+  "@venueHubBadgeVenue": {
+    "description": "Venue settings card badge: tax and service rates",
+    "placeholders": {
+      "tax": {
+        "type": "String"
+      },
+      "svc": {
+        "type": "String"
+      }
+    }
+  },
+  "venueHubLanActive": "LAN AKTIF",
+  "@venueHubLanActive": {
+    "description": "Venue header chip when the LAN server is reachable"
+  },
+  "venueHubLanLocal": "LOKAL",
+  "@venueHubLanLocal": {
+    "description": "Venue header chip when running without a LAN server"
   }
 }

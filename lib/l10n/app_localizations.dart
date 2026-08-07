@@ -10770,6 +10770,42 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'siap'**
   String get meShiftReady;
+
+  /// Menu card badge on the venue hub
+  ///
+  /// In id, this message translates to:
+  /// **'{items} item · {cats} kategori'**
+  String venueHubBadgeMenu(int items, int cats);
+
+  /// Stock card badge when ingredients are low
+  ///
+  /// In id, this message translates to:
+  /// **'{n} perhatian'**
+  String venueHubBadgeStockLow(int n);
+
+  /// Stock card badge when nothing is low
+  ///
+  /// In id, this message translates to:
+  /// **'{n} bahan'**
+  String venueHubBadgeStockOk(int n);
+
+  /// Venue settings card badge: tax and service rates
+  ///
+  /// In id, this message translates to:
+  /// **'Pajak {tax}% · Service {svc}%'**
+  String venueHubBadgeVenue(String tax, String svc);
+
+  /// Venue header chip when the LAN server is reachable
+  ///
+  /// In id, this message translates to:
+  /// **'LAN AKTIF'**
+  String get venueHubLanActive;
+
+  /// Venue header chip when running without a LAN server
+  ///
+  /// In id, this message translates to:
+  /// **'LOKAL'**
+  String get venueHubLanLocal;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

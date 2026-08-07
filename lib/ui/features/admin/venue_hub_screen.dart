@@ -73,7 +73,7 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     badgeBuilder: (ref) {
       final m = ref.watch(menuItemsProvider);
       final c = ref.watch(menuCategoriesProvider);
-      return '${m.length} item · ${c.length} kategori';
+      return ref.read(l10nProvider).venueHubBadgeMenu(m.length, c.length);
     },
   ),
   _HubSection(
@@ -85,7 +85,10 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     badgeBuilder: (ref) {
       final s = ref.watch(ingredientsProvider).valueOrNull ?? const [];
       final low = s.where((i) => i.isLow).length;
-      return low > 0 ? '$low perhatian' : '${s.length} bahan';
+      final l = ref.read(l10nProvider);
+      return low > 0
+          ? l.venueHubBadgeStockLow(low)
+          : l.venueHubBadgeStockOk(s.length);
     },
     hasAlert: (ref) {
       final s = ref.watch(ingredientsProvider).valueOrNull ?? const [];
@@ -102,7 +105,7 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
       final v = ref.watch(venueSettingsProvider);
       final tax = (v.taxRateBps / 100.0).toStringAsFixed(0);
       final svc = (v.serviceRateBps / 100.0).toStringAsFixed(0);
-      return 'Pajak $tax% · Service $svc%';
+      return ref.read(l10nProvider).venueHubBadgeVenue(tax, svc);
     },
   ),
   _HubSection(
@@ -305,7 +308,9 @@ class _VenueHeroStrip extends ConsumerWidget {
                               ),
                               const SizedBox(width: Sp.s1),
                               Text(
-                                apiConfig != null ? 'LAN AKTIF' : 'LOKAL',
+                                apiConfig != null
+                                    ? context.l10n.venueHubLanActive
+                                    : context.l10n.venueHubLanLocal,
                                 style: SatType.caption(color: sc.success),
                               ),
                             ],

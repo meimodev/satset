@@ -383,6 +383,8 @@ void main() {
       r'|struk|staf|pelayan|dapur|kirim|hapus|simpan|ubah|tambah|batal|lewat'
       r'|sekarang|dulu|salah|habis|rusak|lama|bagian|kembali|diambil|dikirim'
       r'|diatur|dilayani|terhubung|berjalan|diketahui|permanen|dibatalkan'
+      r'|kategori|bahan|perhatian|pajak|aktif|lokal|layanan|zona|resep'
+      r'|opname|diskon|antrian|kasir|buka|tutup'
       r')(?:[^A-Za-z]|$)',
       caseSensitive: false,
     );
@@ -395,6 +397,8 @@ void main() {
       'laporan',
       'riwayat-pesanan',
       'laporan-staf', // export filename slugs
+      'kasir', // rail destination id + '/kasir' route, not a label
+      'bahan', // report section id + its ValueKey
     };
     final literal = RegExp(r"'((?:[^'\\\n]|\\.)*)'");
     final hits = <String>[];
