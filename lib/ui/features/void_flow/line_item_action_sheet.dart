@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/localization/report_copy.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/cart_item.dart';
@@ -19,35 +21,23 @@ import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
 // Canonical reason codes — must match the server taxonomy in
 // reports_routes.dart and the void_reason_code DB column (see ADR-0006).
-const _voidReasons = <Map<String, String>>[
-  {
-    'id': 'wrongOrder',
-    'label': 'Terkirim salah',
-    'desc': 'Salah meja, tap ganda, salah ring',
-  },
-  {
-    'id': 'customerChange',
-    'label': 'Tamu berubah pikiran',
-    'desc': 'Tamu batalkan permintaan',
-  },
-  {'id': 'outOfStock', 'label': 'Stok habis', 'desc': 'Item habis di stasiun'},
-  {
-    'id': 'kitchenError',
-    'label': 'Komplain / kualitas dapur',
-    'desc': 'Masalah kualitas — item ditarik dari tagihan',
-  },
-  {'id': 'other', 'label': 'Lainnya', 'desc': 'Alasan bebas wajib diisi'},
+// Codes only. The words come from `voidReasonLabel`/`voidReasonDesc` at build
+// time, so the same code reads Indonesian on one device and English on the
+// next, and a report renders a void with the words the waiter picked
+// (ADR-0085).
+const _voidReasons = <String>[
+  'wrongOrder',
+  'customerChange',
+  'outOfStock',
+  'kitchenError',
+  'other',
 ];
 
 /// Offered only on an already-served line, which is exactly when voiding
 /// requires `compItem` rather than `voidItem` (ADR-0006). Without a button of
 /// its own a comp was only recorded as one if someone happened to type the
 /// word into free text — so the venue log counted giveaways as cancellations.
-const _compReason = <String, String>{
-  'id': 'comp',
-  'label': 'Kompensasi manajer',
-  'desc': 'Digratiskan untuk tamu · tercatat terpisah dari pembatalan',
-};
+const _compReason = 'comp';
 
 void showLineItemActionSheet({
   required BuildContext context,
@@ -96,7 +86,7 @@ class _SheetBody extends ConsumerStatefulWidget {
 
 class _SheetBodyState extends ConsumerState<_SheetBody> {
   _Step _step = _Step.actions;
-  Map<String, String>? _reason;
+  String? _reason;
   String _reasonText = '';
 
   // Re-resolves the ticket from live state each build so kitchen status
@@ -194,17 +184,18 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
   Future<void> _commitVoid() async {
     final t = _live;
     final reason = _reason!;
-    // Free-text rides only for `other`; fixed reasons store their label so the
-    // audit row + reports read cleanly. The server stamps the acting waiter.
-    final reasonStr = _reasonText.isNotEmpty ? _reasonText : reason['label']!;
+    // Free text rides only for `other`. A fixed reason stores nothing but its
+    // code — the label it used to store was whichever language the waiter's
+    // phone happened to be in, frozen into the row. The server stamps the
+    // acting waiter.
     await ref
         .read(advanceTicketStatusUseCaseProvider)
         .call(
           widget.tableId,
           t.id,
           TicketStatus.voided,
-          voidReason: reasonStr,
-          voidReasonCode: reason['id']!,
+          voidReason: _reasonText.trim(),
+          voidReasonCode: reason,
         );
     setState(() => _step = _Step.confirmed);
     Future.delayed(const Duration(milliseconds: 1500), () {
@@ -294,7 +285,7 @@ class _LineActionHead extends StatelessWidget {
               const SizedBox(width: Sp.s2),
               Flexible(
                 child: Text(
-                  'MEJA $tableName · ${ticket.sentAt}',
+                  context.l10n.liaTableAt(tableName, ticket.sentAt),
                   style: SatType.monoS(color: sc.textLo),
                 ),
               ),
@@ -333,8 +324,8 @@ class _ActionList extends StatelessWidget {
         _ActionItem(
           id: 'fire',
           icon: Icons.local_fire_department,
-          title: 'Bakar sekarang',
-          desc: 'Kirim course ke line langsung',
+          title: context.l10n.liaFireNow,
+          desc: context.l10n.liaFireDesc,
           tone: _Tone.accent,
         ),
       );
@@ -345,8 +336,8 @@ class _ActionList extends StatelessWidget {
         _ActionItem(
           id: 'modify',
           icon: Icons.edit_outlined,
-          title: 'Ubah item',
-          desc: 'Jumlah, catatan, dan pilihan · sebelum masuk dapur',
+          title: context.l10n.liaEditItem,
+          desc: context.l10n.liaEditDesc,
           tone: _Tone.normal,
         ),
       );
@@ -356,8 +347,8 @@ class _ActionList extends StatelessWidget {
         _ActionItem(
           id: 'serve',
           icon: Icons.check,
-          title: 'Tandai disajikan',
-          desc: 'Konfirmasi diambil & diantar ke meja',
+          title: context.l10n.olcMarkServed,
+          desc: context.l10n.liaServeDesc,
           tone: _Tone.success,
         ),
       );
@@ -367,8 +358,8 @@ class _ActionList extends StatelessWidget {
         _ActionItem(
           id: 'unserve',
           icon: Icons.undo,
-          title: 'Batalkan sajian',
-          desc: 'Kembalikan status jika ditandai terlalu cepat',
+          title: context.l10n.liaUnserve,
+          desc: context.l10n.liaUnserveDesc,
           tone: _Tone.normal,
         ),
       );
@@ -378,8 +369,8 @@ class _ActionList extends StatelessWidget {
         _ActionItem(
           id: 'void',
           icon: Icons.delete_outline,
-          title: 'Batalkan item',
-          desc: 'Hapus dari pesanan · tercatat atas nama kamu',
+          title: context.l10n.liaVoidItem,
+          desc: context.l10n.liaVoidDesc,
           tone: _Tone.danger,
         ),
       );
@@ -395,7 +386,7 @@ class _ActionList extends StatelessWidget {
           ],
           const SizedBox(height: 60),
           Text(
-            'Tap luar sheet untuk batal.',
+            context.l10n.liaTapOutside,
             style: SatType.bodyS(color: sc.textLo),
           ),
         ],
@@ -503,7 +494,7 @@ class _ActionRow extends StatelessWidget {
 }
 
 class _VoidReasonList extends StatefulWidget {
-  final void Function(Map<String, String> reason, String text) onPick;
+  final void Function(String reasonCode, String text) onPick;
 
   /// Whether the line has already been served — the case that requires
   /// `compItem` rather than `voidItem`, and the only one where "gratis" is a
@@ -519,10 +510,10 @@ class _VoidReasonListState extends State<_VoidReasonList> {
   String? _pickedId;
   String _other = '';
 
-  List<Map<String, String>> get _reasons => [
-    ..._voidReasons.where((r) => r['id'] != 'other'),
+  List<String> get _reasons => [
+    ..._voidReasons.where((r) => r != 'other'),
     if (widget.canComp) _compReason,
-    ..._voidReasons.where((r) => r['id'] == 'other'),
+    ..._voidReasons.where((r) => r == 'other'),
   ];
 
   bool get _canContinue =>
@@ -554,7 +545,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                 const SizedBox(width: Sp.s2),
                 Expanded(
                   child: Text(
-                    'Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan dan catatan audit.',
+                    context.l10n.liaVoidWarning,
                     style: SatType.bodyS(color: sc.textMd),
                   ),
                 ),
@@ -565,10 +556,10 @@ class _VoidReasonListState extends State<_VoidReasonList> {
             Padding(
               padding: const EdgeInsets.only(bottom: Sp.s1h),
               child: Material(
-                color: _pickedId == r['id'] ? sc.accentSoft : sc.bg2,
+                color: _pickedId == r ? sc.accentSoft : sc.bg2,
                 borderRadius: SatR.a(14),
                 child: InkWell(
-                  onTap: () => setState(() => _pickedId = r['id']),
+                  onTap: () => setState(() => _pickedId = r),
                   borderRadius: SatR.a(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -578,9 +569,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                     decoration: SatBox.d(
                       borderRadius: SatR.a(14),
                       border: SatB.all(
-                        color: _pickedId == r['id']
-                            ? sc.accentBorder
-                            : sc.border0,
+                        color: _pickedId == r ? sc.accentBorder : sc.border0,
                       ),
                     ),
                     child: Row(
@@ -589,19 +578,17 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                           width: 22,
                           height: 22,
                           decoration: SatBox.d(
-                            color: _pickedId == r['id']
+                            color: _pickedId == r
                                 ? sc.accent
                                 : Colors.transparent,
                             shape: BoxShape.circle,
                             border: SatB.all(
-                              color: _pickedId == r['id']
-                                  ? sc.accent
-                                  : sc.border2,
+                              color: _pickedId == r ? sc.accent : sc.border2,
                               width: 1.5,
                             ),
                           ),
                           alignment: Alignment.center,
-                          child: _pickedId == r['id']
+                          child: _pickedId == r
                               ? Icon(Icons.check, size: 14, color: sc.accentInk)
                               : null,
                         ),
@@ -611,12 +598,16 @@ class _VoidReasonListState extends State<_VoidReasonList> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                r['label']!,
+                                r == _compReason
+                                    ? context.l10n.vrsComp
+                                    : voidReasonLabel(context.l10n, r),
                                 style: SatType.bodyM(color: sc.textHi),
                               ),
                               const SizedBox(height: Sp.sHair),
                               Text(
-                                r['desc']!,
+                                r == _compReason
+                                    ? context.l10n.vrsCompDesc
+                                    : voidReasonDesc(context.l10n, r),
                                 style: SatType.bodyS(color: sc.textMd),
                               ),
                             ],
@@ -632,7 +623,7 @@ class _VoidReasonListState extends State<_VoidReasonList> {
             Padding(
               padding: const EdgeInsets.only(top: Sp.s1),
               child: SatField.text(
-                hint: 'Wajib — jelaskan alasan pembatalan',
+                hint: context.l10n.liaVoidReasonHint,
                 maxLength: 120,
                 // Red before it is wrong: the reason gates the void, so the
                 // field wears the same border it would on rejection.
@@ -644,16 +635,13 @@ class _VoidReasonListState extends State<_VoidReasonList> {
           SizedBox(
             width: double.infinity,
             child: SatButton.primary(
-              label: 'Batalkan item',
+              label: context.l10n.liaVoidItem,
               icon: Icons.delete_outline,
               size: SatButtonSize.lg,
               onTap: _canContinue
                   ? () {
-                      final r = _voidReasons.firstWhere(
-                        (x) => x['id'] == _pickedId,
-                      );
                       widget.onPick(
-                        r,
+                        _pickedId!,
                         _pickedId == 'other' ? _other.trim() : '',
                       );
                     }
@@ -688,10 +676,10 @@ class _ConfirmedView extends StatelessWidget {
             child: Icon(Icons.delete_outline, size: 46, color: sc.urgent),
           ),
           const SizedBox(height: Sp.s4),
-          Text('Item dibatalkan', style: SatType.h2(color: sc.textHi)),
+          Text(context.l10n.liaVoided, style: SatType.h2(color: sc.textHi)),
           const SizedBox(height: Sp.s2),
           Text(
-            'Tercatat: ×${ticket.qty} ${ticket.name} · atas nama kamu · terlihat di laporan',
+            context.l10n.liaVoidedNote(ticket.qty, ticket.name),
             textAlign: TextAlign.center,
             style: SatType.bodyM(color: sc.textMd),
           ),

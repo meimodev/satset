@@ -150,4 +150,3 @@ String? _bearer(Request req) {
   if (!h.toLowerCase().startsWith('bearer ')) return null;
   return h.substring(7).trim();
 }
-

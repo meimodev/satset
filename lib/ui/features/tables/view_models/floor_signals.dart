@@ -1,9 +1,9 @@
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// Everything the floor card reads that is *derived* rather than stored.
 ///
@@ -152,6 +152,9 @@ Reservation? nextReservationFor(
 /// two `crit` ready/ungreeted rules read a *second* window past the threshold
 /// that already fired the audible cue — this banner is for cues that went
 /// unanswered, so firing it at the same moment would say nothing new.
+/// [l10n] is threaded in rather than read off a `BuildContext`: this is a pure
+/// function in `view_models/`, and the banner it returns is already a finished
+/// sentence by the time a widget sees it. ADR-0083.
 TableStale? staleFor({
   required VenueTable table,
   required List<Ticket> lines,
@@ -159,16 +162,14 @@ TableStale? staleFor({
   required ServiceState service,
   required VenueSettingsDto s,
   required DateTime now,
+  required AppL10n l10n,
 }) {
   if (table.status == TableStatus.ready) {
     final readyAt = _earliestReadyAt(lines);
     if (readyAt != null) {
       final mins = now.difference(readyAt).inMinutes;
       if (mins > s.pickupTargetMins * 2) {
-        return TableStale(
-          StaleSeverity.crit,
-          AppStrings.staleReadyUncollected(mins),
-        );
+        return TableStale(StaleSeverity.crit, l10n.staleReadyUncollected(mins));
       }
     }
   }
@@ -176,10 +177,7 @@ TableStale? staleFor({
   if (hold != null) {
     final lateBy = now.difference(hold.expectedAt).inMinutes;
     if (lateBy > s.reservationGraceMins) {
-      return TableStale(
-        StaleSeverity.crit,
-        AppStrings.staleReservationLate(lateBy),
-      );
+      return TableStale(StaleSeverity.crit, l10n.staleReservationLate(lateBy));
     }
   }
 
@@ -187,7 +185,7 @@ TableStale? staleFor({
   if (service == ServiceState.ungreeted && openedAt != null) {
     final mins = now.difference(openedAt).inMinutes;
     if (mins > s.ungreetedMins + s.ungreetedEscalateMins) {
-      return TableStale(StaleSeverity.crit, AppStrings.staleUngreeted(mins));
+      return TableStale(StaleSeverity.crit, l10n.staleUngreeted(mins));
     }
   }
 
@@ -196,7 +194,7 @@ TableStale? staleFor({
     if (lastServed != null) {
       final mins = now.difference(lastServed).inMinutes;
       if (mins > s.idleTableMins) {
-        return TableStale(StaleSeverity.warn, AppStrings.staleIdle(mins));
+        return TableStale(StaleSeverity.warn, l10n.staleIdle(mins));
       }
     }
   }
@@ -206,7 +204,7 @@ TableStale? staleFor({
     if (elapsed > Duration(minutes: s.longStayMins)) {
       return TableStale(
         StaleSeverity.warn,
-        AppStrings.staleLongStay(formatElapsedId(elapsed)),
+        l10n.staleLongStay(formatElapsed(l10n, elapsed)),
       );
     }
   }
@@ -224,7 +222,6 @@ DateTime? _earliestReadyAt(List<Ticket> lines) {
   }
   return out;
 }
-
 
 DateTime? _latestServedAt(List<Ticket> lines) {
   DateTime? out;

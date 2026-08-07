@@ -5,12 +5,12 @@ import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/generic_seed.dart';
 import 'package:satset/ui/features/admin/widgets/seed_data_dialog.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,6 +33,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 class SystemScreen extends ConsumerStatefulWidget {
   const SystemScreen({super.key});
@@ -56,10 +57,12 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     final ping = ref.watch(pingProvider);
     final degraded = !ping.reachable || wsState != WsConnState.open;
     return AdminPage(
-      title: 'Sistem',
-      sub: '${venueName.isEmpty ? 'Venue' : venueName} · v2.0',
+      title: context.l10n.sysTitle,
+      sub: context.l10n.sysHeaderSub(
+        venueName.isEmpty ? context.l10n.sysVenueFallback : venueName,
+      ),
       topTrailing: SatChip.tag(
-        label: degraded ? 'Mode degraded' : 'LAN online',
+        label: degraded ? context.l10n.sysDegraded : context.l10n.sysLanOnline,
         size: SatChipSize.sm,
         // Degraded now reads as warn rather than neutral: a LAN that is half
         // up is not the same fact as one that is fine, and the old pill said
@@ -100,29 +103,31 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             const SizedBox(width: Sp.s3),
             Expanded(
               child: SetTile(
-                label: 'KDS Online',
+                label: context.l10n.sysKdsOnline,
                 value: '$kdsCount',
-                sub: kdsCount == 0 ? 'Belum ada stasiun' : 'Stasiun aktif',
+                sub: kdsCount == 0
+                    ? context.l10n.sysNoStations
+                    : context.l10n.sysStationsActive,
               ),
             ),
             const SizedBox(width: Sp.s3),
             Expanded(
               child: SetTile(
-                label: 'Tablet Pair',
+                label: context.l10n.sysTabletPair,
                 value: '$pairedTablets',
                 sub: pairedTablets == 0
-                    ? 'Belum ada perangkat'
-                    : 'Perangkat aktif',
+                    ? context.l10n.sysNoDevices
+                    : context.l10n.sysDevicesActive,
               ),
             ),
             const SizedBox(width: Sp.s3),
             Expanded(
               child: SetTile(
-                label: 'Antrian',
+                label: context.l10n.sysQueue,
                 value: '$queueTotal',
                 sub: queueTotal == 0
-                    ? 'Tidak ada job tertunda'
-                    : 'Tiket menunggu',
+                    ? context.l10n.sysNoPendingJobs
+                    : context.l10n.sysTicketsWaiting,
               ),
             ),
           ],
@@ -160,58 +165,69 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     }
     final cert = status == null
         ? '—'
-        : '${_relTime(status.tlsCertExpiry)} · ${_isoDate(status.tlsCertExpiry)}';
+        : '${_relTime(context.l10n, status.tlsCertExpiry)} · ${_isoDate(status.tlsCertExpiry)}';
     final pingText = ping.latest == null
         ? '— ms'
-        : 'p50 ${ping.p50?.inMilliseconds ?? ping.latest!.inMilliseconds} ms · last ${ping.latest!.inMilliseconds} ms';
+        : context.l10n.sysPingValue(
+            ping.p50?.inMilliseconds ?? ping.latest!.inMilliseconds,
+            ping.latest!.inMilliseconds,
+          );
     final fp = status?.tlsFingerprint ?? '';
     final fpShort = fp.length >= 12 ? '${fp.substring(0, 12)}…' : fp;
 
     return _sectionCard(
       context,
       sc,
-      title: 'Server LAN',
-      tag: status == null ? 'BOOTING' : 'PRIMARY',
+      title: context.l10n.sysServerLan,
+      tag: status == null
+          ? context.l10n.sysTagBooting
+          : context.l10n.sysTagPrimary,
       rows: [
         AdminRow(
-          label: 'Alamat',
+          label: context.l10n.sysAddress,
           value: Text(addr, style: SatType.monoM(color: sc.textHi)),
         ),
         AdminRow(
-          label: 'Uptime',
+          label: context.l10n.sysUptime,
           value: Text(
             status == null
                 ? '—'
-                : _humanDuration(Duration(milliseconds: status.uptimeMs)),
+                : _humanDuration(
+                    context.l10n,
+                    Duration(milliseconds: status.uptimeMs),
+                  ),
             style: SatType.monoM(color: sc.textHi),
           ),
         ),
         AdminRow(
-          label: 'Sertifikat',
+          label: context.l10n.sysCertificate,
           value: Text(cert, style: SatType.bodyM(color: sc.textHi)),
         ),
         AdminRow(
-          label: 'Ping LAN',
+          label: context.l10n.sysPingLan,
           value: Text(pingText, style: SatType.monoM(color: sc.textHi)),
         ),
         AdminRow(
-          label: 'p95 latensi',
+          label: context.l10n.sysP95,
           value: Text(
             status == null
                 ? '—'
-                : '${status.p95LatencyMs} ms · ${status.requestCountRecent} req',
+                : context.l10n.sysP95Value(
+                    status.p95LatencyMs,
+                    status.requestCountRecent,
+                  ),
             style: SatType.monoM(color: sc.textHi),
           ),
         ),
         AdminRow(
-          label: 'Fingerprint',
+          label: context.l10n.sysFingerprint,
           value: Row(
             children: [
               Expanded(
                 child: Text(fpShort, style: SatType.monoM(color: sc.textHi)),
               ),
               SatButton.outline(
-                label: 'Salin',
+                label: context.l10n.sysCopy,
                 size: SatButtonSize.sm,
                 onTap: fp.isEmpty
                     ? null
@@ -219,7 +235,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                         await Clipboard.setData(ClipboardData(text: fp));
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Fingerprint disalin')),
+                          SnackBar(
+                            content: Text(context.l10n.sysFingerprintCopied),
+                          ),
                         );
                       },
               ),
@@ -242,9 +260,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     if (printers.isEmpty && stations.isEmpty) {
       rows.add(
         AdminRow(
-          label: 'Belum ada',
+          label: context.l10n.sysNoneYet,
           value: Text(
-            'Tambahkan printer atau stasiun',
+            context.l10n.sysAddPrinterOrStation,
             style: SatType.bodyM(color: sc.textMd),
           ),
           last: true,
@@ -269,20 +287,20 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     return _sectionCard(
       context,
       sc,
-      title: 'Printer & KDS',
-      tag: '${printers.length + stations.length} STASIUN',
+      title: context.l10n.sysPrintersKds,
+      tag: context.l10n.sysTagStations(printers.length + stations.length),
       rows: rows,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SatButton.outline(
-            label: 'Cari',
+            label: context.l10n.sysDiscover,
             size: SatButtonSize.sm,
             onTap: () => _discoverPrinters(context),
           ),
           const SizedBox(width: Sp.s1h),
           SatButton.outline(
-            label: '+ Printer',
+            label: context.l10n.sysAddPrinterBtn,
             size: SatButtonSize.sm,
             onTap: () => _showAddPrinterSheet(context),
           ),
@@ -311,21 +329,21 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
             ),
           ),
           SatButton.outline(
-            label: 'Test',
+            label: context.l10n.sysPrinterTest,
             size: SatButtonSize.sm,
             onTap: () async {
               final err = await ref
                   .read(printersRepositoryProvider.notifier)
                   .testPrint(p.id);
               if (!context.mounted) return;
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(err ?? 'Tes tercetak')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(err ?? context.l10n.sysTestPrinted)),
+              );
             },
           ),
           const SizedBox(width: Sp.s1h),
           SatChip.tag(
-            label: online ? 'Online' : 'Offline',
+            label: online ? context.l10n.sysOnline : context.l10n.sysOffline,
             size: SatChipSize.sm,
             hue: online ? SatChipHue.accent : SatChipHue.neutral,
           ),
@@ -350,12 +368,14 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         children: [
           Expanded(
             child: Text(
-              '$staffOnline staf · $pending tiket',
+              context.l10n.sysStationLoad(staffOnline, pending),
               style: SatType.bodyM(color: sc.textHi),
             ),
           ),
           SatChip.tag(
-            label: pending == 0 ? 'Sepi' : 'Aktif',
+            label: pending == 0
+                ? context.l10n.sysStationQuiet
+                : context.l10n.sysStationBusy,
             size: SatChipSize.sm,
             hue: pending > 0 ? SatChipHue.accent : SatChipHue.neutral,
           ),
@@ -370,14 +390,14 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     return _sectionCard(
       context,
       sc,
-      title: 'Perangkat aktif',
-      tag: '${devices.where((d) => !d.revoked).length} PAIR',
+      title: context.l10n.sysDevicesTitle,
+      tag: context.l10n.sysTagPair(devices.where((d) => !d.revoked).length),
       rows: devices.isEmpty
           ? [
               AdminRow(
-                label: 'Belum ada',
+                label: context.l10n.sysNoneYet,
                 value: Text(
-                  'Belum ada perangkat dipasangkan',
+                  context.l10n.sysNoDevicesPaired,
                   style: SatType.bodyM(color: sc.textMd),
                 ),
                 last: true,
@@ -402,13 +422,13 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     bool last = false,
   }) {
     final sub = d.lastSessionAt == null
-        ? 'belum sign-in'
-        : 'sesi ${_relTime(d.lastSessionAt!)}';
+        ? context.l10n.sysNeverSignedIn
+        : context.l10n.sysLastSession(_relTime(context.l10n, d.lastSessionAt!));
     final pillLabel = d.revoked
-        ? 'Revoked'
+        ? context.l10n.sysRevoked
         : d.sessionActive
-        ? 'Aktif'
-        : 'Idle';
+        ? context.l10n.sysDeviceActive
+        : context.l10n.sysDeviceIdle;
     return AdminRow(
       label: d.label,
       value: Row(
@@ -418,7 +438,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           ),
           if (!d.revoked)
             SatButton.outline(
-              label: 'Revoke',
+              label: context.l10n.sysRevoke,
               size: SatButtonSize.sm,
               onTap: () => _confirmRevoke(d),
             ),
@@ -443,15 +463,15 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     return _sectionCard(
       context,
       sc,
-      title: 'Operasional',
-      tag: 'RUNTIME',
+      title: context.l10n.sysOperational,
+      tag: context.l10n.sysTagRuntime,
       rows: [
         AdminRow(
-          label: 'Tindakan',
+          label: context.l10n.sysActions,
           value: Row(
             children: [
               SatButton.outline(
-                label: 'Mulai ulang server',
+                label: context.l10n.sysRestartServer,
                 size: SatButtonSize.sm,
                 onTap: () => _confirmRestart(),
               ),
@@ -462,11 +482,11 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         // (ADR-0073). Without this a single tap on "Lewati" would put the
         // sample data permanently out of reach.
         AdminRow(
-          label: AppStrings.settingsSeedTitle,
+          label: context.l10n.settingsSeedTitle,
           value: SatButton.outline(
             label: ref.watch(genericSeedProvider).hasSampleData
-                ? AppStrings.venueHubSeedBtnClear
-                : AppStrings.venueHubSeedBtnLoad,
+                ? context.l10n.venueHubSeedBtnClear
+                : context.l10n.venueHubSeedBtnLoad,
             size: SatButtonSize.sm,
             onTap: () => showSeedDataDialog(context),
           ),
@@ -509,8 +529,10 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     );
 
     final pingValue = ping.latest == null
-        ? (wsState == WsConnState.open ? 'tunggu probe…' : 'offline')
-        : '${ping.latest!.inMilliseconds} ms · ${wsState.name}';
+        ? (wsState == WsConnState.open
+              ? context.l10n.sysWaitingProbe
+              : context.l10n.sysOfflineLower)
+        : context.l10n.sysPingWs(ping.latest!.inMilliseconds, wsState.name);
 
     return SafeArea(
       child: Column(
@@ -518,12 +540,15 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-            child: Text('Sistem', style: SatType.h1(color: sc.textHi)),
+            child: Text(
+              context.l10n.sysTitle,
+              style: SatType.h1(color: sc.textHi),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Text(
-              'Server, jaringan, printer, perangkat',
+              context.l10n.sysPhoneSub,
               style: SatType.bodyM(color: sc.textMd),
             ),
           ),
@@ -534,46 +559,50 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
                 _phoneRow(
                   context,
                   sc,
-                  label: 'Server LAN',
+                  label: context.l10n.sysServerLan,
                   value: pingValue,
                   onTap: () => _openDetail(
                     context,
-                    'Server LAN',
+                    context.l10n.sysServerLan,
                     (c, s) => _serverCard(c, s),
                   ),
                 ),
                 _phoneRow(
                   context,
                   sc,
-                  label: 'Printer & KDS',
-                  value:
-                      '${printers.length} printer · ${stations.length} stasiun',
+                  label: context.l10n.sysPrintersKds,
+                  value: context.l10n.sysPrinterStationCount(
+                    printers.length,
+                    stations.length,
+                  ),
                   onTap: () => _openDetail(
                     context,
-                    'Printer & KDS',
+                    context.l10n.sysPrintersKds,
                     (c, s) => _printersCard(c, s),
                   ),
                 ),
                 _phoneRow(
                   context,
                   sc,
-                  label: 'Perangkat',
-                  value:
-                      '${devices.where((d) => !d.revoked).length} pair · ${devices.where((d) => d.sessionActive).length} aktif',
+                  label: context.l10n.sysDevices,
+                  value: context.l10n.sysPairActiveCount(
+                    devices.where((d) => !d.revoked).length,
+                    devices.where((d) => d.sessionActive).length,
+                  ),
                   onTap: () => _openDetail(
                     context,
-                    'Perangkat aktif',
+                    context.l10n.sysDevicesTitle,
                     (c, s) => _devicesCard(c, s),
                   ),
                 ),
                 _phoneRow(
                   context,
                   sc,
-                  label: 'Operasional',
-                  value: 'Mulai ulang server',
+                  label: context.l10n.sysOperational,
+                  value: context.l10n.sysRestartServer,
                   onTap: () => _openDetail(
                     context,
-                    'Operasional',
+                    context.l10n.sysOperational,
                     (c, s) => _opsCard(c, s),
                   ),
                   last: true,
@@ -641,9 +670,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
   Future<void> _confirmRestart() async {
     final auth = ref.read(authStateProvider);
     if (!auth.has(Capability.manageStaff)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak punya izin manageStaff')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.sysNoManageStaff)));
       return;
     }
     final ok = await showSatDialog<bool>(
@@ -651,14 +680,13 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       builder: (_) => const _RestartPinDialog(),
     );
     if (ok != true || !mounted) return;
+    final l10n = context.l10n;
     final api = ref.read(apiClientProvider);
     try {
       await api.postJson('/server/restart', const <String, dynamic>{});
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Server restart… menyambung ulang')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.sysRestarting)));
       // Wait for WS to flip back to open, then refresh status.
       final timeout = Timer(const Duration(seconds: 12), () {});
       final wsClient = ref.read(wsClientProvider);
@@ -676,9 +704,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       wsClient.connState.addListener(listener);
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Restart gagal: ${e.statusCode}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.sysRestartFailed('${e.statusCode}'))),
+      );
     }
   }
 
@@ -686,15 +714,15 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     final ok = await showSatDialog<bool>(
       context,
       builder: (_) => AlertDialog(
-        title: const Text('Revoke device?'),
-        content: Text('${d.label} akan kehilangan sesi.'),
+        title: Text(context.l10n.sysRevokeTitle),
+        content: Text(context.l10n.sysRevokeBody(d.label)),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.of(context).pop(false),
           ),
           SatButton.primary(
-            label: 'Revoke',
+            label: context.l10n.sysRevoke,
             onTap: () => Navigator.of(context).pop(true),
           ),
         ],
@@ -710,16 +738,16 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     showSatDialog<void>(
       context,
       dismissible: false,
-      builder: (_) => const AlertDialog(
+      builder: (_) => AlertDialog(
         content: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: Sp.s6,
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: Sp.s4),
-            Text('Mencari printer…'),
+            const SizedBox(width: Sp.s4),
+            Text(context.l10n.sysSearchingPrinters),
           ],
         ),
       ),
@@ -730,15 +758,15 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     }
     if (!context.mounted) return;
     if (printers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak ada printer ditemukan')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.sysNoPrintersFound)));
       return;
     }
     final chosen = await showSatDialog<DiscoveredPrinter>(
       context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Printer ditemukan'),
+        title: Text(context.l10n.sysPrintersFound),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -746,7 +774,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
               ListTile(
                 leading: const Icon(Icons.print_rounded),
                 title: Text(f.name),
-                subtitle: Text('${f.host}:${f.port}'),
+                subtitle: Text(context.l10n.sysHostPort(f.host, f.port)),
                 onTap: () => Navigator.of(ctx).pop(f),
               ),
           ],
@@ -759,7 +787,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
         .create(label: chosen.name, host: chosen.host, port: chosen.port);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Printer "${chosen.name}" ditambahkan')),
+        SnackBar(content: Text(context.l10n.sysPrinterAdded(chosen.name))),
       );
     }
   }
@@ -773,17 +801,29 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Tambah printer'),
+          title: Text(context.l10n.sysAddPrinterTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SatField.text(controller: labelCtl, label: 'Label', hint: ''),
-              SatField.text(controller: hostCtl, label: 'Host (IP)', hint: ''),
-              SatField.number(controller: portCtl, label: 'Port', hint: ''),
+              SatField.text(
+                controller: labelCtl,
+                label: context.l10n.sysPrinterLabel,
+                hint: '',
+              ),
+              SatField.text(
+                controller: hostCtl,
+                label: context.l10n.sysPrinterHost,
+                hint: '',
+              ),
+              SatField.number(
+                controller: portCtl,
+                label: context.l10n.sysPrinterPort,
+                hint: '',
+              ),
               const SizedBox(height: Sp.s2),
               SatDropdown<String>(
                 value: kind,
-                label: 'Jenis',
+                label: context.l10n.sysPrinterKind,
                 options: const [
                   SatOption('escpos', 'ESC/POS'),
                   SatOption('kds', 'KDS'),
@@ -794,11 +834,11 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           ),
           actions: [
             SatButton.ghost(
-              label: AppStrings.cancel,
+              label: context.l10n.cancel,
               onTap: () => Navigator.of(ctx).pop(false),
             ),
             SatButton.primary(
-              label: AppStrings.add,
+              label: context.l10n.add,
               onTap: () => Navigator.of(ctx).pop(true),
             ),
           ],
@@ -837,10 +877,18 @@ class _SystemHero extends StatelessWidget {
     final activeSessions = status?.activeSessions ?? 0;
     final paired = status?.pairedDevices ?? 0;
     final desc = warn
-        ? 'WS ${wsState?.name ?? "—"} · reach=${reachable ? "ok" : "off"} · ${ping.consecutiveFailures} gagal'
-        : '$activeSessions sesi aktif · $paired perangkat · WS ${wsState?.name ?? "—"}';
+        ? context.l10n.sysHeroWarnDesc(
+            wsState?.name ?? '—',
+            reachable ? context.l10n.sysReachOk : context.l10n.sysReachOff,
+            ping.consecutiveFailures,
+          )
+        : context.l10n.sysHeroOkDesc(
+            activeSessions,
+            paired,
+            wsState?.name ?? '—',
+          );
     return SetHero(
-      label: warn ? 'Mode degraded' : 'Server LAN OK',
+      label: warn ? context.l10n.sysDegraded : context.l10n.sysServerLanOk,
       value: pingMs == null ? '—' : '$pingMs ms',
       desc: desc,
       warn: warn,
@@ -872,18 +920,16 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Mulai ulang server?'),
+      title: Text(context.l10n.sysRestartTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'WS clients akan disconnect ~1-3 detik. Masukkan PIN untuk konfirmasi.',
-          ),
+          Text(context.l10n.sysRestartBody),
           const SizedBox(height: Sp.s2h),
           SatField.pin(
             controller: _ctl,
-            label: 'PIN',
+            label: context.l10n.sysPin,
             hint: '',
             errorText: _err,
           ),
@@ -891,15 +937,16 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
       ),
       actions: [
         SatButton.ghost(
-          label: AppStrings.cancel,
+          label: context.l10n.cancel,
           onTap: _busy ? null : () => Navigator.of(context).pop(false),
         ),
         SatButton.primary(
-          label: 'Konfirmasi',
+          label: context.l10n.sysConfirm,
           onTap: _busy
               ? null
               : () async {
                   final nav = Navigator.of(context);
+                  final l10n = context.l10n;
                   setState(() => _busy = true);
                   final ok = await ref
                       .read(authStateProvider.notifier)
@@ -910,7 +957,7 @@ class _RestartPinDialogState extends ConsumerState<_RestartPinDialog> {
                   } else {
                     setState(() {
                       _busy = false;
-                      _err = 'PIN salah';
+                      _err = l10n.sysWrongPin;
                     });
                   }
                 },
@@ -941,7 +988,7 @@ class _SystemPhoneDetail extends StatelessWidget {
               child: Row(
                 children: [
                   IconButton(
-                    tooltip: AppStrings.back,
+                    tooltip: context.l10n.back,
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),
@@ -966,23 +1013,28 @@ class _SystemPhoneDetail extends StatelessWidget {
 
 // ---- helpers ----
 
-String _humanDuration(Duration d) {
-  if (d.inDays > 0) return '${d.inDays}h ${d.inHours % 24}j';
-  if (d.inHours > 0) return '${d.inHours}j ${d.inMinutes % 60}m';
-  if (d.inMinutes > 0) return '${d.inMinutes}m ${d.inSeconds % 60}s';
-  return '${d.inSeconds}s';
+String _humanDuration(AppL10n l10n, Duration d) {
+  if (d.inDays > 0) return l10n.durDh(d.inDays, d.inHours % 24);
+  if (d.inHours > 0) return l10n.durHm(d.inHours, d.inMinutes % 60);
+  if (d.inMinutes > 0) return l10n.durMs(d.inMinutes, d.inSeconds % 60);
+  return l10n.durSecs(d.inSeconds);
 }
 
-String _relTime(DateTime t) {
+String _relTime(AppL10n l10n, DateTime t) {
   final now = SatClock.now();
-  final diff = t.isAfter(now) ? t.difference(now) : now.difference(t);
-  final suffix = t.isAfter(now) ? ' lagi' : ' lalu';
-  if (diff.inDays > 365) return '${diff.inDays ~/ 365}thn$suffix';
-  if (diff.inDays > 30) return '${diff.inDays ~/ 30}bl$suffix';
-  if (diff.inDays > 0) return '${diff.inDays}h$suffix';
-  if (diff.inHours > 0) return '${diff.inHours}j$suffix';
-  if (diff.inMinutes > 0) return '${diff.inMinutes}m$suffix';
-  return '${diff.inSeconds}s$suffix';
+  final future = t.isAfter(now);
+  final diff = future ? t.difference(now) : now.difference(t);
+  final v = switch (diff) {
+    _ when diff.inDays > 365 => l10n.durYears(diff.inDays ~/ 365),
+    _ when diff.inDays > 30 => l10n.durMonths(diff.inDays ~/ 30),
+    _ when diff.inDays > 0 => l10n.durDays(diff.inDays),
+    _ when diff.inHours > 0 => l10n.durHours(diff.inHours),
+    _ when diff.inMinutes > 0 => l10n.durMins(diff.inMinutes),
+    _ => l10n.durSecs(diff.inSeconds),
+  };
+  // English needs the marker in front ("in 3h"), Indonesian behind ("3j lagi"),
+  // so the whole phrase is the string, not a suffix glued on.
+  return future ? l10n.relIn(v) : l10n.relAgo(v);
 }
 
 String _isoDate(DateTime t) {

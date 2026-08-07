@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/data/services/firebase_admin_service.dart';
@@ -32,19 +34,20 @@ export 'package:satset/data/services/venue_billing.dart';
 ({Color tint, Color soft, String label, IconData icon}) fleetStatusVisual(
   SatColors sc,
   AdminStatus s, {
+  required AppL10n l10n,
   required IconData activeIcon,
 }) {
   return switch (s) {
     AdminStatus.active => (
       tint: sc.success,
       soft: sc.successSoft,
-      label: 'AKTIF',
+      label: l10n.fltActive,
       icon: activeIcon,
     ),
     AdminStatus.suspended => (
       tint: sc.warn,
       soft: sc.warnSoft,
-      label: 'TANGGUH',
+      label: l10n.fltSuspended,
       icon: Icons.pause_circle_outline,
     ),
     // Also where a pre-0076 `banned` doc lands: blocked, but the console can no
@@ -384,7 +387,9 @@ void fleetToast(BuildContext context, String msg, {bool error = false}) {
               Icon(Icons.error_outline, size: 18, color: fg),
               const SizedBox(width: Sp.s2),
             ],
-            Expanded(child: Text(msg, style: SatType.bodyM(color: fg))),
+            Expanded(
+              child: Text(msg, style: SatType.bodyM(color: fg)),
+            ),
           ],
         ),
       ),
@@ -405,10 +410,7 @@ class FleetOfflineBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(Sp.s4, Sp.s2, Sp.s4, 0),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Sp.s3,
-        vertical: Sp.s2h,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: sc.warnSoft,
         borderRadius: SatR.a(12),
@@ -420,8 +422,7 @@ class FleetOfflineBanner extends StatelessWidget {
           const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
-              'Tidak terhubung — data tersimpan, bisa sudah berubah. '
-              'Perubahan dinonaktifkan sampai tersambung.',
+              context.l10n.fltOfflineNote,
               style: SatType.labelS(color: sc.warn),
             ),
           ),
@@ -506,7 +507,11 @@ class FleetHeader extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: [titleBlock, const SizedBox(height: Sp.s3), t],
+          children: [
+            titleBlock,
+            const SizedBox(height: Sp.s3),
+            t,
+          ],
         );
       }
       // Bottoms aligned: the actions sit on the title's line, not the kicker's,

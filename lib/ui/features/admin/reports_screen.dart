@@ -3,7 +3,10 @@ import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/export/export_share.dart' show customRangeLabel;
+import 'package:intl/intl.dart';
+
+import 'package:satset/core/export/export_share.dart' show rangeLabel;
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/data/repositories/reports_repository.dart';
 import 'package:satset/ui/core/widgets/custom_range_sheet.dart';
@@ -29,23 +32,13 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-  static const _rangeLabel = {
-    ReportRange.today: 'Hari ini',
-    ReportRange.yesterday: 'Kemarin',
-    ReportRange.d7: '7 hari',
-    ReportRange.d30: '30 hari',
-    ReportRange.month: 'Bulan ini',
-    ReportRange.custom: 'Custom',
-  };
-
-  /// Chip text: fixed presets read the static map; a committed custom window
-  /// shows its span ("12 Jun – 15 Jun"), an uncommitted one stays "Custom".
-  String _chipLabel(ReportRange r, ReportsQuery q) {
-    if (r == ReportRange.custom && q.customFrom != null && q.customTo != null) {
-      return customRangeLabel(q.customFrom!, q.customTo!);
-    }
-    return _rangeLabel[r]!;
-  }
+  /// Chip text: a committed custom window shows its span ("12 Jun – 15 Jun"),
+  /// an uncommitted one stays "Khusus". Shares [rangeLabel] with the export
+  /// sheet and the exporters — the screen used to carry its own copy of the
+  /// same six-entry table, which is how a chip and the PDF it produces end up
+  /// disagreeing about what "this month" is called.
+  String _chipLabel(ReportRange r, ReportsQuery q) =>
+      rangeLabel(context.l10n, r, from: q.customFrom, to: q.customTo);
 
   void _setRange(ReportRange r) {
     final q = ref.read(reportsQueryProvider);
@@ -102,10 +95,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text('Laporan', style: SatType.h1(color: sc.textHi)),
+                    child: Text(
+                      context.l10n.venueHubSectionReports,
+                      style: SatType.h1(color: sc.textHi),
+                    ),
                   ),
                   SatButton.outline(
-                    label: 'Ekspor',
+                    label: context.l10n.auditExport,
                     size: SatButtonSize.sm,
                     onTap: () => showExportSheet(
                       context,
@@ -123,14 +119,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       );
     }
     return AdminPage(
-      title: 'Laporan',
-      sub: _rangeSub(snapshot, query),
+      title: context.l10n.venueHubSectionReports,
+      sub: _rangeSub(context, snapshot, query),
       subLeading: snapshot == null ? null : _freshnessDot(context, query),
       topTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SatButton.outline(
-            label: 'Ekspor',
+            label: context.l10n.auditExport,
             size: SatButtonSize.sm,
             onTap: () =>
                 showExportSheet(context, ref, snapshot: snapshot, query: query),
@@ -174,7 +170,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       onPressed: loading ? null : onTap,
       visualDensity: VisualDensity.compact,
       iconSize: 20,
-      tooltip: 'Muat ulang',
+      tooltip: context.l10n.a11yRefresh,
       icon: loading
           ? SizedBox(
               width: Sp.s4,
@@ -188,34 +184,28 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  String _rangeSub(ReportsSnapshotDto? snapshot, ReportsQuery query) {
-    if (snapshot == null) return 'Memuat laporan…';
-    final fresh = query.range == ReportRange.today ? 'Live' : 'Snapshot';
+  String _rangeSub(
+    BuildContext context,
+    ReportsSnapshotDto? snapshot,
+    ReportsQuery query,
+  ) {
+    if (snapshot == null) return context.l10n.rptLoading;
+    final fresh = query.range == ReportRange.today
+        ? context.l10n.rptFreshLive
+        : context.l10n.rptFreshSnapshot;
     return '$fresh · ${_humanRange(query)} · ${_fmtRange(snapshot.rangeFrom, snapshot.rangeTo)}';
   }
 
-  String _humanRange(ReportsQuery q) =>
-      q.range == ReportRange.custom ? 'Custom' : _rangeLabel[q.range]!;
+  String _humanRange(ReportsQuery q) => rangeLabel(context.l10n, q.range);
 
   String _fmtRange(String fromIso, String toIso) {
     final from = DateTime.parse(fromIso).toLocal();
     final to = DateTime.parse(toIso).toLocal();
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    String d(DateTime t) => '${t.day} ${months[t.month - 1]}';
-    return '${d(from)} — ${d(to.subtract(const Duration(seconds: 1)))}';
+    // Dates localise (ADR-0084), so the hand-rolled Indonesian month array
+    // that used to sit here is gone — it printed `Agu` inside an English shell.
+    final d = DateFormat('d MMM');
+    return '${d.format(from)} — '
+        '${d.format(to.subtract(const Duration(seconds: 1)))}';
   }
 
   List<Widget> _body(
@@ -260,12 +250,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(width: Sp.s2h),
           Expanded(
             child: Text(
-              'Gagal memuat laporan',
+              context.l10n.rptLoadFailed,
               style: SatType.bodyM(color: sc.textHi),
             ),
           ),
           SatButton.outline(
-            label: 'Coba lagi',
+            label: context.l10n.retry,
             size: SatButtonSize.sm,
             onTap: () => ref.read(reportsRepositoryProvider.notifier).refresh(),
           ),
@@ -299,6 +289,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     ReportsSnapshotDto? snapshot,
     ReportsQuery query,
   ) {
+    final l = context.l10n;
     final servers = snapshot?.filterOptions.servers ?? const <NamedIdDto>[];
     final zones = snapshot?.filterOptions.zones ?? const <NamedIdDto>[];
     final categories =
@@ -306,19 +297,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final serverName = servers
         .firstWhere(
           (s) => s.id == query.serverId,
-          orElse: () => const NamedIdDto(id: '', name: 'Semua pelayan'),
+          orElse: () => NamedIdDto(id: '', name: l.rptAllWaiters),
         )
         .name;
     final zoneName = zones
         .firstWhere(
           (z) => z.id == query.zoneId,
-          orElse: () => const NamedIdDto(id: '', name: 'Semua zona'),
+          orElse: () => NamedIdDto(id: '', name: l.rptAllZones),
         )
         .name;
     final categoryName = categories
         .firstWhere(
           (c) => c.id == query.categoryId,
-          orElse: () => const NamedIdDto(id: '', name: 'Semua kategori'),
+          orElse: () => NamedIdDto(id: '', name: l.rptAllCategories),
         )
         .name;
 
@@ -327,26 +318,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         Expanded(
           child: _filterChip(
             context,
-            'Pelayan',
+            l.expColWaiter,
             serverName,
-            [const NamedIdDto(id: '', name: 'Semua pelayan'), ...servers],
+            query.serverId != null,
+            [NamedIdDto(id: '', name: l.rptAllWaiters), ...servers],
             (n) => _setServer(n.id.isEmpty ? null : n.id),
           ),
         ),
         const SizedBox(width: Sp.s2),
         Expanded(
-          child: _filterChip(context, 'Zona', zoneName, [
-            const NamedIdDto(id: '', name: 'Semua zona'),
-            ...zones,
-          ], (n) => _setZone(n.id.isEmpty ? null : n.id)),
+          child: _filterChip(
+            context,
+            l.venueHubSectionZona,
+            zoneName,
+            query.zoneId != null,
+            [NamedIdDto(id: '', name: l.rptAllZones), ...zones],
+            (n) => _setZone(n.id.isEmpty ? null : n.id),
+          ),
         ),
         const SizedBox(width: Sp.s2),
         Expanded(
           child: _filterChip(
             context,
-            'Kategori',
+            l.mnaTabCategories,
             categoryName,
-            [const NamedIdDto(id: '', name: 'Semua kategori'), ...categories],
+            query.categoryId != null,
+            [NamedIdDto(id: '', name: l.rptAllCategories), ...categories],
             (n) => _setCategory(n.id.isEmpty ? null : n.id),
           ),
         ),
@@ -358,11 +355,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     BuildContext context,
     String label,
     String value,
+    // Whether a filter is actually set. Read off the query, never off the
+    // rendered value: "Semua zona" is copy, and matching on it broke the
+    // moment the same chip could read "All zones".
+    bool active,
     List<NamedIdDto> options,
     ValueChanged<NamedIdDto> onPick,
   ) {
     final sc = context.sat;
-    final active = !value.toLowerCase().startsWith('semua');
     return InkWell(
       onTap: () async {
         final picked = await showSatSheet<NamedIdDto>(

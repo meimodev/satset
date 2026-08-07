@@ -4,6 +4,7 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/domain/models/venue_table.dart';
@@ -96,16 +97,19 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
               ),
             ),
             const SizedBox(height: Sp.s4h),
-            Text('Tetapkan ke meja', style: SatType.h2(color: sc.textHi)),
+            Text(context.l10n.asgTitle, style: SatType.h2(color: sc.textHi)),
             const SizedBox(height: Sp.s1),
             Text(
-              'Atur tamu lalu pilih meja kosong',
+              context.l10n.asgSubtitle,
               style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
             Row(
               children: [
-                Text('Tamu', style: SatType.bodyM(color: sc.textHi)),
+                Text(
+                  context.l10n.tableGuests,
+                  style: SatType.bodyM(color: sc.textHi),
+                ),
                 const Spacer(),
                 SatStepper.pill(
                   value: _pax,
@@ -113,20 +117,23 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                   icon: Icons.person_outline,
                   showMax: true,
                   size: SatStepperSize.lg,
-                  semanticLabel: 'Tamu',
+                  semanticLabel: context.l10n.tableGuests,
                   onChanged: (v) => setState(() => _pax = v.clamp(0, 20)),
                 ),
               ],
             ),
             const SizedBox(height: Sp.s3h),
-            SatField.text(controller: _guestCtrl, hint: 'Nama tamu (opsional)'),
+            SatField.text(
+              controller: _guestCtrl,
+              hint: context.l10n.asgGuestNameHint,
+            ),
             const SizedBox(height: Sp.s4),
             Flexible(
               child: targets.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: Sp.s8),
                       child: Text(
-                        'Tidak ada meja kosong.',
+                        context.l10n.asgNoTargets,
                         textAlign: TextAlign.center,
                         style: SatType.bodyM(color: sc.textLo),
                       ),
@@ -195,7 +202,7 @@ class _AssignTableSheetState extends ConsumerState<_AssignTableSheet> {
                 ),
                 const SizedBox(width: Sp.s3),
                 Text(
-                  'kapasitas ${target.capacity}',
+                  context.l10n.tblCapacityOf(target.capacity),
                   style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),

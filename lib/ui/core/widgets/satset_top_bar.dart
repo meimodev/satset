@@ -1,9 +1,9 @@
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 void safePop(BuildContext context, {String fallback = '/tables'}) {
   final router = GoRouter.of(context);
@@ -36,7 +36,7 @@ class SatBackButton extends StatelessWidget {
         : sc.textHi;
     return Semantics(
       button: true,
-      label: semanticLabel ?? AppStrings.back,
+      label: semanticLabel ?? context.l10n.back,
       child: GestureDetector(
         onTap: onTap,
         child: Container(

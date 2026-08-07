@@ -3,7 +3,6 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -17,6 +16,8 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// First path segment of [loc], e.g. `/menuadm` for `/menuadm/42`. Shell routes
 /// are matched on this rather than on `startsWith`, so a destination can never
@@ -26,41 +27,55 @@ String _firstSegment(String loc) {
   return parts.length > 1 ? '/${parts[1]}' : '/';
 }
 
-/// Shell routes that are a rail destination in their own right, each with the
-/// label that names it — `(rail id, crumb label)`. Everything not listed belongs
-/// to the Venue hub — the default points at `venue`, not `tables`. See ADR-0058:
+/// Shell routes that are a rail destination in their own right. Everything not
+/// listed belongs to the Venue hub — the default points at `venue`, not
+/// `tables`. See ADR-0058:
 /// the hub grows children (Stok, Peringatan, …) far more often than the app
 /// grows top-level destinations, and an unlisted hub child used to light up
 /// Meja. A *new top-level destination* must be added here or it will read as
 /// Venue.
 ///
-/// The label is the same `AppStrings.tab*` constant the rail button renders, so
-/// the trail and the rail cannot disagree about what a destination is called.
-const _railRoutes = <String, (String, String)>{
-  '/tables': ('tables', AppStrings.tabMeja),
-  '/orders': ('orders', AppStrings.tabPesanan),
-  '/kitchen': ('kitchen', AppStrings.tabAntrian),
-  '/kasir': ('kasir', AppStrings.tabKasir),
-  '/me': ('me', AppStrings.tabSaya),
+/// Route → rail id. Stays `const` and label-free so [activeTabFor] remains a
+/// pure function: which tab owns a path is a routing fact, not a display one,
+/// and it is asked for by tests and by `redirect` where no locale exists.
+/// Naming is [railLabel]'s job.
+const _railRoutes = <String, String>{
+  '/tables': 'tables',
+  '/orders': 'orders',
+  '/kitchen': 'kitchen',
+  '/kasir': 'kasir',
+  '/me': 'me',
 };
 
-/// Venue hub children → their crumb trail's tail segment. One map feeds both the
-/// rail (anything absent is `venue`) and the crumb, so the two can no longer
+/// The name a rail destination goes by — the same entry the rail button renders,
+/// so the trail and the rail cannot disagree about what a destination is called.
+String? railLabel(AppL10n l10n, String railId) => switch (railId) {
+  'tables' => l10n.tabMeja,
+  'orders' => l10n.tabPesanan,
+  'kitchen' => l10n.tabAntrian,
+  'kasir' => l10n.tabKasir,
+  'me' => l10n.tabSaya,
+  _ => null,
+};
+
+/// Venue hub children → their crumb trail's tail segment. One table feeds both
+/// the rail (anything absent is `venue`) and the crumb, so the two can no longer
 /// drift apart the way two parallel switches did. A hub path with no entry gets
 /// the bare `[Venue]` trail rather than borrowing another screen's label.
-const venueHubCrumbs = <String, String>{
-  '/venue-settings': AppStrings.crumbKonfigurasi,
-  '/alerts': AppStrings.alertsTitle,
-  '/zone-admin': AppStrings.zoneAdminTitle,
-  '/menuadm': AppStrings.crumbMenuAdmin,
-  '/stock': AppStrings.venueHubSectionStock,
-  '/reports': AppStrings.crumbLaporanShift,
-  '/system': AppStrings.venueHubSectionSystem,
-  '/staff': AppStrings.crumbStafAkun,
+String? venueHubCrumb(AppL10n l10n, String path) => switch (path) {
+  '/venue-settings' => l10n.crumbKonfigurasi,
+  '/alerts' => l10n.alertsTitle,
+  '/zone-admin' => l10n.zoneAdminTitle,
+  '/menuadm' => l10n.crumbMenuAdmin,
+  '/stock' => l10n.venueHubSectionStock,
+  '/reports' => l10n.crumbLaporanShift,
+  '/system' => l10n.venueHubSectionSystem,
+  '/staff' => l10n.crumbStafAkun,
+  _ => null,
 };
 
 /// Which rail item owns [loc].
-String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)]?.$1 ?? 'venue';
+String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)] ?? 'venue';
 
 /// The crumb trail for [loc], *without* the venue name — `SatAppBar` prepends
 /// that for every trail in the app, shell or pushed, so it is not repeated here.
@@ -69,14 +84,13 @@ String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)]?.$1 ?? 'venue
 /// child's own label if it is one. `/me`'s tail is [userName] instead of `Saya`:
 /// on shared hardware "which account am I in?" is a live question, and the rail
 /// avatar shows initials only. An unnamed user falls back to the label.
-List<String> crumbsFor(String loc, String userName) {
-  final dest = _railRoutes[_firstSegment(loc)];
-  if (dest == null) {
+List<String> crumbsFor(AppL10n l10n, String loc, String userName) {
+  final id = _railRoutes[_firstSegment(loc)];
+  if (id == null) {
     // Venue hub: the hub itself, then the child screen if this path is one.
-    return [AppStrings.tabVenue, ?venueHubCrumbs[_firstSegment(loc)]];
+    return [l10n.tabVenue, ?venueHubCrumb(l10n, _firstSegment(loc))];
   }
-  final (id, label) = dest;
-  return [id == 'me' && userName.isNotEmpty ? userName : label];
+  return [id == 'me' && userName.isNotEmpty ? userName : railLabel(l10n, id)!];
 }
 
 class AppShell extends ConsumerWidget {
@@ -104,7 +118,7 @@ class AppShell extends ConsumerWidget {
           readyCount: ready,
           kitchenCount: kitchenCount,
           showKasir: showKasir,
-          crumbs: crumbsFor(loc, userName),
+          crumbs: crumbsFor(context.l10n, loc, userName),
           child: Column(
             children: [
               // Connectivity before commerce: the grace banner is a countdown to
@@ -188,14 +202,14 @@ class _FloatingTabBar extends StatelessWidget {
         children: [
           _Tab(
             id: 'tables',
-            label: AppStrings.tabMeja,
+            label: context.l10n.tabMeja,
             icon: Icons.grid_view_rounded,
             active: active == 'tables',
             onTap: () => context.go('/tables'),
           ),
           _Tab(
             id: 'orders',
-            label: AppStrings.tabPesanan,
+            label: context.l10n.tabPesanan,
             icon: Icons.description_outlined,
             active: active == 'orders',
             badge: readyCount,
@@ -205,14 +219,14 @@ class _FloatingTabBar extends StatelessWidget {
           if (showKasir)
             _Tab(
               id: 'kasir',
-              label: AppStrings.tabKasir,
+              label: context.l10n.tabKasir,
               icon: Icons.point_of_sale_rounded,
               active: active == 'kasir',
               onTap: () => context.go('/kasir'),
             ),
           _Tab(
             id: 'me',
-            label: AppStrings.tabSaya,
+            label: context.l10n.tabSaya,
             icon: Icons.person_outline_rounded,
             active: active == 'me',
             onTap: () => context.go('/me'),

@@ -4,6 +4,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
@@ -88,7 +89,9 @@ class ReceiptPreview extends StatelessWidget {
             const SizedBox(height: 10),
           ],
           _center(
-            d.venueName.isEmpty ? 'NAMA VENUE' : d.venueName,
+            d.venueName.isEmpty
+                ? context.l10n.rcpVenueNamePlaceholder
+                : d.venueName,
             size: 15,
             weight: FontWeight.w700,
           ),
@@ -108,9 +111,13 @@ class ReceiptPreview extends StatelessWidget {
             _center(d.header.trim(), size: 11),
           ],
           _dashes(),
-          _center('TAGIHAN', size: 11.5, weight: FontWeight.w700),
+          _center(
+            context.l10n.strukBillTitle,
+            size: 11.5,
+            weight: FontWeight.w700,
+          ),
           const SizedBox(height: 2),
-          _line('Meja 4 · Contoh', 'No. 0042', muted: true),
+          _line(context.l10n.rcpSampleTable, 'No. 0042', muted: true),
           _dashes(),
           _line('2× Nasi Goreng', formatIDR(60000)),
           _line('1× Es Teh', formatIDR(8000)),

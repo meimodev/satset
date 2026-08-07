@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:satset/ui/core/widgets/sat_field.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -9,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/core/printing/bill_struk_builder.dart';
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/core/printing/bill_struk_renderer.dart';
@@ -32,6 +32,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 const _uuid = Uuid();
 
@@ -73,23 +74,25 @@ Future<void> printTableStruk({
   required VenueTable table,
   required List<Ticket> tickets,
 }) async {
+  final l = context.l10n;
   final printable = tickets
       .where((t) => t.status != TicketStatus.voided)
       .toList();
   if (printable.isEmpty) {
-    _toast(context, 'Tidak ada pesanan untuk dicetak');
+    _toast(context, l.prnNothingToPrint);
     return;
   }
   await _openPicker(
     context,
     PrintJob(
-      subtitle: 'Cetak struk Meja ${table.displayName}',
+      subtitle: l.printJobOrderSlip(table.displayName),
       renderBytes: () async {
         final venue = ref.read(venueSettingsProvider);
         final logo = await ref.read(
           venueLogoBytesProvider(venue.logoRev).future,
         );
         return StrukRenderer.render(
+          l,
           StrukBuilder.fromTable(
             venue: venue,
             tableLabel: table.displayName,
@@ -117,22 +120,24 @@ Future<void> printBillStruk({
   required Bill bill,
   BillReceipt? receipt,
 }) async {
-  final hasLines = bill.lines.any((l) => l.status != 'voided');
+  final l = context.l10n;
+  final hasLines = bill.lines.any((x) => x.status != 'voided');
   if (!hasLines) {
-    _toast(context, 'Tidak ada pesanan untuk dicetak');
+    _toast(context, l.prnNothingToPrint);
     return;
   }
   final paid = receipt == null
       ? bill.paidAmount > 0
       : receipt.payments.isNotEmpty;
-  final what = paid ? 'struk' : 'tagihan';
   final who = receipt == null
-      ? 'Meja ${bill.tableLabel ?? ''}'.trim()
-      : (receipt.label.isEmpty ? 'struk' : receipt.label);
+      ? l.expTableVisit(bill.tableLabel ?? '').trim()
+      : (receipt.label.isEmpty ? l.printWhoReceipt : receipt.label);
+  final subtitle = paid ? l.printJobReceiptDoc(who) : l.printJobBillDoc(who);
 
   final venue = ref.read(venueSettingsProvider);
   final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
   final data = BillStrukBuilder.fromBill(
+    l: l,
     bill: bill,
     receipt: receipt,
     venue: venue,
@@ -146,15 +151,15 @@ Future<void> printBillStruk({
   if (!context.mounted) return;
   final go = await showSatSheet<bool>(
     context,
-    builder: (c) => _PreviewSheet(data: data, subtitle: 'Cetak $what · $who'),
+    builder: (c) => _PreviewSheet(data: data, subtitle: subtitle),
   );
   if (go != true || !context.mounted) return;
 
   await _openPicker(
     context,
     PrintJob(
-      subtitle: 'Cetak $what · $who',
-      renderBytes: () async => BillStrukRenderer.render(data),
+      subtitle: subtitle,
+      renderBytes: () async => BillStrukRenderer.render(l, data),
       printVenue: (pid) => receipt == null
           ? ref.read(settlementProvider.notifier).printBill(bill.visitId, pid)
           : ref.read(settlementProvider.notifier).printReceipt(receipt.id, pid),
@@ -181,16 +186,13 @@ class _PreviewSheet extends StatelessWidget {
           children: [
             SatSheetHeader(
               onClose: () => Navigator.of(context).pop(false),
-              child: Text(
-                subtitle,
-                style: SatType.labelL(color: sc.textHi),
-              ),
+              child: Text(subtitle, style: SatType.labelL(color: sc.textHi)),
             ),
             Expanded(child: PaperPreviewBody(data)),
             Padding(
               padding: const EdgeInsets.all(Sp.s4),
               child: SatButton.primary(
-                label: 'Pilih printer',
+                label: context.l10n.prnPick,
                 icon: Icons.print_rounded,
                 onTap: () => Navigator.of(context).pop(true),
               ),
@@ -234,7 +236,8 @@ class _Entry {
     this.bt,
   });
 
-  String get scopeTag => kind == _Kind.venue ? 'Venue' : 'Alat ini';
+  String scopeTag(AppL10n l) =>
+      kind == _Kind.venue ? l.prnScopeVenue : l.prnThisDevice;
 }
 
 class _PrinterPickerSheet extends ConsumerStatefulWidget {
@@ -461,7 +464,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Pilih printer',
+                        context.l10n.prnPick,
                         style: SatType.h3(color: sc.textHi),
                       ),
                       const SizedBox(height: Sp.s1),
@@ -489,7 +492,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: Sp.s4h),
                 child: Text(
-                  'Tidak ada printer online. Tambah manual, atau pair printer Bluetooth di Pengaturan dulu.',
+                  context.l10n.prnNoneOnline,
                   textAlign: TextAlign.center,
                   style: SatType.bodyM(color: sc.textLo),
                 ),
@@ -513,7 +516,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             _ghostBtn(
               sc,
               Icons.add_rounded,
-              'Tambah manual',
+              context.l10n.prnAddManual,
               _busy ? null : () => _addManual(),
             ),
 
@@ -602,7 +605,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                       border: SatB.all(color: sc.border0),
                     ),
                     child: Text(
-                      e.scopeTag,
+                      e.scopeTag(context.l10n),
                       style: SatType.labelS(color: sc.textMd),
                     ),
                   ),
@@ -623,10 +626,10 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
         () => _loadPaired(),
       ),
       BtUnavailableReason.adapterOff => (
-        'Nyalakan Bluetooth',
+        context.l10n.prnEnableBluetoothTitle,
         Icons.bluetooth_disabled_rounded,
         () {
-          _toast(context, 'Nyalakan Bluetooth di Pengaturan lalu coba lagi');
+          _toast(context, context.l10n.prnEnableBluetooth);
           _loadPaired();
         },
       ),
@@ -697,11 +700,12 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     final err = await widget.job.printVenue(p.id);
     if (!mounted) return;
     Navigator.of(context).pop();
-    _toast(context, err ?? 'Struk tercetak');
+    _toast(context, err ?? context.l10n.prnReceiptPrinted);
   }
 
   Future<void> _printDevice(DevicePrinter d, {bool persist = false}) async {
     setState(() => _busy = true);
+    final l = context.l10n;
     String? err;
     try {
       final bytes = await widget.job.renderBytes();
@@ -714,11 +718,11 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
         await ref.read(devicePrintersProvider.notifier).add(d);
       }
     } catch (_) {
-      err = 'Printer tak terhubung';
+      err = l.prnErrNotConnected;
     }
     if (!mounted) return;
     Navigator.of(context).pop();
-    _toast(context, err ?? 'Struk tercetak');
+    _toast(context, err ?? l.prnReceiptPrinted);
   }
 
   // --- manual add (wifi only; Bluetooth is added by pairing in Settings) ---
@@ -736,22 +740,36 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
           final sc = ctx.sat;
           return AlertDialog(
             backgroundColor: sc.bg1,
-            title: Text('Tambah printer Wi-Fi', style: SatType.labelL()),
+            title: Text(ctx.l10n.prnAddWifi, style: SatType.labelL()),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SatField.text(controller: labelCtl, label: 'Label', hint: ''),
                 SatField.text(
-                  controller: hostCtl,
-                  label: 'Host (IP)',
+                  controller: labelCtl,
+                  label: ctx.l10n.prnLabel,
                   hint: '',
                 ),
-                SatField.number(controller: portCtl, label: 'Port', hint: ''),
+                SatField.text(
+                  controller: hostCtl,
+                  label: ctx.l10n.prnHost,
+                  hint: '',
+                ),
+                SatField.number(
+                  controller: portCtl,
+                  label: ctx.l10n.prnPort,
+                  hint: '',
+                ),
                 const SizedBox(height: Sp.s3),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'venue', label: Text('Venue')),
-                    ButtonSegment(value: 'device', label: Text('Alat ini')),
+                  segments: [
+                    ButtonSegment(
+                      value: 'venue',
+                      label: Text(ctx.l10n.prnScopeVenue),
+                    ),
+                    ButtonSegment(
+                      value: 'device',
+                      label: Text(ctx.l10n.prnScopeDevice),
+                    ),
                   ],
                   selected: {scope},
                   onSelectionChanged: (s) => setLocal(() => scope = s.first),
@@ -760,11 +778,11 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
             ),
             actions: [
               SatButton.ghost(
-                label: AppStrings.cancel,
+                label: context.l10n.cancel,
                 onTap: () => Navigator.of(ctx).pop(false),
               ),
               SatButton.primary(
-                label: AppStrings.add,
+                label: context.l10n.add,
                 onTap: () => Navigator.of(ctx).pop(true),
               ),
             ],

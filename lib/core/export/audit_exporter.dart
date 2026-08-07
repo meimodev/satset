@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/export/export_share.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/services/api_client.dart';
 
 /// Hand the venue audit log to the Android share sheet as CSV.
@@ -30,6 +31,6 @@ Future<void> exportAuditCsv(WidgetRef ref, {required String path}) async {
     // every multi-byte character for no gain.
     bytes: Uint8List.fromList([0xEF, 0xBB, 0xBF, ...raw]),
     mime: ExportFormat.csv.mime,
-    subject: 'Catatan audit',
+    subject: ref.read(l10nProvider).expAuditSubject,
   );
 }

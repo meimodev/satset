@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/audit_text.dart';
 import 'package:satset/core/export/audit_exporter.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/venue_audit_repository.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/domain/models/audit_entry.dart';
@@ -18,6 +18,9 @@ import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import '_common.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/ui/features/admin/audit_labels.dart';
 
 /// The venue-wide integrity log (ADR-0072).
 ///
@@ -71,11 +74,11 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AdminEmbeddedStrip(
-          title: AppStrings.auditTitle,
+          title: context.l10n.auditTitle,
           sub: state.loading
-              ? AppStrings.auditSubtitle
-              : '${AppStrings.auditEventCount(total)} · '
-                    '${_windowLabel(state.filters.window)}',
+              ? context.l10n.auditSubtitle
+              : '${context.l10n.auditEventCount(total)} · '
+                    '${_windowLabel(context.l10n, state.filters.window)}',
           trailing: _AuditToolbar(state: state, repo: repo),
         ),
         Expanded(
@@ -99,14 +102,14 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                     ),
                   ),
                   if (state.items.isEmpty && !state.loading)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: Padding(
                         padding: EdgeInsets.all(Sp.s7),
                         child: SatEmpty(
                           icon: Icons.history,
-                          title: AppStrings.auditEmpty,
-                          body: AppStrings.auditEmptyBody,
+                          title: context.l10n.auditEmpty,
+                          body: context.l10n.auditEmptyBody,
                         ),
                       ),
                     )
@@ -152,11 +155,11 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
   }
 }
 
-String _windowLabel(AuditWindow w) => switch (w) {
-  AuditWindow.today => AppStrings.auditWindowToday,
-  AuditWindow.yesterday => AppStrings.auditWindowYesterday,
-  AuditWindow.week => AppStrings.auditWindowWeek,
-  AuditWindow.all => AppStrings.auditWindowAll,
+String _windowLabel(AppL10n l10n, AuditWindow w) => switch (w) {
+  AuditWindow.today => l10n.auditWindowToday,
+  AuditWindow.yesterday => l10n.auditWindowYesterday,
+  AuditWindow.week => l10n.auditWindowWeek,
+  AuditWindow.all => l10n.auditWindowAll,
 };
 
 class _AuditToolbar extends ConsumerStatefulWidget {
@@ -185,7 +188,8 @@ class _AuditToolbarState extends ConsumerState<_AuditToolbar> {
           child: SatDropdown<AuditWindow>(
             value: f.window,
             options: [
-              for (final w in AuditWindow.values) SatOption(w, _windowLabel(w)),
+              for (final w in AuditWindow.values)
+                SatOption(w, _windowLabel(context.l10n, w)),
             ],
             onChanged: (w) =>
                 w == null ? null : repo.setFilters(f.copyWith(window: w)),
@@ -197,9 +201,9 @@ class _AuditToolbarState extends ConsumerState<_AuditToolbar> {
           child: SatDropdown<AuditType?>(
             value: f.types.length == 1 ? f.types.first : null,
             options: [
-              const SatOption(null, AppStrings.auditTypeAll),
+              SatOption(null, context.l10n.auditTypeAll),
               for (final t in auditSummaryTypes)
-                SatOption(t, auditTypeLabel(t)),
+                SatOption(t, auditTypeLabel(context.l10n, t)),
             ],
             onChanged: (t) => repo.setFilters(
               f.copyWith(types: t == null ? <AuditType>{} : {t}),
@@ -208,7 +212,7 @@ class _AuditToolbarState extends ConsumerState<_AuditToolbar> {
         ),
         const SizedBox(width: Sp.s2),
         SatButton.outline(
-          label: AppStrings.auditExport,
+          label: context.l10n.auditExport,
           icon: Icons.download_outlined,
           size: SatButtonSize.sm,
           busy: _exporting,
@@ -228,7 +232,7 @@ class _AuditToolbarState extends ConsumerState<_AuditToolbar> {
       await exportAuditCsv(ref, path: repo.csvPath());
     } catch (_) {
       if (mounted) {
-        ref.read(errorBusServiceProvider).push('Gagal mengekspor audit');
+        ref.read(errorBusServiceProvider).push(ref.read(l10nProvider).auditExportFailed);
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -239,15 +243,6 @@ class _AuditToolbarState extends ConsumerState<_AuditToolbar> {
 class _AuditTiles extends StatelessWidget {
   final Map<AuditType, AuditTally> summary;
   const _AuditTiles({required this.summary});
-
-  static const _labels = <AuditType, String>{
-    AuditType.voidItem: AppStrings.auditTileVoid,
-    AuditType.comp: AppStrings.auditTileComp,
-    AuditType.discountApplied: AppStrings.auditTileDiscount,
-    AuditType.refund: AppStrings.auditTileRefund,
-    AuditType.menuKilled: AppStrings.auditTileKilled,
-    AuditType.modify: AppStrings.auditTileModify,
-  };
 
   /// Types whose tile carries rupiah. The rest count occurrences — an 86 has
   /// no amount, and inventing one would be a number with nothing behind it.
@@ -276,8 +271,8 @@ class _AuditTiles extends StatelessWidget {
                 child: TabletStatTile(
                   value: '${summary[t]?.count ?? 0}',
                   label: _money.contains(t)
-                      ? '${_labels[t]} · ${formatIDR(summary[t]?.amount ?? 0)}'
-                      : _labels[t]!,
+                      ? '${auditTileLabel(context.l10n, t)} · ${formatIDR(summary[t]?.amount ?? 0)}'
+                      : auditTileLabel(context.l10n, t),
                   valueColor: (summary[t]?.count ?? 0) > 0
                       ? auditTone(t, sc).fg
                       : null,
@@ -311,13 +306,13 @@ class _AuditTable extends StatelessWidget {
               horizontal: Sp.s4,
               vertical: Sp.s3,
             ),
-            child: const _AuditRowLayout(
-              time: Text(AppStrings.auditColTime),
-              type: Text(AppStrings.auditColType),
-              user: Text(AppStrings.auditColUser),
-              event: Text(AppStrings.auditColEvent),
-              amount: Text(AppStrings.auditColAmount),
-              reason: Text(AppStrings.auditColReason),
+            child: _AuditRowLayout(
+              time: Text(context.l10n.auditColTime),
+              type: Text(context.l10n.auditColType),
+              user: Text(context.l10n.auditColUser),
+              event: Text(context.l10n.auditColEvent),
+              amount: Text(context.l10n.auditColAmount),
+              reason: Text(context.l10n.auditColReason),
               header: true,
             ),
           ),
@@ -382,13 +377,13 @@ class _AuditLogRow extends StatelessWidget {
               vertical: Sp.sHair,
             ),
             child: Text(
-              auditTypeLabel(entry.type),
+              auditTypeLabel(context.l10n, entry.type),
               style: SatType.labelS(color: tone.fg),
             ),
           ),
         ),
         user: Text(
-          entry.actorName ?? AppStrings.auditSystemActor,
+          entry.actorName ?? context.l10n.auditSystemActor,
           style: SatType.bodyS(
             color: entry.actorName == null ? sc.textDim : sc.textHi,
           ),
@@ -396,7 +391,7 @@ class _AuditLogRow extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         event: Text(
-          entry.title,
+          auditText(context.l10n, entry),
           style: SatType.bodyS(color: sc.textHi),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -477,7 +472,7 @@ class _NewRowsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SatButton.primary(
-    label: AppStrings.auditNewRows(count),
+    label: context.l10n.auditNewRows(count),
     icon: Icons.arrow_upward_rounded,
     size: SatButtonSize.sm,
     onTap: onTap,
@@ -488,13 +483,13 @@ class _AuditPhoneNotice extends StatelessWidget {
   const _AuditPhoneNotice();
 
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.all(Sp.s5),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(Sp.s5),
     child: Center(
       child: SatEmpty(
         icon: Icons.tablet_mac_outlined,
-        title: AppStrings.auditTabletOnly,
-        body: AppStrings.auditTabletOnlyBody,
+        title: context.l10n.auditTabletOnly,
+        body: context.l10n.auditTabletOnlyBody,
       ),
     ),
   );

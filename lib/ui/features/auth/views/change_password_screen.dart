@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -10,6 +9,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Where an admin holding a dictated temporary password sets a real one.
 ///
@@ -64,14 +64,16 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   String? get _newError {
     final v = _new.text;
     if (v.isEmpty) return null;
-    if (v.length < _minLen) return AppStrings.tempPasswordTooShort(_minLen);
-    if (v == widget.tempPassword) return AppStrings.tempPasswordReused;
+    if (v.length < _minLen) return context.l10n.tempPasswordTooShort(_minLen);
+    if (v == widget.tempPassword) return context.l10n.tempPasswordReused;
     return null;
   }
 
   String? get _confirmError {
     if (_confirm.text.isEmpty) return null;
-    return _confirm.text == _new.text ? null : AppStrings.tempPasswordMismatch;
+    return _confirm.text == _new.text
+        ? null
+        : context.l10n.tempPasswordMismatch;
   }
 
   bool get _valid =>
@@ -87,9 +89,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     });
     final password = _new.text;
     try {
-      await ref
-          .read(firebaseAdminServiceProvider)
-          .changeOwnPassword(password);
+      await ref.read(firebaseAdminServiceProvider).changeOwnPassword(password);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -133,12 +133,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        AppStrings.tempPasswordTitle,
+                        context.l10n.tempPasswordTitle,
                         style: SatType.h2(color: sc.textHi),
                       ),
                       const SizedBox(height: Sp.s2),
                       Text(
-                        AppStrings.tempPasswordReason,
+                        context.l10n.tempPasswordReason,
                         style: SatType.bodyM(color: sc.textMd),
                       ),
                       const SizedBox(height: Sp.s2),
@@ -149,7 +149,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       const SizedBox(height: Sp.s5),
                       SatField.password(
                         controller: _new,
-                        label: AppStrings.tempPasswordNew,
+                        label: context.l10n.tempPasswordNew,
                         hint: '',
                         autofocus: true,
                         visible: _newVisible,
@@ -161,7 +161,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       const SizedBox(height: Sp.s3),
                       SatField.password(
                         controller: _confirm,
-                        label: AppStrings.tempPasswordConfirm,
+                        label: context.l10n.tempPasswordConfirm,
                         hint: '',
                         visible: _confirmVisible,
                         onToggle: () =>
@@ -175,12 +175,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       ],
                       const SizedBox(height: Sp.s5),
                       SatButton.primary(
-                        label: AppStrings.save,
+                        label: context.l10n.save,
                         onTap: _busy || !_valid ? null : _submit,
                       ),
                       const SizedBox(height: Sp.s2),
                       SatButton.ghost(
-                        label: AppStrings.logout,
+                        label: context.l10n.logout,
                         onTap: _busy ? null : _cancel,
                       ),
                     ],

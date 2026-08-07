@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -19,6 +18,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/features/admin/widgets/receipt_preview.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 class VenueSettingsScreen extends ConsumerStatefulWidget {
   const VenueSettingsScreen({super.key});
@@ -272,7 +272,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
   Widget _tablet(BuildContext context) {
     final s = ref.watch(venueSettingsProvider);
     return AdminPage(
-      title: AppStrings.venueSettingsTitle,
+      title: context.l10n.venueSettingsTitle,
       sub: s.legalName.isEmpty
           ? s.displayName
           : '${s.displayName} · ${s.legalName}',
@@ -317,14 +317,14 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
             child: Text(
-              AppStrings.venueSettingsTitle,
+              context.l10n.venueSettingsTitle,
               style: SatType.h1(color: sc.textHi),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Text(
-              AppStrings.venueSettingsSubtitle,
+              context.l10n.venueSettingsSubtitle,
               style: SatType.bodyM(color: sc.textMd),
             ),
           ),
@@ -335,22 +335,22 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                 _phoneRow(
                   context,
                   sc,
-                  label: AppStrings.venueSettingsSectionIdentity,
+                  label: context.l10n.venueSettingsSectionIdentity,
                   value: s.displayName,
                   onTap: () => _openDetail(
                     context,
-                    AppStrings.venueSettingsSectionIdentity,
+                    context.l10n.venueSettingsSectionIdentity,
                     (c, _) => _identityCard(c),
                   ),
                 ),
                 _phoneRow(
                   context,
                   sc,
-                  label: AppStrings.venueSettingsSectionReceipt,
+                  label: context.l10n.venueSettingsSectionReceipt,
                   value: _receiptSummary(s),
                   onTap: () => _openDetail(
                     context,
-                    AppStrings.venueSettingsSectionReceipt,
+                    context.l10n.venueSettingsSectionReceipt,
                     (c, _) => Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -364,23 +364,24 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                 _phoneRow(
                   context,
                   sc,
-                  label: AppStrings.venueSettingsSectionTax,
+                  label: context.l10n.venueSettingsSectionTax,
                   value: _pajakLayananSummary(s),
                   onTap: () => _openDetail(
                     context,
-                    AppStrings.venueSettingsSectionTax,
+                    context.l10n.venueSettingsSectionTax,
                     (c, _) => _PajakLayananCard(),
                   ),
                 ),
                 _phoneRow(
                   context,
                   sc,
-                  label: AppStrings.venueSettingsSectionReports,
-                  value:
-                      'Mulai ${s.businessDayStartHour.toString().padLeft(2, '0')}:00',
+                  label: context.l10n.venueSettingsSectionReports,
+                  value: context.l10n.vstReportsStartAt(
+                    s.businessDayStartHour.toString().padLeft(2, '0'),
+                  ),
                   onTap: () => _openDetail(
                     context,
-                    AppStrings.venueSettingsSectionReports,
+                    context.l10n.venueSettingsSectionReports,
                     (c, _) => _ReportsHourCard(),
                   ),
                   last: true,
@@ -421,7 +422,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'IDENTITAS RESTORAN',
+                  context.l10n.vstIdentityHead,
                   style: SatType.caption(color: sc.textLo),
                 ),
                 const SizedBox(height: Sp.s2),
@@ -431,12 +432,14 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                 ),
                 const SizedBox(height: Sp.s1),
                 Text(
-                  s.legalName.isEmpty ? 'Belum ada nama legal' : s.legalName,
+                  s.legalName.isEmpty
+                      ? context.l10n.vstNoLegalName
+                      : s.legalName,
                   style: SatType.bodyS(color: sc.textMd),
                 ),
                 const SizedBox(height: Sp.s2h),
                 Text(
-                  s.address.isEmpty ? 'Belum ada alamat' : s.address,
+                  s.address.isEmpty ? context.l10n.vstNoAddress : s.address,
                   style: SatType.bodyM(color: sc.textMd),
                 ),
               ],
@@ -451,34 +454,34 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     final s = ref.watch(venueSettingsProvider);
     return _sectionCard(
       context,
-      title: AppStrings.venueSettingsSectionIdentity,
-      tag: AppStrings.venueSettingsSectionIdentityTag,
+      title: context.l10n.venueSettingsSectionIdentity,
+      tag: context.l10n.venueSettingsSectionIdentityTag,
       rows: [
         AdminRow(
-          label: AppStrings.venueSettingsDisplayName,
+          label: context.l10n.venueSettingsDisplayName,
           value: _cloudManaged(context, s.displayName),
         ),
         AdminRow(
-          label: AppStrings.venueSettingsLegalName,
+          label: context.l10n.venueSettingsLegalName,
           value: _editor(
             context,
             controller: _legalName,
             focus: _legalNameFocus,
-            hint: 'PT …',
+            hint: context.l10n.vstLegalNameHint,
             onSubmit: (v) => _patch(legalName: v),
           ),
         ),
         AdminRow(
-          label: AppStrings.venueSettingsAddress,
+          label: context.l10n.venueSettingsAddress,
           value: _cloudManaged(context, s.address),
         ),
         AdminRow(
-          label: AppStrings.venueSettingsPhone,
+          label: context.l10n.venueSettingsPhone,
           value: _editor(
             context,
             controller: _phone,
             focus: _phoneFocus,
-            hint: '+62 …',
+            hint: context.l10n.vstPhoneHint,
             mono: true,
             inputType: TextInputType.phone,
             onSubmit: (v) => _patch(phone: v),
@@ -507,7 +510,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             Icon(Icons.lock_outline_rounded, size: 10, color: sc.textLo),
             const SizedBox(width: Sp.s1),
             Text(
-              AppStrings.venueSettingsManagedBySuperAdmin,
+              context.l10n.venueSettingsManagedBySuperAdmin,
               style: SatType.bodyS(color: sc.textLo),
             ),
           ],
@@ -518,80 +521,83 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
 
   Widget _receiptCard(BuildContext context) => _sectionCard(
     context,
-    title: AppStrings.venueSettingsSectionReceipt,
-    tag: AppStrings.venueSettingsSectionReceiptTag,
+    title: context.l10n.venueSettingsSectionReceipt,
+    tag: context.l10n.venueSettingsSectionReceiptTag,
     rows: [
-      AdminRow(label: AppStrings.venueSettingsLogo, value: _logoTile(context)),
       AdminRow(
-        label: AppStrings.venueSettingsTagline,
+        label: context.l10n.venueSettingsLogo,
+        value: _logoTile(context),
+      ),
+      AdminRow(
+        label: context.l10n.venueSettingsTagline,
         value: _editor(
           context,
           controller: _receiptTagline,
           focus: _receiptTaglineFocus,
-          hint: 'mis. Kopi & Dapur',
+          hint: context.l10n.vstTaglineHint,
           onSubmit: (v) => _patch(receiptTagline: v),
         ),
       ),
       AdminRow(
-        label: AppStrings.venueSettingsHeader,
+        label: context.l10n.venueSettingsHeader,
         value: _editor(
           context,
           controller: _receiptHeader,
           focus: _receiptHeaderFocus,
-          hint: 'Tampil di atas struk',
+          hint: context.l10n.vstHeaderHint,
           onSubmit: (v) => _patch(receiptHeader: v),
         ),
       ),
       AdminRow(
-        label: AppStrings.venueSettingsSocial,
+        label: context.l10n.venueSettingsSocial,
         value: _editor(
           context,
           controller: _receiptSocial,
           focus: _receiptSocialFocus,
-          hint: '@instagram · wa.me/…',
+          hint: context.l10n.vstSocialHint,
           onSubmit: (v) => _patch(receiptSocial: v),
         ),
       ),
       AdminRow(
-        label: AppStrings.venueSettingsFooter,
+        label: context.l10n.venueSettingsFooter,
         value: _editor(
           context,
           controller: _receiptFooter,
           focus: _receiptFooterFocus,
-          hint: 'Tampil di bawah struk',
+          hint: context.l10n.vstFooterHint,
           multiline: true,
           onSubmit: (v) => _patch(receiptFooter: v),
         ),
       ),
       AdminRow(
-        label: AppStrings.venueSettingsThankYou,
+        label: context.l10n.venueSettingsThankYou,
         value: _editor(
           context,
           controller: _receiptThankYou,
           focus: _receiptThankYouFocus,
-          hint: 'Terima kasih',
+          hint: context.l10n.vstThankYouHint,
           onSubmit: (v) => _patch(receiptThankYou: v),
         ),
       ),
       AdminRow(
-        label: AppStrings.venueSettingsQrUrl,
+        label: context.l10n.venueSettingsQrUrl,
         value: _editor(
           context,
           controller: _receiptQrUrl,
           focus: _receiptQrUrlFocus,
-          hint: 'https://… (hanya struk uang)',
+          hint: context.l10n.vstQrUrlHint,
           mono: true,
           inputType: TextInputType.url,
           onSubmit: (v) => _patch(receiptQrUrl: v),
         ),
       ),
       AdminRow(
-        label: AppStrings.venueSettingsQrCaption,
+        label: context.l10n.venueSettingsQrCaption,
         value: _editor(
           context,
           controller: _receiptQrCaption,
           focus: _receiptQrCaptionFocus,
-          hint: 'mis. Ulas kami di Google',
+          hint: context.l10n.vstQrCaptionHint,
           onSubmit: (v) => _patch(receiptQrCaption: v),
         ),
         last: true,
@@ -647,15 +653,15 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
               _logoBtn(
                 sc,
                 bytes == null
-                    ? AppStrings.venueSettingsLogoAdd
-                    : AppStrings.venueSettingsLogoChange,
+                    ? context.l10n.venueSettingsLogoAdd
+                    : context.l10n.venueSettingsLogoChange,
                 _pickLogo,
               ),
               if (bytes != null) ...[
                 const SizedBox(width: Sp.s2),
                 _logoBtn(
                   sc,
-                  AppStrings.venueSettingsLogoDelete,
+                  context.l10n.venueSettingsLogoDelete,
                   _clearLogo,
                   danger: true,
                 ),
@@ -845,7 +851,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
 
   String _receiptSummary(VenueSettingsDto s) {
     if (s.receiptHeader.isEmpty && s.receiptFooter.isEmpty) {
-      return 'Belum diisi';
+      return context.l10n.vstNotSet;
     }
     final h = s.receiptHeader.isEmpty ? '—' : s.receiptHeader;
     final f = s.receiptFooter.isEmpty ? '—' : s.receiptFooter;
@@ -853,12 +859,15 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
   }
 
   String _pajakLayananSummary(VenueSettingsDto s) {
-    final tax = s.taxEnabled ? '${_fmtPct(s.taxRateBps)} PPN' : 'PPN off';
+    final l10n = context.l10n;
+    final tax = s.taxEnabled
+        ? l10n.vstTaxOn(_fmtPct(s.taxRateBps))
+        : l10n.vstTaxOff;
     final svc = !s.serviceEnabled
-        ? 'Layanan off'
+        ? l10n.vstServiceOff
         : s.serviceMode == 'fixed'
-        ? 'Layanan ${formatIDR(s.serviceFixedAmount)}'
-        : 'Layanan ${_fmtPct(s.serviceRateBps)}';
+        ? l10n.vstServiceValue(formatIDR(s.serviceFixedAmount))
+        : l10n.vstServiceValue(_fmtPct(s.serviceRateBps));
     return '$tax · $svc';
   }
 
@@ -900,18 +909,21 @@ class _PajakLayananCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  AppStrings.venueSettingsSectionTax,
+                  context.l10n.venueSettingsSectionTax,
                   style: SatType.labelL(color: sc.textHi),
                 ),
               ),
-              Text('BIAYA', style: SatType.caption(color: sc.textLo)),
+              Text(
+                context.l10n.vstFeesTag,
+                style: SatType.caption(color: sc.textLo),
+              ),
             ],
           ),
           const SizedBox(height: Sp.s3h),
           _toggleRow(
             context,
             sc,
-            label: 'Aktifkan PPN',
+            label: context.l10n.vstEnableTax,
             on: s.taxEnabled,
             onToggle: () => n.patch(taxEnabled: !s.taxEnabled),
           ),
@@ -920,7 +932,7 @@ class _PajakLayananCard extends ConsumerWidget {
             _bpsStepper(
               context,
               sc,
-              label: 'Tarif PPN',
+              label: context.l10n.vstTaxRate,
               valueBps: s.taxRateBps,
               stepBps: 25,
               minBps: 0,
@@ -932,7 +944,7 @@ class _PajakLayananCard extends ConsumerWidget {
           _toggleRow(
             context,
             sc,
-            label: 'Aktifkan layanan',
+            label: context.l10n.vstEnableService,
             on: s.serviceEnabled,
             onToggle: () => n.patch(serviceEnabled: !s.serviceEnabled),
           ),
@@ -949,7 +961,7 @@ class _PajakLayananCard extends ConsumerWidget {
               _bpsStepper(
                 context,
                 sc,
-                label: 'Tarif layanan',
+                label: context.l10n.vstServiceRate,
                 valueBps: s.serviceRateBps,
                 stepBps: 50,
                 minBps: 0,
@@ -960,7 +972,7 @@ class _PajakLayananCard extends ConsumerWidget {
               _amountStepper(
                 context,
                 sc,
-                label: 'Jumlah layanan',
+                label: context.l10n.vstServiceAmount,
                 amount: s.serviceFixedAmount,
                 step: 1000,
                 min: 0,
@@ -974,22 +986,20 @@ class _PajakLayananCard extends ConsumerWidget {
           _toggleRow(
             context,
             sc,
-            label: 'Pajak dihitung setelah diskon',
+            label: context.l10n.vstTaxAfterDiscount,
             on: s.taxAfterDiscount,
             onToggle: () => n.patch(taxAfterDiscount: !s.taxAfterDiscount),
           ),
           const SizedBox(height: Sp.s1h),
           Text(
             s.taxAfterDiscount
-                ? 'Diskon mengurangi dasar pengenaan — pajak & layanan '
-                      'dihitung dari jumlah setelah diskon.'
-                : 'Pajak & layanan dihitung dari subtotal kotor, diskon '
-                      'dipotong dari total akhir.',
+                ? context.l10n.vstTaxAfterDiscountOn
+                : context.l10n.vstTaxAfterDiscountOff,
             style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s1),
           Text(
-            'Diskon per item selalu dihitung sebelum pajak.',
+            context.l10n.vstItemDiscountNote,
             style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s2h),
@@ -1006,7 +1016,7 @@ class _PajakLayananCard extends ConsumerWidget {
                   const SizedBox(width: Sp.s2h),
                   Expanded(
                     child: Text(
-                      'Preset diskon',
+                      context.l10n.vstDiscountPresets,
                       style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),
@@ -1051,14 +1061,31 @@ class _PajakLayananCard extends ConsumerWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text('Tipe biaya', style: SatType.bodyM(color: sc.textMd)),
+          child: Text(
+            context.l10n.vstFeeType,
+            style: SatType.bodyM(color: sc.textMd),
+          ),
         ),
         Expanded(
           child: Row(
             children: [
-              _modeChip(context, sc, 'Persen', 'percent', mode, onPick),
+              _modeChip(
+                context,
+                sc,
+                context.l10n.vstFeePercent,
+                'percent',
+                mode,
+                onPick,
+              ),
               const SizedBox(width: Sp.s2),
-              _modeChip(context, sc, 'Tetap', 'fixed', mode, onPick),
+              _modeChip(
+                context,
+                sc,
+                context.l10n.vstFeeFixed,
+                'fixed',
+                mode,
+                onPick,
+              ),
             ],
           ),
         ),
@@ -1117,6 +1144,7 @@ class _PajakLayananCard extends ConsumerWidget {
           child: Row(
             children: [
               _stepBtn(
+                context,
                 sc,
                 Icons.remove,
                 canDown
@@ -1141,6 +1169,7 @@ class _PajakLayananCard extends ConsumerWidget {
               ),
               const SizedBox(width: Sp.s2h),
               _stepBtn(
+                context,
                 sc,
                 Icons.add,
                 canUp
@@ -1176,6 +1205,7 @@ class _PajakLayananCard extends ConsumerWidget {
           child: Row(
             children: [
               _stepBtn(
+                context,
                 sc,
                 Icons.remove,
                 canDown
@@ -1200,6 +1230,7 @@ class _PajakLayananCard extends ConsumerWidget {
               ),
               const SizedBox(width: Sp.s2h),
               _stepBtn(
+                context,
                 sc,
                 Icons.add,
                 canUp ? () => onChange((amount + step).clamp(min, max)) : null,
@@ -1214,12 +1245,17 @@ class _PajakLayananCard extends ConsumerWidget {
   /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
   /// deriving it from the glyph is how every one of these gets named without
   /// the call sites repeating it.
-  Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
+  Widget _stepBtn(
+    BuildContext context,
+    SatColors sc,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
     return SatIconButton.outline(
       icon: icon,
       tooltip: icon == Icons.add
-          ? AppStrings.stepperIncrease
-          : AppStrings.stepperDecrease,
+          ? context.l10n.stepperIncrease
+          : context.l10n.stepperDecrease,
       size: 36,
       onTap: onTap,
     );
@@ -1234,8 +1270,8 @@ class _ReportsHourCard extends ConsumerWidget {
     final n = ref.read(venueSettingsProvider.notifier);
     final hour = s.businessDayStartHour;
     return SatCard.titled(
-      title: AppStrings.venueSettingsSectionReports,
-      tag: 'LAPORAN',
+      title: context.l10n.venueSettingsSectionReports,
+      tag: context.l10n.vstReportsTag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1248,12 +1284,12 @@ class _ReportsHourCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Jam mulai hari kerja',
+                      context.l10n.vstBusinessDayStart,
                       style: SatType.bodyM(color: sc.textMd),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
-                      'Pengelompokan laporan "Hari ini"',
+                      context.l10n.vstBusinessDayStartHint,
                       style: SatType.bodyS(color: sc.textLo),
                     ),
                   ],
@@ -1263,6 +1299,7 @@ class _ReportsHourCard extends ConsumerWidget {
                 child: Row(
                   children: [
                     _stepBtn(
+                      context,
                       sc,
                       Icons.remove,
                       hour > 0
@@ -1287,6 +1324,7 @@ class _ReportsHourCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: Sp.s2h),
                     _stepBtn(
+                      context,
                       sc,
                       Icons.add,
                       hour < 23
@@ -1309,12 +1347,17 @@ class _ReportsHourCard extends ConsumerWidget {
   /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
   /// deriving it from the glyph is how every one of these gets named without
   /// the call sites repeating it.
-  Widget _stepBtn(SatColors sc, IconData icon, VoidCallback? onTap) {
+  Widget _stepBtn(
+    BuildContext context,
+    SatColors sc,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
     return SatIconButton.outline(
       icon: icon,
       tooltip: icon == Icons.add
-          ? AppStrings.stepperIncrease
-          : AppStrings.stepperDecrease,
+          ? context.l10n.stepperIncrease
+          : context.l10n.stepperDecrease,
       size: 36,
       onTap: onTap,
     );
@@ -1340,7 +1383,7 @@ class _VenueSettingsPhoneDetail extends StatelessWidget {
               child: Row(
                 children: [
                   IconButton(
-                    tooltip: AppStrings.back,
+                    tooltip: context.l10n.back,
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: Icon(Icons.arrow_back_rounded, color: sc.textHi),
                   ),

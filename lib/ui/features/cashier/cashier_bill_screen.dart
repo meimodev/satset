@@ -16,7 +16,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
@@ -33,14 +32,9 @@ import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
-
-const _methodLabels = {
-  'tunai': 'Tunai',
-  'kartu': 'Kartu',
-  'qris': 'QRIS',
-  'transfer': 'Transfer',
-  'lainnya': 'Lainnya',
-};
+import 'package:satset/core/localization/labels.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// Opens the bill surface. Hardware decides, as everywhere else (ADR-0049):
 ///
@@ -55,10 +49,7 @@ const _methodLabels = {
 ///
 /// Both are root-navigator by construction, so the floating phone tab bar still
 /// cannot float over the confirm button.
-Future<void> openCashierBill(
-  BuildContext context, {
-  required String visitId,
-}) {
+Future<void> openCashierBill(BuildContext context, {required String visitId}) {
   if (!context.layout.useTabletShell) {
     return showSatSheet<void>(
       context,
@@ -100,8 +91,14 @@ class CashierBillPage extends ConsumerWidget {
             SatAppBar(
               onBack: () => Navigator.of(context).pop(),
               crumbs: billAsync.maybeWhen(
-                data: (b) => ['Kasir', b.tableLabel ?? 'Tagihan'],
-                orElse: () => const ['Kasir', 'Tagihan'],
+                data: (b) => [
+                  context.l10n.cshCrumbCashier,
+                  b.tableLabel ?? context.l10n.cshCrumbBill,
+                ],
+                orElse: () => [
+                  context.l10n.cshCrumbCashier,
+                  context.l10n.cshCrumbBill,
+                ],
               ),
               showAvatar: false,
             ),
@@ -143,7 +140,7 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
       await op();
       if (mounted) setState(() => _error = null);
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = _msg(e));
+      if (mounted) setState(() => _error = _msg(ref.read(l10nProvider), e));
     } finally {
       ref.invalidate(billDetailProvider(widget.visitId));
     }
@@ -165,8 +162,10 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
             onClose: () => Navigator.of(context).pop(),
             child: Text(
               billAsync.maybeWhen(
-                data: (b) => 'Tagihan · Meja ${b.tableLabel ?? ''}'.trim(),
-                orElse: () => 'Tagihan',
+                data: (b) => (b.tableLabel ?? '').isEmpty
+                    ? context.l10n.cshCrumbBill
+                    : context.l10n.cshBillTableCrumb(b.tableLabel!),
+                orElse: () => context.l10n.cshCrumbBill,
               ),
               style: SatType.labelL(color: sc.textHi),
             ),
@@ -181,7 +180,7 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
               child: Text(
-                'Gagal memuat tagihan.',
+                context.l10n.cshLoadFailed,
                 style: SatType.bodyM(color: sc.textLo),
               ),
             ),
@@ -219,18 +218,15 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
       final ok = await showSatDialog<bool>(
         context,
         builder: (c) => AlertDialog(
-          title: const Text('Tutup tagihan'),
-          content: Text(
-            'Kunci tagihan Meja ${bill.tableLabel ?? ''} sebagai lunas? '
-            'Tindakan ini mengakhiri tagihan.',
-          ),
+          title: Text(context.l10n.cshCloseBill),
+          content: Text(context.l10n.cshCloseBillBody(bill.tableLabel ?? '')),
           actions: [
             SatButton.ghost(
-              label: AppStrings.cancel,
+              label: context.l10n.cancel,
               onTap: () => Navigator.pop(c, false),
             ),
             SatButton.primary(
-              label: 'Tutup tagihan',
+              label: context.l10n.cshCloseBill,
               onTap: () => Navigator.pop(c, true),
             ),
           ],
@@ -244,7 +240,7 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
           .closeBill(bill.visitId, writeOff: writeOff, reason: reason);
       if (context.mounted) Navigator.of(context).pop();
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = _msg(e));
+      if (mounted) setState(() => _error = _msg(ref.read(l10nProvider), e));
     }
   }
 
@@ -258,7 +254,7 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
       ref.invalidate(billDetailProvider(bill.visitId));
       await ref.read(settlementProvider.notifier).refresh();
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = _msg(e));
+      if (mounted) setState(() => _error = _msg(ref.read(l10nProvider), e));
     }
   }
 
@@ -267,31 +263,28 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
     return showSatDialog<String>(
       context,
       builder: (c) => AlertDialog(
-        title: const Text('Tutup tagihan — tak tertagih'),
+        title: Text(context.l10n.cshWriteOffTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Sisa ${formatIDR(outstanding)} akan dicatat sebagai '
-              'kerugian (tak tertagih). Perlu persetujuan manajer.',
-            ),
+            Text(context.l10n.cshWriteOffBody(formatIDR(outstanding))),
             const SizedBox(height: Sp.s3),
             SatField.text(
               controller: ctrl,
-              label: 'Alasan (wajib)',
-              hint: 'mis. tamu pergi tanpa bayar',
+              label: context.l10n.cshWriteOffReason,
+              hint: context.l10n.cshWriteOffReasonHint,
               autofocus: true,
             ),
           ],
         ),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.pop(c),
           ),
           SatButton.danger(
-            label: 'Catat kerugian',
+            label: context.l10n.cshWriteOffConfirm,
             onTap: () {
               final t = ctrl.text.trim();
               if (t.isEmpty) return;
@@ -302,18 +295,17 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
       ),
     );
   }
-
 }
 
-String _msg(ApiException e) => switch (e.code) {
-  'over_assign' => 'Unit melebihi yang tersedia.',
-  'receipt_paid' => 'Buka ulang struk sebelum mengubahnya.',
-  'not_settled' => 'Tagihan belum lunas.',
-  'bill_locked' => 'Tagihan sudah ditutup — buka ulang dulu.',
-  'forbidden' => 'Perlu persetujuan manajer (tak tertagih).',
-  'reason_required' => 'Alasan tak tertagih wajib diisi.',
-  'no_lines' => 'Meja tidak punya pesanan.',
-  _ => 'Operasi gagal (${e.code ?? e.statusCode}).',
+String _msg(AppL10n l10n, ApiException e) => switch (e.code) {
+  'over_assign' => l10n.cshErrOverAssign,
+  'receipt_paid' => l10n.cshErrReceiptPaid,
+  'not_settled' => l10n.cshErrNotSettled,
+  'bill_locked' => l10n.cshErrBillLocked,
+  'forbidden' => l10n.cshErrForbidden,
+  'reason_required' => l10n.cshErrReasonRequired,
+  'no_lines' => l10n.cshErrNoLines,
+  _ => l10n.cshErrGeneric('${e.code ?? e.statusCode}'),
 };
 
 /// The failed-operation line under the sheet header — warn-toned, dismissible,
@@ -343,7 +335,7 @@ class _ErrorLine extends StatelessWidget {
           ),
           SatIconButton.plain(
             icon: Icons.close,
-            tooltip: AppStrings.close,
+            tooltip: context.l10n.close,
             size: 32,
             onTap: onDismiss,
           ),
@@ -533,7 +525,7 @@ class _BillBodyState extends State<_BillBody> {
           else if (bill.receipts.isNotEmpty)
             rv(
               SatCard.section(
-                header: 'Struk',
+                header: context.l10n.cshReceipts,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -557,7 +549,8 @@ class _BillBodyState extends State<_BillBody> {
         ],
         // Pre-assigning named slips before anyone pays is still a real
         // workflow, so it stays — just no longer the only way in. ADR-0067.
-        if (!picking) rv(_AddReceiptButton(bill: bill, run: widget.run, repo: widget.repo)),
+        if (!picking)
+          rv(_AddReceiptButton(bill: bill, run: widget.run, repo: widget.repo)),
       ],
     );
   }
@@ -587,7 +580,7 @@ class _UnassignedBanner extends StatelessWidget {
           const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
-              '$n item belum diatur ke struk',
+              context.l10n.cshUnassignedCount(n),
               style: SatType.labelM(color: sc.warn),
             ),
           ),
@@ -629,7 +622,7 @@ class _TotalsCard extends StatelessWidget {
       padding: const EdgeInsets.all(Sp.s3h),
       child: Column(
         children: [
-          row('Subtotal', bill.subtotal),
+          row(context.l10n.cshSubtotal, bill.subtotal),
           // The Diskon row's position follows the actual pipeline (ADR-0038),
           // matching the printed slip: above Layanan when the discount reduced
           // the base service and tax were computed on, below Pajak otherwise.
@@ -638,26 +631,27 @@ class _TotalsCard extends StatelessWidget {
               // Named when the whole-bill promo is what the cut is; the generic
               // label stays for a total that aggregates several receipts'
               // discounts, where no single name would be honest. ADR-0070.
-              bill.billDiscount?.name ?? 'Diskon',
+              bill.billDiscount?.name ?? context.l10n.cshDiscount,
               -bill.discountAmount,
               color: sc.warn,
             ),
-          if (bill.serviceAmount > 0) row('Layanan', bill.serviceAmount),
-          if (bill.taxAmount > 0) row('Pajak', bill.taxAmount),
+          if (bill.serviceAmount > 0)
+            row(context.l10n.cshService, bill.serviceAmount),
+          if (bill.taxAmount > 0) row(context.l10n.cshTax, bill.taxAmount),
           if (bill.discountAmount > 0 && !bill.taxAfterDiscount)
             row(
               // Named when the whole-bill promo is what the cut is; the generic
               // label stays for a total that aggregates several receipts'
               // discounts, where no single name would be honest. ADR-0070.
-              bill.billDiscount?.name ?? 'Diskon',
+              bill.billDiscount?.name ?? context.l10n.cshDiscount,
               -bill.discountAmount,
               color: sc.warn,
             ),
           Divider(color: sc.border0, height: 16),
-          row('Total', bill.total, strong: true),
-          row('Terbayar', bill.paidAmount, color: sc.success),
+          row(context.l10n.cshTotal, bill.total, strong: true),
+          row(context.l10n.cshPaidAmount, bill.paidAmount, color: sc.success),
           row(
-            'Sisa',
+            context.l10n.cshOutstanding,
             bill.outstanding,
             color: bill.outstanding > 0 ? sc.warn : sc.success,
           ),
@@ -732,7 +726,7 @@ class _LinesSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: Sp.s2, bottom: Sp.sHair),
             child: Text(
-              'PESANAN $batchNo · $key',
+              context.l10n.cshBatch('$batchNo', key),
               style: SatType.labelS(color: sc.textLo),
             ),
           ),
@@ -744,9 +738,12 @@ class _LinesSection extends StatelessWidget {
     });
 
     return SatCard.section(
-      header: 'Item pesanan',
+      header: context.l10n.cshOrderItems,
       headerTrailing: (!bill.fullyAssigned && assignable)
-          ? Text('Belum semua diatur', style: SatType.bodyS(color: sc.warn))
+          ? Text(
+              context.l10n.cshNotAllAssigned,
+              style: SatType.bodyS(color: sc.warn),
+            )
           : null,
       padding: const EdgeInsets.fromLTRB(Sp.s3h, Sp.s3, Sp.s3h, Sp.s2),
       child: Column(
@@ -817,7 +814,7 @@ class _LinesSection extends StatelessWidget {
             ),
           if (hasNote)
             Text(
-              'Catatan: ${l.note!.trim()}',
+              context.l10n.cshNote(l.note!.trim()),
               style: SatType.bodyS(color: sc.textLo),
             ),
           // The partial case only. A line split between two guests is rare, so
@@ -829,20 +826,20 @@ class _LinesSection extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    '$picked dari $free',
+                    context.l10n.cshPickedOf(picked, free),
                     style: SatType.labelS(color: sc.accentText),
                   ),
                   const SizedBox(width: Sp.s2),
                   SatIconButton.plain(
                     icon: Icons.remove_rounded,
-                    tooltip: 'Kurangi unit',
+                    tooltip: context.l10n.cshUnitDec,
                     onTap: picked <= 1
                         ? null
                         : () => onUnits?.call(l, picked - 1),
                   ),
                   SatIconButton.plain(
                     icon: Icons.add_rounded,
-                    tooltip: 'Tambah unit',
+                    tooltip: context.l10n.cshUnitInc,
                     onTap: picked >= free
                         ? null
                         : () => onUnits?.call(l, picked + 1),
@@ -858,7 +855,9 @@ class _LinesSection extends StatelessWidget {
           ? SizedBox(
               width: 84,
               child: SatButton.ghost(
-                label: assigned >= l.qty ? 'Ubah' : 'Atur',
+                label: assigned >= l.qty
+                    ? context.l10n.edit
+                    : context.l10n.cshAssign,
                 onTap: () => _assignSheet(context, l),
               ),
             )
@@ -883,7 +882,7 @@ class _LinesSection extends StatelessWidget {
         isReceiptLetter(r.label.trim())
             ? ReceiptBadge(r.label.trim(), count: units, dense: true)
             : Text(
-                '${receiptTitle(r.label)} ×$units',
+                '${receiptTitle(context.l10n, r.label)} ×$units',
                 style: SatType.labelS(color: context.sat.textLo),
               ),
       );
@@ -914,12 +913,12 @@ class _LinesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Atur "${line.name}"',
+              context.l10n.cshAssignTitle(line.name),
               style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1),
             Text(
-              '${line.qty} unit total · ${line.unassignedUnits} belum diatur',
+              context.l10n.cshAssignSub(line.qty, line.unassignedUnits),
               style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s3),
@@ -977,7 +976,7 @@ class _AssignRowState extends State<_AssignRow> {
           ],
           Expanded(
             child: Text(
-              receiptTitle(widget.label),
+              receiptTitle(context.l10n, widget.label),
               style: SatType.bodyM(color: sc.textHi),
             ),
           ),
@@ -989,7 +988,7 @@ class _AssignRowState extends State<_AssignRow> {
           ),
           const SizedBox(width: Sp.s2),
           SatButton.primary(
-            label: AppStrings.save,
+            label: context.l10n.save,
             onTap: () => widget.onChanged(v),
           ),
         ],
@@ -1061,7 +1060,7 @@ class _ReceiptCard extends ConsumerWidget {
               ],
               Expanded(
                 child: Text(
-                  receiptTitle(r.label),
+                  receiptTitle(context.l10n, r.label),
                   style: SatType.labelM(color: sc.textHi),
                 ),
               ),
@@ -1069,7 +1068,7 @@ class _ReceiptCard extends ConsumerWidget {
               // outline says the same thing at a glance; the chip is what says
               // it in words.
               SatChip.tag(
-                label: paid ? 'Lunas' : 'Belum bayar',
+                label: paid ? context.l10n.cshSettled : context.l10n.cshUnpaid,
                 hue: paid ? SatChipHue.success : SatChipHue.warn,
                 size: SatChipSize.sm,
               ),
@@ -1098,7 +1097,10 @@ class _ReceiptCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total', style: SatType.bodyM(color: sc.textLo)),
+              Text(
+                context.l10n.cshTotal,
+                style: SatType.bodyM(color: sc.textLo),
+              ),
               Text(formatIDR(r.total), style: SatType.monoM(color: sc.textHi)),
             ],
           ),
@@ -1108,7 +1110,10 @@ class _ReceiptCard extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Terbayar', style: SatType.bodyS(color: sc.textLo)),
+                  Text(
+                    context.l10n.cshPaidAmount,
+                    style: SatType.bodyS(color: sc.textLo),
+                  ),
                   Text(
                     formatIDR(r.paidNet),
                     style: SatType.monoM(color: sc.success),
@@ -1128,7 +1133,7 @@ class _ReceiptCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: Sp.s1h),
                   Text(
-                    _methodLabels[p.method] ?? p.method,
+                    paymentMethodLabel(context.l10n, p.method),
                     style: SatType.bodyS(color: sc.textLo),
                   ),
                   if (p.hasPhoto) ...[
@@ -1153,21 +1158,21 @@ class _ReceiptCard extends ConsumerWidget {
               if (!paid && r.total > 0)
                 SatButton.primary(
                   size: SatButtonSize.sm,
-                  label: 'Bayar',
+                  label: context.l10n.cshPay,
                   onTap: () => _paySheet(context, r),
                 ),
               if (paid)
                 SatButton.neutral(
                   size: SatButtonSize.sm,
-                  label: 'Buka ulang',
+                  label: context.l10n.cshReopen,
                   onTap: () async {
                     if (await _confirm(
                       context,
-                      title: 'Buka ulang struk',
-                      message:
-                          'Batalkan status lunas "${receiptTitle(r.label)}" '
-                          'agar bisa diubah? Pembayaran tercatat tetap ada.',
-                      confirmLabel: 'Ya, buka ulang',
+                      title: context.l10n.cshReopenTitle,
+                      message: context.l10n.cshReopenBody(
+                        receiptTitle(context.l10n, r.label),
+                      ),
+                      confirmLabel: context.l10n.cshReopenConfirm,
                     )) {
                       await run(() => repo.reopen(r.id));
                     }
@@ -1176,7 +1181,7 @@ class _ReceiptCard extends ConsumerWidget {
               if (canRefund && r.paidNet > 0)
                 SatButton.neutral(
                   size: SatButtonSize.sm,
-                  label: 'Refund',
+                  label: context.l10n.cshRefund,
                   onTap: () => _refundSheet(context, r),
                 ),
               // Discounts are frozen once paid — reopen to correct a mistaken
@@ -1184,7 +1189,7 @@ class _ReceiptCard extends ConsumerWidget {
               if (!paid && r.subtotal > 0 && r.orderDiscount == null)
                 SatButton.neutral(
                   size: SatButtonSize.sm,
-                  label: 'Diskon',
+                  label: context.l10n.cshDiscount,
                   onTap: () async {
                     final picked = await showDiscountSheet(
                       context,
@@ -1193,7 +1198,7 @@ class _ReceiptCard extends ConsumerWidget {
                         receipt: r,
                         ticketId: null,
                         base: r.subtotal,
-                        title: receiptTitle(r.label),
+                        title: receiptTitle(context.l10n, r.label),
                       ),
                     );
                     if (picked == null) return;
@@ -1209,16 +1214,17 @@ class _ReceiptCard extends ConsumerWidget {
               if (!paid && r.orderDiscount != null)
                 SatButton.neutral(
                   size: SatButtonSize.sm,
-                  label: 'Hapus diskon',
+                  label: context.l10n.cshRemoveDiscount,
                   onTap: () async {
                     final d = r.orderDiscount!;
                     if (await _confirm(
                       context,
-                      title: 'Hapus diskon',
-                      message:
-                          'Hapus "${d.label}" (${formatIDR(d.amount)}) '
-                          'dari struk ini?',
-                      confirmLabel: 'Ya, hapus',
+                      title: context.l10n.cshRemoveDiscount,
+                      message: context.l10n.cshRemoveDiscountBody(
+                        d.label,
+                        formatIDR(d.amount),
+                      ),
+                      confirmLabel: context.l10n.cshConfirmDelete,
                     )) {
                       await run(() => repo.removeDiscount(r.id, d.id));
                     }
@@ -1227,21 +1233,23 @@ class _ReceiptCard extends ConsumerWidget {
               if (r.total > 0)
                 SatButton.neutral(
                   size: SatButtonSize.sm,
-                  label: r.payments.isEmpty ? 'Cetak tagihan' : 'Cetak struk',
+                  label: r.payments.isEmpty
+                      ? context.l10n.cshPrintBill
+                      : context.l10n.cshPrintReceipt,
                   onTap: () => printDoc(r),
                 ),
               if (!paid && r.mode != 'even')
                 SatButton.neutral(
                   size: SatButtonSize.sm,
-                  label: 'Hapus',
+                  label: context.l10n.delete,
                   onTap: () async {
                     if (await _confirm(
                       context,
-                      title: 'Hapus struk',
-                      message:
-                          'Hapus "${receiptTitle(r.label)}"? '
-                          'Item yang sudah diatur ke struk ini akan kembali belum diatur.',
-                      confirmLabel: 'Ya, hapus',
+                      title: context.l10n.cshDeleteReceiptTitle,
+                      message: context.l10n.cshDeleteReceiptBody(
+                        receiptTitle(context.l10n, r.label),
+                      ),
+                      confirmLabel: context.l10n.cshConfirmDelete,
                       destructive: true,
                     )) {
                       await run(() => repo.deleteReceipt(r.id));
@@ -1299,7 +1307,7 @@ class _ReceiptCard extends ConsumerWidget {
             } catch (e) {
               if (ctx.mounted) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(content: Text('Gagal mengambil foto: $e')),
+                  SnackBar(content: Text(context.l10n.cshPhotoFailed('$e'))),
                 );
               }
             }
@@ -1318,27 +1326,30 @@ class _ReceiptCard extends ConsumerWidget {
               children: [
                 Text(
                   refund
-                      ? 'Refund ${receiptTitle(r.label)}'
-                      : 'Bayar ${receiptTitle(r.label)}',
+                      ? context.l10n.cshRefundTitle(
+                          receiptTitle(context.l10n, r.label),
+                        )
+                      : context.l10n.cshPayTitle(
+                          receiptTitle(context.l10n, r.label),
+                        ),
                   style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s3),
                 Wrap(
                   spacing: 8,
-                  children: _methodLabels.entries
-                      .map(
-                        (e) => SatChip.select(
-                          label: e.value,
-                          selected: method == e.key,
-                          onTap: () => setState(() => method = e.key),
-                        ),
-                      )
-                      .toList(),
+                  children: [
+                    for (final m in paymentMethods)
+                      SatChip.select(
+                        label: paymentMethodLabel(context.l10n, m),
+                        selected: method == m,
+                        onTap: () => setState(() => method = m),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: Sp.s3),
                 SatField.money(
                   controller: amountCtl,
-                  label: 'Jumlah',
+                  label: context.l10n.cshAmount,
                   hint: '',
                   onChanged: (_) => setState(() {}),
                 ),
@@ -1346,7 +1357,7 @@ class _ReceiptCard extends ConsumerWidget {
                   const SizedBox(height: Sp.s2),
                   SatField.money(
                     controller: tenderedCtl,
-                    label: 'Uang diterima',
+                    label: context.l10n.cshTendered,
                     hint: '',
                     onChanged: (_) => setState(() {}),
                   ),
@@ -1368,8 +1379,8 @@ class _ReceiptCard extends ConsumerWidget {
                             padding: const EdgeInsets.only(top: Sp.s2),
                             child: Text(
                               change >= 0
-                                  ? 'Kembalian ${formatIDR(change)}'
-                                  : 'Kurang ${formatIDR(-change)}',
+                                  ? context.l10n.cshChangeDue(formatIDR(change))
+                                  : context.l10n.cshShortBy(formatIDR(-change)),
                               style: SatType.labelM(
                                 color: change >= 0 ? sc.success : sc.warn,
                               ),
@@ -1381,7 +1392,7 @@ class _ReceiptCard extends ConsumerWidget {
                 if (needsPhoto) ...[
                   const SizedBox(height: Sp.s3),
                   Text(
-                    'Foto bukti (wajib)',
+                    context.l10n.cshProofPhoto,
                     style: SatType.labelS(color: sc.textLo),
                   ),
                   const SizedBox(height: Sp.s2),
@@ -1399,8 +1410,8 @@ class _ReceiptCard extends ConsumerWidget {
                       Expanded(
                         child: SatButton.outline(
                           label: photoBytes == null
-                              ? 'Ambil foto'
-                              : 'Ambil ulang',
+                              ? context.l10n.cshTakePhoto
+                              : context.l10n.cshRetakePhoto,
                           icon: Icons.photo_camera_rounded,
                           onTap: shootPhoto,
                         ),
@@ -1412,7 +1423,9 @@ class _ReceiptCard extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: SatButton.primary(
-                    label: refund ? 'Catat refund' : 'Catat pembayaran',
+                    label: refund
+                        ? context.l10n.cshRecordRefund
+                        : context.l10n.cshRecordPayment,
                     onTap: amount <= 0 || photoMissing
                         ? null
                         : () async {
@@ -1502,19 +1515,19 @@ class _EvenSplitCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Split rata · ${rs.length} bagian',
+                  context.l10n.cshEvenSplit(rs.length),
                   style: SatType.labelM(color: sc.textHi),
                 ),
               ),
               Text(
-                '${formatIDR(perHead)} / orang',
+                context.l10n.cshPerHead(formatIDR(perHead)),
                 style: SatType.monoM(color: sc.textHi),
               ),
             ],
           ),
           const SizedBox(height: Sp.s1),
           Text(
-            '$paidCount dari ${rs.length} lunas',
+            context.l10n.cshPaidCount(paidCount, rs.length),
             style: SatType.bodyS(
               color: paidCount == rs.length ? sc.success : sc.textLo,
             ),
@@ -1531,7 +1544,7 @@ class _EvenSplitCard extends StatelessWidget {
             const SizedBox(height: Sp.s2h),
             SatButton.primary(
               size: SatButtonSize.sm,
-              label: 'Bayar bagian ${next + 1}',
+              label: context.l10n.cshPayPart(next + 1),
               onTap: () => _shareSheet(context, rs[next]),
             ),
           ],
@@ -1610,9 +1623,10 @@ class _ReceiptRow extends StatelessWidget {
     final items = receipt.lines.fold<int>(0, (a, l) => a + l.qtyUnits);
     return Semantics(
       button: true,
-      label:
-          '${receiptTitle(receipt.label)}, '
-          '${paid ? 'lunas' : 'belum bayar'}',
+      label: context.l10n.cshShareSemantic(
+        receiptTitle(context.l10n, receipt.label),
+        paid ? context.l10n.cshStatusSettled : context.l10n.cshStatusUnpaid,
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: SatR.a(8),
@@ -1631,14 +1645,14 @@ class _ReceiptRow extends StatelessWidget {
                       style: SatType.monoM(color: sc.textHi),
                     ),
                     Text(
-                      '$items item',
+                      context.l10n.cshItemCount(items),
                       style: SatType.labelS(color: sc.textLo),
                     ),
                   ],
                 ),
               ),
               Text(
-                paid ? 'Lunas' : 'Belum bayar',
+                paid ? context.l10n.cshSettled : context.l10n.cshUnpaid,
                 style: SatType.labelS(color: paid ? sc.success : sc.warn),
               ),
               const SizedBox(width: Sp.s1h),
@@ -1670,7 +1684,10 @@ class _EvenShareRow extends StatelessWidget {
     final paid = receipt.isPaid;
     return Semantics(
       button: true,
-      label: 'Bagian ${index + 1}, ${paid ? 'lunas' : 'belum bayar'}',
+      label: context.l10n.cshPartSemantic(
+        index + 1,
+        paid ? context.l10n.cshStatusSettled : context.l10n.cshStatusUnpaid,
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: SatR.a(8),
@@ -1692,15 +1709,11 @@ class _EvenShareRow extends StatelessWidget {
                 ),
               ),
               Text(
-                paid ? 'Lunas' : 'Belum bayar',
+                paid ? context.l10n.cshSettled : context.l10n.cshUnpaid,
                 style: SatType.labelS(color: paid ? sc.success : sc.warn),
               ),
               const SizedBox(width: Sp.s1h),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: sc.textDim,
-              ),
+              Icon(Icons.chevron_right_rounded, size: 18, color: sc.textDim),
             ],
           ),
         ),
@@ -1735,7 +1748,7 @@ class _ReceiptItemRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final l = line;
-    final name = l?.name ?? 'Item';
+    final name = l?.name ?? context.l10n.cshItemFallback;
     final variant = (l?.variantName.isNotEmpty ?? false)
         ? ' · ${l!.variantName}'
         : '';
@@ -1749,11 +1762,13 @@ class _ReceiptItemRow extends ConsumerWidget {
       if (existing != null) {
         if (await _confirm(
           context,
-          title: 'Hapus diskon item',
-          message:
-              'Hapus "${existing.label}" '
-              '(${formatIDR(existing.amount)}) dari $name?',
-          confirmLabel: 'Ya, hapus',
+          title: context.l10n.cshRemoveLineDiscountTitle,
+          message: context.l10n.cshRemoveLineDiscountBody(
+            existing.label,
+            formatIDR(existing.amount),
+            name,
+          ),
+          confirmLabel: context.l10n.cshConfirmDelete,
         )) {
           await run(() => repo.removeDiscount(receipt.id, existing.id));
         }
@@ -1839,7 +1854,7 @@ class _AddReceiptButton extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: SatButton.ghost(
-        label: 'Tambah struk',
+        label: context.l10n.cshAddReceipt,
         icon: Icons.add_rounded,
         onTap: () => run(
           () => repo.createReceipt(
@@ -1904,16 +1919,23 @@ class _DonePane extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      writeOff ? 'Tagihan tak tertagih' : 'Tagihan lunas',
+                      writeOff
+                          ? context.l10n.cshBillWrittenOff
+                          : context.l10n.cshBillSettled,
                       style: SatType.labelL(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
                       writeOff
-                          ? '${formatIDR(bill.outstanding)} dicatat sebagai '
-                                'kerugian.'
-                          : '${formatIDR(bill.total)} diterima penuh'
-                                '${parts > 1 ? ' dalam $parts bagian' : ''}.',
+                          ? context.l10n.cshWrittenOffBody(
+                              formatIDR(bill.outstanding),
+                            )
+                          : parts > 1
+                          ? context.l10n.cshSettledParts(
+                              formatIDR(bill.total),
+                              parts,
+                            )
+                          : context.l10n.cshSettledFull(formatIDR(bill.total)),
                       style: SatType.bodyS(color: sc.textLo),
                     ),
                   ],
@@ -1923,13 +1945,15 @@ class _DonePane extends StatelessWidget {
           ),
           const SizedBox(height: Sp.s3h),
           SatButton.primary(
-            label: writeOff ? 'Cetak tagihan' : 'Cetak struk lunas',
+            label: writeOff
+                ? context.l10n.cshPrintBill
+                : context.l10n.cshPrintSettledReceipt,
             icon: Icons.print_rounded,
             onTap: onPrint,
           ),
           const SizedBox(height: Sp.s2),
           SatButton.outline(
-            label: 'Buka ulang',
+            label: context.l10n.cshReopen,
             icon: Icons.lock_open_rounded,
             onTap: onReopen,
           ),
@@ -1974,7 +1998,9 @@ class _TopActions extends ConsumerWidget {
       children: [
         Expanded(
           child: SatButton.outline(
-            label: paid ? 'Cetak struk meja' : 'Cetak tagihan meja',
+            label: paid
+                ? context.l10n.cshPrintTableReceipt
+                : context.l10n.cshPrintTableBill,
             icon: Icons.receipt_long_outlined,
             onTap: () => printDoc(null),
           ),
@@ -1984,7 +2010,7 @@ class _TopActions extends ConsumerWidget {
         // with no name on it is the one a manager queries later.
         Expanded(
           child: SatButton.outline(
-            label: disc?.name ?? 'Diskon',
+            label: disc?.name ?? context.l10n.cshDiscount,
             icon: Icons.local_offer_outlined,
             onTap: canDiscount
                 ? () => disc == null
@@ -1996,7 +2022,7 @@ class _TopActions extends ConsumerWidget {
         const SizedBox(width: Sp.s2),
         SatIconButton.danger(
           icon: Icons.report_gmailerrorred_outlined,
-          tooltip: 'Tutup tagihan — tak tertagih',
+          tooltip: context.l10n.cshWriteOffTitle,
           size: 46,
           onTap: canWriteOff ? onWriteOff : null,
         ),
@@ -2008,7 +2034,10 @@ class _TopActions extends ConsumerWidget {
     final picked = await showDiscountSheet(
       context,
       ref,
-      DiscountTarget.bill(base: bill.subtotal, title: 'Seluruh tagihan'),
+      DiscountTarget.bill(
+        base: bill.subtotal,
+        title: context.l10n.cshWholeBill,
+      ),
     );
     if (picked == null) return;
     await run(
@@ -2031,11 +2060,12 @@ class _TopActions extends ConsumerWidget {
     final disc = bill.billDiscount!;
     final ok = await _confirm(
       context,
-      title: 'Hapus diskon tagihan',
-      message:
-          'Hapus "${disc.name}" (${formatIDR(disc.amount)}) '
-          'dari seluruh tagihan?',
-      confirmLabel: 'Ya, hapus',
+      title: context.l10n.cshRemoveBillDiscountTitle,
+      message: context.l10n.cshRemoveBillDiscountBody(
+        disc.name,
+        formatIDR(disc.amount),
+      ),
+      confirmLabel: context.l10n.cshConfirmDelete,
     );
     if (!ok) return;
     await run(() => repo.removeBillDiscount(bill.visitId, discountId));
@@ -2062,7 +2092,7 @@ class _DetachedBanner extends StatelessWidget {
           const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
-              'Meja sudah ditutup waiter — tagihan belum lunas',
+              context.l10n.cshTableClosedUnpaid,
               style: SatType.labelS(color: sc.warn),
             ),
           ),
@@ -2090,7 +2120,7 @@ Future<bool> _confirm(
       content: Text(message),
       actions: [
         SatButton.ghost(
-          label: AppStrings.cancel,
+          label: context.l10n.cancel,
           onTap: () => Navigator.pop(c, false),
         ),
         SatButton.danger(
@@ -2142,7 +2172,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
         Padding(
           padding: const EdgeInsets.only(top: Sp.s1h, bottom: Sp.sHair),
           child: Text(
-            'PESANAN $batchNo · $key',
+            context.l10n.cshBatch('$batchNo', key),
             style: SatType.labelS(color: sc.textLo),
           ),
         ),
@@ -2185,7 +2215,7 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
                 Padding(
                   padding: const EdgeInsets.only(left: Sp.s7, top: Sp.sHair),
                   child: Text(
-                    'Catatan: ${l.note!.trim()}',
+                    context.l10n.cshNote(l.note!.trim()),
                     style: SatType.bodyS(color: sc.textLo),
                   ),
                 ),
@@ -2204,7 +2234,6 @@ List<Widget> _pastLineWidgets(BuildContext context, Bill bill) {
 /// screen's **Lunas** segment — which renders a `BillCard` per closed bill, the
 /// same card a live one gets. The row tile, its day grouping and its filter bar
 /// went with it; the table filter survives as the segment's range + filter row.
-
 
 /// Read-only Struk pembayaran detail for one closed (past) bill.
 class PastBillDetailScreen extends ConsumerWidget {
@@ -2238,7 +2267,9 @@ class PastBillDetailScreen extends ConsumerWidget {
                 ? const []
                 : [
                     Text(
-                      'Struk · Meja ${tableLabel ?? ''}'.trim(),
+                      (tableLabel ?? '').isEmpty
+                          ? context.l10n.receiptDefault
+                          : context.l10n.cshReceiptTableCrumb(tableLabel!),
                       style: SatType.labelM(color: sc.textMd),
                     ),
                   ],
@@ -2249,66 +2280,65 @@ class PastBillDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _body(BuildContext context, SatColors sc, Future<Bill> future) =>
-      FutureBuilder<Bill>(
-        future: future,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.hasError || snap.data == null) {
-            return Center(
-              child: Text(
-                'Gagal memuat struk.',
-                style: SatType.bodyM(color: sc.textLo),
-              ),
-            );
-          }
-          final bill = snap.data!;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
-            children: [
-              _TotalsCard(bill),
-              const SizedBox(height: Sp.s3h),
-              ..._pastLineWidgets(context, bill),
-              if (bill.receipts.isNotEmpty) ...[
-                const SizedBox(height: Sp.s3h),
-                ...bill.receipts
-                    .expand((r) => r.payments)
-                    .map(
-                      (p) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: Sp.s1),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _body(
+    BuildContext context,
+    SatColors sc,
+    Future<Bill> future,
+  ) => FutureBuilder<Bill>(
+    future: future,
+    builder: (context, snap) {
+      if (snap.connectionState != ConnectionState.done) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (snap.hasError || snap.data == null) {
+        return Center(
+          child: Text(
+            context.l10n.cshReceiptLoadFailed,
+            style: SatType.bodyM(color: sc.textLo),
+          ),
+        );
+      }
+      final bill = snap.data!;
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+        children: [
+          _TotalsCard(bill),
+          const SizedBox(height: Sp.s3h),
+          ..._pastLineWidgets(context, bill),
+          if (bill.receipts.isNotEmpty) ...[
+            const SizedBox(height: Sp.s3h),
+            ...bill.receipts
+                .expand((r) => r.payments)
+                .map(
+                  (p) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: Sp.s1),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '${p.isRefund ? 'Refund' : 'Bayar'} · '
-                                  '${_methodLabels[p.method] ?? p.method}',
-                                  style: SatType.bodyS(color: sc.textLo),
-                                ),
-                                if (p.hasPhoto) ...[
-                                  const SizedBox(width: Sp.s2),
-                                  PaymentProofThumb(
-                                    paymentId: p.id,
-                                    history: true,
-                                  ),
-                                ],
-                              ],
-                            ),
                             Text(
-                              formatIDR(p.amount),
-                              style: SatType.monoM(color: sc.textHi),
+                              '${p.isRefund ? context.l10n.cshRefund : context.l10n.cshPay} · '
+                              '${paymentMethodLabel(context.l10n, p.method)}',
+                              style: SatType.bodyS(color: sc.textLo),
                             ),
+                            if (p.hasPhoto) ...[
+                              const SizedBox(width: Sp.s2),
+                              PaymentProofThumb(paymentId: p.id, history: true),
+                            ],
                           ],
                         ),
-                      ),
+                        Text(
+                          formatIDR(p.amount),
+                          style: SatType.monoM(color: sc.textHi),
+                        ),
+                      ],
                     ),
-              ],
-            ],
-          );
-        },
+                  ),
+                ),
+          ],
+        ],
       );
+    },
+  );
 }
-

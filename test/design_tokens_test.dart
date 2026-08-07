@@ -276,6 +276,167 @@ void main() {
   // Accessibility rules need the whole constructor call, not one line: the
   // `tooltip:` that names a button sits several lines below `IconButton(`.
   // Balanced-paren scan instead of a line regex.
+  // ADR-0083. Started life as a ratchet — 304 literals were sitting in widgets
+  // when `AppStrings` was deleted and gen-l10n landed. The sweep finished, so
+  // this is now a ban like everything else in this file: user-facing text lives
+  // in `lib/l10n/*.arb` and is read through `context.l10n`, or it is invisible
+  // to a translator and renders Indonesian in an English build.
+  test('no hardcoded user-facing copy in a Text()', () {
+    // The wordmark. A brand name is not translated in either language.
+    const brand = {'satset'};
+    final hits = <String>[];
+    final pattern = RegExp(r"""Text\(\s*(?:const\s+)?'((?:[^'\\]|\\.)*)'""");
+    for (final file in files) {
+      // The widget book is debug-only scaffolding over stub data (ADR-0054):
+      // its strings are sample dishes and English state names, never shipped
+      // copy.
+      if (file.path.contains('/_book/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in pattern.allMatches(src)) {
+        final raw = m.group(1)!;
+        // A literal whose `${…}` holds its own quote (`${x.isEmpty ? '' : y}`)
+        // ends the regex early, so the capture is a fragment of an expression
+        // rather than a string. Unbalanced braces are the tell.
+        if (RegExp(r'\$\{').allMatches(raw).length !=
+            RegExp(r'\}').allMatches(raw).length) {
+          continue;
+        }
+        if (brand.contains(raw)) continue;
+        // Strip interpolations: `Text('$count')` and `Text('${l.qty}×')` are
+        // data, not copy, and hoisting them to ARB would be noise. What is
+        // left has to contain two consecutive letters to count as a word.
+        final bare = raw.replaceAll(RegExp(r'\$\{[^}]*\}|\$\w+'), '');
+        if (!RegExp(r'[A-Za-z]{2}').hasMatch(bare)) continue;
+        hits.add('${file.path}:${_lineOf(src, m.start)}  $raw');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'User-facing text belongs in lib/l10n/app_id.arb + app_en.arb, read '
+          'via context.l10n (ADR-0083).\n${hits.join('\n')}',
+    );
+  });
+
+  // The sibling of the ban above. A `Text()` is only half the copy in this
+  // codebase: the shared vocabulary takes its words as named params, so
+  // `SatButton.primary(label: 'Simpan')` renders Indonesian in an English
+  // build just as loudly as a `Text` would, and the `Text` regex never sees it.
+  test('no hardcoded user-facing copy in a named param', () {
+    // `satset` is the wordmark. `Book` names the debug widget book (ADR-0054),
+    // which never ships to a venue. `GL` is a sample three-letter tag code in
+    // a field whose input is a code, not a word.
+    const allow = {'satset', 'Book', 'GL'};
+    final hits = <String>[];
+    final pattern = RegExp(
+      r"\b(?:label|title|subtitle|hint|hintText|labelText|tooltip|helperText"
+      r"|semanticLabel|confirmLabel|header|sub|message|body|placeholder|text)"
+      r":\s*(?:const\s+)?'((?:[^'\\]|\\.)*)'",
+    );
+    for (final file in files) {
+      if (file.path.contains('/_book/')) continue;
+      final src = file.readAsStringSync();
+      for (final m in pattern.allMatches(src)) {
+        final raw = m.group(1)!;
+        // Same escape hatch as the `Text` ban: a literal whose `${…}` holds its
+        // own quote truncates the capture, leaving an expression fragment.
+        if (RegExp(r'\$\{').allMatches(raw).length !=
+            RegExp(r'\}').allMatches(raw).length) {
+          continue;
+        }
+        if (allow.contains(raw)) continue;
+        final bare = raw.replaceAll(RegExp(r'\$\{[^}]*\}|\$\w+'), '');
+        if (!RegExp(r'[A-Za-z]{2}').hasMatch(bare)) continue;
+        hits.add('${file.path}:${_lineOf(src, m.start)}  $raw');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Copy passed to a widget by name is still copy. Move it to '
+          'lib/l10n/app_id.arb + app_en.arb (ADR-0083).\n${hits.join('\n')}',
+    );
+  });
+
+  // The two bans above are shape-based, and shape is what the last of the
+  // sweep hid behind: a switch arm, a `const` list of preset reasons, a
+  // positional argument, a `return`. So this one is language-based instead —
+  // Indonesian is the source language, so an Indonesian word in a Dart string
+  // under `ui/` or `domain/` is copy that never reached the ARB, whatever
+  // syntax it is sitting in.
+  //
+  // Scans `lib/domain/` too: enums used to carry their own display labels
+  // (`Capability`, `TicketStatus`, `StockReason`, `AlertSoundPreset`), which is
+  // the same bug one layer down — the words are now resolved from the enum name
+  // in `core/localization/labels.dart`.
+  test('no Indonesian copy left in a Dart literal', () {
+    // Deliberately narrow: common function words plus the domain nouns from
+    // CONTEXT.md. Catches a sentence, ignores a `dapur` station code — those
+    // are exempted by the data-shape rules below, not by the word list.
+    final words = RegExp(
+      r'(?:^|[^A-Za-z])('
+      r'dan|atau|tidak|belum|sudah|akan|bisa|untuk|dari|dengan|pada|yang|ada'
+      r'|masuk|keluar|meja|pesanan|gagal|coba|lagi|semua|pilih|hari|nama'
+      r'|wajib|kosong|terisi|siap|catatan|jumlah|harga|stok|laporan|tagihan'
+      r'|struk|staf|pelayan|dapur|kirim|hapus|simpan|ubah|tambah|batal|lewat'
+      r'|sekarang|dulu|salah|habis|rusak|lama|bagian|kembali|diambil|dikirim'
+      r'|diatur|dilayani|terhubung|berjalan|diketahui|permanen|dibatalkan'
+      r')(?:[^A-Za-z]|$)',
+      caseSensitive: false,
+    );
+    // A venue's own words, not the app's: a role named "Dapur" or a station
+    // code on a query string is data this build must not translate.
+    const dataShaped = {
+      'Dapur', // station code, order-taking → SentScreen (see report_copy)
+      'dapur', // legacy-role name matching in staff_screen
+      'semua',
+      'laporan',
+      'riwayat-pesanan',
+      'laporan-staf', // export filename slugs
+    };
+    final literal = RegExp(r"'((?:[^'\\\n]|\\.)*)'");
+    final hits = <String>[];
+    final targets = [
+      ...files,
+      ...Directory('lib/domain')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart')),
+    ];
+    for (final file in targets) {
+      if (file.path.contains('/_book/')) continue;
+      final src = file.readAsStringSync();
+      final lines = src.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        final trimmed = line.trimLeft();
+        // Prose in a doc comment is documentation, and a log line is for
+        // whoever reads `adb logcat`, not for a waiter.
+        if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+        if (line.contains('SatLog')) continue;
+        for (final m in literal.allMatches(line)) {
+          final raw = m.group(1)!;
+          // Route paths and package URIs are addresses, not words.
+          if (raw.startsWith('/') || raw.startsWith('package:')) continue;
+          if (dataShaped.contains(raw)) continue;
+          if (!words.hasMatch(raw)) continue;
+          hits.add('${file.path}:${i + 1}  $raw');
+        }
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Indonesian in a Dart literal is copy that skipped the ARB — a '
+          'switch arm and a preset list translate no better than a Text() '
+          'does (ADR-0083). Emit a code and render it through '
+          'core/localization/ instead.\n${hits.join('\n')}',
+    );
+  });
+
   test('every IconButton names itself', () {
     final hits = <String>[];
     for (final file in files) {

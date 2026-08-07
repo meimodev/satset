@@ -109,15 +109,12 @@ List<String> _names(Object? raw) =>
 
 /// Why stock moved. One uniform shape for every change (ADR-0041).
 enum StockReason {
-  sale('Terjual'),
-  voidReturn('Batal — kembali'),
-  waste('Terbuang'),
-  receive('Terima barang'),
-  adjust('Penyesuaian'),
-  produce('Produksi');
-
-  final String label;
-  const StockReason(this.label);
+  sale,
+  voidReturn,
+  waste,
+  receive,
+  adjust,
+  produce;
 }
 
 StockReason stockReasonFromKey(String key) => StockReason.values.firstWhere(

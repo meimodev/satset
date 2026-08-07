@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -9,15 +8,17 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// Common reasons a dish comes off mid-service. Offered as taps because the
 /// person doing this is standing at a pass, not typing — but the field stays
 /// open, since the real reason is often none of these.
-const _presets = <String>[
-  'Bahan habis',
-  'Kualitas tidak layak',
-  'Alat rusak',
-  'Terlalu lama',
+List<String> _presets(AppL10n l) => [
+  l.killReasonOutOfStock,
+  l.killReasonQuality,
+  l.killReasonBrokenEquipment,
+  l.killReasonTooSlow,
 ];
 
 /// Ask why an item is coming off the menu.
@@ -70,12 +71,12 @@ class _KillReasonSheetState extends State<_KillReasonSheet> {
               padding: const EdgeInsets.fromLTRB(0, Sp.s3, 0, Sp.s2),
               onClose: () => Navigator.of(context).pop(),
               child: Text(
-                AppStrings.killReasonTitle,
+                context.l10n.killReasonTitle,
                 style: SatType.h3(color: sc.textHi),
               ),
             ),
             Text(
-              AppStrings.killReasonBody(widget.itemName),
+              context.l10n.killReasonBody(widget.itemName),
               style: SatType.bodyS(color: sc.textMd),
             ),
             const SizedBox(height: Sp.s4),
@@ -83,7 +84,7 @@ class _KillReasonSheetState extends State<_KillReasonSheet> {
               spacing: Sp.s2,
               runSpacing: Sp.s2,
               children: [
-                for (final p in _presets)
+                for (final p in _presets(context.l10n))
                   SatChip.select(
                     label: p,
                     selected: _picked == p && _controller.text.trim().isEmpty,
@@ -97,7 +98,7 @@ class _KillReasonSheetState extends State<_KillReasonSheet> {
             const SizedBox(height: Sp.s3),
             SatField.text(
               controller: _controller,
-              hint: AppStrings.killReasonHint,
+              hint: context.l10n.killReasonHint,
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: Sp.s4),
@@ -105,14 +106,14 @@ class _KillReasonSheetState extends State<_KillReasonSheet> {
               children: [
                 Expanded(
                   child: SatButton.ghost(
-                    label: AppStrings.killReasonSkip,
+                    label: context.l10n.killReasonSkip,
                     onTap: () => Navigator.of(context).pop(''),
                   ),
                 ),
                 const SizedBox(width: Sp.s2),
                 Expanded(
                   child: SatButton.danger(
-                    label: AppStrings.killReasonConfirm,
+                    label: context.l10n.killReasonConfirm,
                     onTap: () => Navigator.of(context).pop(_reason),
                   ),
                 ),

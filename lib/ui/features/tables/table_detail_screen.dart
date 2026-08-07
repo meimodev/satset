@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'package:satset/core/localization/labels.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -40,6 +40,7 @@ import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -187,10 +188,10 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       if (r.isAcquired) {
         _startHeartbeat();
       } else if (r.conflict != null) {
-        final holder = r.conflict!.lockedByName ?? 'pengguna lain';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Meja diambil oleh $holder')));
+        final holder = r.conflict!.lockedByName ?? context.l10n.tblOtherUser;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.tblTakenBy(holder))),
+        );
       }
     } catch (_) {
       if (mounted) setState(() => _acquiring = false);
@@ -276,18 +277,18 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         // No explicit lock call here.
       } on ApiException catch (e) {
         if (!context.mounted) return;
-        final holder = table.lockedByName ?? 'pengguna lain';
+        final holder = table.lockedByName ?? context.l10n.tblOtherUser;
         final msg = e.code == 'already_seated'
-            ? 'Meja sudah diisi oleh $holder'
-            : 'Gagal mulai layani: ${e.code ?? e.statusCode}';
+            ? context.l10n.tblAlreadySeated(holder)
+            : context.l10n.tblSeatFailed('${e.code ?? e.statusCode}');
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(msg)));
       } catch (e) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal mulai layani: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.tblSeatFailed('$e'))),
+        );
       }
     }
 
@@ -321,7 +322,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     // block is an in-flight ticket.
     final canClose = !readOnly && !hasLive;
     final isEmptyClose = tickets.isEmpty;
-    final closeLabel = isEmptyClose ? 'Lepaskan Meja' : 'Selesaikan Layanan';
+    final closeLabel = isEmptyClose
+        ? context.l10n.tblReleaseTable
+        : context.l10n.tblFinishService;
 
     final menuItems = ref.watch(menuItemsProvider);
     final ctxAllergens = <String>{};
@@ -354,7 +357,10 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: Sp.s3),
-              Text('Memuat menu…', style: SatType.bodyM(color: sc.textMd)),
+              Text(
+                context.l10n.tblLoadingMenu,
+                style: SatType.bodyM(color: sc.textMd),
+              ),
             ],
           ),
         ),
@@ -372,12 +378,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 Icon(Icons.cloud_off, size: 36, color: sc.urgent),
                 const SizedBox(height: Sp.s2h),
                 Text(
-                  'Gagal memuat menu meja',
+                  context.l10n.tblMenuLoadFailed,
                   style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s3),
                 SatButton.outline(
-                  label: 'Coba lagi',
+                  label: context.l10n.retry,
                   onTap: () =>
                       ref.read(menuRepositoryProvider.notifier).refresh(),
                 ),
@@ -418,20 +424,24 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       final choice = await showSatDialog<String>(
         context,
         builder: (ctx) => AlertDialog(
-          title: Text(isEmptyClose ? 'Lepaskan Meja?' : 'Selesaikan Layanan?'),
+          title: Text(
+            isEmptyClose
+                ? context.l10n.tblReleaseTableQ
+                : context.l10n.tblFinishServiceQ,
+          ),
           content: Text(
             isEmptyClose
-                ? 'Belum ada pesanan. Kosongkan meja ${table.displayName}?'
-                : 'Semua tiket telah selesai. Kosongkan meja ${table.displayName} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.',
+                ? context.l10n.tblReleaseBody(table.displayName)
+                : context.l10n.tblFinishBody(table.displayName),
           ),
           actions: [
             SatButton.ghost(
-              label: AppStrings.cancel,
+              label: context.l10n.cancel,
               onTap: () => Navigator.of(ctx).pop('cancel'),
             ),
             if (!isEmptyClose)
               SatButton.ghost(
-                label: 'Cetak struk',
+                label: context.l10n.cshPrintReceipt,
                 onTap: () => Navigator.of(ctx).pop('print'),
               ),
             SatButton.primary(
@@ -464,16 +474,16 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         if (context.mounted) safePop(context);
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Gagal menutup meja: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.tblCloseFailed('$e'))),
+          );
         }
       }
     }
 
     final lockBanner = lockedByOther
         ? _LockedBanner(
-            holderName: table.lockedByName ?? 'pengguna lain',
+            holderName: table.lockedByName ?? context.l10n.tblOtherUser,
             since: table.lockedAt,
           )
         : null;
@@ -581,7 +591,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                     32,
                                   ),
                                   child: Text(
-                                    'Belum ada item — ketuk "Tambah ke pesanan" untuk mulai.',
+                                    context.l10n.tblEmptyPhone,
                                     textAlign: TextAlign.center,
                                     style: SatType.bodyM(color: sc.textLo),
                                   ),
@@ -660,7 +670,10 @@ class _TableDetailHeader extends ConsumerWidget {
     ref.watch(_detailElapsedTickerProvider);
     final elapsedStr = table.openedAt == null
         ? null
-        : formatElapsedId(SatClock.now().difference(table.openedAt!));
+        : formatElapsed(
+            context.l10n,
+            SatClock.now().difference(table.openedAt!),
+          );
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Row(
@@ -695,7 +708,7 @@ class _TableDetailHeader extends ConsumerWidget {
                       icon: Icons.person_outline,
                       showMax: true,
                       size: SatStepperSize.sm,
-                      semanticLabel: AppStrings.tableGuests,
+                      semanticLabel: context.l10n.tableGuests,
                       onChanged: (v) =>
                           v > table.pax ? onPlusPax() : onMinusPax(),
                     ),
@@ -757,7 +770,7 @@ class _LiveSeatedChip extends ConsumerWidget {
     ref.watch(_detailElapsedTickerProvider);
     return SatChip.tag(
       icon: Icons.access_time,
-      label: formatElapsedId(SatClock.now().difference(openedAt)),
+      label: formatElapsed(context.l10n, SatClock.now().difference(openedAt)),
       size: SatChipSize.sm,
     );
   }
@@ -883,10 +896,21 @@ class _ContextSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Konteks meja', style: SatType.h2(color: sc.textHi)),
+                  Text(
+                    context.l10n.tblContextTitle,
+                    style: SatType.h2(color: sc.textHi),
+                  ),
                   const SizedBox(height: Sp.s1),
                   Text(
-                    'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                    context.l10n.tblSeatedFor(
+                      formatElapsed(
+                        context.l10n,
+                        SatClock.now().difference(
+                          table.openedAt ?? SatClock.now(),
+                        ),
+                      ),
+                      table.pax,
+                    ),
                     style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
@@ -945,12 +969,14 @@ class _DetailCourseBlock extends StatelessWidget {
                 ),
                 const SizedBox(width: Sp.s2h),
                 Text(
-                  course.name.toUpperCase(),
+                  courseLabel(context.l10n, course.serialId).toUpperCase(),
                   style: SatType.caption(color: sc.textMd),
                 ),
                 const Spacer(),
                 Text(
-                  '${items.length} item${allHeld ? ' · ditahan' : ''}',
+                  allHeld
+                      ? context.l10n.tblItemCountHeld(items.length)
+                      : context.l10n.tblItemCount(items.length),
                   style: SatType.monoS(color: sc.textLo),
                 ),
               ],
@@ -967,7 +993,9 @@ class _DetailCourseBlock extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: Sp.s1h),
               child: _FireButton(
-                label: 'Bakar ${course.name}',
+                label: context.l10n.tblFireCourse(
+                  courseLabel(context.l10n, course.serialId),
+                ),
                 onTap: onFireCourse,
               ),
             ),
@@ -1069,12 +1097,12 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
             ),
             const SizedBox(height: Sp.s4h),
             Text(
-              'Meja ${widget.tableName} kosong',
+              context.l10n.tblKosong(widget.tableName),
               style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1h),
             Text(
-              'Tap untuk mulai melayani tamu',
+              context.l10n.tblKosongHint,
               style: SatType.bodyM(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s6),
@@ -1129,7 +1157,7 @@ class _KosongSeatCardState extends State<_KosongSeatCard>
                           Icon(Icons.play_circle_fill, size: 22, color: fg),
                           const SizedBox(width: Sp.s2h),
                           Text(
-                            'Mulai layani meja',
+                            context.l10n.tblStartService,
                             style: SatType.labelL(color: fg),
                           ),
                         ],
@@ -1176,7 +1204,7 @@ class _PrimaryIconButtonState extends State<_PrimaryIconButton> {
       // Disabled here means the table is locked by someone else, which is the
       // reason the waiter cannot add — say that rather than let the glyph swap
       // silently.
-      label: enabled ? AppStrings.a11yAddItem : AppStrings.a11yTableLocked,
+      label: enabled ? context.l10n.a11yAddItem : context.l10n.a11yTableLocked,
       child: Center(
         child: AnimatedScale(
           scale: _pressed ? 0.92 : 1.0,
@@ -1278,7 +1306,9 @@ class _LockedBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final sinceLabel = since == null ? '' : ' · sejak ${_hhmm(since!)}';
+    final sinceLabel = since == null
+        ? ''
+        : context.l10n.tblLockedSince(_hhmm(since!));
     return Reveal(
       child: Container(
         width: double.infinity,
@@ -1298,7 +1328,7 @@ class _LockedBanner extends StatelessWidget {
             const SizedBox(width: Sp.s2h),
             Expanded(
               child: Text(
-                'Terkunci oleh $holderName$sinceLabel · hanya lihat',
+                context.l10n.tblLockedBy(holderName, sinceLabel),
                 style: SatType.bodyM(color: sc.warn),
               ),
             ),
@@ -1424,7 +1454,7 @@ class _TabletSplit extends StatelessWidget {
                                             icon: Icons.person_outline,
                                             showMax: true,
                                             semanticLabel:
-                                                AppStrings.tableGuests,
+                                                context.l10n.tableGuests,
                                             onChanged: (v) => v > table.pax
                                                 ? onPlusPax()
                                                 : onMinusPax(),
@@ -1456,7 +1486,7 @@ class _TabletSplit extends StatelessWidget {
                                     _pill(
                                       context,
                                       sc,
-                                      '$readyN siap diambil',
+                                      context.l10n.tblReadyToCollect(readyN),
                                       tone: 'success',
                                     ),
                                   if (table.guestName != null &&
@@ -1488,7 +1518,7 @@ class _TabletSplit extends StatelessWidget {
                                 child: Padding(
                                   padding: const EdgeInsets.all(Sp.s7),
                                   child: Text(
-                                    'Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.',
+                                    context.l10n.tblDetailEmptyLines,
                                     textAlign: TextAlign.center,
                                     style: SatType.bodyM(color: sc.textLo),
                                   ),
@@ -1566,10 +1596,14 @@ class _TabletSplit extends StatelessWidget {
                                             const SizedBox(width: Sp.s2),
                                             Text(
                                               readOnly
-                                                  ? 'Hanya lihat'
+                                                  ? context.l10n.tblViewOnly
                                                   : (tickets.isEmpty
-                                                        ? 'Buat pesanan'
-                                                        : 'Tambah pesanan'),
+                                                        ? context
+                                                              .l10n
+                                                              .tblCreateOrder
+                                                        : context
+                                                              .l10n
+                                                              .tblAddOrder),
                                               style: SatType.labelL(
                                                 color: sc.accentInk,
                                               ),
@@ -1695,25 +1729,37 @@ class _ContextPane extends ConsumerWidget {
                 context,
                 sc,
                 tickets.length.toString(),
-                'Total item',
+                context.l10n.tblStatTotal,
               ),
             ),
             const SizedBox(width: Sp.s2),
             Expanded(
-              child: _stat(context, sc, sent.toString(), 'Dalam proses'),
+              child: _stat(
+                context,
+                sc,
+                sent.toString(),
+                context.l10n.tblStatInProgress,
+              ),
             ),
             const SizedBox(width: Sp.s2),
-            Expanded(child: _stat(context, sc, served.toString(), 'Disajikan')),
+            Expanded(
+              child: _stat(
+                context,
+                sc,
+                served.toString(),
+                context.l10n.tblStatServed,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: Sp.s4),
         _card(
           context,
           sc,
-          'CATATAN TAMU',
+          context.l10n.tblGuestNotes,
           guestNotes.isEmpty
               ? Text(
-                  'Belum ada catatan khusus.',
+                  context.l10n.tblNoGuestNotes,
                   style: SatType.bodyM(color: sc.textLo),
                 )
               : Column(
@@ -1730,7 +1776,7 @@ class _ContextPane extends ConsumerWidget {
                             borderRadius: SatR.a(12),
                           ),
                           child: NoteLine(
-                            label: 'Instruksi khusus',
+                            label: context.l10n.tblSpecialInstruction,
                             text: note,
                           ),
                         ),
@@ -1742,9 +1788,12 @@ class _ContextPane extends ConsumerWidget {
         _card(
           context,
           sc,
-          'ALERGEN DI PESANAN',
+          context.l10n.tblAllergensInOrder,
           allergens.isEmpty
-              ? Text('Tidak ada.', style: SatType.bodyM(color: sc.textLo))
+              ? Text(
+                  context.l10n.tblNoAllergens,
+                  style: SatType.bodyM(color: sc.textLo),
+                )
               : Wrap(
                   spacing: 6,
                   runSpacing: 6,
@@ -1771,14 +1820,14 @@ class _ContextPane extends ConsumerWidget {
         _card(
           context,
           sc,
-          'AKSI CEPAT',
+          context.l10n.tblQuickActions,
           Column(
             children: [
               _quickAction(
                 context,
                 sc,
                 Icons.receipt_long_rounded,
-                'Cetak struk meja',
+                context.l10n.tblPrintTableReceipt,
                 accent: true,
                 onTap: () => printTableStruk(
                   context: context,
@@ -1793,7 +1842,7 @@ class _ContextPane extends ConsumerWidget {
                   context,
                   sc,
                   Icons.swap_horiz_rounded,
-                  'Pindahkan meja',
+                  context.l10n.tblMoveTable,
                   onTap: onMove,
                 ),
               ],
@@ -1817,10 +1866,19 @@ class _ContextPane extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Konteks meja', style: SatType.h2(color: sc.textHi)),
+              Text(
+                context.l10n.tblContextTitle,
+                style: SatType.h2(color: sc.textHi),
+              ),
               const SizedBox(height: Sp.s1),
               Text(
-                'DUDUK ${table.openedAt == null ? '0d' : formatElapsedId(SatClock.now().difference(table.openedAt!))} · ${table.pax} TAMU',
+                context.l10n.tblSeatedFor(
+                  formatElapsed(
+                    context.l10n,
+                    SatClock.now().difference(table.openedAt ?? SatClock.now()),
+                  ),
+                  table.pax,
+                ),
                 style: SatType.monoS(color: sc.textLo),
               ),
             ],

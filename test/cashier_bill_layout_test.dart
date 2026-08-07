@@ -12,6 +12,7 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// What the bill's lines pane shows while the cashier is picking items.
 ///
@@ -170,6 +171,11 @@ void main() {
           billDetailProvider('v1').overrideWith((ref) async => fixture ?? bill),
         ],
         child: MaterialApp(
+          // Pinned, exactly as the app pins it (ADR-0083). Without this the
+          // test resolves against the host's locale and reads English.
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
           home: const Scaffold(body: CashierBillView(visitId: 'v1')),
         ),
@@ -193,8 +199,7 @@ void main() {
   // `SatCard.section` upper-cases its header, so the two card finders match the
   // rendered caps rather than the string the call site passes.
   Finder totals() => find.text('Subtotal', skipOffstage: false);
-  Finder actions() =>
-      find.textContaining('Cetak tagihan', skipOffstage: false);
+  Finder actions() => find.textContaining('Cetak tagihan', skipOffstage: false);
   Finder lines() => find.text('ITEM PESANAN', skipOffstage: false);
   Finder receipts() => find.text('STRUK', skipOffstage: false);
 

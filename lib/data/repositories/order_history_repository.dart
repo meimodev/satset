@@ -22,7 +22,7 @@ class OrderHistoryLine {
   final List<String> modifiers;
   final DateTime? readyAt;
   final DateTime? servedAt;
-  final String? voidReasonLabel;
+  final String? voidReasonCode;
 
   const OrderHistoryLine({
     required this.sentAt,
@@ -36,7 +36,7 @@ class OrderHistoryLine {
     required this.modifiers,
     this.readyAt,
     this.servedAt,
-    this.voidReasonLabel,
+    this.voidReasonCode,
   });
 
   bool get isVoided => status == 'voided';
@@ -59,7 +59,7 @@ class OrderHistoryLine {
     servedAt: j['servedAt'] == null
         ? null
         : DateTime.parse(j['servedAt'] as String),
-    voidReasonLabel: j['voidReasonLabel'] as String?,
+    voidReasonCode: j['voidReasonCode'] as String?,
   );
 }
 

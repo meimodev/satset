@@ -4,7 +4,6 @@ import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -18,7 +17,9 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/labels.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 enum _StockFilter { all, low, negative, produced }
 
@@ -58,17 +59,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     return Column(
       children: [
         AdminEmbeddedStrip(
-          title: 'Stok',
-          sub: _opname
-              ? 'Stok opname physical audit'
-              : 'Bahan, penerimaan & mutasi',
+          title: context.l10n.stkTitle,
+          sub: _opname ? context.l10n.stkSubOpname : context.l10n.stkSub,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!_opname) ...[
                 PressScale(
                   child: IconButton(
-                    tooltip: 'Tambah bahan',
+                    tooltip: context.l10n.stkAddIngredient,
                     icon: Container(
                       padding: const EdgeInsets.all(Sp.s1h),
                       decoration: SatBox.d(
@@ -85,7 +84,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               PressScale(
                 child: _opname
                     ? SatButton.danger(
-                        label: AppStrings.cancel,
+                        label: context.l10n.cancel,
                         icon: Icons.close,
                         onTap: () => setState(() {
                           _opname = false;
@@ -93,7 +92,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         }),
                       )
                     : SatButton.outline(
-                        label: 'Opname',
+                        label: context.l10n.stkOpname,
                         icon: Icons.inventory_2_outlined,
                         onTap: () => setState(() {
                           _opname = true;
@@ -105,7 +104,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 const SizedBox(width: Sp.s2),
                 PressScale(
                   child: SatButton.primary(
-                    label: 'Simpan (${_counts.length})',
+                    label: context.l10n.stkSaveCount(_counts.length),
                     icon: Icons.check_circle_outline,
                     onTap: _counts.isEmpty ? null : _submitOpname,
                   ),
@@ -118,17 +117,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => _Message(
-              'Gagal memuat stok: $e',
+              context.l10n.stkLoadFailed('$e'),
               color: sc.urgent,
               icon: Icons.error_outline,
             ),
             data: (list) {
               if (list.isEmpty) {
                 return _EmptyState(
-                  title: 'Belum Ada Bahan',
-                  message:
-                      'Tambahkan bahan pertama Anda, lalu susun resepnya di editor menu '
-                      'agar stok berkurang otomatis saat pesanan dikirim.',
+                  title: context.l10n.stkEmptyTitle,
+                  message: context.l10n.stkEmptyBody,
                   onAction: () => _editIngredient(null),
                 );
               }
@@ -172,10 +169,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     _searchAndFilterBar(sc, list),
                     const SizedBox(height: Sp.s4),
                     if (filtered.isEmpty)
-                      _Message(
-                        'Tidak ada bahan yang cocok dengan pencarian / filter.',
-                        icon: Icons.search_off,
-                      )
+                      _Message(context.l10n.stkNoMatch, icon: Icons.search_off)
                     else
                       for (int idx = 0; idx < filtered.length; idx++)
                         Reveal(index: idx, child: _row(sc, filtered[idx])),
@@ -202,9 +196,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           _statCard(
             sc,
             index: 0,
-            label: 'MENIPIS',
-            value: '$low Bahan',
-            sub: low > 0 ? 'Perlu reorder' : 'Stok aman',
+            label: context.l10n.stkKpiLow,
+            value: context.l10n.stkCountIngredients(low),
+            sub: low > 0
+                ? context.l10n.stkNeedReorder
+                : context.l10n.stkStockOk,
             icon: Icons.warning_amber_rounded,
             color: low > 0 ? sc.warn : sc.textLo,
             bg: low > 0 ? sc.warnSoft : sc.bg2,
@@ -220,9 +216,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             _statCard(
               sc,
               index: 1,
-              label: 'STOK MINUS',
-              value: '$negative Bahan',
-              sub: 'Perlu opname segera',
+              label: context.l10n.stkKpiNegative,
+              value: context.l10n.stkCountIngredients(negative),
+              sub: context.l10n.stkNeedOpname,
               icon: Icons.remove_circle_outline,
               color: sc.urgent,
               bg: sc.urgentSoft,
@@ -237,9 +233,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           _statCard(
             sc,
             index: 2,
-            label: 'PRODUKSI MANDIRI',
-            value: '$produced Bahan',
-            sub: 'dari ${list.length} bahan terdaftar',
+            label: context.l10n.stkKpiProduced,
+            value: context.l10n.stkCountIngredients(produced),
+            sub: context.l10n.stkOfRegistered(list.length),
             icon: Icons.blender_outlined,
             color: sc.info,
             bg: sc.bg2,
@@ -366,12 +362,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'MODE STOK OPNAME',
+                  context.l10n.stkOpnameMode,
                   style: SatType.caption(color: sc.accentText),
                 ),
                 const SizedBox(height: Sp.sHair),
                 Text(
-                  'Ketik jumlah fisik di gudang saat ini. Selisih akan otomatis dihitung sebagai penyesuaian mutasi.',
+                  context.l10n.stkOpnameHint,
                   style: SatType.bodyS(color: sc.textMd),
                 ),
               ],
@@ -394,7 +390,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   borderRadius: SatR.a(999),
                 ),
                 child: Text(
-                  '${_counts.length} diisi',
+                  context.l10n.stkFilled(_counts.length),
                   style: SatType.caption(color: sc.accentInk),
                 ),
               ),
@@ -419,12 +415,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             Expanded(
               child: SatField.search(
                 controller: _searchCtrl,
-                hint: 'Cari nama bahan...',
+                hint: context.l10n.stkSearchHint,
                 suffix: _searchQuery.isEmpty
                     ? null
                     : SatIconButton.plain(
                         icon: Icons.clear,
-                        tooltip: AppStrings.a11yClear,
+                        tooltip: context.l10n.a11yClear,
                         onTap: () {
                           _searchCtrl.clear();
                           setState(() => _searchQuery = '');
@@ -440,12 +436,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _filterChip(sc, _StockFilter.all, 'Semua (${list.length})'),
+              _filterChip(
+                sc,
+                _StockFilter.all,
+                context.l10n.stkFilterAll(list.length),
+              ),
               const SizedBox(width: Sp.s1h),
               _filterChip(
                 sc,
                 _StockFilter.low,
-                'Menipis ($lowCount)',
+                context.l10n.stkFilterLow(lowCount),
                 highlightColor: lowCount > 0 ? sc.warn : null,
               ),
               if (negCount > 0) ...[
@@ -453,7 +453,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 _filterChip(
                   sc,
                   _StockFilter.negative,
-                  'Minus ($negCount)',
+                  context.l10n.stkFilterNegative(negCount),
                   highlightColor: sc.urgent,
                 ),
               ],
@@ -461,7 +461,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               _filterChip(
                 sc,
                 _StockFilter.produced,
-                'Produksi ($prodCount)',
+                context.l10n.stkFilterProduced(prodCount),
                 highlightColor: sc.info,
               ),
             ],
@@ -568,7 +568,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
-                                label: 'PRODUKSI',
+                                label: context.l10n.stkBadgeProduced,
                                 color: sc.info,
                                 icon: Icons.blender_outlined,
                               ),
@@ -577,7 +577,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
-                                label: 'MENIPIS',
+                                label: context.l10n.stkBadgeLow,
                                 color: sc.warn,
                                 icon: Icons.warning_amber_rounded,
                               ),
@@ -586,7 +586,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
-                                label: 'MINUS',
+                                label: context.l10n.stkBadgeNegative,
                                 color: sc.urgent,
                                 icon: Icons.remove_circle_outline,
                               ),
@@ -604,7 +604,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'STOK SAAT INI',
+                                    context.l10n.stkColOnHand,
                                     style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
@@ -622,7 +622,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'HARGA / ${i.unit.label.toUpperCase()}',
+                                    context.l10n.stkColPricePer(
+                                      i.unit.label.toUpperCase(),
+                                    ),
                                     style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
@@ -647,14 +649,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'TERAKHIR TERIMA',
+                                    context.l10n.stkColLastReceived,
                                     style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
                                   Text(
                                     i.lastReceivedAt == null
                                         ? '—'
-                                        : formatElapsedId(
+                                        : formatElapsed(
+                                            context.l10n,
                                             SatClock.now().difference(
                                               i.lastReceivedAt!,
                                             ),
@@ -728,7 +731,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           children: [
                             PressScale(
                               child: SatButton.outline(
-                                label: 'Terima',
+                                label: context.l10n.stkReceive,
                                 icon: Icons.add_shopping_cart,
                                 onTap: () => _receive(i),
                               ),
@@ -748,44 +751,50 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 _ => null,
                               },
                               itemBuilder: (_) => [
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'receive',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.add_shopping_cart, size: 16),
-                                      SizedBox(width: Sp.s2h),
-                                      Text('Terima barang'),
+                                      const Icon(
+                                        Icons.add_shopping_cart,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: Sp.s2h),
+                                      Text(context.l10n.stkMenuReceive),
                                     ],
                                   ),
                                 ),
                                 if (i.isProduced)
-                                  const PopupMenuItem(
+                                  PopupMenuItem(
                                     value: 'produce',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.blender_outlined, size: 16),
-                                        SizedBox(width: Sp.s2h),
-                                        Text('Produksi batch'),
+                                        const Icon(
+                                          Icons.blender_outlined,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: Sp.s2h),
+                                        Text(context.l10n.stkMenuProduce),
                                       ],
                                     ),
                                   ),
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'ledger',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.history, size: 16),
-                                      SizedBox(width: Sp.s2h),
-                                      Text('Riwayat mutasi'),
+                                      const Icon(Icons.history, size: 16),
+                                      const SizedBox(width: Sp.s2h),
+                                      Text(context.l10n.stkMenuLedger),
                                     ],
                                   ),
                                 ),
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'edit',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit_outlined, size: 16),
-                                      SizedBox(width: Sp.s2h),
-                                      Text('Ubah bahan'),
+                                      const Icon(Icons.edit_outlined, size: 16),
+                                      const SizedBox(width: Sp.s2h),
+                                      Text(context.l10n.stkMenuEdit),
                                     ],
                                   ),
                                 ),
@@ -800,7 +809,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                       ),
                                       const SizedBox(width: Sp.s2h),
                                       Text(
-                                        'Arsipkan',
+                                        context.l10n.stkMenuArchive,
                                         style: TextStyle(color: sc.urgent),
                                       ),
                                     ],
@@ -872,7 +881,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         ),
         const SizedBox(width: Sp.s2),
         Text(
-          'Batas min: ${formatQty(threshold, i.unit)}',
+          context.l10n.stkMinThreshold(formatQty(threshold, i.unit)),
           style: SatType.monoS(color: sc.textLo),
         ),
       ],
@@ -888,7 +897,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         ? sc.success
         : sc.warn;
     final sign = positive ? '+' : '';
-    final text = delta == 0 ? 'Pas' : '$sign${formatQty(delta, i.unit)}';
+    final text = delta == 0
+        ? context.l10n.stkVarianceExact
+        : '$sign${formatQty(delta, i.unit)}';
 
     return AnimatedSwitcher(
       duration: satMotion(context, 180),
@@ -906,6 +917,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   Future<void> _submitOpname() async {
     final api = ref.read(stockApiProvider);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       final deltas = await api.recordCounts(Map.of(_counts));
       final changed = deltas.values.where((d) => d != 0).length;
@@ -913,8 +925,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         SnackBar(
           content: Text(
             changed == 0
-                ? 'Opname selesai — tidak ada selisih'
-                : 'Opname selesai — $changed bahan disesuaikan',
+                ? l10n.stkOpnameDoneNoVariance
+                : l10n.stkOpnameDone(changed),
           ),
         ),
       );
@@ -924,7 +936,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       });
       ref.invalidate(ingredientsProvider);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkSaveFailed('$e'))));
     }
   }
 
@@ -942,8 +954,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       context,
       bare: true,
       builder: (ctx) => _Sheet(
-        title: 'Terima ${i.name}',
-        subtitle: 'Catat penambahan stok dan harga beli terbaru.',
+        title: context.l10n.stkReceiveTitle(i.name),
+        subtitle: context.l10n.stkReceiveSub,
         children: [
           StatefulBuilder(
             builder: (_, setSheet) => Row(
@@ -951,7 +963,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 Expanded(
                   child: SatField.decimal(
                     controller: qtyCtrl,
-                    label: 'Jumlah',
+                    label: context.l10n.quantity,
                     hint: '',
                     autofocus: true,
                     prefixIcon: Icons.numbers_outlined,
@@ -974,14 +986,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           ),
           SatField.number(
             controller: priceCtrl,
-            label: 'Harga per ${i.unit.label} (opsional)',
+            label: context.l10n.stkPricePer(i.unit.label),
             hint: '',
-            helperText: 'Kosongkan jika tidak mengubah harga rata-rata',
+            helperText: context.l10n.stkPriceHelper,
             prefixIcon: Icons.payments_outlined,
           ),
           SatField.text(
             controller: supplierCtrl,
-            label: 'Pemasok (opsional)',
+            label: context.l10n.stkSupplier,
             hint: '',
             prefixIcon: Icons.storefront_outlined,
           ),
@@ -994,6 +1006,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     if (amount == null || amount <= 0) return;
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       await ref
           .read(stockApiProvider)
@@ -1006,11 +1019,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 : supplierCtrl.text.trim(),
           );
       ref.invalidate(ingredientsProvider);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Stok berhasil ditambahkan')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkReceiveOk)));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkFailed('$e'))));
     }
   }
 
@@ -1020,15 +1031,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       context,
       bare: true,
       builder: (ctx) => _Sheet(
-        title: 'Produksi ${i.name}',
+        title: context.l10n.stkProduceTitle(i.name),
         subtitle: i.batchYield == null
             ? null
-            : '1 batch = ${formatQty(i.batchYield!, i.unit)}. '
-                  'Bahan baku penyusun akan berkurang otomatis.',
+            : context.l10n.stkProduceSub(formatQty(i.batchYield!, i.unit)),
         children: [
           SatField.number(
             controller: ctrl,
-            label: 'Jumlah batch',
+            label: context.l10n.stkBatchCount,
             hint: '',
             autofocus: true,
             prefixIcon: Icons.blender_outlined,
@@ -1042,14 +1052,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     if (n <= 0) return;
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       await ref.read(stockApiProvider).produce(i.id, n);
       ref.invalidate(ingredientsProvider);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Produksi berhasil dicatat')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkProduceOk)));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkFailed('$e'))));
     }
   }
 
@@ -1064,12 +1073,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   Future<void> _archive(Ingredient i) async {
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       await ref.read(stockApiProvider).archive(i.id);
       ref.invalidate(ingredientsProvider);
-      messenger.showSnackBar(SnackBar(content: Text('${i.name} diarsipkan')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkArchived(i.name))));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkFailed('$e'))));
     }
   }
 
@@ -1093,25 +1103,30 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       bare: true,
       builder: (ctx) => StatefulBuilder(
         builder: (_, setSheet) => _Sheet(
-          title: existing == null ? 'Bahan Baru' : 'Ubah ${existing.name}',
-          subtitle: 'Atur nama, satuan unit, dan batas reorder.',
+          title: existing == null
+              ? context.l10n.stkNewIngredient
+              : context.l10n.stkEditIngredient(existing.name),
+          subtitle: context.l10n.stkEditorSub,
           children: [
             SatField.text(
               controller: nameCtrl,
-              label: 'Nama bahan',
+              label: context.l10n.stkName,
               hint: '',
               autofocus: existing == null,
               prefixIcon: Icons.inventory_outlined,
             ),
             SatDropdown<StockUnit>(
               value: unit,
-              label: 'Satuan',
+              label: context.l10n.stkUnit,
               prefixIcon: Icons.straighten_outlined,
               options: [
                 for (final u in StockUnit.values)
                   SatOption(
                     u,
-                    '${u.label} · ${stockDimensionLabel(u.dimension)}',
+                    context.l10n.stkUnitOption(
+                      u.label,
+                      stockDimensionLabel(context.l10n, u.dimension),
+                    ),
                   ),
               ],
               onChanged: (u) => setSheet(() => unit = u ?? unit),
@@ -1119,24 +1134,23 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             if (existing == null)
               SatField.decimal(
                 controller: openingCtrl,
-                label: 'Stok awal (${unit.label})',
+                label: context.l10n.stkOpening(unit.label),
                 hint: '',
-                helperText: 'Dicatat sebagai mutasi awal',
+                helperText: context.l10n.stkOpeningHelper,
                 prefixIcon: Icons.assessment_outlined,
               ),
             SatField.decimal(
               controller: lowCtrl,
-              label: 'Batas menipis (${unit.label}, opsional)',
+              label: context.l10n.stkLowAt(unit.label),
               hint: '',
-              helperText: 'Munculkan peringatan saat stok di bawah angka ini',
+              helperText: context.l10n.stkLowAtHelper,
               prefixIcon: Icons.warning_amber_rounded,
             ),
             SatField.decimal(
               controller: yieldCtrl,
-              label: 'Hasil 1 batch (${unit.label}, opsional)',
+              label: context.l10n.stkBatchYield(unit.label),
               hint: '',
-              helperText:
-                  'Isi bila bahan ini hasil racikan internal, lalu susun resepnya',
+              helperText: context.l10n.stkBatchYieldHelper,
               prefixIcon: Icons.blender_outlined,
             ),
           ],
@@ -1154,6 +1168,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final opening = parse(openingCtrl);
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       await ref
           .read(stockApiProvider)
@@ -1170,11 +1185,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 : 0,
           );
       ref.invalidate(ingredientsProvider);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Bahan berhasil disimpan')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkSaveOk)));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkFailed('$e'))));
     }
   }
 
@@ -1251,7 +1264,7 @@ class _Sheet extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: AppStrings.close,
+                  tooltip: context.l10n.close,
                   icon: Icon(Icons.close, size: 20, color: sc.textLo),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -1270,7 +1283,7 @@ class _Sheet extends StatelessWidget {
             // Primary Action Button
             PressScale(
               child: SatButton.primary(
-                label: AppStrings.save,
+                label: context.l10n.save,
                 onTap: onConfirm,
               ),
             ),
@@ -1324,7 +1337,7 @@ class _LedgerSheet extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Riwayat Mutasi',
+                        context.l10n.stkLedgerTitle,
                         style: SatType.h3(color: sc.textHi),
                       ),
                       Text(
@@ -1334,7 +1347,7 @@ class _LedgerSheet extends ConsumerWidget {
                     ],
                   ),
                   IconButton(
-                    tooltip: AppStrings.close,
+                    tooltip: context.l10n.close,
                     icon: Icon(Icons.close, size: 20, color: sc.textLo),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -1349,12 +1362,12 @@ class _LedgerSheet extends ConsumerWidget {
                     padding: EdgeInsets.all(Sp.s6),
                     child: Center(child: CircularProgressIndicator()),
                   ),
-                  error: (e, _) =>
-                      _Message('Gagal memuat: $e', color: sc.urgent),
+                  error: (e, _) => _Message(
+                    context.l10n.stkLedgerLoadFailed('$e'),
+                    color: sc.urgent,
+                  ),
                   data: (rows) => rows.isEmpty
-                      ? const _Message(
-                          'Belum ada riwayat mutasi untuk bahan ini.',
-                        )
+                      ? _Message(context.l10n.stkLedgerEmpty)
                       : ListView.separated(
                           shrinkWrap: true,
                           itemCount: rows.length,
@@ -1396,7 +1409,10 @@ class _LedgerSheet extends ConsumerWidget {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            m.reason.label,
+                                            stockReasonLabel(
+                                              context.l10n,
+                                              m.reason,
+                                            ),
                                             style: SatType.labelM(
                                               color: sc.textHi,
                                             ),
@@ -1491,7 +1507,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: Sp.s5),
             PressScale(
               child: SatButton.primary(
-                label: 'Tambah Bahan Pertama',
+                label: context.l10n.stkAddFirst,
                 icon: Icons.add,
                 onTap: onAction,
               ),
@@ -1565,7 +1581,7 @@ class _RecipeLinkChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (madeFrom.isEmpty && usedBy.isEmpty) {
-      return _chip(context, 'belum dipakai', null, sc.textLo);
+      return _chip(context, context.l10n.stkUnused, null, sc.textLo);
     }
 
     // Made-from first: it is the rarer, more explanatory direction, and

@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/reservation.dart';
@@ -14,6 +17,9 @@ void main() {
   final now = DateTime(2026, 7, 27, 19, 0);
   const s = VenueSettingsDto();
   final dayStart = businessDayStart(now, s.businessDayStartHour);
+  // The banner's wording is the ARB's business; this file pins thresholds
+  // and precedence, so it runs in the default locale. ADR-0083.
+  final l10n = lookupAppL10n(const Locale('id'));
 
   VenueTable table({
     TableStatus status = TableStatus.occupied,
@@ -64,6 +70,7 @@ void main() {
         service: ServiceState.none,
         s: s,
         now: now,
+        l10n: l10n,
       );
       expect(out, isNull);
     });
@@ -82,6 +89,7 @@ void main() {
         service: ServiceState.none,
         s: s,
         now: now,
+        l10n: l10n,
       );
       expect(justUnder, isNull);
 
@@ -97,6 +105,7 @@ void main() {
         service: ServiceState.none,
         s: s,
         now: now,
+        l10n: l10n,
       );
       expect(over!.severity, StaleSeverity.crit);
       expect(over.label, contains('12'));
@@ -111,6 +120,7 @@ void main() {
         service: ServiceState.none,
         s: s, // longStayMins 90 → 100 minutes is over
         now: now,
+        l10n: l10n,
       );
       expect(atDefault!.severity, StaleSeverity.warn);
 
@@ -121,6 +131,7 @@ void main() {
         service: ServiceState.none,
         s: s.copyWith(longStayMins: 180),
         now: now,
+        l10n: l10n,
       );
       expect(relaxed, isNull);
     });
@@ -141,6 +152,7 @@ void main() {
         service: ServiceState.ungreeted,
         s: quiet,
         now: now,
+        l10n: l10n,
       );
       expect(ungreeted?.severity, StaleSeverity.crit);
 
@@ -156,6 +168,7 @@ void main() {
         service: ServiceState.none,
         s: quiet,
         now: now,
+        l10n: l10n,
       );
       expect(uncollected?.severity, StaleSeverity.crit);
     });
@@ -175,6 +188,7 @@ void main() {
         service: ServiceState.ungreeted,
         s: s,
         now: now,
+        l10n: l10n,
       );
       expect(out!.severity, StaleSeverity.crit);
       expect(out.label, contains('disapa'));
@@ -189,6 +203,7 @@ void main() {
         service: ServiceState.none,
         s: s,
         now: now,
+        l10n: l10n,
       );
       expect(out!.severity, StaleSeverity.crit);
       expect(out.label, contains('telat'));

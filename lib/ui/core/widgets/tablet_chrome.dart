@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +10,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 class TabletShell extends StatelessWidget {
   final String activeTab;
@@ -103,14 +103,14 @@ class TabletSideRail extends StatelessWidget {
                 children: [
                   _RailBtn(
                     id: 'tables',
-                    label: AppStrings.tabMeja,
+                    label: context.l10n.tabMeja,
                     icon: Icons.grid_view_rounded,
                     route: '/tables',
                     active: active,
                   ),
                   _RailBtn(
                     id: 'kitchen',
-                    label: AppStrings.tabAntrian,
+                    label: context.l10n.tabAntrian,
                     icon: Icons.receipt_long_outlined,
                     route: '/kitchen',
                     active: active,
@@ -118,7 +118,7 @@ class TabletSideRail extends StatelessWidget {
                   ),
                   _RailBtn(
                     id: 'orders',
-                    label: AppStrings.tabPesanan,
+                    label: context.l10n.tabPesanan,
                     icon: Icons.description_outlined,
                     route: '/orders',
                     active: active,
@@ -128,7 +128,7 @@ class TabletSideRail extends StatelessWidget {
                   if (showKasir)
                     _RailBtn(
                       id: 'kasir',
-                      label: AppStrings.tabKasir,
+                      label: context.l10n.tabKasir,
                       icon: Icons.point_of_sale_rounded,
                       route: '/kasir',
                       active: active,
@@ -136,7 +136,7 @@ class TabletSideRail extends StatelessWidget {
                   _RailDiv(),
                   _RailBtn(
                     id: 'venue',
-                    label: AppStrings.tabVenue,
+                    label: context.l10n.tabVenue,
                     icon: Icons.storefront_outlined,
                     route: '/venue',
                     active: active,
@@ -403,7 +403,7 @@ class _AvatarBtn extends ConsumerWidget {
         shape: border,
         child: Semantics(
           button: true,
-          label: AppStrings.tabSaya,
+          label: context.l10n.tabSaya,
           child: InkWell(
             customBorder: border,
             onTap: () => context.go('/me'),
@@ -620,11 +620,7 @@ class TabletStatTile extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             borderRadius: SatR.a(14),
-            child: InkWell(
-              borderRadius: SatR.a(14),
-              onTap: onTap,
-              child: body,
-            ),
+            child: InkWell(borderRadius: SatR.a(14), onTap: onTap, child: body),
           ),
         ),
       ),

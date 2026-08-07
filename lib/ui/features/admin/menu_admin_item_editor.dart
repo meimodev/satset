@@ -4,7 +4,6 @@ import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,6 +26,7 @@ import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Full sectioned editor for one menu item.
 /// Used in tablet right pane and phone full-screen route.
@@ -219,9 +219,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Future<bool> _save() async {
     if (_hasBlankNames) {
       setState(() => _showErrors = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lengkapi nama yang masih kosong')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.mieBlankNames)));
       return false;
     }
     final priceCents =
@@ -249,6 +249,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     );
     final repo = ref.read(menuRepositoryProvider.notifier);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final wasNew = _isNew;
     try {
       // Item row first, then the photo side-call (PUT/DELETE need an
@@ -264,7 +265,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         await ref.read(stockApiProvider).saveRecipes(saved.id, _recipes);
       }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.mieSaveFailed('$e'))));
       return false;
     }
     if (wasNew) {
@@ -272,7 +273,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     }
     messenger.showSnackBar(
       SnackBar(
-        content: Text(wasNew ? 'Item ditambahkan' : 'Perubahan tersimpan'),
+        content: Text(wasNew ? l10n.mieItemAdded : l10n.mieChangesSaved),
       ),
     );
     widget.onClose?.call();
@@ -302,10 +303,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   ),
                 ),
                 const SizedBox(height: Sp.s4h),
-                Text('Hapus item?', style: SatType.labelL(color: sc.textHi)),
+                Text(
+                  context.l10n.mieDeleteTitle,
+                  style: SatType.labelL(color: sc.textHi),
+                ),
                 const SizedBox(height: Sp.s2),
                 Text(
-                  'Item "${_draft.name}" akan dihapus dari menu.',
+                  context.l10n.mieDeleteBody(_draft.name),
                   style: SatType.bodyM(color: sc.textMd),
                 ),
                 const SizedBox(height: Sp.s4h),
@@ -313,14 +317,14 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   children: [
                     Expanded(
                       child: SatButton.outline(
-                        label: AppStrings.cancel,
+                        label: context.l10n.cancel,
                         onTap: () => Navigator.pop(ctx, false),
                       ),
                     ),
                     const SizedBox(width: Sp.s2h),
                     Expanded(
                       child: SatButton.danger(
-                        label: AppStrings.delete,
+                        label: context.l10n.delete,
                         onTap: () => Navigator.pop(ctx, true),
                       ),
                     ),
@@ -355,11 +359,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         child: Column(
           children: [
             _EditorHeader(
-              title: _isNew ? 'Item baru' : _draft.name,
+              title: _isNew ? context.l10n.mieNewItem : _draft.name,
               // 'Edit lengkap' carried no information; the availability badge
               // takes its place. Staff keep the sub line, since it's the only
               // thing explaining why every field is inert (ADR-0046).
-              sub: readOnly ? 'Hanya admin yang bisa edit' : null,
+              sub: readOnly ? context.l10n.mieReadOnlySub : null,
               badge: _availabilityBadge(sc),
               onClose: widget.onClose,
             ),
@@ -406,7 +410,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     bool readOnly,
   ) {
     return _EditorSection(
-      title: 'Identitas',
+      title: context.l10n.mieIdentity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -420,7 +424,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   children: [
                     _input(
                       _name,
-                      'Nama item',
+                      context.l10n.mieItemName,
                       readOnly: readOnly,
                       error: _errorIfBlank(_name.text),
                       onChanged: (_) => setState(() {}),
@@ -428,7 +432,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                     const SizedBox(height: Sp.s2h),
                     _input(
                       _desc,
-                      'Deskripsi singkat',
+                      context.l10n.mieShortDesc,
                       maxLines: 3,
                       readOnly: readOnly,
                     ),
@@ -438,7 +442,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ],
           ),
           const SizedBox(height: Sp.s3),
-          _label('Kategori'),
+          _label(context.l10n.mieCategory),
           const SizedBox(height: Sp.s1h),
           Wrap(
             spacing: 6,
@@ -525,7 +529,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   ),
                 ),
                 child: Text(
-                  _hasPhotoNow ? 'UBAH' : 'FOTO',
+                  _hasPhotoNow
+                      ? context.l10n.miePhotoChange
+                      : context.l10n.miePhotoAdd,
                   style: SatType.caption(color: onFill(satMediaScrim)),
                 ),
               ),
@@ -552,7 +558,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             const SizedBox(height: Sp.s2),
             ListTile(
               leading: Icon(Icons.photo_library_outlined, color: sc.textMd),
-              title: const Text('Pilih dari galeri'),
+              title: Text(context.l10n.miePickGallery),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _pickPhoto(ImageSource.gallery);
@@ -560,7 +566,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ),
             ListTile(
               leading: Icon(Icons.photo_camera_outlined, color: sc.textMd),
-              title: const Text('Ambil foto'),
+              title: Text(context.l10n.mieTakePhoto),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _pickPhoto(ImageSource.camera);
@@ -570,7 +576,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ListTile(
                 leading: Icon(Icons.delete_outline, color: sc.urgent),
                 title: Text(
-                  'Hapus foto',
+                  context.l10n.mieDeletePhoto,
                   style: SatType.bodyM(color: sc.urgent),
                 ),
                 onTap: () {
@@ -607,9 +613,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       await _commitPhotoIfExisting();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal memuat foto: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.miePhotoLoadFailed('$e'))),
+      );
     }
   }
 
@@ -624,6 +630,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     if (_isNew) return;
     final repo = ref.read(menuRepositoryProvider.notifier);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       if (_pendingPhoto != null) {
         await repo.uploadPhoto(_draft.id, _pendingPhoto!);
@@ -638,9 +645,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         _pendingPhoto = null;
         _pendingPhotoClear = false;
       });
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Gagal menyimpan foto')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.miePhotoSaveFailed)));
       return;
     }
     if (!mounted) return;
@@ -660,7 +665,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _pricingSection(SatColors sc, bool readOnly) {
     return _EditorSection(
-      title: 'Harga',
+      title: context.l10n.miePricing,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -669,7 +674,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               Expanded(
                 child: _input(
                   _basePrice,
-                  'Harga dasar',
+                  context.l10n.mieBasePrice,
                   keyboard: TextInputType.number,
                   amount: true,
                   readOnly: readOnly,
@@ -682,9 +687,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                   _prep,
                   // Empty field reads as what it inherits, so a blank is never
                   // mistaken for "no target" (ADR-0043).
-                  'Ikut venue '
-                  '(${ref.watch(venueSettingsProvider).prepTargetMins}m)',
-                  label: 'Waktu siap (menit)',
+                  context.l10n.mieFollowVenue(
+                    ref.watch(venueSettingsProvider).prepTargetMins,
+                  ),
+                  label: context.l10n.miePrepTime,
                   keyboard: TextInputType.number,
                   readOnly: readOnly,
                 ),
@@ -697,7 +703,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               Expanded(
                 child: _input(
                   _cost,
-                  'HPP',
+                  context.l10n.mieCost,
                   keyboard: TextInputType.number,
                   amount: true,
                   readOnly: readOnly,
@@ -714,16 +720,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           const SizedBox(height: Sp.s3h),
           _subhead(
-            'Varian ukuran',
+            context.l10n.mieVariants,
             trailing: readOnly
                 ? null
-                : _ghostButton('+ Varian', onTap: _addVariant),
+                : _ghostButton(context.l10n.mieAddVariant, onTap: _addVariant),
           ),
           const SizedBox(height: Sp.s1h),
           ExpandFade(
             child: _realVariants.isEmpty
                 ? Text(
-                    'Belum ada varian. Hanya pakai harga dasar.',
+                    context.l10n.mieNoVariants,
                     key: const ValueKey('var-empty'),
                     style: SatType.bodyS(color: sc.textLo),
                   )
@@ -755,7 +761,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Expanded(
             child: SatField.text(
               controller: _ctrl('v:${v.id}:name', v.name),
-              hint: 'Nama (mis. Besar)',
+              hint: context.l10n.mieVariantNameHint,
               readOnly: readOnly,
               errorText: _errorIfBlank(v.name),
               // setState, not a bare assign: the recipe scope chips are built
@@ -775,7 +781,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
                 'v:${v.id}:price',
                 v.price == 0 ? '' : groupRupiah(v.price),
               ),
-              hint: 'Harga',
+              hint: context.l10n.miePrice,
               readOnly: readOnly,
               onChanged: (t) => setState(() {
                 final n = int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? 0;
@@ -787,7 +793,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           if (!readOnly)
             IconButton(
-              tooltip: AppStrings.delete,
+              tooltip: context.l10n.delete,
               icon: Icon(Icons.close, size: 18, color: sc.textLo),
               onPressed: () {
                 final next = List<Variant>.of(_draft.variants)..removeAt(idx);
@@ -810,14 +816,14 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Widget _modifiersSection(SatColors sc, bool readOnly) {
     return _EditorSection(
-      title: 'Grup modifier',
+      title: context.l10n.mieModifierGroups,
       trailing: readOnly
           ? null
-          : _ghostButton('+ Grup', onTap: _addModifierGroup),
+          : _ghostButton(context.l10n.mieAddGroup, onTap: _addModifierGroup),
       child: ExpandFade(
         child: _draft.modifierGroups.isEmpty
             ? Text(
-                'Belum ada grup modifier (mis. tingkat pedas, pilih protein).',
+                context.l10n.mieNoModifiers,
                 key: const ValueKey('mod-empty'),
                 style: SatType.bodyS(color: sc.textLo),
               )
@@ -868,7 +874,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               Expanded(
                 child: SatField.text(
                   controller: _ctrl('g:${g.id}:name', g.name),
-                  hint: 'Nama grup',
+                  hint: context.l10n.mieGroupName,
                   readOnly: readOnly,
                   errorText: _errorIfBlank(g.name),
                   onChanged: (t) => setState(() {
@@ -880,7 +886,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
               if (!readOnly)
                 IconButton(
-                  tooltip: AppStrings.delete,
+                  tooltip: context.l10n.delete,
                   icon: Icon(Icons.delete_outline, size: 18, color: sc.textLo),
                   onPressed: () {
                     final next = List<ModifierGroup>.of(_draft.modifierGroups)
@@ -894,7 +900,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Row(
             children: [
               _toggleChip(
-                label: 'Wajib',
+                label: context.l10n.mieRequired,
                 on: g.required,
                 onTap: readOnly
                     ? null
@@ -908,7 +914,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               ),
               const SizedBox(width: Sp.s2),
               _toggleChip(
-                label: 'Pilih banyak',
+                label: context.l10n.mieMulti,
                 on: g.multi,
                 onTap: readOnly
                     ? null
@@ -938,7 +944,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             Align(
               alignment: Alignment.centerLeft,
               child: _ghostButton(
-                '+ Opsi',
+                context.l10n.mieAddOption,
                 onTap: () {
                   final opts = List<ModifierOption>.of(g.options)
                     ..add(
@@ -968,7 +974,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Expanded(
             child: SatField.text(
               controller: _ctrl('o:${g.id}:${o.id}:name', o.name),
-              hint: 'Nama opsi',
+              hint: context.l10n.mieOptionName,
               readOnly: readOnly,
               errorText: _errorIfBlank(o.name),
               onChanged: (t) => setState(() {
@@ -1010,7 +1016,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           if (!readOnly)
             IconButton(
-              tooltip: AppStrings.delete,
+              tooltip: context.l10n.delete,
               icon: Icon(Icons.close, size: 16, color: sc.textLo),
               onPressed: () {
                 final opts = List<ModifierOption>.of(g.options)..removeAt(oi);
@@ -1088,19 +1094,19 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Widget _recipeSection(SatColors sc, bool readOnly) {
     final pantry = ref.watch(ingredientsProvider);
     return _EditorSection(
-      title: 'Resep',
+      title: context.l10n.mieRecipe,
       child: pantry.when(
         loading: () => const Padding(
           padding: EdgeInsets.symmetric(vertical: Sp.s3),
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         error: (e, _) => Text(
-          'Gagal memuat bahan: $e',
+          context.l10n.mieIngredientsLoadFailed('$e'),
           style: SatType.bodyS(color: sc.urgent),
         ),
         data: (list) => list.isEmpty
             ? Text(
-                'Belum ada bahan. Tambahkan di menu Stok sebelum menyusun resep.',
+                context.l10n.mieNoIngredients,
                 style: SatType.bodyS(color: sc.textLo),
               )
             : _recipeBody(sc, readOnly, list),
@@ -1111,7 +1117,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Widget _recipeBody(SatColors sc, bool readOnly, List<Ingredient> pantry) {
     final byId = {for (final i in pantry) i.id: i};
     final scopes = <(String, String)>[
-      ('', 'Dasar'),
+      ('', context.l10n.mieScopeBase),
       for (final v in _draft.variants)
         if (v.name.isNotEmpty) ('v:${v.id}', v.name),
       for (final g in _draft.modifierGroups)
@@ -1119,7 +1125,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           for (final o in g.options)
             // Both halves required, or a half-typed group yields a chip
             // reading ': Pedas'. The chip appears on the first keystroke.
-            if (o.name.isNotEmpty) ('o:${o.id}', '${g.name}: ${o.name}'),
+            if (o.name.isNotEmpty)
+              ('o:${o.id}', context.l10n.mieScopeOption(g.name, o.name)),
     ];
     if (!scopes.any((s) => s.$1 == _recipeScope)) _recipeScope = '';
     final lines = _linesFor(_recipeScope);
@@ -1135,7 +1142,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           children: [
             for (final s in scopes)
               _toggleChip(
-                label: _linesFor(s.$1).isEmpty ? s.$2 : '${s.$2} ·',
+                label: _linesFor(s.$1).isEmpty
+                    ? s.$2
+                    : context.l10n.mieScopeFilled(s.$2),
                 on: _recipeScope == s.$1,
                 onTap: () => setState(() => _recipeScope = s.$1),
               ),
@@ -1144,16 +1153,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         const SizedBox(height: Sp.s2),
         Text(
           isVariant
-              ? 'Resep varian menggantikan resep dasar sepenuhnya. Kosong = ikut resep dasar.'
+              ? context.l10n.mieRecipeVariantHint
               : isOption
-              ? 'Resep modifier ditambahkan di atas resep yang berlaku.'
-              : 'Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.',
+              ? context.l10n.mieRecipeOptionHint
+              : context.l10n.mieRecipeBaseHint,
           style: SatType.bodyS(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2h),
         if (lines.isEmpty)
           Text(
-            'Belum ada bahan pada resep ini.',
+            context.l10n.mieRecipeEmpty,
             style: SatType.bodyS(color: sc.textLo),
           ),
         for (var i = 0; i < lines.length; i++)
@@ -1163,7 +1172,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           Align(
             alignment: Alignment.centerLeft,
             child: SatButton.ghost(
-              label: 'Tambah bahan',
+              label: context.l10n.mieAddIngredient,
               icon: Icons.add,
               onTap: () => _setLines(_recipeScope, [
                 ...lines,
@@ -1200,10 +1209,13 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             flex: 3,
             child: SatDropdown<String>(
               value: ing.id,
-              hint: 'Bahan',
+              hint: context.l10n.mieIngredient,
               options: [
                 for (final p in pantry)
-                  SatOption(p.id, '${p.name} (${p.unit.label})'),
+                  SatOption(
+                    p.id,
+                    context.l10n.mieIngredientOption(p.name, p.unit.label),
+                  ),
               ],
               onChanged: readOnly
                   ? null
@@ -1232,7 +1244,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             // number is typed, which is exactly when "g or kg?" matters.
             child: SatField.decimal(
               controller: ctrl,
-              hint: 'Jumlah',
+              hint: context.l10n.mieQty,
               suffixText: ing.unit.label,
               readOnly: readOnly,
               onChanged: (t) {
@@ -1250,7 +1262,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           if (!readOnly)
             IconButton(
-              tooltip: 'Hapus',
+              tooltip: context.l10n.delete,
               icon: Icon(Icons.close, size: 18, color: sc.textLo),
               onPressed: () {
                 _subCtrls.remove(ctrlKey)?.dispose();
@@ -1278,11 +1290,11 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final allergens = menuTagsOfKind(allTags, MenuTagKind.allergen);
     final diets = menuTagsOfKind(allTags, MenuTagKind.diet);
     return _EditorSection(
-      title: 'Tag',
+      title: context.l10n.mieTags,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _label('Alergen'),
+          _label(context.l10n.mieAllergens),
           const SizedBox(height: Sp.s1h),
           Wrap(
             spacing: 6,
@@ -1303,7 +1315,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
             ],
           ),
           const SizedBox(height: Sp.s3),
-          _label('Diet'),
+          _label(context.l10n.mieDiet),
           const SizedBox(height: Sp.s1h),
           Wrap(
             spacing: 6,
@@ -1331,7 +1343,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
   Widget _availabilitySection(SatColors sc) {
     final auto = _draft.isAutoSoldOut;
     return _EditorSection(
-      title: 'Ketersediaan',
+      title: context.l10n.mieAvailability,
       child: Row(
         children: [
           Expanded(
@@ -1339,10 +1351,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
               // One word for "cannot be sold", cause in the parenthetical —
               // ADR-0046.
               auto
-                  ? 'Tidak tersedia (stok 0)'
+                  ? context.l10n.mieAutoSoldOut
                   : (_draft.unavailable
-                        ? 'Tidak tersedia (manual)'
-                        : 'Aktif untuk dijual'),
+                        ? context.l10n.mieManualSoldOut
+                        : context.l10n.mieActiveForSale),
               style: SatType.labelM(
                 color: _draft.isSoldOut ? sc.urgent : sc.success,
               ),
@@ -1352,14 +1364,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           // beside it, since an auto sell-out is not a thing to override here.
           SatToggle(
             value: !_draft.isSoldOut,
-            semanticLabel: 'Aktif untuk dijual',
+            semanticLabel: context.l10n.mieActiveForSale,
             onChanged: auto
                 ? null
                 : (v) => _patch(_draft.copyWith(unavailable: !v)),
           ),
           const SizedBox(width: Sp.s1h),
           SatButton.ghost(
-            label: _draft.unavailable ? 'Aktifkan' : 'Tandai tidak tersedia',
+            label: _draft.unavailable
+                ? context.l10n.mieActivate
+                : context.l10n.mieMarkUnavailable,
             onTap: auto
                 ? null
                 : () =>
@@ -1382,7 +1396,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         borderRadius: SatR.a(6),
       ),
       child: Text(
-        out ? 'Tidak tersedia' : 'Aktif',
+        out ? context.l10n.mieUnavailable : context.l10n.mieActive,
         style: SatType.labelS(color: tone),
       ),
     );
@@ -1395,13 +1409,14 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     if (_recipes.base.isEmpty) return null;
     final pantry = ref.watch(ingredientsProvider).valueOrNull;
     if (pantry == null) return null;
-    return '≈ ${formatIDR(_derivedCost(pantry))} dari resep dasar';
+    return context.l10n.mieDerivedCost(formatIDR(_derivedCost(pantry)));
   }
 
   // ---- shared field bits -----------------------------------------------
 
-  String? _errorIfBlank(String value) =>
-      _showErrors && value.trim().isEmpty ? 'Wajib diisi' : null;
+  String? _errorIfBlank(String value) => _showErrors && value.trim().isEmpty
+      ? context.l10n.mieRequiredField
+      : null;
 
   /// The editor's fields, in the app's one input skin. Kept as a local helper
   /// only because every one of them shares `readOnly` and the blank-check.
@@ -1462,16 +1477,16 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     String hint;
     if (!hasData) {
       tone = sc.textLo;
-      hint = 'Isi harga dasar dulu';
+      hint = context.l10n.mieMarginNoPrice;
     } else if (marginPct >= 40) {
       tone = sc.success;
-      hint = 'Margin sehat';
+      hint = context.l10n.mieMarginHealthy;
     } else if (marginPct >= 15) {
       tone = sc.warn;
-      hint = 'Margin tipis';
+      hint = context.l10n.mieMarginThin;
     } else {
       tone = sc.urgent;
-      hint = 'Margin kritis';
+      hint = context.l10n.mieMarginCritical;
     }
     return AnimatedContainer(
       duration: satMotion(context, 240),
@@ -1485,7 +1500,10 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('MARGIN', style: SatType.caption(color: sc.textLo)),
+          Text(
+            context.l10n.mieMargin,
+            style: SatType.caption(color: sc.textLo),
+          ),
           const SizedBox(height: Sp.s1),
           AnimatedDefaultTextStyle(
             duration: satMotion(context, 240),
@@ -1500,7 +1518,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
           const SizedBox(height: Sp.sHair),
           Text(
-            hasData ? 'Rp $marginRp · $hint' : hint,
+            hasData ? context.l10n.mieMarginValue(marginRp, hint) : hint,
             style: SatType.bodyS(color: sc.textMd),
           ),
         ],
@@ -1685,7 +1703,7 @@ class _EditorHeader extends StatelessWidget {
           ),
           if (onClose != null)
             IconButton(
-              tooltip: AppStrings.close,
+              tooltip: context.l10n.close,
               icon: Icon(Icons.close, color: sc.textMd),
               onPressed: onClose,
             ),
@@ -1748,7 +1766,7 @@ class _FooterState extends State<_EditorFooter> {
             PressScale(
               pressedScale: 0.96,
               child: SatButton.ghost(
-                label: AppStrings.delete,
+                label: context.l10n.delete,
                 icon: Icons.delete_outline,
                 onTap: widget.onDelete,
               ),
@@ -1761,12 +1779,12 @@ class _FooterState extends State<_EditorFooter> {
             // survives a glance from arm's length that a 18px check does not.
             child: done
                 ? SatButton.success(
-                    label: AppStrings.saved,
+                    label: context.l10n.saved,
                     icon: Icons.check_rounded,
                     onTap: null,
                   )
                 : SatButton.primary(
-                    label: AppStrings.save,
+                    label: context.l10n.save,
                     busy: saving,
                     onTap: _state == _SaveState.idle ? _run : null,
                   ),

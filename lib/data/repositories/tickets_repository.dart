@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -286,16 +287,17 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   void _reportRejected(List<RejectedLineDto> rejected) {
     if (rejected.isEmpty) return;
     final bus = ref.read(errorBusServiceProvider);
+    final l = ref.read(l10nProvider);
     for (final r in rejected) {
       final what = [
         r.name,
         if (r.variantName.isNotEmpty) r.variantName,
       ].join(' ');
       final why = r.ingredients.isEmpty
-          ? 'bahan habis'
-          : 'bahan habis: ${r.ingredients.join(", ")}';
+          ? l.tktOutOfStock
+          : l.tktOutOfStockNamed(r.ingredients.join(', '));
       bus.push(
-        '$what tidak dikirim — $why',
+        l.tktNotSent(what, why),
         level: AppErrorLevel.warning,
         code: 'out_of_stock',
       );
@@ -658,8 +660,7 @@ final ticketsProvider =
 /// return the identical instance, so an empty group cannot cause a rebuild
 /// either.
 final ticketsForVisitProvider = Provider.family<List<Ticket>, String>(
-  (ref, visitId) =>
-      ref.watch(ticketsProvider)[visitId] ?? const <Ticket>[],
+  (ref, visitId) => ref.watch(ticketsProvider)[visitId] ?? const <Ticket>[],
 );
 
 /// Live dine-in lines for a table, resolved through the table's current visit.

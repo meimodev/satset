@@ -6,6 +6,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:satset/core/export/export_share.dart';
 import 'package:satset/core/export/pdf_theme.dart';
 import 'package:satset/data/repositories/staff_report_repository.dart';
+import 'package:satset/core/localization/report_copy.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/format.dart';
 
 /// CSV + PDF builders for the staff-focus export (ADR-0032). One combined row
@@ -13,8 +15,10 @@ import 'package:satset/ui/core/design/format.dart';
 /// wide table verbatim; the PDF renders it as a single landscape table because
 /// the columns do not fit a portrait page.
 
-final _dateFull = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
-final _dateShort = DateFormat('d MMM yyyy', 'id_ID');
+/// Built per call: a cached [DateFormat] freezes whichever locale was active
+/// when it was first touched (ADR-0084).
+DateFormat get _dateFull => DateFormat('d MMM yyyy, HH:mm');
+DateFormat get _dateShort => DateFormat('d MMM yyyy');
 
 String _windowLine(StaffReport s) =>
     '${_dateShort.format(s.rangeFrom.toLocal())} – ${_dateShort.format(s.rangeTo.toLocal())}';
@@ -24,21 +28,21 @@ String _windowLine(StaffReport s) =>
 String _pctNum(double v) => '${v.toStringAsFixed(1)}%';
 String _pctFrac(double v) => '${(v * 100).round()}%';
 
-const _headers = [
-  'Nama',
-  'Sesi',
-  'Cover',
-  'Item',
-  'Net',
-  'Rata tagihan',
-  'Upsell %',
-  'Void',
-  'Void %',
-  'Lost (void)',
-  'Alasan teratas',
+List<String> _headers(AppL10n l) => [
+  l.expColName,
+  l.expColSessions,
+  l.expColCover,
+  l.expColItem,
+  l.expNet,
+  l.expColAvgBill,
+  l.expColUpsellPct,
+  l.expColVoidCount,
+  l.expColVoidPct,
+  l.expColLostVoid,
+  l.expColTopReason,
 ];
 
-List<String> _row(StaffReportRow r) => [
+List<String> _row(AppL10n l, StaffReportRow r) => [
   r.name,
   '${r.sessions}',
   '${r.covers}',
@@ -49,31 +53,31 @@ List<String> _row(StaffReportRow r) => [
   '${r.voidCount}',
   _pctNum(r.voidPct),
   formatIDR(r.lostRupiah),
-  r.topReasonLabel ?? '—',
+  r.topReasonCode == null ? '—' : voidReasonLabel(l, r.topReasonCode!),
 ];
 
 // ─── CSV ────────────────────────────────────────────────────────────────────
 
-String buildStaffCsv(StaffReport s) {
+String buildStaffCsv(AppL10n l, StaffReport s) {
   final rows = <String>[];
-  rows.add(csvRow(['Laporan Staf SatSet']));
+  rows.add(csvRow([l.expStaffCsvTitle]));
   rows.add(
     csvRow([
-      'Periode',
-      rangeLabelId(s.range, from: s.rangeFrom, to: s.rangeTo),
+      l.expPeriod,
+      rangeLabel(l, s.range, from: s.rangeFrom, to: s.rangeTo),
     ]),
   );
-  rows.add(csvRow(['Rentang', _windowLine(s)]));
-  rows.add(csvRow(['Dibuat', _dateFull.format(s.generatedAt.toLocal())]));
+  rows.add(csvRow([l.expRange, _windowLine(s)]));
+  rows.add(csvRow([l.expGenerated, _dateFull.format(s.generatedAt.toLocal())]));
   rows.add('');
-  rows.add(csvRow(_headers));
+  rows.add(csvRow(_headers(l)));
   for (final r in s.rows) {
-    rows.add(csvRow(_row(r)));
+    rows.add(csvRow(_row(l, r)));
   }
   rows.add('');
   rows.add(
     csvRow([
-      'TOTAL',
+      l.expTotalRow,
       '',
       '',
       '',
@@ -91,38 +95,42 @@ String buildStaffCsv(StaffReport s) {
 
 // ─── PDF ────────────────────────────────────────────────────────────────────
 
-Future<Uint8List> buildStaffPdf(StaffReport s, {PdfBranding? branding}) async {
+Future<Uint8List> buildStaffPdf(
+  AppL10n l,
+  StaffReport s, {
+  PdfBranding? branding,
+}) async {
   final theme = await pdfTheme();
   final doc = pw.Document(theme: theme.base);
+  final range = rangeLabel(l, s.range, from: s.rangeFrom, to: s.rangeTo);
 
   doc.addPage(
     pw.MultiPage(
       pageTheme: pdfPageTheme(theme, landscape: true),
       header: (ctx) => ctx.pageNumber == 1
           ? pw.SizedBox()
-          : pdfRunningHeader(
-              'Laporan Staf · ${rangeLabelId(s.range, from: s.rangeFrom, to: s.rangeTo)}',
-            ),
-      footer: pdfFooter,
+          : pdfRunningHeader(l.expStaffHeader(range)),
+      footer: (ctx) => pdfFooter(l, ctx),
       build: (ctx) => [
         pdfTitleBlock(
-          title: 'Laporan Staf',
-          subtitle: rangeLabelId(s.range, from: s.rangeFrom, to: s.rangeTo),
+          title: l.expStaffTitle,
+          subtitle: range,
           logoBytes: branding?.logoBytes,
           venueName: branding?.venueName,
           address: branding?.address,
           phone: branding?.phone,
           meta: [
-            'Rentang: ${_windowLine(s)}',
-            'Dibuat: ${_dateFull.format(s.generatedAt.toLocal())}',
-            'Diurutkan menurut Net (tertinggi dahulu).',
+            l.expMetaRange(_windowLine(s)),
+            l.expMetaGenerated(_dateFull.format(s.generatedAt.toLocal())),
+            l.expStaffSortNote,
           ],
         ),
         pw.SizedBox(height: 18),
-        pdfSectionTitle('Kinerja Staf'),
+        pdfSectionTitle(l.expStaffPerformance),
         pdfTable(
-          headers: _headers,
-          rows: [for (final r in s.rows) _row(r)],
+          l,
+          headers: _headers(l),
+          rows: [for (final r in s.rows) _row(l, r)],
           numericFrom: 1,
         ),
       ],

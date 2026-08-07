@@ -11,6 +11,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 
 import '_tickers.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// The venue name leads every trail, and `SatAppBar` is the one place it is
 /// prepended (ADR-0058) — call sites pass venue-less trails. Two branches worth
@@ -42,6 +43,11 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          // Pinned, exactly as the app pins it (ADR-0083). Without this the
+          // test resolves against the host's locale and reads English.
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
           home: const Scaffold(
             body: SatAppBar(crumbs: ['Meja 5', 'Teras'], showAvatar: false),

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -19,6 +18,7 @@ import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Everything a super admin does to one venue, opened from a Fleet console
 /// tile: its **access** (the kill switch), its **subscription**
@@ -145,11 +145,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   Future<bool> _run(Future<void> Function() action, String okMsg) async {
     if (_busy) return false;
     if (_offline) {
-      fleetToast(
-        context,
-        'Tidak terhubung — perubahan tidak dikirim.',
-        error: true,
-      );
+      fleetToast(context, context.l10n.fltNotConnected, error: true);
       return false;
     }
     setState(() => _busy = true);
@@ -182,11 +178,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   Future<void> _save() async {
     if (_busy || !_nameValid || !_priceValid) return;
     if (_offline) {
-      fleetToast(
-        context,
-        'Tidak terhubung — perubahan tidak dikirim.',
-        error: true,
-      );
+      fleetToast(context, context.l10n.fltNotConnected, error: true);
       return;
     }
     final v = _live;
@@ -303,13 +295,13 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         // switch; which venue is about to go dark is not a detail to infer from
         // the field below it.
         title: Text(
-          live.name.isEmpty ? '(tanpa nama)' : live.name,
+          live.name.isEmpty ? context.l10n.fltUnnamed : live.name,
           overflow: TextOverflow.ellipsis,
           style: SatType.h3(color: sc.textHi),
         ),
         actions: [
           SatButton.ghost(
-            label: AppStrings.save,
+            label: context.l10n.save,
             onTap: _busy || !_nameValid || !_dirty ? null : _save,
           ),
           const SizedBox(width: Sp.s2),
@@ -356,10 +348,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 admins,
                 venueAdmins,
                 role: 'admin',
-                title: 'Admin venue',
-                tag: 'AKUN',
-                addLabel: 'Tambah admin',
-                emptyMsg: 'Belum ada admin untuk venue ini.',
+                title: context.l10n.fltVenueAdmin,
+                tag: context.l10n.fltTagAccount,
+                addLabel: context.l10n.fltAddAdmin,
+                emptyMsg: context.l10n.fltNoAdmins,
               ),
               // Admins and owners are one concern read as one block — who is
               // attached to this venue — so they sit a single beat apart.
@@ -369,32 +361,32 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 admins,
                 venueOwners,
                 role: 'owner',
-                title: 'Pemilik',
-                tag: 'LAPORAN',
-                addLabel: 'Tambah pemilik',
-                emptyMsg:
-                    'Belum ada akun pemilik — akses baca laporan dari luar '
-                    'venue, bukan peran staf.',
+                title: context.l10n.fltOwner,
+                tag: context.l10n.fltTagReports,
+                addLabel: context.l10n.fltAddOwner,
+                emptyMsg: context.l10n.fltNoOwners,
               ),
               const SizedBox(height: Sp.s6),
               SatCard.titled(
-                title: 'Identitas',
-                tag: 'DATA',
+                title: context.l10n.mieIdentity,
+                tag: context.l10n.fltTagData,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SatField.text(
                       controller: _name,
-                      label: 'Nama venue',
+                      label: context.l10n.fltVenueName,
                       hint: '',
                       onChanged: (_) => setState(() {}),
-                      errorText: _nameValid ? null : 'Nama wajib diisi',
+                      errorText: _nameValid
+                          ? null
+                          : context.l10n.fltNameRequired,
                     ),
                     const SizedBox(height: Sp.s3h),
                     SatField.text(
                       controller: _address,
-                      label: 'Alamat',
-                      hint: 'opsional',
+                      label: context.l10n.sysAddress,
+                      hint: context.l10n.resOptional,
                       onChanged: (_) => setState(() {}),
                     ),
                   ],
@@ -430,6 +422,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final vis = fleetStatusVisual(
       sc,
       live.status,
+      l10n: context.l10n,
       activeIcon: Icons.storefront_outlined,
     );
     final can = !_busy && !_offline;
@@ -438,8 +431,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     // still the old one, and the sweep would take it down again within the hour.
     final lapsed = fleetCutoffDue(live, SatClock.now());
     return SatCard.titled(
-      title: 'Akses venue',
-      tag: 'KENDALI',
+      title: context.l10n.fltVenueAccess,
+      tag: context.l10n.fltTagControl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -475,8 +468,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           const SizedBox(height: Sp.s4),
           if (lapsed) ...[
             Text(
-              'Langganan sudah lewat batas. Perpanjang dulu di bawah sebelum '
-              'venue bisa diaktifkan.',
+              context.l10n.fveLapsedNote,
               style: SatType.bodyS(color: sc.warn),
             ),
             const SizedBox(height: Sp.s3),
@@ -487,7 +479,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             children: [
               if (live.status != AdminStatus.active)
                 SatButton.success(
-                  label: 'Aktifkan',
+                  label: context.l10n.mieActivate,
                   icon: Icons.play_arrow_rounded,
                   size: SatButtonSize.sm,
                   onTap: can && !lapsed
@@ -500,21 +492,20 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 ),
               if (live.status != AdminStatus.suspended)
                 SatButton.neutral(
-                  label: 'Tangguhkan',
+                  label: context.l10n.fltSuspend,
                   icon: Icons.pause_circle_outline,
                   size: SatButtonSize.sm,
                   onTap: can
                       ? () => _confirm(
-                          'Tangguhkan ${live.name}?',
-                          'Server venue mati sekarang juga dan semua staf '
-                              'terputus — termasuk di tengah jam ramai.',
-                          'Tangguhkan',
+                          context.l10n.fltSuspendTitle(live.name),
+                          context.l10n.fltSuspendBody,
+                          context.l10n.fltSuspend,
                           () => _run(
                             () => _svc.setVenueStatus(
                               live.id,
                               AdminStatus.suspended,
                             ),
-                            '${live.name} ditangguhkan',
+                            context.l10n.fltVenueSuspended(live.name),
                           ),
                         )
                       : null,
@@ -529,13 +520,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// What the status *does*, not what it is called. "TANGGUH" tells an operator
   /// nothing about whether the waiters can still take orders.
   String _accessMeaning(AdminStatus s) => switch (s) {
-    AdminStatus.active =>
-      'Server venue berjalan dan staf bisa masuk seperti biasa.',
-    AdminStatus.suspended =>
-      'Server venue mati. Staf tidak bisa masuk sampai diaktifkan lagi.',
-    AdminStatus.unknown =>
-      'Status tidak dikenali di cloud. Venue tetap tidak bisa melayani. '
-          'Setel ulang dengan tombol di bawah.',
+    AdminStatus.active => context.l10n.fltAccessActive,
+    AdminStatus.suspended => context.l10n.fltAccessSuspended,
+    AdminStatus.unknown => context.l10n.fltAccessUnknown,
   };
 
   // ── Subscription ─────────────────────────────────────────────────────────
@@ -558,8 +545,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final can = !_busy && !_offline;
     final trial = _planKey == venuePlanTrial;
     return SatCard.titled(
-      title: 'Langganan',
-      tag: 'TAGIHAN',
+      title: context.l10n.fltSubscription,
+      tag: context.l10n.fltTagBilling,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -571,9 +558,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           if (trial) ...[
             _dateRow(
               sc,
-              label: 'Mulai coba',
+              label: context.l10n.fltStartTrial,
               value: _trialStartAt,
-              empty: 'belum diatur',
+              empty: context.l10n.fltNotSetLower,
               onPick: can ? _pickTrialStart : null,
               onClear: can && _trialStartAt != null
                   ? () => setState(() => _trialStartAt = null)
@@ -583,7 +570,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           ] else ...[
             SatField.money(
               controller: _price,
-              label: 'Harga per bulan',
+              label: context.l10n.fltPricePerMonth,
               hint: '0',
               enabled: can,
               onChanged: (_) => setState(() {}),
@@ -602,9 +589,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             children: [
               // A yearly partner renews by the year. Offering +1 bulan beside a
               // cycle that says otherwise makes the checkbox decorative.
-              for (final (months, label) in _yearly && !trial
-                  ? const [(12, '+1 tahun')]
-                  : const [(1, '+1 bulan'), (3, '+3 bulan'), (12, '+1 tahun')])
+              for (final (months, label)
+                  in _yearly && !trial
+                      ? const [(12, '+1 tahun')]
+                      : const [
+                          (1, '+1 bulan'),
+                          (3, '+3 bulan'),
+                          (12, '+1 tahun'),
+                        ])
                 SatButton.outline(
                   label: label,
                   size: SatButtonSize.sm,
@@ -661,10 +653,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 borderRadius: SatR.a(12),
               ),
               child: Text(
-                'Venue ini punya $activeCount admin aktif. Satu venue kini '
-                'hanya boleh punya satu admin aktif — tangguhkan yang lain, '
-                'sisakan akun di perangkat yang memegang data venue. Admin '
-                'yang tersisa aktif tidak akan bisa masuk.',
+                context.l10n.fveManyAdmins(activeCount),
                 style: SatType.bodyS(color: sc.textHi),
               ),
             ),
@@ -672,14 +661,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           ],
           if (all.hasError) ...[
             Text(
-              'Gagal memuat: ${fleetErrText(all.error!)}',
+              context.l10n.fveLoadFailed(fleetErrText(all.error!)),
               style: SatType.bodyS(color: sc.urgent),
             ),
             const SizedBox(height: Sp.s2),
             Align(
               alignment: Alignment.centerLeft,
               child: SatButton.outline(
-                label: 'Coba lagi',
+                label: context.l10n.retry,
                 icon: Icons.refresh,
                 size: SatButtonSize.sm,
                 onTap: () => ref.invalidate(fleetAdminsProvider),
@@ -723,8 +712,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           if (atCap) ...[
             const SizedBox(height: Sp.s2),
             Text(
-              'Satu venue, satu admin aktif. Untuk mengganti admin: '
-              'tangguhkan yang lama dulu, lalu tambah yang baru.',
+              context.l10n.fveAtCapNote,
               style: SatType.bodyS(color: sc.textLo),
             ),
           ],
@@ -737,13 +725,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final vis = fleetStatusVisual(
       sc,
       a.status,
+      l10n: context.l10n,
       activeIcon: Icons.person_outline_rounded,
     );
     return FleetTile(
       big: false,
       icon: vis.icon,
       tint: vis.tint,
-      title: a.name.isEmpty ? '(tanpa nama)' : a.name,
+      title: a.name.isEmpty ? context.l10n.fltUnnamed : a.name,
       sub: a.email ?? a.uid,
       subMono: true,
       pills: [
@@ -753,14 +742,16 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       trailing: fleetMenu(
         sc,
         enabled: !_busy && !_offline,
-        tooltip: 'Tindakan akun',
+        tooltip: context.l10n.fltAccountActions,
         // No `Blokir` since ADR-0076: it did the same thing as `Tangguhkan`,
         // and an account that should never come back is deleted, not blocked.
         items: {
-          if (a.status != AdminStatus.active) 'activate': 'Aktifkan',
-          if (a.status != AdminStatus.suspended) 'suspend': 'Tangguhkan',
-          if (a.email != null) 'reset': 'Reset password',
-          'delete': 'Hapus',
+          if (a.status != AdminStatus.active)
+            'activate': context.l10n.fltActivate,
+          if (a.status != AdminStatus.suspended)
+            'suspend': context.l10n.fltSuspend,
+          if (a.email != null) 'reset': context.l10n.fltResetPassword,
+          'delete': context.l10n.delete,
         },
         dangerKeys: const {'delete'},
         onSelected: (k) => _onAdminAction(a, k),
@@ -773,22 +764,24 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       case 'activate':
         _run(
           () => _svc.setAdminStatus(a.uid, AdminStatus.active),
-          '${a.name} diaktifkan',
+          context.l10n.fltAdminActivated(a.name),
         );
       case 'suspend':
         _run(
           () => _svc.setAdminStatus(a.uid, AdminStatus.suspended),
-          '${a.name} ditangguhkan',
+          context.l10n.fltAdminSuspended(a.name),
         );
       case 'reset':
         _resetPassword(a);
       case 'delete':
         _confirm(
-          'Hapus ${a.name}?',
-          'Akun login & datanya dihapus permanen. '
-              '${a.email ?? a.uid} tidak bisa masuk lagi.',
-          'Hapus',
-          () => _run(() => _svc.deleteAdmin(a.uid), '${a.name} dihapus'),
+          context.l10n.fltDeleteAdminTitle(a.name),
+          context.l10n.fltDeleteAdminBody(a.email ?? a.uid),
+          context.l10n.delete,
+          () => _run(
+            () => _svc.deleteAdmin(a.uid),
+            context.l10n.fltAdminDeleted(a.name),
+          ),
         );
     }
   }
@@ -805,11 +798,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   Future<void> _resetPassword(AdminProfile a) async {
     if (_busy) return;
     if (_offline) {
-      fleetToast(
-        context,
-        'Tidak terhubung — perubahan tidak dikirim.',
-        error: true,
-      );
+      fleetToast(context, context.l10n.fltNotConnected, error: true);
       return;
     }
     setState(() => _busy = true);
@@ -839,17 +828,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(
-          AppStrings.tempPasswordIssuedTitle,
+          context.l10n.tempPasswordIssuedTitle,
           style: SatType.h3(color: sc.textHi),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              a.email ?? a.name,
-              style: SatType.monoS(color: sc.textMd),
-            ),
+            Text(a.email ?? a.name, style: SatType.monoS(color: sc.textMd)),
             const SizedBox(height: Sp.s4),
             // Sized up and given its own surface because this is dictated down a
             // phone line in a loud room — the operator reads it off the glass
@@ -870,40 +856,40 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             ),
             const SizedBox(height: Sp.s3),
             Text(
-              AppStrings.tempPasswordIssuedHint,
+              context.l10n.tempPasswordIssuedHint,
               style: SatType.bodyS(color: sc.textMd),
             ),
             const SizedBox(height: Sp.s2),
             Text(
-              AppStrings.tempPasswordIssuedOnce,
+              context.l10n.tempPasswordIssuedOnce,
               style: SatType.bodyS(color: sc.warn),
             ),
           ],
         ),
         actions: [
           SatButton.ghost(
-            label: 'Salin',
+            label: context.l10n.sysCopy,
             icon: Icons.copy_rounded,
             onTap: () async {
               await Clipboard.setData(ClipboardData(text: otp));
-              if (ctx.mounted) fleetToast(ctx, 'Kode disalin');
+              if (ctx.mounted) fleetToast(ctx, ctx.l10n.fltCodeCopied);
             },
           ),
           SatButton.outline(
-            label: 'Kirim WA',
+            label: context.l10n.fltSendWa,
             icon: Icons.chat_outlined,
             // No recipient: the fleet does not store venue phone numbers, so
             // this opens WhatsApp's own contact picker with the message ready.
             onTap: () => launchUrl(
               Uri.parse(
                 'https://wa.me/?text='
-                '${Uri.encodeComponent(AppStrings.tempPasswordShareMessage(pretty))}',
+                '${Uri.encodeComponent(context.l10n.tempPasswordShareMessage(pretty))}',
               ),
               mode: LaunchMode.externalApplication,
             ),
           ),
           SatButton.primary(
-            label: AppStrings.close,
+            label: context.l10n.close,
             onTap: () => Navigator.pop(ctx),
           ),
         ],
@@ -952,19 +938,20 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('ZONA BAHAYA', style: SatType.caption(color: sc.urgent)),
+          Text(
+            context.l10n.fveDangerZone,
+            style: SatType.caption(color: sc.urgent),
+          ),
           const SizedBox(height: Sp.s2h),
           Text(
             blocked
-                ? 'Hapus semua akun venue ini dulu sebelum menghapus venue. '
-                      'Untuk sekadar memutus akses, pakai Tangguhkan di atas.'
-                : 'Menghapus venue tidak dapat dibatalkan. Untuk sekadar '
-                      'memutus akses, pakai Tangguhkan di atas.',
+                ? context.l10n.fveDeleteBlocked
+                : context.l10n.fveDeleteWarning,
             style: SatType.bodyM(color: sc.textMd),
           ),
           const SizedBox(height: Sp.s3h),
           SatButton.danger(
-            label: 'Hapus venue',
+            label: context.l10n.fltDeleteVenue,
             icon: Icons.delete_outline,
             onTap: blocked || _busy || _offline ? null : _confirmDeleteVenue,
           ),
@@ -976,9 +963,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   void _confirmDeleteVenue() {
     final v = widget.venue;
     _confirm(
-      'Hapus ${v.name}?',
-      'Venue dihapus permanen dari fleet. Tidak bisa dibatalkan.',
-      'Hapus venue',
+      context.l10n.fltDeleteVenueTitle(v.name),
+      context.l10n.fltDeleteVenueBody,
+      context.l10n.fltDeleteVenue,
       () async {
         // Pops only on a delete that actually landed. It used to pop
         // unconditionally, so a `failed-precondition` (an admin added between
@@ -987,7 +974,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         // still listed it.
         final ok = await _run(
           () => _svc.deleteVenue(v.id),
-          '${v.name} dihapus',
+          context.l10n.fltAdminDeleted(v.name),
         );
         if (ok && mounted) Navigator.of(context).pop();
       },
@@ -1014,7 +1001,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         content: Text(body, style: SatType.bodyM(color: sc.textMd)),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
           SatButton.danger(
@@ -1039,8 +1026,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final remain = p == null
         ? null
         : expired
-        ? 'Sudah lewat'
-        : '${p.difference(now).inDays} hari lagi';
+        ? context.l10n.fltAlreadyPassed
+        : context.l10n.fltDaysLeft(p.difference(now).inDays);
     final tint = p == null
         ? sc.textMd
         : expired
@@ -1049,9 +1036,11 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
     return _dateRow(
       sc,
-      label: _planKey == venuePlanTrial ? 'Selesai coba' : 'Berlaku sampai',
+      label: _planKey == venuePlanTrial
+          ? context.l10n.fltTrialEnds
+          : context.l10n.fltValidUntil,
       value: p,
-      empty: 'Belum diatur',
+      empty: context.l10n.fltNotSet,
       note: remain,
       noteTint: tint,
       alarm: expired,
@@ -1116,10 +1105,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         if (onClear != null)
           SatIconButton.plain(
             icon: Icons.clear,
-            tooltip: 'Hapus tanggal',
+            tooltip: context.l10n.fltClearDate,
             onTap: onClear,
           ),
-        SatButton.ghost(label: 'Pilih', onTap: onPick),
+        SatButton.ghost(label: context.l10n.fltPickDate, onTap: onPick),
       ],
     ),
   );
@@ -1141,12 +1130,15 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Bayar tahunan', style: SatType.labelM(color: sc.textHi)),
+              Text(
+                context.l10n.fveAnnual,
+                style: SatType.labelM(color: sc.textHi),
+              ),
               const SizedBox(height: Sp.sHair),
               Text(
                 total == null
-                    ? 'Hemat 2 bulan — isi harga bulanan dulu.'
-                    : '${formatIDR(total)} per tahun — hemat 2 bulan.',
+                    ? context.l10n.fveAnnualNoPrice
+                    : context.l10n.fveAnnualPrice(formatIDR(total)),
                 style: SatType.bodyS(color: sc.textMd),
               ),
             ],
@@ -1163,8 +1155,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final p = _paidUntil;
     if (p == null) {
       return Text(
-        'Tanpa tanggal, langganan tidak pernah habis dan venue tidak '
-        'ditangguhkan otomatis.',
+        context.l10n.fveNoCutoff,
         style: SatType.bodyS(color: sc.textLo),
       );
     }
@@ -1182,10 +1173,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         Expanded(
           child: Text(
             trial
-                ? 'Venue ditangguhkan otomatis ${formatShortDateId(cutoff)}, '
-                      'tepat saat masa coba habis.'
-                : 'Venue ditangguhkan otomatis ${formatShortDateId(cutoff)} — '
-                      '7 hari tenggang setelah jatuh tempo.',
+                ? context.l10n.fltCutoffTrial(formatShortDateId(cutoff))
+                : context.l10n.fltCutoffPaid(formatShortDateId(cutoff)),
             style: SatType.bodyS(color: overdue ? sc.urgent : sc.textLo),
           ),
         ),
@@ -1246,7 +1235,7 @@ class _NewPrincipalDialogState extends State<NewPrincipalDialog> {
     return AlertDialog(
       backgroundColor: sc.bg1,
       title: Text(
-        'Tambah ${widget.roleLabel} · ${widget.venueName}',
+        context.l10n.fveAddPrincipal(widget.roleLabel, widget.venueName),
         style: SatType.h3(color: sc.textHi),
       ),
       // Scrollable and un-autofocused for the same reason as the console's
@@ -1258,41 +1247,41 @@ class _NewPrincipalDialogState extends State<NewPrincipalDialog> {
         children: [
           SatField.text(
             controller: _name,
-            label: 'Nama',
+            label: context.l10n.staffName,
             hint: '',
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: Sp.s3),
           SatField.text(
             controller: _email,
-            label: 'Email',
+            label: context.l10n.pinEmail,
             hint: '',
             onChanged: (_) => setState(() {}),
             errorText: emailText.isEmpty || emailValid
                 ? null
-                : 'Format email tidak valid',
+                : context.l10n.fltEmailInvalid,
           ),
           const SizedBox(height: Sp.s3),
           SatField.password(
             controller: _pw,
-            label: 'Password awal',
+            label: context.l10n.fltInitialPassword,
             hint: '',
             visible: _pwVisible,
             onToggle: () => setState(() => _pwVisible = !_pwVisible),
             onChanged: (_) => setState(() {}),
             errorText: pwText.isEmpty || pwText.length >= 6
                 ? null
-                : 'Minimal 6 karakter',
+                : context.l10n.fltPasswordMin,
           ),
         ],
       ),
       actions: [
         SatButton.ghost(
-          label: AppStrings.cancel,
+          label: context.l10n.cancel,
           onTap: () => Navigator.pop(context),
         ),
         SatButton.primary(
-          label: AppStrings.save,
+          label: context.l10n.save,
           onTap: valid
               ? () => Navigator.pop(context, (
                   name: _name.text,

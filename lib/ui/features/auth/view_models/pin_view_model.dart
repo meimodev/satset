@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/io_client.dart' as http_io;
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/pair_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -300,7 +301,7 @@ class PinViewModel extends StateNotifier<PinState> {
     final rt = _ref.read(serverRuntimeProvider);
     final cfg = _ref.read(apiConfigProvider);
     if (rt == null || cfg == null) {
-      throw StateError('Server runtime tidak siap');
+      throw StateError('server runtime not ready');
     }
   }
 
@@ -344,18 +345,18 @@ class PinViewModel extends StateNotifier<PinState> {
     final cfg = _ref.read(apiConfigProvider);
     final sel = state.selectedServer;
     if (cfg == null || sel == null || !sel.paired) {
-      return 'Pilih server dulu.';
+      return _ref.read(l10nProvider).pinPickServerFirst;
     }
     final deviceId = await _storage.readDeviceId();
     if (deviceId == null || deviceId.isEmpty) {
       SatLog.vm('PinVM verifyPin missing deviceId');
-      return 'HP belum tersambung. Scan QR lagi untuk pasangkan.';
+      return _ref.read(l10nProvider).pinDeviceNotPaired;
     }
     try {
       await _persistMode(AppMode.client);
     } catch (e) {
       SatLog.vm('PinVM verifyPin persist fail $e');
-      return 'Gagal menyiapkan aplikasi. Coba lagi.';
+      return _ref.read(l10nProvider).pinSetupFailed;
     }
     final ok = await _auth.signInWithPin(pin);
     if (ok) {
@@ -364,7 +365,7 @@ class PinViewModel extends StateNotifier<PinState> {
     }
     final err = _ref.read(authStateProvider).error;
     SatLog.vm('PinVM verifyPin result=fail err=$err');
-    return err ?? 'PIN salah. Coba lagi.';
+    return err ?? _ref.read(l10nProvider).authWrongPin;
   }
 
   Future<bool> submitAdmin({
@@ -396,7 +397,7 @@ class PinViewModel extends StateNotifier<PinState> {
       SatLog.vm('PinVM submitAdmin boot fail $bootError');
       state = state.copyWith(
         adminBusy: false,
-        adminError: 'Gagal menjalankan server di HP ini. Coba lagi.',
+        adminError: _ref.read(l10nProvider).pinServerBootFailed,
       );
       return false;
     }
@@ -418,7 +419,7 @@ class PinViewModel extends StateNotifier<PinState> {
     SatLog.vm('PinVM submitAdmin result=fail err=$err');
     state = state.copyWith(
       adminBusy: false,
-      adminError: err ?? 'Email atau password salah.',
+      adminError: err ?? _ref.read(l10nProvider).authWrongCredentials,
     );
     return false;
   }
@@ -486,7 +487,7 @@ class PinViewModel extends StateNotifier<PinState> {
       SatLog.vm('PinVM autoClaim fail $e');
       state = state.copyWith(
         pairingBusy: false,
-        pairingError: 'Sambung otomatis gagal: $e',
+        pairingError: _ref.read(l10nProvider).pinAutoClaimFailed('$e'),
       );
       return false;
     }

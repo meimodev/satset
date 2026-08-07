@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +28,7 @@ import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'cart_line_actions.dart';
 import 'modifier_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   final String tableId;
@@ -85,12 +85,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   /// Shared by both layouts — the phone strip and the tablet header slot.
   Widget _searchField(String query) => SatField.search(
     controller: _search,
-    hint: 'Cari item, deskripsi…',
+    hint: context.l10n.mnaSearchHint,
     suffix: query.isEmpty
         ? null
         : SatIconButton.plain(
             icon: Icons.close,
-            tooltip: AppStrings.hapusPencarian,
+            tooltip: context.l10n.hapusPencarian,
             onTap: _clearSearch,
             size: 32,
           ),
@@ -107,10 +107,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   Widget _noMatches(String query) => SingleChildScrollView(
     child: SatEmpty(
       icon: Icons.search_off,
-      title: AppStrings.takAdaItemCocok,
+      title: context.l10n.takAdaItemCocok,
       body: '“$query”',
       action: SatButton.outline(
-        label: AppStrings.hapusPencarian,
+        label: context.l10n.hapusPencarian,
         onTap: _clearSearch,
       ),
     ),
@@ -194,7 +194,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: Sp.s3),
-              Text('Memuat menu…', style: SatType.bodyM(color: sc.textMd)),
+              Text(
+                context.l10n.tblLoadingMenu,
+                style: SatType.bodyM(color: sc.textMd),
+              ),
             ],
           ),
         ),
@@ -212,7 +215,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 Icon(Icons.cloud_off, size: 36, color: sc.urgent),
                 const SizedBox(height: Sp.s3),
                 Text(
-                  'Gagal memuat menu',
+                  context.l10n.mnuLoadFailed,
                   style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s1h),
@@ -223,7 +226,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 ),
                 const SizedBox(height: Sp.s3h),
                 SatButton.outline(
-                  label: 'Coba lagi',
+                  label: context.l10n.retry,
                   onTap: () =>
                       ref.read(menuRepositoryProvider.notifier).refresh(),
                 ),
@@ -258,7 +261,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                       children: [
                         Semantics(
                           button: true,
-                          label: AppStrings.back,
+                          label: context.l10n.back,
                           child: GestureDetector(
                             onTap: _handleBack,
                             child: Container(
@@ -286,18 +289,23 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                               Text(
                                 widget.tableless
                                     ? (_isTakeaway
-                                          ? 'Tambah ke Bawa pulang'
-                                          : 'Pesanan baru')
-                                    : 'Tambah ke Meja ${table!.displayName}',
+                                          ? context.l10n.mnuAddToTakeaway
+                                          : context.l10n.mnuNewOrder)
+                                    : context.l10n.mnuAddToTable(
+                                        table!.displayName,
+                                      ),
                                 style: SatType.h3(color: sc.textHi),
                               ),
                               const SizedBox(height: Sp.sHair),
                               Text(
                                 widget.tableless
                                     ? (_isTakeaway
-                                          ? 'BAWA PULANG · TANPA MEJA'
-                                          : 'TANPA MEJA · PILIH MEJA SAAT KIRIM')
-                                    : '${table!.zoneId.toUpperCase()} · ${table.pax} TAMU',
+                                          ? context.l10n.mnuTakeawayNoTable
+                                          : context.l10n.mnuNoTablePickLater)
+                                    : context.l10n.mnuZonePax(
+                                        table!.zoneId.toUpperCase(),
+                                        table.pax,
+                                      ),
                                 style: SatType.monoS(color: sc.textLo),
                               ),
                             ],
@@ -371,25 +379,28 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 onBack: _handleBack,
                 crumbs: widget.tableless
                     ? (_isTakeaway
-                          ? const [
-                              AppStrings.crumbBawaPulang,
-                              AppStrings.crumbTambahItem,
+                          ? [
+                              context.l10n.crumbBawaPulang,
+                              context.l10n.crumbTambahItem,
                             ]
-                          : const [
-                              AppStrings.crumbPesananBaru,
-                              AppStrings.crumbTambahItem,
+                          : [
+                              context.l10n.crumbPesananBaru,
+                              context.l10n.crumbTambahItem,
                             ])
-                    : [table!.displayName, AppStrings.crumbTambahItem],
+                    : [table!.displayName, context.l10n.crumbTambahItem],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Tambah item', style: SatType.h1(color: sc.textHi)),
+                    Text(
+                      context.l10n.mnuAddItem,
+                      style: SatType.h1(color: sc.textHi),
+                    ),
                     const SizedBox(height: Sp.s1),
                     Text(
-                      'KETUK UNTUK ATUR · TEKAN LAMA UNTUK TAMBAH DEFAULT',
+                      context.l10n.mnuAddItemHint,
                       style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
@@ -708,14 +719,14 @@ class _CartFooter extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$count item pending',
+                context.l10n.mnuPending(count),
                 style: SatType.bodyM(color: sc.textHi),
               ),
               Text(formatIDR(total), style: SatType.monoS(color: sc.textMd)),
             ],
           ),
           const Spacer(),
-          SatButton.primary(label: 'Tinjau', onTap: onReview),
+          SatButton.primary(label: context.l10n.crumbTinjau, onTap: onReview),
         ],
       ),
     );
@@ -745,9 +756,9 @@ class _TabletCartPane extends ConsumerWidget {
     final venue = ref.watch(venueSettingsProvider);
     final breakdown = computeBreakdown(subtotal, venue.toTaxServiceConfig());
     final serviceLabel = venue.serviceMode == 'fixed'
-        ? 'Layanan'
-        : 'Layanan · ${_fmtPct(venue.serviceRateBps)}';
-    final taxLabel = 'Pajak · ${_fmtPct(venue.taxRateBps)}';
+        ? context.l10n.cshService
+        : context.l10n.mnuServicePct(_fmtPct(venue.serviceRateBps));
+    final taxLabel = context.l10n.mnuTaxPct(_fmtPct(venue.taxRateBps));
     final est = breakdown.total;
 
     final byCourse = <String, List<int>>{};
@@ -774,23 +785,25 @@ class _TabletCartPane extends ConsumerWidget {
               children: [
                 Text(
                   takeaway
-                      ? 'BAWA PULANG · TANPA MEJA'
+                      ? context.l10n.mnuHeadTakeaway
                       : tableless
-                      ? 'PESANAN BARU · TANPA MEJA'
-                      : 'PESANAN BARU · MEJA $tableId',
+                      ? context.l10n.mnuHeadTableless
+                      : context.l10n.mnuHeadTable(tableId),
                   style: SatType.caption(color: sc.textLo),
                 ),
                 const SizedBox(height: Sp.s1h),
                 Text(
-                  count == 0 ? 'Keranjang kosong' : '$count item siap kirim',
+                  count == 0
+                      ? context.l10n.mnuCartEmpty
+                      : context.l10n.mnuCartReady(count),
                   style: SatType.h3(color: sc.textHi),
                 ),
                 if (count > 0) ...[
                   const SizedBox(height: Sp.s1),
                   Text(
                     [
-                      if (kit > 0) 'Dapur × $kit',
-                      if (bar > 0) 'Bar × $bar',
+                      if (kit > 0) context.l10n.mnuKitchenCount(kit),
+                      if (bar > 0) context.l10n.mnuBarCount(bar),
                     ].join('  ·  '),
                     style: SatType.monoS(color: sc.textLo),
                   ),
@@ -804,7 +817,7 @@ class _TabletCartPane extends ConsumerWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(Sp.s7),
                       child: Text(
-                        'Belum ada item di keranjang. Pilih dari menu di kiri.',
+                        context.l10n.mnuCartEmptyHint,
                         textAlign: TextAlign.center,
                         style: SatType.bodyM(color: sc.textLo),
                       ),
@@ -893,7 +906,12 @@ class _TabletCartPane extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: Sp.s3),
                     child: Column(
                       children: [
-                        _totalRow(context, sc, 'Subtotal', formatIDR(subtotal)),
+                        _totalRow(
+                          context,
+                          sc,
+                          context.l10n.cshSubtotal,
+                          formatIDR(subtotal),
+                        ),
                         if (venue.serviceEnabled)
                           _totalRow(
                             context,
@@ -918,7 +936,7 @@ class _TabletCartPane extends ConsumerWidget {
                             child: Row(
                               children: [
                                 Text(
-                                  'Estimasi',
+                                  context.l10n.mnuEstimate,
                                   style: SatType.labelM(color: sc.textHi),
                                 ),
                                 const Spacer(),
@@ -945,11 +963,13 @@ class _TabletCartPane extends ConsumerWidget {
                           height: 56,
                           alignment: Alignment.center,
                           child: Text(
-                            'Tinjau & kirim ke ${kit > 0 && bar > 0
-                                ? 'dapur + bar'
-                                : kit > 0
-                                ? 'dapur'
-                                : 'bar'}',
+                            context.l10n.mnuReviewSendTo(
+                              kit > 0 && bar > 0
+                                  ? context.l10n.mnuTargetKitchenBar
+                                  : kit > 0
+                                  ? context.l10n.mnuTargetKitchen
+                                  : context.l10n.mnuTargetBar,
+                            ),
                             style: SatType.labelL(color: sc.accentInk),
                           ),
                         ),
@@ -1020,12 +1040,12 @@ Future<bool?> _confirmDiscard(BuildContext context, int items) {
               ),
               const SizedBox(height: Sp.s4h),
               Text(
-                AppStrings.discardCartTitle,
+                context.l10n.discardCartTitle,
                 style: SatType.labelL(color: sc.textHi),
               ),
               const SizedBox(height: Sp.s2),
               Text(
-                AppStrings.discardCartBody(items),
+                context.l10n.discardCartBody(items),
                 style: SatType.bodyM(color: sc.textMd),
               ),
               const SizedBox(height: Sp.s4h),
@@ -1033,14 +1053,14 @@ Future<bool?> _confirmDiscard(BuildContext context, int items) {
                 children: [
                   Expanded(
                     child: SatButton.outline(
-                      label: AppStrings.cancel,
+                      label: context.l10n.cancel,
                       onTap: () => Navigator.pop(ctx, false),
                     ),
                   ),
                   const SizedBox(width: Sp.s2h),
                   Expanded(
                     child: SatButton.danger(
-                      label: AppStrings.discardCartConfirm,
+                      label: context.l10n.discardCartConfirm,
                       onTap: () => Navigator.pop(ctx, true),
                     ),
                   ),

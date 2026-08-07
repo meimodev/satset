@@ -2,6 +2,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 import 'package:satset/core/printing/printer_branding.dart';
 import 'package:satset/core/printing/struk_data.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// The single, shared ESC/POS renderer. Turns a [StrukData] into printer bytes
 /// for a 58mm thermal roll. Used by BOTH the server (venue printers) and a
@@ -11,6 +12,12 @@ import 'package:satset/core/printing/struk_data.dart';
 /// `esc_pos_utils_plus` loads its capability profile from a package asset via
 /// `rootBundle`; the embedded server runs in-process inside the Flutter app, so
 /// this works server-side too.
+///
+/// Copy follows the **printing device's** language (ADR-0083) — the server for
+/// a venue printer, the handset for a device one — which is why [AppL10n]
+/// arrives as a parameter: a shelf route holds no `BuildContext` and no `Ref`,
+/// and passes `satL10n`. Venue-authored lines (name, tagline, header, footer,
+/// thank-you) are never translated.
 class StrukRenderer {
   static const _paper = PaperSize.mm58;
 
@@ -22,7 +29,7 @@ class StrukRenderer {
   }
 
   /// Renders a full guest order-confirmation struk (no prices).
-  static Future<List<int>> render(StrukData d) async {
+  static Future<List<int>> render(AppL10n l, StrukData d) async {
     final profile = await CapabilityProfile.load();
     final g = Generator(_paper, profile);
     final out = <int>[];
@@ -81,15 +88,15 @@ class StrukRenderer {
     // Table + party + time.
     out.addAll(
       g.text(
-        'Meja ${d.tableLabel}  ·  ${d.pax} org  ·  ${_clock(d.at)}',
+        l.strukTableLine(d.tableLabel, d.pax, _clock(d.at)),
         styles: const PosStyles(bold: true),
       ),
     );
     if (d.guestName.trim().isNotEmpty) {
-      out.addAll(g.text('Tamu: ${d.guestName.trim()}'));
+      out.addAll(g.text(l.strukGuest(d.guestName.trim())));
     }
     if (d.guestNote.trim().isNotEmpty) {
-      out.addAll(g.text('Catatan: ${d.guestNote.trim()}'));
+      out.addAll(g.text(l.strukNote(d.guestNote.trim())));
     }
     out.addAll(g.hr());
 
@@ -113,10 +120,7 @@ class StrukRenderer {
 
     // Footer: "verifikasi pesanan" + optional receipt footer + sign-off.
     out.addAll(
-      g.text(
-        'Verifikasi pesanan Anda',
-        styles: const PosStyles(align: PosAlign.center),
-      ),
+      g.text(l.strukVerify, styles: const PosStyles(align: PosAlign.center)),
     );
     if (d.footer.trim().isNotEmpty) {
       for (final line in d.footer.trim().split('\n')) {
@@ -126,7 +130,7 @@ class StrukRenderer {
       }
     }
     final thanks = d.thankYou.trim().isEmpty
-        ? 'Terima kasih'
+        ? l.strukThanks
         : d.thankYou.trim();
     out.addAll(g.text(thanks, styles: const PosStyles(align: PosAlign.center)));
     out.addAll(g.feed(2));
@@ -136,6 +140,7 @@ class StrukRenderer {
 
   /// A short slip used by the "Tes cetak" action to prove a printer is wired.
   static Future<List<int>> renderTest(
+    AppL10n l,
     String label,
     String host,
     int port,
@@ -145,7 +150,7 @@ class StrukRenderer {
     final out = <int>[];
     out.addAll(
       g.text(
-        'TES PRINTER',
+        l.strukTestTitle,
         styles: const PosStyles(
           align: PosAlign.center,
           bold: true,
@@ -167,7 +172,7 @@ class StrukRenderer {
     );
     out.addAll(
       g.text(
-        'Terhubung OK',
+        l.strukTestOk,
         styles: const PosStyles(align: PosAlign.center, bold: true),
       ),
     );

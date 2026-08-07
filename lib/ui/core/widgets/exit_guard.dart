@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -42,12 +43,12 @@ class _ExitGuardState extends State<ExitGuard> {
     ScaffoldMessenger.maybeOf(context)
       ?..clearSnackBars()
       ..showSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: window,
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'Tekan kembali lagi untuk keluar',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            context.l10n.exitAgainToQuit,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ),
       );

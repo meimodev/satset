@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -197,7 +198,10 @@ class SetHero extends StatelessWidget {
               ],
             ),
             const SizedBox(height: Sp.s2),
-            Text('STATIONS · LIVE', style: SatType.monoS(color: sc.textLo)),
+            Text(
+              context.l10n.cmnStationsLive,
+              style: SatType.monoS(color: sc.textLo),
+            ),
           ],
         ],
       ),

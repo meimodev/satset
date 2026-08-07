@@ -14,12 +14,6 @@ library;
 
 enum StockDimension { mass, volume, count }
 
-String stockDimensionLabel(StockDimension d) => switch (d) {
-  StockDimension.mass => 'Berat',
-  StockDimension.volume => 'Volume',
-  StockDimension.count => 'Jumlah',
-};
-
 /// A unit the admin can pick for an ingredient.
 ///
 /// [perUnit] is how many milli-base units one of this unit is worth:

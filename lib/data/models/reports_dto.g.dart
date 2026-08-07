@@ -76,13 +76,21 @@ Map<String, dynamic> _$$NamedIdDtoImplToJson(_$NamedIdDtoImpl instance) =>
 
 _$KpiTileDtoImpl _$$KpiTileDtoImplFromJson(Map<String, dynamic> json) =>
     _$KpiTileDtoImpl(
-      label: json['label'] as String,
+      key: json['key'] as String? ?? '',
+      args:
+          (json['args'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const <int>[],
+      label: json['label'] as String? ?? '',
       value: json['value'] as String,
-      sub: json['sub'] as String,
+      sub: json['sub'] as String? ?? '',
     );
 
 Map<String, dynamic> _$$KpiTileDtoImplToJson(_$KpiTileDtoImpl instance) =>
     <String, dynamic>{
+      'key': instance.key,
+      'args': instance.args,
       'label': instance.label,
       'value': instance.value,
       'sub': instance.sub,
@@ -484,7 +492,7 @@ Map<String, dynamic> _$$ReservationStatsDtoImplToJson(
 _$VoidReasonDtoImpl _$$VoidReasonDtoImplFromJson(Map<String, dynamic> json) =>
     _$VoidReasonDtoImpl(
       code: json['code'] as String,
-      label: json['label'] as String,
+      label: json['label'] as String? ?? '',
       count: (json['count'] as num?)?.toInt() ?? 0,
       lostRupiah: (json['lostRupiah'] as num?)?.toInt() ?? 0,
     );
@@ -570,7 +578,6 @@ _$StaffVoidDtoImpl _$$StaffVoidDtoImplFromJson(Map<String, dynamic> json) =>
       count: (json['count'] as num?)?.toInt() ?? 0,
       lostRupiah: (json['lostRupiah'] as num?)?.toInt() ?? 0,
       topReasonCode: json['topReasonCode'] as String? ?? 'other',
-      topReasonLabel: json['topReasonLabel'] as String? ?? 'Lainnya',
     );
 
 Map<String, dynamic> _$$StaffVoidDtoImplToJson(_$StaffVoidDtoImpl instance) =>
@@ -580,5 +587,4 @@ Map<String, dynamic> _$$StaffVoidDtoImplToJson(_$StaffVoidDtoImpl instance) =>
       'count': instance.count,
       'lostRupiah': instance.lostRupiah,
       'topReasonCode': instance.topReasonCode,
-      'topReasonLabel': instance.topReasonLabel,
     };

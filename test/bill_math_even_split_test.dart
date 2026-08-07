@@ -6,16 +6,7 @@ import 'package:satset/domain/use_cases/bill_math.dart';
 void main() {
   group('distributeEvenRounded', () {
     test('sums to the bill total exactly', () {
-      for (final total in [
-        3000,
-        87334,
-        150000,
-        1,
-        99,
-        100,
-        250050,
-        1000000,
-      ]) {
+      for (final total in [3000, 87334, 150000, 1, 99, 100, 250050, 1000000]) {
         for (var n = 1; n <= 12; n++) {
           final shares = distributeEvenRounded(total, n);
           expect(shares.length, n, reason: 'total=$total n=$n');
@@ -50,14 +41,17 @@ void main() {
       expect(shares.every((s) => s > 0), isTrue);
     });
 
-    test('earliest payers get round numbers, the last absorbs the ragged end', () {
-      final shares = distributeEvenRounded(87334, 3);
-      expect(shares.fold<int>(0, (a, b) => a + b), 87334);
-      // Everyone but the last hands over a multiple of the step.
-      for (final s in shares.take(shares.length - 1)) {
-        expect(s % cashRoundingStep, 0, reason: '$shares');
-      }
-    });
+    test(
+      'earliest payers get round numbers, the last absorbs the ragged end',
+      () {
+        final shares = distributeEvenRounded(87334, 3);
+        expect(shares.fold<int>(0, (a, b) => a + b), 87334);
+        // Everyone but the last hands over a multiple of the step.
+        for (final s in shares.take(shares.length - 1)) {
+          expect(s % cashRoundingStep, 0, reason: '$shares');
+        }
+      },
+    );
 
     test('an exact multiple splits flat', () {
       expect(distributeEvenRounded(400, 4), [100, 100, 100, 100]);

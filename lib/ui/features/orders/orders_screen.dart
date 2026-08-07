@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_tabs.dart';
@@ -109,9 +110,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             .call(tableId, ticketId, TicketStatus.served);
       } catch (e) {
         if (!context.mounted) return;
-        ScaffoldMessenger.maybeOf(
-          context,
-        )?.showSnackBar(SnackBar(content: Text('Gagal sajikan: $e')));
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(context.l10n.ordServeFailed('$e'))),
+        );
       }
     }
 
@@ -151,14 +152,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     // Scoped-and-empty is a different fact from venue-empty: say which, so a
     // waiter never reads "nothing is cooking" when the kitchen is slammed.
     final emptyMsg = _seg == 'ready'
-        ? 'Belum ada yang siap di pass.'
+        ? context.l10n.ordEmptyPass
         : _seg == 'active'
         ? (showAll
-              ? 'Tidak ada item yang sedang disiapkan.'
-              : 'Tidak ada item Anda yang sedang disiapkan.\nPilih Semua untuk melihat seluruh venue.')
+              ? context.l10n.ordEmptyPreparingAll
+              : context.l10n.ordEmptyPreparingMine)
         : (showAll
-              ? 'Belum ada item yang selesai pada sesi ini.'
-              : 'Belum ada item Anda yang selesai pada sesi ini.\nPilih Semua untuk melihat seluruh venue.');
+              ? context.l10n.ordEmptyDoneAll
+              : context.l10n.ordEmptyDoneMine);
 
     Widget orderRow(_Row r) => _OrderRow(
       row: r,
@@ -264,7 +265,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
+                        venueName.isEmpty
+                            ? context.l10n.tabPesanan
+                            : context.l10n.ordTitleVenue(venueName),
                         style: SatType.h1(color: sc.textHi),
                       ),
                     ),
@@ -272,7 +275,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
                 const SizedBox(height: Sp.s1h),
                 Text(
-                  '${active.length} berjalan · ${ready.length} siap diambil',
+                  context.l10n.ordSummary(active.length, ready.length),
                   style: SatType.monoS(color: sc.textLo),
                 ),
               ],
@@ -283,21 +286,21 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             child: Row(
               children: [
                 SatChip.select(
-                  label: 'Siap diambil',
+                  label: context.l10n.ordReadyForPickup,
                   count: ready.length,
                   selected: _seg == 'ready',
                   onTap: () => setState(() => _seg = 'ready'),
                 ),
                 const SizedBox(width: Sp.s2),
                 SatChip.select(
-                  label: 'Disiapkan',
+                  label: context.l10n.ordPreparing,
                   count: active.length,
                   selected: _seg == 'active',
                   onTap: () => setState(() => _seg = 'active'),
                 ),
                 const SizedBox(width: Sp.s2),
                 SatChip.select(
-                  label: 'Selesai',
+                  label: context.l10n.ordDone,
                   count: done.length,
                   selected: _seg == 'done',
                   onTap: () => setState(() => _seg = 'done'),
@@ -330,7 +333,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      venueName.isEmpty ? 'Pesanan' : 'Pesanan $venueName',
+                      venueName.isEmpty
+                          ? context.l10n.tabPesanan
+                          : context.l10n.ordTitleVenue(venueName),
                       style: SatType.h1(color: sc.textHi),
                     ),
                   ),
@@ -338,7 +343,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               ),
               const SizedBox(height: Sp.s1),
               Text(
-                '${active.length} berjalan · ${ready.length} siap diambil',
+                context.l10n.ordSummary(active.length, ready.length),
                 style: SatType.monoS(color: sc.textLo),
               ),
             ],
@@ -455,9 +460,9 @@ class _Segments extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
         children: [
           for (final (key, label, count) in [
-            ('ready', 'Siap', ready),
-            ('active', 'Disiapkan', active),
-            ('done', 'Selesai', done),
+            ('ready', context.l10n.ordTabReady, ready),
+            ('active', context.l10n.ordPreparing, active),
+            ('done', context.l10n.ordDone, done),
           ]) ...[
             SatChip.select(
               label: label,
@@ -487,7 +492,10 @@ class _ScopeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SatTabs(
-      tabs: const [SatTab(label: 'Milik saya'), SatTab(label: 'Semua')],
+      tabs: [
+        SatTab(label: context.l10n.ordTabMine),
+        SatTab(label: context.l10n.mnaAll),
+      ],
       selected: showAll ? 1 : 0,
       onSelected: (i) => onChange(i == 1),
     );
@@ -639,7 +647,7 @@ class _OrderRow extends ConsumerWidget {
                       const Spacer(),
                       if (isReady) ...[
                         SatButton.success(
-                          label: 'Sajikan',
+                          label: context.l10n.ordServe,
                           icon: Icons.check_rounded,
                           size: SatButtonSize.sm,
                           onTap: onServe,
@@ -685,21 +693,19 @@ class _ElapsedStack extends ConsumerWidget {
     final d = SatClock.now().difference(clockStart);
     final mins = d.inMinutes;
     final label = mins < 1
-        ? '<1m'
-        : (d.inHours > 0 ? '${d.inHours}j ${mins.remainder(60)}m' : '${mins}m');
+        ? context.l10n.ordUnderMin
+        : (d.inHours > 0
+              ? context.l10n.durHm(d.inHours, mins.remainder(60))
+              : context.l10n.durMins(mins));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        Text(label, style: SatType.monoM(color: late ? sc.urgent : sc.textHi)),
         Text(
-          label,
-          style: SatType.monoM(color: late ? sc.urgent : sc.textHi),
-        ),
-        Text(
-          'sejak $sentAtClock',
+          context.l10n.ordSince(sentAtClock),
           style: SatType.caption(color: sc.textMd),
         ),
       ],
     );
   }
 }
-

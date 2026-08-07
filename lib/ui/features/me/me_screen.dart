@@ -1,8 +1,9 @@
+import 'package:satset/core/localization/labels.dart';
+import 'package:satset/core/localization/audit_text.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/material.dart';
@@ -15,7 +16,6 @@ import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart';
 import 'package:satset/domain/models/ticket.dart';
-import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/server/server.dart' show serverRuntimeProvider;
 import 'package:satset/ui/core/design/audit_visuals.dart';
@@ -31,6 +31,8 @@ import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/features/me/widgets/locale_sheet.dart';
 
 /// What the "Saya" tab shows: a **live snapshot** of the shift you are in, not a
 /// cumulative tally of it.
@@ -174,7 +176,9 @@ class _ShiftLine extends ConsumerWidget {
         : SatClock.now().difference(started);
     if (elapsed.isNegative) elapsed = Duration.zero;
     return Text(
-      'MULAI $shiftStart · ${formatElapsedId(elapsed)} BERJALAN'.toUpperCase(),
+      context.l10n
+          .meShiftLine(shiftStart, formatElapsed(context.l10n, elapsed))
+          .toUpperCase(),
       style: SatType.monoS(color: context.sat.textLo),
     );
   }
@@ -216,7 +220,9 @@ class MeScreen extends ConsumerWidget {
       roleName = '—';
     } else {
       final match = roles.where((r) => r.id == user.roleId);
-      roleName = match.isNotEmpty ? match.first.name : userRoleLabel(user.role);
+      roleName = match.isNotEmpty
+          ? match.first.name
+          : userRoleLabel(context.l10n, user.role);
     }
     final zone = user?.zoneAssigned ?? '';
     final roleLabel = (zone.isEmpty || zone == '—')
@@ -268,8 +274,7 @@ class MeScreen extends ConsumerWidget {
     // admin, `apiConfigProvider`), each of which bumps the router's refresh
     // listener, and the redirect sends `/me` → `/pin` on its own. An explicit
     // go here raced those two async redirects. See ADR-0078.
-    Future<void> switchUser() =>
-        ref.read(authStateProvider.notifier).signOut();
+    Future<void> switchUser() => ref.read(authStateProvider.notifier).signOut();
 
     // "Akhiri shift & keluar" — close the shift *and* sign out.
     Future<void> endShift() async {
@@ -279,28 +284,29 @@ class MeScreen extends ConsumerWidget {
       final ok = await showSatDialog<bool>(
         context,
         builder: (ctx) => AlertDialog(
-          title: Text(isServer ? 'Akhiri sesi admin?' : 'Akhiri shift?'),
+          title: Text(
+            isServer
+                ? context.l10n.meEndAdminTitle
+                : context.l10n.meEndShiftTitle,
+          ),
           content: Text(
             isServer
                 ? (liveCount > 0
-                      ? '$liveCount meja masih aktif. Keluar akan mematikan server — '
-                            'semua staff terputus dan tidak bisa menyambung sampai '
-                            'admin masuk lagi.'
-                      : 'Keluar akan mematikan server. Staff tidak bisa menyambung '
-                            'sampai admin masuk lagi.')
+                      ? context.l10n.meEndServerBodyLive(liveCount)
+                      : context.l10n.meEndServerBody)
                 // Spell out the one thing that separates this from "Keluar":
                 // the shift closes, so signing back in starts a new one.
-                : 'Shift ditutup dan hitungannya berhenti. Masuk lagi akan '
-                      'memulai shift baru. Untuk menyerahkan perangkat tanpa '
-                      'menutup shift, pakai "Keluar".',
+                : context.l10n.meEndShiftBody,
           ),
           actions: [
             SatButton.ghost(
-              label: AppStrings.cancel,
+              label: context.l10n.cancel,
               onTap: () => Navigator.pop(ctx, false),
             ),
             SatButton.danger(
-              label: isServer ? 'Keluar & matikan' : 'Akhiri shift',
+              label: isServer
+                  ? context.l10n.meEndAndShutdown
+                  : context.l10n.meEndShiftConfirm,
               onTap: () => Navigator.pop(ctx, true),
             ),
           ],
@@ -377,7 +383,10 @@ class _MePhone extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-              child: _EndShiftButton(onPressed: onEndShift, onSwitchUser: onSwitchUser),
+              child: _EndShiftButton(
+                onPressed: onEndShift,
+                onSwitchUser: onSwitchUser,
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -447,6 +456,8 @@ class _MeTablet extends StatelessWidget {
                   startedAt: m.shiftStartedAt,
                 ),
               ),
+              const _LocaleButton(),
+              const SizedBox(width: Sp.s2),
               _ThemeButton(theme: theme, onTap: onPickTheme),
             ],
           ),
@@ -464,7 +475,10 @@ class _MeTablet extends StatelessWidget {
                     children: [
                       _Identity(m: m, big: true, showShiftLine: false),
                       const SizedBox(height: Sp.s3h),
-                      _EndShiftButton(onPressed: onEndShift, onSwitchUser: onSwitchUser),
+                      _EndShiftButton(
+                        onPressed: onEndShift,
+                        onSwitchUser: onSwitchUser,
+                      ),
                       const SizedBox(height: Sp.s3h),
                       _KpiGrid(m: m, columns: 4),
                       const SizedBox(height: Sp.s3),
@@ -505,8 +519,43 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           const Spacer(),
+          const _LocaleButton(),
+          const SizedBox(width: Sp.s2),
           _ThemeButton(theme: theme, onTap: onPickTheme),
         ],
+      ),
+    );
+  }
+}
+
+/// Opens the language sheet, and names the language it would change.
+///
+/// Self-contained rather than taking an `onTap` the way [_ThemeButton] does:
+/// a `ConsumerWidget` already holds the `ref` the sheet needs, so threading a
+/// callback through four widgets to reach the same place would be ceremony.
+/// The label is the language **tag**, not its name — `Bahasa Indonesia` does
+/// not fit a phone top bar next to a theme name, and the two-letter code is
+/// what a bilingual user is scanning for anyway.
+class _LocaleButton extends ConsumerWidget {
+  const _LocaleButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(satLocaleProvider);
+    final tag = locale.languageCode.toUpperCase();
+    void open() => showLocaleSheet(context, ref);
+
+    // Same reasoning as [_ThemeButton]: SatButton would name itself "ID,
+    // button", which says nothing about what the tap does.
+    return Semantics(
+      button: true,
+      label: '${context.l10n.a11yPickLocale}, $tag',
+      excludeSemantics: true,
+      onTap: open,
+      child: SatButton.outline(
+        label: tag,
+        icon: Icons.translate_rounded,
+        onTap: open,
       ),
     );
   }
@@ -533,7 +582,7 @@ class _ThemeButton extends StatelessWidget {
     // takes the activation with it.
     return Semantics(
       button: true,
-      label: '${AppStrings.a11yPickTheme}, ${theme.label}',
+      label: '${context.l10n.a11yPickTheme}, ${theme.label}',
       excludeSemantics: true,
       onTap: onTap,
       child: SatButton.outline(
@@ -616,17 +665,17 @@ class _KpiGrid extends StatelessWidget {
     // past-tense labels ("Tiket dikirim") would promise a shift total the
     // numbers do not carry.
     final items = <_Kpi>[
-      _Kpi(label: 'Tiket terbuka', value: '${m.openTickets}'),
-      _Kpi(label: 'Cover dilayani', value: '${m.openCovers}'),
+      _Kpi(label: context.l10n.meKpiOpenTickets, value: '${m.openTickets}'),
+      _Kpi(label: context.l10n.meKpiCovers, value: '${m.openCovers}'),
       _Kpi(
-        label: 'Pembatalan',
+        label: context.l10n.auditTileVoid,
         value: '${m.voidCount}',
         tone: m.voidCount > 0 ? _Tone.urgent : _Tone.normal,
       ),
       // Replaces a "Comp / modif" box that could only ever read zero:
       // `AuditType.comp` and `.modify` are emitted nowhere, because a comp is a
       // void carrying reason `comp` and lands in Pembatalan above.
-      _Kpi(label: 'Meja aktif', value: '${m.openTables}'),
+      _Kpi(label: context.l10n.zoneAdminTableActive, value: '${m.openTables}'),
     ];
 
     if (columns >= 4) {
@@ -738,12 +787,12 @@ class _PacingCard extends StatelessWidget {
     final sc = context.sat;
     // Kitchen order, not enum order: the closer to the guest, the later it
     // reads — so a waiter scans left-to-right toward what to pick up next.
-    const order = [
-      (TicketStatus.held, 'ditahan'),
-      (TicketStatus.sent, 'terkirim'),
-      (TicketStatus.prep, 'disiapkan'),
-      (TicketStatus.cooked, 'matang'),
-      (TicketStatus.ready, 'siap'),
+    final order = [
+      (TicketStatus.held, context.l10n.meShiftHeld),
+      (TicketStatus.sent, context.l10n.meShiftSent),
+      (TicketStatus.prep, context.l10n.meShiftPrep),
+      (TicketStatus.cooked, context.l10n.meShiftCooked),
+      (TicketStatus.ready, context.l10n.meShiftReady),
     ];
     final parts = <String>[
       for (final (s, label) in order)
@@ -752,7 +801,7 @@ class _PacingCard extends StatelessWidget {
     final hasAny = parts.isNotEmpty;
     // A lull is the common case mid-shift, and three zeros would read as
     // broken. Say the state in words instead.
-    final text = hasAny ? parts.join(' · ') : 'Tidak ada tiket terbuka';
+    final text = hasAny ? parts.join(' · ') : context.l10n.meNoOpenTickets;
     return Container(
       padding: EdgeInsets.fromLTRB(18, big ? 18 : 16, 18, big ? 18 : 16),
       decoration: SatBox.d(
@@ -782,9 +831,7 @@ class _PacingCard extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: SatType.labelL(
-                color: hasAny ? sc.textHi : sc.textLo,
-              ),
+              style: SatType.labelL(color: hasAny ? sc.textHi : sc.textLo),
             ),
           ),
         ],
@@ -812,7 +859,7 @@ class _ActivityCard extends StatelessWidget {
         ? Padding(
             padding: const EdgeInsets.all(Sp.s5),
             child: Text(
-              'Belum ada entri audit. Pembatalan, comp, dan perubahan pasca-kirim muncul di sini.',
+              context.l10n.meAuditEmpty,
               style: SatType.bodyM(color: sc.textLo),
             ),
           )
@@ -828,9 +875,9 @@ class _ActivityCard extends StatelessWidget {
 
     if (padded) {
       return SatCard.section(
-        header: 'Aktivitas terkini',
+        header: context.l10n.meRecentActivity,
         headerTrailing: Text(
-          '${audit.length} entri',
+          context.l10n.meAuditCount(audit.length),
           style: SatType.monoS(color: sc.textDim),
         ),
         padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s4h, Sp.s5, Sp.s1h),
@@ -859,7 +906,7 @@ class _AuditRow extends StatelessWidget {
     final sc = context.sat;
     final meta = <String>[
       if (entry.tableId.isNotEmpty)
-        'Meja ${tableNames[entry.tableId] ?? entry.tableId}',
+        context.l10n.meAuditTable(tableNames[entry.tableId] ?? entry.tableId),
       formatClockId(entry.when),
       if (entry.approvedBy != null) 'disetujui ${entry.approvedBy}',
       if (entry.reason != null) entry.reason!,
@@ -882,7 +929,10 @@ class _AuditRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(entry.title, style: SatType.bodyM(color: sc.textHi)),
+                Text(
+                  auditText(context.l10n, entry),
+                  style: SatType.bodyM(color: sc.textHi),
+                ),
                 const SizedBox(height: Sp.s1),
                 Text(meta, style: SatType.monoS(color: sc.textLo)),
               ],
@@ -911,7 +961,7 @@ class _EndShiftButton extends StatelessWidget {
     final endShift = SizedBox(
       width: double.infinity,
       child: SatButton.ghost(
-        label: 'Akhiri shift & keluar',
+        label: context.l10n.meEndShiftAndLogout,
         icon: Icons.logout_rounded,
         size: SatButtonSize.lg,
         onTap: onPressed,
@@ -923,7 +973,7 @@ class _EndShiftButton extends StatelessWidget {
       return SizedBox(
         width: double.infinity,
         child: SatButton.outline(
-          label: 'Akhiri shift & keluar',
+          label: context.l10n.meEndShiftAndLogout,
           icon: Icons.logout_rounded,
           size: SatButtonSize.lg,
           onTap: onPressed,
@@ -934,7 +984,7 @@ class _EndShiftButton extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SatButton.outline(
-          label: 'Keluar',
+          label: context.l10n.logout,
           icon: Icons.swap_horiz_rounded,
           size: SatButtonSize.lg,
           onTap: onSwitchUser!,

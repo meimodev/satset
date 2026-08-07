@@ -25,18 +25,6 @@ enum TicketStatus {
   voided,
 }
 
-String ticketStatusLabel(TicketStatus s) => switch (s) {
-  TicketStatus.draft => 'Draf',
-  TicketStatus.acknowledged => 'Diterima',
-  TicketStatus.sent => 'Terkirim',
-  TicketStatus.prep => 'Disiapkan',
-  TicketStatus.cooked => 'Selesai dimasak',
-  TicketStatus.ready => 'Siap diambil',
-  TicketStatus.served => 'Disajikan',
-  TicketStatus.held => 'Ditahan',
-  TicketStatus.voided => 'Dibatalkan',
-};
-
 String ticketStatusKey(TicketStatus s) => switch (s) {
   TicketStatus.draft => 'draft',
   TicketStatus.acknowledged => 'acknowledged',

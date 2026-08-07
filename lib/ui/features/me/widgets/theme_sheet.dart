@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Device-local theme picker (ADR-0045). Lives on the Me screen rather than in
 /// `/settings` on purpose: `/settings` is gated on `editSettings`, and every
@@ -47,14 +47,14 @@ class _ThemeSheet extends ConsumerWidget {
             ),
             const SizedBox(height: Sp.s4h),
             Text(
-              AppStrings.themeSheetTitle,
+              context.l10n.themeSheetTitle,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1),
             Text(
-              AppStrings.themeSheetSubtitle,
+              context.l10n.themeSheetSubtitle,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: sc.textLo),

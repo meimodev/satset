@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -22,15 +23,15 @@ class ModeSelectScreen extends ConsumerWidget {
             children: [
               const SizedBox(height: Sp.s6),
               Text(
-                'Pilih mode',
+                context.l10n.onbPickMode,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: Sp.s2),
-              const Text('Tablet ini akan jadi server atau klien?'),
+              Text(context.l10n.onbPickModeSub),
               const SizedBox(height: Sp.s6),
               _ModeCard(
-                title: 'Server',
-                subtitle: 'Tablet ini host venue. Database lokal di sini.',
+                title: context.l10n.onbModeServer,
+                subtitle: context.l10n.onbModeServerSub,
                 onTap: s.busy
                     ? null
                     : () async {
@@ -40,9 +41,8 @@ class ModeSelectScreen extends ConsumerWidget {
               ),
               const SizedBox(height: Sp.s3),
               _ModeCard(
-                title: 'Klien',
-                subtitle:
-                    'Tablet ini ambil order, terhubung ke server lewat LAN.',
+                title: context.l10n.onbModeClient,
+                subtitle: context.l10n.onbModeClientSub,
                 onTap: s.busy
                     ? null
                     : () async {

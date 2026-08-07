@@ -17,7 +17,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
@@ -54,6 +54,11 @@ void main() {
             minuteTickerProvider.overrideWith((ref) => minutes.stream),
           ],
           child: MaterialApp(
+            // Pinned, exactly as the app pins it (ADR-0083). Without this the
+            // test resolves against the host's locale and reads English.
+            locale: const Locale('id'),
+            localizationsDelegates: AppL10n.localizationsDelegates,
+            supportedLocales: AppL10n.supportedLocales,
             theme: satTheme(SatTheme.neonTerang),
             home: Scaffold(
               body: Center(
@@ -132,7 +137,7 @@ void main() {
       tester,
       openedAt: SatClock.now().subtract(const Duration(minutes: 12)),
     );
-    expect(find.text(AppStrings.staleUngreeted(13)), findsNothing);
+    expect(find.text(_l10n.staleUngreeted(13)), findsNothing);
 
     // One minute later — no ticket arrived, no table row changed, nothing came
     // off the socket. The only input is the clock crossing a boundary.
@@ -141,7 +146,7 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text(AppStrings.staleUngreeted(13)),
+      find.text(_l10n.staleUngreeted(13)),
       findsOneWidget,
       reason:
           'staleness is derived purely from elapsed time; if the body watches '
@@ -149,3 +154,7 @@ void main() {
     );
   });
 }
+
+/// The app boots Indonesian and these tests never switch it (ADR-0083),
+/// so the expected copy is read from the same place the widget reads it.
+final _l10n = lookupAppL10n(const Locale('id'));

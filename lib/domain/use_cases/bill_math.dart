@@ -248,8 +248,7 @@ bool isFullyAssigned({
   required bool allUnitsAssigned,
   required int receiptsClaim,
   required int billTotal,
-}) =>
-    hasReceipts && (allUnitsAssigned || receiptsClaim >= billTotal);
+}) => hasReceipts && (allUnitsAssigned || receiptsClaim >= billTotal);
 
 /// The smallest note/coin a guest is asked to produce. Rp 100 is the smallest
 /// denomination still in real circulation here.

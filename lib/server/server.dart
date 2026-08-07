@@ -438,11 +438,7 @@ const _corsHeaders = {
 };
 
 Middleware _authMiddleware(ServerAuth auth) {
-  const skip = {
-    '/healthz',
-    '/auth/login',
-    '/pair/auto-claim',
-  };
+  const skip = {'/healthz', '/auth/login', '/pair/auto-claim'};
   return (Handler inner) {
     return (Request req) async {
       final path = '/${req.url.path}';

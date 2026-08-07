@@ -89,21 +89,24 @@ void main() {
     }
   });
 
-  test('venue audit paging walks the index instead of sorting the log', () async {
-    final plan = await db
-        .customSelect(
-          'EXPLAIN QUERY PLAN SELECT * FROM audit_entries '
-          'ORDER BY at DESC, id DESC LIMIT 51',
-        )
-        .get();
-    final details = [
-      for (final r in plan) r.data['detail'] as String? ?? '',
-    ].join('\n');
-    expect(details, contains('audit_entries_at_id'));
-    // A temp b-tree here means the whole log was sorted to return one page —
-    // exactly the cost the composite index exists to remove.
-    expect(details, isNot(contains('USE TEMP B-TREE')));
-  });
+  test(
+    'venue audit paging walks the index instead of sorting the log',
+    () async {
+      final plan = await db
+          .customSelect(
+            'EXPLAIN QUERY PLAN SELECT * FROM audit_entries '
+            'ORDER BY at DESC, id DESC LIMIT 51',
+          )
+          .get();
+      final details = [
+        for (final r in plan) r.data['detail'] as String? ?? '',
+      ].join('\n');
+      expect(details, contains('audit_entries_at_id'));
+      // A temp b-tree here means the whole log was sorted to return one page —
+      // exactly the cost the composite index exists to remove.
+      expect(details, isNot(contains('USE TEMP B-TREE')));
+    },
+  );
 
   test('own-shift audit feed filters on the actor index', () async {
     await expectsIndex(

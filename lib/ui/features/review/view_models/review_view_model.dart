@@ -42,6 +42,7 @@ class ReviewViewModel extends StateNotifier<ReviewState> {
   Future<String?> submitTakeaway(
     List<CartItem> cart, {
     String guestName = '',
+
     /// How the order reached us, and whether an aggregator already settled it.
     /// Ignored when appending to an existing takeaway — the visit already has
     /// them. ADR-0066.

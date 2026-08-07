@@ -15,7 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:patrol/patrol.dart';
-import 'package:satset/core/localization/app_strings.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
@@ -133,7 +133,7 @@ void main() {
     await $.platformAutomator.android.pressBack();
     await settle();
     expect(
-      $(AppStrings.discardCartTitle),
+      $(_l10n.discardCartTitle),
       findsNothing,
       reason: 'an empty cart has nothing to confirm',
     );
@@ -151,12 +151,12 @@ void main() {
     await $.platformAutomator.android.pressBack();
     await settle();
     expect(
-      $(AppStrings.discardCartTitle),
+      $(_l10n.discardCartTitle),
       findsOneWidget,
       reason: 'leaving with items must be confirmed',
     );
 
-    await $(AppStrings.cancel).tap();
+    await $(_l10n.cancel).tap();
     await settle();
     expect(
       $('Nasi Goreng'),
@@ -167,8 +167,12 @@ void main() {
     // 3. Confirming discards the cart and leaves.
     await $.platformAutomator.android.pressBack();
     await settle();
-    await $(AppStrings.discardCartConfirm).tap();
+    await $(_l10n.discardCartConfirm).tap();
     await settle();
     expect($('CART 0'), findsOneWidget, reason: 'cart cleared on the way out');
   });
 }
+
+/// The app boots Indonesian and these tests never switch it (ADR-0083),
+/// so the expected copy is read from the same place the widget reads it.
+final _l10n = lookupAppL10n(const Locale('id'));

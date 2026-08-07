@@ -52,8 +52,10 @@ void main() {
       final last = now.subtract(
         FirebaseAdminService.staleAfter - const Duration(hours: 10),
       );
-      expect(fleetLockoutRisk(venue(lastSeenAt: last), now),
-          const Duration(hours: 10));
+      expect(
+        fleetLockoutRisk(venue(lastSeenAt: last), now),
+        const Duration(hours: 10),
+      );
     });
 
     test('goes negative past the limit rather than clamping', () {
@@ -177,10 +179,7 @@ void main() {
 
   group('add months', () {
     test('does not let the day of month run into the next one', () {
-      expect(
-        fleetAddMonths(DateTime(2026, 1, 31), 1),
-        DateTime(2026, 2, 28),
-      );
+      expect(fleetAddMonths(DateTime(2026, 1, 31), 1), DateTime(2026, 2, 28));
     });
 
     test('keeps the day when the target month is long enough', () {
@@ -209,8 +208,7 @@ void main() {
         venue(name: 'unpaid', paidUntil: now.subtract(const Duration(days: 2)));
     Venue expiring() =>
         venue(name: 'expiring', paidUntil: now.add(const Duration(days: 5)));
-    Venue killed() =>
-        venue(name: 'killed', status: AdminStatus.suspended);
+    Venue killed() => venue(name: 'killed', status: AdminStatus.suspended);
     Venue healthy() => venue(name: 'healthy');
 
     test('orders the kinds of trouble', () {
@@ -237,7 +235,10 @@ void main() {
     test('an unpaid venue outranks a healthy one whatever its name', () {
       final rows = [healthy(), unpaid()]
         ..sort((a, b) {
-          final r = fleetUrgencyRank(a, now).compareTo(fleetUrgencyRank(b, now));
+          final r = fleetUrgencyRank(
+            a,
+            now,
+          ).compareTo(fleetUrgencyRank(b, now));
           return r != 0 ? r : a.name.compareTo(b.name);
         });
       // 'healthy' sorts before 'unpaid' alphabetically — rank has to win.

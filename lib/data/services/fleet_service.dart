@@ -47,8 +47,7 @@ class FleetService {
       trialStartAt: (m['trialStartAt'] as Timestamp?)?.toDate(),
       paidUntil: (m['paidUntil'] as Timestamp?)?.toDate(),
       priceMonthly: (m['priceMonthly'] as num?)?.toInt(),
-      billingCycle:
-          (m['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
+      billingCycle: (m['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
       lastSeenAt: (m['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: d.metadata.isFromCache,
     );
@@ -129,7 +128,10 @@ class FleetService {
       'paidUntil': null
     else if (paidUntil != null)
       'paidUntil': paidUntil.millisecondsSinceEpoch,
-    if (clearPriceMonthly) 'priceMonthly': null else 'priceMonthly': ?priceMonthly,
+    if (clearPriceMonthly)
+      'priceMonthly': null
+    else
+      'priceMonthly': ?priceMonthly,
   });
 
   Future<void> deleteVenue(String vid) => _call('deleteVenue', {'vid': vid});

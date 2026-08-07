@@ -116,19 +116,11 @@ void main() {
       const prep = {'iga': 40};
 
       expect(
-        _order(
-          lines,
-          const Duration(minutes: 28),
-          prepByItem: prep,
-        ).warn,
+        _order(lines, const Duration(minutes: 28), prepByItem: prep).warn,
         isTrue,
       );
       expect(
-        _order(
-          lines,
-          const Duration(minutes: 27),
-          prepByItem: prep,
-        ).warn,
+        _order(lines, const Duration(minutes: 27), prepByItem: prep).warn,
         isFalse,
       );
       // Late outranks warn — they never both read true.
@@ -149,27 +141,27 @@ void main() {
     expect(o.late, isTrue);
   });
 
-  test('complete batch missing a stamp keeps ticking until one is supplied', () {
-    final lines = [_line(status: TicketStatus.cooked)];
+  test(
+    'complete batch missing a stamp keeps ticking until one is supplied',
+    () {
+      final lines = [_line(status: TicketStatus.cooked)];
 
-    final live = _order(lines, const Duration(minutes: 9));
-    expect(live.needsFallbackFreeze, isTrue);
-    expect(live.age, const Duration(minutes: 9));
+      final live = _order(lines, const Duration(minutes: 9));
+      expect(live.needsFallbackFreeze, isTrue);
+      expect(live.age, const Duration(minutes: 9));
 
-    final frozen = _order(
-      lines,
-      const Duration(minutes: 30),
-      fb: _t0.add(const Duration(minutes: 9)),
-    );
-    expect(frozen.age, const Duration(minutes: 9));
-  });
+      final frozen = _order(
+        lines,
+        const Duration(minutes: 30),
+        fb: _t0.add(const Duration(minutes: 9)),
+      );
+      expect(frozen.age, const Duration(minutes: 9));
+    },
+  );
 
   test('held course measures from its fire, not from the guest order', () {
     final o = _order([
-      _line(
-        status: TicketStatus.prep,
-        fired: const Duration(minutes: 20),
-      ),
+      _line(status: TicketStatus.prep, fired: const Duration(minutes: 20)),
     ], const Duration(minutes: 24));
 
     expect(o.clockStart, _t0.add(const Duration(minutes: 20)));

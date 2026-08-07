@@ -364,9 +364,10 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     try {
-      final raw = await ref.read(apiClientProvider).patchJson('/tables/$id/pax', {
-        'pax': pax,
-      });
+      final raw = await ref.read(apiClientProvider).patchJson(
+        '/tables/$id/pax',
+        {'pax': pax},
+      );
       _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
     } catch (_) {
       if (prev != null) _replace(id, prev);

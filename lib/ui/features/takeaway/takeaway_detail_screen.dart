@@ -1,4 +1,3 @@
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -20,6 +19,7 @@ import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/features/void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Takeaway (Bawa pulang) detail — the visit-keyed home for one takeaway order.
 /// Mirrors the table detail minus lock/seat: shows lines, lets the waiter add
@@ -57,7 +57,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
         .where((t) => t.status != TicketStatus.voided)
         .toList();
     final total = active.fold<int>(0, (s, t) => s + t.price * t.qty);
-    final label = visit?.label ?? 'Bawa pulang';
+    final label = visit?.label ?? context.l10n.tkwFallbackLabel;
     final guest = visit?.guestName;
     final handedOver = visit?.handedOver ?? false;
     // Can hand over once there are lines and none are still in flight.
@@ -70,7 +70,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
         children: [
           SatAppBar(
             onBack: () => safePop(context, fallback: '/tables'),
-            crumbs: [AppStrings.crumbBawaPulang, ?guest],
+            crumbs: [context.l10n.crumbBawaPulang, ?guest],
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
@@ -82,8 +82,8 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
                 Text(
                   [
                     if (guest != null && guest.isNotEmpty) guest.toUpperCase(),
-                    '${active.length} ITEM',
-                    if (handedOver) 'SUDAH DISERAHKAN',
+                    context.l10n.tkwItemCount(active.length),
+                    if (handedOver) context.l10n.tkwHandedOverTag,
                   ].join(' · '),
                   style: SatType.monoS(color: sc.textLo),
                 ),
@@ -94,7 +94,7 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
             child: tickets.isEmpty
                 ? Center(
                     child: Text(
-                      'Belum ada item.',
+                      context.l10n.tkwEmpty,
                       style: SatType.bodyM(color: sc.textLo),
                     ),
                   )
@@ -136,9 +136,9 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
           .call(widget.visitId, ticketId, TicketStatus.served);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal sajikan: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.tkwServeFailed('$e'))),
+      );
     }
   }
 
@@ -160,9 +160,9 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
       await printBillStruk(context: context, ref: ref, bill: bill);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal memuat tagihan: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.tkwBillLoadFailed('$e'))),
+        );
       }
     }
   }
@@ -176,18 +176,17 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
       if (!mounted) return;
       setState(() => _busy = false);
       final msg = switch (e.code) {
-        'tickets_not_terminal' =>
-          'Masih ada item yang dimasak — tunggu siap dulu.',
-        'no_tickets' => 'Belum ada item untuk diserahkan.',
-        _ => 'Gagal menyerahkan: ${e.code ?? e.statusCode}',
+        'tickets_not_terminal' => context.l10n.tkwErrNotTerminal,
+        'no_tickets' => context.l10n.tkwErrNoTickets,
+        _ => context.l10n.tkwHandoverFailed('${e.code ?? e.statusCode}'),
       };
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal menyerahkan: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.tkwHandoverFailed('$e'))),
+      );
     }
   }
 }
@@ -230,7 +229,10 @@ class _TakeawayFooter extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Total', style: SatType.bodyM(color: sc.textMd)),
+              Text(
+                context.l10n.cshTotal,
+                style: SatType.bodyM(color: sc.textMd),
+              ),
               const Spacer(),
               Text(formatIDR(total), style: SatType.monoM(color: sc.textHi)),
             ],
@@ -241,7 +243,7 @@ class _TakeawayFooter extends StatelessWidget {
               if (!handedOver)
                 Expanded(
                   child: SatButton.outline(
-                    label: 'Tambah item',
+                    label: context.l10n.crumbTambahItem,
                     icon: Icons.add_rounded,
                     onTap: busy ? null : onAddItems,
                   ),
@@ -249,7 +251,7 @@ class _TakeawayFooter extends StatelessWidget {
               if (!handedOver) const SizedBox(width: Sp.s2h),
               Expanded(
                 child: SatButton.outline(
-                  label: 'Tagihan',
+                  label: context.l10n.cshCrumbBill,
                   icon: Icons.receipt_long_rounded,
                   onTap: onPrint,
                 ),
@@ -262,7 +264,7 @@ class _TakeawayFooter extends StatelessWidget {
               width: double.infinity,
               height: 52,
               child: SatButton.primary(
-                label: 'Serahkan',
+                label: context.l10n.tkwHandover,
                 icon: Icons.shopping_bag_rounded,
                 busy: busy,
                 size: SatButtonSize.lg,
@@ -273,7 +275,7 @@ class _TakeawayFooter extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: Sp.s2),
                 child: Text(
-                  'Bisa diserahkan setelah semua item siap/disajikan.',
+                  context.l10n.tkwHandoverBlocked,
                   textAlign: TextAlign.center,
                   style: SatType.monoS(color: sc.textLo),
                 ),
@@ -282,7 +284,7 @@ class _TakeawayFooter extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: Sp.s1),
               child: Text(
-                'Sudah diserahkan ke tamu.',
+                context.l10n.tkwHandedOver,
                 style: SatType.bodyS(color: sc.textMd),
               ),
             ),

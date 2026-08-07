@@ -20,6 +20,8 @@ Stack: `flutter_riverpod`, `go_router`, `intl`, `uuid`, `freezed`, `json_seriali
 
 Generated `*.g.dart`, `*.freezed.dart`, Drift outputs excluded from analyzer. Run `tool/codegen.sh` (= `dart run build_runner build --delete-conflicting-outputs`) after editing those.
 
+Localization is a **separate generator**, not part of `build_runner`: `lib/l10n/*.arb` → `flutter gen-l10n` → `lib/l10n/app_localizations*.dart`, configured by `l10n.yaml`. Output is committed and analyzer-excluded, so tests and CI need no generate step.
+
 UI, repositories, services, server routes, use cases: hand-written.
 
 ## Commands
@@ -34,6 +36,7 @@ flutter test test/foo_test.dart
 flutter test --tags golden --run-skipped            # pixel lock on core/widgets
 flutter test --tags golden --run-skipped --update-goldens
 tool/codegen.sh                  # rebuild generated files
+flutter gen-l10n                 # rebuild AppL10n after editing lib/l10n/*.arb
 ```
 
 Lints: `package:flutter_lints/flutter.yaml`. No custom rules.
@@ -72,7 +75,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 - `routes/` — `auth_routes`, `tables_routes`, `tickets_routes`, `menu_routes`, `reference_routes`, `health_routes`.
 - `db/` — Drift: `database.dart`, `tables.dart` (schema), `seed.dart` + `seed_data.dart` (DB seeded on first boot — no more `DummyData`), `seed_history.dart` + `seed_history_mix.dart` (the fabricated month), `seed_inventory_data.dart` (bahan + resep).
 - `seed_job.dart` — job marker + the venue-wide "prompt answered" flag (ADR-0073).
-- `audit_log.dart` — **the** audit writer (`writeAudit`) + wire shape (`auditJson`). Every route that audits an act goes through it; hand-rolling the insert is how a new column reaches three call sites out of four.
+- `audit_log.dart` — **the** audit writer (`writeAudit`) + wire shape (`auditJson`). Every route that audits an act goes through it; hand-rolling the insert is how a new column reaches three call sites out of four. A row stores an `AuditKind` + params, never a sentence (ADR-0085) — the words are composed at read time by `auditText` in `lib/core/localization/audit_text.dart`.
 - `auth.dart` (PIN + JWT), `tls.dart` (self-signed cert), `mdns.dart` (advertise), `ws_hub.dart` (WebSocket broadcast). Pairing is a single unauthenticated `POST /pair/auto-claim` in `server.dart` that upserts the `Devices` row; there is no token table (ADR-0080).
 
 **`lib/core/log/`** — `sat_log.dart` (logger), `sat_nav_observer.dart` (router observer).
@@ -115,6 +118,7 @@ Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageS
 - **One seed, not two** (ADR-0073). `seedSampleVenue` = reference half (4 zones / 20 tables / ~42 items / 4 staff — 2 waiters + 2 kitchen / bahan+resep) **plus** a fabricated month of ~1500 bills and its audit trail, written through the production order path. It refuses on a venue that has traded; `clearSampleData` deletes the `contoh-` tagged transactional rows only, leaving the menu standing. The old demo seed and demo clock are gone — a seeded venue runs on real time, and backdating goes through the `at`/`idPrefix` overrides on `submitOrder`, `receiveStock` and `writeAudit`. A new seeded menu item needs a resep, bahan and a weight in `seed_history_mix.dart` or the seed will reject its lines for want of stock.
 - The first-run seed prompt is a **blocking, non-dismissible dialog** on the Venue Hub, answered once and recorded server-side. Admin → Sistem → Operasional holds the permanent way back in.
 - `apiConfigProvider == null` blocks every non-onboarding route — pair before exercising data screens.
+- **Never rename an `AuditKind`** (`lib/domain/models/audit_kind.dart`). The name is persisted in `audit_entries.kind` and is the join to the ARB template; a rename silently drops every existing row back to its frozen Indonesian `title`. Adding one means an ARB entry in both locales — the `switch` in `auditText` is exhaustive, so the analyzer will say so.
 - **Release builds run R8** (`isMinifyEnabled` + `isShrinkResources`). Dart is AOT and untouched, but a new plugin that resolves Java/Kotlin classes reflectively needs a keep rule in `android/app/proguard-rules.pro` or it fails only in release. `flutter build apk --release` is the check; debug will not catch it. Crashlytics' Gradle plugin uploads the mapping file, so minified traces stay symbolicated.
 
 ## graphify
@@ -156,7 +160,19 @@ Four staff roles on shared Android hardware:
 
 Job to be done: get an order from a guest's mouth into the kitchen, correctly, in seconds, without the internet. Everything else is bookkeeping around that.
 
-UI language is **Bahasa Indonesia** (`kosong`, `terisi`, `habis`, `Dikelola pengelola`). Copy goes through `lib/core/localization/app_strings.dart` — never hardcode user-facing text.
+The app ships **Indonesian and English** (ADR-0083). Indonesian is the hard default — the system locale is never consulted — and the picker is device-local, on `/me` beside the theme sheet.
+
+Copy lives in `lib/l10n/app_id.arb` + `app_en.arb`, generated by `flutter gen-l10n` into `lib/l10n/app_localizations.dart` (class `AppL10n`, committed, analyzer-excluded). `AppStrings` is gone.
+
+- **Widgets:** `context.l10n.foo` (extension in `lib/core/localization/locale_view_model.dart`).
+- **No `BuildContext`** — exporters, `auth_error.dart`, pure view-model functions: `ref.read(l10nProvider)`, or take an `AppL10n` parameter.
+- **A code crosses a layer, never a sentence** (ADR-0085). Enums carry their key and nothing else (`Capability`, `TicketStatus`, `ReservationStatus`, `StockReason`, `UserRole`, `AlertSoundPreset`); the server sends `kind` / `key` / `code` + params; `StaffException` and the report DTOs carry codes. The words are composed at read time by the resolvers in `lib/core/localization/` — `labels.dart` (enums, capabilities, staff errors, alert sounds), `report_copy.dart` (server-emitted report + void-reason codes), `audit_text.dart` (audit rows). Every resolver falls through to the raw code, so an older row or a newer server never renders blank.
+- **Never hardcode user-facing text.** Three bans in `design_tokens_test.dart`, all at zero: copy in a `Text()`, copy in a named param (`label:`, `title:`, `hint:`…), and *any* Indonesian word in a Dart literal under `lib/ui` or `lib/domain` — the last one is what catches a switch arm, a preset list or a `return`. `arb_parity_test.dart` fails on a key, placeholder or plural present in one locale and not the other, because gen-l10n only *warns*.
+- Indonesian remains the source language: `app_id.arb` is the template, and new copy is authored there first.
+
+**Not localised, on purpose:** money (`formatIDR`, `groupRupiah` and the rupiah input mask stay `id_ID` in both languages — ADR-0084); the six theme names; venue-authored content (menu items, zones, notes, seed data). Dates *are* localised, so `format.dart` is deliberately half-pinned — see ADR-0084 before "fixing" it.
+
+Domain vocabulary is canonical in `CONTEXT.md`: each term entry carries an `ID · EN` line, and no ARB value may render a domain term any other way (`opname` → Stocktake, not Inspection; `resep` → Recipe, not Prescription).
 
 ### Brand Personality
 

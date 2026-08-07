@@ -46,9 +46,16 @@ class NamedIdDto with _$NamedIdDto {
 @freezed
 class KpiTileDto with _$KpiTileDto {
   const factory KpiTileDto({
-    required String label,
+    /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+    /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+    /// this build does not know.
+    @Default('') String key,
+
+    /// The caption's counts, in the order its message declares them.
+    @Default(<int>[]) List<int> args,
+    @Default('') String label,
     required String value,
-    required String sub,
+    @Default('') String sub,
   }) = _KpiTileDto;
 
   factory KpiTileDto.fromJson(Map<String, dynamic> json) =>
@@ -307,7 +314,7 @@ class ReservationStatsDto with _$ReservationStatsDto {
 class VoidReasonDto with _$VoidReasonDto {
   const factory VoidReasonDto({
     required String code,
-    required String label,
+    @Default('') String label,
     @Default(0) int count,
     @Default(0) int lostRupiah,
   }) = _VoidReasonDto;
@@ -367,7 +374,6 @@ class StaffVoidDto with _$StaffVoidDto {
     @Default(0) int count,
     @Default(0) int lostRupiah,
     @Default('other') String topReasonCode,
-    @Default('Lainnya') String topReasonLabel,
   }) = _StaffVoidDto;
 
   factory StaffVoidDto.fromJson(Map<String, dynamic> json) =>

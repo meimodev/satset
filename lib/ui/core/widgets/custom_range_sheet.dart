@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -59,10 +61,10 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
   bool get _spanOk => _spanDays <= kCustomRangeMaxDays;
   bool get _valid => _from != null && _to != null && _orderOk && _spanOk;
 
-  String? get _error {
+  String? _error(AppL10n l) {
     if (_from == null || _to == null) return null;
-    if (!_orderOk) return 'Tanggal mulai harus sebelum tanggal selesai.';
-    if (!_spanOk) return 'Rentang maksimal $kCustomRangeMaxDays hari.';
+    if (!_orderOk) return l.crsStartBeforeEnd;
+    if (!_spanOk) return l.crsMaxSpan(kCustomRangeMaxDays);
     return null;
   }
 
@@ -94,7 +96,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final err = _error;
+    final err = _error(context.l10n);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -102,16 +104,29 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('RENTANG KHUSUS', style: SatType.caption(color: sc.textLo)),
+            Text(
+              context.l10n.crsTitle,
+              style: SatType.caption(color: sc.textLo),
+            ),
             const SizedBox(height: Sp.s4),
             Row(
               children: [
                 Expanded(
-                  child: _field(context, 'Mulai', _from, () => _pick(true)),
+                  child: _field(
+                    context,
+                    context.l10n.crsFrom,
+                    _from,
+                    () => _pick(true),
+                  ),
                 ),
                 const SizedBox(width: Sp.s3),
                 Expanded(
-                  child: _field(context, 'Selesai', _to, () => _pick(false)),
+                  child: _field(
+                    context,
+                    context.l10n.crsTo,
+                    _to,
+                    () => _pick(false),
+                  ),
                 ),
               ],
             ),
@@ -153,7 +168,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
             Text(label.toUpperCase(), style: SatType.caption(color: sc.textLo)),
             const SizedBox(height: Sp.sHair),
             Text(
-              set ? _fmt(value) : 'Pilih',
+              set ? _fmt(value) : context.l10n.fltPickDate,
               style: SatType.bodyM(color: set ? sc.accentText : sc.textLo),
             ),
           ],
@@ -174,7 +189,7 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
           borderRadius: SatR.a(14),
         ),
         child: Text(
-          'Terapkan',
+          context.l10n.crsApply,
           style: SatType.labelL(color: _valid ? sc.accentInk : sc.textLo),
         ),
       ),

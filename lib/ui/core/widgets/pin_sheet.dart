@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -395,7 +397,7 @@ class _DebugCredsHint extends StatelessWidget {
               Icon(Icons.bug_report_outlined, size: 14, color: sc.warn),
               const SizedBox(width: Sp.s1h),
               Text(
-                'DEBUG · SEEDED PINS',
+                context.l10n.pinDebugSeeded,
                 style: SatType.caption(color: sc.warn),
               ),
             ],
@@ -427,7 +429,7 @@ class _DebugCredRow extends StatelessWidget {
         Clipboard.setData(ClipboardData(text: label));
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
-            content: Text('Disalin: $label'),
+            content: Text(context.l10n.pinCopied(label)),
             duration: const Duration(milliseconds: 800),
           ),
         );

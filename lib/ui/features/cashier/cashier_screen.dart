@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
@@ -19,6 +18,7 @@ import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/ui/features/cashier/widgets/bill_card.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Which slice of the venue's money the cashier is looking at.
 ///
@@ -190,13 +190,13 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       ];
     }
     if (status.hasError && open.isEmpty && _seg == _Segment.perluDitagih) {
-      return const [
+      return [
         SliverFillRemaining(
           hasScrollBody: false,
           child: SatEmpty(
             icon: Icons.cloud_off_rounded,
-            title: 'Gagal memuat tagihan',
-            body: 'Tarik untuk coba lagi.',
+            title: context.l10n.cshLoadFailedTitle,
+            body: context.l10n.cshPullToRetry,
           ),
         ),
       ];
@@ -221,13 +221,15 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           child: SatEmpty(
             icon: Icons.receipt_long_outlined,
             title: switch (_seg) {
-              _Segment.perluDitagih => _detachedOnly
-                  ? 'Tidak ada meja tertutup yang belum lunas'
-                  : 'Tidak ada tagihan terbuka',
-              _Segment.lunas => _range == _Range.hariIni
-                  ? 'Belum ada tagihan lunas hari ini'
-                  : 'Belum ada tagihan lunas 7 hari terakhir',
-              _Segment.semua => 'Belum ada tagihan',
+              _Segment.perluDitagih =>
+                _detachedOnly
+                    ? context.l10n.cshEmptyDetached
+                    : context.l10n.cshEmptyOpen,
+              _Segment.lunas =>
+                _range == _Range.hariIni
+                    ? context.l10n.cshEmptySettledToday
+                    : context.l10n.cshEmptySettled7d,
+              _Segment.semua => context.l10n.cshEmptyAll,
             },
           ),
         ),
@@ -248,12 +250,14 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       for (final b in sortedLive)
         BillCard.fromSummary(
           b,
+          l10n: context.l10n,
           zone: zones[b.zoneId],
           onTap: () => openCashierBill(context, visitId: b.visitId),
         ),
       for (final p in sortedPast)
         BillCard.fromPastBill(
           p,
+          l10n: context.l10n,
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => PastBillDetailScreen(
@@ -297,7 +301,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, Sp.s6),
             child: Text(
-              AppStrings.kasirRiwayatBatas,
+              context.l10n.kasirRiwayatBatas,
               textAlign: TextAlign.center,
               style: SatType.bodyS(color: context.sat.textDim),
             ),
@@ -381,11 +385,10 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Kasir', style: SatType.h2(color: sc.textHi)),
+              Text(context.l10n.cshTitle, style: SatType.h2(color: sc.textHi)),
               const SizedBox(height: Sp.s1),
               Text(
-                '$running tagihan berjalan · $takeaway tanpa meja · '
-                '$settled lunas',
+                context.l10n.cshSummary(running, takeaway, settled),
                 style: SatType.bodyS(color: sc.textLo),
               ),
             ],
@@ -395,9 +398,15 @@ class _Header extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('Belum tertagih', style: SatType.labelS(color: sc.textLo)),
+            Text(
+              context.l10n.cshUnbilled,
+              style: SatType.labelS(color: sc.textLo),
+            ),
             const SizedBox(height: Sp.s1),
-            Text(formatIDR(outstanding), style: SatType.monoL(color: sc.textHi)),
+            Text(
+              formatIDR(outstanding),
+              style: SatType.monoL(color: sc.textHi),
+            ),
           ],
         ),
       ],
@@ -433,22 +442,22 @@ class _StatRow extends StatelessWidget {
     final tiles = <Widget>[
       TabletStatTile(
         value: '$belumBayar',
-        label: 'Belum bayar',
+        label: context.l10n.cshStatUnpaid,
         valueColor: sc.urgent,
       ),
       TabletStatTile(
         value: '$sebagian',
-        label: 'Sebagian',
+        label: context.l10n.cshStatPartial,
         valueColor: sc.info,
       ),
       TabletStatTile(
         value: formatIDR(diterima),
-        label: 'Sudah diterima',
+        label: context.l10n.cshStatReceived,
         valueColor: sc.success,
       ),
       TabletStatTile(
         value: '$ditutup',
-        label: 'Meja ditutup',
+        label: context.l10n.cshStatClosed,
         valueColor: sc.warn,
         selected: detachedOnly,
         onTap: ditutup == 0 && !detachedOnly ? null : onDetachedTap,
@@ -485,19 +494,19 @@ class _SegmentRow extends StatelessWidget {
     runSpacing: Sp.s2,
     children: [
       SatChip.select(
-        label: 'Perlu ditagih',
+        label: context.l10n.cshSegNeedCharge,
         count: perluDitagih,
         selected: selected == _Segment.perluDitagih,
         onTap: () => onSelected(_Segment.perluDitagih),
       ),
       SatChip.select(
-        label: 'Lunas',
+        label: context.l10n.cshSegSettled,
         count: lunas,
         selected: selected == _Segment.lunas,
         onTap: () => onSelected(_Segment.lunas),
       ),
       SatChip.select(
-        label: 'Semua',
+        label: context.l10n.cshSegAll,
         count: semua,
         selected: selected == _Segment.semua,
         onTap: () => onSelected(_Segment.semua),
@@ -516,12 +525,12 @@ class _RangeRow extends StatelessWidget {
     spacing: Sp.s2,
     children: [
       SatChip.select(
-        label: 'Hari ini',
+        label: context.l10n.cshRangeToday,
         selected: selected == _Range.hariIni,
         onTap: () => onSelected(_Range.hariIni),
       ),
       SatChip.select(
-        label: '7 hari',
+        label: context.l10n.cshRange7d,
         selected: selected == _Range.tujuhHari,
         onTap: () => onSelected(_Range.tujuhHari),
       ),

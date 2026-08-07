@@ -36,18 +36,24 @@ void main() {
   // grouping by (table, sentAt) and the oldest-fire-first sort across tables.
   final byVisit = {
     'v1': [
-      _line(status: TicketStatus.sent, sentAt: '12:10', sent: const Duration(minutes: 10)),
+      _line(
+        status: TicketStatus.sent,
+        sentAt: '12:10',
+        sent: const Duration(minutes: 10),
+      ),
       _line(
         status: TicketStatus.prep,
         sentAt: '12:10',
         sent: const Duration(minutes: 10),
         itemId: 'i2',
       ),
-      _line(status: TicketStatus.sent, sentAt: '12:20', sent: const Duration(minutes: 20)),
+      _line(
+        status: TicketStatus.sent,
+        sentAt: '12:20',
+        sent: const Duration(minutes: 20),
+      ),
     ],
-    'v2': [
-      _line(status: TicketStatus.sent, sentAt: '12:00', tableId: 'T2'),
-    ],
+    'v2': [_line(status: TicketStatus.sent, sentAt: '12:00', tableId: 'T2')],
   };
 
   List<String> keysAt(Duration nowOffset) => buildKitchenOrders(
@@ -114,7 +120,8 @@ void main() {
     expect(
       freeze.containsKey('T9|09:00'),
       isFalse,
-      reason: 'a batch that left the queue must not keep its entry, or the map '
+      reason:
+          'a batch that left the queue must not keep its entry, or the map '
           'grows for the length of a service',
     );
   });

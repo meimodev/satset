@@ -7,7 +7,6 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -21,6 +20,7 @@ import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 class ZoneAdminScreen extends ConsumerStatefulWidget {
   const ZoneAdminScreen({super.key});
@@ -57,7 +57,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
       child: Column(
         children: [
           _ZoneAdminHeader(
-            sub: '${tables.length} meja · ${zones.length} zona · $seats kursi',
+            sub: context.l10n.zonAdminSub(tables.length, zones.length, seats),
             canManage: canManage,
             onManageZones: () => _showZones(context),
           ),
@@ -110,12 +110,12 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
             Icon(Icons.table_restaurant_outlined, size: 40, color: sc.textDim),
             const SizedBox(height: Sp.s3),
             Text(
-              '${AppStrings.zoneAdminEmptyZone} ${zone.name}',
+              '${context.l10n.zoneAdminEmptyZone} ${zone.name}',
               style: SatType.bodyM(color: sc.textMd),
             ),
             const SizedBox(height: Sp.s4),
             SatButton.primary(
-              label: AppStrings.zoneAdminAddTable,
+              label: context.l10n.zoneAdminAddTable,
               icon: Icons.add,
               onTap: () => _editTable(context, null, zone.id),
             ),
@@ -135,21 +135,21 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
             Icon(Icons.layers_outlined, size: 44, color: sc.textDim),
             const SizedBox(height: Sp.s3h),
             Text(
-              AppStrings.zoneAdminNoZones,
+              context.l10n.zoneAdminNoZones,
               style: SatType.h3(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1h),
             Text(
               canManage
-                  ? AppStrings.zoneAdminNoZonesCreate
-                  : AppStrings.zoneAdminNoZonesCreateRequest,
+                  ? context.l10n.zoneAdminNoZonesCreate
+                  : context.l10n.zoneAdminNoZonesCreateRequest,
               textAlign: TextAlign.center,
               style: SatType.bodyM(color: sc.textMd),
             ),
             if (canManage) ...[
               const SizedBox(height: Sp.s4h),
               SatButton.primary(
-                label: AppStrings.zoneAdminAddZone,
+                label: context.l10n.zoneAdminAddZone,
                 onTap: () => _showZones(context),
               ),
             ],
@@ -193,7 +193,7 @@ class _ZoneAdminHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppStrings.zoneAdminTitle,
+                  context.l10n.zoneAdminTitle,
                   style: SatType.h2(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.s1),
@@ -204,12 +204,12 @@ class _ZoneAdminHeader extends StatelessWidget {
           if (canManage)
             SatButton.outline(
               icon: Icons.dashboard_customize_outlined,
-              label: AppStrings.zoneAdminZonePill,
+              label: context.l10n.zoneAdminZonePill,
               onTap: onManageZones,
             )
           else
             SatChip.tag(
-              label: AppStrings.zoneAdminZonePill,
+              label: context.l10n.zoneAdminZonePill,
               icon: Icons.lock_outline,
             ),
         ],
@@ -265,7 +265,7 @@ class _ZoneBar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 14, 0),
             child: SatButton.primary(
-              label: AppStrings.zoneAdminAddTable,
+              label: context.l10n.zoneAdminAddTable,
               icon: Icons.add,
               onTap: onAdd,
             ),
@@ -330,7 +330,7 @@ class _TableRow extends StatelessWidget {
                     ),
                     const SizedBox(height: Sp.sHair),
                     Text(
-                      '${table.capacity} kursi',
+                      context.l10n.zonSeatsCount(table.capacity),
                       style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
@@ -347,7 +347,7 @@ class _TableRow extends StatelessWidget {
                     borderRadius: SatR.a(999),
                   ),
                   child: Text(
-                    AppStrings.inactive,
+                    context.l10n.inactive,
                     style: SatType.labelS(color: sc.urgent),
                   ),
                 ),
@@ -434,8 +434,8 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
   Future<void> _delete() async {
     final ok = await _confirm(
       context,
-      AppStrings.zoneAdminDeleteTableConfirmTitle,
-      '${widget.table!.displayName} ${AppStrings.zoneAdminDeleteTableConfirmSub}',
+      context.l10n.zoneAdminDeleteTableConfirmTitle,
+      '${widget.table!.displayName} ${context.l10n.zoneAdminDeleteTableConfirmSub}',
     );
     if (ok != true) return;
     ref.read(tablesProvider.notifier).removeTable(widget.table!.id);
@@ -449,27 +449,30 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
 
     return _SheetShell(
       title: _isNew
-          ? AppStrings.zoneAdminNewTable
-          : '${AppStrings.zoneAdminEditTable} ${widget.table!.displayName}',
+          ? context.l10n.zoneAdminNewTable
+          : '${context.l10n.zoneAdminEditTable} ${widget.table!.displayName}',
       body: ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
         children: [
-          _label(sc, AppStrings.zoneAdminTableName),
+          _label(sc, context.l10n.zoneAdminTableName),
           const SizedBox(height: Sp.s2),
-          SatField.text(controller: _name, hint: 'mis. T7, Booth A'),
+          SatField.text(
+            controller: _name,
+            hint: context.l10n.zoneAdminTableNameHint,
+          ),
           const SizedBox(height: Sp.s5),
-          _label(sc, AppStrings.zoneAdminMaxCapacity),
+          _label(sc, context.l10n.zoneAdminMaxCapacity),
           const SizedBox(height: Sp.s2),
           SatStepper(
             value: _capacity,
             min: 1,
             max: 20,
-            semanticLabel: AppStrings.zoneAdminMaxCapacity,
+            semanticLabel: context.l10n.zoneAdminMaxCapacity,
             onChanged: (v) => setState(() => _capacity = v),
           ),
           const SizedBox(height: Sp.s5),
-          _label(sc, AppStrings.zoneAdminZonePill),
+          _label(sc, context.l10n.zoneAdminZonePill),
           const SizedBox(height: Sp.s2),
           Wrap(
             spacing: 8,
@@ -497,12 +500,14 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
       footer: Row(
         children: [
           if (!_isNew) ...[
-            SatButton.danger(label: AppStrings.delete, onTap: _delete),
+            SatButton.danger(label: context.l10n.delete, onTap: _delete),
             const SizedBox(width: Sp.s2h),
           ],
           Expanded(
             child: SatButton.primary(
-              label: _isNew ? AppStrings.zoneAdminAddTable : AppStrings.save,
+              label: _isNew
+                  ? context.l10n.zoneAdminAddTable
+                  : context.l10n.save,
               onTap: _save,
             ),
           ),
@@ -542,12 +547,12 @@ class _ActiveRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppStrings.zoneAdminTableActive,
+                    context.l10n.zoneAdminTableActive,
                     style: SatType.labelM(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.sHair),
                   Text(
-                    AppStrings.zoneAdminTableActiveSub,
+                    context.l10n.zoneAdminTableActiveSub,
                     style: SatType.bodyS(color: sc.textMd),
                   ),
                 ],
@@ -555,7 +560,7 @@ class _ActiveRow extends StatelessWidget {
             ),
             SatToggle(
               value: active,
-              semanticLabel: AppStrings.zoneAdminTableActive,
+              semanticLabel: context.l10n.zoneAdminTableActive,
               onChanged: (v) => onChanged(v),
             ),
           ],
@@ -577,13 +582,17 @@ class _ZonesEditor extends ConsumerWidget {
     final seats = tables.fold<int>(0, (s, t) => s + t.capacity);
 
     return _SheetShell(
-      title: 'Kelola Zona',
-      subtitle: '${zones.length} zona · ${tables.length} meja · $seats kursi',
+      title: context.l10n.zoneAdminManageZones,
+      subtitle: context.l10n.zoneAdminSummary(
+        zones.length,
+        tables.length,
+        seats,
+      ),
       body: zones.isEmpty
           ? Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: Text(
-                'Belum ada zona. Tambah zona pertama.',
+                context.l10n.zoneAdminEmpty,
                 style: SatType.bodyM(color: sc.textMd),
               ),
             )
@@ -610,7 +619,7 @@ class _ZonesEditor extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Pindahkan $count meja dulu sebelum hapus zona.',
+                            context.l10n.zoneAdminMoveTablesFirst(count),
                           ),
                         ),
                       );
@@ -618,8 +627,8 @@ class _ZonesEditor extends ConsumerWidget {
                     }
                     final ok = await _confirm(
                       context,
-                      'Hapus zona?',
-                      'Zona "${z.name}" akan dihapus.',
+                      context.l10n.zoneAdminDeleteZoneTitle,
+                      context.l10n.zoneAdminDeleteZoneBody(z.name),
                     );
                     if (ok == true) zonesN.remove(z.id);
                   },
@@ -627,7 +636,7 @@ class _ZonesEditor extends ConsumerWidget {
               },
             ),
       footer: SatButton.primary(
-        label: AppStrings.zoneAdminAddZone,
+        label: context.l10n.zoneAdminAddZone,
         icon: Icons.add,
         onTap: () => _present(context, const _ZoneEditor()),
       ),
@@ -691,7 +700,7 @@ class _ZoneAdminRow extends StatelessWidget {
                   Text(zone.name, style: SatType.labelM(color: sc.textHi)),
                   const SizedBox(height: Sp.sHair),
                   Text(
-                    '$tableCount meja',
+                    context.l10n.zonTablesCount(tableCount),
                     style: SatType.monoS(color: sc.textLo),
                   ),
                 ],
@@ -700,7 +709,7 @@ class _ZoneAdminRow extends StatelessWidget {
           ),
           SatIconButton.outline(
             icon: Icons.tune,
-            tooltip: AppStrings.a11yEdit,
+            tooltip: context.l10n.a11yEdit,
             size: 36,
             onTap: onEdit,
           ),
@@ -708,14 +717,14 @@ class _ZoneAdminRow extends StatelessWidget {
           if (locked)
             SatIconButton.outline(
               icon: Icons.delete_outline,
-              tooltip: AppStrings.delete,
+              tooltip: context.l10n.delete,
               size: 36,
               onTap: null,
             )
           else
             SatIconButton.danger(
               icon: Icons.delete_outline,
-              tooltip: AppStrings.delete,
+              tooltip: context.l10n.delete,
               size: 36,
               onTap: onDelete,
             ),
@@ -782,7 +791,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Pindahkan ${widget.tableCount} meja dulu sebelum hapus zona.',
+            context.l10n.zoneAdminMoveTablesFirst(widget.tableCount),
           ),
         ),
       );
@@ -790,8 +799,8 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
     }
     final ok = await _confirm(
       context,
-      'Hapus zona?',
-      'Zona "${widget.zone!.name}" akan dihapus.',
+      context.l10n.zoneAdminDeleteZoneTitle,
+      context.l10n.zoneAdminDeleteZoneBody(widget.zone!.name),
     );
     if (ok != true) return;
     ref.read(zonesProvider.notifier).remove(widget.zone!.id);
@@ -802,22 +811,24 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return _SheetShell(
-      title: _isNew ? 'Zona baru' : 'Atur ${widget.zone!.name}',
+      title: _isNew
+          ? context.l10n.zoneAdminNewZone
+          : context.l10n.zoneAdminEditZone(widget.zone!.name),
       body: ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
         children: [
           _ZonePreview(name: _name.text, color: _color, icon: _icon),
           const SizedBox(height: Sp.s5),
-          _fieldLabel(sc, 'Nama zona'),
+          _fieldLabel(sc, context.l10n.zoneAdminZoneName),
           const SizedBox(height: Sp.s2),
           SatField.text(
             controller: _name,
-            hint: 'mis. Teras, Bar',
+            hint: context.l10n.zoneAdminZoneNameHint,
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: Sp.s5),
-          _fieldLabel(sc, 'Warna'),
+          _fieldLabel(sc, context.l10n.zoneAdminColor),
           const SizedBox(height: Sp.s2h),
           Wrap(
             spacing: 10,
@@ -832,7 +843,7 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
             ],
           ),
           const SizedBox(height: Sp.s5),
-          _fieldLabel(sc, 'Ikon'),
+          _fieldLabel(sc, context.l10n.zoneAdminIcon),
           const SizedBox(height: Sp.s2h),
           Wrap(
             spacing: 10,
@@ -856,12 +867,12 @@ class _ZoneEditorState extends ConsumerState<_ZoneEditor> {
       footer: Row(
         children: [
           if (!_isNew) ...[
-            SatButton.danger(label: AppStrings.delete, onTap: _delete),
+            SatButton.danger(label: context.l10n.delete, onTap: _delete),
             const SizedBox(width: Sp.s2h),
           ],
           Expanded(
             child: SatButton.primary(
-              label: _isNew ? AppStrings.zoneAdminAddZone : AppStrings.save,
+              label: _isNew ? context.l10n.zoneAdminAddZone : context.l10n.save,
               onTap: _save,
             ),
           ),
@@ -887,7 +898,7 @@ class _ZonePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final shown = name.trim().isEmpty ? 'Zona baru' : name;
+    final shown = name.trim().isEmpty ? context.l10n.zoneAdminNewZone : name;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
       decoration: SatBox.d(
@@ -918,7 +929,10 @@ class _ZonePreview extends StatelessWidget {
                   style: SatType.labelL(color: sc.textHi),
                 ),
                 const SizedBox(height: Sp.sHair),
-                Text('PRATINJAU', style: SatType.monoS(color: color)),
+                Text(
+                  context.l10n.zoneAdminPreview,
+                  style: SatType.monoS(color: color),
+                ),
               ],
             ),
           ),
@@ -944,7 +958,7 @@ class _ColorDot extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: AppStrings.a11yPickColor,
+      label: context.l10n.a11yPickColor,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
@@ -986,7 +1000,7 @@ class _IconTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: AppStrings.zoneAdminIcon,
+      label: context.l10n.zoneAdminIcon,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
@@ -1029,8 +1043,8 @@ class _MetaRow extends StatelessWidget {
           Expanded(
             child: Text(
               tableCount == 0
-                  ? 'Belum ada meja di zona ini.'
-                  : '$tableCount meja saat ini ada di zona ini.',
+                  ? context.l10n.zoneAdminNoTablesHere
+                  : context.l10n.zoneAdminTablesHere(tableCount),
               style: SatType.bodyM(color: sc.textMd),
             ),
           ),
@@ -1092,7 +1106,7 @@ class _SheetShell extends StatelessWidget {
                 ),
                 SatIconButton.outline(
                   icon: Icons.close,
-                  tooltip: AppStrings.close,
+                  tooltip: context.l10n.close,
                   size: 36,
                   onTap: () => Navigator.of(context).pop(),
                 ),
@@ -1157,14 +1171,14 @@ Future<bool?> _confirm(BuildContext context, String title, String message) {
                 children: [
                   Expanded(
                     child: SatButton.outline(
-                      label: AppStrings.cancel,
+                      label: context.l10n.cancel,
                       onTap: () => Navigator.of(ctx).pop(false),
                     ),
                   ),
                   const SizedBox(width: Sp.s2h),
                   Expanded(
                     child: SatButton.danger(
-                      label: AppStrings.delete,
+                      label: context.l10n.delete,
                       onTap: () => Navigator.of(ctx).pop(true),
                     ),
                   ),

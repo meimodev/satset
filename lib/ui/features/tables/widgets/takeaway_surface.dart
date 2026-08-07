@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/models/ticket.dart';
@@ -11,6 +10,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Active Bawa pulang visits (ADR-0026), behind the floor head's second
 /// trigger. A sheet on both form factors — unlike the booking book there is
@@ -45,7 +45,7 @@ class _TakeawayList extends ConsumerWidget {
           ),
           const SizedBox(height: Sp.s3h),
           Text(
-            SatShape.caps(AppStrings.floorTakeaway),
+            SatShape.caps(context.l10n.floorTakeaway),
             style: SatType.h3(color: sc.textHi),
           ),
           const SizedBox(height: Sp.s3),
@@ -53,7 +53,7 @@ class _TakeawayList extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: Sp.s5),
               child: Text(
-                AppStrings.takeawayEmpty,
+                context.l10n.takeawayEmpty,
                 style: SatType.bodyM(color: sc.textMd),
               ),
             )
@@ -96,12 +96,12 @@ class _TakeawayRow extends ConsumerWidget {
     );
 
     final (statusLabel, statusColor) = visit.handedOver
-        ? ('Diserahkan', sc.textMd)
+        ? (context.l10n.tkwStatusHandedOver, sc.textMd)
         : ready
-        ? ('Siap', sc.success)
+        ? (context.l10n.tkwStatusReady, sc.success)
         : live
-        ? ('Diproses', sc.warn)
-        : ('Selesai', sc.info);
+        ? (context.l10n.tkwStatusInProgress, sc.warn)
+        : (context.l10n.tkwStatusDone, sc.info);
 
     return GestureDetector(
       onTap: onTap,

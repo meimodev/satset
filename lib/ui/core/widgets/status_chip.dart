@@ -1,3 +1,5 @@
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/core/localization/labels.dart';
 import 'package:flutter/material.dart';
 
 import 'package:satset/domain/models/ticket.dart';
@@ -23,7 +25,7 @@ class StatusChip extends StatelessWidget {
     final sc = context.sat;
     final (bg, fg) = _tone(sc, status);
     final animate = motionEnabled(context);
-    final label = ticketStatusLabel(status).toUpperCase();
+    final label = ticketStatusLabel(context.l10n, status).toUpperCase();
     return AnimatedContainer(
       duration: animate ? _morph : Duration.zero,
       curve: satEaseOut,

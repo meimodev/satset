@@ -11,6 +11,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/_book/book_entries.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// Pixel lock on the shared control vocabulary (ADR-0055).
 ///
@@ -57,6 +58,11 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               child: MaterialApp(
+                // Pinned, exactly as the app pins it (ADR-0083). Without this the
+                // test resolves against the host's locale and reads English.
+                locale: const Locale('id'),
+                localizationsDelegates: AppL10n.localizationsDelegates,
+                supportedLocales: AppL10n.supportedLocales,
                 debugShowCheckedModeBanner: false,
                 theme: satTheme(theme),
                 home: Builder(

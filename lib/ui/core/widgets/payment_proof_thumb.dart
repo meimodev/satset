@@ -3,11 +3,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Every proof image in the app is this box: a [satProofThumb] square, cropped
 /// `cover`, opening a fullscreen lightbox on tap. ADR-0082.
@@ -98,7 +98,7 @@ class PaymentProofThumb extends ConsumerWidget {
 
   Widget _shot(BuildContext context, Uint8List bytes) => Semantics(
     button: true,
-    label: AppStrings.a11yViewPhoto,
+    label: context.l10n.a11yViewPhoto,
     child: GestureDetector(
       onTap: () => Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
@@ -143,7 +143,7 @@ class _ProofViewer extends StatelessWidget {
       backgroundColor: satMediaChrome,
       iconTheme: const IconThemeData(color: satMediaInk),
       title: Text(
-        'Bukti pembayaran',
+        context.l10n.ppfTitle,
         style: SatType.labelL(color: satMediaInk),
       ),
     ),

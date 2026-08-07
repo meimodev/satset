@@ -1,4 +1,7 @@
+import 'package:satset/core/localization/report_copy.dart';
 import 'dart:math';
+
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
@@ -87,10 +90,10 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 ),
               ),
               const SizedBox(height: Sp.s6),
-              Text('Terkirim', style: SatType.h1(color: ink)),
+              Text(context.l10n.sntTitle, style: SatType.h1(color: ink)),
               const SizedBox(height: Sp.s2),
               Text(
-                'Pesanan Meja $name sudah live di display dapur dan bar.',
+                context.l10n.sntBody(name),
                 textAlign: TextAlign.center,
                 style: SatType.bodyM(
                   color: glow ? ink.withValues(alpha: 0.7) : sc.textMd,
@@ -108,7 +111,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
               ),
               const SizedBox(height: Sp.s4),
               Text(
-                'LAN P50 ${_latency}MS · CLOUD QUEUED',
+                context.l10n.sntLatency('$_latency'),
                 style: SatType.monoS(
                   color: glow ? ink.withValues(alpha: 0.55) : sc.textLo,
                 ),
@@ -117,7 +120,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 const SizedBox(height: Sp.s6),
                 SatButton.outline(
                   icon: Icons.receipt_long_rounded,
-                  label: 'Cetak struk',
+                  label: context.l10n.cshPrintReceipt,
                   onTap: () {
                     setState(() => _engaged = true);
                     printTableStruk(
@@ -178,7 +181,10 @@ class _StationChip extends StatelessWidget {
                   ),
                 ),
           const SizedBox(width: Sp.s2),
-          Text(name, style: SatType.bodyM(color: sc.textHi)),
+          Text(
+            stationLabel(context.l10n, name),
+            style: SatType.bodyM(color: sc.textHi),
+          ),
         ],
       ),
     );

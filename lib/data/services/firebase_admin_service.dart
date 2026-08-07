@@ -271,8 +271,7 @@ class FirebaseAdminService {
       trialStartAt: (d['trialStartAt'] as Timestamp?)?.toDate(),
       paidUntil: (d['paidUntil'] as Timestamp?)?.toDate(),
       priceMonthly: (d['priceMonthly'] as num?)?.toInt(),
-      billingCycle:
-          (d['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
+      billingCycle: (d['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
       lastSeenAt: (d['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: snap.metadata.isFromCache,
     );

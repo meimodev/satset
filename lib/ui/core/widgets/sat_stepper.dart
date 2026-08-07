@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/app_strings.dart';
 import '../design/colors.dart';
 import '../design/skin.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import 'anim.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 enum SatStepperSize { sm, md, lg }
 
@@ -104,7 +104,7 @@ class SatStepper extends StatelessWidget {
           children: [
             _StepButton(
               icon: _pill ? Icons.remove_rounded : Icons.remove,
-              semanticLabel: AppStrings.stepperDecrease,
+              semanticLabel: context.l10n.stepperDecrease,
               width: _btnW,
               height: _h,
               round: _pill,
@@ -134,7 +134,7 @@ class SatStepper extends StatelessWidget {
             ),
             _StepButton(
               icon: _pill ? Icons.add_rounded : Icons.add,
-              semanticLabel: AppStrings.stepperIncrease,
+              semanticLabel: context.l10n.stepperIncrease,
               width: _btnW,
               height: _h,
               round: _pill,

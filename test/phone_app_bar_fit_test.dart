@@ -12,6 +12,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 
 import '_tickers.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// The phone bar's width budget (ADR-0062).
 ///
@@ -70,6 +71,11 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          // Pinned, exactly as the app pins it (ADR-0083). Without this the
+          // test resolves against the host's locale and reads English.
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
           home: Scaffold(body: SatAppBar(onBack: onBack)),
         ),

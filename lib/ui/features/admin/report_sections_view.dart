@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:satset/core/localization/labels.dart';
+import 'package:satset/core/localization/report_copy.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:satset/data/models/reports_dto.dart';
@@ -68,13 +73,13 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
   };
   _StaffSort _staffSort = _StaffSort.net;
 
-  static const _sectionLabel = {
-    _Section.sales: 'Penjualan',
-    _Section.staff: 'Staf',
-    _Section.menu: 'Menu',
-    _Section.bahan: 'Bahan',
-    _Section.ops: 'Operasi',
-    _Section.payments: 'Pembayaran',
+  String _sectionLabel(AppL10n l10n, _Section s) => switch (s) {
+    _Section.sales => l10n.rptSecSales,
+    _Section.staff => l10n.rptSecStaff,
+    _Section.menu => l10n.rptSecMenu,
+    _Section.bahan => l10n.rptSecBahan,
+    _Section.ops => l10n.rptSecOps,
+    _Section.payments => l10n.rptSecPayments,
   };
 
   @override
@@ -120,7 +125,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    _sectionLabel[s]!,
+                    _sectionLabel(context.l10n, s),
                     style: SatType.bodyS(
                       color: _on.contains(s) ? sc.textHi : sc.textLo,
                     ),
@@ -165,8 +170,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           index: 3,
           child: _card(
             context,
-            'Bahan & stok',
-            sub: 'Pemakaian, terbuang, nilai stok, dan selisih opname',
+            context.l10n.rptStockTitle,
+            sub: context.l10n.rptStockSub,
             child: ReportStockSection(
               rangeFrom: snapshot.rangeFrom,
               rangeTo: snapshot.rangeTo,
@@ -245,7 +250,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             ),
           ),
           const SizedBox(width: Sp.s2h),
-          Text('Memperbarui…', style: SatType.bodyS(color: sc.textHi)),
+          Text(
+            context.l10n.rptUpdating,
+            style: SatType.bodyS(color: sc.textHi),
+          ),
         ],
       ),
     );
@@ -297,13 +305,6 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
   }
 
   // ──────────── PAYMENTS (non-cash proof, ADR-0025) ────────────
-  static const _payMethodLabel = {
-    'kartu': 'Kartu',
-    'qris': 'QRIS',
-    'transfer': 'Transfer',
-    'lainnya': 'Lainnya',
-  };
-
   String _payTime(String iso) {
     final d = DateTime.tryParse(iso)?.toLocal();
     if (d == null) return '';
@@ -316,24 +317,24 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (p.rows.isEmpty) {
       return _card(
         context,
-        'Pembayaran non-tunai',
-        sub: 'bukti foto wajib',
+        context.l10n.rptNonCash,
+        sub: context.l10n.rptNonCashSub,
         child: Text(
-          'Tidak ada pembayaran non-tunai pada rentang ini.',
+          context.l10n.rptNonCashEmpty,
           style: SatType.bodyM(color: sc.textLo),
         ),
       );
     }
     return _card(
       context,
-      'Pembayaran non-tunai',
-      sub: 'total ${formatIDR(p.nonCashTotal)}',
+      context.l10n.rptNonCash,
+      sub: context.l10n.rptTotalOf(formatIDR(p.nonCashTotal)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!widget.showProofPhotos && p.rows.any((r) => r.hasPhoto)) ...[
             Text(
-              'Bukti foto tersedia di perangkat venue.',
+              context.l10n.rptProofOnVenue,
               style: SatType.bodyS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s2h),
@@ -354,8 +355,11 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     border: SatB.all(color: sc.border0),
                   ),
                   child: Text(
-                    '${_payMethodLabel[m.method] ?? m.method} · '
-                    '${m.count}× · ${formatIDR(m.amount)}',
+                    context.l10n.rptMethodCount(
+                      paymentMethodLabel(context.l10n, m.method),
+                      m.count,
+                      formatIDR(m.amount),
+                    ),
                     style: SatType.bodyS(color: sc.textHi),
                   ),
                 ),
@@ -383,8 +387,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${_payMethodLabel[r.method] ?? r.method} · '
-                          'Meja ${r.tableLabel ?? '-'}',
+                          context.l10n.rptMethodTable(
+                            paymentMethodLabel(context.l10n, r.method),
+                            r.tableLabel ?? '-',
+                          ),
                           style: SatType.labelM(color: sc.textHi),
                         ),
                         const SizedBox(height: Sp.sHair),
@@ -445,22 +451,22 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
   Widget _takeawaySplit(BuildContext context, TakeawaySplitDto t) {
     return _card(
       context,
-      'Dine-in vs Bawa pulang',
+      context.l10n.rptDineVsTakeaway,
       child: Row(
         children: [
           Expanded(
             child: SetTile(
-              label: 'Dine-in',
+              label: context.l10n.rptDineIn,
               value: formatIDR(t.dineInNet),
-              sub: '${t.dineInCount} transaksi',
+              sub: context.l10n.rptTxCount(t.dineInCount),
             ),
           ),
           const SizedBox(width: Sp.s3),
           Expanded(
             child: SetTile(
-              label: 'Bawa pulang',
+              label: context.l10n.rptTakeaway,
               value: formatIDR(t.net),
-              sub: '${t.count} transaksi',
+              sub: context.l10n.rptTxCount(t.count),
             ),
           ),
         ],
@@ -470,11 +476,19 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
 
   Widget _salesKpis(BuildContext context, List<KpiTileDto> kpis) {
     final tiles = kpis.isEmpty
-        ? const [
-            KpiTileDto(label: 'Net', value: '—', sub: 'belum ada data'),
-            KpiTileDto(label: 'Gross', value: '—', sub: '—'),
-            KpiTileDto(label: 'Pajak + Service', value: '—', sub: '—'),
-            KpiTileDto(label: 'Void', value: '—', sub: '—'),
+        ? [
+            KpiTileDto(
+              label: context.l10n.rptKpiNet,
+              value: '—',
+              sub: context.l10n.rptNoDataLower,
+            ),
+            KpiTileDto(label: context.l10n.rptKpiGross, value: '—', sub: '—'),
+            KpiTileDto(
+              label: context.l10n.rptKpiTaxService,
+              value: '—',
+              sub: '—',
+            ),
+            KpiTileDto(label: context.l10n.rptKpiVoid, value: '—', sub: '—'),
           ]
         : kpis;
     return LayoutBuilder(
@@ -488,9 +502,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   for (var i = 0; i < 2 && i < tiles.length; i++) ...[
                     Expanded(
                       child: SetTile(
-                        label: tiles[i].label,
+                        label: kpiLabel(context.l10n, tiles[i]),
                         value: tiles[i].value,
-                        sub: tiles[i].sub,
+                        sub: kpiSub(context.l10n, tiles[i]),
                       ),
                     ),
                     if (i == 0) const SizedBox(width: Sp.s3),
@@ -504,9 +518,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     for (var i = 2; i < 4 && i < tiles.length; i++) ...[
                       Expanded(
                         child: SetTile(
-                          label: tiles[i].label,
+                          label: kpiLabel(context.l10n, tiles[i]),
                           value: tiles[i].value,
-                          sub: tiles[i].sub,
+                          sub: kpiSub(context.l10n, tiles[i]),
                         ),
                       ),
                       if (i == 2) const SizedBox(width: Sp.s3),
@@ -522,9 +536,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             for (var i = 0; i < tiles.length; i++) ...[
               Expanded(
                 child: SetTile(
-                  label: tiles[i].label,
+                  label: kpiLabel(context.l10n, tiles[i]),
                   value: tiles[i].value,
-                  sub: tiles[i].sub,
+                  sub: kpiSub(context.l10n, tiles[i]),
                 ),
               ),
               if (i != tiles.length - 1) const SizedBox(width: Sp.s3),
@@ -540,8 +554,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (pairs.isEmpty) {
       return _card(
         context,
-        'Tren tamu vs minggu lalu',
-        sub: 'Belum ada data',
+        context.l10n.rptGuestTrend,
+        sub: context.l10n.rptNoData,
         child: const SizedBox(height: Sp.s10),
       );
     }
@@ -553,8 +567,11 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final delta = lastWk == 0 ? 0 : ((thisWk - lastWk) / lastWk * 100).round();
     return _card(
       context,
-      'Tren tamu vs minggu lalu',
-      sub: '$thisWk tamu · ${delta >= 0 ? '+' : ''}$delta% WoW',
+      context.l10n.rptGuestTrend,
+      sub: context.l10n.rptGuestTrendSub(
+        thisWk,
+        '${delta >= 0 ? '+' : ''}$delta',
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -609,7 +626,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 decoration: SatBox.d(color: sc.accent, borderRadius: SatR.a(2)),
               ),
               const SizedBox(width: Sp.s1h),
-              Text('Minggu ini', style: SatType.bodyS(color: sc.textMd)),
+              Text(
+                context.l10n.rptThisWeek,
+                style: SatType.bodyS(color: sc.textMd),
+              ),
               const SizedBox(width: Sp.s3h),
               Container(
                 width: 9,
@@ -617,7 +637,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 decoration: SatBox.d(color: sc.bg4, borderRadius: SatR.a(2)),
               ),
               const SizedBox(width: Sp.s1h),
-              Text('Minggu lalu', style: SatType.bodyS(color: sc.textMd)),
+              Text(
+                context.l10n.rptLastWeek,
+                style: SatType.bodyS(color: sc.textMd),
+              ),
             ],
           ),
         ],
@@ -648,9 +671,11 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     );
     return _card(
       context,
-      'Pendapatan per jam',
-      sub:
-          'Puncak ${hours[peakIdx]}:00 — ${(int.parse(hours[peakIdx]) + 1).toString().padLeft(2, '0')}:00',
+      context.l10n.rptRevenuePerHour,
+      sub: context.l10n.rptPeakHour(
+        hours[peakIdx],
+        (int.parse(hours[peakIdx]) + 1).toString().padLeft(2, '0'),
+      ),
       child: SizedBox(
         height: 130,
         child: Row(
@@ -704,11 +729,11 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       children: [
         _card(
           context,
-          'Performa pelayan',
-          sub: '${rows.length} staf · sortir aktif',
+          context.l10n.rptWaiterPerf,
+          sub: context.l10n.rptWaiterPerfSub(rows.length),
           trailing: _sortMenu(context),
           child: rows.isEmpty
-              ? _emptyChunk(context, 'Belum ada sesi tutup di rentang ini.')
+              ? _emptyChunk(context, context.l10n.rptNoClosedSessions)
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -731,29 +756,27 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
 
   Widget _sortMenu(BuildContext context) {
     final sc = context.sat;
-    final label = {
-      _StaffSort.net: 'Net',
-      _StaffSort.covers: 'Meja',
-      _StaffSort.voidPct: 'Void %',
-      _StaffSort.avgTicket: 'Avg',
-    }[_staffSort]!;
+    final l10n = context.l10n;
+    final label = switch (_staffSort) {
+      _StaffSort.net => l10n.rptKpiNet,
+      _StaffSort.covers => l10n.rptSortCovers,
+      _StaffSort.voidPct => l10n.rptSortVoidPct,
+      _StaffSort.avgTicket => l10n.rptSortAvg,
+    };
     return PopupMenuButton<_StaffSort>(
-      tooltip: 'Sortir',
+      tooltip: l10n.rptSort,
       color: sc.bg1,
       onSelected: (v) => setState(() => _staffSort = v),
       itemBuilder: (c) => [
         for (final s in _StaffSort.values)
           PopupMenuItem(
             value: s,
-            child: Text(
-              {
-                _StaffSort.net: 'Net tertinggi',
-                _StaffSort.covers: 'Paling banyak meja',
-                _StaffSort.voidPct: 'Void terbanyak',
-                _StaffSort.avgTicket: 'Avg ticket',
-              }[s]!,
-              style: SatType.bodyM(color: sc.textHi),
-            ),
+            child: Text(switch (s) {
+              _StaffSort.net => l10n.rptSortNetDesc,
+              _StaffSort.covers => l10n.rptSortMostTables,
+              _StaffSort.voidPct => l10n.rptSortMostVoids,
+              _StaffSort.avgTicket => l10n.rptSortAvgTicket,
+            }, style: SatType.bodyM(color: sc.textHi)),
           ),
       ],
       child: Container(
@@ -785,26 +808,46 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
       child: Row(
         children: [
-          Expanded(flex: 4, child: Text('PELAYAN', style: s())),
+          Expanded(flex: 4, child: Text(context.l10n.rptColWaiter, style: s())),
           Expanded(
             flex: 2,
-            child: Text('MEJA', textAlign: TextAlign.right, style: s()),
+            child: Text(
+              context.l10n.rptColTables,
+              textAlign: TextAlign.right,
+              style: s(),
+            ),
           ),
           Expanded(
             flex: 2,
-            child: Text('ITEM', textAlign: TextAlign.right, style: s()),
+            child: Text(
+              context.l10n.rptColItems,
+              textAlign: TextAlign.right,
+              style: s(),
+            ),
           ),
           Expanded(
             flex: 3,
-            child: Text('AVG TICKET', textAlign: TextAlign.right, style: s()),
+            child: Text(
+              context.l10n.rptColAvgTicket,
+              textAlign: TextAlign.right,
+              style: s(),
+            ),
           ),
           Expanded(
             flex: 2,
-            child: Text('VOID%', textAlign: TextAlign.right, style: s()),
+            child: Text(
+              context.l10n.rptColVoidPct,
+              textAlign: TextAlign.right,
+              style: s(),
+            ),
           ),
           Expanded(
             flex: 3,
-            child: Text('NET', textAlign: TextAlign.right, style: s()),
+            child: Text(
+              context.l10n.rptColNet,
+              textAlign: TextAlign.right,
+              style: s(),
+            ),
           ),
         ],
       ),
@@ -911,8 +954,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (rows.isEmpty) {
       return _card(
         context,
-        'Indeks upsell pelayan',
-        sub: 'Belum ada data',
+        context.l10n.rptUpsell,
+        sub: context.l10n.rptNoData,
         child: const SizedBox(height: Sp.s8),
       );
     }
@@ -922,8 +965,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
         : positive.fold<double>(0, (a, r) => a + r.rate) / positive.length;
     return _card(
       context,
-      'Indeks upsell pelayan',
-      sub: '% sesi dgn starter & main · avg ${(avg * 100).round()}%',
+      context.l10n.rptUpsell,
+      sub: context.l10n.rptUpsellSub((avg * 100).round()),
       child: Column(
         children: [
           for (final r in rows)
@@ -972,18 +1015,28 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: _menuList(context, 'Top sellers', menu.top, top: true),
+                child: _menuList(
+                  context,
+                  context.l10n.rptTopSellers,
+                  menu.top,
+                  top: true,
+                ),
               ),
               const SizedBox(width: Sp.s3h),
               Expanded(
-                child: _menuList(context, 'Slow movers', menu.slow, top: false),
+                child: _menuList(
+                  context,
+                  context.l10n.rptSlowMovers,
+                  menu.slow,
+                  top: false,
+                ),
               ),
             ],
           )
         else ...[
-          _menuList(context, 'Top sellers', menu.top, top: true),
+          _menuList(context, context.l10n.rptTopSellers, menu.top, top: true),
           const SizedBox(height: Sp.s3h),
-          _menuList(context, 'Slow movers', menu.slow, top: false),
+          _menuList(context, context.l10n.rptSlowMovers, menu.slow, top: false),
         ],
         const SizedBox(height: Sp.s3h),
         _modifierAttach(context, menu.modifierAttach),
@@ -1019,7 +1072,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       return _card(
         context,
         title,
-        sub: 'Belum ada data',
+        sub: context.l10n.rptNoData,
         child: const SizedBox(height: Sp.s10),
       );
     }
@@ -1027,8 +1080,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       context,
       title,
       sub: top
-          ? '${rows.length} item · margin tinggi'
-          : '${rows.length} item · stok mengendap',
+          ? context.l10n.rptMenuHighMargin(rows.length)
+          : context.l10n.rptMenuSlowStock(rows.length),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++) ...[
@@ -1047,7 +1100,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(
-                          '×${rows[i].qty} · margin ${rows[i].marginPct}%',
+                          context.l10n.rptQtyMargin(
+                            rows[i].qty,
+                            rows[i].marginPct,
+                          ),
                           style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
@@ -1092,15 +1148,15 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (mods.isEmpty) {
       return _card(
         context,
-        'Attach rate modifier',
-        sub: '% order pakai modifier',
+        context.l10n.rptAttachRate,
+        sub: context.l10n.rptAttachRateSub,
         child: const SizedBox(height: Sp.s8),
       );
     }
     return _card(
       context,
-      'Attach rate modifier',
-      sub: '% order pakai modifier',
+      context.l10n.rptAttachRate,
+      sub: context.l10n.rptAttachRateSub,
       child: Column(
         children: [
           for (final m in mods)
@@ -1113,7 +1169,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     children: [
                       Expanded(
                         child: Text(
-                          m.group,
+                          modifierGroupLabel(context.l10n, m.group),
                           style: SatType.bodyM(color: sc.textHi),
                         ),
                       ),
@@ -1142,22 +1198,37 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
   Widget _menuMatrix(BuildContext context, List<MatrixItemDto> items) {
     final sc = context.sat;
     final buckets = <_BucketSpec>[
-      _BucketSpec('star', 'LAKU & UNTUNG', 'jaga & sorot', sc.success),
+      _BucketSpec(
+        'star',
+        context.l10n.rptBucketStar,
+        context.l10n.rptBucketStarAction,
+        sc.success,
+      ),
       _BucketSpec(
         'plow',
-        'LAKU TAPI TIPIS',
-        'reprice / kurangi porsi',
+        context.l10n.rptBucketPlow,
+        context.l10n.rptBucketPlowAction,
         sc.warn,
       ),
-      _BucketSpec('puzzle', 'UNTUNG TAPI SEPI', 'promosikan', sc.info),
-      _BucketSpec('dog', 'SEPI & TIPIS', 'kandidat dipangkas', sc.textLo),
+      _BucketSpec(
+        'puzzle',
+        context.l10n.rptBucketPuzzle,
+        context.l10n.rptBucketPuzzleAction,
+        sc.info,
+      ),
+      _BucketSpec(
+        'dog',
+        context.l10n.rptBucketDog,
+        context.l10n.rptBucketDogAction,
+        sc.textLo,
+      ),
     ];
     return _card(
       context,
-      'Klasifikasi menu',
-      sub: 'Populer × margin',
+      context.l10n.rptMenuClass,
+      sub: context.l10n.rptMenuClassSub,
       child: items.isEmpty
-          ? _emptyChunk(context, 'Belum ada data.')
+          ? _emptyChunk(context, context.l10n.rptNoDataDot)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -1193,7 +1264,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             const SizedBox(width: Sp.s2),
             Expanded(
               child: Text(
-                '· ${spec.action}',
+                context.l10n.rptBucketAction(spec.action),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: SatType.bodyS(color: sc.textLo),
@@ -1206,7 +1277,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: Sp.s1),
             child: Text(
-              'tidak ada item',
+              context.l10n.rptNoItems,
               style: SatType.bodyS(color: sc.textLo),
             ),
           )
@@ -1235,7 +1306,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   ),
                   const SizedBox(width: Sp.s2h),
                   Text(
-                    'pop ${(it.popularity * 100).round()} · margin ${(it.margin * 100).round()}%',
+                    context.l10n.rptPopMargin(
+                      (it.popularity * 100).round(),
+                      (it.margin * 100).round(),
+                    ),
                     style: SatType.monoS(color: sc.textMd),
                   ),
                 ],
@@ -1245,7 +1319,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             Padding(
               padding: const EdgeInsets.only(top: Sp.s1, left: Sp.s3h),
               child: Text(
-                '+$extra lainnya',
+                context.l10n.rptMoreItems(extra),
                 style: SatType.monoS(color: sc.textLo),
               ),
             ),
@@ -1259,20 +1333,23 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (cats.isEmpty) {
       return _card(
         context,
-        'Bauran kategori (WoW)',
-        sub: 'Belum ada data',
+        context.l10n.rptCategoryMix,
+        sub: context.l10n.rptNoData,
         child: const SizedBox(height: Sp.s8),
       );
     }
     final palette = [sc.accent, sc.info, sc.success, sc.violet, sc.warn];
     return _card(
       context,
-      'Bauran kategori (WoW)',
-      sub: 'Bagian pendapatan vs minggu lalu',
+      context.l10n.rptCategoryMix,
+      sub: context.l10n.rptCategoryMixSub,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('MINGGU INI', style: SatType.caption(color: sc.textLo)),
+          Text(
+            context.l10n.rptColThisWeek,
+            style: SatType.caption(color: sc.textLo),
+          ),
           const SizedBox(height: Sp.s1h),
           ClipRRect(
             borderRadius: SatR.a(4),
@@ -1293,7 +1370,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             ),
           ),
           const SizedBox(height: Sp.s2h),
-          Text('MINGGU LALU', style: SatType.caption(color: sc.textLo)),
+          Text(
+            context.l10n.rptColLastWeek,
+            style: SatType.caption(color: sc.textLo),
+          ),
           const SizedBox(height: Sp.s1h),
           ClipRRect(
             borderRadius: SatR.a(4),
@@ -1377,15 +1457,15 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (pairs.isEmpty) {
       return _card(
         context,
-        'Pasangan keranjang',
-        sub: 'Item paling sering dipesan bersama',
+        context.l10n.rptBasketPairs,
+        sub: context.l10n.rptBasketPairsSub,
         child: const SizedBox(height: Sp.s8),
       );
     }
     return _card(
       context,
-      'Pasangan keranjang',
-      sub: 'Item paling sering dipesan bersama',
+      context.l10n.rptBasketPairs,
+      sub: context.l10n.rptBasketPairsSub,
       child: Column(
         children: [
           for (var i = 0; i < pairs.length; i++) ...[
@@ -1430,7 +1510,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                         ),
                         const SizedBox(height: Sp.sHair),
                         Text(
-                          '${pairs[i].count}× di rentang ini',
+                          context.l10n.rptPairCount(pairs[i].count),
                           style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
@@ -1483,15 +1563,19 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
 
   Widget _opsKpis(BuildContext context, List<KpiTileDto> kpis) {
     final tiles = kpis.isEmpty
-        ? const [
+        ? [
             KpiTileDto(
-              label: 'Avg turn time',
+              label: context.l10n.rptKpiTurnTime,
               value: '—',
-              sub: 'belum ada data',
+              sub: context.l10n.rptNoDataLower,
             ),
-            KpiTileDto(label: 'Prep dapur', value: '—', sub: '—'),
-            KpiTileDto(label: 'Tunggu antar', value: '—', sub: '—'),
-            KpiTileDto(label: 'Reservasi', value: '—', sub: '—'),
+            KpiTileDto(label: context.l10n.rptKpiPrep, value: '—', sub: '—'),
+            KpiTileDto(label: context.l10n.rptKpiPickup, value: '—', sub: '—'),
+            KpiTileDto(
+              label: context.l10n.rptKpiReservations,
+              value: '—',
+              sub: '—',
+            ),
           ]
         : kpis;
     return LayoutBuilder(
@@ -1504,18 +1588,18 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 children: [
                   Expanded(
                     child: SetTile(
-                      label: tiles[0].label,
+                      label: kpiLabel(context.l10n, tiles[0]),
                       value: tiles[0].value,
-                      sub: tiles[0].sub,
+                      sub: kpiSub(context.l10n, tiles[0]),
                     ),
                   ),
                   const SizedBox(width: Sp.s3),
                   if (tiles.length > 1)
                     Expanded(
                       child: SetTile(
-                        label: tiles[1].label,
+                        label: kpiLabel(context.l10n, tiles[1]),
                         value: tiles[1].value,
-                        sub: tiles[1].sub,
+                        sub: kpiSub(context.l10n, tiles[1]),
                       ),
                     ),
                 ],
@@ -1526,18 +1610,18 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   children: [
                     Expanded(
                       child: SetTile(
-                        label: tiles[2].label,
+                        label: kpiLabel(context.l10n, tiles[2]),
                         value: tiles[2].value,
-                        sub: tiles[2].sub,
+                        sub: kpiSub(context.l10n, tiles[2]),
                       ),
                     ),
                     const SizedBox(width: Sp.s3),
                     if (tiles.length > 3)
                       Expanded(
                         child: SetTile(
-                          label: tiles[3].label,
+                          label: kpiLabel(context.l10n, tiles[3]),
                           value: tiles[3].value,
-                          sub: tiles[3].sub,
+                          sub: kpiSub(context.l10n, tiles[3]),
                         ),
                       ),
                   ],
@@ -1551,9 +1635,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             for (var i = 0; i < tiles.length; i++) ...[
               Expanded(
                 child: SetTile(
-                  label: tiles[i].label,
+                  label: kpiLabel(context.l10n, tiles[i]),
                   value: tiles[i].value,
-                  sub: tiles[i].sub,
+                  sub: kpiSub(context.l10n, tiles[i]),
                 ),
               ),
               if (i != tiles.length - 1) const SizedBox(width: Sp.s3),
@@ -1569,8 +1653,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (s.sampleSize == 0) {
       return _card(
         context,
-        'Kecepatan layanan',
-        sub: 'Belum ada item siap/disajikan',
+        context.l10n.rptServiceSpeed,
+        sub: context.l10n.rptServiceSpeedEmpty,
         child: const SizedBox(height: Sp.s8),
       );
     }
@@ -1585,10 +1669,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               .fold<double>(0.1, (a, b) => b > a ? b : a);
     return _card(
       context,
-      'Kecepatan layanan',
-      sub:
-          'Median prep ${s.prepMedianMin}m · antar ${s.pickupMedianMin}m · '
-          '${s.sampleSize} item',
+      context.l10n.rptServiceSpeed,
+      sub: context.l10n.rptServiceSpeedSub(
+        s.prepMedianMin,
+        s.pickupMedianMin,
+        s.sampleSize,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1607,7 +1693,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 // single number — the percentage is still one honest figure
                 // ("% of courses that hit their own target"). ADR-0043.
                 child: Text(
-                  'kursus siap di bawah target masing-masing',
+                  context.l10n.rptSlaCourses,
                   style: SatType.bodyS(color: sc.textMd),
                 ),
               ),
@@ -1624,17 +1710,18 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           // number that actually drives its cue.
           if (s.pickupSlaPct > 0 || s.pickupMedianMin > 0)
             _MiniStatRow(
-              label: 'Diantar < ${s.pickupTargetMins}m',
+              label: context.l10n.rptPickupSla(s.pickupTargetMins),
               value: '${s.pickupSlaPct.round()}%',
-              sub: 'median ${s.pickupMedianMin}m',
+              sub: context.l10n.rptMedianMins(s.pickupMedianMin),
             ),
           if (s.greetSampleSize > 0)
             _MiniStatRow(
-              label: 'Telat dilayani > ${s.ungreetedMins}m',
+              label: context.l10n.rptGreetBreach(s.ungreetedMins),
               value: '${s.greetBreachPct.round()}%',
-              sub:
-                  'median ${s.greetMedianMin}m · '
-                  '${s.greetSampleSize} kunjungan',
+              sub: context.l10n.rptGreetSub(
+                s.greetMedianMin,
+                s.greetSampleSize,
+              ),
             ),
           if (s.slowItems.isNotEmpty) ...[
             const SizedBox(height: Sp.s4),
@@ -1643,7 +1730,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             // a "sides" item would red permanently for correctly waiting on
             // its mains. ADR-0043.
             Text(
-              'Menu paling lambat (rata-rata prep)',
+              context.l10n.rptSlowestMenu,
               style: SatType.labelS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s2),
@@ -1694,17 +1781,22 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (grid.isEmpty || grid.first.isEmpty) {
       return _card(
         context,
-        'Peak-hour heatmap',
-        sub: '7 hari · jam 11—22',
+        context.l10n.rptHeatmap,
+        sub: context.l10n.rptHeatmapSub,
         child: const SizedBox(height: Sp.s8),
       );
     }
-    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    // Weekday names are a date, and dates follow the language (ADR-0084).
+    // 2024-01-01 was a Monday, so this walks Mon→Sun in whichever locale.
+    final dow = DateFormat.E(context.l10n.localeName);
+    final days = [
+      for (var i = 0; i < 7; i++) dow.format(DateTime(2024, 1, 1 + i)),
+    ];
     const hours = ['11', '', '13', '', '15', '', '17', '', '19', '', '21', ''];
     return _card(
       context,
-      'Peak-hour heatmap',
-      sub: '7 hari · jam 11—22',
+      context.l10n.rptHeatmap,
+      sub: context.l10n.rptHeatmapSub,
       child: LayoutBuilder(
         builder: (c, cons) {
           final cellW = (cons.maxWidth - 32) / 12;
@@ -1762,7 +1854,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               const SizedBox(height: Sp.s2h),
               Row(
                 children: [
-                  Text('SEPI', style: SatType.monoS(color: sc.textLo)),
+                  Text(
+                    context.l10n.rptHeatQuiet,
+                    style: SatType.monoS(color: sc.textLo),
+                  ),
                   const SizedBox(width: Sp.s1h),
                   for (var i = 0; i < 5; i++) ...[
                     Container(
@@ -1776,7 +1871,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     const SizedBox(width: Sp.sHair),
                   ],
                   const SizedBox(width: Sp.s1),
-                  Text('PADAT', style: SatType.monoS(color: sc.textLo)),
+                  Text(
+                    context.l10n.rptHeatBusy,
+                    style: SatType.monoS(color: sc.textLo),
+                  ),
                 ],
               ),
             ],
@@ -1792,12 +1890,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (booked == 0) {
       return _card(
         context,
-        'Konversi reservasi',
-        sub: 'Belum ada modul reservasi',
-        child: _emptyChunk(
-          context,
-          'Aktifkan modul reservasi (P3) untuk melihat konversi.',
-        ),
+        context.l10n.rptReservationConv,
+        sub: context.l10n.rptReservationNoModule,
+        child: _emptyChunk(context, context.l10n.rptReservationNoModuleBody),
       );
     }
     final seatedPct = r.seated / booked;
@@ -1805,8 +1900,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final cancelPct = r.cancelled / booked;
     return _card(
       context,
-      'Konversi reservasi',
-      sub: '$booked dipesan · ${r.seated} duduk · ${r.noShow} no-show',
+      context.l10n.rptReservationConv,
+      sub: context.l10n.rptReservationSub(booked, r.seated, r.noShow),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1830,9 +1925,27 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             ),
           ),
           const SizedBox(height: Sp.s3h),
-          _resvRow(context, sc.success, 'Duduk', r.seated, seatedPct),
-          _resvRow(context, sc.warn, 'No-show', r.noShow, noShowPct),
-          _resvRow(context, sc.textLo, 'Batal', r.cancelled, cancelPct),
+          _resvRow(
+            context,
+            sc.success,
+            context.l10n.rptSeated,
+            r.seated,
+            seatedPct,
+          ),
+          _resvRow(
+            context,
+            sc.warn,
+            context.l10n.rptNoShow,
+            r.noShow,
+            noShowPct,
+          ),
+          _resvRow(
+            context,
+            sc.textLo,
+            context.l10n.rptCancelled,
+            r.cancelled,
+            cancelPct,
+          ),
         ],
       ),
     );
@@ -1875,8 +1988,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (rows.isEmpty) {
       return _card(
         context,
-        'Alasan void & comp',
-        sub: 'Belum ada void',
+        context.l10n.rptVoidReasons,
+        sub: context.l10n.rptNoVoids,
         child: const SizedBox(height: Sp.s8),
       );
     }
@@ -1893,8 +2006,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     ];
     return _card(
       context,
-      'Alasan void & comp',
-      sub: '$total kejadian · ${_compactRp(totalRp)} hilang',
+      context.l10n.rptVoidReasons,
+      sub: context.l10n.rptVoidSub(total, _compactRp(totalRp)),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++)
@@ -1907,7 +2020,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     children: [
                       Expanded(
                         child: Text(
-                          rows[i].label,
+                          voidReasonLabel(context.l10n, rows[i].code),
                           style: SatType.bodyM(color: sc.textHi),
                         ),
                       ),
@@ -1941,8 +2054,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     if (rows.isEmpty) {
       return _card(
         context,
-        'Void per pelayan',
-        sub: 'Belum ada void',
+        context.l10n.rptVoidPerWaiter,
+        sub: context.l10n.rptNoVoids,
         child: const SizedBox(height: Sp.s8),
       );
     }
@@ -1951,8 +2064,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     final maxN = rows.map((r) => r.count).fold<int>(1, (a, b) => b > a ? b : a);
     return _card(
       context,
-      'Void per pelayan',
-      sub: '$total kejadian · ${_compactRp(totalRp)} hilang',
+      context.l10n.rptVoidPerWaiter,
+      sub: context.l10n.rptVoidSub(total, _compactRp(totalRp)),
       child: Column(
         children: [
           for (final r in rows)
@@ -1965,7 +2078,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     children: [
                       Expanded(
                         child: Text(
-                          r.name,
+                          staffName(context.l10n, r.id, r.name),
                           style: SatType.bodyM(color: sc.textHi),
                         ),
                       ),
@@ -1992,7 +2105,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       ),
                       const SizedBox(width: Sp.s2h),
                       Text(
-                        'alasan: ${r.topReasonLabel}',
+                        context.l10n.rptTopReason(
+                          voidReasonLabel(context.l10n, r.topReasonCode),
+                        ),
                         style: SatType.bodyS(color: sc.textLo),
                       ),
                     ],
@@ -2019,12 +2134,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           Icon(Icons.dashboard_customize_outlined, color: sc.textLo, size: 28),
           const SizedBox(height: Sp.s2h),
           Text(
-            'Tidak ada bagian aktif',
+            context.l10n.rptNoSection,
             style: SatType.labelM(color: sc.textHi),
           ),
           const SizedBox(height: Sp.s1),
           Text(
-            'Aktifkan minimal satu tab di atas',
+            context.l10n.rptNoSectionBody,
             style: SatType.bodyS(color: sc.textMd),
           ),
         ],

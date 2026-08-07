@@ -20,7 +20,7 @@ class StaffReportRow {
   final int voidCount;
   final double voidPct;
   final int lostRupiah;
-  final String? topReasonLabel;
+  final String? topReasonCode;
 
   const StaffReportRow({
     required this.id,
@@ -34,7 +34,7 @@ class StaffReportRow {
     required this.voidCount,
     required this.voidPct,
     required this.lostRupiah,
-    required this.topReasonLabel,
+    required this.topReasonCode,
   });
 
   static StaffReportRow fromJson(Map<String, dynamic> j) => StaffReportRow(
@@ -49,7 +49,7 @@ class StaffReportRow {
     voidCount: (j['voidCount'] as num?)?.toInt() ?? 0,
     voidPct: (j['voidPct'] as num?)?.toDouble() ?? 0.0,
     lostRupiah: (j['lostRupiah'] as num?)?.toInt() ?? 0,
-    topReasonLabel: j['topReasonLabel'] as String?,
+    topReasonCode: j['topReasonCode'] as String?,
   );
 }
 

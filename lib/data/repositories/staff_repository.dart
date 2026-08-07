@@ -12,11 +12,17 @@ import 'package:satset/domain/models/role.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:uuid/uuid.dart';
 
+/// A staff edit the client refused, or the server rejected.
+///
+/// Carries a [code], never a sentence (ADR-0085): the words are composed by
+/// `staffErrorMessage` at the moment they are shown, in the reader's language.
+/// [arg] is the one detail some codes need — today only an HTTP status.
 class StaffException implements Exception {
-  final String message;
-  StaffException(this.message);
+  final String code;
+  final String arg;
+  StaffException(this.code, {this.arg = ''});
   @override
-  String toString() => message;
+  String toString() => 'StaffException($code)';
 }
 
 /// Surfaces bootstrap progress for the staff list. Symmetric with
@@ -139,7 +145,7 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
       final p = (_rng.nextInt(900000) + 100000).toString();
       if (!_pinExists(p)) return p;
     }
-    throw StaffException('PIN pool exhausted');
+    throw StaffException('pinPoolExhausted');
   }
 
   AppUser create({
@@ -289,10 +295,10 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
   /// 409 [`pin_in_use`] code as a [StaffException].
   Future<void> setPin(String id, String pin) async {
     if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
-      throw StaffException('PIN must be 6 digits');
+      throw StaffException('pinLength');
     }
     if (_pinExists(pin, exceptId: id)) {
-      throw StaffException('PIN already in use');
+      throw StaffException('pinInUse');
     }
     final prev = byId(id);
     state = [for (final u in state) u.id == id ? u.copyWith(pin: pin) : u];
@@ -309,9 +315,9 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
   StaffException _mapPinError(Object e) {
     final s = e.toString();
     if (s.contains('pin_in_use')) {
-      return StaffException('PIN already in use');
+      return StaffException('pinInUse');
     }
-    return StaffException('Failed to update PIN: $s');
+    return StaffException('pinUpdateFailed', arg: s);
   }
 
   void setDisabled(String id, bool disabled) {
@@ -358,9 +364,7 @@ class StaffRepository extends StateNotifier<List<AppUser>> {
       (u) => !u.disabled && u.roleId != null && adminRoleIds.contains(u.roleId),
     );
     if (!hasAdmin) {
-      throw StaffException(
-        'Must keep at least one active user with “Manage staff” capability',
-      );
+      throw StaffException('lastAdmin');
     }
   }
 

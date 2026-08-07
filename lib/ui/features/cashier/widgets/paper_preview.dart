@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/printing/bill_struk_data.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -23,86 +25,94 @@ class PaperPreview extends StatelessWidget {
   const PaperPreview(this.d, {super.key});
 
   @override
-  Widget build(BuildContext context) => Container(
-    // 58mm at the roll's own aspect. Fixed, because a slip that reflows to the
-    // pane width stops being a preview of anything.
-    width: 280,
-    padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s5),
-    color: satPaperGround,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _centre(d.venueName, bold: true),
-        if (d.tagline.isNotEmpty) _centre(d.tagline, faint: true),
-        if (d.address.isNotEmpty) _centre(d.address, faint: true),
-        if (d.phone.isNotEmpty) _centre(d.phone, faint: true),
-        if (d.header.isNotEmpty) _centre(d.header, faint: true),
-        _rule(),
-        _row(_title, d.docLabel.isEmpty ? '' : d.docLabel, bold: true),
-        _row(
-          d.guestName.isEmpty
-              ? 'Meja ${d.tableLabel}'
-              : '${d.tableLabel} · ${d.guestName}',
-          formatClockId(d.at.toIso8601String()),
-          faint: true,
-        ),
-        if (d.pax > 0) _row('${d.pax} tamu', '', faint: true),
-        _rule(dashed: true),
-        for (final l in d.lines) ..._line(l),
-        _rule(dashed: true),
-        _row('Subtotal', _money(d.subtotal)),
-        // The Diskon row's position is the arithmetic, not decoration —
-        // above Layanan when it reduced their base, below Pajak otherwise
-        // (ADR-0038). Printing it in a fixed slot prints a sum that fails.
-        if (d.discountAmount > 0 && d.taxAfterDiscount)
-          _row(d.discountLabel, '−${_money(d.discountAmount)}'),
-        if (d.serviceAmount > 0) _row('Layanan', _money(d.serviceAmount)),
-        if (d.taxAmount > 0) _row('Pajak', _money(d.taxAmount)),
-        if (d.discountAmount > 0 && !d.taxAfterDiscount)
-          _row(d.discountLabel, '−${_money(d.discountAmount)}'),
-        _rule(),
-        _row('TOTAL', _money(d.total), bold: true),
-        if (d.kind == BillDocKind.evenReceipt && d.billTotal != d.total)
-          _row('Total tagihan', _money(d.billTotal), faint: true),
-        if (d.payments.isNotEmpty) ...[
-          _rule(dashed: true),
-          for (final p in d.payments)
-            _row(
-              p.isRefund ? '${p.methodLabel} (refund)' : p.methodLabel,
-              _money(p.amount),
-            ),
-          if (d.tenderedTotal != null) ...[
-            _row('Tunai diterima', _money(d.tenderedTotal!), faint: true),
-            _row(
-              'Kembalian',
-              _money(d.tenderedTotal! - d.paidNet),
-              faint: true,
-            ),
-          ],
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Container(
+      // 58mm at the roll's own aspect. Fixed, because a slip that reflows to the
+      // pane width stops being a preview of anything.
+      width: 280,
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s4, vertical: Sp.s5),
+      color: satPaperGround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _centre(d.venueName, bold: true),
+          if (d.tagline.isNotEmpty) _centre(d.tagline, faint: true),
+          if (d.address.isNotEmpty) _centre(d.address, faint: true),
+          if (d.phone.isNotEmpty) _centre(d.phone, faint: true),
+          if (d.header.isNotEmpty) _centre(d.header, faint: true),
+          _rule(),
+          _row(_title(l10n), d.docLabel.isEmpty ? '' : d.docLabel, bold: true),
           _row(
-            d.outstanding > 0 ? 'SISA' : 'LUNAS',
-            d.outstanding > 0 ? _money(d.outstanding) : '0',
-            bold: true,
+            d.guestName.isEmpty
+                ? l10n.tableNamed(d.tableLabel)
+                : '${d.tableLabel} · ${d.guestName}',
+            formatClockId(d.at.toIso8601String()),
+            faint: true,
           ),
-        ] else if (d.outstanding > 0)
-          _row('SISA', _money(d.outstanding), bold: true),
-        _rule(),
-        if (d.footer.isNotEmpty) _centre(d.footer, faint: true),
-        _centre(
-          d.thankYou.isEmpty ? 'Terima kasih' : d.thankYou,
-          faint: true,
-        ),
-        if (d.social.isNotEmpty) _centre(d.social, faint: true),
-      ],
-    ),
-  );
+          if (d.pax > 0) _row(l10n.rcpPaxCount(d.pax), '', faint: true),
+          _rule(dashed: true),
+          for (final l in d.lines) ..._line(l),
+          _rule(dashed: true),
+          _row(l10n.strukSubtotal, _money(d.subtotal)),
+          // The Diskon row's position is the arithmetic, not decoration —
+          // above Layanan when it reduced their base, below Pajak otherwise
+          // (ADR-0038). Printing it in a fixed slot prints a sum that fails.
+          if (d.discountAmount > 0 && d.taxAfterDiscount)
+            _row(d.discountLabel, '−${_money(d.discountAmount)}'),
+          if (d.serviceAmount > 0)
+            _row(l10n.strukService, _money(d.serviceAmount)),
+          if (d.taxAmount > 0) _row(l10n.strukTax, _money(d.taxAmount)),
+          if (d.discountAmount > 0 && !d.taxAfterDiscount)
+            _row(d.discountLabel, '−${_money(d.discountAmount)}'),
+          _rule(),
+          _row(l10n.strukTotal, _money(d.total), bold: true),
+          if (d.kind == BillDocKind.evenReceipt && d.billTotal != d.total)
+            _row(l10n.strukBillTotal, _money(d.billTotal), faint: true),
+          if (d.payments.isNotEmpty) ...[
+            _rule(dashed: true),
+            for (final p in d.payments)
+              _row(
+                p.isRefund ? l10n.rcpRefundLine(p.methodLabel) : p.methodLabel,
+                _money(p.amount),
+              ),
+            if (d.tenderedTotal != null) ...[
+              _row(
+                l10n.strukCashReceived,
+                _money(d.tenderedTotal!),
+                faint: true,
+              ),
+              _row(
+                l10n.cpdChange,
+                _money(d.tenderedTotal! - d.paidNet),
+                faint: true,
+              ),
+            ],
+            _row(
+              d.outstanding > 0 ? l10n.strukOutstanding : l10n.strukSettled,
+              d.outstanding > 0 ? _money(d.outstanding) : '0',
+              bold: true,
+            ),
+          ] else if (d.outstanding > 0)
+            _row(l10n.strukOutstanding, _money(d.outstanding), bold: true),
+          _rule(),
+          if (d.footer.isNotEmpty) _centre(d.footer, faint: true),
+          _centre(
+            d.thankYou.isEmpty ? l10n.strukThanks : d.thankYou,
+            faint: true,
+          ),
+          if (d.social.isNotEmpty) _centre(d.social, faint: true),
+        ],
+      ),
+    );
+  }
 
-  String get _title => switch (d.kind) {
+  String _title(AppL10n l10n) => switch (d.kind) {
     BillDocKind.wholeBill =>
-      d.payments.isEmpty ? 'TAGIHAN' : 'STRUK PEMBAYARAN',
-    BillDocKind.itemizedReceipt => 'STRUK',
-    BillDocKind.evenReceipt => 'STRUK BAGIAN',
+      d.payments.isEmpty ? l10n.strukBillTitle : l10n.strukReceiptTitle,
+    BillDocKind.itemizedReceipt => l10n.rcpItemizedReceipt,
+    BillDocKind.evenReceipt => l10n.rcpSplitReceipt,
   };
 
   /// The roll prints no currency symbol — the grouping alone is the number.
@@ -115,7 +125,8 @@ class PaperPreview extends StatelessWidget {
     ),
     for (final m in l.modifiers) _sub(m),
     if (l.note.isNotEmpty) _sub('* ${l.note}'),
-    if (l.hasDiscount) _row('  ${l.discountLabel}', '−${_money(l.discountAmount)}', faint: true),
+    if (l.hasDiscount)
+      _row('  ${l.discountLabel}', '−${_money(l.discountAmount)}', faint: true),
   ];
 
   Widget _centre(String text, {bool bold = false, bool faint = false}) =>

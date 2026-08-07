@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/ui/core/widgets/sat_field.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/discount_dto.dart';
@@ -26,6 +25,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// What the caller wants to discount: the whole [[Bill (tab)]], a receipt, or
 /// one of a receipt's lines — the three scopes ADR-0070 settled.
@@ -81,23 +81,15 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
     await showSatDialog<void>(
       context,
       builder: (c) => AlertDialog(
-        title: const Text('Belum ada preset diskon'),
-        content: Text(
-          switch (target.scope) {
-            'line' =>
-              'Belum ada preset diskon per item. Tambahkan di '
-                  'Pengaturan venue › Diskon.',
-            'bill' =>
-              'Belum ada preset diskon tagihan. Tambahkan di '
-                  'Pengaturan venue › Diskon.',
-            _ =>
-              'Belum ada preset diskon per pesanan. Tambahkan di '
-                  'Pengaturan venue › Diskon.',
-          },
-        ),
+        title: Text(c.l10n.dscNoPresetsTitle),
+        content: Text(switch (target.scope) {
+          'line' => c.l10n.dscNoPresetsLine,
+          'bill' => c.l10n.dscNoPresetsBill,
+          _ => c.l10n.dscNoPresetsReceipt,
+        }),
         actions: [
           SatButton.ghost(
-            label: AppStrings.close,
+            label: context.l10n.close,
             onTap: () => Navigator.pop(c),
           ),
         ],
@@ -118,18 +110,15 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Diskon · ${target.title}',
+              c.l10n.dscSheetTitle(target.title),
               style: SatType.labelL(color: sc.textHi),
             ),
             const SizedBox(height: Sp.sHair),
-            Text(
-              switch (target.scope) {
-                'line' => 'Berlaku untuk item ini',
-                'bill' => 'Berlaku seluruh tagihan · semua struk',
-                _ => 'Berlaku seluruh struk',
-              },
-              style: SatType.bodyS(color: sc.textLo),
-            ),
+            Text(switch (target.scope) {
+              'line' => c.l10n.dscAppliesLine,
+              'bill' => c.l10n.dscAppliesBill,
+              _ => c.l10n.dscAppliesReceipt,
+            }, style: SatType.bodyS(color: sc.textLo)),
             const SizedBox(height: Sp.s3),
             Flexible(
               child: ListView.separated(
@@ -191,19 +180,16 @@ Future<String?> _askApproverPin(BuildContext context) async {
   return showSatDialog<String>(
     context,
     builder: (c) => AlertDialog(
-      title: const Text('Persetujuan manajer'),
+      title: Text(c.l10n.dscApproverTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Diskon perlu disetujui manajer. Minta manajer memasukkan PIN.',
-            style: SatType.bodyM(color: sc.textLo),
-          ),
+          Text(c.l10n.dscApproverBody, style: SatType.bodyM(color: sc.textLo)),
           const SizedBox(height: Sp.s3),
           SatField.pin(
             controller: ctrl,
-            label: 'PIN manajer',
+            label: c.l10n.dscManagerPin,
             hint: '',
             autofocus: true,
           ),
@@ -211,11 +197,11 @@ Future<String?> _askApproverPin(BuildContext context) async {
       ),
       actions: [
         SatButton.ghost(
-          label: AppStrings.cancel,
+          label: context.l10n.cancel,
           onTap: () => Navigator.pop(c),
         ),
         SatButton.primary(
-          label: 'Setujui',
+          label: c.l10n.dscApprove,
           onTap: () => Navigator.pop(c, ctrl.text.trim()),
         ),
       ],

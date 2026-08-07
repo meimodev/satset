@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// One box for every proof state (ADR-0082).
 ///
@@ -34,6 +35,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          // Pinned, exactly as the app pins it (ADR-0083). Without this the
+          // test resolves against the host's locale and reads English.
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
           home: Scaffold(body: Center(child: thumb)),
         ),
@@ -112,6 +118,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          // Pinned, exactly as the app pins it (ADR-0083). Without this the
+          // test resolves against the host's locale and reads English.
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
           home: Scaffold(
             body: Column(

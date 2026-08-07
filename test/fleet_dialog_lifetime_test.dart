@@ -7,6 +7,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/features/fleet/fleet_console_screen.dart';
 import 'package:satset/ui/features/fleet/venue_edit_screen.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// Both fleet forms used to keep their [TextEditingController]s at the *call
 /// site* and dispose them in a `finally` once `showSatDialog` returned. That
@@ -30,6 +31,11 @@ void main() {
     final popped = <Object?>[];
     await tester.pumpWidget(
       MaterialApp(
+        // Pinned, exactly as the app pins it (ADR-0083). Without this the
+        // test resolves against the host's locale and reads English.
+        locale: const Locale('id'),
+        localizationsDelegates: AppL10n.localizationsDelegates,
+        supportedLocales: AppL10n.supportedLocales,
         theme: satTheme(SatTheme.neonTerang),
         home: Builder(
           builder: (context) => Scaffold(

@@ -37,13 +37,14 @@ class SeedJob {
   /// loading the data *is* an answer, and a job that never reached here left
   /// the question open (ADR-0073).
   static Future<void> markComplete(AppDatabase db) async {
-    await (db.update(db.demoStates)..where((d) => d.id.equals('default')))
-        .write(
-          const DemoStatesCompanion(
-            complete: Value(true),
-            promptAnswered: Value(true),
-          ),
-        );
+    await (db.update(
+      db.demoStates,
+    )..where((d) => d.id.equals('default'))).write(
+      const DemoStatesCompanion(
+        complete: Value(true),
+        promptAnswered: Value(true),
+      ),
+    );
   }
 
   /// The admin declined. The prompt never fires again; Admin → Settings stays

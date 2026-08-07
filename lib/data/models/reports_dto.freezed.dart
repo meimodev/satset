@@ -868,6 +868,13 @@ KpiTileDto _$KpiTileDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$KpiTileDto {
+  /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+  /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+  /// this build does not know.
+  String get key => throw _privateConstructorUsedError;
+
+  /// The caption's counts, in the order its message declares them.
+  List<int> get args => throw _privateConstructorUsedError;
   String get label => throw _privateConstructorUsedError;
   String get value => throw _privateConstructorUsedError;
   String get sub => throw _privateConstructorUsedError;
@@ -889,7 +896,13 @@ abstract class $KpiTileDtoCopyWith<$Res> {
     $Res Function(KpiTileDto) then,
   ) = _$KpiTileDtoCopyWithImpl<$Res, KpiTileDto>;
   @useResult
-  $Res call({String label, String value, String sub});
+  $Res call({
+    String key,
+    List<int> args,
+    String label,
+    String value,
+    String sub,
+  });
 }
 
 /// @nodoc
@@ -906,9 +919,23 @@ class _$KpiTileDtoCopyWithImpl<$Res, $Val extends KpiTileDto>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? label = null, Object? value = null, Object? sub = null}) {
+  $Res call({
+    Object? key = null,
+    Object? args = null,
+    Object? label = null,
+    Object? value = null,
+    Object? sub = null,
+  }) {
     return _then(
       _value.copyWith(
+            key: null == key
+                ? _value.key
+                : key // ignore: cast_nullable_to_non_nullable
+                      as String,
+            args: null == args
+                ? _value.args
+                : args // ignore: cast_nullable_to_non_nullable
+                      as List<int>,
             label: null == label
                 ? _value.label
                 : label // ignore: cast_nullable_to_non_nullable
@@ -936,7 +963,13 @@ abstract class _$$KpiTileDtoImplCopyWith<$Res>
   ) = __$$KpiTileDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String label, String value, String sub});
+  $Res call({
+    String key,
+    List<int> args,
+    String label,
+    String value,
+    String sub,
+  });
 }
 
 /// @nodoc
@@ -952,9 +985,23 @@ class __$$KpiTileDtoImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? label = null, Object? value = null, Object? sub = null}) {
+  $Res call({
+    Object? key = null,
+    Object? args = null,
+    Object? label = null,
+    Object? value = null,
+    Object? sub = null,
+  }) {
     return _then(
       _$KpiTileDtoImpl(
+        key: null == key
+            ? _value.key
+            : key // ignore: cast_nullable_to_non_nullable
+                  as String,
+        args: null == args
+            ? _value._args
+            : args // ignore: cast_nullable_to_non_nullable
+                  as List<int>,
         label: null == label
             ? _value.label
             : label // ignore: cast_nullable_to_non_nullable
@@ -976,24 +1023,47 @@ class __$$KpiTileDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$KpiTileDtoImpl implements _KpiTileDto {
   const _$KpiTileDtoImpl({
-    required this.label,
+    this.key = '',
+    final List<int> args = const <int>[],
+    this.label = '',
     required this.value,
-    required this.sub,
-  });
+    this.sub = '',
+  }) : _args = args;
 
   factory _$KpiTileDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$KpiTileDtoImplFromJson(json);
 
+  /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+  /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+  /// this build does not know.
   @override
+  @JsonKey()
+  final String key;
+
+  /// The caption's counts, in the order its message declares them.
+  final List<int> _args;
+
+  /// The caption's counts, in the order its message declares them.
+  @override
+  @JsonKey()
+  List<int> get args {
+    if (_args is EqualUnmodifiableListView) return _args;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_args);
+  }
+
+  @override
+  @JsonKey()
   final String label;
   @override
   final String value;
   @override
+  @JsonKey()
   final String sub;
 
   @override
   String toString() {
-    return 'KpiTileDto(label: $label, value: $value, sub: $sub)';
+    return 'KpiTileDto(key: $key, args: $args, label: $label, value: $value, sub: $sub)';
   }
 
   @override
@@ -1001,6 +1071,8 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$KpiTileDtoImpl &&
+            (identical(other.key, key) || other.key == key) &&
+            const DeepCollectionEquality().equals(other._args, _args) &&
             (identical(other.label, label) || other.label == label) &&
             (identical(other.value, value) || other.value == value) &&
             (identical(other.sub, sub) || other.sub == sub));
@@ -1008,7 +1080,14 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, label, value, sub);
+  int get hashCode => Object.hash(
+    runtimeType,
+    key,
+    const DeepCollectionEquality().hash(_args),
+    label,
+    value,
+    sub,
+  );
 
   /// Create a copy of KpiTileDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1026,14 +1105,25 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
 
 abstract class _KpiTileDto implements KpiTileDto {
   const factory _KpiTileDto({
-    required final String label,
+    final String key,
+    final List<int> args,
+    final String label,
     required final String value,
-    required final String sub,
+    final String sub,
   }) = _$KpiTileDtoImpl;
 
   factory _KpiTileDto.fromJson(Map<String, dynamic> json) =
       _$KpiTileDtoImpl.fromJson;
 
+  /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+  /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+  /// this build does not know.
+  @override
+  String get key;
+
+  /// The caption's counts, in the order its message declares them.
+  @override
+  List<int> get args;
   @override
   String get label;
   @override
@@ -5538,7 +5628,7 @@ class __$$VoidReasonDtoImplCopyWithImpl<$Res>
 class _$VoidReasonDtoImpl implements _VoidReasonDto {
   const _$VoidReasonDtoImpl({
     required this.code,
-    required this.label,
+    this.label = '',
     this.count = 0,
     this.lostRupiah = 0,
   });
@@ -5549,6 +5639,7 @@ class _$VoidReasonDtoImpl implements _VoidReasonDto {
   @override
   final String code;
   @override
+  @JsonKey()
   final String label;
   @override
   @JsonKey()
@@ -5595,7 +5686,7 @@ class _$VoidReasonDtoImpl implements _VoidReasonDto {
 abstract class _VoidReasonDto implements VoidReasonDto {
   const factory _VoidReasonDto({
     required final String code,
-    required final String label,
+    final String label,
     final int count,
     final int lostRupiah,
   }) = _$VoidReasonDtoImpl;
@@ -6372,7 +6463,6 @@ mixin _$StaffVoidDto {
   int get count => throw _privateConstructorUsedError;
   int get lostRupiah => throw _privateConstructorUsedError;
   String get topReasonCode => throw _privateConstructorUsedError;
-  String get topReasonLabel => throw _privateConstructorUsedError;
 
   /// Serializes this StaffVoidDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -6397,7 +6487,6 @@ abstract class $StaffVoidDtoCopyWith<$Res> {
     int count,
     int lostRupiah,
     String topReasonCode,
-    String topReasonLabel,
   });
 }
 
@@ -6421,7 +6510,6 @@ class _$StaffVoidDtoCopyWithImpl<$Res, $Val extends StaffVoidDto>
     Object? count = null,
     Object? lostRupiah = null,
     Object? topReasonCode = null,
-    Object? topReasonLabel = null,
   }) {
     return _then(
       _value.copyWith(
@@ -6445,10 +6533,6 @@ class _$StaffVoidDtoCopyWithImpl<$Res, $Val extends StaffVoidDto>
                 ? _value.topReasonCode
                 : topReasonCode // ignore: cast_nullable_to_non_nullable
                       as String,
-            topReasonLabel: null == topReasonLabel
-                ? _value.topReasonLabel
-                : topReasonLabel // ignore: cast_nullable_to_non_nullable
-                      as String,
           )
           as $Val,
     );
@@ -6470,7 +6554,6 @@ abstract class _$$StaffVoidDtoImplCopyWith<$Res>
     int count,
     int lostRupiah,
     String topReasonCode,
-    String topReasonLabel,
   });
 }
 
@@ -6493,7 +6576,6 @@ class __$$StaffVoidDtoImplCopyWithImpl<$Res>
     Object? count = null,
     Object? lostRupiah = null,
     Object? topReasonCode = null,
-    Object? topReasonLabel = null,
   }) {
     return _then(
       _$StaffVoidDtoImpl(
@@ -6517,10 +6599,6 @@ class __$$StaffVoidDtoImplCopyWithImpl<$Res>
             ? _value.topReasonCode
             : topReasonCode // ignore: cast_nullable_to_non_nullable
                   as String,
-        topReasonLabel: null == topReasonLabel
-            ? _value.topReasonLabel
-            : topReasonLabel // ignore: cast_nullable_to_non_nullable
-                  as String,
       ),
     );
   }
@@ -6535,7 +6613,6 @@ class _$StaffVoidDtoImpl implements _StaffVoidDto {
     this.count = 0,
     this.lostRupiah = 0,
     this.topReasonCode = 'other',
-    this.topReasonLabel = 'Lainnya',
   });
 
   factory _$StaffVoidDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -6554,13 +6631,10 @@ class _$StaffVoidDtoImpl implements _StaffVoidDto {
   @override
   @JsonKey()
   final String topReasonCode;
-  @override
-  @JsonKey()
-  final String topReasonLabel;
 
   @override
   String toString() {
-    return 'StaffVoidDto(id: $id, name: $name, count: $count, lostRupiah: $lostRupiah, topReasonCode: $topReasonCode, topReasonLabel: $topReasonLabel)';
+    return 'StaffVoidDto(id: $id, name: $name, count: $count, lostRupiah: $lostRupiah, topReasonCode: $topReasonCode)';
   }
 
   @override
@@ -6574,22 +6648,13 @@ class _$StaffVoidDtoImpl implements _StaffVoidDto {
             (identical(other.lostRupiah, lostRupiah) ||
                 other.lostRupiah == lostRupiah) &&
             (identical(other.topReasonCode, topReasonCode) ||
-                other.topReasonCode == topReasonCode) &&
-            (identical(other.topReasonLabel, topReasonLabel) ||
-                other.topReasonLabel == topReasonLabel));
+                other.topReasonCode == topReasonCode));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    name,
-    count,
-    lostRupiah,
-    topReasonCode,
-    topReasonLabel,
-  );
+  int get hashCode =>
+      Object.hash(runtimeType, id, name, count, lostRupiah, topReasonCode);
 
   /// Create a copy of StaffVoidDto
   /// with the given fields replaced by the non-null parameter values.
@@ -6612,7 +6677,6 @@ abstract class _StaffVoidDto implements StaffVoidDto {
     final int count,
     final int lostRupiah,
     final String topReasonCode,
-    final String topReasonLabel,
   }) = _$StaffVoidDtoImpl;
 
   factory _StaffVoidDto.fromJson(Map<String, dynamic> json) =
@@ -6628,8 +6692,6 @@ abstract class _StaffVoidDto implements StaffVoidDto {
   int get lostRupiah;
   @override
   String get topReasonCode;
-  @override
-  String get topReasonLabel;
 
   /// Create a copy of StaffVoidDto
   /// with the given fields replaced by the non-null parameter values.

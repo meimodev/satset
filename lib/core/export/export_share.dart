@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:satset/data/repositories/reports_repository.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// File flavour the user picks in the export sheet (ADR-0030).
 enum ExportFormat { csv, pdf }
@@ -25,41 +27,37 @@ extension ExportFormatX on ExportFormat {
   };
 }
 
-const _idMonthsShort = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'Mei',
-  'Jun',
-  'Jul',
-  'Agu',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Des',
-];
-
-/// Short Indonesian span for a committed custom window, e.g. `12 Jun – 15 Jun`.
+/// Short span for a committed custom window, e.g. `12 Jun – 15 Jun`.
 /// [from]/[to] are inclusive calendar dates.
+///
+/// A span is a **date**, so it localises (ADR-0084) — this used to index a
+/// hand-rolled Indonesian month array, the same shortcut `format.dart` carried
+/// and for the same reason. Built per call so the format never freezes on
+/// whichever locale happened to be active the first time a report was opened.
 String customRangeLabel(DateTime from, DateTime to) {
-  String d(DateTime t) => '${t.day} ${_idMonthsShort[t.month - 1]}';
-  return '${d(from)} – ${d(to)}';
+  final d = DateFormat('d MMM');
+  return '${d.format(from)} – ${d.format(to)}';
 }
 
-/// Indonesian range label, reused in filenames and document headers. For
-/// [ReportRange.custom], pass the inclusive [from]/[to] to render the span;
-/// without them it falls back to a generic "Khusus".
-String rangeLabelId(ReportRange r, {DateTime? from, DateTime? to}) =>
-    switch (r) {
-      ReportRange.today => 'Hari ini',
-      ReportRange.yesterday => 'Kemarin',
-      ReportRange.d7 => '7 hari',
-      ReportRange.d30 => '30 hari',
-      ReportRange.month => 'Bulan ini',
-      ReportRange.custom =>
-        (from != null && to != null) ? customRangeLabel(from, to) : 'Khusus',
-    };
+/// Range label, reused on the timeline chips, in filenames and in document
+/// headers. For [ReportRange.custom], pass the inclusive [from]/[to] to render
+/// the span; without them it falls back to a generic "Khusus".
+String rangeLabel(
+  AppL10n l10n,
+  ReportRange r, {
+  DateTime? from,
+  DateTime? to,
+}) => switch (r) {
+  ReportRange.today => l10n.rangeToday,
+  ReportRange.yesterday => l10n.rangeYesterday,
+  ReportRange.d7 => l10n.rangeD7,
+  ReportRange.d30 => l10n.rangeD30,
+  ReportRange.month => l10n.rangeMonth,
+  ReportRange.custom =>
+    (from != null && to != null)
+        ? customRangeLabel(from, to)
+        : l10n.rangeCustom,
+};
 
 String _rangeSlug(ReportRange r, {DateTime? from, DateTime? to}) {
   String two(int n) => n.toString().padLeft(2, '0');

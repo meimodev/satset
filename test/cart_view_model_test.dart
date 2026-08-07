@@ -31,7 +31,11 @@ CartItem line({
 );
 
 const pedas = TicketModifier(groupId: 'spice', optionId: 'hot', label: 'Pedas');
-const noIce = TicketModifier(groupId: 'ice', optionId: 'none', label: 'Tanpa es');
+const noIce = TicketModifier(
+  groupId: 'ice',
+  optionId: 'none',
+  label: 'Tanpa es',
+);
 
 void main() {
   group('add stacks identical lines', () {
@@ -95,14 +99,17 @@ void main() {
       expect(vm.state.length, 2);
     });
 
-    test('stacking clamps at the line ceiling instead of rejecting the add', () {
-      final vm = CartViewModel()
-        ..add(line(id: 'C1', qty: 95))
-        ..add(line(id: 'C2', qty: 20));
+    test(
+      'stacking clamps at the line ceiling instead of rejecting the add',
+      () {
+        final vm = CartViewModel()
+          ..add(line(id: 'C1', qty: 95))
+          ..add(line(id: 'C2', qty: 20));
 
-      expect(vm.state.length, 1);
-      expect(vm.state.single.qty, kCartLineMaxQty);
-    });
+        expect(vm.state.length, 1);
+        expect(vm.state.single.qty, kCartLineMaxQty);
+      },
+    );
   });
 
   group('setQty', () {

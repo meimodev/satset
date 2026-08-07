@@ -14,13 +14,6 @@ ReservationStatus reservationStatusFromKey(String key) => switch (key) {
   _ => ReservationStatus.pending,
 };
 
-String reservationStatusLabel(ReservationStatus s) => switch (s) {
-  ReservationStatus.pending => 'Menunggu',
-  ReservationStatus.seated => 'Duduk',
-  ReservationStatus.noShow => 'No-show',
-  ReservationStatus.cancelled => 'Batal',
-};
-
 class Reservation {
   final String id;
   final String name;

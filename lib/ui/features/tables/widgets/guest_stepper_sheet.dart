@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +14,7 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'move_table_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 Future<void> showGuestStepperSheet({
   required BuildContext context,
@@ -65,12 +65,12 @@ class _GuestStepperSheet extends ConsumerWidget {
             Row(
               children: [
                 Text(
-                  'Meja ${table.id}',
+                  context.l10n.gstTableLabel(table.id),
                   style: SatType.monoL(color: sc.textHi),
                 ),
                 const SizedBox(width: Sp.s2h),
                 Text(
-                  'Atur jumlah tamu',
+                  context.l10n.gstTitle,
                   style: SatType.bodyM(color: sc.textMd),
                 ),
               ],
@@ -84,7 +84,7 @@ class _GuestStepperSheet extends ConsumerWidget {
                 icon: Icons.person_outline,
                 showMax: true,
                 size: SatStepperSize.lg,
-                semanticLabel: AppStrings.tableGuests,
+                semanticLabel: context.l10n.tableGuests,
                 // No actor passed: a pax correction is not a takeover, so it
                 // must not touch the table's lastActorId. See ADR-0056.
                 onChanged: (v) => v > table.pax
@@ -97,7 +97,7 @@ class _GuestStepperSheet extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: Sp.s1),
                 child: Text(
-                  'Hanya pelayan yang bisa mengubah jumlah tamu.',
+                  context.l10n.gstWaiterOnly,
                   textAlign: TextAlign.center,
                   style: SatType.monoS(color: sc.textLo),
                 ),
@@ -107,7 +107,7 @@ class _GuestStepperSheet extends ConsumerWidget {
               SizedBox(
                 height: Sp.s12,
                 child: SatButton.primary(
-                  label: 'Pindahkan meja',
+                  label: context.l10n.tblMoveTable,
                   icon: Icons.swap_horiz_rounded,
                   onTap: () async {
                     final targetId = await showMoveTableSheet(
@@ -125,7 +125,7 @@ class _GuestStepperSheet extends ConsumerWidget {
             SizedBox(
               height: Sp.s12,
               child: SatButton.outline(
-                label: AppStrings.close,
+                label: context.l10n.close,
                 onTap: () => Navigator.of(context).pop(),
               ),
             ),

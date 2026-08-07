@@ -12,7 +12,12 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart'
     show AuditType, isAdminAuditType;
+import 'package:satset/core/localization/audit_text.dart';
+import 'package:satset/data/repositories/audit_repository.dart'
+    show auditEntryFromJson;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/server/shift.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
@@ -70,20 +75,22 @@ Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
   return auth.resolveBearer(token);
 }
 
-/// Write an audit row + WS-broadcast it. Thin shim over [writeAudit] kept for
-/// the string-typed call sites in this file.
+/// Write an audit row + WS-broadcast it. Thin shim over [writeAudit], kept
+/// because this file names its `type` as a string rather than the enum.
 Future<void> _emitAudit(
   AppDatabase db,
   WsHub? hub, {
   required String type,
-  required String title,
+  required AuditKind kind,
+  Map<String, String> params = const {},
   String? tableId,
   String? actorUserId,
 }) => writeAudit(
   db,
   hub: hub,
   type: AuditType.values.byName(type),
-  title: title,
+  kind: kind,
+  params: params,
   tableId: tableId,
   actorUserId: actorUserId,
 );
@@ -421,7 +428,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
       db,
       hub,
       type: AuditType.roleCreated.name,
-      title: 'Created role ${row.name}',
+      kind: AuditKind.roleCreated,
+      params: {'name': row.name},
       actorUserId: actor?.id,
     );
     return _ok(_roleJson(row));
@@ -492,7 +500,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
         db,
         hub,
         type: AuditType.roleRenamed.name,
-        title: 'Role: ${prev.name} → ${row.name}',
+        kind: AuditKind.roleRenamed,
+        params: {'from': prev.name, 'to': row.name},
         actorUserId: actorId,
       );
     }
@@ -501,7 +510,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
         db,
         hub,
         type: AuditType.roleColorChanged.name,
-        title: 'Color changed for ${row.name}',
+        kind: AuditKind.roleColorChanged,
+        params: {'name': row.name},
         actorUserId: actorId,
       );
     }
@@ -520,7 +530,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
           db,
           hub,
           type: AuditType.roleCapabilityChanged.name,
-          title: '${row.name}: ${parts.join(" ")}',
+          kind: AuditKind.roleCapabilityChanged,
+          params: {'name': row.name, 'changes': parts.join(' ')},
           actorUserId: actorId,
         );
       }
@@ -571,7 +582,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
       db,
       hub,
       type: AuditType.roleDeleted.name,
-      title: 'Deleted role ${prev.name}',
+      kind: AuditKind.roleDeleted,
+      params: {'name': prev.name},
       actorUserId: actor?.id,
     );
     return _ok({'id': id});
@@ -628,7 +640,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
       db,
       hub,
       type: AuditType.staffCreated.name,
-      title: 'Created ${row.name}',
+      kind: AuditKind.staffCreated,
+      params: {'name': row.name},
       actorUserId: actor?.id,
     );
     return _ok(_staffJson(row));
@@ -719,7 +732,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
         db,
         hub,
         type: AuditType.staffRoleChanged.name,
-        title: '${row.name}: $oldRole → $newRole',
+        kind: AuditKind.staffRoleChanged,
+        params: {'name': row.name, 'from': oldRole, 'to': newRole},
         actorUserId: actorId,
       );
     }
@@ -730,7 +744,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
         type: row.disabled
             ? AuditType.staffDisabled.name
             : AuditType.staffEnabled.name,
-        title: row.disabled ? 'Disabled ${row.name}' : 'Enabled ${row.name}',
+        kind: row.disabled ? AuditKind.staffDisabled : AuditKind.staffEnabled,
+        params: {'name': row.name},
         actorUserId: actorId,
       );
     }
@@ -742,9 +757,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
         type: isReset
             ? AuditType.staffPinReset.name
             : AuditType.staffPinSet.name,
-        title: isReset
-            ? 'PIN reset for ${row.name}'
-            : 'PIN changed for ${row.name}',
+        kind: isReset ? AuditKind.staffPinReset : AuditKind.staffPinSet,
+        params: {'name': row.name},
         actorUserId: actorId,
       );
     }
@@ -857,10 +871,7 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
               ]))
             .get();
     final json = await _auditJsonWithFallback(db, rows);
-    final buf = StringBuffer()
-      ..writeln(
-        'Waktu,Jenis,Pengguna,Peran,Kejadian,Meja,Jumlah,Alasan,Disetujui',
-      );
+    final buf = StringBuffer()..writeln(satL10n.expAuditCsvHeader);
     for (final e in json) {
       buf.writeln(
         [
@@ -868,7 +879,10 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
           e['type'],
           e['actorName'] ?? '',
           e['actorRoleName'] ?? '',
-          e['title'],
+          // Composed here rather than read off `title`, so the CSV follows the
+          // exporting device's language like every other export (ADR-0083).
+          // Pre-ADR-0085 rows have no kind and fall back to their sentence.
+          auditText(satL10n, auditEntryFromJson(e)),
           e['tableId'] ?? '',
           e['amountCents']?.toString() ?? '',
           e['reason'] ?? '',
@@ -950,7 +964,8 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
       db,
       hub,
       type: AuditType.staffDeleted.name,
-      title: 'Deleted ${prev.name}',
+      kind: AuditKind.staffDeleted,
+      params: {'name': prev.name},
       actorUserId: actor?.id,
     );
     return _ok({'id': id});
@@ -1035,7 +1050,7 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
       db,
       hub,
       type: AuditType.staffCreated.name,
-      title: 'Memuat contoh data restoran',
+      kind: AuditKind.sampleDataLoaded,
       actorUserId: actor?.id,
     );
     return Response(

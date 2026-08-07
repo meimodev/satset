@@ -64,11 +64,16 @@ void main() {
         .toSet();
     expect(families, containsAll(['IBM Plex Sans', 'IBM Plex Mono']));
 
-    final assets = (pubspec['flutter']['fonts'] as YamlList)
-        .expand((f) => (f['fonts'] as YamlList).map((v) => v['asset'] as String));
+    final assets = (pubspec['flutter']['fonts'] as YamlList).expand(
+      (f) => (f['fonts'] as YamlList).map((v) => v['asset'] as String),
+    );
     expect(assets, isNotEmpty);
     for (final a in assets) {
-      expect(File(a).existsSync(), isTrue, reason: '$a is declared but missing');
+      expect(
+        File(a).existsSync(),
+        isTrue,
+        reason: '$a is declared but missing',
+      );
     }
   });
 }

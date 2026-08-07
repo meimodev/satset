@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/core/localization/report_copy.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -194,15 +196,26 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                             Padding(
                               padding: const EdgeInsets.only(top: Sp.s1),
                               child: NoteLine(
-                                label: 'Instruksi khusus',
+                                label: context.l10n.tblSpecialInstruction,
                                 text: ticket.note!,
                               ),
                             ),
-                          if (ticket.voidReason != null)
+                          if (ticket.voidReason != null ||
+                              ticket.voidReasonCode != null)
                             Padding(
                               padding: const EdgeInsets.only(top: Sp.s1),
                               child: Text(
-                                'Dibatalkan · ${ticket.voidReason} · disetujui oleh ${ticket.voidApprovedBy ?? ''}',
+                                context.l10n.olcVoidedBy(
+                                  // A fixed reason stores no free text: its
+                                  // words are rendered from the code.
+                                  (ticket.voidReason ?? '').isNotEmpty
+                                      ? ticket.voidReason!
+                                      : voidReasonLabel(
+                                          context.l10n,
+                                          ticket.voidReasonCode ?? 'other',
+                                        ),
+                                  ticket.voidApprovedBy ?? '',
+                                ),
                                 style: SatType.bodyS(color: sc.urgent),
                               ),
                             ),
@@ -235,7 +248,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                               child: Padding(
                                 padding: const EdgeInsets.only(top: Sp.s2),
                                 child: _SmallSuccessButton(
-                                  label: 'Tandai disajikan',
+                                  label: context.l10n.olcMarkServed,
                                   icon: Icons.check,
                                   onTap: () => onMarkServed(ticket.id),
                                 ),

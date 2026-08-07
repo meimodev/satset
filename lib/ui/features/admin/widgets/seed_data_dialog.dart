@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/generic_seed.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -9,6 +8,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// The one surface for sample data (ADR-0073): the mandatory first-run prompt,
 /// the progress of a running job, the failed/interrupted recovery, and the
@@ -61,7 +61,10 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
       // The Android back button is the last way out of a "mandatory" dialog.
       canPop: false,
       child: AlertDialog(
-        title: Text(AppStrings.venueHubSeedTitle, style: SatType.h3(color: sc.textHi)),
+        title: Text(
+          context.l10n.venueHubSeedTitle,
+          style: SatType.h3(color: sc.textHi),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,15 +72,15 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
             Text(
               _error ??
                   switch (true) {
-                    _ when _finished => AppStrings.venueHubSeedBodyDone,
-                    _ when running => AppStrings.venueHubSeedBodyRunning,
+                    _ when _finished => context.l10n.venueHubSeedBodyDone,
+                    _ when running => context.l10n.venueHubSeedBodyRunning,
                     _ when phase == SeedPromptPhase.failed =>
-                      AppStrings.venueHubSeedBodyFailed,
+                      context.l10n.venueHubSeedBodyFailed,
                     _ when phase == SeedPromptPhase.incomplete =>
-                      AppStrings.venueHubSeedBodyIncomplete,
+                      context.l10n.venueHubSeedBodyIncomplete,
                     _ when st.hasSampleData =>
-                      AppStrings.venueHubSeedBodyLoaded,
-                    _ => AppStrings.venueHubSeedBody,
+                      context.l10n.venueHubSeedBodyLoaded,
+                    _ => context.l10n.venueHubSeedBody,
                   },
               style: SatType.bodyM(
                 color: _error == null ? sc.textMd : sc.urgent,
@@ -96,8 +99,8 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
               ),
               const SizedBox(height: Sp.s2),
               Text(
-                '${AppStrings.venueHubSeedProgress} · '
-                '${AppStrings.venueHubSeedDays(st.daysDone, st.daysTotal)}',
+                '${context.l10n.venueHubSeedProgress} · '
+                '${context.l10n.venueHubSeedDays(st.daysDone, st.daysTotal)}',
                 style: SatType.caption(color: sc.textDim),
               ),
             ],
@@ -120,7 +123,7 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
     if (_finished) {
       return [
         SatButton.primary(
-          label: AppStrings.venueHubSeedBtnDone,
+          label: context.l10n.venueHubSeedBtnDone,
           onTap: () => Navigator.of(context).pop(),
         ),
       ];
@@ -132,7 +135,7 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
 
     return [
       SatButton.ghost(
-        label: AppStrings.venueHubSeedBtnSkip,
+        label: context.l10n.venueHubSeedBtnSkip,
         onTap: st.loading
             ? null
             : () async {
@@ -143,8 +146,8 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
       if (st.hasSampleData || broken)
         SatButton.danger(
           label: broken
-              ? AppStrings.venueHubSeedBtnClearRetry
-              : AppStrings.venueHubSeedBtnClear,
+              ? context.l10n.venueHubSeedBtnClearRetry
+              : context.l10n.venueHubSeedBtnClear,
           busy: st.loading,
           onTap: st.loading
               ? null
@@ -155,7 +158,7 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
         ),
       if (!st.hasSampleData && !broken)
         SatButton.primary(
-          label: AppStrings.venueHubSeedBtnLoad,
+          label: context.l10n.venueHubSeedBtnLoad,
           busy: st.loading,
           onTap: st.loading ? null : () => _run(() => _start(ctrl)),
         ),
@@ -172,7 +175,7 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
     try {
       await action();
     } catch (_) {
-      if (mounted) setState(() => _error = AppStrings.venueHubSeedError);
+      if (mounted) setState(() => _error = context.l10n.venueHubSeedError);
     }
   }
 }

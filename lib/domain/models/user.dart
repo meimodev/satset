@@ -71,9 +71,3 @@ const List<int> avatarColorPalette = <int>[
   0xFFD4A373, // tan
   0xFF9F5BFF, // grape
 ];
-
-String userRoleLabel(UserRole r) => switch (r) {
-  UserRole.waiter => 'Pelayan',
-  UserRole.kitchen => 'Dapur',
-  UserRole.admin => 'Admin',
-};
