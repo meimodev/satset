@@ -236,30 +236,35 @@ class _ZoneBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      height: 60,
+      // ponytail: no fixed bar height — a horizontal ListView hands its children
+      // a tight cross-axis constraint, so a 60px bar minus 26px of padding left
+      // 34px for a chip that needs ~37 and clipped it (worse at text scale). A
+      // scroll view sizes to the chip instead. Eager children, but a venue has
+      // a handful of zones.
       decoration: SatBox.d(
         border: Border(bottom: SatB.side(color: sc.border0)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: ListView.separated(
+            child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 13, 8, 13),
-              itemCount: zones.length,
-              separatorBuilder: (_, _) => const SizedBox(width: Sp.s2),
-              itemBuilder: (ctx, i) {
-                final z = zones[i];
-                final count = tables.where((t) => t.zoneId == z.id).length;
-                return SatChip.select(
-                  label: z.name,
-                  icon: z.icon,
-                  dot: z.color,
-                  count: count,
-                  selected: z.id == selectedId,
-                  onTap: () => onSelect(z.id),
-                );
-              },
+              padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s2h, Sp.s2, Sp.s2h),
+              child: Row(
+                children: [
+                  for (final (i, z) in zones.indexed) ...[
+                    if (i > 0) const SizedBox(width: Sp.s2),
+                    SatChip.select(
+                      label: z.name,
+                      icon: z.icon,
+                      dot: z.color,
+                      count: tables.where((t) => t.zoneId == z.id).length,
+                      selected: z.id == selectedId,
+                      onTap: () => onSelect(z.id),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           Padding(
