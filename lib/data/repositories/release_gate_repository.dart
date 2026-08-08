@@ -1,0 +1,157 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:satset/core/app_version.dart';
+import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/firebase_admin_service.dart';
+import 'package:satset/data/services/prefs_service.dart';
+import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/domain/models/app_mode.dart';
+import 'package:satset/domain/models/release_gate.dart';
+import 'package:satset/server/server.dart';
+
+/// Owns this device's view of the [[Release gate]] (ADR-0087), from whichever
+/// of the two sources it has.
+///
+/// **The host reads the cloud; everyone else reads the host.** Clients never
+/// touch Firebase, so the gate reaches them over the LAN — once from `/healthz`
+/// at bootstrap, then live on the `release.gate` broadcast. Both paths land
+/// here so the comparison that decides whether a device stops is written once.
+///
+/// Every gate that arrives is cached to `SharedPreferences`, and the cache is
+/// what the notifier starts from. A blocked device therefore stays blocked
+/// across a restart and across losing its host — force-quitting the app is not
+/// a way out of a floor.
+class ReleaseGateRepository extends StateNotifier<ReleaseGate> {
+  /// [listen] off gives an inert notifier parked on [seed] — the widget book
+  /// and the tests, where a live cloud/WS wire would be the thing under test
+  /// rather than the widget.
+  ReleaseGateRepository({
+    required this.ref,
+    required ReleaseGate seed,
+    bool listen = true,
+  }) : super(seed) {
+    if (listen) Future.microtask(_start);
+  }
+
+  final Ref ref;
+  StreamSubscription<ReleaseGate>? _cloudSub;
+  StreamSubscription<WsEventDto>? _wsSub;
+
+  @override
+  void dispose() {
+    _cloudSub?.cancel();
+    _wsSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _start() async {
+    final mode = ref.read(prefsServiceProvider).valueOrNull?.appMode();
+    if (mode == AppMode.server) {
+      _watchCloud();
+      return;
+    }
+    _wireWs();
+    await _fetchFromHost();
+  }
+
+  /// Host only. Sits beside the eligibility listener in `auth_repository`
+  /// rather than inside it because the gate is not about this venue — it
+  /// outlives any one admin session and must keep relaying while the venue's
+  /// own billing is in trouble.
+  void _watchCloud() {
+    if (_cloudSub != null) return;
+    final fb = ref.read(firebaseAdminServiceProvider);
+    if (fb.currentUser == null) return; // no session, no read; retried on login
+    _cloudSub = fb.watchReleaseGate().listen(
+      _apply,
+      onError: (Object e, StackTrace st) => SatLog.err('release gate watch', e, st),
+    );
+  }
+
+  /// Client only. `/healthz` is unauthenticated, so this works at the PIN
+  /// screen — which is the point: the block has to bite before login.
+  Future<void> _fetchFromHost() async {
+    if (ref.read(apiConfigProvider) == null) return;
+    try {
+      final raw = await ref.read(apiClientProvider).getJson('/healthz');
+      final j = (raw as Map?)?['releaseGate'];
+      if (j is Map) _apply(ReleaseGate.fromJson(j.cast<String, dynamic>()));
+    } catch (e) {
+      // A host that cannot be reached says nothing about the floor. Keep the
+      // cached gate and try again on the next socket connect.
+      SatLog.err('release gate fetch', e);
+    }
+  }
+
+  void _wireWs() {
+    if (_wsSub != null) return;
+    _wsSub = ref.read(wsClientProvider).events.listen((ev) {
+      switch (ev.type) {
+        // ADR-0021: the socket dropping is the one moment a client can have
+        // missed a floor moving, so re-read rather than wait for a push.
+        case WsEventTypes.connected:
+          unawaited(_fetchFromHost());
+        case WsEventTypes.releaseGate:
+          _apply(ReleaseGate.fromJson(ev.payload));
+      }
+    });
+  }
+
+  void _apply(ReleaseGate next) {
+    if (next == state) return;
+    state = next;
+    SatLog.repo('release gate = $next (installed ${AppVersion.value})');
+    // Relay to the LAN. Only the host has a runtime; on a client this is null
+    // and the write is skipped.
+    ref.read(serverRuntimeProvider)?.publishReleaseGate(next);
+    unawaited(ref.read(prefsServiceProvider).valueOrNull?.setReleaseGate(next) ??
+        Future<void>.value());
+  }
+
+  /// Re-arms the cloud listener after a sign-in. Called by the auth flow, for
+  /// the same reason the eligibility watch is: at construction there may be no
+  /// Firebase session yet.
+  void refreshCloudWatch() {
+    if (ref.read(prefsServiceProvider).valueOrNull?.appMode() !=
+        AppMode.server) {
+      return;
+    }
+    _watchCloud();
+  }
+}
+
+final releaseGateProvider =
+    StateNotifierProvider<ReleaseGateRepository, ReleaseGate>((ref) {
+      // Seeded from the cache so the first frame after a cold boot already
+      // carries the floor. Watching prefs (not reading) means the seed lands as
+      // soon as SharedPreferences resolves.
+      final prefs = ref.watch(prefsServiceProvider).valueOrNull;
+      return ReleaseGateRepository(
+        ref: ref,
+        seed: prefs?.releaseGate() ?? ReleaseGate.unknown,
+      );
+    });
+
+/// What the gate says about *this* build. The single input to both the banner
+/// and the block.
+///
+/// `dependencies` is what lets a nested `ProviderScope` override the gate under
+/// it — the widget book puts two states of the same banner side by side, and
+/// without it Riverpod refuses to read a derived provider whose input was
+/// overridden in an inner scope.
+final updateVerdictProvider = Provider<UpdateVerdict>(
+  (ref) => ref.watch(releaseGateProvider).verdictFor(AppVersion.value),
+  dependencies: [releaseGateProvider],
+);
+
+/// True on the Main Device. Not a capability — the question the update UI asks
+/// is "can this device install the APK", and only the one running the server
+/// can (ADR-0087). Its own provider so the book can answer it without a
+/// [ServerRuntime].
+final isHostDeviceProvider = Provider<bool>(
+  (ref) => ref.watch(serverRuntimeProvider) != null,
+);

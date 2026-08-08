@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/app_version.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
@@ -46,7 +47,10 @@ class ModeSelectViewModel extends StateNotifier<ModeSelectState> {
         // venue host. The `venueId` is advertised in the mDNS TXT precisely so
         // the next device can find us and stop. See ADR-0017.
         var rt = _ref.read(serverRuntimeProvider);
-        rt ??= await ServerRuntime.boot(venueId: venueId);
+        rt ??= await ServerRuntime.boot(
+          venueId: venueId,
+          version: AppVersion.value,
+        );
         _ref.read(serverRuntimeProvider.notifier).state = rt;
         _ref.read(apiConfigProvider.notifier).state = ApiConfig(
           baseUri: Uri.parse('https://127.0.0.1:${rt.port}'),

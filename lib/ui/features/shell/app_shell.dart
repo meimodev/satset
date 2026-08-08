@@ -10,6 +10,7 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
+import 'package:satset/ui/core/widgets/update_banner.dart';
 import 'package:satset/ui/core/widgets/venue_billing_banner.dart';
 import 'package:satset/ui/core/widgets/exit_guard.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
@@ -126,6 +127,7 @@ class AppShell extends ConsumerWidget {
               // A subscription is neither.
               const AdminGraceBanner(),
               const VenueBillingBanner(),
+              const UpdateBanner(),
               Expanded(child: child),
             ],
           ),
@@ -141,6 +143,7 @@ class AppShell extends ConsumerWidget {
             const SatAppBar(),
             const AdminGraceBanner(),
             const VenueBillingBanner(),
+            const UpdateBanner(),
             Expanded(
               child: Stack(
                 children: [

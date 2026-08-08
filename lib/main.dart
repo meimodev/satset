@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'app.dart';
+import 'package:satset/core/app_version.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -36,6 +37,9 @@ Future<void> main() async {
       await initializeDateFormatting('id_ID');
       await initializeDateFormatting('en_US');
       SatLog.init();
+      // Before anything reads it: the mDNS advert carries it, and the release
+      // gate compares against it (ADR-0087).
+      await AppVersion.load();
       FlutterError.onError = (details) {
         SatLog.err('flutter', details.exception, details.stack);
         FlutterError.presentError(details);
@@ -90,7 +94,7 @@ Future<void> main() async {
         final decision = await fbAdmin.evaluateForBoot(storage);
         switch (decision.gate) {
           case AdminBootGate.ok:
-            server = await ServerRuntime.boot();
+            server = await ServerRuntime.boot(version: AppVersion.value);
             apiConfig = ApiConfig(
               baseUri: Uri.parse('https://127.0.0.1:${server.port}'),
               trustedFingerprint: server.tls.fingerprint,

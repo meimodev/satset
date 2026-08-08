@@ -873,6 +873,63 @@ class AppL10nEn extends AppL10n {
   String get billingCta => 'Tap to renew over WhatsApp.';
 
   @override
+  String updateAvailable(String latest, String installed) {
+    return 'Version $latest is available. This device is on $installed.';
+  }
+
+  @override
+  String get updateAction => 'Update';
+
+  @override
+  String get updateBlockedTitle => 'This version is no longer supported';
+
+  @override
+  String updateBlockedBody(String installed, String min) {
+    return 'This device is running $installed. The minimum version is now $min.';
+  }
+
+  @override
+  String get updateBlockedAskAdmin => 'Ask an admin to update this device.';
+
+  @override
+  String updateDownloading(int percent) {
+    return 'Downloading $percent%';
+  }
+
+  @override
+  String get updateInstalling => 'Opening the installer...';
+
+  @override
+  String get updateFailed =>
+      'Download failed. Check the connection and try again.';
+
+  @override
+  String get updateRetry => 'Try again';
+
+  @override
+  String get updatePermissionNeeded =>
+      'Allow app installs from SatSet, then try again.';
+
+  @override
+  String get fltReleaseGate => 'Release gate';
+
+  @override
+  String get fltReleaseGateHint => 'Leave a field empty to clear that floor.';
+
+  @override
+  String get fltReleaseGateMin => 'Minimum (mandatory)';
+
+  @override
+  String get fltReleaseGateRecommended => 'Recommended';
+
+  @override
+  String get fltReleaseGateLatest => 'Latest';
+
+  @override
+  String get fltReleaseGateInvalid =>
+      'Must be 1.2.3, and min <= recommended <= latest.';
+
+  @override
   String get bootBlockStale =>
       'Internet is needed to verify the admin. Reconnect, then sign in again.';
 

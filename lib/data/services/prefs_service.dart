@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:satset/data/models/device_printer.dart';
 import 'package:satset/domain/models/alert_sound.dart';
 import 'package:satset/domain/models/app_mode.dart';
+import 'package:satset/domain/models/release_gate.dart';
 
 /// Non-sensitive preferences: app mode, paired host/port, last selected mode.
 class PrefsService {
@@ -29,6 +30,11 @@ class PrefsService {
   /// default is hard, never resolved from the system locale, because the cheap
   /// tablets a venue actually buys ship `en_US` and never have it changed.
   static const _kLocale = 'satset.locale';
+
+  /// Last-known release gate (ADR-0087). Device-local like everything else
+  /// here, and deliberately survives a restart: the block it drives must not be
+  /// clearable by force-quitting the app.
+  static const _kReleaseGate = 'satset.release_gate';
 
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
   Future<void> setAppMode(AppMode m) async {
@@ -119,6 +125,33 @@ class PrefsService {
   String? localeTag() => _p.getString(_kLocale);
   Future<void> setLocaleTag(String tag) async {
     await _p.setString(_kLocale, tag);
+  }
+
+  /// The last release gate this device heard, cached so a client stays gated
+  /// with its host down (ADR-0087).
+  ///
+  /// Without it a blocked waiter phone would unblock itself by losing the
+  /// wifi — the floor exists precisely for builds that must stop running, and
+  /// "the host is unreachable" is not evidence the build became acceptable. An
+  /// *unpaired* device never has one, so it is never blocked.
+  ReleaseGate releaseGate() {
+    final raw = _p.getString(_kReleaseGate);
+    if (raw == null || raw.isEmpty) return ReleaseGate.unknown;
+    try {
+      return ReleaseGate.fromJson(
+        (jsonDecode(raw) as Map).cast<String, dynamic>(),
+      );
+    } catch (_) {
+      return ReleaseGate.unknown;
+    }
+  }
+
+  Future<void> setReleaseGate(ReleaseGate g) async {
+    if (g.isEmpty) {
+      await _p.remove(_kReleaseGate);
+      return;
+    }
+    await _p.setString(_kReleaseGate, jsonEncode(g.toJson()));
   }
 }
 

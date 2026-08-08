@@ -10,6 +10,7 @@ import 'package:satset/data/services/owner_report_service.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/auth_dto.dart';
 import 'package:satset/data/repositories/auth_error.dart';
+import 'package:satset/data/repositories/release_gate_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/venue_subscription.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -506,6 +507,13 @@ class AuthRepository extends StateNotifier<AuthState> {
     _venueSub?.cancel();
     _heartbeat?.cancel();
     final fb = ref.read(firebaseAdminServiceProvider);
+
+    // The release gate is not this venue's document and does not belong to this
+    // listener, but it needs the same trigger: a Firebase session exists now
+    // where none did at construction. It is deliberately *not* torn down beside
+    // the others — a host whose venue was suspended still relays the floor to
+    // clients that are showing the suspension notice. See ADR-0087.
+    ref.read(releaseGateProvider.notifier).refreshCloudWatch();
 
     _eligibilitySub = fb.watch(uid).listen((profile) async {
       if (profile == null || !profile.isActive) {

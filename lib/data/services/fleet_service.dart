@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
+import 'package:satset/domain/models/release_gate.dart';
 
 /// Cloud control plane for the super admin. READS go straight to Firestore
 /// (gated by the `isSuper()` security rule); MUTATIONS go through Cloud
@@ -35,6 +36,18 @@ class FleetService {
       .collection('admins')
       .snapshots(includeMetadataChanges: true)
       .map((q) => [for (final d in q.docs) _admin(d)]);
+
+  /// The one global release gate (ADR-0087). Not per-venue: a floor that some
+  /// venues are under and others are not is a fleet nobody can reason about.
+  Stream<ReleaseGate> watchReleaseGate() => _fs
+      .collection('config')
+      .doc('release_gate')
+      .snapshots()
+      .map(
+        (d) => d.exists
+            ? ReleaseGate.fromJson(d.data() ?? const {})
+            : ReleaseGate.unknown,
+      );
 
   Venue _venue(QueryDocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data();
@@ -136,6 +149,20 @@ class FleetService {
 
   Future<void> deleteVenue(String vid) => _call('deleteVenue', {'vid': vid});
 
+  /// Overrides the gate CI wrote from the tag. The only undo for a `-breaking`
+  /// tag that should not have been one — every device in the fleet is blocked
+  /// until this doc says otherwise. Empty string clears a floor; the callable
+  /// rejects `min > recommended > latest`. See ADR-0087.
+  Future<void> setReleaseGate({
+    required String min,
+    required String recommended,
+    required String latest,
+  }) => _call('setReleaseGate', {
+    'min': min,
+    'recommended': recommended,
+    'latest': latest,
+  });
+
   /// Creates a venue principal. [role] is `admin` (default) or `owner` — the
   /// read-only cloud report viewer (ADR-0036). `super` is seeded by hand.
   Future<String> createAdmin({
@@ -199,6 +226,12 @@ final fleetVenuesProvider = StreamProvider<List<Venue>>(
 /// Live fleet admins for the console.
 final fleetAdminsProvider = StreamProvider<List<AdminProfile>>(
   (ref) => ref.watch(fleetServiceProvider).watchAdmins(),
+);
+
+/// The release gate as the super admin sees it — the same doc the whole fleet
+/// reads, so the console edits what it is showing.
+final fleetReleaseGateProvider = StreamProvider<ReleaseGate>(
+  (ref) => ref.watch(fleetServiceProvider).watchReleaseGate(),
 );
 
 /// Wall-clock tick driving the console's offline / lockout readouts.

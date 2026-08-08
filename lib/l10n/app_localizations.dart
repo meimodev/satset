@@ -1669,6 +1669,102 @@ abstract class AppL10n {
   /// **'Ketuk untuk perpanjang lewat WhatsApp.'**
   String get billingCta;
 
+  /// Shell banner on the Main Device only (ADR-0087). Version numbers only — no release notes.
+  ///
+  /// In id, this message translates to:
+  /// **'Versi {latest} tersedia. Perangkat ini di {installed}.'**
+  String updateAvailable(String latest, String installed);
+
+  /// No description provided for @updateAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Perbarui'**
+  String get updateAction;
+
+  /// No description provided for @updateBlockedTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Versi ini tidak didukung lagi'**
+  String get updateBlockedTitle;
+
+  /// No description provided for @updateBlockedBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Perangkat ini menjalankan versi {installed}. Versi minimum sekarang {min}.'**
+  String updateBlockedBody(String installed, String min);
+
+  /// No description provided for @updateBlockedAskAdmin.
+  ///
+  /// In id, this message translates to:
+  /// **'Minta admin memperbarui perangkat ini.'**
+  String get updateBlockedAskAdmin;
+
+  /// No description provided for @updateDownloading.
+  ///
+  /// In id, this message translates to:
+  /// **'Mengunduh {percent}%'**
+  String updateDownloading(int percent);
+
+  /// No description provided for @updateInstalling.
+  ///
+  /// In id, this message translates to:
+  /// **'Membuka pemasang...'**
+  String get updateInstalling;
+
+  /// No description provided for @updateFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Unduhan gagal. Periksa koneksi lalu coba lagi.'**
+  String get updateFailed;
+
+  /// No description provided for @updateRetry.
+  ///
+  /// In id, this message translates to:
+  /// **'Coba lagi'**
+  String get updateRetry;
+
+  /// No description provided for @updatePermissionNeeded.
+  ///
+  /// In id, this message translates to:
+  /// **'Izinkan pemasangan aplikasi dari SatSet, lalu coba lagi.'**
+  String get updatePermissionNeeded;
+
+  /// No description provided for @fltReleaseGate.
+  ///
+  /// In id, this message translates to:
+  /// **'Gerbang versi'**
+  String get fltReleaseGate;
+
+  /// No description provided for @fltReleaseGateHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Kosongkan untuk menghapus batas.'**
+  String get fltReleaseGateHint;
+
+  /// No description provided for @fltReleaseGateMin.
+  ///
+  /// In id, this message translates to:
+  /// **'Minimum (wajib)'**
+  String get fltReleaseGateMin;
+
+  /// No description provided for @fltReleaseGateRecommended.
+  ///
+  /// In id, this message translates to:
+  /// **'Disarankan'**
+  String get fltReleaseGateRecommended;
+
+  /// No description provided for @fltReleaseGateLatest.
+  ///
+  /// In id, this message translates to:
+  /// **'Terbaru'**
+  String get fltReleaseGateLatest;
+
+  /// No description provided for @fltReleaseGateInvalid.
+  ///
+  /// In id, this message translates to:
+  /// **'Format harus 1.2.3, dan min <= disarankan <= terbaru.'**
+  String get fltReleaseGateInvalid;
+
   /// No description provided for @bootBlockStale.
   ///
   /// In id, this message translates to:

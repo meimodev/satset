@@ -78,6 +78,14 @@ dependencies:
   permission_handler: ^12.0.3
   qr_flutter: ^4.1.0
 
+  # The update gate (ADR-0087). package_info_plus supplies this build's own
+  # versionName — the value the gate compares against and the `ver` the mDNS TXT
+  # record advertises. open_filex hands the downloaded APK to Android's package
+  # installer; it ships its own FileProvider, so there is no authority to
+  # declare here.
+  package_info_plus: ^8.1.1
+  open_filex: ^4.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
